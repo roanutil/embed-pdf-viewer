@@ -30,6 +30,6 @@
     "vite": ">=6.0.0"
   },
   "devDependencies": {
-    "@vue/language-core": "^3.0.6"
+    "@vue/language-core": "^3.2.6"
   }
 }
