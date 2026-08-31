@@ -1,0 +1,13 @@
+{
+  "name": "@poc/geometry",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Pure 2D primitives: Vec, Rect, Quad, and the rotate/scale transforms. Zero dependencies, DOM-free, serializable. The bottom of the pyramid.",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": { "typescript": "^5.9.3", "vitest": "^2.1.9" }
+}

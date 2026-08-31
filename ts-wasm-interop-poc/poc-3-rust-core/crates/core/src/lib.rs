@@ -1,0 +1,205 @@
+//! `@poc/core`: geometry, the shape brain, and the store, all in Rust.
+//!
+//! The boundary is deliberately narrow. TypeScript can do exactly four things:
+//! dispatch a message, read a version number, ask for one frame's display list,
+//! and hit-test a point. Everything else stays on this side.
+//!
+//! That narrowness is the design. poc-2 exported a dozen geometry helpers and
+//! paid seven crossings per anchored shape per frame. This exports four calls
+//! and pays one per frame, because the loop over shapes runs in Rust.
+
+use std::cell::RefCell;
+
+use wasm_bindgen::prelude::*;
+
+pub mod geom;
+pub mod model;
+
+use crate::model::{
+    hit_test, scene_buffer, shape_table, update, Model, Msg, Point, ViewEnv, ITEM_STRIDE,
+};
+
+thread_local! {
+    static HOST_LOG: RefCell<Option<js_sys::Function>> = const { RefCell::new(None) };
+}
+
+fn host_log(message: &str) {
+    HOST_LOG.with(|slot| {
+        if let Some(f) = slot.borrow().as_ref() {
+            let _ = f.call1(&JsValue::NULL, &JsValue::from_str(message));
+        }
+    });
+}
+
+/// The layout of `scene()`'s buffer, handed to TypeScript so the decoder is not
+/// a magic number on the other side.
+#[wasm_bindgen(js_name = itemStride)]
+pub fn item_stride() -> usize {
+    ITEM_STRIDE
+}
+
+/// The Rust-owned store.
+///
+/// State lives here. TypeScript holds nothing but this handle and a cache.
+#[wasm_bindgen]
+pub struct Core {
+    model: Model,
+    /// Bumped on every change. This is what `useSyncExternalStore` subscribes
+    /// to, because the model itself lives in linear memory and there is no
+    /// object identity for React to compare.
+    version: u32,
+    /// Bumped only when the SET of shapes changes, so the TypeScript side knows
+    /// when its id and color cache is stale. Panning and zooming never move it.
+    topology: u32,
+}
+
+/// What `dispatch` reports back. `changed` is what drives invalidation on the
+/// TypeScript side.
+///
+/// The core deliberately does NOT hold a JS change listener and call it from
+/// inside `dispatch`. It used to, and that was a bug: `dispatch` takes
+/// `&mut self`, so wasm-bindgen holds a mutable borrow for its whole duration,
+/// and the listener synchronously re-rendered React, which read `core.version`
+/// and hit a recursive borrow. The error surfaced much later as
+/// "attempted to take ownership of Rust value while it was borrowed" on
+/// `free()`.
+///
+/// The rule that falls out: a `&mut self` export must not call back into JS.
+/// Return what happened and let the host notify after the call has returned.
+#[derive(serde::Serialize)]
+struct DispatchResult {
+    changed: bool,
+    effects: Vec<crate::model::Effect>,
+}
+
+impl Default for Core {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[wasm_bindgen]
+impl Core {
+    #[wasm_bindgen(constructor)]
+    pub fn new() -> Core {
+        Core {
+            model: Model::default(),
+            version: 1,
+            topology: 1,
+        }
+    }
+
+    /// Rust -> TypeScript, for host services the core cannot implement itself.
+    ///
+    /// `&self`, so the callback may READ this Core (`version`, `scene`, ...).
+    /// It must not dispatch: that needs `&mut self` and would be a recursive
+    /// borrow. Every host callback in a real core wants that constraint written
+    /// down next to it.
+    #[wasm_bindgen(js_name = setHostLogger)]
+    pub fn set_host_logger(&self, f: &js_sys::Function) {
+        HOST_LOG.with(|slot| *slot.borrow_mut() = Some(f.clone()));
+        host_log(&format!("poc-core {} ready", env!("CARGO_PKG_VERSION")));
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn version(&self) -> u32 {
+        self.version
+    }
+
+    #[wasm_bindgen(getter, js_name = topologyVersion)]
+    pub fn topology_version(&self) -> u32 {
+        self.topology
+    }
+
+    #[wasm_bindgen(getter, js_name = shapeCount)]
+    pub fn shape_count(&self) -> usize {
+        self.model.shapes.len()
+    }
+
+    #[wasm_bindgen(getter, js_name = selectedHandle)]
+    pub fn selected_handle(&self) -> Option<u32> {
+        self.model.selected
+    }
+
+    #[wasm_bindgen(getter, js_name = isDragging)]
+    pub fn is_dragging(&self) -> bool {
+        self.model.drag.is_some()
+    }
+
+    /// One message in, `{ changed, effects }` out. One crossing per user action,
+    /// and no callback into JS while the borrow is held.
+    #[wasm_bindgen]
+    pub fn dispatch(&mut self, msg: JsValue) -> Result<JsValue, JsValue> {
+        let parsed: Msg = serde_wasm_bindgen::from_value(msg)
+            .map_err(|e| JsValue::from_str(&format!("bad message: {e}")))?;
+
+        let topology_before = self.model.shapes.len();
+        let (changed, effects) = update(&mut self.model, parsed);
+
+        if changed {
+            self.version = self.version.wrapping_add(1);
+            if self.model.shapes.len() != topology_before {
+                self.topology = self.topology.wrapping_add(1);
+            }
+        }
+
+        Ok(serde_wasm_bindgen::to_value(&DispatchResult { changed, effects })?)
+    }
+
+    /// ONE crossing for the whole frame. The loop over shapes is in Rust.
+    #[wasm_bindgen]
+    pub fn scene(&self, zoom: f64, rotation: f64) -> Vec<f64> {
+        scene_buffer(&self.model, ViewEnv { zoom, rotation })
+    }
+
+    /// The slowly-changing half: ids, colors, flags. Read on a topology bump.
+    #[wasm_bindgen(js_name = shapeTable)]
+    pub fn shape_table(&self) -> Result<JsValue, JsValue> {
+        Ok(serde_wasm_bindgen::to_value(&shape_table(&self.model))?)
+    }
+
+    /// The handle under the point, or -1. Hit-testing walks every shape, and it
+    /// walks them here rather than crossing once per shape.
+    #[wasm_bindgen(js_name = hitTest)]
+    pub fn hit_test(&self, x: f64, y: f64, zoom: f64, rotation: f64) -> i32 {
+        hit_test(
+            &self.model,
+            Point { x, y }.into(),
+            ViewEnv { zoom, rotation },
+        )
+        .map_or(-1, |h| h as i32)
+    }
+
+    /// Drops every shape. Exists so the demo can rebuild a large scene for the
+    /// crossing comparison without a hundred dispatches.
+    #[wasm_bindgen(js_name = seedShapes)]
+    pub fn seed_shapes(&mut self, count: u32, anchored: bool) {
+        self.model = Model::default();
+        for i in 0..count {
+            let col = (i % 10) as f64;
+            let row = (i / 10) as f64;
+            update(
+                &mut self.model,
+                Msg::Add {
+                    at: Point {
+                        x: 60.0 + col * 52.0,
+                        y: 60.0 + row * 46.0,
+                    },
+                    color: PALETTE[(i as usize) % PALETTE.len()].to_string(),
+                },
+            );
+            if anchored {
+                let id = format!("s{}", self.model.seq);
+                update(&mut self.model, Msg::SetAnchored { id, anchored: true });
+            }
+        }
+        self.model.selected = None;
+        self.version = self.version.wrapping_add(1);
+        self.topology = self.topology.wrapping_add(1);
+        // No host_log here. `seed_shapes` takes `&mut self`, and calling into JS
+        // under a mutable borrow is the trap documented on DispatchResult. The
+        // wrapper logs this instead.
+    }
+}
+
+const PALETTE: [&str; 6] = ["#c0392b", "#2980b9", "#27ae60", "#8e44ad", "#d35400", "#16a085"];

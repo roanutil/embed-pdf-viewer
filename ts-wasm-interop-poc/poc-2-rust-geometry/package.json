@@ -1,0 +1,22 @@
+{
+  "name": "poc-2-rust-geometry",
+  "private": true,
+  "packageManager": "pnpm@10.34.0",
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "gen:vectors": "tsx scripts/gen-vectors.mjs",
+    "build:wasm": "node scripts/build-wasm.mjs",
+    "test:rust": "cargo test"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.8",
+    "typescript": "^5.9.3",
+    "vitest": "^2.1.9",
+    "@poc/geometry": "workspace:*",
+    "@poc/shapes": "workspace:*",
+    "tsx": "^4.19.2"
+  }
+}

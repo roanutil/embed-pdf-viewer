@@ -1,0 +1,26 @@
+{
+  "name": "@poc/react",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "React adapter: one reactive binding over the store, the ShapeCanvas surface, and the wasm init gate.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@poc/geometry": "workspace:*",
+    "@poc/shapes": "workspace:*",
+    "@poc/store": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "react": "^18.3.1",
+    "typescript": "^5.9.3"
+  }
+}
