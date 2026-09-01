@@ -1,0 +1,11 @@
+[package]
+name = "shim"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[lib]
+crate-type = ["staticlib", "rlib"]
+
+[dependencies]
+pdfium-sys = { path = "../pdfium-sys" }
