@@ -958,9 +958,13 @@ import { SEARCH_TERM } from './fixture.mjs';
 const ALL = ['a', 'b', 'c', 'd'];
 const THIN = ['a', 'b'];
 
-/** EPDF_CHAR_GEOMETRY field offsets, from epdf_text.h:35. */
+/**
+ * EPDF_CHAR_GEOMETRY field offsets, from epdf_text.h:35:
+ * loose_box 16 + tight_box 16 + loose_quad 32 + tight_quad 32 + matrix 24 + flags 4.
+ * Step 5 of this task verifies them with offsetof rather than trusting the sum.
+ */
 const GEO = {
-  bytes: 88,
+  bytes: 124,
   looseBox: 0,
   tightBox: 16,
   looseQuad: 32,
@@ -968,13 +972,6 @@ const GEO = {
   matrix: 96,
   flags: 120,
 };
-// loose_box 16 + tight_box 16 + loose_quad 32 + tight_quad 32 + matrix 24 + flags 4
-GEO.bytes = 124;
-GEO.tightBox = 16;
-GEO.looseQuad = 32;
-GEO.tightQuad = 64;
-GEO.matrix = 96;
-GEO.flags = 120;
 
 const F = {
   HAS_TIGHT_BOX: 1 << 0,
@@ -1398,7 +1395,7 @@ em++ /tmp/geo.cc -I build/libpdfium/wasm32/include -std=c++17 -o /tmp/geo.mjs -s
 node /tmp/geo.mjs
 ```
 
-Expected: `sizeof=124 loose=0 tight=16 lq=32 tq=64 m=96 flags=120`. If it prints anything else, correct the `GEO` object in `bench/workloads.mjs` to match, and delete the redundant reassignment block below the literal while you are there.
+Expected: `sizeof=124 loose=0 tight=16 lq=32 tq=64 m=96 flags=120`. If it prints anything else, correct the `GEO` object in `bench/workloads.mjs` to match.
 
 - [ ] **Step 6: Run the test to verify it passes**
 
@@ -2832,26 +2829,61 @@ export async function loadNativeArm(name, target = 'darwin-arm64') {
     const addon = require(
       resolve(here, `../../packages/engine/runtime/npm/${target}/lib/pdf-runtime.node`),
     );
-    const N = (v) => (typeof v === 'bigint' ? v : BigInt(Math.trunc(v)));
-    const fn = new Proxy(
-      {},
-      {
-        get: (_t, key) => (...args) => addon[key](...args.map((a) =>
-          typeof a === 'number' && String(key).endsWith('Ptr') ? N(a) : a,
-        )),
-      },
-    );
+    // The shipping addon takes BigInt pointers. Which ARGUMENTS are pointers
+    // is per-function, so it is spelled out rather than guessed: an earlier
+    // draft keyed the conversion off the function name and silently passed
+    // Numbers where the addon expects BigInt.
+    const P = (v) => (typeof v === 'bigint' ? v : BigInt(Math.trunc(v)));
+    const raw = addon.fn ?? addon;
+    const fn = {
+      FPDF_InitLibrary: () => raw.FPDF_InitLibrary(),
+      FPDF_DestroyLibrary: () => raw.FPDF_DestroyLibrary(),
+      FPDF_LoadMemDocument: (buf, len, pw) => raw.FPDF_LoadMemDocument(P(buf), len, P(pw)),
+      FPDF_CloseDocument: (doc) => raw.FPDF_CloseDocument(P(doc)),
+      FPDF_GetPageCount: (doc) => raw.FPDF_GetPageCount(P(doc)),
+      FPDF_LoadPage: (doc, i) => raw.FPDF_LoadPage(P(doc), i),
+      FPDF_ClosePage: (pg) => raw.FPDF_ClosePage(P(pg)),
+      FPDF_GetPageWidthF: (pg) => raw.FPDF_GetPageWidthF(P(pg)),
+      FPDF_GetPageHeightF: (pg) => raw.FPDF_GetPageHeightF(P(pg)),
+      EPDF_GetPageSizeByIndexNormalized: (doc, i, out) =>
+        raw.EPDF_GetPageSizeByIndexNormalized(P(doc), i, P(out)),
+      FPDFText_LoadPage: (pg) => raw.FPDFText_LoadPage(P(pg)),
+      FPDFText_ClosePage: (tp) => raw.FPDFText_ClosePage(P(tp)),
+      FPDFText_CountChars: (tp) => raw.FPDFText_CountChars(P(tp)),
+      FPDFText_GetTextObject: (tp, i) => raw.FPDFText_GetTextObject(P(tp), i),
+      FPDFText_GetFontSize: (tp, i) => raw.FPDFText_GetFontSize(P(tp), i),
+      EPDFText_GetCharGeometry: (tp, i, out) =>
+        raw.EPDFText_GetCharGeometry(P(tp), i, P(out)),
+      EPDFText_GetTextFull: (tp, buf, len) => raw.EPDFText_GetTextFull(P(tp), P(buf), len),
+      FPDFText_FindStart: (tp, term, flags, start) =>
+        raw.FPDFText_FindStart(P(tp), P(term), flags, start),
+      FPDFText_FindNext: (h) => raw.FPDFText_FindNext(P(h)),
+      FPDFText_GetSchResultIndex: (h) => raw.FPDFText_GetSchResultIndex(P(h)),
+      FPDFText_GetSchCount: (h) => raw.FPDFText_GetSchCount(P(h)),
+      FPDFText_FindClose: (h) => raw.FPDFText_FindClose(P(h)),
+      FPDFText_CountRects: (tp, s, c) => raw.FPDFText_CountRects(P(tp), s, c),
+      FPDFText_GetRect: (tp, i, l, t, r, b) =>
+        raw.FPDFText_GetRect(P(tp), i, P(l), P(t), P(r), P(b)),
+      FPDFBitmap_CreateEx: (w, h, fmt, buf, stride) =>
+        raw.FPDFBitmap_CreateEx(w, h, fmt, P(buf), stride),
+      FPDFBitmap_FillRect: (b, l, t, w, h, color) =>
+        raw.FPDFBitmap_FillRect(P(b), l, t, w, h, color),
+      FPDFBitmap_Destroy: (b) => raw.FPDFBitmap_Destroy(P(b)),
+      FPDF_RenderPageBitmap: (b, pg, x, y, w, h, rot, flags) =>
+        raw.FPDF_RenderPageBitmap(P(b), P(pg), x, y, w, h, rot, flags),
+    };
     const mem = {
-      alloc: (b) => addon.alloc(b),
-      free: (p) => addon.free(p),
-      peek32: (p) => Number(addon.peek(p, 'i32')),
-      peekF32: (p) => Number(addon.peek(p, 'f32')),
-      peekF64: (p) => Number(addon.peek(p, 'f64')),
-      readBytes: (p, len) => new Uint8Array(addon.readBytes(p, len)),
-      writeBytes: (p, d) => addon.writeBytes(p, d.buffer.slice(d.byteOffset, d.byteOffset + d.byteLength)),
-      writeU16: (s) => addon.writeU16String(s),
+      alloc: (b) => raw.alloc(b),
+      free: (p) => raw.free(P(p)),
+      peek32: (p) => Number(raw.peek(P(p), 'i32')),
+      peekF32: (p) => Number(raw.peek(P(p), 'f32')),
+      peekF64: (p) => Number(raw.peek(P(p), 'f64')),
+      readBytes: (p, len) => new Uint8Array(raw.readBytes(P(p), len)),
+      writeBytes: (p, d) =>
+        raw.writeBytes(P(p), d.buffer.slice(d.byteOffset, d.byteOffset + d.byteLength)),
+      writeU16: (s) => raw.writeU16String(s),
       readU16: (p, units) => {
-        const bytes = new Uint8Array(addon.readBytes(p, units * 2));
+        const bytes = new Uint8Array(raw.readBytes(P(p), units * 2));
         const u16 = new Uint16Array(bytes.buffer, bytes.byteOffset, units);
         let out = '';
         const CHUNK = 0x2000;
@@ -3281,7 +3313,5 @@ git commit -m "docs: record what the PDFium Rust wrapper benchmark measured"
 **Spec coverage.** Gate: Task 1. Four arms: Tasks 2, 4, 5, 6 for wasm, Tasks 8 and 9 for native. Fairness gate: Task 3, enforced before timing in Task 7's `run.mjs`. Five workloads: Task 3, including both render scales and the three separate null probes. Method (warmup, budget, median and p95, sink, round-robin at k=7, environment stamp): Task 7, inherited from `ts-wasm-interop-poc/bench/harness.mjs`. Wasm byte size: Task 7. Native phase: Tasks 8 and 9. Write-up: Tasks 7, 9 and 10.
 
 Two spec items are deliberately not implemented, both recorded under "Deviations from the spec" above: `bindgen`, replaced by 21 hand-written declarations, and importing `PageGeometryReader`, replaced by a transcription of its loop.
-
-**Known rough edge.** Task 3's `GEO` object contains a literal followed by a reassignment block. Step 5 of that task verifies the real offsets with `offsetof` and instructs deleting the redundant block. If the verification prints `sizeof=124 loose=0 tight=16 lq=32 tq=64 m=96 flags=120`, the literal is already right.
 
 **Name consistency.** `loadArm` / `loadNativeArm` / `wasmBytes` (arm.mjs); `openFixture` / `PDF_PATH` / `SEARCH_TERM` / `PAGE_INDEX` (fixture.mjs); `makeWorkloads` / `RECORD_BYTES` (workloads.mjs); `canonicalFor` / `canonicalForNative` / `compare` (gate.mjs). Workload ids are `null-call`, `null-peek`, `null-readbytes`, `geometry`, `text`, `render-1x`, `render-4x`, `search`, used identically in `workloads.mjs`, `gate.mjs`, `node.mjs` and `compare.mjs`. The 112-byte record layout appears in `crates/ops/src/record.rs`, `cpp/record.h` and the `geometryCoarse` decoder in `bench/workloads.mjs`, and Task 6's test asserts arms C and D produce it identically.
