@@ -1,17 +1,19 @@
 /**
  * One PDF, one page, chosen by glyph count rather than by guess, and recorded
- * in every results file. `examples/react/public/ebook.pdf` is a real document
- * from the repo's own examples, not a synthetic page.
+ * in every results file. `examples/snippet-react/public/report.pdf` is a real document from the
+ * repo's own examples, not a synthetic page. Page 4 carries 8,106 glyphs,
+ * the densest in the repo's example PDFs; ebook.pdf's best page has 625,
+ * which is too thin to make the crossing count the dominant term.
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const here = import.meta.dirname;
-export const PDF_PATH = resolve(here, '../../examples/react/public/ebook.pdf');
+export const PDF_PATH = resolve(here, '../../examples/snippet-react/public/report.pdf');
 export const SEARCH_TERM = 'the';
 
 /** Picked once by `node bench/fixture.mjs`, then frozen here so every round agrees. */
-export const PAGE_INDEX = Number(process.env.BENCH_PAGE ?? 1);
+export const PAGE_INDEX = Number(process.env.BENCH_PAGE ?? 4);
 
 export function openFixture(arm) {
   const { fn, mem } = arm;

@@ -108,13 +108,18 @@ This is the pure wrapper tax and the only workload that measures it in isolation
 ### 2. Glyph geometry
 
 `PageGeometryReader.read` at
-`packages/engine/services/src/features/geometry/PageGeometryReader.ts:86`, on a text-heavy page of
-`examples/react/public/ebook.pdf`, with the glyph count recorded in the results header.
+`packages/engine/services/src/features/geometry/PageGeometryReader.ts:86`, on page 4 of
+`examples/snippet-react/public/report.pdf`, which carries 8,106 glyphs. The count goes in the
+results header.
 
 This is the chattiest path in the engine and the reason to bother. Per glyph the loop at `:109` makes
 `FPDFText_GetTextObject`, `EPDFText_GetCharGeometry`, sometimes `FPDFText_GetFontSize`, and then 5 to
-21 `mem.peek` calls to decode the struct in `readGlyphRaw` at `:135`. Three thousand glyphs is
-something like 40,000 crossings for arithmetic that fits in registers.
+21 `mem.peek` calls to decode the struct in `readGlyphRaw` at `:135`. So 8,106 glyphs is somewhere
+around 100,000 crossings for arithmetic that fits in registers.
+
+(I first picked `examples/react/public/ebook.pdf`, whose densest page has 625 glyphs. That is thin
+enough that the crossing count stops being the dominant term, which would have quietly flattered
+every arm. Measuring the candidates first was worth the ten minutes.)
 
 ### 3. Page text
 

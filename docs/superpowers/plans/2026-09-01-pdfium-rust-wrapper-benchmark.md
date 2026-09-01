@@ -319,7 +319,7 @@ import { resolve } from 'node:path';
 import { test } from 'node:test';
 
 const here = import.meta.dirname;
-const PDF = resolve(here, '../../examples/react/public/ebook.pdf');
+const PDF = resolve(here, '../../examples/snippet-react/public/report.pdf');
 
 test('a Rust function linked into the PDFium wasm module returns the same page size as PDFium', async () => {
   const { default: createProbe } = await import('../build/out/probe.mjs');
@@ -800,14 +800,14 @@ export async function wasmBytes(name) {
 ```js
 /**
  * One PDF, one page, chosen by glyph count rather than by guess, and recorded
- * in every results file. `examples/react/public/ebook.pdf` is a real document
+ * in every results file. `examples/snippet-react/public/report.pdf` is a real document
  * from the repo's own examples, not a synthetic page.
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const here = import.meta.dirname;
-export const PDF_PATH = resolve(here, '../../examples/react/public/ebook.pdf');
+export const PDF_PATH = resolve(here, '../../examples/snippet-react/public/report.pdf');
 export const SEARCH_TERM = 'the';
 
 /** Picked once by `node bench/fixture.mjs`, then frozen here so every round agrees. */
