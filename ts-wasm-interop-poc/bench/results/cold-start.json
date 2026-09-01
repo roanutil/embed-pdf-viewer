@@ -1,0 +1,11 @@
+{
+  "mode": "cold-start",
+  "collectedBy": "Chrome DevTools MCP, 5 same-origin iframe loads per POC against `vite preview` production builds",
+  "caveat": "localhost, and the hashed JS/wasm assets come from the memory cache. The wasm leg here is fetch-from-cache plus compile plus instantiate, NOT download. Over a real network add the transfer: 45.2 kB gzipped for poc-2, 66.6 kB for poc-3.",
+  "samples": 5,
+  "pocs": {
+    "poc-1-ts": { "wasmLegMs": 1.2, "firstFrameMs": 19.0, "firstFrameRange": [13.5, 34.4], "wasmBytes": 0 },
+    "poc-2-rust-geometry": { "wasmLegMs": 6.3, "firstFrameMs": 21.2, "firstFrameRange": [12.7, 43.7], "wasmBytes": 133877 },
+    "poc-3-rust-core": { "wasmLegMs": 7.8, "firstFrameMs": 24.8, "firstFrameRange": [21.5, 41.6], "wasmBytes": 283867 }
+  }
+}

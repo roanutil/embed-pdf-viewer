@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { createCoreStore, initCore, resetCrossings } from '@poc/core';
 import wasmUrl from '@poc/core/wasm-url';
 import type { CoreStore, Effect, Rotation, ViewEnv } from '@poc/core';
+import { markFirstFrame, markWasmReady } from './marks';
 import {
   CoreContext,
   ShapeCanvas,
@@ -34,6 +35,7 @@ export function App() {
     initCore({ wasmUrl })
       .then(() => {
         if (!live) return;
+        markWasmReady();
         created = createCoreStore({
           log: (m) => setHostLines((l) => [m, ...l].slice(0, 6)),
         });
@@ -71,6 +73,7 @@ function Shell({ hostLines }: { hostLines: string[] }) {
   const stats = useInteropStats();
 
   const store = useCore();
+  useEffect(markFirstFrame, []);
 
   useEffect(() => {
     const off = store.onEffect((e: Effect) => {

@@ -109,9 +109,16 @@ measurement pollution, and the marks should stay in afterwards.
 
 The noisiest of the four, and its job is to explain the frame numbers rather than to be a headline.
 
-In Node, run a fixed 10,000-frame loop under `--expose-gc`, force a collection before and after, and
-report the `heapUsed` delta plus a scavenge count scraped from `--trace-gc`. Scavenges per 10,000
-frames is the more stable of the two and the better proxy for allocation pressure.
+In Node, force a collection and then run a window of frames SHORT enough that no collection
+intervenes, reporting the `heapUsed` delta divided by the frame count. Verify no GC fired; if one
+did, halve the window and retry.
+
+(Two earlier designs for this are recorded in `bench/workloads.mjs` because both failed quietly.
+Counting scavenges through `PerformanceObserver` does not work: Node 24 emits no perf entry per
+scavenge, and its kind constants are MINOR=1, MAJOR=4, INCREMENTAL=8, not the 1/2/4 I assumed. And a
+10,000-frame window is self-defeating, because that many frames trigger the very collections whose
+absence the measurement depends on: it reported 150 bytes per frame for work that allocates five
+objects per shape.)
 
 poc-2 is the one to watch: every geometry call allocates a `Float64Array` on the way in and four
 `{x, y}` objects plus a tuple on the way out, in `packages/geometry/src/index.ts`. Seven of those per
@@ -125,7 +132,8 @@ the setup for a one-off.
 
 Rules that apply to every cell, because getting these wrong is how benchmarks lie.
 
-Warm up to V8's optimizing tier before sampling: 1,000 iterations or 100 ms, whichever comes first.
+Warm up to V8's optimizing tier before sampling: 10,000 iterations or 200 ms, whichever comes first.
+(I first wrote 1,000 and 100 ms here, which is too few calls to reliably tier up a small function.)
 Sample against a fixed time budget per cell, 500 ms, counting iterations, rather than a fixed
 iteration count. N=1 and N=10000 differ by four orders of magnitude and a fixed count starves one end
 or wastes minutes on the other.
@@ -196,3 +204,67 @@ and the dual-implementation worry in that document deserves revisiting. If it la
 hundred, the plan's ordering stands and the annotation brain should stay in TypeScript on web.
 
 I do not know which. That is the point of measuring.
+
+## What actually happened
+
+Built, run over five interleaved rounds, and the predictions above were mostly wrong. The full
+tables are in [`ts-wasm-interop-poc/bench/RESULTS.md`](../../ts-wasm-interop-poc/bench/RESULTS.md);
+what follows is what I did not expect.
+
+**poc-3 never beat poc-1 on a single frame cell.** Not at 10 shapes, not at 10,000. It ran 1.6x to
+3.1x slower everywhere, and the crossover I predicted between n=10 and n=50 does not exist. At
+n=1000 anchored and projecting, the workload the whole port plan cares about, poc-1 takes 127 µs and
+poc-3 takes 207 µs, for a frame that crosses the boundary exactly once against poc-1's zero.
+
+So I added a measurement that was not in this plan: `sceneRaw`, which returns the flat
+`Float64Array` without decoding it into `DisplayList` objects. That decode allocates one item plus
+four points per shape, which is the same allocation poc-1 performs, so I expected it to be the whole
+explanation. It is about half of it. The decode is 44% to 53% of poc-3's frame cost at n=1000 and
+above. Strip it entirely and poc-3 is STILL 1.35x to 1.75x slower than poc-1.
+
+Which leaves one conclusion I cannot argue my way out of: for arithmetic this simple, V8's JIT beats
+Rust in wasm plus a single boundary crossing. Not by a little. The hit-test numbers say the same
+thing from another angle, where poc-3 loses even the n=1000 miss case, 154 µs against 128 µs, and
+that case walks all thousand shapes in Rust for one crossing while poc-1 walks all thousand in
+JavaScript.
+
+**poc-2 won 0 of 20 frame cells**, which is the one prediction that held cleanly. It ran 4.6x to 8.4x
+slower than poc-1 across the board. A fine-grained boundary is exactly as bad as the plan said.
+
+**Dispatch was the only place Rust won**, and for a reason that has nothing to do with Rust. poc-3
+costs 18.7x poc-1 per `pointerMove` at 10 shapes, because every message pays a serde crossing. At
+1,000 shapes it costs 0.33x, because `replace` at `poc-1-ts/packages/shapes/src/update.ts:19` is
+`shapes.map(...)` and allocates a thousand objects on every pointer move while Rust mutates in place.
+That is a finding about immutable-model reducers, and poc-1 could win it back with a targeted fix.
+
+**Cold start** cost 6.3 ms to instantiate 130.7 kB and 7.8 ms for 277.2 kB, pushing first frame from
+19.0 ms to 21.2 ms and 24.8 ms. Smaller than I feared, though that is localhost with the hashed
+assets served from cache, so the download is not in those numbers.
+
+**The benchmark found two bugs**, which is a decent argument for having built it. poc-3's decode
+looked up ids with `rows.find(...)` inside the per-item loop, making `scene()` O(n^2): invisible at
+demo sizes and 184x slower than poc-1 at 10,000 shapes, for a frame that still crossed the boundary
+exactly once. And the first allocation metric reported 0 scavenges for all three implementations,
+which is not a plausible answer for 200,000 object allocations and should have been the giveaway.
+
+### What this changes
+
+I opened this document hoping to replace a missing number in
+[the port plan](./rust-core-port.md). The number turns out to argue against the framing of the
+question. There is no crossover to find, so the paragraph I wrote about wave 4 looking better if the
+crossover landed under twenty shapes is moot.
+
+What survives, and is strengthened: the case for this port is code sharing across platforms, not
+performance on web. Every frame metric here says a Rust core makes the web build slower, and the
+honest reason to do it anyway is that iOS and Android otherwise need a reimplementation of
+`engine-services` that will drift.
+
+The caveat that matters most. This toy's per-shape math is a handful of multiplies and adds, which is
+precisely the shape V8 optimizes best. The real annotation core does considerably more per shape:
+cloudy border generation in `packages/core/annotation/src/cloudy.ts` is 570 lines, ink resampling and
+polygon hit-testing are not four floats and a winding test. So this result does NOT say Rust would
+lose on the real workload. It says the boundary and the JavaScript object materialization together
+eat any win on math this cheap, and that a real port should pick its first slice by asking how much
+compute sits behind each crossing.
+
+Which is, in fairness, what wave 2 of the port plan already says. I just have numbers for it now.

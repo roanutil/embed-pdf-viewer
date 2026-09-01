@@ -34,6 +34,18 @@ export interface CoreStore {
 
   /** ONE crossing, whole frame, any number of shapes. */
   scene(view: ViewEnv): DisplayList;
+
+  /**
+   * The same frame, undecoded: `[count, (handle, 8 coords, flags) * count]`.
+   *
+   * `scene()` turns that buffer into `DisplayList` objects because an SVG
+   * renderer wants objects. That decode allocates one item plus four points per
+   * shape, and it is the SAME allocation the all-TypeScript build does, so it
+   * cancels out most of what moving the math to Rust buys. A renderer that can
+   * read floats directly, a canvas or WebGL path, should take this instead and
+   * skip the objects entirely.
+   */
+  sceneRaw(view: ViewEnv): Float64Array;
   hitTest(at: { x: number; y: number }, view: ViewEnv): string | null;
 
   /** Cheap reads that do not need the whole model. */
@@ -69,6 +81,16 @@ export function createCoreStore(host: CoreHost = {}): CoreStore {
   let tableDirty = true;
   let tableVersion = -1;
   let rows: readonly ShapeRow[] = [];
+  /**
+   * handle -> row, rebuilt with the table.
+   *
+   * The first version looked this up with `rows.find(...)` inside the per-item
+   * decode loop, which made `scene()` O(n^2). It was invisible at demo sizes and
+   * catastrophic at 10,000 shapes: 184x slower than the all-TypeScript build,
+   * for a frame that still crossed the boundary exactly once. Crossing count is
+   * not cost.
+   */
+  let rowByHandle = new Map<number, ShapeRow>();
 
   /**
    * The version, mirrored on this side.
@@ -113,14 +135,17 @@ export function createCoreStore(host: CoreHost = {}): CoreStore {
     if (v !== tableVersion) {
       countCrossing();
       rows = core.shapeTable() as ShapeRow[];
+      rowByHandle = new Map(rows.map((r) => [r.handle, r]));
       tableVersion = v;
     }
     tableDirty = false;
     return rows;
   };
 
-  const byHandle = (handle: number): ShapeRow | undefined =>
-    table().find((r) => r.handle === handle);
+  const byHandle = (handle: number): ShapeRow | undefined => {
+    table();
+    return rowByHandle.get(handle);
+  };
 
   return {
     getVersion: () => cachedVersion,
@@ -153,8 +178,13 @@ export function createCoreStore(host: CoreHost = {}): CoreStore {
       return () => void effectHandlers.delete(handler);
     },
 
+    sceneRaw(view) {
+      countCrossing();
+      return core.scene(view.zoom, view.rotation);
+    },
+
     scene(view) {
-      const meta = table();
+      table();
       countCrossing();
       const buf = core.scene(view.zoom, view.rotation);
       const stride = 10;
@@ -164,7 +194,7 @@ export function createCoreStore(host: CoreHost = {}): CoreStore {
         const o = 1 + i * stride;
         const handle = buf[o]!;
         const flags = buf[o + 9]!;
-        const row = meta.find((r) => r.handle === handle);
+        const row = rowByHandle.get(handle);
         items.push({
           handle,
           id: row?.id ?? `s${handle}`,

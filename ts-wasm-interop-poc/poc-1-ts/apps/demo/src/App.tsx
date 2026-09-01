@@ -3,10 +3,15 @@ import { createStore } from '@poc/store';
 import type { Effect } from '@poc/shapes';
 import { ShapeCanvas, StoreContext, nextColor, resetStats, useDispatch, useInteropStats, useModel, useScene } from '@poc/react';
 import type { Rotation, ViewEnv } from '@poc/shapes';
+import { markFirstFrame, markWasmReady } from './marks';
 
 const PAGE = { width: 600, height: 420 };
 
 export function App() {
+  // Nothing to instantiate. Recording it anyway keeps the four legs comparable
+  // across the three builds.
+  useEffect(markWasmReady, []);
+
   // Seeded at CREATION, not in an effect. StrictMode double-invokes effects, and
   // a seeding effect would put four shapes on the page instead of two.
   const store = useMemo(() => {
@@ -42,6 +47,7 @@ function Shell({ log }: { log: string[] }) {
   const dispatch = useDispatch();
   const scene = useScene(view);
   const stats = useInteropStats();
+  useEffect(markFirstFrame, []);
   const selected = model.shapes.find((s) => s.id === model.selected) ?? null;
 
   return (

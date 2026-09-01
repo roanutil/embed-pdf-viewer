@@ -3,6 +3,7 @@ import { benchHostCalls, initGeometry, rectQuad, rectQuadObjects, resetCrossings
 import wasmUrl from '@poc/geometry/wasm-url';
 import { createStore } from '@poc/store';
 import type { Effect, Rotation, ViewEnv } from '@poc/shapes';
+import { markFirstFrame, markWasmReady } from './marks';
 import {
   ShapeCanvas,
   StoreContext,
@@ -34,7 +35,11 @@ export function App() {
       wasmUrl,
       host: { log: (m) => live && setHostLines((l) => [m, ...l].slice(0, 6)) },
     })
-      .then(() => live && setReady(true))
+      .then(() => {
+        if (!live) return;
+        markWasmReady();
+        setReady(true);
+      })
       .catch((e: unknown) => live && setError(String(e)));
     return () => {
       live = false;
@@ -110,6 +115,7 @@ function Shell({ log, hostLines }: { log: string[]; hostLines: string[] }) {
   const dispatch = useDispatch();
   const scene = useScene(view);
   const stats = useInteropStats();
+  useEffect(markFirstFrame, []);
   const selected = model.shapes.find((s) => s.id === model.selected) ?? null;
   const anchoredCount = model.shapes.filter((s) => s.anchored).length;
 
