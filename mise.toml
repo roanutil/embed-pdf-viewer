@@ -1,0 +1,5 @@
+[tools]
+# Matches the `packageManager` field in package.json. Keep the two in step:
+# pnpm refuses to run when they disagree.
+pnpm = "10.34.0"
+node = "24.20.0"
