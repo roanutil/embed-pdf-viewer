@@ -39,7 +39,7 @@ const PDFIUM = [
   ['FPDFText_CountRects', 'number', ['number', 'number', 'number']],
   ['FPDFText_GetRect', 'number', ['number', 'number', 'number', 'number', 'number', 'number']],
   ['FPDFBitmap_CreateEx', 'number', ['number', 'number', 'number', 'number', 'number']],
-  ['FPDFBitmap_FillRect', null, ['number', 'number', 'number', 'number', 'number', 'number']],
+  ['FPDFBitmap_FillRect', 'number', ['number', 'number', 'number', 'number', 'number', 'number']],
   ['FPDFBitmap_Destroy', null, ['number']],
   ['FPDF_RenderPageBitmap', null, [
     'number', 'number', 'number', 'number', 'number', 'number', 'number', 'number',

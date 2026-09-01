@@ -21,11 +21,23 @@ export function openFixture(arm) {
   const buf = mem.alloc(bytes.length);
   mem.writeBytes(buf, bytes);
   const doc = fn.FPDF_LoadMemDocument(buf, bytes.length, 0);
-  if (!doc) throw new Error(`FPDF_LoadMemDocument failed for ${PDF_PATH}`);
+  if (!doc) {
+    mem.free(buf);
+    throw new Error(`FPDF_LoadMemDocument failed for ${PDF_PATH}`);
+  }
   const page = fn.FPDF_LoadPage(doc, PAGE_INDEX);
-  if (!page) throw new Error(`FPDF_LoadPage failed for index ${PAGE_INDEX}`);
+  if (!page) {
+    fn.FPDF_CloseDocument(doc);
+    mem.free(buf);
+    throw new Error(`FPDF_LoadPage failed for index ${PAGE_INDEX}`);
+  }
   const textPage = fn.FPDFText_LoadPage(page);
-  if (!textPage) throw new Error(`FPDFText_LoadPage failed for index ${PAGE_INDEX}`);
+  if (!textPage) {
+    fn.FPDF_ClosePage(page);
+    fn.FPDF_CloseDocument(doc);
+    mem.free(buf);
+    throw new Error(`FPDFText_LoadPage failed for index ${PAGE_INDEX}`);
+  }
   const glyphCount = Math.max(fn.FPDFText_CountChars(textPage), 0);
 
   return {
@@ -66,4 +78,6 @@ if (import.meta.filename === process.argv[1]) {
   console.log(`${pages} pages; densest first:`);
   for (const r of rows.slice(0, 10)) console.log(`  page ${r.page}: ${r.glyphs} glyphs`);
   arm.fn.FPDF_CloseDocument(doc);
+  arm.mem.free(buf);
+  arm.close();
 }

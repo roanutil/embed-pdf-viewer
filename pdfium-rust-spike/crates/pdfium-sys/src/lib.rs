@@ -144,7 +144,7 @@ extern "C" {
         width: i32,
         height: i32,
         color: u32,
-    );
+    ) -> FPDF_BOOL;
     pub fn FPDFBitmap_Destroy(bitmap: FPDF_BITMAP);
     pub fn FPDF_RenderPageBitmap(
         bitmap: FPDF_BITMAP,
