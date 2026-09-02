@@ -3,6 +3,13 @@
 version = 4
 
 [[package]]
+name = "ops"
+version = "0.0.0"
+dependencies = [
+ "pdfium-sys",
+]
+
+[[package]]
 name = "pdfium-sys"
 version = "0.0.0"
 
