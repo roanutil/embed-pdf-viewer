@@ -405,6 +405,19 @@ glyphs (two guaranteed BigInt-marshalled calls per glyph plus one more on every 
 as the wasm section above quantifies). The coarsening numbers below use both pairings and say which
 one is more trustworthy where it matters.
 
+That said, the size of the gap is worth recording as a lead rather than only as a nuisance. On
+`geometry` arm a takes 8.374 ms and arm b 4.000 ms for the same PDFium calls in the same order, and
+on `null-peek` 38.0 ns against 14.7 ns. Whatever the cause, something in the shipping addon's
+per-call path costs roughly twice what the `napi-rs` path costs, and it costs it on the read that
+`PageGeometryReader` performs up to twenty-one times per glyph through `mem.peek` at
+`packages/engine/runtime/src/native/native-runtime.ts:57`. I cannot say from these numbers how much
+of that is the BigInt pointer representation and how much is `node-addon-api` against `napi-rs`,
+because this benchmark changed both at once and was never designed to separate them. But the
+question is worth answering on its own, independently of anything to do with Rust, and it is cheap
+to answer: add an f64-pointer entry point to the existing C++ addon and time the two conventions
+through one binding framework. If the BigInt convention is most of it, that is a change to the
+addon's argument marshalling with no port attached.
+
 ### Geometry: the predicted result
 
 The prediction in
