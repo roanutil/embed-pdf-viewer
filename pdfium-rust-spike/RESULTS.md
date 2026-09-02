@@ -205,6 +205,22 @@ built to isolate what about the link produces the effect (code layout, page cach
 something in how Binaryen's `-O3` pass treats the extra section are all consistent with what is
 measured here); the finding is the correlation with which arms link a Rust archive, not a mechanism.
 
+There is evidence in this same run that cuts against that reading, and it belongs here rather than
+in a footnote. On `null-call` the Rust-linked arm is the FASTER one, by about 20 nanoseconds in
+every round. If linking `libshim.a` imposed a general cost on the module, arm b should be slower
+there too, and it is not. So the two observations do not tell one story: on a millisecond-scale
+PDFium workload the two Rust-linked arms are slower, and on a microsecond-scale one the Rust-linked
+arm is faster. What both are consistent with is that each arm is a separately linked binary, and
+that code layout between two separate links moves PDFium-dominated timings by a few percent in
+whichever direction it happens to land. That reading also explains why the `null-call` gap survived
+rotation: it was never a scheduling artifact.
+
+This matters for how much weight any sub-5-percent cross-arm difference in this document can carry,
+including the render one. Treat differences at that scale as unresolved rather than as findings. The
+experiment that would separate the two explanations is cheap and was not run: link `libshim.a` into
+a module that never calls into it, and compare that against arm a. If the render gap follows the
+archive, it is a linkage cost; if it does not, it was layout. Worth doing before anyone acts on it.
+
 Coarsening the crossing wins on `geometry` and `search`, for both languages behind it. Arm c lands
 at 0.38x and arm d at 0.38x on `geometry` (about 2.6x faster than arm a); on `search`, arm c is 0.30x
 and arm d is 0.33x (about 3.3x and 3.1x faster than arm a). Both are inside the prediction's
