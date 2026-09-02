@@ -21,9 +21,9 @@ pub extern "C" fn rs_read_page_geometry(text_page: u32, out: *mut u8, cap: i32) 
     }
     let mut w = unsafe { Writer::new(out, cap as usize) };
     let mut prev_key: Option<u32> = None;
+    let mut geo = EPDF_CHAR_GEOMETRY::default();
 
     for i in 0..count {
-        let mut geo = EPDF_CHAR_GEOMETRY::default();
         let object_key = unsafe { FPDFText_GetTextObject(text_page, i) };
         let ok = unsafe { EPDFText_GetCharGeometry(text_page, i, &mut geo) };
 
@@ -39,8 +39,7 @@ pub extern "C" fn rs_read_page_geometry(text_page: u32, out: *mut u8, cap: i32) 
         // So this assignment must happen for every glyph, empty or not, and
         // must happen before the empty/ok early-return below -- an empty
         // glyph that begins a new text object still carries a real font size.
-        let key_changed = prev_key != Some(object_key);
-        if key_changed {
+        if prev_key != Some(object_key) {
             rec.font_size = unsafe { FPDFText_GetFontSize(text_page, i) } as f32;
         }
         prev_key = Some(object_key);
@@ -125,9 +124,13 @@ pub extern "C" fn rs_search_page(text_page: u32, term: *const u16, out: *mut f32
             let rects = FPDFText_CountRects(text_page, start, count);
             for r in 0..rects {
                 let (mut l, mut t, mut ri, mut b) = (0f64, 0f64, 0f64, 0f64);
-                if FPDFText_GetRect(text_page, r, &mut l, &mut t, &mut ri, &mut b) == 0 {
-                    continue;
-                }
+                // PDFium's FPDFText_GetRect (fpdf_text.cpp) writes all four
+                // outputs before returning its status, storing a
+                // default-constructed zero rect on failure. searchThin
+                // (bench/workloads.mjs) never checks the return value, so it
+                // records that zero rect and counts it. Match that here:
+                // write and count regardless of status.
+                FPDFText_GetRect(text_page, r, &mut l, &mut t, &mut ri, &mut b);
                 if written < cap {
                     let p = out.add((written * 4) as usize);
                     core::ptr::write_unaligned(p, l as f32);
