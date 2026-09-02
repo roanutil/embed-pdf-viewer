@@ -4,6 +4,13 @@
  * repo's own examples, not a synthetic page. Page 4 carries 8,106 glyphs,
  * the densest in the repo's example PDFs; ebook.pdf's best page has 625,
  * which is too thin to make the crossing count the dominant term.
+ *
+ * That page is also entirely upright (0 non-upright glyphs, 0 SPACE flags),
+ * so the fairness gate needs a second fixture to exercise the rotation /
+ * ascent-flip branch and the SPACE flag branch that all four arms implement.
+ * `examples/viewer-react/public/rotated_text.pdf` page 0 covers both. The
+ * gate compares every arm on both fixtures; TIMING keeps using only the
+ * default fixture below, via `PDF_PATH`/`PAGE_INDEX`.
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -15,28 +22,42 @@ export const SEARCH_TERM = 'the';
 /** Picked once by `node bench/fixture.mjs`, then frozen here so every round agrees. */
 export const PAGE_INDEX = Number(process.env.BENCH_PAGE ?? 4);
 
-export function openFixture(arm) {
+/**
+ * Fixtures the fairness gate compares every arm on. `report-p4` is the
+ * timing fixture above; `rotated-p0` is entirely non-upright with SPACE
+ * glyphs, covering the two branches `report-p4` never touches.
+ */
+export const GATE_FIXTURES = [
+  { label: 'report-p4', pdfPath: PDF_PATH, pageIndex: PAGE_INDEX },
+  {
+    label: 'rotated-p0',
+    pdfPath: resolve(here, '../../examples/viewer-react/public/rotated_text.pdf'),
+    pageIndex: 0,
+  },
+];
+
+export function openFixture(arm, { pdfPath = PDF_PATH, pageIndex = PAGE_INDEX } = {}) {
   const { fn, mem } = arm;
-  const bytes = readFileSync(PDF_PATH);
+  const bytes = readFileSync(pdfPath);
   const buf = mem.alloc(bytes.length);
   mem.writeBytes(buf, bytes);
   const doc = fn.FPDF_LoadMemDocument(buf, bytes.length, 0);
   if (!doc) {
     mem.free(buf);
-    throw new Error(`FPDF_LoadMemDocument failed for ${PDF_PATH}`);
+    throw new Error(`FPDF_LoadMemDocument failed for ${pdfPath}`);
   }
-  const page = fn.FPDF_LoadPage(doc, PAGE_INDEX);
+  const page = fn.FPDF_LoadPage(doc, pageIndex);
   if (!page) {
     fn.FPDF_CloseDocument(doc);
     mem.free(buf);
-    throw new Error(`FPDF_LoadPage failed for index ${PAGE_INDEX}`);
+    throw new Error(`FPDF_LoadPage failed for index ${pageIndex}`);
   }
   const textPage = fn.FPDFText_LoadPage(page);
   if (!textPage) {
     fn.FPDF_ClosePage(page);
     fn.FPDF_CloseDocument(doc);
     mem.free(buf);
-    throw new Error(`FPDFText_LoadPage failed for index ${PAGE_INDEX}`);
+    throw new Error(`FPDFText_LoadPage failed for index ${pageIndex}`);
   }
   const glyphCount = Math.max(fn.FPDFText_CountChars(textPage), 0);
 
@@ -44,7 +65,7 @@ export function openFixture(arm) {
     doc,
     page,
     textPage,
-    pageIndex: PAGE_INDEX,
+    pageIndex,
     glyphCount,
     width: fn.FPDF_GetPageWidthF(page),
     height: fn.FPDF_GetPageHeightF(page),

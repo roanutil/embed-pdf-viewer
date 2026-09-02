@@ -5,24 +5,39 @@
  * This runs before any timing. A wrong arm can be fast, and nothing about a
  * timing table would reveal it. The previous study on this branch caught real
  * divergence exactly here, which is the reason to keep paying for it.
+ *
+ * It runs over every fixture in `GATE_FIXTURES`, not just the one timing
+ * uses: the timing fixture (report.pdf page 4) is entirely upright, so a
+ * gate that only ever saw that page would never compare the rotation /
+ * ascent-flip branch or the SPACE flag branch that all four arms implement.
  */
 import { loadArm } from './arm.mjs';
-import { openFixture } from './fixture.mjs';
+import { GATE_FIXTURES, openFixture } from './fixture.mjs';
 import { makeWorkloads, WORKLOAD_TABLE } from './workloads.mjs';
 
+/**
+ * `{ [fixtureLabel]: { glyphCount, pageIndex, ...canonical answers } }` for
+ * every fixture in `GATE_FIXTURES`. Also spreads the first fixture's answers
+ * onto the top level, so `canonicalFor(arm).glyphCount` and friends keep
+ * meaning "the timing fixture", as they did before this had more than one.
+ */
 export async function canonicalFor(armName) {
   const arm = await loadArm(armName);
-  const fx = openFixture(arm);
-  const w = makeWorkloads(arm, fx);
-  const out = { glyphCount: fx.glyphCount, pageIndex: fx.pageIndex };
-  for (const [id, wl] of Object.entries(w)) {
-    if (id === 'dispose' || !wl.arms.includes(armName) || wl.canonical == null) continue;
-    out[id] = wl.canonical();
+  const fixtures = {};
+  for (const fixtureSpec of GATE_FIXTURES) {
+    const fx = openFixture(arm, fixtureSpec);
+    const w = makeWorkloads(arm, fx);
+    const result = { glyphCount: fx.glyphCount, pageIndex: fx.pageIndex };
+    for (const [id, wl] of Object.entries(w)) {
+      if (id === 'dispose' || !wl.arms.includes(armName) || wl.canonical == null) continue;
+      result[id] = wl.canonical();
+    }
+    w.dispose();
+    fx.close();
+    fixtures[fixtureSpec.label] = result;
   }
-  w.dispose();
-  fx.close();
   arm.close();
-  return out;
+  return { ...fixtures[GATE_FIXTURES[0].label], fixtures };
 }
 
 /** Ids the workload table declares BOTH arms are supposed to run and verify. */
@@ -36,13 +51,26 @@ function expectedIds(armA, armB) {
   return new Set([...a].filter((id) => b.has(id)));
 }
 
+/**
+ * `baseline`/`actual` are whole `canonicalFor()` results (each carrying a
+ * `.fixtures` field keyed by fixture label). Compares every fixture in
+ * `GATE_FIXTURES`, so a divergence that only shows up on one page (the
+ * rotation/SPACE branches, say) is caught even when every other fixture
+ * agrees.
+ */
 export function compare(baselineName, baseline, armName, actual) {
+  const baselineFixtures = baseline.fixtures;
+  const actualFixtures = actual.fixtures;
   const expected = expectedIds(baselineName, armName);
 
   const missing = [];
-  for (const id of expected) {
-    if (!(id in baseline)) missing.push(`${id} missing from ${baselineName}'s results`);
-    if (!(id in actual)) missing.push(`${id} missing from ${armName}'s results`);
+  for (const { label } of GATE_FIXTURES) {
+    const baseline = baselineFixtures[label] ?? {};
+    const actual = actualFixtures[label] ?? {};
+    for (const id of expected) {
+      if (!(id in baseline)) missing.push(`${label}: ${id} missing from ${baselineName}'s results`);
+      if (!(id in actual)) missing.push(`${label}: ${id} missing from ${armName}'s results`);
+    }
   }
   if (missing.length > 0) {
     console.error(
@@ -54,20 +82,27 @@ export function compare(baselineName, baseline, armName, actual) {
   }
 
   const failures = [];
-  for (const id of expected) {
-    const a = JSON.stringify(baseline[id]);
-    const b = JSON.stringify(actual[id]);
-    if (a === b) continue;
-    failures.push({
-      id,
-      baseline: a.length > 400 ? `${a.slice(0, 400)}… (${a.length} chars)` : a,
-      actual: b.length > 400 ? `${b.slice(0, 400)}… (${b.length} chars)` : b,
-    });
+  for (const { label } of GATE_FIXTURES) {
+    const baseline = baselineFixtures[label];
+    const actual = actualFixtures[label];
+    for (const id of expected) {
+      const a = JSON.stringify(baseline[id]);
+      const b = JSON.stringify(actual[id]);
+      if (a === b) continue;
+      failures.push({
+        fixture: label,
+        id,
+        baseline: a.length > 400 ? `${a.slice(0, 400)}… (${a.length} chars)` : a,
+        actual: b.length > 400 ? `${b.slice(0, 400)}… (${b.length} chars)` : b,
+      });
+    }
   }
   if (failures.length > 0) {
     console.error(`\nFAIRNESS GATE FAILED: arm ${armName} disagrees with arm ${baselineName}.`);
     for (const f of failures) {
-      console.error(`  ${f.id}\n    ${baselineName}: ${f.baseline}\n    ${armName}: ${f.actual}`);
+      console.error(
+        `  [${f.fixture}] ${f.id}\n    ${baselineName}: ${f.baseline}\n    ${armName}: ${f.actual}`,
+      );
     }
     return { ok: false, compared: expected.size };
   }
@@ -96,8 +131,11 @@ if (import.meta.filename === process.argv[1]) {
     }
   }
   if (!ok) process.exit(1);
+  const fixtureSummary = GATE_FIXTURES.map(
+    ({ label }) => `${label} (${results[first].fixtures[label].glyphCount} glyphs)`,
+  ).join(', ');
   console.log(
-    `fairness gate: ${arms.join(', ')} agree on ${results[first].glyphCount} glyphs, ` +
-      `page ${results[first].pageIndex} (${compared} workload${compared === 1 ? '' : 's'} compared)`,
+    `fairness gate: ${arms.join(', ')} agree on ${fixtureSummary}, ` +
+      `${compared} workload${compared === 1 ? '' : 's'} compared`,
   );
 }

@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <cstring>
 
-constexpr size_t kRecordBytes = 112;
+constexpr std::size_t kRecordBytes = 112;
 // Set alongside the EPDF_CHARGEO bits when the char matrix has det < 0.
 constexpr uint32_t kFlagAscentFlip = 1u << 6;
 
@@ -20,7 +20,9 @@ struct Record {
   float tight_quad[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 };
 
-inline void WriteRecord(uint8_t* base, size_t index, size_t cap, const Record& r) {
+static_assert(sizeof(Record) == kRecordBytes, "record layout must stay 112 bytes");
+
+inline void WriteRecord(uint8_t* base, std::size_t index, std::size_t cap, const Record& r) {
   if (index >= cap) return;
   uint8_t* p = base + index * kRecordBytes;
   std::memcpy(p + 0, &r.flags, 4);

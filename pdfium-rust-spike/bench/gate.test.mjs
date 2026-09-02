@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { canonicalFor, compare } from './gate.mjs';
+import { GATE_FIXTURES } from './fixture.mjs';
 
 test('arm a produces a stable canonical answer for every workload it runs', async () => {
   const first = await canonicalFor('a');
@@ -29,29 +30,70 @@ test('arm a produces a stable canonical answer for every workload it runs', asyn
   for (const id of ['null-peek', 'null-readbytes', 'geometry-copyout', 'render-copyout-4x']) {
     assert.ok(!(id in first), `expected ${id} to be excluded from the canonical answer`);
   }
+
+  // The timing fixture (report.pdf page 4) is entirely upright, so it never
+  // exercises the rotation/ascent-flip branch or the SPACE flag branch that
+  // all four arms implement. `rotated-p0` does; this is the assertion that
+  // proves the gate actually runs that branch rather than merely declaring
+  // a fixture that could. Each geometry tuple is
+  // [flags, objectKeyChanged, fontSize, rotation, ascentFlip, upright, ...]
+  // (see `canonicalGeometry` in bench/workloads.mjs), so rotation is index 3.
+  const rotated = first.fixtures['rotated-p0'];
+  assert.ok(rotated, 'expected the rotated fixture to be present in the canonical answer');
+  assert.ok(rotated.glyphCount > 0);
+  assert.ok(
+    rotated.geometry.some((g) => g[3] !== 0),
+    'expected at least one glyph with a non-zero rotation on the rotated fixture',
+  );
 });
 
+/** Shaped like a `canonicalFor()` result: a `.fixtures` map keyed by label. */
 const SHARED_FIXTURE = {
-  glyphCount: 10,
-  pageIndex: 4,
-  'null-call': [1, 2],
-  geometry: [],
-  text: 'hello',
-  'render-1x': { hash: 'a', len: 1, firstNonWhite: 0 },
-  'render-4x': { hash: 'a', len: 1, firstNonWhite: 0 },
-  search: [],
+  fixtures: {
+    'report-p4': {
+      glyphCount: 10,
+      pageIndex: 4,
+      'null-call': [1, 2],
+      geometry: [],
+      text: 'hello',
+      'render-1x': { hash: 'a', len: 1, firstNonWhite: 0 },
+      'render-4x': { hash: 'a', len: 1, firstNonWhite: 0 },
+      search: [],
+    },
+    'rotated-p0': {
+      glyphCount: 5,
+      pageIndex: 0,
+      'null-call': [3, 4],
+      geometry: [],
+      text: '',
+      'render-1x': { hash: 'b', len: 1, firstNonWhite: 0 },
+      'render-4x': { hash: 'b', len: 1, firstNonWhite: 0 },
+      search: [],
+    },
+  },
 };
+
+// Sanity check on the fixture above: it must actually cover every fixture
+// the gate compares, or these tests would silently stop exercising the
+// per-fixture loop in `compare()` if GATE_FIXTURES ever grew a new entry.
+test('SHARED_FIXTURE covers every gate fixture', () => {
+  for (const { label } of GATE_FIXTURES) {
+    assert.ok(label in SHARED_FIXTURE.fixtures, `SHARED_FIXTURE is missing fixture ${label}`);
+  }
+});
 
 test('compare() fails when a workload both arms are declared to run is missing from the baseline', () => {
   const originalError = console.error;
   console.error = () => {};
   try {
     // `text` is declared for every arm (WORKLOAD_TABLE), so a and b both
-    // owe it. The baseline is missing only `text` — the exact shape of the
-    // bug in Finding 1, where a key present only in `actual` was never
-    // examined because the old `compare()` only walked `baseline`'s keys.
-    const { text: _omit, ...baseline } = SHARED_FIXTURE;
-    const result = compare('a', baseline, 'b', { ...SHARED_FIXTURE });
+    // owe it. The baseline is missing only `text`, on one fixture — the
+    // exact shape of the bug in Finding 1, where a key present only in
+    // `actual` was never examined because the old `compare()` only walked
+    // `baseline`'s keys.
+    const { text: _omit, ...reportBaseline } = SHARED_FIXTURE.fixtures['report-p4'];
+    const baseline = { fixtures: { ...SHARED_FIXTURE.fixtures, 'report-p4': reportBaseline } };
+    const result = compare('a', baseline, 'b', { fixtures: { ...SHARED_FIXTURE.fixtures } });
     assert.equal(result.ok, false);
   } finally {
     console.error = originalError;
@@ -62,8 +104,25 @@ test('compare() fails when a workload both arms are declared to run is missing f
   const originalError = console.error;
   console.error = () => {};
   try {
-    const { text: _omit, ...actual } = SHARED_FIXTURE;
-    const result = compare('a', { ...SHARED_FIXTURE }, 'b', actual);
+    const { text: _omit, ...reportActual } = SHARED_FIXTURE.fixtures['report-p4'];
+    const actual = { fixtures: { ...SHARED_FIXTURE.fixtures, 'report-p4': reportActual } };
+    const result = compare('a', { fixtures: { ...SHARED_FIXTURE.fixtures } }, 'b', actual);
+    assert.equal(result.ok, false);
+  } finally {
+    console.error = originalError;
+  }
+});
+
+test('compare() fails when a workload is missing only on the second fixture', () => {
+  const originalError = console.error;
+  console.error = () => {};
+  try {
+    // Same bug shape as above, but on `rotated-p0` rather than `report-p4`
+    // — proves compare() checks every fixture in GATE_FIXTURES, not just
+    // the first one.
+    const { text: _omit, ...rotatedBaseline } = SHARED_FIXTURE.fixtures['rotated-p0'];
+    const baseline = { fixtures: { ...SHARED_FIXTURE.fixtures, 'rotated-p0': rotatedBaseline } };
+    const result = compare('a', baseline, 'b', { fixtures: { ...SHARED_FIXTURE.fixtures } });
     assert.equal(result.ok, false);
   } finally {
     console.error = originalError;
@@ -75,8 +134,15 @@ test('compare() reports how many workloads it actually compared', () => {
   console.error = () => {};
   try {
     // WORKLOAD_TABLE owes a and b: null-call, geometry, text, render-1x,
-    // render-4x, search — six ids with a real canonical answer.
-    const result = compare('a', { ...SHARED_FIXTURE }, 'b', { ...SHARED_FIXTURE });
+    // render-4x, search — six ids with a real canonical answer. That count
+    // does not multiply by the number of fixtures: it is how many distinct
+    // workloads were compared, each of them checked on every fixture.
+    const result = compare(
+      'a',
+      { fixtures: { ...SHARED_FIXTURE.fixtures } },
+      'b',
+      { fixtures: { ...SHARED_FIXTURE.fixtures } },
+    );
     assert.equal(result.ok, true);
     assert.equal(result.compared, 6);
   } finally {
