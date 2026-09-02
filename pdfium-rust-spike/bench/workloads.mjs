@@ -256,14 +256,17 @@ export function makeWorkloads(arm, fx) {
   /** Arms c and d. One crossing, then one typed-array walk. */
   const geometryCoarse = () => {
     const n = fn[`${coarse}_read_page_geometry`](fx.textPage, recordPtr, recordCap);
-    // A DataView over the LIVE heap, not a copy: `mem.readBytes` here would
-    // memcpy this arm's 908 KB record buffer every call, a cost the thin
-    // arm never pays since it reads the heap in place — see Finding 6. The
-    // wasm module is linked with ALLOW_MEMORY_GROWTH=1, so the backing
-    // ArrayBuffer can be replaced whenever the heap grows; `arm.m.HEAPU8.buffer`
-    // is re-read on every call for exactly that reason — never cache this
-    // DataView across calls.
-    const dv = new DataView(arm.m.HEAPU8.buffer, recordPtr, n * RECORD_BYTES);
+    // A view over the LIVE memory, not a copy: `mem.readBytes` here would
+    // memcpy this arm's 908 KB record buffer every call, a cost the thin arm
+    // never pays since it reads the heap in place — see Finding 6.
+    // `mem.viewBuffer` is the single code path for both platforms: in wasm it
+    // is the live `HEAPU8.buffer` (linked with ALLOW_MEMORY_GROWTH=1, so that
+    // backing ArrayBuffer can be replaced whenever the heap grows), and
+    // natively it is a zero-copy external ArrayBuffer aliasing the same
+    // pointer. Either way this must be rebuilt on every call — never cache it
+    // across calls.
+    const view = mem.viewBuffer(recordPtr, n * RECORD_BYTES);
+    const dv = new DataView(view.buffer, view.byteOffset, n * RECORD_BYTES);
     const out = new Array(n);
     for (let i = 0; i < n; i++) {
       const o = i * RECORD_BYTES;
@@ -372,15 +375,14 @@ export function makeWorkloads(arm, fx) {
 
   const searchCoarse = () => {
     const n = fn[`${coarse}_search_page`](fx.textPage, termPtr, searchPtr, searchCap);
-    // A DataView over the LIVE heap, not a copy: `mem.readBytes` here would
+    // A view over the LIVE memory, not a copy: `mem.readBytes` here would
     // memcpy the packed rect buffer every call, a cost the thin arm never
     // pays since it reads the heap in place — the same asymmetry Finding 6
     // fixed in geometryCoarse, and geometryCoarse's fix and this one should
-    // not disagree about the same principle. The wasm module is linked with
-    // ALLOW_MEMORY_GROWTH=1, so the backing ArrayBuffer can be replaced
-    // whenever the heap grows; `arm.m.HEAPU8.buffer` is re-read on every
-    // call for exactly that reason — never cache this DataView across calls.
-    const dv = new DataView(arm.m.HEAPU8.buffer, searchPtr, n * 16);
+    // not disagree about the same principle. See geometryCoarse's comment for
+    // why `mem.viewBuffer` must be rebuilt on every call rather than cached.
+    const view = mem.viewBuffer(searchPtr, n * 16);
+    const dv = new DataView(view.buffer, view.byteOffset, n * 16);
     const hits = new Array(n);
     for (let i = 0; i < n; i++) {
       hits[i] = [0, 4, 8, 12].map((k) => dv.getFloat32(i * 16 + k, true));

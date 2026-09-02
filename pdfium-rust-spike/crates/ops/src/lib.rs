@@ -14,7 +14,7 @@ const _: () = assert!(RECORD_BYTES == 112);
 /// packages/engine/services/src/features/geometry/PageGeometryReader.ts:109.
 /// Returns the total glyph count; writes at most `cap` records.
 #[no_mangle]
-pub extern "C" fn rs_read_page_geometry(text_page: u32, out: *mut u8, cap: i32) -> i32 {
+pub extern "C" fn rs_read_page_geometry(text_page: FPDF_TEXTPAGE, out: *mut u8, cap: i32) -> i32 {
     let count = unsafe { FPDFText_CountChars(text_page as _) }.max(0);
     if out.is_null() || cap <= 0 {
         return count;
@@ -98,12 +98,12 @@ fn quad(q: &FS_QUADPOINTSF) -> [f32; 8] {
 }
 
 #[no_mangle]
-pub extern "C" fn rs_read_page_text(text_page: u32, buf: *mut u16, len: i32) -> i32 {
+pub extern "C" fn rs_read_page_text(text_page: FPDF_TEXTPAGE, buf: *mut u16, len: i32) -> i32 {
     unsafe { EPDFText_GetTextFull(text_page as _, buf, len) }
 }
 
 #[no_mangle]
-pub extern "C" fn rs_render_page(page: u32, bitmap: u32, w: i32, h: i32, rotate: i32) -> i32 {
+pub extern "C" fn rs_render_page(page: FPDF_PAGE, bitmap: FPDF_BITMAP, w: i32, h: i32, rotate: i32) -> i32 {
     unsafe {
         FPDFBitmap_FillRect(bitmap as _, 0, 0, w, h, 0xffff_ffff);
         FPDF_RenderPageBitmap(bitmap as _, page as _, 0, 0, w, h, rotate, 0);
@@ -114,7 +114,7 @@ pub extern "C" fn rs_render_page(page: u32, bitmap: u32, w: i32, h: i32, rotate:
 /// Runs the whole FindNext loop in Rust. Returns the hit-rect count; writes
 /// four little-endian f32s per rect (left, top, right, bottom).
 #[no_mangle]
-pub extern "C" fn rs_search_page(text_page: u32, term: *const u16, out: *mut f32, cap: i32) -> i32 {
+pub extern "C" fn rs_search_page(text_page: FPDF_TEXTPAGE, term: *const u16, out: *mut f32, cap: i32) -> i32 {
     let handle = unsafe { FPDFText_FindStart(text_page as _, term, 0, 0) };
     if handle == 0 {
         return 0;

@@ -20,9 +20,13 @@ import { makeWorkloads, WORKLOAD_TABLE } from './workloads.mjs';
  * every fixture in `GATE_FIXTURES`. Also spreads the first fixture's answers
  * onto the top level, so `canonicalFor(arm).glyphCount` and friends keep
  * meaning "the timing fixture", as they did before this had more than one.
+ *
+ * Shared by `canonicalFor` and `canonicalForNative` below, which differ only
+ * in which loader opens the arm -- collapsed into one helper so a future
+ * change to the fixture loop can't land in one and not the other.
  */
-export async function canonicalFor(armName) {
-  const arm = await loadArm(armName);
+async function canonicalUsing(loader, armName) {
+  const arm = await loader(armName);
   const fixtures = {};
   for (const fixtureSpec of GATE_FIXTURES) {
     const fx = openFixture(arm, fixtureSpec);
@@ -40,30 +44,18 @@ export async function canonicalFor(armName) {
   return { ...fixtures[GATE_FIXTURES[0].label], fixtures };
 }
 
+export async function canonicalFor(armName) {
+  return canonicalUsing(loadArm, armName);
+}
+
 /**
- * Same shape as `canonicalFor` above (a `.fixtures` map keyed by
- * `GATE_FIXTURES` label, spread onto the top level for the default fixture),
- * but for a native arm loaded through `loadNativeArm` rather than `loadArm`.
- * `compare()` doesn't know or care which loader produced its two arguments.
+ * Same shape as `canonicalFor` above, but for a native arm loaded through
+ * `loadNativeArm` rather than `loadArm`. `compare()` doesn't know or care
+ * which loader produced its two arguments.
  */
 export async function canonicalForNative(armName) {
   const { loadNativeArm } = await import('./arm.mjs');
-  const arm = await loadNativeArm(armName);
-  const fixtures = {};
-  for (const fixtureSpec of GATE_FIXTURES) {
-    const fx = openFixture(arm, fixtureSpec);
-    const w = makeWorkloads(arm, fx);
-    const result = { glyphCount: fx.glyphCount, pageIndex: fx.pageIndex };
-    for (const [id, wl] of Object.entries(w)) {
-      if (id === 'dispose' || !wl.arms.includes(armName) || wl.canonical == null) continue;
-      result[id] = wl.canonical();
-    }
-    w.dispose();
-    fx.close();
-    fixtures[fixtureSpec.label] = result;
-  }
-  arm.close();
-  return { ...fixtures[GATE_FIXTURES[0].label], fixtures };
+  return canonicalUsing(loadNativeArm, armName);
 }
 
 /** Ids the workload table declares BOTH arms are supposed to run and verify. */

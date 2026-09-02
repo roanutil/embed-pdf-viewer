@@ -94,6 +94,11 @@ export async function loadArm(name) {
     peekF64: (ptr) => m.getValue(ptr, 'double'),
     readBytes: (ptr, len) => m.HEAPU8.slice(ptr, ptr + len),
     writeBytes: (ptr, data) => m.HEAPU8.set(data, ptr),
+    // A view onto the LIVE heap, not a copy -- see the coarse workloads in
+    // bench/workloads.mjs, which rebuild the DataView on every call because
+    // ALLOW_MEMORY_GROWTH=1 means `m.HEAPU8.buffer` can be replaced whenever
+    // the heap grows.
+    viewBuffer: (ptr, _len) => ({ buffer: m.HEAPU8.buffer, byteOffset: ptr }),
     writeU16: (str) => {
       const bytes = (str.length + 1) * 2;
       const ptr = m._malloc(bytes);
@@ -143,7 +148,7 @@ export async function loadNativeArm(name, target = 'darwin-arm64') {
     // draft keyed the conversion off the function name and silently passed
     // Numbers where the addon expects BigInt.
     const P = (v) => (typeof v === 'bigint' ? v : BigInt(Math.trunc(v)));
-    const raw = addon.fn ?? addon;
+    const raw = addon;
     const fn = {
       FPDF_InitLibrary: () => raw.FPDF_InitLibrary(),
       FPDF_DestroyLibrary: () => raw.FPDF_DestroyLibrary(),
@@ -214,6 +219,23 @@ export async function loadNativeArm(name, target = 'darwin-arm64') {
   }
 
   const addon = require(resolve(here, '../build/out/native/napi-arms.node'));
+
+  // Arm d additionally loads the cmake-js addon and wires its `cc_*` coarse
+  // entries in; arm c's `rs_*` coarse entries are already in the napi-arms
+  // addon required above. Memory helpers (mem, below) always come from the
+  // napi-arms addon, even for arm d -- ops_napi.cc exports only the four
+  // coarse `cc_*` functions, nothing else.
+  const fnExtra = {};
+  if (name === 'd') {
+    const cc = require(resolve(here, '../build/out/native/cc-ops.node'));
+    Object.assign(fnExtra, {
+      cc_read_page_geometry: cc.ccReadPageGeometry,
+      cc_read_page_text: cc.ccReadPageText,
+      cc_render_page: cc.ccRenderPage,
+      cc_search_page: cc.ccSearchPage,
+    });
+  }
+
   const fn = {
     FPDF_InitLibrary: addon.initLibrary,
     FPDF_DestroyLibrary: addon.destroyLibrary,
@@ -266,6 +288,7 @@ export async function loadNativeArm(name, target = 'darwin-arm64') {
     rs_read_page_text: addon.rsReadPageText,
     rs_render_page: addon.rsRenderPage,
     rs_search_page: addon.rsSearchPage,
+    ...fnExtra,
   };
   const mem = {
     alloc: addon.alloc,
@@ -275,6 +298,14 @@ export async function loadNativeArm(name, target = 'darwin-arm64') {
     peekF64: addon.peekF64,
     readBytes: (p, len) => new Uint8Array(addon.readBytes(p, len)),
     writeBytes: (p, d) => addon.writeBytes(p, Buffer.from(d)),
+    // A zero-copy view onto native memory: `addon.viewBuffer` returns a real
+    // external ArrayBuffer that ALIASES `[ptr, ptr+len)` rather than copying
+    // it (crates/napi-arms/src/lib.rs's `view_buffer`), so the native coarse
+    // arms pay the same "one crossing, then a typed read" cost the wasm arms
+    // do and not an extra memcpy the wasm side never pays. `byteOffset: 0`
+    // because the returned buffer already starts exactly at `ptr` -- unlike
+    // the wasm case, there is no larger backing buffer to offset into.
+    viewBuffer: (ptr, len) => ({ buffer: addon.viewBuffer(ptr, len), byteOffset: 0 }),
     writeU16: addon.writeU16,
     readU16: (p, units) => {
       const bytes = new Uint8Array(addon.readBytes(p, units * 2));

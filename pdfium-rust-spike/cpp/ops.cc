@@ -10,6 +10,11 @@
 
 #include "record.h"
 
+// On wasm32 the FPDF_* handle typedefs are 32-bit; on 64-bit natives they are
+// pointers. ops_napi.cc passes void*, which matches the native case.
+static_assert(sizeof(FPDF_TEXTPAGE) == sizeof(void*) || sizeof(FPDF_TEXTPAGE) == 4,
+              "unexpected PDFium handle width");
+
 extern "C" {
 
 // Transcribes the loop in

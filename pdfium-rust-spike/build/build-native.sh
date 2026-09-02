@@ -19,3 +19,14 @@ cp "$LIB_DIR/libembedpdf.dylib" "$OUT_DIR/libembedpdf.dylib.tmp"
 mv -f "$OUT_DIR/libembedpdf.dylib.tmp" "$OUT_DIR/libembedpdf.dylib"
 
 echo "native arms b,c -> $OUT_DIR/napi-arms.node"
+
+INCLUDE_DIR="$ROOT/build/libpdfium/$TARGET/include"
+npx --prefix "$ROOT" cmake-js compile \
+  --directory "$ROOT/build" \
+  --arch arm64 \
+  --CDPDFIUM_LIB_DIR="$LIB_DIR" \
+  --CDPDFIUM_INCLUDE_DIR="$INCLUDE_DIR"
+
+cp "$ROOT/build/build/Release/cc-ops.node" "$OUT_DIR/cc-ops.node.tmp"
+mv -f "$OUT_DIR/cc-ops.node.tmp" "$OUT_DIR/cc-ops.node"
+echo "native arm d -> $OUT_DIR/cc-ops.node"
