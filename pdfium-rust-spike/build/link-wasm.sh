@@ -41,6 +41,15 @@ link() {
   local arm="$1"; shift
   local exports="$1"; shift
   mkdir -p "$OUT_DIR/$arm"
+  # -O3 is a deliberate departure from packages/engine/runtime/build/compile.esm.sh,
+  # which carries no -O flag at all (so em++ defaults to -O0). That default is
+  # harmless there because that script compiles no C++ of its own; it only links
+  # a prebuilt libembedpdf.a, so -O0 touches nothing but the JS glue. Here, arm d
+  # compiles cpp/ops.cc from source, and arm c's Rust is already built with
+  # `cargo build --release` (opt-level = 3, lto = true, codegen-units = 1). Linking
+  # arm d at -O0 against that would hand arm c an unearned win on any workload that
+  # exercises ops.cc, so -O3 goes in this one shared link() body, applied identically
+  # to all four arms, rather than as a per-arm flag.
   em++ "$LIB_DIR/lib/libembedpdf.a" "$@" \
     -sENVIRONMENT=node \
     -sMODULARIZE=1 \
@@ -50,6 +59,7 @@ link() {
     -sALLOW_TABLE_GROWTH=1 \
     -sEXPORT_NAME=createArm \
     -sASSERTIONS=1 \
+    -O3 \
     -sEXPORTED_RUNTIME_METHODS=cwrap,getValue,setValue,UTF8ToString,UTF16ToString,stringToUTF8,stringToUTF16,wasmExports \
     -sEXPORTED_FUNCTIONS="$exports" \
     -I"$LIB_DIR/include" \

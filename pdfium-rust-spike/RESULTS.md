@@ -4,66 +4,102 @@ The fairness gate ran before any timing, over both gate fixtures (`report-p4` an
 and passed:
 
 ```
-fairness gate: a, b, c, d agree on 8106 glyphs, page 4
+fairness gate: a, b, c, d agree on report-p4 (8106 glyphs), rotated-p0 (31 glyphs), 5 workloads compared
 ```
 
 All four arms agree on every canonical answer they are declared to produce, on both fixtures. The
 numbers below are real per-operation cost, not an artifact of one arm quietly computing the wrong
 thing.
 
-## This run corrects a bug in the previous one
+## This run corrects a second bug: arm d was linked unoptimized
 
-The first version of this file reported `geometry` at 1.57x (arm C) and 1.64x (arm D) slower than
-arm A, and concluded coarsening lost on this workload. That conclusion was wrong. `geometryCoarse`
-in `bench/workloads.mjs`, the decode arms C and D use to turn the packed record buffer back into JS
-glyph objects, allocated four throwaway arrays and four throwaway closures per non-empty glyph:
-`[16, 20, 24, 28].map(...)` and `[32, 36, 40, 44].map(...)` for the two rects, and
-`Array.from({ length: 8 }, ...)` for each of the two quads. `geometryThin`, the arm A/B path,
-builds the same shapes through `rectAt` and `quadAt`, both closure-free: a direct 4-element array
-literal for a rect, a preallocated `Array(8)` filled by a plain indexed loop for a quad. Across the
-fixture's 6,648 non-empty glyphs that is roughly 26,000 extra allocations paid only by arms C and
-D, on a workload where JS-side object materialization is the dominant cost for every arm. The
-`geometry` numbers in the first run measured that allocation bug, not the cost of coarsening.
+The previous version of this file reported arm C beating arm D on `geometry` by 25 to 33 percent,
+holding in all seven rounds of that run, and read that gap as evidence that `rs_read_page_geometry`
+in Rust was doing the per-glyph work faster than `cc_read_page_geometry` in C++. That reading was
+wrong, and the cause was not in either producer function. It was in `build/link-wasm.sh`.
 
-The fix rewrites `geometryCoarse` to build rects and quads the same way `geometryThin` does:
-`dvRectAt` and `dvQuadAt`, added next to `rectAt`/`quadAt` in `bench/workloads.mjs`, read through
-the same `DataView` the coarse path already used, but with no `.map`, no `Array.from`, and no
-closure per glyph. Nothing else about the decode changed: same fields, same order, same branch
-conditions, same values, confirmed by the fairness gate still passing with all four arms agreeing.
-The other three coarse decode paths in the file (`searchCoarse`, `textCoarse`, `renderCoarse`) were
-checked against the same class of asymmetry and found already symmetric with their thin
-counterparts — `textCoarse` and `renderCoarse` make one call and no per-item JS loop at all, and
-`searchCoarse`'s per-hit `[0, 4, 8, 12].map(...)` allocates exactly the same shape per hit that
-`searchThin`'s per-rect `rectPtrs.map(...)` allocates per rect. Those three were left unchanged.
+The script's shared `link()` function calls `em++` with no `-O` flag at all, so Emscripten defaulted
+to `-O0` for everything it linked, `cpp/ops.cc` included. Arm C's Rust, by contrast, is built by a
+separate `cargo build --release` step against this workspace's `[profile.release]`: `opt-level = 3`,
+`lto = true`, `codegen-units = 1`. Arms A and B never showed this problem because they compile no
+C++ of their own; they only link the prebuilt, already-optimized `libembedpdf.a`. Arm D was the one
+arm whose own source got compiled by the unflagged `em++` call, so it was the one arm silently
+measured at `-O0` against everything else at `-O3` or better. The 25-to-33-percent gap was that flag
+difference, not a language difference.
 
-Every number in this file after this section is from the run made with the fix in place. Only the
-`geometry` column moved; everything else is unchanged from the first run within round-to-round
-noise, which is what you would expect from a bug confined to one decode path.
+The fix adds `-O3` to the one shared `link()` body in `build/link-wasm.sh`, so all four arms are
+linked with the identical flag, the same way they already shared every other flag. Nothing else
+about the link flags changed: `-sASSERTIONS=1` is still there, matching the shipping build at
+`packages/engine/runtime/build/compile.esm.sh`.
+
+Turning that flag on exposed a second, unrelated problem before any timing could run: `em++`'s
+automatic post-link Binaryen pass reads a `target_features` custom section out of the linked module
+and turns each entry into an `--enable-<feature>` flag for `wasm-opt`. The Rust static libraries
+(`libshim.a`, `libops.a`) carry two feature entries, `bulk-memory-opt` and `call-indirect-overlong`,
+that this rustc's LLVM backend enables by default for `wasm32-unknown-emscripten` and that come from
+the toolchain's precompiled `std`/`core`, not from any per-crate flag this spike controls. The
+`wasm-opt` binary vendored with the pinned emsdk 3.1.72 predates both flag names and refuses to
+start, so any `-O`-level link that includes a Rust archive failed outright once `-O0` stopped hiding
+it. Arm A, which links no Rust code, was unaffected and built as soon as `-O3` was added. Working
+around this required substituting a newer standalone `wasm-opt` (Homebrew's binaryen 132, which
+recognizes both flags) for the one bundled in `build/emsdk`; `em++`, `wasm-ld`, and the rest of the
+toolchain stayed on the pinned 3.1.72. This is a local build-environment substitution, not a
+committed change: `build/link-wasm.sh` still names no Binaryen version, and nothing in this repo
+pins one. It is recorded here because it is part of how the arm D binaries measured below were
+produced, and because the same feature-name mismatch will recur for anyone rebuilding this spike
+with this rustc against an unmodified emsdk 3.1.72 install.
+
+Every number in this file is from the run made with both fixes in place: `-O3` in the shared
+`link()`, and the substituted `wasm-opt`. Only `geometry` moved from the first published run;
+`text`, `render`, and `search` are unchanged within round-to-round noise, which is what you would
+expect from a bug confined to the C++ link flags of one arm.
+
+## The `-O0`/`-O3` bug was on top of an earlier decode-allocation bug
+
+The run before this one already corrected a different, JS-side fairness bug: `geometryCoarse` in
+`bench/workloads.mjs`, the decode both arm C and arm D use to turn the packed record buffer back
+into JS glyph objects, allocated four throwaway arrays and closures per non-empty glyph, where
+`geometryThin` built the same shapes with a direct array literal and a preallocated `Array(8)`
+filled by a plain loop. That cost roughly 26,000 extra allocations on this fixture, paid by both
+arm C and arm D equally, and it inflated both of their `geometry` numbers by close to the same
+absolute amount. Because it hit both coarse arms equally, it did not, by itself, produce a fake gap
+between them; the `-O0`/`-O3` bug described above is what did that, and it happened to be
+introduced in a later run than the allocation fix, which is why the two bugs were caught separately
+rather than at the same time. Both are corrected in the numbers below.
 
 ## Environment
 
 ```
 Node v24.20.0 · Apple M4 Max · darwin 25.6.0
-arch arm64 · 16 cores · loadavg 3.08 at the start of the run
+arch arm64 · 16 cores · loadavg 6.35 at the start of the run
 emsdk unknown · rustc 1.98.0 (88d9e12ae, 2026-08-18)
 fixture: examples/snippet-react/public/report.pdf, page 4, 8106 glyphs
 rounds: 7, interleaved a/b/c/d, budget 500ms per cell
 ```
 
-`emsdk unknown` is a shell artifact of this measurement session, not a change to the wasm module:
-the session's PATH did not have `em++` on it when `bench/run.mjs` ran, so `bench/node.mjs` fell
-back to its `'unknown'` default for that one metadata field. The wasm modules were not rebuilt for
-this run; module sizes below are byte-identical to the first run, which is what you would expect
-from a JS-only fix. `bench/run.test.mjs` independently fails on this same detection gap on a clean
-checkout of this branch, before any change in this task, so it is a pre-existing environment
-quirk, not something this task introduced or needs to fix.
+`emsdk unknown` is a shell artifact of how `bench/run.mjs` was invoked for this measurement, not a
+change to the wasm modules: the session's `PATH` did not have `em++` on it when the benchmark ran
+(the modules had already been built in an earlier step, in a shell that had sourced
+`build/emsdk.sh`), so `bench/node.mjs` fell back to its `'unknown'` default for that one metadata
+field. `bench/run.test.mjs` independently asserts `emsdk !== 'unknown'` and fails on this exact gap
+when `em++` is not on `PATH`; sourcing `build/emsdk.sh` first makes it pass. That assertion was not
+touched. This is the same pre-existing environment quirk noted in the previous two versions of this
+file, not something introduced here.
+
+The `node --test` suite (`gate.test.mjs`, `arm-b.test.mjs`, `arm-c.test.mjs`, `arm-d.test.mjs`,
+`fixture.test.mjs`, `probe.test.mjs`) passed 10 of 11 tests. The one failure,
+`probe.test.mjs`, imports `../build/out/probe.mjs`, a build output that no current script produces;
+`build/link-wasm.sh` has only ever built arms `a`, `b`, `c`, and `d` since the commit that introduced
+its shared `link()` function (`403b18b4`), and `probe.mjs` was an artifact of an earlier, since-
+replaced prototype script (`ea20d1c3`). This is orphaned test infrastructure, unrelated to the `-O3`
+change and not something this task's scope covers fixing.
 
 macOS thermal throttling is not controllable from here. Rounds are interleaved for exactly that
 reason, so drift lands on all four arms rather than on whoever runs last. Worst observed
 round-to-round spread (max/min across the 7 rounds, same arm and workload):
 
 ```
-b/null-peek 1.23x, a/null-peek 1.21x, a/geometry 1.16x
+a/null-peek 1.24x, b/null-peek 1.23x, a/geometry 1.15x
 ```
 
 `null-peek` measures a single `getValue` call, around 4 nanoseconds; a 1.2x spread there is a
@@ -82,89 +118,100 @@ per-call tail latency, and should not be read as a worst-case frame cost.
 
 | workload | a direct | b rust thin | c rust coarse | d c++ coarse | b/a | c/a | d/a |
 |---|---|---|---|---|---|---|---|
-| `null-call` | 322.5 ns | 335.3 ns | — | — | 1.04x | — | — |
-| `null-peek` | 4.0 ns | 3.3 ns | — | — | 0.83x | — | — |
-| `null-readbytes` | 30.3 ns | 30.2 ns | — | — | 1.00x | — | — |
-| `geometry` | 3.569 ms | 3.576 ms | 976.83 µs | 1.294 ms | 1.00x | 0.27x | 0.36x |
-| `geometry-copyout` | — | — | 20.52 µs | 20.38 µs | — | — | — |
-| `text` | 120.43 µs | 122.55 µs | 122.33 µs | 121.55 µs | 1.02x | 1.02x | 1.01x |
-| `render-1x` | 2.804 ms | 2.945 ms | 2.932 ms | 2.792 ms | 1.05x | 1.05x | 1.00x |
-| `render-4x` | 15.715 ms | 16.439 ms | 16.324 ms | 15.602 ms | 1.05x | 1.04x | 0.99x |
-| `render-copyout-4x` | 576.51 µs | 578.45 µs | 573.42 µs | 573.50 µs | 1.00x | 0.99x | 0.99x |
-| `search` | 110.50 µs | 111.27 µs | 30.46 µs | 31.32 µs | 1.01x | 0.28x | 0.28x |
+| `null-call` | 343.1 ns | 324.3 ns | — | — | 0.95x | — | — |
+| `null-peek` | 3.3 ns | 3.9 ns | — | — | 1.19x | — | — |
+| `null-readbytes` | 30.1 ns | 29.9 ns | — | — | 0.99x | — | — |
+| `geometry` | 3.555 ms | 3.664 ms | 1.042 ms | 1.031 ms | 1.03x | 0.29x | 0.29x |
+| `geometry-copyout` | — | — | 19.11 µs | 19.34 µs | — | — | — |
+| `text` | 117.30 µs | 119.13 µs | 119.53 µs | 119.08 µs | 1.02x | 1.02x | 1.02x |
+| `render-1x` | 2.803 ms | 2.870 ms | 2.847 ms | 2.773 ms | 1.02x | 1.02x | 0.99x |
+| `render-4x` | 15.520 ms | 16.161 ms | 16.218 ms | 15.555 ms | 1.04x | 1.04x | 1.00x |
+| `render-copyout-4x` | 583.86 µs | 582.40 µs | 583.33 µs | 585.31 µs | 1.00x | 1.00x | 1.00x |
+| `search` | 102.75 µs | 108.31 µs | 30.17 µs | 32.91 µs | 1.05x | 0.29x | 0.32x |
 
 ### p95 of batch means, same cells
 
 | workload | a direct | b rust thin | c rust coarse | d c++ coarse |
 |---|---|---|---|---|
-| `null-call` | 329.8 ns | 344.6 ns | — | — |
-| `null-peek` | 4.0 ns | 4.0 ns | — | — |
-| `null-readbytes` | 30.9 ns | 30.7 ns | — | — |
-| `geometry` | 4.473 ms | 3.955 ms | 1.025 ms | 1.328 ms |
-| `geometry-copyout` | — | — | 22.47 µs | 22.40 µs |
-| `text` | 124.81 µs | 126.87 µs | 126.91 µs | 126.11 µs |
-| `render-1x` | 2.848 ms | 3.010 ms | 2.992 ms | 2.847 ms |
-| `render-4x` | 15.915 ms | 16.824 ms | 16.519 ms | 15.778 ms |
-| `render-copyout-4x` | 592.11 µs | 592.99 µs | 594.91 µs | 592.41 µs |
-| `search` | 112.55 µs | 115.92 µs | 35.12 µs | 37.12 µs |
+| `null-call` | 352.6 ns | 334.7 ns | — | — |
+| `null-peek` | 3.9 ns | 4.0 ns | — | — |
+| `null-readbytes` | 30.5 ns | 30.5 ns | — | — |
+| `geometry` | 3.922 ms | 4.023 ms | 1.095 ms | 1.100 ms |
+| `geometry-copyout` | — | — | 21.27 µs | 20.46 µs |
+| `text` | 120.67 µs | 122.57 µs | 123.51 µs | 122.85 µs |
+| `render-1x` | 2.846 ms | 2.906 ms | 2.898 ms | 2.826 ms |
+| `render-4x` | 15.720 ms | 16.364 ms | 16.388 ms | 15.738 ms |
+| `render-copyout-4x` | 603.23 µs | 597.48 µs | 603.94 µs | 600.33 µs |
+| `search` | 106.04 µs | 111.60 µs | 31.26 µs | 33.53 µs |
 
 ### Module size
 
 | arm | wasm bytes | delta vs a |
 |---|---|---|
-| a direct | 5,180,492 | — |
-| b rust thin | 5,183,471 | +2.9 kB |
-| c rust coarse | 5,184,644 | +4.1 kB |
-| d c++ coarse | 5,188,608 | +7.9 kB |
+| a direct | 4,676,714 | — |
+| b rust thin | 4,680,516 | +3.7 kB |
+| c rust coarse | 4,681,488 | +4.7 kB |
+| d c++ coarse | 4,684,877 | +8.0 kB |
 
-Byte-identical to the first run, as expected: this task changed only `bench/workloads.mjs`, a
-harness file, not any producer crate or the C++ side.
+Smaller across the board than the two previous runs (a was 5,180,492 bytes at `-O0`), which is what
+you would expect: `-O3` now runs Binaryen's dead-code elimination and inlining passes on every arm,
+where `-O0` skipped them for arm D and never applied to A, B, or C's prebuilt/prelinked C++ side
+either. Arm D's delta over arm A, `+8.0 kB`, is the smallest it has been across all three published
+runs (it was `+7.9 kB` at `-O0` on a larger base, so the four `EPDF_*`/`cc_*` C++ entry points still
+cost about the same absolute handful of kilobytes; only the shared PDFium code shrank).
 
 ## What the numbers say
 
-**The wrapper tax is real and small.** Arm B costs 0 to 5 percent more than arm A on every
-workload that runs PDFium work (`geometry` 1.00x, `text` 1.02x, `render-1x` 1.05x, `render-4x`
-1.05x, `search` 1.01x), and 4 percent on the pure `null-call` crossing with nothing behind it. That
-is inside the pre-registered 15 percent band in
+**The wrapper tax is real and small.** Arm B costs 0 to 5 percent more than arm A on every workload
+that runs PDFium work (`geometry` 1.03x, `text` 1.02x, `render-1x` 1.02x, `render-4x` 1.04x,
+`search` 1.05x), and 5 percent below arm A on the pure `null-call` crossing with nothing behind it.
+That is inside the pre-registered 15 percent band in
 [`docs/research/pdfium-rust-wrapper-benchmarks.md`](../docs/research/pdfium-rust-wrapper-benchmarks.md),
 and well inside the 25 percent line past which the prediction said to suspect the harness rather
-than the result. `null-peek` at 0.83x and `null-readbytes` at 1.00x are noise: both are
-single-digit-nanosecond operations where a 500ms sampling budget cannot resolve better than about a
-nanosecond, and the round-to-round spread above confirms `null-peek` is the noisiest cell in the
-whole table.
+than the result. `null-peek` at 1.19x is noise: it is a single-digit-nanosecond operation where a
+500ms sampling budget cannot resolve better than about a nanosecond, and the round-to-round spread
+above confirms `null-peek` is the noisiest cell in the whole table.
 
-**Coarsening the crossing wins on `geometry`, once the decode is fairness-matched.** The prediction
-was 3x to 10x faster for arm C against arm A. With the allocation bug fixed, arm C lands at 0.27x
-(about 3.7x faster) and arm D at 0.36x (about 2.8x faster), both inside or just under that band.
-The mechanism is what the prediction expected: `geometryThin` makes two wasm calls per glyph
+**Coarsening the crossing wins on `geometry` and `search`, by about the same margin for Rust and
+C++.** Arm C lands at 0.29x (about 3.4x faster than arm A) and arm D lands at 0.29x (about 3.4x
+faster than arm A) on `geometry`; on `search`, arm C is 0.29x and arm D is 0.32x. Both are inside
+the prediction's 3x-to-10x band for coarsening a chatty per-glyph crossing into one call. The
+mechanism is what the prediction expected: `geometryThin` makes two wasm calls per glyph
 (`FPDFText_GetTextObject` and `EPDFText_GetCharGeometry`) plus a third on every object-key change,
-so 8,106 glyphs cost on the order of sixteen thousand crossings. `geometryCoarse` makes exactly one
-crossing, decodes PDFium's per-glyph struct into a packed 112-byte record on the native side, and
-then walks that one contiguous buffer from JS. What the first run's bug did was add roughly 26,000
-extra JS-side allocations on top of that one-crossing win, allocations big enough to erase it and
-invert the result. `search` shows the same mechanism at a different ratio (0.28x, about 3.5x
-faster) because it was never near the bug: `searchCoarse`'s per-hit decode already matched
-`searchThin`'s allocation shape, so its number did not move between runs. `render` and `text` land
-within 1 to 5 percent everywhere in both runs, matching the prediction that render is dominated by
-PDFium's own bitmap work and unaffected by any wrapper.
+so 8,106 glyphs cost on the order of sixteen thousand crossings, where `geometryCoarse` makes
+exactly one crossing and decodes PDFium's per-glyph struct into a packed 112-byte record on the
+native side. `render` and `text` land within 1 to 5 percent everywhere, matching the prediction that
+render is dominated by PDFium's own bitmap work and unaffected by any wrapper, and that a single
+already-coarse call like `text` has nothing left for coarsening to remove.
 
-**Arm C and arm D are no longer indistinguishable on `geometry`.** On every other shared workload
-they still are: `text` 122.33µs vs 121.55µs (d 1 percent faster), `render-1x` 2.932ms vs 2.792ms
-(d 5 percent faster), `render-4x` 16.324ms vs 15.602ms (d 5 percent faster), `search` 30.46µs vs
-31.32µs (c 3 percent faster) — all inside or close to the round-to-round spread measured above, so
-none of them is a result. `geometry` is different: arm C at 976.83µs against arm D at 1.294ms is
-arm C running about 25 percent faster, and that gap holds in every one of the 7 rounds individually
-(ratio of d over c from 1.27x to 1.37x, no overlap with the 1.16x worst same-arm spread measured
-elsewhere in this run). The JS decode is identical for both arms after the fix, and both make one
-crossing into an identically-shaped native record buffer, so the gap is in the native geometry
-producers themselves: `rs_read_page_geometry` in Rust is doing the per-glyph PDFium-to-record work
-measurably faster than `cc_read_page_geometry` in C++ on this fixture. The first run's allocation
-bug added roughly the same amount of JS garbage to both arms, which was large enough relative to
-this ~300-microsecond native gap to bury it entirely; correcting the bug is what makes it visible.
-This is the one place in the whole table where Rust buys something C++ does not, and it is worth
-treating cautiously rather than as a general verdict: it is one native routine on one fixture, and
-the reason for the gap (register allocation, bounds-check elision, something about how emscripten
-compiled the two implementations) has not been investigated here.
+**Arm C and arm D are indistinguishable on `geometry`, once both are compiled the same way.** In the
+run before this one, arm C measured 25 to 33 percent faster than arm D on `geometry`, holding in
+every round. With both arms linked at `-O3`, the median gap is under 1 percent (`c` 1.042 ms vs `d`
+1.031 ms, arm D 1 percent faster) and the per-round ratio of d over c is 0.981x to 1.012x across all
+seven rounds:
+
+```
+round 1  d/c 0.991x
+round 2  d/c 0.981x
+round 3  d/c 0.994x
+round 4  d/c 0.985x
+round 5  d/c 0.985x
+round 6  d/c 1.012x
+round 7  d/c 1.000x
+```
+
+That 3-percentage-point spread across rounds is smaller than the worst same-arm, same-workload
+round-to-round spread measured anywhere else in this run (1.15x on `a/geometry`), which is to say
+the C-versus-D difference on `geometry` is not distinguishable from noise. `search` shows the same
+pattern: arm C 30.17 µs against arm D 32.91 µs is a 9 percent gap, in the opposite direction from
+what the flag bug produced, and small enough next to the round-to-round spread to not support a
+verdict either. **The verdict on `geometry`, and on this benchmark generally, is that arm C and arm
+D cost the same.** The entire previous 25-to-33-percent gap was the `-O0` link flag on arm D's C++,
+not a property of Rust or C++ as languages, and not a property of `rs_read_page_geometry` versus
+`cc_read_page_geometry` as implementations. Once the two are compiled under the same optimizer at
+the same level, this benchmark has no evidence that either language does the per-glyph decode work
+faster than the other. The win on `geometry` and `search` is coarsening the crossing; which language
+sits behind that one crossing does not show up in these numbers.
 
 **These are lower bounds on real per-call cost.** `bench/arm.mjs` cwraps every arm by hand, calling
 each exported PDFium function directly. It does not go through the engine's per-call argument
@@ -185,8 +232,7 @@ real time only in the thin arms (a and b), which build each glyph record on the 
 real reader does; the coarse arms never touch that per-glyph JS path in the first place. So all
 three omissions make the thin arms look cheaper than `PageGeometryReader` actually is, which
 understates the thin side of the comparison and can only shrink the measured coarsening win, never
-inflate it. `geometry` came out as a win for coarsening on this fixture even before correcting for
-this bias; correcting for it would widen that win, not close it.
+inflate it.
 
 **The timing fixture never exercises the rotation branch.** `report.pdf` page 4 has 0 non-upright
 glyphs and 0 SPACE-flagged glyphs (see `fixture.mjs`'s header comment). The fairness gate's second
