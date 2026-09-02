@@ -10,6 +10,18 @@
  *
  * Each workload declares which arms can run it. The null probes have nothing
  * for a coarse arm to collapse, so arms c and d skip them.
+ *
+ * Known bias in the transcription, one-directional and conservative: the
+ * real reader also does three things per glyph that this file omits —
+ *   - `throwIfAborted(signal)` (PageGeometryReader.ts:111);
+ *   - `normalizePdfRect` on the loose and tight boxes (:156, :162);
+ *   - the `{objectKey, ...raw}` object spread that builds each record (:113).
+ * All three cost real time only in the THIN arm (a/b), which calls
+ * `readGlyphRaw` per glyph the way the real reader does; the coarse arms
+ * never went through that per-glyph JS path to begin with. Omitting them
+ * therefore makes the THIN arm look cheaper than the real reader actually
+ * is, which understates the THIN side of the comparison and so shrinks,
+ * never inflates, the measured win from coarsening.
  */
 import { SEARCH_TERM } from './fixture.mjs';
 
@@ -38,10 +50,37 @@ const F = {
   UPRIGHT: 1 << 3,
   SPACE: 1 << 4,
   EMPTY: 1 << 5,
+  /** Set by the record producer (rs_/cc_), not by PDFium itself. */
+  ASCENT_FLIP: 1 << 6,
 };
 
 /** The packed record arms c and d write, one per glyph. See cpp/record.h. */
 export const RECORD_BYTES = 112;
+
+/**
+ * Static per-workload metadata: which arms are supposed to run a workload,
+ * and whether it has a real canonical answer to compare (`false` for probes
+ * that exist to measure raw call/copy cost and have nothing meaningful to
+ * verify). `makeWorkloads` below builds each workload's `arms`/`canonical`
+ * fields from this table, so there is exactly one place that says what each
+ * arm is supposed to run. `gate.mjs` imports this table directly so it can
+ * compute the set of workloads two arms are BOTH expected to agree on from
+ * the declaration, not from whichever keys happen to come back — a typo in
+ * a workload's `arms` list, or an arm that never learns a workload, then
+ * fails loudly instead of silently dropping out of the comparison.
+ */
+export const WORKLOAD_TABLE = [
+  { id: 'null-call', arms: THIN, hasCanonical: true },
+  { id: 'null-peek', arms: THIN, hasCanonical: false },
+  { id: 'null-readbytes', arms: THIN, hasCanonical: false },
+  { id: 'geometry', arms: ALL, hasCanonical: true },
+  { id: 'geometry-copyout', arms: ['c', 'd'], hasCanonical: false },
+  { id: 'text', arms: ALL, hasCanonical: true },
+  { id: 'render-1x', arms: ALL, hasCanonical: true },
+  { id: 'render-4x', arms: ALL, hasCanonical: true },
+  { id: 'render-copyout-4x', arms: ALL, hasCanonical: false },
+  { id: 'search', arms: ALL, hasCanonical: true },
+];
 
 const rectAt = (mem, ptr, off) => [
   mem.peekF32(ptr + off),
@@ -81,17 +120,28 @@ export function makeWorkloads(arm, fx) {
   const coarse = arm.name === 'c' ? 'rs' : arm.name === 'd' ? 'cc' : null;
   const p = arm.name === 'b' ? 'rs_' : '';
 
+  const allocChecked = (bytes, label) => {
+    const ptr = mem.alloc(bytes);
+    if (!ptr) throw new Error(`mem.alloc(${bytes}) returned 0 allocating ${label}`);
+    return ptr;
+  };
+
   // Scratch buffers, allocated once so allocation is not in any hot loop.
-  const geoPtr = mem.alloc(GEO.bytes);
-  const scratch8 = mem.alloc(8);
+  const geoPtr = allocChecked(GEO.bytes, 'geoPtr');
+  const scratch8 = allocChecked(8, 'scratch8');
   const recordCap = Math.max(fx.glyphCount, 1);
-  const recordPtr = mem.alloc(recordCap * RECORD_BYTES);
+  const recordPtr = allocChecked(recordCap * RECORD_BYTES, 'recordPtr');
   const textUnits = fx.glyphCount * 2 + 1;
-  const textPtr = mem.alloc(textUnits * 2);
-  const rectPtrs = [mem.alloc(8), mem.alloc(8), mem.alloc(8), mem.alloc(8)];
+  const textPtr = allocChecked(textUnits * 2, 'textPtr');
+  const rectPtrs = [
+    allocChecked(8, 'rectPtrs[0]'),
+    allocChecked(8, 'rectPtrs[1]'),
+    allocChecked(8, 'rectPtrs[2]'),
+    allocChecked(8, 'rectPtrs[3]'),
+  ];
   const termPtr = mem.writeU16(SEARCH_TERM);
   const searchCap = 4096;
-  const searchPtr = mem.alloc(searchCap * 16);
+  const searchPtr = allocChecked(searchCap * 16, 'searchPtr');
 
   const W = Math.round(fx.width);
   const H = Math.round(fx.height);
@@ -99,8 +149,9 @@ export function makeWorkloads(arm, fx) {
     const w = Math.max(1, Math.round(W * scale));
     const h = Math.max(1, Math.round(H * scale));
     const stride = w * 4;
-    const buf = mem.alloc(stride * h);
+    const buf = allocChecked(stride * h, `bitmap buffer (${w}x${h})`);
     const handle = fn.FPDFBitmap_CreateEx(w, h, 4 /* BGRA */, buf, stride);
+    if (!handle) throw new Error(`FPDFBitmap_CreateEx returned 0 for ${w}x${h}`);
     return { w, h, stride, buf, handle };
   };
   const bmp1 = bmp(1);
@@ -159,8 +210,14 @@ export function makeWorkloads(arm, fx) {
   /** Arms c and d. One crossing, then one typed-array walk. */
   const geometryCoarse = () => {
     const n = fn[`${coarse}_read_page_geometry`](fx.textPage, recordPtr, recordCap);
-    const bytes = mem.readBytes(recordPtr, n * RECORD_BYTES);
-    const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    // A DataView over the LIVE heap, not a copy: `mem.readBytes` here would
+    // memcpy this arm's 908 KB record buffer every call, a cost the thin
+    // arm never pays since it reads the heap in place — see Finding 6. The
+    // wasm module is linked with ALLOW_MEMORY_GROWTH=1, so the backing
+    // ArrayBuffer can be replaced whenever the heap grows; `arm.m.HEAPU8.buffer`
+    // is re-read on every call for exactly that reason — never cache this
+    // DataView across calls.
+    const dv = new DataView(arm.m.HEAPU8.buffer, recordPtr, n * RECORD_BYTES);
     const out = new Array(n);
     for (let i = 0; i < n; i++) {
       const o = i * RECORD_BYTES;
@@ -168,16 +225,28 @@ export function makeWorkloads(arm, fx) {
       if (native & F.EMPTY) {
         const g = emptyGlyph();
         g.objectKey = dv.getUint32(o + 4, true);
+        // geometryThin assigns fontSize from a fresh PDFium call whenever
+        // the object key changes, even when the glyph that starts the
+        // object is empty (PageGeometryReader.ts:113-116). The record
+        // already carries that same per-object fontSize at this offset;
+        // read it here too instead of leaving emptyGlyph()'s 0.
+        g.fontSize = dv.getFloat32(o + 8, true);
         out[i] = g;
         continue;
       }
       const upright = Boolean(native & F.UPRIGHT);
+      // Matches readGlyphRaw's gate exactly (:161 in the real reader):
+      // rotation/ascentFlip exist only when there is an oriented quad to
+      // read them from. A non-upright glyph with a singular matrix and no
+      // oriented cell (real reader's comment at PageGeometryReader.ts:186)
+      // must not report a rotation just because it isn't upright.
+      const looseQuadGate = !upright && Boolean(native & F.HAS_LOOSE_QUAD);
       const g = {
         flags: native & F.SPACE ? 1 : 0,
         objectKey: dv.getUint32(o + 4, true),
         fontSize: dv.getFloat32(o + 8, true),
-        rotation: upright ? 0 : dv.getFloat32(o + 12, true),
-        ascentFlip: !upright && (native & (1 << 6)) !== 0,
+        rotation: looseQuadGate ? dv.getFloat32(o + 12, true) : 0,
+        ascentFlip: looseQuadGate && Boolean(native & F.ASCENT_FLIP),
         upright,
         looseBox: [16, 20, 24, 28].map((k) => dv.getFloat32(o + k, true)),
         tightBox: null,
@@ -208,13 +277,29 @@ export function makeWorkloads(arm, fx) {
     return written <= 1 ? '' : mem.readU16(textPtr, written - 1);
   };
 
+  // Timed render paths: consume via a single peek rather than a full copy,
+  // so the timed region is the render call itself (Finding 6c). The full
+  // bitmap is only ever copied for correctness checking, in `renderBytes`
+  // below, which is never on the timed path.
   const renderThin = (b) => {
+    fn.FPDFBitmap_FillRect(b.handle, 0, 0, b.w, b.h, 0xffffffff);
+    fn[`${p}FPDF_RenderPageBitmap`](b.handle, fx.page, 0, 0, b.w, b.h, 0, 0);
+    return mem.peek32(b.buf);
+  };
+
+  const renderCoarse = (b) => {
+    fn[`${coarse}_render_page`](fx.page, b.handle, b.w, b.h, 0);
+    return mem.peek32(b.buf);
+  };
+
+  /** Untimed: renders fresh and copies out the full bitmap, for canonical() only. */
+  const renderBytesThin = (b) => {
     fn.FPDFBitmap_FillRect(b.handle, 0, 0, b.w, b.h, 0xffffffff);
     fn[`${p}FPDF_RenderPageBitmap`](b.handle, fx.page, 0, 0, b.w, b.h, 0, 0);
     return mem.readBytes(b.buf, b.stride * b.h);
   };
 
-  const renderCoarse = (b) => {
+  const renderBytesCoarse = (b) => {
     fn[`${coarse}_render_page`](fx.page, b.handle, b.w, b.h, 0);
     return mem.readBytes(b.buf, b.stride * b.h);
   };
@@ -249,7 +334,23 @@ export function makeWorkloads(arm, fx) {
   const geometry = () => (coarse ? geometryCoarse() : geometryThin());
   const text = () => (coarse ? textCoarse() : textThin());
   const render = (b) => (coarse ? renderCoarse(b) : renderThin(b));
+  const renderBytes = (b) => (coarse ? renderBytesCoarse(b) : renderBytesThin(b));
   const search = () => (coarse ? searchCoarse() : searchThin());
+
+  // `geometry-copyout` isolates the record-buffer copy cost that
+  // `geometryCoarse` used to pay every call before Finding 6a moved it onto
+  // the live heap. Populate the buffer once, untimed, at setup: the copy's
+  // cost depends only on byte length, not content, so there is no need to
+  // re-cross into the coarse read on every timed iteration.
+  let geometryCopyoutN = 0;
+  if (coarse) {
+    geometryCopyoutN = fn[`${coarse}_read_page_geometry`](fx.textPage, recordPtr, recordCap);
+  }
+
+  // Warm the 4x bitmap once, untimed, so `render-copyout-4x` always copies
+  // real pixels regardless of what order the bench runner invokes workloads
+  // in.
+  render(bmp4);
 
   const hash = (bytes) => {
     let h = 0x811c9dc5;
@@ -260,14 +361,54 @@ export function makeWorkloads(arm, fx) {
     return h.toString(16).padStart(8, '0');
   };
 
+  /** Offset of the first byte that differs from the 0xFF fill (Finding 8). */
+  const firstNonWhite = (bytes) => {
+    for (let i = 0; i < bytes.length; i++) {
+      if (bytes[i] !== 0xff) return i;
+    }
+    return -1;
+  };
+
+  const canonicalRender = (b) => {
+    const bytes = renderBytes(b);
+    return { hash: hash(bytes), len: bytes.length, firstNonWhite: firstNonWhite(bytes) };
+  };
+
   const round = (v) => (typeof v === 'number' ? Math.round(v * 1e6) / 1e6 : v);
   const roundDeep = (v) =>
     Array.isArray(v) ? v.map(roundDeep) : typeof v === 'number' ? round(v) : v;
 
-  return {
+  const canonicalGeometry = () => {
+    let prevKey = null;
+    return roundDeep(
+      geometry().map((g) => {
+        // A per-glyph CHANGE MARKER, not the raw objectKey handle: raw
+        // handle values legitimately differ between wasm modules (separate
+        // allocators, separate numbering), but the pattern of when the key
+        // changes from the previous glyph is real run-splitting data
+        // (PageGeometryReader.ts:203) that a coarse arm writing shifted or
+        // garbage keys must still reproduce.
+        const objectKeyChanged = g.objectKey !== prevKey ? 1 : 0;
+        prevKey = g.objectKey;
+        return [
+          g.flags,
+          objectKeyChanged,
+          g.fontSize,
+          g.rotation,
+          g.ascentFlip ? 1 : 0,
+          g.upright ? 1 : 0,
+          g.looseBox,
+          g.tightBox,
+          g.looseQuad,
+          g.tightQuad,
+        ];
+      }),
+    );
+  };
+
+  /** run()/canonical() bodies, keyed by id. Arms/nullability come from WORKLOAD_TABLE. */
+  const defs = {
     'null-call': {
-      id: 'null-call',
-      arms: THIN,
       run: () => fn[`${p}EPDF_GetPageSizeByIndexNormalized`](fx.doc, fx.pageIndex, scratch8),
       canonical: () => {
         fn[`${p}EPDF_GetPageSizeByIndexNormalized`](fx.doc, fx.pageIndex, scratch8);
@@ -275,57 +416,58 @@ export function makeWorkloads(arm, fx) {
       },
     },
     'null-peek': {
-      id: 'null-peek',
-      arms: THIN,
       run: () => mem.peek32(geoPtr + GEO.flags),
-      canonical: () => 'n/a',
     },
     'null-readbytes': {
-      id: 'null-readbytes',
-      arms: THIN,
       run: () => mem.readBytes(geoPtr, 64)[0],
-      canonical: () => 'n/a',
     },
     geometry: {
-      id: 'geometry',
-      arms: ALL,
       run: () => geometry().length,
-      canonical: () => roundDeep(geometry().map((g) => [
-        g.flags, g.fontSize, g.rotation, g.ascentFlip ? 1 : 0, g.upright ? 1 : 0,
-        g.looseBox, g.tightBox, g.looseQuad, g.tightQuad,
-      ])),
+      canonical: canonicalGeometry,
+    },
+    'geometry-copyout': {
+      run: () => mem.readBytes(recordPtr, geometryCopyoutN * RECORD_BYTES)[0],
     },
     text: {
-      id: 'text',
-      arms: ALL,
       run: () => text().length,
       canonical: () => text(),
     },
     'render-1x': {
-      id: 'render-1x',
-      arms: ALL,
-      run: () => render(bmp1)[0],
-      canonical: () => hash(render(bmp1)),
+      run: () => render(bmp1),
+      canonical: () => canonicalRender(bmp1),
     },
     'render-4x': {
-      id: 'render-4x',
-      arms: ALL,
-      run: () => render(bmp4)[0],
-      canonical: () => hash(render(bmp4)),
+      run: () => render(bmp4),
+      canonical: () => canonicalRender(bmp4),
+    },
+    'render-copyout-4x': {
+      run: () => mem.readBytes(bmp4.buf, bmp4.stride * bmp4.h)[0],
     },
     search: {
-      id: 'search',
-      arms: ALL,
       run: () => search().length,
       canonical: () => roundDeep(search()),
     },
-    dispose() {
-      fn.FPDFBitmap_Destroy(bmp1.handle);
-      fn.FPDFBitmap_Destroy(bmp4.handle);
-      for (const q of [
-        geoPtr, scratch8, recordPtr, textPtr, termPtr, searchPtr,
-        bmp1.buf, bmp4.buf, ...rectPtrs,
-      ]) mem.free(q);
-    },
   };
+
+  const out = {};
+  for (const spec of WORKLOAD_TABLE) {
+    const d = defs[spec.id];
+    out[spec.id] = {
+      id: spec.id,
+      arms: spec.arms,
+      run: d.run,
+      canonical: spec.hasCanonical ? d.canonical : null,
+    };
+  }
+
+  out.dispose = () => {
+    fn.FPDFBitmap_Destroy(bmp1.handle);
+    fn.FPDFBitmap_Destroy(bmp4.handle);
+    for (const q of [
+      geoPtr, scratch8, recordPtr, textPtr, termPtr, searchPtr,
+      bmp1.buf, bmp4.buf, ...rectPtrs,
+    ]) mem.free(q);
+  };
+
+  return out;
 }
