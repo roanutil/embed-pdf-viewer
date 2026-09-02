@@ -275,10 +275,21 @@ prediction gave. In wasm, collapsing the per-glyph loop into one crossing takes 
 for both coarse arms, about 2.6x faster than arm A, which is just under the 3x-to-10x band I
 predicted. Natively, held within one language and framework, it is 7.10x (arm B against arm C, both
 `napi-rs`) and 15.08x (arm A against arm D, both `node-addon-api`). The mechanism is visible in the
-null probe: `mem.peek32` costs 3.8 ns in wasm and 38.0 ns natively, because in wasm it is a
-typed-array read in JavaScript and natively it is a full N-API round trip. `readGlyphRaw` makes up
-to 21 of those per glyph. Over 8,106 glyphs that is on the order of 170,000 round trips that one
-coarse call deletes.
+null probe, but it is not the same peek for both pairings. Arm A's `mem.peek32` costs 3.8 ns in wasm
+and 38.0 ns natively, and that gap is behind the 15.08x figure. Arm B's costs 3.9 ns in wasm and
+14.7 ns natively, about 3.9x, and that gap is behind 7.10x. Ten times is the wrong multiple for the
+pairing that isolates the language.
+
+Arm A's peek is expensive for reasons that have nothing to do with coarsening. It goes through
+`raw.peek(P(p), 'i32')` at `bench/arm.mjs:243`, converting the pointer to a BigInt and dispatching on
+a JavaScript string type tag on every call, the same shape as the shipping addon's `peek(ptr, kind)`
+at `packages/engine/runtime/src/native/native-runtime.ts:57`. `readGlyphRaw` makes up to 21 of those
+per glyph, so 8,106 glyphs is on the order of 170,000 calls through that path in one `geometry`
+iteration. So 15.08x is pricing string-tag dispatch, BigInt marshalling, and node-addon-api's own
+per-call cost together, not "coarsening held within C++" on its own, and arm D's coarse call never
+pays any of those three. That is three distinct effects riding on one number, not one effect scaled
+up. 7.10x is the figure I trust more: arm B's peek is a direct `f64` call into `napi-rs` with no
+string dispatch and no BigInt conversion, so it avoids all three.
 
 `search` went the other way, and it is the only place the direction of a prediction failed. Native
 coarsening wins only 1.62x and 2.10x on that workload, smaller than wasm's 3.1x to 3.3x, not larger.
@@ -286,8 +297,12 @@ The likely reason is that `searchThin` is call-bound rather than peek-bound, and
 191.0 ns against wasm's 343.9 ns, so the thing being collapsed away was already the cheaper of the
 two. That is inferred from the shape of the loop and the null-probe cells, not measured directly.
 The `text` prediction failed more quietly: I said arm C would win natively on the buffer copy, and
-all four arms land at 1.00x. Render came out within noise on both platforms, as predicted, which at
-this point is the least interesting sentence in the document.
+all four arms land at 1.00x. That is not a coarsening result at all. `textThin` and `textCoarse` both
+make exactly one crossing and then the identical `mem.readU16`, so the workload never had a thin
+side for coarsening to beat; the prediction was never testable on this shape of call, and the flat
+1.00x says that rather than saying anything about C versus native `napi-rs`. Render came out within
+noise on both platforms, as predicted, which at this point is the least interesting sentence in the
+document.
 
 Three of this study's own measurement bugs each reversed or manufactured a conclusion, and all three
 were invisible to the fairness gate, because a wrong measurement and a right answer coexist happily.

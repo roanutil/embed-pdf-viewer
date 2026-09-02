@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Install and activate emsdk 3.1.72, matching scripts/dev.sh:7. Source this
+# Install and activate emsdk 3.1.72, matching packages/engine/runtime/scripts/dev.sh:7. Source this
 # script rather than running it: it exports PATH entries em++ needs.
 set -euo pipefail
 

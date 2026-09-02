@@ -31,7 +31,10 @@ const THIN = ['a', 'b'];
 /**
  * EPDF_CHAR_GEOMETRY field offsets, from epdf_text.h:35:
  * loose_box 16 + tight_box 16 + loose_quad 32 + tight_quad 32 + matrix 24 + flags 4.
- * Step 5 of this task verifies them with offsetof rather than trusting the sum.
+ * Verified once during development with a throwaway offsetof program, which printed
+ * "sizeof=124 loose=0 tight=16 lq=32 tq=64 m=96 flags=120", confirming the literal below.
+ * That program was never committed, so there is no standing check here: this struct's
+ * layout is otherwise trusted from the header.
  */
 const GEO = {
   bytes: 124,
@@ -103,6 +106,15 @@ const quadAt = (mem, ptr, off) => {
  * plain indexed loop for a quad. No `.map`, no `Array.from`, no closure
  * allocated per glyph — the coarse and thin decodes must differ only in
  * where the data comes from, never in how much garbage they make.
+ *
+ * geometryCoarse obeys this rule; searchCoarse below does not. Its hit loop
+ * builds `[0, 4, 8, 12].map(...)`, one throwaway array literal and closure
+ * per hit, about 600 per call on this fixture. That is the same class of bug
+ * this rule exists to catch, and it runs against the coarse arm, so the
+ * published 3.3x and 3.1x search-coarsening numbers understate the true win
+ * slightly. It is left rather than fixed, because fixing it would change a
+ * published number and re-running the benchmark to correct it is not worth
+ * a change that can only improve the coarse arm's result.
  */
 const dvRectAt = (dv, off) => [
   dv.getFloat32(off, true),
@@ -123,7 +135,7 @@ const dvQuadAt = (dv, off) => {
  * that downstream run-grouping tests with `flags & 2` (see :232 and :299).
  * The brief's literal transcription used `flags: 0`; that would silently
  * stop empty glyphs from being recognized as empty, so this follows the real
- * reader instead. See task-3-report.md.
+ * reader instead.
  */
 const emptyGlyph = () => ({
   flags: 2,
@@ -153,6 +165,15 @@ export function makeWorkloads(arm, fx) {
   // property of the thin design: the real reader at
   // PageGeometryReader.ts:113 does a plain monomorphic property access, so
   // hoisting is both fairer and closer to the code being modelled.
+  //
+  // This hoist reaches the thin side only. geometryCoarse, textCoarse,
+  // renderCoarse and searchCoarse below still do `fn[`${coarse}_op_name`]`
+  // inside their timed body, rebuilding the same kind of template string and
+  // dynamic property lookup on every call. That call happens once per
+  // invocation rather than once per glyph or hit, since a coarse call
+  // crosses once instead of looping per record, so one lookup against a
+  // 563 µs to 2.8 ms call is immaterial on its own. But it means only the
+  // thin side was equalized here, not both.
   const thinGetTextObject = fn[`${p}FPDFText_GetTextObject`];
   const thinGetCharGeometry = fn[`${p}EPDFText_GetCharGeometry`];
   const thinGetFontSize = fn[`${p}FPDFText_GetFontSize`];

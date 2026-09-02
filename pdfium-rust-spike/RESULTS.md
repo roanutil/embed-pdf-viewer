@@ -33,15 +33,22 @@ below.
 
 **The thin loops rebuilt a dynamic property key on every call.** `geometryThin`, `searchThin`,
 `textThin`, and `renderThin` in `bench/workloads.mjs` called through `fn[`${p}Name`](...)` inside
-their hot paths, so every call rebuilt a template string and did a dynamic property lookup, while
-the coarse paths hoist their single lookup out of the loop. Measured at about 7.7 ns per lookup,
-that is roughly 62 µs per `geometryThin()` call (two guaranteed lookups per glyph over 8,106
-glyphs) and about 601 lookups per `searchThin()` call, enough to inflate the coarse win by roughly 4
-percent on `geometry` and 10 percent on `search` in the previous run. All four functions now resolve
-their per-arm function references once, into local consts, outside the loop, the same way `p` and
-`coarse` were already resolved once per arm. This run does not isolate the before/after delta with a
-controlled pair of runs; the fix is applied going forward, and the `geometry` and `search` numbers
-below should read a few percent closer to the true coarsening win than the previous file's did.
+their hot paths, so every call rebuilt a template string and did a dynamic property lookup. Measured
+at about 7.7 ns per lookup, that is roughly 62 µs per `geometryThin()` call (two guaranteed lookups
+per glyph over 8,106 glyphs) and about 601 lookups per `searchThin()` call, enough to inflate the
+coarse win by roughly 4 percent on `geometry` and 10 percent on `search` in the previous run. The
+four thin functions now resolve their per-arm function references once, into local consts, outside
+the loop, the same way `p` and `coarse` were already resolved once per arm. This run does not
+isolate the before/after delta with a controlled pair of runs; the fix is applied going forward, and
+the `geometry` and `search` numbers below should read a few percent closer to the true coarsening
+win than the previous file's did.
+
+The hoist reaches the thin side only. `geometryCoarse`, `textCoarse`, `renderCoarse`, and
+`searchCoarse` still rebuild the same kind of template string and do a dynamic property lookup
+inside their timed body, once per call rather than once per glyph or hit, because a coarse call
+crosses once instead of looping per record. One lookup against a 563 µs to 2.8 ms call is immaterial
+on its own, but it means this fix equalized which side pays a per-call cost, not which side pays
+none at all.
 
 **`searchCoarse` broke the rule `geometryCoarse` follows.** `searchCoarse` read its result buffer
 with `mem.readBytes`, a `HEAPU8.slice` copy, while `geometryCoarse` deliberately reads through a
@@ -127,11 +134,11 @@ per-call tail latency, and should not be read as a worst-case frame cost.
 
 | workload | a direct | b rust thin | c rust coarse | d c++ coarse | b/a | c/a | d/a |
 |---|---|---|---|---|---|---|---|
-| `null-call` | 343.9 ns | 324.2 ns | — | — | 0.94x | — | — |
-| `null-peek` | 3.8 ns | 3.9 ns | — | — | 1.02x | — | — |
-| `null-readbytes` | 30.0 ns | 30.0 ns | — | — | 1.00x | — | — |
+| `null-call` | 343.9 ns | 324.2 ns | n/a | n/a | 0.94x | n/a | n/a |
+| `null-peek` | 3.8 ns | 3.9 ns | n/a | n/a | 1.02x | n/a | n/a |
+| `null-readbytes` | 30.0 ns | 30.0 ns | n/a | n/a | 1.00x | n/a | n/a |
 | `geometry` | 2.707 ms | 2.726 ms | 1.030 ms | 1.027 ms | 1.01x | 0.38x | 0.38x |
-| `geometry-copyout` | — | — | 19.54 µs | 19.00 µs | — | — | — |
+| `geometry-copyout` | n/a | n/a | 19.54 µs | 19.00 µs | n/a | n/a | n/a |
 | `text` | 116.94 µs | 120.12 µs | 120.58 µs | 117.78 µs | 1.03x | 1.03x | 1.01x |
 | `render-1x` | 2.811 ms | 2.847 ms | 2.842 ms | 2.752 ms | 1.01x | 1.01x | 0.98x |
 | `render-4x` | 15.579 ms | 16.063 ms | 16.153 ms | 15.457 ms | 1.03x | 1.04x | 0.99x |
@@ -142,11 +149,11 @@ per-call tail latency, and should not be read as a worst-case frame cost.
 
 | workload | a direct | b rust thin | c rust coarse | d c++ coarse |
 |---|---|---|---|---|
-| `null-call` | 355.5 ns | 332.3 ns | — | — |
-| `null-peek` | 4.0 ns | 4.0 ns | — | — |
-| `null-readbytes` | 30.5 ns | 30.5 ns | — | — |
+| `null-call` | 355.5 ns | 332.3 ns | n/a | n/a |
+| `null-peek` | 4.0 ns | 4.0 ns | n/a | n/a |
+| `null-readbytes` | 30.5 ns | 30.5 ns | n/a | n/a |
 | `geometry` | 2.950 ms | 2.947 ms | 1.088 ms | 1.085 ms |
-| `geometry-copyout` | — | — | 20.88 µs | 21.07 µs |
+| `geometry-copyout` | n/a | n/a | 20.88 µs | 21.07 µs |
 | `text` | 120.77 µs | 123.89 µs | 124.35 µs | 121.19 µs |
 | `render-1x` | 2.870 ms | 2.894 ms | 2.894 ms | 2.805 ms |
 | `render-4x` | 15.782 ms | 16.165 ms | 16.308 ms | 15.654 ms |
@@ -157,7 +164,7 @@ per-call tail latency, and should not be read as a worst-case frame cost.
 
 | arm | wasm bytes | delta vs a |
 |---|---|---|
-| a direct | 4,676,714 | — |
+| a direct | 4,676,714 | n/a |
 | b rust thin | 4,680,516 | +3.7 kB |
 | c rust coarse | 4,681,488 | +4.7 kB |
 | d c++ coarse | 4,684,877 | +8.0 kB |
@@ -188,6 +195,16 @@ percent band in
 [`docs/research/pdfium-rust-wrapper-benchmarks.md`](../docs/research/pdfium-rust-wrapper-benchmarks.md),
 and well inside the 25 percent line past which the prediction said to suspect the harness rather
 than the result.
+
+The `render-1x` and `render-4x` numbers are a half dose of that tax, undisclosed until now.
+`crates/shim/src/lib.rs` exports no `rs_FPDFBitmap_FillRect`, so `renderThin` calls the unprefixed
+`fn.FPDFBitmap_FillRect` on every arm, arm b included, rather than going through arm b's shim.
+`renderThin` makes two PDFium calls per render, `FPDFBitmap_FillRect` and the actual render call, and
+arm b only pays its one extra wasm frame on the second. So the 1.01x and 1.03x quoted above for
+`render-1x` and `render-4x` price one shim frame out of two calls, not two out of two: the true
+per-call wrapper tax on a fully-shimmed render is conservatively higher than what these two cells
+report. Not fixed here, because adding the missing shim function would require a rebuild and a
+re-run.
 
 `render-4x` is the result the previous write-up missed. Arm a and arm d cluster low across six of
 the seven rounds (a from 15.171 to 15.660 ms, d from 15.312 to 15.493 ms) while arm b and arm c
@@ -223,8 +240,9 @@ archive, it is a linkage cost; if it does not, it was layout. Worth doing before
 
 Coarsening the crossing wins on `geometry` and `search`, for both languages behind it. Arm c lands
 at 0.38x and arm d at 0.38x on `geometry` (about 2.6x faster than arm a); on `search`, arm c is 0.30x
-and arm d is 0.33x (about 3.3x and 3.1x faster than arm a). Both are inside the prediction's
-3x-to-10x band for coarsening a chatty per-glyph crossing into one call. `geometryThin` makes two
+and arm d is 0.33x (about 3.3x and 3.1x faster than arm a). Search landed inside the prediction's
+3x-to-10x band for coarsening a chatty per-glyph crossing into one call; geometry, at 2.6x, landed
+just under it. `geometryThin` makes two
 wasm calls per glyph (`FPDFText_GetTextObject` and `EPDFText_GetCharGeometry`) plus a third on every
 object-key change, so 8,106 glyphs cost on the order of sixteen thousand crossings, where
 `geometryCoarse` makes exactly one crossing and decodes PDFium's per-glyph struct into a packed
@@ -277,6 +295,16 @@ look faster than the code it is modelling. So a few percent of the `geometry` an
 coarsening win in the tables above comes from this read-mechanism difference rather than from
 coarsening itself, on top of the transcription omissions above, both of which run in the same
 direction: understating the thin side, and so understating, never overstating, the coarsening win.
+
+One more asymmetry runs the other way, against the coarse arm, and is also not fixed here.
+`geometryCoarse` follows the rule that the coarse and thin decodes must differ only in where the
+data comes from, never in how much garbage they make (`bench/workloads.mjs`'s comment above
+`dvRectAt`); `searchCoarse` does not. Its hit loop builds `hits[i] = [0, 4, 8, 12].map(...)`, one
+throwaway array literal and closure per hit, about 600 per call on this fixture. That is the same
+class of allocation bug this run's Finding 6 already fixed elsewhere, and it is left in place rather
+than fixed, because fixing it would change a published number, and re-running the benchmark to
+correct it is not worth a change that can only improve the coarse arm's own result. So the published
+`search` coarsening figures, 3.3x and 3.1x, understate the true win slightly.
 
 The timing fixture never exercises the rotation branch. `report.pdf` page 4 has 0 non-upright glyphs
 and 0 SPACE-flagged glyphs (see `fixture.mjs`'s header comment). The fairness gate's second fixture,
@@ -336,11 +364,11 @@ throttling laptop gets slower over a run, and this one got faster. It matters fo
 
 | workload | a direct | b rust thin | c rust coarse | d c++ coarse | b/a | c/a | d/a |
 |---|---|---|---|---|---|---|---|
-| `null-call` | 191.0 ns | 182.4 ns | — | — | 0.95x | — | — |
-| `null-peek` | 38.0 ns | 14.7 ns | — | — | 0.39x | — | — |
-| `null-readbytes` | 268.5 ns | 280.9 ns | — | — | 1.05x | — | — |
+| `null-call` | 191.0 ns | 182.4 ns | n/a | n/a | 0.95x | n/a | n/a |
+| `null-peek` | 38.0 ns | 14.7 ns | n/a | n/a | 0.39x | n/a | n/a |
+| `null-readbytes` | 268.5 ns | 280.9 ns | n/a | n/a | 1.05x | n/a | n/a |
 | `geometry` | 8.374 ms | 4.000 ms | 563.25 µs | 555.48 µs | 0.48x | 0.07x | 0.07x |
-| `geometry-copyout` | — | — | 66.69 µs | 66.23 µs | — | — | — |
+| `geometry-copyout` | n/a | n/a | 66.69 µs | 66.23 µs | n/a | n/a | n/a |
 | `text` | 122.94 µs | 122.74 µs | 123.52 µs | 123.21 µs | 1.00x | 1.00x | 1.00x |
 | `render-1x` | 1.508 ms | 1.510 ms | 1.503 ms | 1.505 ms | 1.00x | 1.00x | 1.00x |
 | `render-4x` | 8.250 ms | 8.235 ms | 8.178 ms | 8.211 ms | 1.00x | 0.99x | 1.00x |
@@ -351,11 +379,11 @@ throttling laptop gets slower over a run, and this one got faster. It matters fo
 
 | workload | a direct | b rust thin | c rust coarse | d c++ coarse |
 |---|---|---|---|---|
-| `null-call` | 203.3 ns | 194.8 ns | — | — |
-| `null-peek` | 41.2 ns | 15.1 ns | — | — |
-| `null-readbytes` | 279.6 ns | 288.7 ns | — | — |
+| `null-call` | 203.3 ns | 194.8 ns | n/a | n/a |
+| `null-peek` | 41.2 ns | 15.1 ns | n/a | n/a |
+| `null-readbytes` | 279.6 ns | 288.7 ns | n/a | n/a |
 | `geometry` | 9.763 ms | 4.375 ms | 602.66 µs | 602.09 µs |
-| `geometry-copyout` | — | — | 74.70 µs | 72.44 µs |
+| `geometry-copyout` | n/a | n/a | 74.70 µs | 72.44 µs |
 | `text` | 126.91 µs | 125.92 µs | 132.71 µs | 126.31 µs |
 | `render-1x` | 1.538 ms | 1.651 ms | 1.532 ms | 1.536 ms |
 | `render-4x` | 8.386 ms | 8.423 ms | 8.301 ms | 8.315 ms |
@@ -433,15 +461,25 @@ inflates arm a's absolute cost and therefore this second number somewhat). Eithe
 to 5.7x larger than wasm's `geometry` win of about 2.6x. The direction and the rough size both match
 the prediction.
 
-The mechanism is visible in the null-probe cells. `mem.peek32` costs 38.0 ns natively against 3.8 ns
-in wasm, a native peek costing roughly 10x a wasm one. `readGlyphRaw` (`bench/workloads.mjs`) makes
-up to 21 such peeks per glyph, on top of the object-key and font-size calls every glyph pays; over
-8,106 glyphs that is on the order of 170,000 peeks for the thin arms, and `rs_read_page_geometry`
-collapses all of it into one crossing. Wasm's coarsening win comes from removing calls that were
-already inexpensive; native's comes from removing calls plus removing tens of thousands of round
-trips that individually cost an order of magnitude more than their wasm counterparts. That is a
-different mechanism producing a bigger number in the same direction, not the same mechanism scaled
-up.
+The mechanism is visible in the null-probe cells, but it is not the same peek for both pairings.
+Arm a's `mem.peek32` costs 38.0 ns natively against 3.8 ns in wasm, and that is the pairing behind
+the 15.08x figure. Arm b's `mem.peek32` costs 14.7 ns natively against 3.9 ns in wasm, roughly 3.9x,
+and that is the pairing behind 7.10x. Ten times is the right multiple for arm a's peek and the wrong
+one for arm b's.
+
+Arm a's peek is expensive for reasons that have nothing to do with coarsening. `bench/arm.mjs:243`
+calls `raw.peek(P(p), 'i32')`, converting the pointer to a BigInt through `P()` and dispatching on a
+JavaScript string type tag on every call, the same shape as the shipping addon's `peek(ptr, kind)`
+at `packages/engine/runtime/src/native/native-runtime.ts:57`. `readGlyphRaw` (`bench/workloads.mjs`)
+makes up to 21 such peeks per glyph, on top of the object-key and font-size calls every glyph pays;
+over 8,106 glyphs that call happens on the order of 170,000 times in one `geometry` iteration, and
+`rs_read_page_geometry` collapses all of it into one crossing. So the 15.08x figure prices
+string-tag dispatch, BigInt marshalling, and node-addon-api's own per-call cost together, not
+"coarsening held within C++" by itself; arm d's coarse call never goes through arm a's peek path, so
+none of those three costs is shared between the two arms being compared. That is three distinct
+effects bundled into one number, not one effect at a larger scale. The 7.10x figure is the more
+trustworthy of the two: arm b's peek is a direct `f64` call into `napi-rs` with no string dispatch
+and no BigInt conversion, so it avoids all three.
 
 `geometry-copyout` gives one more data point for the same story. It isolates the cost of a full
 memcpy readback of the packed record buffer (908 KB): 66.69 µs (c) and 66.23 µs (d) natively against
@@ -504,6 +542,13 @@ copy it replaces (see `geometry-copyout` above). But it is a real asymmetry agai
 arms, present in every `geometry` and `search` number for arms c and d in this section, and it is not
 present in arm a or arm b's numbers at all. The coarsening win reported above is the win net of this
 cost, not in addition to it.
+
+`view_buffer` (`crates/napi-arms/src/lib.rs:231`, the lock and lookup at `:251`) pays one more
+small, undisclosed cost on top of the `BackingStore` and finalizer above: it takes a mutex lock and
+does a `HashMap` lookup against `ALLOCATIONS` on every coarse call, to bound `len` against the
+allocation actually registered for that pointer (Fix 2 above). Same direction as the `BackingStore`
+cost, and just as tiny relative to the calls it sits inside; noted here for completeness rather than
+because it moves any number in this section.
 
 ### Fat LTO versus thin LTO
 

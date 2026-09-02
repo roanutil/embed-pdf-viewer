@@ -327,7 +327,6 @@ export async function loadNativeArm(name, target = 'darwin-arm64') {
       addon.renderPageBitmap(b, page, w, h, rot, flags),
     rs_FPDF_RenderPageBitmap: (b, page, _x, _y, w, h, rot, flags) =>
       addon.renderPageBitmap(b, page, w, h, rot, flags),
-    rs_peek_i32: addon.peek32,
     rs_read_page_geometry: addon.rsReadPageGeometry,
     rs_read_page_text: addon.rsReadPageText,
     rs_render_page: addon.rsRenderPage,

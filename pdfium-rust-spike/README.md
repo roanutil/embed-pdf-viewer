@@ -34,6 +34,38 @@ node bench/compare.mjs           # medians, p95, and the wasm size table, as mar
 `bench/run.mjs` runs before any timing and aborts if any two arms disagree on an answer: a wrong arm
 can be fast, and no timing table would reveal it on its own.
 
+`-O3` makes `em++` run `wasm-opt` over the linked module. emsdk 3.1.72 bundles `wasm-opt` v119, which
+rejects two wasm feature names present in rustc 1.98's precompiled std. The numbers in `RESULTS.md`
+were produced on a machine where a newer `wasm-opt` had been symlinked over that bundled binary; a
+fresh `emsdk.sh` install will hit the rejection until the same substitution is made.
+
 `node --test bench/run.test.mjs` is the smoke test: two short rounds, checked for plausible shapes
 (render at 4x costs more than at 1x, the glyph loop dwarfs a single null call), not for
 publishable numbers.
+
+## Native
+
+Same four arms, same gate, same fixture, run against native addons instead of wasm modules:
+
+```bash
+bash build/fetch.sh darwin-arm64          # pulls the prebuilt libembedpdf for this target
+npm install                               # cmake-js and node-addon-api, both devDependencies here
+bash build/build-native.sh darwin-arm64   # builds arms b, c and d
+node bench/run.mjs --native --rounds 7    # fairness gate, then seven interleaved rounds
+node bench/compare.mjs --native           # medians and p95, as markdown
+```
+
+`npm install` has to run inside `pdfium-rust-spike` before the native build. `build/build-native.sh`
+shells out to `npx cmake-js`, and `build/CMakeLists.txt` resolves `node-addon-api` by running
+`node -p "require('node-addon-api').include"` from the spike root, so both packages need to be
+installed here. Nothing else in this directory documents that.
+
+`build/build-native.sh` builds arms b, c, and d only. Native arm a is
+`packages/engine/runtime/npm/darwin-arm64/lib/pdf-runtime.node`, the shipping addon, and
+`packages/engine/runtime/.gitignore` ignores it, so a fresh clone doesn't have it. Build it from
+`packages/engine/runtime` with `pnpm build:target darwin-arm64`. `bench/run.mjs` checks for all three
+native artifacts before running and, if arm a's is missing, tells you to run `build-native.sh`; that
+script will not produce it, so run the `pnpm build:target` command above instead.
+
+The native half is macOS arm64 only: `darwin-arm64` is hardcoded at `bench/run.mjs:45` and
+`bench/arm.mjs:182`. There is no `--native` path for any other OS or architecture.
