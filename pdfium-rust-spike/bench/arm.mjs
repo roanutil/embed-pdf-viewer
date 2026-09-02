@@ -98,6 +98,9 @@ export async function loadArm(name) {
     writeU16: (str) => {
       const bytes = (str.length + 1) * 2;
       const ptr = m._malloc(bytes);
+      // An unchecked 0 here silently writes the string over the heap
+      // prologue and every later read of it returns garbage.
+      if (!ptr) throw new Error(`writeU16: _malloc(${bytes}) returned 0`);
       m.stringToUTF16(str, ptr, bytes);
       return ptr;
     },

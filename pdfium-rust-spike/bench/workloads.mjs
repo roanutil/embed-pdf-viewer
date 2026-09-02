@@ -13,7 +13,7 @@
  *
  * Known bias in the transcription, one-directional and conservative: the
  * real reader also does three things per glyph that this file omits —
- *   - `throwIfAborted(signal)` (PageGeometryReader.ts:111);
+ *   - `throwIfAborted(signal)` (PageGeometryReader.ts:110);
  *   - `normalizePdfRect` on the loose and tight boxes (:156, :162);
  *   - the `{objectKey, ...raw}` object spread that builds each record (:113).
  * All three cost real time only in the THIN arm (a/b), which calls
@@ -225,20 +225,24 @@ export function makeWorkloads(arm, fx) {
       if (native & F.EMPTY) {
         const g = emptyGlyph();
         g.objectKey = dv.getUint32(o + 4, true);
-        // geometryThin assigns fontSize from a fresh PDFium call whenever
-        // the object key changes, even when the glyph that starts the
-        // object is empty (PageGeometryReader.ts:113-116). The record
-        // already carries that same per-object fontSize at this offset;
-        // read it here too instead of leaving emptyGlyph()'s 0.
+        // PRODUCER CONTRACT, and arms c and d must honour it exactly.
+        // geometryThin calls FPDFText_GetFontSize only when the object key
+        // changes (PageGeometryReader.ts:116-117) and leaves 0 on every
+        // other glyph. So the packed record must carry the font size ONLY
+        // in the first glyph of each text object and 0 everywhere else --
+        // NOT the object's font size duplicated into every slot. Reading
+        // o+8 unconditionally then reproduces thin's values exactly.
+        // The empty branch must read it too, because a text object can
+        // begin on an empty glyph and thin sets fontSize there.
         g.fontSize = dv.getFloat32(o + 8, true);
         out[i] = g;
         continue;
       }
       const upright = Boolean(native & F.UPRIGHT);
-      // Matches readGlyphRaw's gate exactly (:161 in the real reader):
+      // Matches readGlyphRaw's gate exactly (:164 in the real reader):
       // rotation/ascentFlip exist only when there is an oriented quad to
       // read them from. A non-upright glyph with a singular matrix and no
-      // oriented cell (real reader's comment at PageGeometryReader.ts:186)
+      // oriented cell (real reader's comment at PageGeometryReader.ts:189)
       // must not report a rotation just because it isn't upright.
       const looseQuadGate = !upright && Boolean(native & F.HAS_LOOSE_QUAD);
       const g = {
@@ -386,7 +390,7 @@ export function makeWorkloads(arm, fx) {
         // handle values legitimately differ between wasm modules (separate
         // allocators, separate numbering), but the pattern of when the key
         // changes from the previous glyph is real run-splitting data
-        // (PageGeometryReader.ts:203) that a coarse arm writing shifted or
+        // (PageGeometryReader.ts:116) that a coarse arm writing shifted or
         // garbage keys must still reproduce.
         const objectKeyChanged = g.objectKey !== prevKey ? 1 : 0;
         prevKey = g.objectKey;
