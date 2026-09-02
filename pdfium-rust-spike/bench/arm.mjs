@@ -66,7 +66,6 @@ const SHIM = [
   ['rs_FPDF_RenderPageBitmap', null, [
     'number', 'number', 'number', 'number', 'number', 'number', 'number', 'number',
   ]],
-  ['rs_peek_i32', 'number', ['number']],
   ['rs_probe_page_size', 'number', ['number', 'number', 'number']],
 ];
 

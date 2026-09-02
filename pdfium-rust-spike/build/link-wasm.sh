@@ -32,7 +32,7 @@ SHIM_EXPORTS="_rs_probe_page_size\
 ,_rs_EPDFText_GetCharGeometry,_rs_EPDFText_GetTextFull\
 ,_rs_FPDFText_FindStart,_rs_FPDFText_FindNext,_rs_FPDFText_GetSchResultIndex\
 ,_rs_FPDFText_GetSchCount,_rs_FPDFText_FindClose,_rs_FPDFText_CountRects,_rs_FPDFText_GetRect\
-,_rs_FPDF_RenderPageBitmap,_rs_EPDF_GetPageSizeByIndexNormalized,_rs_peek_i32"
+,_rs_FPDF_RenderPageBitmap,_rs_EPDF_GetPageSizeByIndexNormalized"
 
 OPS_EXPORTS="_rs_read_page_geometry,_rs_read_page_text,_rs_render_page,_rs_search_page"
 CPP_EXPORTS="_cc_read_page_geometry,_cc_read_page_text,_cc_render_page,_cc_search_page"
