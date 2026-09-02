@@ -99,8 +99,15 @@ console.log(
     `${compared} workload${compared === 1 ? '' : 's'} compared\n`,
 );
 
-rmSync(RESULTS, { recursive: true, force: true });
+// Clear only the files THIS run is about to write. Wiping the whole directory
+// destroyed the wasm result set the first time a --native run followed a wasm
+// one, and the published wasm tables in RESULTS.md have no raw data behind
+// them because of it.
 mkdirSync(RESULTS, { recursive: true });
+for (const f of readdirSync(RESULTS)) {
+  if (!f.endsWith('.json')) continue;
+  if (f.startsWith('native-') === native) rmSync(resolve(RESULTS, f), { force: true });
+}
 
 for (let r = 1; r <= rounds; r++) {
   // Rotate by round index (Finding 1): round 1 is a,b,c,d; round 2 shifts
