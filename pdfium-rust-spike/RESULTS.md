@@ -11,6 +11,20 @@ All four arms agree on every canonical answer they are declared to produce, on b
 numbers below are real per-operation cost, not an artifact of one arm quietly computing the wrong
 thing.
 
+## This is a re-run; the previous wasm data is gone
+
+`bench/run.mjs` used to clear its entire results directory at the start of every run, wasm or
+native. The first `--native` run after a wasm run deleted that wasm run's raw JSON along with it,
+so the wasm tables previously published in this file had no committed data behind them; only the
+28 native JSONs from that sitting survived, because native ran last. The clearing bug is fixed:
+`run.mjs` now clears only the files it is about to write (native runs clear `native-*.json`, wasm
+runs clear the rest), so the two result sets can no longer take each other out. Rather than
+regenerate wasm alone and end up quoting a wasm run and a native run from two
+different sittings under one set of tables, both runs below were redone together, in the same
+sitting, on the same fixed driver. `bench/results/` now holds all 56 result files this file's
+numbers are drawn from, `<arm>-r<round>.json` and `native-<arm>-r<round>.json`, seven rounds each
+for arms a, b, c, d, and they are committed alongside this file rather than gitignored.
+
 ## This run fixes six review findings
 
 A review of the previous version of this file and its driver found six more ways an arm could be
@@ -73,10 +87,11 @@ compared, in the same wording `gate.mjs` uses; that is the gate line quoted at t
 
 **This file was publishing a stale test result.** It stated the suite "passed 10 of 11 tests" and
 that `probe.test.mjs` failed importing a build output no current script produces. Commit `d6108963`
-repointed that test before this run. The suite actually run for this file
+repointed that test before this run. This re-run's suite
 (`gate.test.mjs`, `arm-b.test.mjs`, `arm-c.test.mjs`, `arm-d.test.mjs`, `fixture.test.mjs`,
-`probe.test.mjs`, `run.test.mjs`, seven files) passed all 12 of 12 tests, `gate.test.mjs` alone
-contributing six of them. There is no known failing test in this suite as of this run.
+`probe.test.mjs`, `native-b.test.mjs`, `native-cd.test.mjs`, eight files, swapping `run.test.mjs` for
+the two native-arm suites) passed all 13 of 13 tests, `gate.test.mjs` alone contributing six of
+them. There is no known failing test in this suite as of this run.
 
 ## Earlier bugs already fixed, unaffected by this run
 
@@ -95,33 +110,33 @@ produced the arm b, c, and d binaries measured below.
 
 ```
 Node v24.20.0 · Apple M4 Max · darwin 25.6.0
-arch arm64 · 16 cores · loadavg 4.01 at the start of the run
+arch arm64 · 16 cores · loadavg 4.31 at the start of the run
 emsdk emcc 3.1.72 (437140d) · rustc 1.98.0 (88d9e12ae, 2026-08-18)
 fixture: examples/snippet-react/public/report.pdf, page 4, 8106 glyphs
 rounds: 7, interleaved a/b/c/d with the order rotated each round, budget 500ms per cell
 ```
 
-Unlike the previous two versions of this file, `emsdk` is not `unknown` here: `build/emsdk.sh` was
-sourced before `bench/run.mjs` ran, so `em++` was on `PATH` and `bench/node.mjs` recorded the real
-version instead of falling back to its default. `bench/run.test.mjs` still asserts `emsdk !==
-'unknown'` and would have failed this run if that had not been true; it passed.
+`emsdk` is not `unknown` here: `build/emsdk.sh` was sourced before `bench/run.mjs` ran, so `em++`
+was on `PATH` and `bench/node.mjs` recorded the real version instead of falling back to its
+default.
 
-The `node --test` suite passed 12 of 12 tests across the seven files listed above. No test failed
+The `node --test` suite passed 13 of 13 tests across the eight files listed above. No test failed
 or was skipped.
 
-macOS thermal throttling is not controllable from here. Rounds are interleaved and, as of this run,
-rotated in order within each round, for exactly that reason: drift and position bias should land on
-all four arms rather than on whoever runs first or last. Worst observed round-to-round spread
-(max/min across the 7 rounds, same arm and workload):
+macOS thermal throttling is not controllable from here. Rounds are interleaved and rotated in order
+within each round, for exactly that reason: drift and position bias should land on all four arms
+rather than on whoever runs first or last. Worst observed round-to-round spread (max/min across the
+7 rounds, same arm and workload):
 
 ```
-a/null-peek 1.23x, b/null-peek 1.22x, d/geometry-copyout 1.09x
+d/geometry-copyout 1.28x, b/null-peek 1.19x, a/render-copyout-4x 1.14x
 ```
 
 `null-peek` measures a single `getValue` call, around 4 nanoseconds; a 1.2x spread there is a
 sub-nanosecond absolute wobble that a 500ms sampling budget cannot fully average out at that scale.
-`bench/compare.mjs` treats spread past about 1.3x as a thermal-drift signal; nothing here reaches
-that line, so nothing suggests throttling distorted the comparisons that matter.
+`bench/compare.mjs` treats spread past about 1.3x as a thermal-drift signal; the largest spread here
+sits at 1.28x, just under that line, so nothing here signals throttling distorted the comparisons
+that matter.
 
 A note on what the numbers mean: `harness.mjs` measures in batches (auto-tuned so one batch takes at
 least 2ms), and reports the median and p95 of those batch means, not of individual calls. The p95
@@ -134,31 +149,31 @@ per-call tail latency, and should not be read as a worst-case frame cost.
 
 | workload | a direct | b rust thin | c rust coarse | d c++ coarse | b/a | c/a | d/a |
 |---|---|---|---|---|---|---|---|
-| `null-call` | 343.9 ns | 324.2 ns | n/a | n/a | 0.94x | n/a | n/a |
-| `null-peek` | 3.8 ns | 3.9 ns | n/a | n/a | 1.02x | n/a | n/a |
-| `null-readbytes` | 30.0 ns | 30.0 ns | n/a | n/a | 1.00x | n/a | n/a |
-| `geometry` | 2.707 ms | 2.726 ms | 1.030 ms | 1.027 ms | 1.01x | 0.38x | 0.38x |
-| `geometry-copyout` | n/a | n/a | 19.54 µs | 19.00 µs | n/a | n/a | n/a |
-| `text` | 116.94 µs | 120.12 µs | 120.58 µs | 117.78 µs | 1.03x | 1.03x | 1.01x |
-| `render-1x` | 2.811 ms | 2.847 ms | 2.842 ms | 2.752 ms | 1.01x | 1.01x | 0.98x |
-| `render-4x` | 15.579 ms | 16.063 ms | 16.153 ms | 15.457 ms | 1.03x | 1.04x | 0.99x |
-| `render-copyout-4x` | 590.30 µs | 584.63 µs | 581.47 µs | 584.77 µs | 0.99x | 0.99x | 0.99x |
-| `search` | 99.60 µs | 101.40 µs | 29.74 µs | 32.63 µs | 1.02x | 0.30x | 0.33x |
+| `null-call` | 350.6 ns | 328.5 ns | n/a | n/a | 0.94x | n/a | n/a |
+| `null-peek` | 4.0 ns | 4.0 ns | n/a | n/a | 0.99x | n/a | n/a |
+| `null-readbytes` | 30.4 ns | 30.5 ns | n/a | n/a | 1.00x | n/a | n/a |
+| `geometry` | 2.711 ms | 2.787 ms | 1.055 ms | 1.050 ms | 1.03x | 0.39x | 0.39x |
+| `geometry-copyout` | n/a | n/a | 19.60 µs | 19.68 µs | n/a | n/a | n/a |
+| `text` | 119.11 µs | 121.31 µs | 121.63 µs | 120.17 µs | 1.02x | 1.02x | 1.01x |
+| `render-1x` | 2.844 ms | 2.894 ms | 2.897 ms | 2.808 ms | 1.02x | 1.02x | 0.99x |
+| `render-4x` | 15.818 ms | 16.429 ms | 16.449 ms | 15.797 ms | 1.04x | 1.04x | 1.00x |
+| `render-copyout-4x` | 591.76 µs | 598.23 µs | 593.67 µs | 601.39 µs | 1.01x | 1.00x | 1.02x |
+| `search` | 100.64 µs | 102.87 µs | 30.60 µs | 32.10 µs | 1.02x | 0.30x | 0.32x |
 
 ### p95 of batch means, same cells
 
 | workload | a direct | b rust thin | c rust coarse | d c++ coarse |
 |---|---|---|---|---|
-| `null-call` | 355.5 ns | 332.3 ns | n/a | n/a |
-| `null-peek` | 4.0 ns | 4.0 ns | n/a | n/a |
-| `null-readbytes` | 30.5 ns | 30.5 ns | n/a | n/a |
-| `geometry` | 2.950 ms | 2.947 ms | 1.088 ms | 1.085 ms |
-| `geometry-copyout` | n/a | n/a | 20.88 µs | 21.07 µs |
-| `text` | 120.77 µs | 123.89 µs | 124.35 µs | 121.19 µs |
-| `render-1x` | 2.870 ms | 2.894 ms | 2.894 ms | 2.805 ms |
-| `render-4x` | 15.782 ms | 16.165 ms | 16.308 ms | 15.654 ms |
-| `render-copyout-4x` | 625.30 µs | 599.49 µs | 599.54 µs | 599.94 µs |
-| `search` | 101.50 µs | 103.38 µs | 30.54 µs | 33.17 µs |
+| `null-call` | 372.7 ns | 345.6 ns | n/a | n/a |
+| `null-peek` | 4.1 ns | 4.1 ns | n/a | n/a |
+| `null-readbytes` | 31.5 ns | 31.5 ns | n/a | n/a |
+| `geometry` | 3.002 ms | 3.143 ms | 1.115 ms | 1.134 ms |
+| `geometry-copyout` | n/a | n/a | 22.94 µs | 23.86 µs |
+| `text` | 124.59 µs | 126.19 µs | 127.69 µs | 127.09 µs |
+| `render-1x` | 2.946 ms | 2.988 ms | 3.006 ms | 2.904 ms |
+| `render-4x` | 16.234 ms | 16.745 ms | 16.781 ms | 16.337 ms |
+| `render-copyout-4x` | 628.92 µs | 656.08 µs | 664.66 µs | 650.34 µs |
+| `search` | 104.20 µs | 106.86 µs | 31.79 µs | 33.37 µs |
 
 ### Module size
 
@@ -175,22 +190,22 @@ changed here, only the JS-side benchmark code and the driver.
 ## What the numbers say
 
 With arm order rotated, `null-call` still shows arm b faster than arm a, in every one of the seven
-rounds: a ran 342.0, 341.6, 345.0, 342.0, 344.1, 343.9, 348.8 ns across the seven rounds, in that
-order, while b ran 316.9, 317.8, 323.5, 326.5, 326.7, 324.2, 326.2 ns in the same seven rounds. Arm a
+rounds: a ran 346.4, 348.3, 354.4, 361.6, 350.6, 353.4, 348.4 ns across the seven rounds, in that
+order, while b ran 323.6, 324.3, 329.8, 334.0, 328.5, 329.5, 327.2 ns in the same seven rounds. Arm a
 occupied every position from first to last across those rounds (round order was a,b,c,d then
 b,c,d,a then c,d,a,b then d,a,b,c then a,b,c,d then b,c,d,a then c,d,a,b), and b still came out ahead
 every time. That rules out the position-decay explanation the previous run's rotation was meant to
 test for. The honest reading is not that arm b's wrapper has negative cost: a wrapper cannot be
 faster than the bare call it wraps. The honest reading is that this cell, at 300-some nanoseconds a
-call with a roughly 20-nanosecond gap between arms, is below what a 500ms sampling budget and
+call with a roughly 20-to-28-nanosecond gap between arms, is below what a 500ms sampling budget and
 Node's own call overhead can resolve on this hardware. The `null-call` cell cannot currently tell
 these two arms apart; it cannot be read as evidence of a negative tax, and it cannot yet be read as
 evidence the wrapper is free either. Something at or below the noise floor of this measurement setup
 is happening in that gap, and this benchmark does not have the resolution to say what.
 
 On the workloads that do real PDFium work, the wrapper tax reads as small and directionally
-consistent: arm b costs 1 to 4 percent more than arm a on `geometry` (1.01x), `text` (1.03x),
-`render-1x` (1.01x), `render-4x` (1.03x), and `search` (1.02x). That is inside the pre-registered 15
+consistent: arm b costs 1 to 4 percent more than arm a on `geometry` (1.03x), `text` (1.02x),
+`render-1x` (1.02x), `render-4x` (1.04x), and `search` (1.02x). That is inside the pre-registered 15
 percent band in
 [`docs/research/pdfium-rust-wrapper-benchmarks.md`](../docs/research/pdfium-rust-wrapper-benchmarks.md),
 and well inside the 25 percent line past which the prediction said to suspect the harness rather
@@ -200,17 +215,21 @@ The `render-1x` and `render-4x` numbers are a half dose of that tax, undisclosed
 `crates/shim/src/lib.rs` exports no `rs_FPDFBitmap_FillRect`, so `renderThin` calls the unprefixed
 `fn.FPDFBitmap_FillRect` on every arm, arm b included, rather than going through arm b's shim.
 `renderThin` makes two PDFium calls per render, `FPDFBitmap_FillRect` and the actual render call, and
-arm b only pays its one extra wasm frame on the second. So the 1.01x and 1.03x quoted above for
+arm b only pays its one extra wasm frame on the second. So the 1.02x and 1.04x quoted above for
 `render-1x` and `render-4x` price one shim frame out of two calls, not two out of two: the true
 per-call wrapper tax on a fully-shimmed render is conservatively higher than what these two cells
 report. Not fixed here, because adding the missing shim function would require a rebuild and a
 re-run.
 
-`render-4x` is the result the previous write-up missed. Arm a and arm d cluster low across six of
-the seven rounds (a from 15.171 to 15.660 ms, d from 15.312 to 15.493 ms) while arm b and arm c
-cluster about 3 to 4 percent higher (b from 15.907 to 16.259 ms, c from 15.961 to 16.245 ms). Round 6
-is the one exception: arm a spiked to 16.269 ms that round, the highest of all four arms, breaking
-the clean split; arm d stayed fastest in all seven rounds regardless. Rendering calls no Rust code
+`render-4x` is the result the previous write-up missed. Arm a and arm d cluster low in six of the
+seven rounds (a from 15.585 to 16.477 ms, d from 15.641 to 16.278 ms) while arm b and arm c cluster
+higher (b from 16.335 to 16.486 ms excluding one outlier round, c from 16.299 to 16.579 ms). Round 6
+is the exception, and this time it inverts the order outright rather than just blunting it: b at
+16.454 ms and c at 16.579 ms are the two lowest of the round, while d at 16.668 ms and a at
+16.688 ms, ordinarily the low pair, become the two highest. Because the inversion this round hits
+both a and d rather than only a, "arm d stayed fastest regardless" does not hold here the way the
+previous write-up found it did; d is the fastest arm in five of the seven rounds and loses that spot
+in rounds 1 (to a) and 6 (to b). Rendering calls no Rust code
 on any arm's timed path (arm b's `rs_FPDF_RenderPageBitmap` is a 1:1 shim around the same PDFium
 call arm a makes, and arm d's `cc_render_page` is C++), so this is not a coarsening effect and not a
 wrapper-call effect. Arms b and c are the two arms with a Rust static archive (`libshim.a`,
@@ -223,7 +242,7 @@ something in how Binaryen's `-O3` pass treats the extra section are all consiste
 measured here); the finding is the correlation with which arms link a Rust archive, not a mechanism.
 
 There is evidence in this same run that cuts against that reading, and it belongs here rather than
-in a footnote. On `null-call` the Rust-linked arm is the FASTER one, by about 20 nanoseconds in
+in a footnote. On `null-call` the Rust-linked arm is the FASTER one, by 21 to 28 nanoseconds in
 every round. If linking `libshim.a` imposed a general cost on the module, arm b should be slower
 there too, and it is not. So the two observations do not tell one story: on a millisecond-scale
 PDFium workload the two Rust-linked arms are slower, and on a microsecond-scale one the Rust-linked
@@ -239,8 +258,8 @@ a module that never calls into it, and compare that against arm a. If the render
 archive, it is a linkage cost; if it does not, it was layout. Worth doing before anyone acts on it.
 
 Coarsening the crossing wins on `geometry` and `search`, for both languages behind it. Arm c lands
-at 0.38x and arm d at 0.38x on `geometry` (about 2.6x faster than arm a); on `search`, arm c is 0.30x
-and arm d is 0.33x (about 3.3x and 3.1x faster than arm a). Search landed inside the prediction's
+at 0.39x and arm d at 0.39x on `geometry` (about 2.6x faster than arm a); on `search`, arm c is 0.30x
+and arm d is 0.32x (about 3.3x and 3.1x faster than arm a). Search landed inside the prediction's
 3x-to-10x band for coarsening a chatty per-glyph crossing into one call; geometry, at 2.6x, landed
 just under it. `geometryThin` makes two
 wasm calls per glyph (`FPDFText_GetTextObject` and `EPDFText_GetCharGeometry`) plus a third on every
@@ -250,12 +269,14 @@ object-key change, so 8,106 glyphs cost on the order of sixteen thousand crossin
 matching the prediction that render is dominated by PDFium's own bitmap work and that a single
 already-coarse call like `text` has nothing left for coarsening to remove.
 
-Arm c and arm d are indistinguishable on `geometry`: the median gap is under 1 percent (c 1.030 ms,
-d 1.027 ms) and the per-round ratio of d over c runs 0.975x to 1.004x across all seven rounds, a
-tighter spread than the worst same-arm, same-workload round-to-round spread measured anywhere in
-this run (1.23x on `a/null-peek`). On `search`, the two arms are not indistinguishable: arm c beat
-arm d in every one of the seven rounds, by 4 to 10 percent (per-round ratio of d over c ran 1.038x
-to 1.099x), and that gap is larger than either arm's own round-to-round spread. This is the one
+Arm c and arm d are indistinguishable on `geometry`: the median gap is under half a percent (c
+1.055 ms, d 1.050 ms) and the per-round ratio of d over c runs 0.977x to 1.029x across all seven
+rounds, a tighter spread than the worst same-arm, same-workload round-to-round spread measured
+anywhere in this run (1.28x on `d/geometry-copyout`). On `search`, the two arms are close to
+indistinguishable but not quite: arm c beat arm d in six of the seven rounds, by 4 to 9 percent
+(per-round ratio of d over c ran 1.046x to 1.088x over those six); round 1 is the exception, where
+arm d was faster instead, by about 3 percent (31.51 µs against 32.35 µs). That gap is larger than
+either arm's own round-to-round spread in the rounds where it shows up. This is the one
 place in this benchmark where a consistent, repeatable difference between the Rust and C++
 implementations of the same coarse operation shows up. It is a difference between
 `rs_search_page` and `cc_search_page` specifically, on this fixture's roughly six hundred search
@@ -356,39 +377,42 @@ fixture: examples/snippet-react/public/report.pdf, page 4, 8106 glyphs
 rounds: 7, interleaved a/b/c/d with the order rotated each round, budget 500ms per cell
 ```
 
-Loadavg fell across the run, from 5.60 at round 1 to 3.36 at round 7, monotonically. That is
-background load settling after the gate finished its own PDFium work, not thermal throttling; a
-throttling laptop gets slower over a run, and this one got faster. It matters for one workload below.
+Loadavg, sampled from the first arm scheduled in each round's rotation, ran 2.61, 3.09, 2.91, 3.44,
+4.19, 3.87, 3.57 across the seven rounds: it rose through the first five rounds and eased off in the
+last two, not the monotonic fall the previous sitting recorded. That trend does not by itself rule
+out thermal drift the way a falling loadavg would; the round-to-round pattern on one workload below
+is the more direct evidence, and is discussed there on its own terms rather than argued from
+loadavg.
 
 ### Median nanoseconds per call, by workload and arm
 
 | workload | a direct | b rust thin | c rust coarse | d c++ coarse | b/a | c/a | d/a |
 |---|---|---|---|---|---|---|---|
-| `null-call` | 191.0 ns | 182.4 ns | n/a | n/a | 0.95x | n/a | n/a |
-| `null-peek` | 38.0 ns | 14.7 ns | n/a | n/a | 0.39x | n/a | n/a |
-| `null-readbytes` | 268.5 ns | 280.9 ns | n/a | n/a | 1.05x | n/a | n/a |
-| `geometry` | 8.374 ms | 4.000 ms | 563.25 µs | 555.48 µs | 0.48x | 0.07x | 0.07x |
-| `geometry-copyout` | n/a | n/a | 66.69 µs | 66.23 µs | n/a | n/a | n/a |
-| `text` | 122.94 µs | 122.74 µs | 123.52 µs | 123.21 µs | 1.00x | 1.00x | 1.00x |
-| `render-1x` | 1.508 ms | 1.510 ms | 1.503 ms | 1.505 ms | 1.00x | 1.00x | 1.00x |
-| `render-4x` | 8.250 ms | 8.235 ms | 8.178 ms | 8.211 ms | 1.00x | 0.99x | 1.00x |
-| `render-copyout-4x` | 1.580 ms | 2.280 ms | 2.270 ms | 2.251 ms | 1.44x | 1.44x | 1.42x |
-| `search` | 80.17 µs | 62.10 µs | 38.36 µs | 38.24 µs | 0.77x | 0.48x | 0.48x |
+| `null-call` | 205.1 ns | 191.5 ns | n/a | n/a | 0.93x | n/a | n/a |
+| `null-peek` | 38.8 ns | 14.9 ns | n/a | n/a | 0.38x | n/a | n/a |
+| `null-readbytes` | 273.0 ns | 288.6 ns | n/a | n/a | 1.06x | n/a | n/a |
+| `geometry` | 8.612 ms | 4.148 ms | 577.05 µs | 579.94 µs | 0.48x | 0.07x | 0.07x |
+| `geometry-copyout` | n/a | n/a | 71.12 µs | 71.96 µs | n/a | n/a | n/a |
+| `text` | 126.82 µs | 126.38 µs | 128.21 µs | 128.88 µs | 1.00x | 1.01x | 1.02x |
+| `render-1x` | 1.546 ms | 1.563 ms | 1.560 ms | 1.553 ms | 1.01x | 1.01x | 1.00x |
+| `render-4x` | 8.491 ms | 8.501 ms | 8.510 ms | 8.569 ms | 1.00x | 1.00x | 1.01x |
+| `render-copyout-4x` | 1.634 ms | 2.380 ms | 2.493 ms | 2.508 ms | 1.46x | 1.53x | 1.54x |
+| `search` | 81.83 µs | 64.23 µs | 39.65 µs | 39.83 µs | 0.78x | 0.48x | 0.49x |
 
 ### p95 of batch means, same cells
 
 | workload | a direct | b rust thin | c rust coarse | d c++ coarse |
 |---|---|---|---|---|
-| `null-call` | 203.3 ns | 194.8 ns | n/a | n/a |
-| `null-peek` | 41.2 ns | 15.1 ns | n/a | n/a |
-| `null-readbytes` | 279.6 ns | 288.7 ns | n/a | n/a |
-| `geometry` | 9.763 ms | 4.375 ms | 602.66 µs | 602.09 µs |
-| `geometry-copyout` | n/a | n/a | 74.70 µs | 72.44 µs |
-| `text` | 126.91 µs | 125.92 µs | 132.71 µs | 126.31 µs |
-| `render-1x` | 1.538 ms | 1.651 ms | 1.532 ms | 1.536 ms |
-| `render-4x` | 8.386 ms | 8.423 ms | 8.301 ms | 8.315 ms |
-| `render-copyout-4x` | 1.684 ms | 2.665 ms | 2.730 ms | 2.555 ms |
-| `search` | 81.85 µs | 63.30 µs | 39.45 µs | 39.32 µs |
+| `null-call` | 220.8 ns | 203.0 ns | n/a | n/a |
+| `null-peek` | 40.6 ns | 15.2 ns | n/a | n/a |
+| `null-readbytes` | 291.6 ns | 303.1 ns | n/a | n/a |
+| `geometry` | 9.825 ms | 4.586 ms | 642.67 µs | 673.12 µs |
+| `geometry-copyout` | n/a | n/a | 91.80 µs | 94.34 µs |
+| `text` | 133.84 µs | 135.06 µs | 137.21 µs | 135.08 µs |
+| `render-1x` | 1.640 ms | 1.639 ms | 1.608 ms | 1.634 ms |
+| `render-4x` | 8.877 ms | 8.835 ms | 8.736 ms | 8.938 ms |
+| `render-copyout-4x` | 1.779 ms | 3.180 ms | 6.621 ms | 6.830 ms |
+| `search` | 84.90 µs | 67.07 µs | 40.70 µs | 42.16 µs |
 
 There is no wasm-byte-size table here; `bench/compare.mjs --native` skips it, since `wasmBytes` is
 null on every native result file.
@@ -396,21 +420,30 @@ null on every native result file.
 Worst round-to-round spread (max/min across the seven rounds, same arm and workload):
 
 ```
-c/render-copyout-4x 1.68x, a/render-copyout-4x 1.24x, b/null-call 1.17x
+c/render-copyout-4x 1.99x, a/render-copyout-4x 1.80x, d/render-copyout-4x 1.20x
 ```
 
-`bench/compare.mjs` treats a spread past about 1.3x as a thermal-drift signal, and `render-copyout-4x`
-on arm c crosses it. It is not thermal drift: loadavg fell across the run rather than rising, and the
-spread is not spread across the seven rounds evenly. Round 1 ran high on this one workload for every
-arm, most sharply for c (3.754 ms against a 2.233-2.367 ms range for rounds 2-7, round 1 running 65
-percent above the mean of the rest) and a (1.939 ms against 1.568-1.591 ms, 23 percent above), and
-more mildly for d (8 percent above) and b (2 percent above). `render-copyout-4x` copies the full 4x
-bitmap out with `mem.readBytes`, roughly 31 MB per call, the single largest copy in this benchmark;
-a one-round effect concentrated on that one workload, at the start of the run while background load
-was still at its highest (loadavg 5.60), reads as a cold-cache or first-large-allocation effect
-rather than thermal drift, which would grow across the run rather than shrink after round 1.
-Excluding round 1, the spread on that cell is under 1.09x for every arm (1.01x for a, 1.08x for b,
-1.06x for c, 1.06x for d).
+`bench/compare.mjs` treats a spread past about 1.3x as a thermal-drift signal, and three of the four
+arms cross it on `render-copyout-4x`, worse than the previous sitting recorded on this same cell
+(1.68x). The loadavg trend logged above does not cleanly rule out thermal drift the way it did last
+time (loadavg rose rather than fell through most of this run), so this run leans on the shape of the
+per-round numbers rather than on loadavg to make the case. That shape does not match gradual
+throttling. Arm a and arm c both spike hardest in round 1 (a at 2.890 ms against 1.605-1.641 ms for
+rounds 2-7, about 78 percent above that range's mean; c at 4.556 ms against 2.293-3.027 ms, about 79
+percent above), which a monotonic thermal effect would not produce on its own. Arms b and d do not
+peak in round 1 at all: b peaks in round 2 (2.657 ms against 2.327-2.545 ms elsewhere, about 11
+percent above the rest) and d peaks in round 2 as well (2.920 ms against 2.440-2.665 ms elsewhere,
+about 16 percent above the rest). `render-copyout-4x` copies the full 4x bitmap out with
+`mem.readBytes`, roughly 31 MB per call, the single largest copy in this benchmark, and a transient
+concentrated in the first one or two rounds, differently timed per arm, reads more like a cold-cache
+or first-large-allocation effect than like drift that should grow smoothly across all seven rounds
+and hit every arm at the same time. It is a weaker case than the previous sitting could make,
+because excluding round 1 alone does not fully tame it this time: arm c's own round 2 value
+(3.027 ms) still leaves a 1.32x spread across rounds 2-7, over the compare.mjs line by itself.
+Excluding round 1, the remaining spread is 1.02x for a, 1.14x for b, 1.32x for c, and 1.20x for d.
+Treat this cell's absolute numbers as noisier in this run than elsewhere in this document, and treat
+the `render-copyout-4x` finding below (arm a diverging from b, c, and d) as the only thing this cell
+is used to support.
 
 ### The a-versus-b confound
 
@@ -420,8 +453,8 @@ binding framework generating the N-API glue, and the pointer representation cros
 every argument. The wasm run could report a wrapper tax for arm b (1 to 4 percent, see "What the
 numbers say" above) because all four wasm arms share one Emscripten export surface; nothing else
 changed. That precondition does not hold here, and neither `b/a` nor any ratio computed against arm
-a in the table above should be read as a native wrapper tax. Reporting `b/a`'s 0.95x on `null-call`
-as "the Rust wrapper is 5 percent cheaper natively" would repeat the exact mistake `null-call`'s wasm
+a in the table above should be read as a native wrapper tax. Reporting `b/a`'s 0.93x on `null-call`
+as "the Rust wrapper is 7 percent cheaper natively" would repeat the exact mistake `null-call`'s wasm
 write-up already flagged, with one more confound layered on.
 
 The two clean comparisons are the ones holding language and framework fixed: b versus c (`napi-rs`
@@ -434,8 +467,8 @@ as the wasm section above quantifies). The coarsening numbers below use both pai
 one is more trustworthy where it matters.
 
 That said, the size of the gap is worth recording as a lead rather than only as a nuisance. On
-`geometry` arm a takes 8.374 ms and arm b 4.000 ms for the same PDFium calls in the same order, and
-on `null-peek` 38.0 ns against 14.7 ns. Whatever the cause, something in the shipping addon's
+`geometry` arm a takes 8.612 ms and arm b 4.148 ms for the same PDFium calls in the same order, and
+on `null-peek` 38.8 ns against 14.9 ns. Whatever the cause, something in the shipping addon's
 per-call path costs roughly twice what the `napi-rs` path costs, and it costs it on the read that
 `PageGeometryReader` performs up to twenty-one times per glyph through `mem.peek` at
 `packages/engine/runtime/src/native/native-runtime.ts:57`. I cannot say from these numbers how much
@@ -454,18 +487,18 @@ was that the native `geometry` win would be larger than wasm's, "plausibly past 
 `mem.peek` is a full N-API round trip natively and a typed-array read in wasm. It is larger, by more
 than the prediction's own floor.
 
-Held within one language and framework, thin-to-coarse coarsening wins 7.10x on this fixture (arm b
-at 4.000 ms against arm c at 563.25 µs, both `napi-rs`) and 15.08x held within C++ (arm a at 8.374 ms
-against arm d at 555.48 µs, both `node-addon-api`, modulo the BigInt caveat above, which likely
-inflates arm a's absolute cost and therefore this second number somewhat). Either way, this is 2.7x
-to 5.7x larger than wasm's `geometry` win of about 2.6x. The direction and the rough size both match
+Held within one language and framework, thin-to-coarse coarsening wins 7.19x on this fixture (arm b
+at 4.148 ms against arm c at 577.05 µs, both `napi-rs`) and 14.85x held within C++ (arm a at 8.612 ms
+against arm d at 579.94 µs, both `node-addon-api`, modulo the BigInt caveat above, which likely
+inflates arm a's absolute cost and therefore this second number somewhat). Either way, this is 2.8x
+to 5.8x larger than wasm's `geometry` win of about 2.6x. The direction and the rough size both match
 the prediction.
 
 The mechanism is visible in the null-probe cells, but it is not the same peek for both pairings.
-Arm a's `mem.peek32` costs 38.0 ns natively against 3.8 ns in wasm, and that is the pairing behind
-the 15.08x figure. Arm b's `mem.peek32` costs 14.7 ns natively against 3.9 ns in wasm, roughly 3.9x,
-and that is the pairing behind 7.10x. Ten times is the right multiple for arm a's peek and the wrong
-one for arm b's.
+Arm a's `mem.peek32` costs 38.8 ns natively against 4.0 ns in wasm, roughly 9.7x, and that is the
+pairing behind the 14.85x figure. Arm b's `mem.peek32` costs 14.9 ns natively against 4.0 ns in
+wasm, roughly 3.7x, and that is the pairing behind 7.19x. Nine or ten times is close to the right
+multiple for arm a's peek; well under four times is the multiple for arm b's.
 
 Arm a's peek is expensive for reasons that have nothing to do with coarsening. `bench/arm.mjs:243`
 calls `raw.peek(P(p), 'i32')`, converting the pointer to a BigInt through `P()` and dispatching on a
@@ -473,59 +506,62 @@ JavaScript string type tag on every call, the same shape as the shipping addon's
 at `packages/engine/runtime/src/native/native-runtime.ts:57`. `readGlyphRaw` (`bench/workloads.mjs`)
 makes up to 21 such peeks per glyph, on top of the object-key and font-size calls every glyph pays;
 over 8,106 glyphs that call happens on the order of 170,000 times in one `geometry` iteration, and
-`rs_read_page_geometry` collapses all of it into one crossing. So the 15.08x figure prices
+`rs_read_page_geometry` collapses all of it into one crossing. So the 14.85x figure prices
 string-tag dispatch, BigInt marshalling, and node-addon-api's own per-call cost together, not
 "coarsening held within C++" by itself; arm d's coarse call never goes through arm a's peek path, so
 none of those three costs is shared between the two arms being compared. That is three distinct
-effects bundled into one number, not one effect at a larger scale. The 7.10x figure is the more
+effects bundled into one number, not one effect at a larger scale. The 7.19x figure is the more
 trustworthy of the two: arm b's peek is a direct `f64` call into `napi-rs` with no string dispatch
 and no BigInt conversion, so it avoids all three.
 
 `geometry-copyout` gives one more data point for the same story. It isolates the cost of a full
-memcpy readback of the packed record buffer (908 KB): 66.69 µs (c) and 66.23 µs (d) natively against
-19.54 µs and 19.00 µs in wasm, roughly 3.4x the cost for the same number of bytes. `view_buffer`'s
+memcpy readback of the packed record buffer (908 KB): 71.12 µs (c) and 71.96 µs (d) natively against
+19.60 µs and 19.68 µs in wasm, roughly 3.6x the cost for the same number of bytes. `view_buffer`'s
 zero-copy design (Fix 1 above) is worth more here than it was in wasm, precisely because the memcpy
 it avoids costs more here than it did there.
 
 ### Search: the prediction did not hold
 
 The wasm write-up's search win was 3.1x to 3.3x. Held within one language and framework, native
-search wins only 1.62x (b at 62.10 µs, c at 38.36 µs, both `napi-rs`) and 2.10x held within C++ (a at
-80.17 µs, d at 38.24 µs). Both are smaller than wasm's, not larger. This is the one place in this run
+search wins only 1.62x (b at 64.23 µs, c at 39.65 µs, both `napi-rs`) and 2.05x held within C++ (a at
+81.83 µs, d at 39.83 µs). Both are smaller than wasm's, not larger. This is the one place in this run
 where "native's coarsening win is bigger" does not hold, and it should be reported as a real result,
 not smoothed over to match the geometry finding or the pre-registered prediction.
 
 The likely reason is visible in the same null-probe cells that explain `geometry`. `searchThin`
 (`bench/workloads.mjs`) is dominated by function calls, not peeks: `FPDFText_FindNext`,
 `GetSchResultIndex`, `GetSchCount`, `CountRects`, and `GetRect` per hit, against roughly six hundred
-hits on this fixture, with only four `peekF64` calls per matched rect. `null-call` costs 191.0 ns
-natively against 343.9 ns in wasm for arm a, a native call costing roughly half a wasm one on this
-machine. `search`'s thin loop is call-bound rather than peek-bound, and the operation being
+hits on this fixture, with only four `peekF64` calls per matched rect. `null-call` costs 205.1 ns
+natively against 350.6 ns in wasm for arm a, a native call costing a bit over half (0.58x) a wasm
+one on this machine. `search`'s thin loop is call-bound rather than peek-bound, and the operation
+being
 collapsed away was already cheaper natively than it was in wasm, so there is less to win by
 collapsing it. This is inferred from the shape of the two loops and the null-probe numbers, not
 measured directly cell for cell, and it would take a dedicated per-call-type breakdown to confirm.
 
 ### Arms c and d: still indistinguishable, and more so than in wasm
 
-`geometry`'s per-round ratio of d over c runs 0.981x to 1.015x across the seven rounds, tighter than
-this run's own worst same-arm spread (1.24x on `a/render-copyout-4x`, excluding the round-1 anomaly
-discussed above). `search`'s per-round ratio runs 0.955x to 1.010x, with no consistent direction:
-d beats c in four of the seven rounds and c beats d in three. That is a change from wasm, where arm c
-beat arm d in all seven rounds on `search`, by 4 to 10 percent, a small but repeatable gap the wasm
-write-up called out as the one place a language difference showed up. That gap is gone natively.
+`geometry`'s per-round ratio of d over c runs 0.994x to 1.024x across the seven rounds, tighter than
+this run's own worst same-arm spread (1.99x on `c/render-copyout-4x`, discussed above, or 1.20x on
+`d/render-copyout-4x` excluding that cell's round-1/round-2 anomaly). `search`'s per-round ratio
+runs 0.965x to 1.022x, with no consistent direction: c beats d in four of the seven rounds and d
+beats c in three. That is a change from wasm, where arm c beat arm d in six of the seven rounds on
+`search`, by 4 to 9 percent, a small but mostly repeatable gap the wasm write-up called out as the
+one place a language difference showed up. That gap is gone natively.
 Whether it went away because the operation changed (a native coarse call does more per crossing: it
 also builds the zero-copy `ArrayBuffer` view, see the caveat below) or because it was never a
 language effect to begin with and wasm's Binaryen `-O3` pass treated the two static libraries
 differently is not something this run can separate; the honest statement is that the wasm-only
 finding did not reproduce here.
 
-`text`, `render-1x`, and `render-4x` land within 1 percent across all four arms, matching the
+`text`, `render-1x`, and `render-4x` land within about 2 percent across all four arms, matching the
 prediction that rendering is dominated by PDFium's own bitmap work and that an already-coarse call
 like `text` has nothing left for coarsening to remove, the same result wasm found.
 
-`render-copyout-4x` is the one workload where arm a and arms b/c/d visibly diverge (1.580 ms against
-2.251-2.280 ms; these medians include the round-1 outlier discussed above, which affects a and c but
-does not change which side of the gap either one falls on), and it should not be read as a
+`render-copyout-4x` is the one workload where arm a and arms b/c/d visibly diverge (1.634 ms against
+2.380-2.508 ms; these medians include the round-1/round-2 anomaly discussed above, which affects all
+four arms to varying degrees but does not change which side of the gap either one falls on), and it
+should not be read as a
 coarse-versus-thin or Rust-versus-C++ result. Arms b, c, and d all read their bytes through
 `napi-arms.node`'s `readBytes`; arm a uses its own shipping addon's implementation. The gap is
 consistent with the two addons implementing that one function differently, not with anything this

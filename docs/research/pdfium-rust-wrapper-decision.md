@@ -12,7 +12,11 @@ more useful under the premise that actually holds.
 Full tables and caveats are in [`pdfium-rust-spike/RESULTS.md`](../../pdfium-rust-spike/RESULTS.md).
 One machine (Apple M4 Max, Node 24.20.0, emsdk 3.1.72, rustc 1.98.0), one fixture page
 (`examples/snippet-react/public/report.pdf` page 4, 8,106 glyphs), seven interleaved rounds with arm
-order rotated per round, behind a fairness gate proving all four arms compute identical answers.
+order rotated per round, behind a fairness gate proving all four arms compute identical answers. The
+numbers below are from a re-run of that benchmark: a bug in `bench/run.mjs` had cleared the wasm
+results out from under the first published wasm tables, so this document, `RESULTS.md`, and
+`pdfium-rust-wrapper-benchmarks.md` were all updated together from one sitting with committed raw
+data behind every figure.
 
 ## What the numbers mean now
 
@@ -21,7 +25,7 @@ Rust (c), and the same four in C++ (d). Read under the port, three results matte
 
 **The expensive boundary is the one the port removes.** Arms c and d ran the same roughly 25,000
 PDFium calls per page as arm a. The difference is that they made them inside the module instead of
-across it, and that alone bought 2.6x in wasm and 7.10x natively on glyph geometry. Once
+across it, and that alone bought 2.6x in wasm and 7.19x natively on glyph geometry. Once
 `PageGeometryReader` is Rust, its per-glyph loop is Rust calling C in-process. Those 25,000 crossings
 stop existing. We don't have to engineer that win, we inherit it.
 
@@ -32,7 +36,7 @@ JavaScript through `cwrap`, where the Rust core will be calling straight through
 style binding is not a thing to optimize. Build it the boring way.
 
 **Which language owns the loop doesn't matter.** Arms c and d are indistinguishable: `d/c` between
-0.975 and 1.004 on geometry in wasm, and inseparable on every native workload. This used to be an
+0.977 and 1.029 on geometry in wasm, and inseparable on every native workload. This used to be an
 argument for keeping the loop in C++. Under a Rust core it's the opposite, and better: the loop can
 live wherever it's cheapest to maintain, and that's Rust, next to the rest of `engine-services`, at
 no measured performance cost.
@@ -54,13 +58,13 @@ no measured performance cost.
 
 3. **Make the JS-to-Rust boundary coarse, per operation.** This is the boundary that still costs
    something, and the numbers put a price on getting it wrong: a per-glyph JS boundary costs 2.6x to
-   7.10x more than a per-page one. `packages/engine/core/src/wire/worker-protocol.ts` is already
+   7.19x more than a per-page one. `packages/engine/core/src/wire/worker-protocol.ts` is already
    shaped this way, one message per operation, so the existing contract is the right one to keep.
    Resist any convenience API that reintroduces a per-item JS call.
 
-4. **On Node, use `napi-rs` with `f64` pointers, not BigInt.** The shipping addon takes 8.374 ms on
-   glyph geometry where the `napi-rs` addon takes 4.000 ms for the same PDFium calls in the same
-   order, and 38.0 ns against 14.7 ns on a single `peek`. We can't attribute that cleanly, because
+4. **On Node, use `napi-rs` with `f64` pointers, not BigInt.** The shipping addon takes 8.612 ms on
+   glyph geometry where the `napi-rs` addon takes 4.148 ms for the same PDFium calls in the same
+   order, and 38.8 ns against 14.9 ns on a single `peek`. We can't attribute that cleanly, because
    the comparison changed the binding framework, the pointer representation, and the string type-tag
    dispatch at `packages/engine/runtime/src/native/native-runtime.ts:57` all at once. A coarse
    boundary makes it mostly moot, which is another reason to prefer one, but the default should be
@@ -84,7 +88,7 @@ no measured performance cost.
 If wave 2 of the port is far out, there's a case for adding a coarse `EPDF_GetPageGeometryFull` to
 the fork now as a bridge. `pdfium-rust-spike/cpp/ops.cc`'s `cc_read_page_geometry` is a working
 reference that already passes the fairness gate against the current reader, so it's close to free to
-land, and it buys 2.6x on web and 7.10x on Node against today's TypeScript reader.
+land, and it buys 2.6x on web and 7.19x on Node against today's TypeScript reader.
 
 The cost is that it's throwaway. Once the Rust core owns `PageGeometryReader`, that function has no
 caller, and it's a public C API in a fork we'd then need a reason to remove. Worth it if the port is

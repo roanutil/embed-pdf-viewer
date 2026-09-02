@@ -1,0 +1,101 @@
+{
+  "arm": "c",
+  "round": 3,
+  "order": [
+    "c",
+    "d",
+    "a",
+    "b"
+  ],
+  "native": false,
+  "env": {
+    "runtime": "node",
+    "node": "v24.20.0",
+    "platform": "darwin 25.6.0",
+    "arch": "arm64",
+    "cpu": "Apple M4 Max",
+    "cores": 16,
+    "loadavg": 3.72119140625,
+    "note": "macOS thermal throttling is not controllable; rounds are interleaved to spread drift."
+  },
+  "emsdk": "emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 3.1.72 (437140d149d9c977ffc8b09dbaf9b0f5a02db190)",
+  "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+  "fixture": {
+    "pageIndex": 4,
+    "glyphCount": 8106
+  },
+  "wasmBytes": 4681488,
+  "sink": 55289082,
+  "cells": {
+    "geometry": {
+      "ns": 1059180.6666666723,
+      "p95": 1118194.466666671,
+      "min": 939847.3333333186,
+      "max": 1446083.3333333388,
+      "batches": 157,
+      "batch": 3,
+      "iters": 471,
+      "warmed": 169
+    },
+    "geometry-copyout": {
+      "ns": 19842.759124087992,
+      "p95": 23160.649635036843,
+      "min": 17076.94160583981,
+      "max": 28768.854014598437,
+      "batches": 185,
+      "batch": 137,
+      "iters": 25345,
+      "warmed": 9542
+    },
+    "text": {
+      "ns": 121767.50000000538,
+      "p95": 127691.99799999662,
+      "min": 112604.99999999412,
+      "max": 130413.36000000229,
+      "batches": 164,
+      "batch": 25,
+      "iters": 4100,
+      "warmed": 1610
+    },
+    "render-1x": {
+      "ns": 2866125.50000018,
+      "p95": 3005895.5000000196,
+      "min": 2678625.0000000107,
+      "max": 3062290.999999732,
+      "batches": 174,
+      "batch": 1,
+      "iters": 174,
+      "warmed": 68
+    },
+    "render-4x": {
+      "ns": 16509332.99999997,
+      "p95": 16851999.50000015,
+      "min": 15990958.000000319,
+      "max": 16928834.00000028,
+      "batches": 31,
+      "batch": 1,
+      "iters": 31,
+      "warmed": 13
+    },
+    "render-copyout-4x": {
+      "ns": 587316.7000000649,
+      "p95": 653661.1399999674,
+      "min": 544483.39999999,
+      "max": 715533.4000000039,
+      "batches": 168,
+      "batch": 5,
+      "iters": 840,
+      "warmed": 303
+    },
+    "search": {
+      "ns": 30305.840206184846,
+      "p95": 31755.73298969173,
+      "min": 28136.164948460348,
+      "max": 34572.597938151994,
+      "batches": 170,
+      "batch": 97,
+      "iters": 16490,
+      "warmed": 6368
+    }
+  }
+}
