@@ -130,6 +130,50 @@ export async function wasmBytes(name) {
 }
 
 /**
+ * Fix 1: confirm `view_buffer` (crates/napi-arms/src/lib.rs) actually hands
+ * back a zero-copy view before trusting any coarse-arm number.
+ *
+ * `env.create_arraybuffer_with_borrowed_data` maps to
+ * `napi_create_external_arraybuffer`. If the runtime returns
+ * `napi_no_external_buffers_allowed` (Electron, or
+ * `NODE_API_DISABLE_EXTERNAL_BUFFERS`), napi-rs silently falls back to
+ * `napi_create_arraybuffer` plus a `ptr::copy_nonoverlapping` -- a full
+ * memcpy per call, no error, no log -- which would restore the exact copy
+ * asymmetry the coarse arms were built to remove, invisibly. Confirmed to
+ * NOT happen on Node 24.20.0; this exists for whatever runs this next.
+ *
+ * A previous version of this file "proved" zero-copy by writing through
+ * `mem.writeBytes` and then reading the pointer back -- that only shows the
+ * pointer is readable, and would pass even over a copy, since the write
+ * happened before the copy was ever made. The only direction that actually
+ * distinguishes a view from a copy is to mutate THROUGH THE VIEW and read
+ * the change back through the original pointer.
+ */
+function probeExternalBuffers(mem) {
+  const ptr = mem.alloc(8);
+  try {
+    mem.writeBytes(ptr, new Uint8Array([0xab, 0xab, 0xab, 0xab]));
+    const view = mem.viewBuffer(ptr, 4);
+    const bytes = new Uint8Array(view.buffer, view.byteOffset, 4);
+    bytes[0] = 0xcd; // mutate through the view, not through mem.writeBytes
+    const readBack = mem.peek32(ptr) & 0xff;
+    if (readBack !== 0xcd) {
+      throw new Error(
+        'native arm: view_buffer returned a COPY, not a zero-copy view (wrote 0xcd through ' +
+          `the view, read back 0x${readBack.toString(16)} through the pointer). ` +
+          'napi_create_external_arraybuffer must have fallen back to napi_create_arraybuffer ' +
+          '+ memcpy (napi_no_external_buffers_allowed), which napi-rs does with no error and ' +
+          'no log. External buffers are unavailable in this runtime, so arms c and d would be ' +
+          'measured against an extra memcpy per call that the design was meant to remove -- ' +
+          'refusing to run rather than publish unfair numbers.',
+      );
+    }
+  } finally {
+    mem.free(ptr);
+  }
+}
+
+/**
  * Native arms. Arm a is the addon that ships, from
  * packages/engine/runtime/npm/<target>/lib/pdf-runtime.node, which uses BigInt
  * pointers; arms b and c are one napi-rs addon using f64 pointers. The
@@ -318,6 +362,7 @@ export async function loadNativeArm(name, target = 'darwin-arm64') {
       return out;
     },
   };
+  probeExternalBuffers(mem);
   fn.FPDF_InitLibrary();
   return { name, m: addon, fn, mem, close: () => fn.FPDF_DestroyLibrary() };
 }

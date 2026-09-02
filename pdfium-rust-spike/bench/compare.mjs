@@ -2,6 +2,12 @@
 /**
  * Medians across interleaved rounds, printed as a markdown table ready to
  * paste into RESULTS.md. Ratios are against arm a, which is what ships today.
+ *
+ * `--native` reads only the `native-<arm>-r<round>.json` files bench/node.mjs
+ * writes under a native run, ignoring the wasm `<arm>-r<round>.json` files
+ * that may also be sitting in bench/results/ from an earlier wasm run (and
+ * vice versa without the flag), and skips the wasm-size table: `wasmBytes` is
+ * null in every native result file, since there is no wasm module to size.
  */
 import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -17,9 +23,15 @@ const LABEL = {
   d: 'd c++ coarse',
 };
 
-const files = readdirSync(RESULTS).filter((f) => f.endsWith('.json'));
+const native = process.argv.includes('--native');
+
+const files = readdirSync(RESULTS).filter((f) =>
+  native ? f.startsWith('native-') && f.endsWith('.json') : !f.startsWith('native-') && f.endsWith('.json'),
+);
 if (files.length === 0) {
-  console.error('no results; run: node bench/run.mjs');
+  console.error(
+    `no ${native ? 'native ' : ''}results; run: node bench/run.mjs${native ? ' --native' : ''}`,
+  );
   process.exit(1);
 }
 
@@ -54,7 +66,7 @@ const fmt = (ns) => {
   return `${(ns / 1_000_000).toFixed(3)} ms`;
 };
 
-console.log(`\nNode ${header.env.node} · ${header.env.cpu} · ${header.env.platform}`);
+console.log(`\n${native ? 'NATIVE · ' : ''}Node ${header.env.node} · ${header.env.cpu} · ${header.env.platform}`);
 console.log(`emsdk ${header.emsdk} · ${header.rustc}`);
 console.log(
   `fixture: page ${header.fixture.pageIndex}, ${header.fixture.glyphCount} glyphs · ` +
@@ -80,14 +92,16 @@ for (const id of ids) {
   );
 }
 
-console.log(`\n| arm | wasm bytes | delta vs a |`);
-console.log(`|---|---|---|`);
-const baseBytes = byArm.a?.[0]?.wasmBytes ?? NaN;
-for (const a of ARMS) {
-  const b = byArm[a]?.[0]?.wasmBytes;
-  if (!Number.isFinite(b)) continue;
-  const delta = a === 'a' ? '—' : `+${(((b - baseBytes) / 1024).toFixed(1))} kB`;
-  console.log(`| ${LABEL[a]} | ${b.toLocaleString()} | ${delta} |`);
+if (!native) {
+  console.log(`\n| arm | wasm bytes | delta vs a |`);
+  console.log(`|---|---|---|`);
+  const baseBytes = byArm.a?.[0]?.wasmBytes ?? NaN;
+  for (const a of ARMS) {
+    const b = byArm[a]?.[0]?.wasmBytes;
+    if (!Number.isFinite(b)) continue;
+    const delta = a === 'a' ? '—' : `+${(((b - baseBytes) / 1024).toFixed(1))} kB`;
+    console.log(`| ${LABEL[a]} | ${b.toLocaleString()} | ${delta} |`);
+  }
 }
 
 // p95 table: the harness's p95 is the p95 of BATCH MEANS, not of individual

@@ -15,11 +15,23 @@ use napi::bindgen_prelude::*;
 use napi::JsArrayBuffer;
 use napi_derive::napi;
 use pdfium_sys::*;
+use std::collections::HashMap;
+use std::sync::{LazyLock, Mutex};
 
 #[inline]
 fn p(v: f64) -> usize {
     v as usize
 }
+
+/// Byte length handed to `alloc` for every pointer it has returned, so
+/// `view_buffer` (Fix 2) can refuse a `len` past what the caller is actually
+/// entitled to instead of aliasing whatever foreign memory happens to sit
+/// past the allocation. Never pruned: `free_ptr` below already deliberately
+/// leaks for the same reason (a fixed, small set of scratch buffers,
+/// allocated once), so an entry here outliving its allocation costs nothing
+/// this benchmark's lifetime notices.
+static ALLOCATIONS: LazyLock<Mutex<HashMap<usize, usize>>> =
+    LazyLock::new(|| Mutex::new(HashMap::new()));
 
 #[napi]
 pub fn init_library() {
@@ -37,12 +49,13 @@ pub fn destroy_library() {
 /// macOS malloc happens to return 16-byte-aligned memory in practice.
 #[napi]
 pub fn alloc(bytes: u32) -> f64 {
-    let layout = std::alloc::Layout::from_size_align(bytes.max(1) as usize, 16)
-        .expect("invalid allocation layout");
+    let size = bytes.max(1) as usize;
+    let layout = std::alloc::Layout::from_size_align(size, 16).expect("invalid allocation layout");
     let ptr = unsafe { std::alloc::alloc(layout) };
     if ptr.is_null() {
         std::alloc::handle_alloc_error(layout);
     }
+    ALLOCATIONS.lock().unwrap().insert(ptr as usize, size);
     ptr as usize as f64
 }
 
@@ -226,7 +239,30 @@ pub fn view_buffer(env: Env, ptr: f64, len: u32) -> Result<JsArrayBuffer> {
     if len == 0 {
         return Ok(env.create_arraybuffer(0)?.value);
     }
-    let data = p(ptr) as *mut u8;
+    let addr = p(ptr);
+    // Fix 2: `len` used to be trusted outright. A negative record count from
+    // a coarse function (there is currently no code path that produces one,
+    // but nothing enforced it either) would wrap to roughly 4 GiB as a u32
+    // and hand back an external ArrayBuffer spanning 4 GiB of memory this
+    // addon does not own, silently readable from JS, where wasm's DataView
+    // would throw RangeError instead. Bound `len` against the allocation the
+    // caller actually owns rather than trusting it, so the failure mode here
+    // is a thrown JS error, not silent corruption.
+    match ALLOCATIONS.lock().unwrap().get(&addr).copied() {
+        Some(cap) if (len as usize) <= cap => {}
+        Some(cap) => {
+            return Err(Error::from_reason(format!(
+                "view_buffer: len {len} exceeds the {cap}-byte allocation at this pointer"
+            )));
+        }
+        None => {
+            return Err(Error::from_reason(
+                "view_buffer: pointer was not returned by alloc(); refusing to hand out a \
+                 view whose size this addon cannot verify",
+            ));
+        }
+    }
+    let data = addr as *mut u8;
     let view =
         unsafe { env.create_arraybuffer_with_borrowed_data(data, len as usize, (), |_, _| {}) }?;
     Ok(view.value)

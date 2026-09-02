@@ -12,11 +12,17 @@
  * the seven rounds, so no arm is systematically first or last. Only medians
  * across interleaved, rotated rounds are comparable; a single round's numbers
  * are not.
+ *
+ * `--native` runs the same protocol over the native arms instead of the wasm
+ * ones: same gate-before-timing rule, same interleaving, same per-round
+ * rotation. It differs only in which build artifacts it checks for, which
+ * canonical-answer loader the gate uses, and the `native-` prefix on its
+ * result files (bench/compare.mjs reads the two sets of files separately).
  */
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { canonicalFor, compare } from './gate.mjs';
+import { canonicalFor, canonicalForNative, compare } from './gate.mjs';
 import { GATE_FIXTURES } from './fixture.mjs';
 
 const here = import.meta.dirname;
@@ -27,14 +33,32 @@ const arg = (name, fallback) => {
   const i = process.argv.indexOf(`--${name}`);
   return i === -1 ? fallback : process.argv[i + 1];
 };
+const native = process.argv.includes('--native');
 const rounds = Number(arg('rounds', '7'));
 const budgetMs = Number(arg('budget', '500'));
 
-for (const a of ARMS) {
-  const f = resolve(here, `../build/out/${a}/arm.mjs`);
-  if (!existsSync(f)) {
-    console.error(`arm ${a} is not built: ${f} is missing.\nRun: bash build/link-wasm.sh`);
-    process.exit(1);
+if (native) {
+  // Arm a is packages/engine/runtime's own shipping addon; arms b and c
+  // share one napi-rs addon; arm d additionally needs the cmake-js addon for
+  // its cc_* coarse entries. See bench/arm.mjs's loadNativeArm.
+  const required = [
+    resolve(here, '../../packages/engine/runtime/npm/darwin-arm64/lib/pdf-runtime.node'),
+    resolve(here, '../build/out/native/napi-arms.node'),
+    resolve(here, '../build/out/native/cc-ops.node'),
+  ];
+  for (const f of required) {
+    if (!existsSync(f)) {
+      console.error(`native build artifact missing: ${f}\nRun: bash build/build-native.sh`);
+      process.exit(1);
+    }
+  }
+} else {
+  for (const a of ARMS) {
+    const f = resolve(here, `../build/out/${a}/arm.mjs`);
+    if (!existsSync(f)) {
+      console.error(`arm ${a} is not built: ${f} is missing.\nRun: bash build/link-wasm.sh`);
+      process.exit(1);
+    }
   }
 }
 
@@ -45,13 +69,14 @@ const version = (cmd, args) => {
     return 'unknown';
   }
 };
-const emsdk = version('em++', ['--version']);
+const emsdk = native ? 'n/a (native)' : version('em++', ['--version']);
 const rustc = version('rustc', ['--version']);
 
 // The gate runs FIRST, over all four arms. A wrong arm can be fast, and no
 // timing table shows it. `compare()` returns `{ok, compared}`, not a bool.
+const getCanonical = native ? canonicalForNative : canonicalFor;
 const canonical = {};
-for (const a of ARMS) canonical[a] = await canonicalFor(a);
+for (const a of ARMS) canonical[a] = await getCanonical(a);
 let ok = true;
 let compared = Infinity;
 for (const a of ARMS.slice(1)) {
@@ -70,7 +95,7 @@ const fixtureSummary = GATE_FIXTURES.map(
   ({ label }) => `${label} (${canonical.a.fixtures[label].glyphCount} glyphs)`,
 ).join(', ');
 console.log(
-  `fairness gate: ${ARMS.join(', ')} agree on ${fixtureSummary}, ` +
+  `${native ? 'native ' : ''}fairness gate: ${ARMS.join(', ')} agree on ${fixtureSummary}, ` +
     `${compared} workload${compared === 1 ? '' : 's'} compared\n`,
 );
 
@@ -80,6 +105,8 @@ mkdirSync(RESULTS, { recursive: true });
 for (let r = 1; r <= rounds; r++) {
   // Rotate by round index (Finding 1): round 1 is a,b,c,d; round 2 shifts
   // by one to b,c,d,a; and so on, cycling back to a,b,c,d every four rounds.
+  // Applies identically under --native: rotation is not optional, and the
+  // wasm run is the proof that position within a round biases results.
   const shift = (r - 1) % ARMS.length;
   const order = [...ARMS.slice(shift), ...ARMS.slice(0, shift)];
   console.log(`── round ${r}/${rounds} (order: ${order.join(', ')}) ──`);
@@ -93,6 +120,7 @@ for (let r = 1; r <= rounds; r++) {
         BENCH_BUDGET_MS: String(budgetMs),
         BENCH_EMSDK: emsdk,
         BENCH_RUSTC: rustc,
+        BENCH_NATIVE: native ? '1' : '',
         // Recorded in each round's results JSON so the rotation is auditable.
         BENCH_ORDER: order.join(','),
       },
@@ -102,5 +130,5 @@ for (let r = 1; r <= rounds; r++) {
 
 console.log(
   `\n${readdirSync(RESULTS).length} result files in bench/results. ` +
-    `Now run: node bench/compare.mjs`,
+    `Now run: node bench/compare.mjs${native ? ' --native' : ''}`,
 );

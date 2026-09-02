@@ -289,7 +289,254 @@ What this does not say: it says nothing about `engine-services`, its 16,000-odd 
 they would port. It says nothing about iOS or Android, which is the actual argument for the port in
 [`docs/research/rust-core-port.md`](../docs/research/rust-core-port.md); if every number above
 argued against Rust, the case for the port would be unchanged, because the case was never about web
-performance. It is Node only, wasm only. Native, where `mem.peek` is an N-API round trip rather than
-a typed-array read, is expected to disagree with this, for the reasons in
+performance. This section is Node only, wasm only. `mem.peek` is an N-API round trip natively rather
+than a typed-array read, for the reasons in
 [`docs/research/pdfium-rust-wrapper-benchmarks.md`](../docs/research/pdfium-rust-wrapper-benchmarks.md#native-after),
-and is not measured here.
+and native was expected to disagree with the numbers above. It does, on one workload and not the
+other; see the Native section below.
+
+## Native
+
+Same four arms, same gate, same fixture, same rotation protocol, run against native addons instead
+of wasm modules. Arm a is `packages/engine/runtime`'s own shipping addon, built with
+`node-addon-api` in C++ and taking BigInt pointers. Arms b and c are one `napi-rs` addon built from
+this spike's own Rust crates, taking `f64` pointers. Arm d is a second `node-addon-api` addon
+(`cpp/ops_napi.cc`, built through `build/CMakeLists.txt`) wrapping the same `cpp/ops.cc` the wasm arm
+d uses, also on `f64` pointers.
+
+The native fairness gate ran before any timing, over both gate fixtures, and passed:
+
+```
+native fairness gate: a, b, c, d agree on report-p4 (8106 glyphs), rotated-p0 (31 glyphs), 5 workloads compared
+```
+
+Before that gate ran, `bench/arm.mjs`'s `probeExternalBuffers` confirmed `view_buffer` hands back a
+real zero-copy view rather than a silent copy (see "Fixes applied before this run" below); it passed
+on this Node build, so the coarse-arm numbers below are not paying a hidden memcpy.
+
+Seven rounds, interleaved and rotated by round index exactly as the wasm run was: round 1 ran
+a,b,c,d; round 2 b,c,d,a; round 3 c,d,a,b; round 4 d,a,b,c; round 5 a,b,c,d; round 6 b,c,d,a; round 7
+c,d,a,b. Each result file under `bench/results/native-<arm>-r<round>.json` records the order its own
+round used. `wasmBytes` is `null` in every one of those files; there is no wasm module to size.
+
+### Environment
+
+```
+Node v24.20.0 · Apple M4 Max · darwin 25.6.0
+arch arm64 · 16 cores · rustc 1.98.0 (88d9e12ae, 2026-08-18)
+fixture: examples/snippet-react/public/report.pdf, page 4, 8106 glyphs
+rounds: 7, interleaved a/b/c/d with the order rotated each round, budget 500ms per cell
+```
+
+Loadavg fell across the run, from 5.60 at round 1 to 3.36 at round 7, monotonically. That is
+background load settling after the gate finished its own PDFium work, not thermal throttling; a
+throttling laptop gets slower over a run, and this one got faster. It matters for one workload below.
+
+### Median nanoseconds per call, by workload and arm
+
+| workload | a direct | b rust thin | c rust coarse | d c++ coarse | b/a | c/a | d/a |
+|---|---|---|---|---|---|---|---|
+| `null-call` | 191.0 ns | 182.4 ns | — | — | 0.95x | — | — |
+| `null-peek` | 38.0 ns | 14.7 ns | — | — | 0.39x | — | — |
+| `null-readbytes` | 268.5 ns | 280.9 ns | — | — | 1.05x | — | — |
+| `geometry` | 8.374 ms | 4.000 ms | 563.25 µs | 555.48 µs | 0.48x | 0.07x | 0.07x |
+| `geometry-copyout` | — | — | 66.69 µs | 66.23 µs | — | — | — |
+| `text` | 122.94 µs | 122.74 µs | 123.52 µs | 123.21 µs | 1.00x | 1.00x | 1.00x |
+| `render-1x` | 1.508 ms | 1.510 ms | 1.503 ms | 1.505 ms | 1.00x | 1.00x | 1.00x |
+| `render-4x` | 8.250 ms | 8.235 ms | 8.178 ms | 8.211 ms | 1.00x | 0.99x | 1.00x |
+| `render-copyout-4x` | 1.580 ms | 2.280 ms | 2.270 ms | 2.251 ms | 1.44x | 1.44x | 1.42x |
+| `search` | 80.17 µs | 62.10 µs | 38.36 µs | 38.24 µs | 0.77x | 0.48x | 0.48x |
+
+### p95 of batch means, same cells
+
+| workload | a direct | b rust thin | c rust coarse | d c++ coarse |
+|---|---|---|---|---|
+| `null-call` | 203.3 ns | 194.8 ns | — | — |
+| `null-peek` | 41.2 ns | 15.1 ns | — | — |
+| `null-readbytes` | 279.6 ns | 288.7 ns | — | — |
+| `geometry` | 9.763 ms | 4.375 ms | 602.66 µs | 602.09 µs |
+| `geometry-copyout` | — | — | 74.70 µs | 72.44 µs |
+| `text` | 126.91 µs | 125.92 µs | 132.71 µs | 126.31 µs |
+| `render-1x` | 1.538 ms | 1.651 ms | 1.532 ms | 1.536 ms |
+| `render-4x` | 8.386 ms | 8.423 ms | 8.301 ms | 8.315 ms |
+| `render-copyout-4x` | 1.684 ms | 2.665 ms | 2.730 ms | 2.555 ms |
+| `search` | 81.85 µs | 63.30 µs | 39.45 µs | 39.32 µs |
+
+There is no wasm-byte-size table here; `bench/compare.mjs --native` skips it, since `wasmBytes` is
+null on every native result file.
+
+Worst round-to-round spread (max/min across the seven rounds, same arm and workload):
+
+```
+c/render-copyout-4x 1.68x, a/render-copyout-4x 1.24x, b/null-call 1.17x
+```
+
+`bench/compare.mjs` treats a spread past about 1.3x as a thermal-drift signal, and `render-copyout-4x`
+on arm c crosses it. It is not thermal drift: loadavg fell across the run rather than rising, and the
+spread is not spread across the seven rounds evenly. Round 1 ran high on this one workload for every
+arm, most sharply for c (3.754 ms against a 2.233-2.367 ms range for rounds 2-7, round 1 running 65
+percent above the mean of the rest) and a (1.939 ms against 1.568-1.591 ms, 23 percent above), and
+more mildly for d (8 percent above) and b (2 percent above). `render-copyout-4x` copies the full 4x
+bitmap out with `mem.readBytes`, roughly 31 MB per call, the single largest copy in this benchmark;
+a one-round effect concentrated on that one workload, at the start of the run while background load
+was still at its highest (loadavg 5.60), reads as a cold-cache or first-large-allocation effect
+rather than thermal drift, which would grow across the run rather than shrink after round 1.
+Excluding round 1, the spread on that cell is under 1.09x for every arm (1.01x for a, 1.08x for b,
+1.06x for c, 1.06x for d).
+
+### The a-versus-b confound
+
+Native arm a is `node-addon-api` C++ taking BigInt pointers; native arm b is `napi-rs` Rust taking
+`f64` pointers. An a-versus-b gap here mixes three things that changed at once: the language, the
+binding framework generating the N-API glue, and the pointer representation crossing the boundary on
+every argument. The wasm run could report a wrapper tax for arm b (1 to 4 percent, see "What the
+numbers say" above) because all four wasm arms share one Emscripten export surface; nothing else
+changed. That precondition does not hold here, and neither `b/a` nor any ratio computed against arm
+a in the table above should be read as a native wrapper tax. Reporting `b/a`'s 0.95x on `null-call`
+as "the Rust wrapper is 5 percent cheaper natively" would repeat the exact mistake `null-call`'s wasm
+write-up already flagged, with one more confound layered on.
+
+The two clean comparisons are the ones holding language and framework fixed: b versus c (`napi-rs`
+Rust, thin versus coarse) and a versus d (`node-addon-api` C++, thin versus coarse, `cpp/ops_napi.cc`
+says outright that this pairing exists so "A-versus-D isolates 'coarse' from everything else"). Even
+that pairing is not perfectly clean: arm a still carries the BigInt marshalling arm d does not, on
+every one of the roughly sixteen thousand crossings `geometryThin` makes over this fixture's 8,106
+glyphs (two guaranteed BigInt-marshalled calls per glyph plus one more on every object-key change,
+as the wasm section above quantifies). The coarsening numbers below use both pairings and say which
+one is more trustworthy where it matters.
+
+### Geometry: the predicted result
+
+The prediction in
+[`docs/research/pdfium-rust-wrapper-benchmarks.md`](../docs/research/pdfium-rust-wrapper-benchmarks.md#predictions)
+was that the native `geometry` win would be larger than wasm's, "plausibly past 10x," because
+`mem.peek` is a full N-API round trip natively and a typed-array read in wasm. It is larger, by more
+than the prediction's own floor.
+
+Held within one language and framework, thin-to-coarse coarsening wins 7.10x on this fixture (arm b
+at 4.000 ms against arm c at 563.25 µs, both `napi-rs`) and 15.08x held within C++ (arm a at 8.374 ms
+against arm d at 555.48 µs, both `node-addon-api`, modulo the BigInt caveat above, which likely
+inflates arm a's absolute cost and therefore this second number somewhat). Either way, this is 2.7x
+to 5.7x larger than wasm's `geometry` win of about 2.6x. The direction and the rough size both match
+the prediction.
+
+The mechanism is visible in the null-probe cells. `mem.peek32` costs 38.0 ns natively against 3.8 ns
+in wasm, a native peek costing roughly 10x a wasm one. `readGlyphRaw` (`bench/workloads.mjs`) makes
+up to 21 such peeks per glyph, on top of the object-key and font-size calls every glyph pays; over
+8,106 glyphs that is on the order of 170,000 peeks for the thin arms, and `rs_read_page_geometry`
+collapses all of it into one crossing. Wasm's coarsening win comes from removing calls that were
+already inexpensive; native's comes from removing calls plus removing tens of thousands of round
+trips that individually cost an order of magnitude more than their wasm counterparts. That is a
+different mechanism producing a bigger number in the same direction, not the same mechanism scaled
+up.
+
+`geometry-copyout` gives one more data point for the same story. It isolates the cost of a full
+memcpy readback of the packed record buffer (908 KB): 66.69 µs (c) and 66.23 µs (d) natively against
+19.54 µs and 19.00 µs in wasm, roughly 3.4x the cost for the same number of bytes. `view_buffer`'s
+zero-copy design (Fix 1 above) is worth more here than it was in wasm, precisely because the memcpy
+it avoids costs more here than it did there.
+
+### Search: the prediction did not hold
+
+The wasm write-up's search win was 3.1x to 3.3x. Held within one language and framework, native
+search wins only 1.62x (b at 62.10 µs, c at 38.36 µs, both `napi-rs`) and 2.10x held within C++ (a at
+80.17 µs, d at 38.24 µs). Both are smaller than wasm's, not larger. This is the one place in this run
+where "native's coarsening win is bigger" does not hold, and it should be reported as a real result,
+not smoothed over to match the geometry finding or the pre-registered prediction.
+
+The likely reason is visible in the same null-probe cells that explain `geometry`. `searchThin`
+(`bench/workloads.mjs`) is dominated by function calls, not peeks: `FPDFText_FindNext`,
+`GetSchResultIndex`, `GetSchCount`, `CountRects`, and `GetRect` per hit, against roughly six hundred
+hits on this fixture, with only four `peekF64` calls per matched rect. `null-call` costs 191.0 ns
+natively against 343.9 ns in wasm for arm a, a native call costing roughly half a wasm one on this
+machine. `search`'s thin loop is call-bound rather than peek-bound, and the operation being
+collapsed away was already cheaper natively than it was in wasm, so there is less to win by
+collapsing it. This is inferred from the shape of the two loops and the null-probe numbers, not
+measured directly cell for cell, and it would take a dedicated per-call-type breakdown to confirm.
+
+### Arms c and d: still indistinguishable, and more so than in wasm
+
+`geometry`'s per-round ratio of d over c runs 0.981x to 1.015x across the seven rounds, tighter than
+this run's own worst same-arm spread (1.24x on `a/render-copyout-4x`, excluding the round-1 anomaly
+discussed above). `search`'s per-round ratio runs 0.955x to 1.010x, with no consistent direction:
+d beats c in four of the seven rounds and c beats d in three. That is a change from wasm, where arm c
+beat arm d in all seven rounds on `search`, by 4 to 10 percent, a small but repeatable gap the wasm
+write-up called out as the one place a language difference showed up. That gap is gone natively.
+Whether it went away because the operation changed (a native coarse call does more per crossing: it
+also builds the zero-copy `ArrayBuffer` view, see the caveat below) or because it was never a
+language effect to begin with and wasm's Binaryen `-O3` pass treated the two static libraries
+differently is not something this run can separate; the honest statement is that the wasm-only
+finding did not reproduce here.
+
+`text`, `render-1x`, and `render-4x` land within 1 percent across all four arms, matching the
+prediction that rendering is dominated by PDFium's own bitmap work and that an already-coarse call
+like `text` has nothing left for coarsening to remove, the same result wasm found.
+
+`render-copyout-4x` is the one workload where arm a and arms b/c/d visibly diverge (1.580 ms against
+2.251-2.280 ms; these medians include the round-1 outlier discussed above, which affects a and c but
+does not change which side of the gap either one falls on), and it should not be read as a
+coarse-versus-thin or Rust-versus-C++ result. Arms b, c, and d all read their bytes through
+`napi-arms.node`'s `readBytes`; arm a uses its own shipping addon's implementation. The gap is
+consistent with the two addons implementing that one function differently, not with anything this
+study is measuring.
+
+### What the native coarse arms pay that wasm's do not
+
+`geometryCoarse` and `searchCoarse` call `mem.viewBuffer` on every timed iteration. In wasm that is a
+plain object literal aliasing the live `HEAPU8.buffer` (`bench/arm.mjs`'s wasm `viewBuffer`), free of
+any allocation. Natively it is `napi-arms.node`'s `view_buffer`, which asks V8 for a real external
+`ArrayBuffer`, backed by a `BackingStore` and a finalizer callback, once per call. That is one V8
+object and one finalizer registration per coarse call, not a memcpy, and it is far cheaper than the
+copy it replaces (see `geometry-copyout` above). But it is a real asymmetry against the wasm coarse
+arms, present in every `geometry` and `search` number for arms c and d in this section, and it is not
+present in arm a or arm b's numbers at all. The coarsening win reported above is the win net of this
+cost, not in addition to it.
+
+### Fat LTO versus thin LTO
+
+Arm c's `Cargo.toml` sets `lto = true`, fat LTO across the whole dependency graph. Arm d's
+`build/CMakeLists.txt` enables `INTERPROCEDURAL_OPTIMIZATION`, which on this toolchain (Apple clang
+21.0.0, confirmed in `build/build/build.ninja`) resolves to `-flto=thin`, not fat LTO. The two are
+not the same optimization. `CMakeLists.txt` never enforced that they even agree on trying: until this
+run, `check_ipo_supported`'s failure was silently swallowed, so a toolchain without IPO support at
+all would have built arm d with no cross-TU inlining while arm c kept fat LTO unconditionally, and
+nothing would have said so. The CMake fix in this run turns that silence into a `message(WARNING)`
+naming the consequence. On this toolchain IPO was supported, so arm d did get thin LTO; arm c's fat
+LTO and arm d's thin LTO are still two different compilation strategies, and the close agreement
+between c and d in every table above is despite that difference, not because it was controlled away.
+
+### Fixes applied before this run
+
+Three findings surfaced before this run were fixed rather than reported as caveats, because each one
+could otherwise have corrupted the numbers above invisibly:
+
+`crates/napi-arms/src/lib.rs`'s `view_buffer` used
+`env.create_arraybuffer_with_borrowed_data`, which maps to `napi_create_external_arraybuffer`. If a
+runtime returns `napi_no_external_buffers_allowed` (Electron, or `NODE_API_DISABLE_EXTERNAL_BUFFERS`),
+napi-rs falls back silently to `napi_create_arraybuffer` plus a `ptr::copy_nonoverlapping`, a full
+memcpy per call, with no error and no log. That would have restored the exact copy asymmetry the
+coarse arms exist to remove, invisibly. `bench/arm.mjs` now probes this once at native arm load
+(`probeExternalBuffers`): it writes a sentinel through `mem.writeBytes`, takes a view through
+`mem.viewBuffer`, mutates a byte through that view, and confirms the mutation is visible through
+`mem.peek32` on the original pointer. A prior version of this same idea wrote through `writeBytes`
+and read the pointer back, which proves the pointer is readable and nothing about whether the view
+aliases it; mutating through the view is the only direction that actually distinguishes a view from a
+copy. This probe passed on Node v24.20.0, so the numbers above are not paying a hidden copy, but it
+did not pass by construction; a run under Electron should check this line before trusting its own
+coarse-arm numbers.
+
+`view_buffer`'s `len: u32` parameter was unchecked. A negative record count from a coarse function
+(nothing produces one today) would wrap to roughly 4 GiB and hand back an external `ArrayBuffer`
+spanning memory this addon does not own, silently readable from JS, where wasm's `DataView` would
+throw `RangeError` instead. `alloc` now records the byte length behind every pointer it returns in a
+process-wide map, and `view_buffer` refuses a `len` that exceeds the allocation registered for its
+pointer, returning a JS `Error` instead of aliasing foreign memory.
+
+`build/CMakeLists.txt` swallowed a `check_ipo_supported` failure silently, described above under
+"Fat LTO versus thin LTO." It now emits a `message(WARNING)` naming the asymmetry that would result.
+
+None of the three changed a measured number in this run: the probe passed, no coarse call in this
+fixture asks for an out-of-range view, and IPO was supported on this toolchain. They are here because
+each one is a way this specific study was already shown to fail once (the unoptimized-link bug in
+"Earlier bugs already fixed" above is the same class of failure as the LTO one) and none of the three
+would have announced itself if it had happened.

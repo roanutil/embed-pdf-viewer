@@ -37,9 +37,21 @@ target_compile_options(${PROJECT_NAME} PRIVATE -O3 -DNDEBUG)
 # as arm c's `ops` crate (one codegen unit) linked into `napi-arms`. Silently
 # skipped (not an error) if this toolchain's compiler/linker don't support it.
 include(CheckIPOSupported)
-check_ipo_supported(RESULT ipo_supported)
+check_ipo_supported(RESULT ipo_supported OUTPUT ipo_error)
 if(ipo_supported)
   set_target_properties(${PROJECT_NAME} PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
+else()
+  # This used to fail silently. Arm c's Cargo.toml sets `lto = true`
+  # unconditionally, so a toolchain that can't do IPO here would build arm c
+  # with LTO and arm d without it and say nothing -- the same "one arm got
+  # optimized and the other did not" class of bug that already produced a
+  # fake 25-33% gap for "Rust" earlier in this spike (see RESULTS.md).
+  message(WARNING
+    "IPO/LTO not supported on this toolchain (${ipo_error}); arm d will "
+    "build WITHOUT cross-TU inlining while arm c keeps lto = true "
+    "unconditionally. Any arm c vs arm d gap measured under this build is "
+    "confounded with that asymmetry and must not be reported as language "
+    "difference.")
 endif()
 
 # cmake-js supplies its own napi.h-less node headers via CMAKE_JS_INC;
