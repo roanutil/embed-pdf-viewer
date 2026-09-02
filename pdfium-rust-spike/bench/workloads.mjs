@@ -96,6 +96,28 @@ const quadAt = (mem, ptr, off) => {
 };
 
 /**
+ * DataView equivalents of rectAt/quadAt above, for geometryCoarse, which
+ * reads from a DataView over the packed record buffer rather than through
+ * `mem`. Same allocation shape as their `mem`-based counterparts: a direct
+ * 4-element array literal for a rect, a preallocated Array(8) filled by a
+ * plain indexed loop for a quad. No `.map`, no `Array.from`, no closure
+ * allocated per glyph — the coarse and thin decodes must differ only in
+ * where the data comes from, never in how much garbage they make.
+ */
+const dvRectAt = (dv, off) => [
+  dv.getFloat32(off, true),
+  dv.getFloat32(off + 4, true),
+  dv.getFloat32(off + 8, true),
+  dv.getFloat32(off + 12, true),
+];
+
+const dvQuadAt = (dv, off) => {
+  const out = new Array(8);
+  for (let i = 0; i < 8; i++) out[i] = dv.getFloat32(off + i * 4, true);
+  return out;
+};
+
+/**
  * Matches PageGeometryReader's `emptyRawGlyph()` (PageGeometryReader.ts:315),
  * which hardcodes `flags: 2` rather than 0 — a deliberate legacy sentinel
  * that downstream run-grouping tests with `flags & 2` (see :232 and :299).
@@ -252,18 +274,18 @@ export function makeWorkloads(arm, fx) {
         rotation: looseQuadGate ? dv.getFloat32(o + 12, true) : 0,
         ascentFlip: looseQuadGate && Boolean(native & F.ASCENT_FLIP),
         upright,
-        looseBox: [16, 20, 24, 28].map((k) => dv.getFloat32(o + k, true)),
+        looseBox: dvRectAt(dv, o + 16),
         tightBox: null,
         looseQuad: null,
         tightQuad: null,
       };
       if (native & F.HAS_TIGHT_BOX) {
-        g.tightBox = [32, 36, 40, 44].map((k) => dv.getFloat32(o + k, true));
+        g.tightBox = dvRectAt(dv, o + 32);
       }
       if (native & F.HAS_LOOSE_QUAD) {
-        g.looseQuad = Array.from({ length: 8 }, (_, k) => dv.getFloat32(o + 48 + k * 4, true));
+        g.looseQuad = dvQuadAt(dv, o + 48);
         if (native & F.HAS_TIGHT_QUAD) {
-          g.tightQuad = Array.from({ length: 8 }, (_, k) => dv.getFloat32(o + 80 + k * 4, true));
+          g.tightQuad = dvQuadAt(dv, o + 80);
         }
       }
       out[i] = g;
