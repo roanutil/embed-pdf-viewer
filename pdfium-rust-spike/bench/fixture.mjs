@@ -36,27 +36,41 @@ export const GATE_FIXTURES = [
   },
 ];
 
+/**
+ * Native arms (`arm.m.loadMemDocument`) load a document straight from a
+ * Buffer and never see `mem.alloc`/`mem.writeBytes`: the napi-rs addon owns
+ * the copy it makes inside `load_mem_document`, and the shipping addon (arm
+ * a) exposes `FPDF_LoadMemDocument` directly over its own BigInt-pointer
+ * memory, same as any other native call. Every wasm arm falls through to the
+ * `mem.alloc`/`FPDF_LoadMemDocument` path exactly as before.
+ */
 export function openFixture(arm, { pdfPath = PDF_PATH, pageIndex = PAGE_INDEX } = {}) {
   const { fn, mem } = arm;
   const bytes = readFileSync(pdfPath);
-  const buf = mem.alloc(bytes.length);
-  mem.writeBytes(buf, bytes);
-  const doc = fn.FPDF_LoadMemDocument(buf, bytes.length, 0);
+  let buf = 0;
+  let doc;
+  if (arm.m.loadMemDocument) {
+    doc = arm.m.loadMemDocument(Buffer.from(bytes));
+  } else {
+    buf = mem.alloc(bytes.length);
+    mem.writeBytes(buf, bytes);
+    doc = fn.FPDF_LoadMemDocument(buf, bytes.length, 0);
+  }
   if (!doc) {
-    mem.free(buf);
+    if (buf) mem.free(buf);
     throw new Error(`FPDF_LoadMemDocument failed for ${pdfPath}`);
   }
   const page = fn.FPDF_LoadPage(doc, pageIndex);
   if (!page) {
     fn.FPDF_CloseDocument(doc);
-    mem.free(buf);
+    if (buf) mem.free(buf);
     throw new Error(`FPDF_LoadPage failed for index ${pageIndex}`);
   }
   const textPage = fn.FPDFText_LoadPage(page);
   if (!textPage) {
     fn.FPDF_ClosePage(page);
     fn.FPDF_CloseDocument(doc);
-    mem.free(buf);
+    if (buf) mem.free(buf);
     throw new Error(`FPDFText_LoadPage failed for index ${pageIndex}`);
   }
   const glyphCount = Math.max(fn.FPDFText_CountChars(textPage), 0);
@@ -73,7 +87,7 @@ export function openFixture(arm, { pdfPath = PDF_PATH, pageIndex = PAGE_INDEX } 
       fn.FPDFText_ClosePage(textPage);
       fn.FPDF_ClosePage(page);
       fn.FPDF_CloseDocument(doc);
-      mem.free(buf);
+      if (buf) mem.free(buf);
     },
   };
 }

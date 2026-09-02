@@ -1,0 +1,17 @@
+[package]
+name = "napi-arms"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+napi = { version = "2", default-features = false, features = ["napi8"] }
+napi-derive = "2"
+pdfium-sys = { path = "../pdfium-sys" }
+ops = { path = "../ops" }
+
+[build-dependencies]
+napi-build = "2"

@@ -15,7 +15,7 @@ const _: () = assert!(RECORD_BYTES == 112);
 /// Returns the total glyph count; writes at most `cap` records.
 #[no_mangle]
 pub extern "C" fn rs_read_page_geometry(text_page: u32, out: *mut u8, cap: i32) -> i32 {
-    let count = unsafe { FPDFText_CountChars(text_page) }.max(0);
+    let count = unsafe { FPDFText_CountChars(text_page as _) }.max(0);
     if out.is_null() || cap <= 0 {
         return count;
     }
@@ -24,8 +24,11 @@ pub extern "C" fn rs_read_page_geometry(text_page: u32, out: *mut u8, cap: i32) 
     let mut geo = EPDF_CHAR_GEOMETRY::default();
 
     for i in 0..count {
-        let object_key = unsafe { FPDFText_GetTextObject(text_page, i) };
-        let ok = unsafe { EPDFText_GetCharGeometry(text_page, i, &mut geo) };
+        // `object_key` is a grouping key compared for equality within one
+        // page (see record.rs), not a pointer dereferenced later, so
+        // truncating it to u32 on a 64-bit target is safe.
+        let object_key = unsafe { FPDFText_GetTextObject(text_page as _, i) } as u32;
+        let ok = unsafe { EPDFText_GetCharGeometry(text_page as _, i, &mut geo) };
 
         let mut rec = Record {
             object_key,
@@ -40,7 +43,7 @@ pub extern "C" fn rs_read_page_geometry(text_page: u32, out: *mut u8, cap: i32) 
         // must happen before the empty/ok early-return below -- an empty
         // glyph that begins a new text object still carries a real font size.
         if prev_key != Some(object_key) {
-            rec.font_size = unsafe { FPDFText_GetFontSize(text_page, i) } as f32;
+            rec.font_size = unsafe { FPDFText_GetFontSize(text_page as _, i) } as f32;
         }
         prev_key = Some(object_key);
 
@@ -96,14 +99,14 @@ fn quad(q: &FS_QUADPOINTSF) -> [f32; 8] {
 
 #[no_mangle]
 pub extern "C" fn rs_read_page_text(text_page: u32, buf: *mut u16, len: i32) -> i32 {
-    unsafe { EPDFText_GetTextFull(text_page, buf, len) }
+    unsafe { EPDFText_GetTextFull(text_page as _, buf, len) }
 }
 
 #[no_mangle]
 pub extern "C" fn rs_render_page(page: u32, bitmap: u32, w: i32, h: i32, rotate: i32) -> i32 {
     unsafe {
-        FPDFBitmap_FillRect(bitmap, 0, 0, w, h, 0xffff_ffff);
-        FPDF_RenderPageBitmap(bitmap, page, 0, 0, w, h, rotate, 0);
+        FPDFBitmap_FillRect(bitmap as _, 0, 0, w, h, 0xffff_ffff);
+        FPDF_RenderPageBitmap(bitmap as _, page as _, 0, 0, w, h, rotate, 0);
     }
     1
 }
@@ -112,7 +115,7 @@ pub extern "C" fn rs_render_page(page: u32, bitmap: u32, w: i32, h: i32, rotate:
 /// four little-endian f32s per rect (left, top, right, bottom).
 #[no_mangle]
 pub extern "C" fn rs_search_page(text_page: u32, term: *const u16, out: *mut f32, cap: i32) -> i32 {
-    let handle = unsafe { FPDFText_FindStart(text_page, term, 0, 0) };
+    let handle = unsafe { FPDFText_FindStart(text_page as _, term, 0, 0) };
     if handle == 0 {
         return 0;
     }
@@ -121,7 +124,7 @@ pub extern "C" fn rs_search_page(text_page: u32, term: *const u16, out: *mut f32
         while FPDFText_FindNext(handle) != 0 {
             let start = FPDFText_GetSchResultIndex(handle);
             let count = FPDFText_GetSchCount(handle);
-            let rects = FPDFText_CountRects(text_page, start, count);
+            let rects = FPDFText_CountRects(text_page as _, start, count);
             for r in 0..rects {
                 let (mut l, mut t, mut ri, mut b) = (0f64, 0f64, 0f64, 0f64);
                 // PDFium's FPDFText_GetRect (fpdf_text.cpp) writes all four
@@ -130,7 +133,7 @@ pub extern "C" fn rs_search_page(text_page: u32, term: *const u16, out: *mut f32
                 // (bench/workloads.mjs) never checks the return value, so it
                 // records that zero rect and counts it. Match that here:
                 // write and count regardless of status.
-                FPDFText_GetRect(text_page, r, &mut l, &mut t, &mut ri, &mut b);
+                FPDFText_GetRect(text_page as _, r, &mut l, &mut t, &mut ri, &mut b);
                 if written < cap {
                     let p = out.add((written * 4) as usize);
                     core::ptr::write_unaligned(p, l as f32);

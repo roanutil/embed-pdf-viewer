@@ -1,15 +1,41 @@
 //! Hand-written declarations for the slice of the PDFium C API this spike
-//! touches. Handles are `u32`, not pointers: the wasm artifact is linked
-//! without WASM_BIGINT, so anything 64 bits wide gets legalized at the JS
-//! boundary and the spike stays clear of that entirely.
+//! touches. On wasm32 handles are `u32`, not pointers: the wasm artifact is
+//! linked without WASM_BIGINT, so anything 64 bits wide gets legalized at the
+//! JS boundary and the wasm arms stay clear of that entirely. On a real
+//! 64-bit target (aarch64-apple-darwin, for the native arms) a PDFium handle
+//! is an honest 64-bit pointer, so the aliases widen to match.
 #![allow(non_camel_case_types, non_snake_case)]
 
+#[cfg(target_pointer_width = "32")]
 pub type FPDF_DOCUMENT = u32;
+#[cfg(target_pointer_width = "64")]
+pub type FPDF_DOCUMENT = u64;
+
+#[cfg(target_pointer_width = "32")]
 pub type FPDF_PAGE = u32;
+#[cfg(target_pointer_width = "64")]
+pub type FPDF_PAGE = u64;
+
+#[cfg(target_pointer_width = "32")]
 pub type FPDF_TEXTPAGE = u32;
+#[cfg(target_pointer_width = "64")]
+pub type FPDF_TEXTPAGE = u64;
+
+#[cfg(target_pointer_width = "32")]
 pub type FPDF_PAGEOBJECT = u32;
+#[cfg(target_pointer_width = "64")]
+pub type FPDF_PAGEOBJECT = u64;
+
+#[cfg(target_pointer_width = "32")]
 pub type FPDF_BITMAP = u32;
+#[cfg(target_pointer_width = "64")]
+pub type FPDF_BITMAP = u64;
+
+#[cfg(target_pointer_width = "32")]
 pub type FPDF_SCHHANDLE = u32;
+#[cfg(target_pointer_width = "64")]
+pub type FPDF_SCHHANDLE = u64;
+
 pub type FPDF_BOOL = i32;
 
 pub const FPDFBitmap_BGRA: i32 = 4;

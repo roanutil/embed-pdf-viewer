@@ -40,6 +40,32 @@ export async function canonicalFor(armName) {
   return { ...fixtures[GATE_FIXTURES[0].label], fixtures };
 }
 
+/**
+ * Same shape as `canonicalFor` above (a `.fixtures` map keyed by
+ * `GATE_FIXTURES` label, spread onto the top level for the default fixture),
+ * but for a native arm loaded through `loadNativeArm` rather than `loadArm`.
+ * `compare()` doesn't know or care which loader produced its two arguments.
+ */
+export async function canonicalForNative(armName) {
+  const { loadNativeArm } = await import('./arm.mjs');
+  const arm = await loadNativeArm(armName);
+  const fixtures = {};
+  for (const fixtureSpec of GATE_FIXTURES) {
+    const fx = openFixture(arm, fixtureSpec);
+    const w = makeWorkloads(arm, fx);
+    const result = { glyphCount: fx.glyphCount, pageIndex: fx.pageIndex };
+    for (const [id, wl] of Object.entries(w)) {
+      if (id === 'dispose' || !wl.arms.includes(armName) || wl.canonical == null) continue;
+      result[id] = wl.canonical();
+    }
+    w.dispose();
+    fx.close();
+    fixtures[fixtureSpec.label] = result;
+  }
+  arm.close();
+  return { ...fixtures[GATE_FIXTURES[0].label], fixtures };
+}
+
 /** Ids the workload table declares BOTH arms are supposed to run and verify. */
 function expectedIds(armA, armB) {
   const runs = (name) =>

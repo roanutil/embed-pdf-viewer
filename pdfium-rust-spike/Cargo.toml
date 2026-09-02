@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/pdfium-sys", "crates/shim", "crates/ops"]
+members = ["crates/pdfium-sys", "crates/shim", "crates/ops", "crates/napi-arms"]
 
 [profile.release]
 opt-level = 3
