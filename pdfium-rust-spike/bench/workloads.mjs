@@ -142,6 +142,30 @@ export function makeWorkloads(arm, fx) {
   const coarse = arm.name === 'c' ? 'rs' : arm.name === 'd' ? 'cc' : null;
   const p = arm.name === 'b' ? 'rs_' : '';
 
+  // Hoisted once per arm, not looked up per call inside geometryThin,
+  // searchThin, textThin and renderThin below (Finding 2). `fn[`${p}Name`]`
+  // inside a hot loop rebuilds a template string and does a dynamic property
+  // lookup on every call; measured at about 7.7 ns per lookup, that is
+  // roughly 62 µs per geometryThin() call (two guaranteed lookups per glyph
+  // over 8,106 glyphs) and about 601 lookups per searchThin() call, enough
+  // to inflate the coarse win by several percent on both workloads. It is an
+  // artifact of how this file selects a function name per arm, not a
+  // property of the thin design: the real reader at
+  // PageGeometryReader.ts:113 does a plain monomorphic property access, so
+  // hoisting is both fairer and closer to the code being modelled.
+  const thinGetTextObject = fn[`${p}FPDFText_GetTextObject`];
+  const thinGetCharGeometry = fn[`${p}EPDFText_GetCharGeometry`];
+  const thinGetFontSize = fn[`${p}FPDFText_GetFontSize`];
+  const thinGetTextFull = fn[`${p}EPDFText_GetTextFull`];
+  const thinRenderPageBitmap = fn[`${p}FPDF_RenderPageBitmap`];
+  const thinFindStart = fn[`${p}FPDFText_FindStart`];
+  const thinFindNext = fn[`${p}FPDFText_FindNext`];
+  const thinGetSchResultIndex = fn[`${p}FPDFText_GetSchResultIndex`];
+  const thinGetSchCount = fn[`${p}FPDFText_GetSchCount`];
+  const thinCountRects = fn[`${p}FPDFText_CountRects`];
+  const thinGetRect = fn[`${p}FPDFText_GetRect`];
+  const thinFindClose = fn[`${p}FPDFText_FindClose`];
+
   const allocChecked = (bytes, label) => {
     const ptr = mem.alloc(bytes);
     if (!ptr) throw new Error(`mem.alloc(${bytes}) returned 0 allocating ${label}`);
@@ -216,12 +240,12 @@ export function makeWorkloads(arm, fx) {
     const out = new Array(fx.glyphCount);
     let prevKey = null;
     for (let i = 0; i < fx.glyphCount; i++) {
-      const objectKey = fn[`${p}FPDFText_GetTextObject`](fx.textPage, i);
-      const ok = fn[`${p}EPDFText_GetCharGeometry`](fx.textPage, i, geoPtr);
+      const objectKey = thinGetTextObject(fx.textPage, i);
+      const ok = thinGetCharGeometry(fx.textPage, i, geoPtr);
       const g = ok ? readGlyphRaw() : emptyGlyph();
       g.objectKey = objectKey;
       if (objectKey !== prevKey) {
-        g.fontSize = fn[`${p}FPDFText_GetFontSize`](fx.textPage, i);
+        g.fontSize = thinGetFontSize(fx.textPage, i);
         prevKey = objectKey;
       }
       out[i] = g;
@@ -294,7 +318,7 @@ export function makeWorkloads(arm, fx) {
   };
 
   const textThin = () => {
-    const written = fn[`${p}EPDFText_GetTextFull`](fx.textPage, textPtr, textUnits);
+    const written = thinGetTextFull(fx.textPage, textPtr, textUnits);
     return written <= 1 ? '' : mem.readU16(textPtr, written - 1);
   };
 
@@ -309,7 +333,7 @@ export function makeWorkloads(arm, fx) {
   // below, which is never on the timed path.
   const renderThin = (b) => {
     fn.FPDFBitmap_FillRect(b.handle, 0, 0, b.w, b.h, 0xffffffff);
-    fn[`${p}FPDF_RenderPageBitmap`](b.handle, fx.page, 0, 0, b.w, b.h, 0, 0);
+    thinRenderPageBitmap(b.handle, fx.page, 0, 0, b.w, b.h, 0, 0);
     return mem.peek32(b.buf);
   };
 
@@ -321,7 +345,7 @@ export function makeWorkloads(arm, fx) {
   /** Untimed: renders fresh and copies out the full bitmap, for canonical() only. */
   const renderBytesThin = (b) => {
     fn.FPDFBitmap_FillRect(b.handle, 0, 0, b.w, b.h, 0xffffffff);
-    fn[`${p}FPDF_RenderPageBitmap`](b.handle, fx.page, 0, 0, b.w, b.h, 0, 0);
+    thinRenderPageBitmap(b.handle, fx.page, 0, 0, b.w, b.h, 0, 0);
     return mem.readBytes(b.buf, b.stride * b.h);
   };
 
@@ -331,25 +355,32 @@ export function makeWorkloads(arm, fx) {
   };
 
   const searchThin = () => {
-    const handle = fn[`${p}FPDFText_FindStart`](fx.textPage, termPtr, 0, 0);
+    const handle = thinFindStart(fx.textPage, termPtr, 0, 0);
     const hits = [];
-    while (fn[`${p}FPDFText_FindNext`](handle)) {
-      const start = fn[`${p}FPDFText_GetSchResultIndex`](handle);
-      const count = fn[`${p}FPDFText_GetSchCount`](handle);
-      const rects = fn[`${p}FPDFText_CountRects`](fx.textPage, start, count);
+    while (thinFindNext(handle)) {
+      const start = thinGetSchResultIndex(handle);
+      const count = thinGetSchCount(handle);
+      const rects = thinCountRects(fx.textPage, start, count);
       for (let r = 0; r < rects; r++) {
-        fn[`${p}FPDFText_GetRect`](fx.textPage, r, ...rectPtrs);
+        thinGetRect(fx.textPage, r, ...rectPtrs);
         hits.push(rectPtrs.map((q) => mem.peekF64(q)));
       }
     }
-    fn[`${p}FPDFText_FindClose`](handle);
+    thinFindClose(handle);
     return hits;
   };
 
   const searchCoarse = () => {
     const n = fn[`${coarse}_search_page`](fx.textPage, termPtr, searchPtr, searchCap);
-    const bytes = mem.readBytes(searchPtr, n * 16);
-    const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    // A DataView over the LIVE heap, not a copy: `mem.readBytes` here would
+    // memcpy the packed rect buffer every call, a cost the thin arm never
+    // pays since it reads the heap in place — the same asymmetry Finding 6
+    // fixed in geometryCoarse, and geometryCoarse's fix and this one should
+    // not disagree about the same principle. The wasm module is linked with
+    // ALLOW_MEMORY_GROWTH=1, so the backing ArrayBuffer can be replaced
+    // whenever the heap grows; `arm.m.HEAPU8.buffer` is re-read on every
+    // call for exactly that reason — never cache this DataView across calls.
+    const dv = new DataView(arm.m.HEAPU8.buffer, searchPtr, n * 16);
     const hits = new Array(n);
     for (let i = 0; i < n; i++) {
       hits[i] = [0, 4, 8, 12].map((k) => dv.getFloat32(i * 16 + k, true));

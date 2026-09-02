@@ -1,14 +1,23 @@
 #!/usr/bin/env node
 /**
- * Rounds are INTERLEAVED (round 1: a, b, c, d; round 2: a, b, c, d; ...). A
- * laptop's clock speed drifts over a multi-minute run, and running all of a
- * then all of b would hand the drift to whoever went last. Only medians across
- * interleaved rounds are comparable; a single round's numbers are not.
+ * Rounds are INTERLEAVED (round 1: a, b, c, d; round 2: a, b, c, d; ...) AND,
+ * within each round, the arm ORDER is rotated by the round index (round 1:
+ * a,b,c,d; round 2: b,c,d,a; round 3: c,d,a,b; ...). A laptop's clock speed
+ * drifts over a multi-minute run, and running all of a then all of b would
+ * hand the drift to whoever went last; interleaving fixes that ACROSS rounds.
+ * But the drift also decays WITHIN a round (background load is highest right
+ * after the previous round's cooldown and lowest by the time the last arm
+ * runs), and a fixed a,b,c,d order hands that decay to whichever arm always
+ * goes first. Rotating the order spreads each arm across every position over
+ * the seven rounds, so no arm is systematically first or last. Only medians
+ * across interleaved, rotated rounds are comparable; a single round's numbers
+ * are not.
  */
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { canonicalFor, compare } from './gate.mjs';
+import { GATE_FIXTURES } from './fixture.mjs';
 
 const here = import.meta.dirname;
 const RESULTS = resolve(here, 'results');
@@ -44,22 +53,37 @@ const rustc = version('rustc', ['--version']);
 const canonical = {};
 for (const a of ARMS) canonical[a] = await canonicalFor(a);
 let ok = true;
-for (const a of ARMS.slice(1)) ok = compare('a', canonical.a, a, canonical[a]).ok && ok;
+let compared = Infinity;
+for (const a of ARMS.slice(1)) {
+  const result = compare('a', canonical.a, a, canonical[a]);
+  ok = result.ok && ok;
+  compared = Math.min(compared, result.compared);
+}
 if (!ok) {
   console.error('\nThe arms do not produce the same answers. Timings would be meaningless.');
   process.exit(1);
 }
+// Report every fixture actually compared, matching gate.mjs's own CLI
+// wording (Finding 5): this line is the artifact people read, so it should
+// say what `compare()` really checked, not just the timing fixture.
+const fixtureSummary = GATE_FIXTURES.map(
+  ({ label }) => `${label} (${canonical.a.fixtures[label].glyphCount} glyphs)`,
+).join(', ');
 console.log(
-  `fairness gate: ${ARMS.join(', ')} agree on ${canonical.a.glyphCount} glyphs, ` +
-    `page ${canonical.a.pageIndex}\n`,
+  `fairness gate: ${ARMS.join(', ')} agree on ${fixtureSummary}, ` +
+    `${compared} workload${compared === 1 ? '' : 's'} compared\n`,
 );
 
 rmSync(RESULTS, { recursive: true, force: true });
 mkdirSync(RESULTS, { recursive: true });
 
 for (let r = 1; r <= rounds; r++) {
-  console.log(`── round ${r}/${rounds} ──`);
-  for (const a of ARMS) {
+  // Rotate by round index (Finding 1): round 1 is a,b,c,d; round 2 shifts
+  // by one to b,c,d,a; and so on, cycling back to a,b,c,d every four rounds.
+  const shift = (r - 1) % ARMS.length;
+  const order = [...ARMS.slice(shift), ...ARMS.slice(0, shift)];
+  console.log(`── round ${r}/${rounds} (order: ${order.join(', ')}) ──`);
+  for (const a of order) {
     execFileSync('node', [resolve(here, 'node.mjs')], {
       stdio: ['ignore', 'inherit', 'inherit'],
       env: {
@@ -69,6 +93,8 @@ for (let r = 1; r <= rounds; r++) {
         BENCH_BUDGET_MS: String(budgetMs),
         BENCH_EMSDK: emsdk,
         BENCH_RUSTC: rustc,
+        // Recorded in each round's results JSON so the rotation is auditable.
+        BENCH_ORDER: order.join(','),
       },
     });
   }

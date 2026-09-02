@@ -16,6 +16,10 @@ const here = import.meta.dirname;
 const armName = process.env.BENCH_ARM;
 const round = Number(process.env.BENCH_ROUND ?? '1');
 const budgetMs = Number(process.env.BENCH_BUDGET_MS ?? '500');
+// The arm order run.mjs used for this round (Finding 1), so the rotation is
+// auditable from the results files themselves and not just from run.mjs's
+// console output.
+const order = (process.env.BENCH_ORDER ?? '').split(',').filter(Boolean);
 
 const arm = await loadArm(armName);
 const fx = openFixture(arm);
@@ -34,6 +38,7 @@ for (const [id, wl] of Object.entries(workloads)) {
 const out = {
   arm: armName,
   round,
+  order,
   env: await environment(),
   emsdk: process.env.BENCH_EMSDK ?? 'unknown',
   rustc: process.env.BENCH_RUSTC ?? 'unknown',
