@@ -10,6 +10,21 @@ The goal, to be clear about it, is one Rust core with platform-specific bindings
 iOS through Swift, Android through Kotlin. Performance on web is not the goal. If it were, almost
 none of what follows would apply.
 
+Update, and it changes how to read everything below: the port is happening. This document was
+written to work out whether and where to start, so treat the waves as a plan now rather than a
+proposal. Performance on web is still not the goal. But it is no longer obviously a cost either, and
+the distinction turns out to depend on which layer you mean. At the `engine-services` boundary the
+port makes web faster, because the per-glyph loop stops crossing anything; measured, that is about
+2.6x on glyph geometry. At the `core/annotation` layer the earlier toy benchmark in
+`ts-wasm-interop-poc/` still says the opposite, that V8 beats Rust-in-wasm on arithmetic that cheap.
+Both can be true because they are different amounts of compute behind each crossing, which is the
+argument the rest of this document already makes.
+
+How the PDFium fork itself should be handled now has its own record in
+[the runtime decision](./pdfium-rust-wrapper-decision.md). The short version: bind to its C ABI from
+Rust, and stop growing coarse `EPDF*` wrappers whose only job is collapsing JavaScript crossings,
+because the port deletes those crossings for free.
+
 ## Why anchor.ts is the wrong start
 
 Four reasons, and only the first is about speed.
@@ -64,8 +79,18 @@ Rust compiled to `wasm32-unknown-unknown` cannot link an Emscripten object. Ther
 out: build the crate for `wasm32-unknown-emscripten` and link normally, rebuild PDFium for
 `wasm32-wasip1` and drop the Emscripten runtime, or keep the two as separate modules and have Rust
 call PDFium through imports. The third pays a crossing per FFI call, of which a single page render
-makes thousands, so I expect it is unusable. Prove one of the first two on
-`EPDF_GetPageSizeByIndexNormalized` before writing anything else.
+makes thousands, so I expect it is unusable.
+
+Update: the first option works, and it is the one to use. A Rust `staticlib` built for
+`wasm32-unknown-emscripten` goes on the same `em++` line as `libembedpdf.a` and links, with no
+second module, no cross-module calls and no shared-memory problem.
+`pdfium-rust-spike/build/link-wasm.sh` does it four times over, and it was proven first on
+`EPDF_GetPageSizeByIndexNormalized`, exactly as this paragraph asked. One snag for whoever wires it
+into the real build: `-O3` makes `em++` run `wasm-opt`, and emsdk 3.1.72's bundled v119 rejects two
+wasm features present in rustc 1.98.0's precompiled std, so it needs a newer `wasm-opt` than the one
+in the SDK.
+
+So wave 0 has one question left rather than two, and the remaining one is the harder of the pair.
 
 The second wave-0 question is cancellation. `engine-core` is built on `AbortablePromise`, and some
 PDFium calls run long and cannot be interrupted. Decide how a Rust cancellation token maps onto that
@@ -96,6 +121,13 @@ spec correctness lives here. Read before write, and easiest-to-verify first:
 5. `features/forms/*` with `FormMutator` (616) and `FormsEffectsApplier` (452).
 6. `features/pages/*`, `RedactionApplier` (274), `PieceInfoAccessor` (370).
 7. `document-session/DocumentSession` (354).
+
+Step 1 is also where the boundary win lands, which is worth knowing before anyone argues about the
+ordering. `PageGeometryReader` makes two PDFium calls per glyph plus up to 21 `mem.peek` reads to
+decode each geometry struct, so a page with 8,106 glyphs costs something like 25,000
+JavaScript-to-PDFium crossings today. Moving that loop into the core does not make the calls
+cheaper. It stops them being crossings, and that alone measured about 2.6x in wasm and 7.10x on
+Node. Nothing has to be redesigned to collect it.
 
 Step 4 is where the plan earns its cost back. `runAnnotationMutationConformance.ts` is 2,255 lines
 of transport-agnostic tests that already exist. Point it at both engines and annotation write
@@ -152,28 +184,19 @@ ported so much as replaced, since a Rust core would embed `rquickjs` directly.
 
 ## What I do not know
 
-The PDFium linkage question is genuinely open and I have not tried any of the three options. Until
-someone does, wave 2 onward is contingent.
+Update: the two things this section used to open with are answered, and the answers moved up into
+wave 0 and into [the PDFium wrapper benchmark](./pdfium-rust-wrapper-benchmarks.md). The linkage
+works. The boundary is priced: a wasm call into PDFium costs around 340 ns through a hand-written
+`cwrap`, putting a Rust frame in front of it costs 1 to 4 percent, and collapsing the per-glyph loop
+is worth about 2.6x in wasm and 7.10x on Node.
 
-Update: the linkage question above is answered, and it went the friendly way. A Rust `staticlib` built for
-`wasm32-unknown-emscripten` goes on the same `em++` command line as `libembedpdf.a` and links, with
-no second module, no cross-module calls and no shared-memory problem. `pdfium-rust-spike/` does it
-four times over, and `build/link-wasm.sh` in that directory is the proof, so wave 2 onward is not
-contingent on it any more.
+What that does not settle is the thing I actually said I wanted. Those are PDFium payloads, not
+`Geom` payloads, and the coarse win came out identical whether Rust or C++ sat behind it, so it
+prices the boundary rather than the language. One machine, one fixture page, one PDF.
 
-I do have a number for the crossing now, and it is in
-[the PDFium wrapper benchmark](./pdfium-rust-wrapper-benchmarks.md). A wasm call into PDFium costs
-around 340 ns through a hand-written `cwrap`. Putting a Rust frame in front of it costs 1 to 4
-percent on workloads that do real PDFium work, and the null probe built to price that frame in
-isolation could not resolve it at all. Collapsing the per-glyph loop in
-`PageGeometryReader` into a single crossing is worth about 2.6x in wasm and 7.10x to 15.08x
-natively, because `mem.peek` is a typed-array read in one place and a full N-API round trip in the
-other.
-
-So the boundary is priced and the answer is that a thin one is nearly free and a chatty one is
-expensive, which is what the ordering above already assumed. What it does not settle is the thing I
-actually said I wanted: those are PDFium payloads, not `Geom` payloads, and the coarse win came out
-identical whether Rust or C++ sat behind it. One machine, one fixture page, one PDF.
+The wave-0 cancellation question is still open, and it is now the one gating item there. `engine-core`
+is built on `AbortablePromise`, some PDFium calls run long and cannot be interrupted, and nobody has
+decided which operations are honestly uncancellable.
 
 And I have assumed mobile needs display, search, and annotation read and write, but not interactive
 drawing. If that assumption is wrong, wave 4 stops being optional and the total roughly grows from
