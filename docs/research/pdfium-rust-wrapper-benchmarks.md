@@ -218,3 +218,98 @@ instead of guessing.
 The result I am most interested in is arm D, and I would rather find out that the fork should keep
 growing `EPDF*` functions in C++ than talk myself into a Rust layer that buys the same thing for more
 work. I genuinely do not know which way it goes.
+
+## What actually happened
+
+Built, gated, and run over seven interleaved rounds in wasm and seven more natively. The full
+tables, the environment stamps and every caveat are in
+[`pdfium-rust-spike/RESULTS.md`](../../pdfium-rust-spike/RESULTS.md), which is the source of record;
+what follows is what I got wrong and what I did not expect.
+
+The module size prediction was wrong by roughly two orders of magnitude. I said +100 to +400 kB for
+the Rust arms. The real numbers, against a 4,676,714-byte baseline, are +3,802 bytes for arm B,
++4,774 for arm C and +8,163 for arm D. The biggest grower is the C++ one. A shim of one-line
+`extern "C"` functions, and four coarse loops next to it, do not pull a runtime in behind them, and
+the linker throws away everything they never touch. So the sentence in the method section about a Rust staticlib
+being a real cost on web that native does not pay is, at this scale, just wrong.
+
+Then the null probe, which is the one cell I built specifically to price the wrapper, and it could
+not do it. Arm B reads about 20 nanoseconds faster than arm A in every one of the seven rounds, both
+before and after the order rotation that was added to test for exactly this. A wrapper cannot be
+faster than the call it wraps. At roughly 320 ns a crossing, that gap is below what a 500 ms
+sampling budget resolves on this machine, so the cell says nothing in either direction: not that the
+tax is negative, and not that it is zero.
+
+The tax showed up anyway, on the workloads with real PDFium work behind them. Arm B costs 1.01x arm
+A on `geometry`, 1.03x on `text`, 1.01x and 1.03x on the two renders, 1.02x on `search`. One to four
+percent, inside the pre-registered 15 percent band and nowhere near the 25 percent line past which I
+said to suspect the harness. The prediction held. The instrument designed to test it did not, which
+is worth remembering the next time I plan to measure something by subtracting two large numbers.
+
+(Two of the wasm arms link a Rust archive and two do not, and on `render-4x` the two Rust-linked arms
+run 3 to 4 percent high in six of seven rounds, while on `null-call` the Rust-linked arm is the
+faster one. Those two observations do not tell one story, and `RESULTS.md` records the correlation
+without naming a mechanism. I think that is the right call, and it is also why nothing under about 5
+percent in that file should be read as a finding.)
+
+Arm D landed within noise of arm C on both platforms, and that is the finding this whole document
+was written to obtain. In wasm the `geometry` medians are 1.030 ms and 1.027 ms, with the per-round
+ratio of D over C running 0.975x to 1.004x, tighter than the worst same-arm round-to-round spread
+measured anywhere in the run. Natively it is 563.25 µs against 555.48 µs, ratio 0.981x to 1.015x.
+The one exception was wasm `search`, where arm C beat arm D in all seven rounds by 4 to 10 percent,
+and that gap did not reproduce natively at all. I do not know whether it was a real difference
+between `rs_search_page` and `cc_search_page` on this fixture's six hundred hits or something
+Binaryen did to one static library and not the other.
+
+So the coarse win belongs to moving the loop, not to the language that holds it. Which argues that
+the fork should keep growing coarse `EPDF*` functions in C++, the way
+`packages/engine/services/src/features/text/PageTextReader.ts:93` already pulls a whole page of text
+through one `EPDFText_GetTextFull` call. No Rust layer is needed to collect this win, and on
+performance grounds these numbers do not support adding one. The cost of that recommendation is that
+every new coarse operation is C++ written against PDFium's headers by hand, with no borrow checker
+and no `Result`, in the part of the stack where a mistake is a memory-safety bug rather than an
+exception. That is a real price. It is just not one this benchmark can put a number on.
+
+The coarsening win itself is large and real, and it is much larger natively, for the reason the
+prediction gave. In wasm, collapsing the per-glyph loop into one crossing takes `geometry` to 0.38x
+for both coarse arms, about 2.6x faster than arm A, which is just under the 3x-to-10x band I
+predicted. Natively, held within one language and framework, it is 7.10x (arm B against arm C, both
+`napi-rs`) and 15.08x (arm A against arm D, both `node-addon-api`). The mechanism is visible in the
+null probe: `mem.peek32` costs 3.8 ns in wasm and 38.0 ns natively, because in wasm it is a
+typed-array read in JavaScript and natively it is a full N-API round trip. `readGlyphRaw` makes up
+to 21 of those per glyph. Over 8,106 glyphs that is on the order of 170,000 round trips that one
+coarse call deletes.
+
+`search` went the other way, and it is the only place the direction of a prediction failed. Native
+coarsening wins only 1.62x and 2.10x on that workload, smaller than wasm's 3.1x to 3.3x, not larger.
+The likely reason is that `searchThin` is call-bound rather than peek-bound, and a native call costs
+191.0 ns against wasm's 343.9 ns, so the thing being collapsed away was already the cheaper of the
+two. That is inferred from the shape of the loop and the null-probe cells, not measured directly.
+The `text` prediction failed more quietly: I said arm C would win natively on the buffer copy, and
+all four arms land at 1.00x. Render came out within noise on both platforms, as predicted, which at
+this point is the least interesting sentence in the document.
+
+Three of this study's own measurement bugs each reversed or manufactured a conclusion, and all three
+were invisible to the fairness gate, because a wrong measurement and a right answer coexist happily.
+The coarse decoder allocated a throwaway array and a closure per rect and per quad, roughly 26,000
+extra allocations an iteration, paid only by the coarse arms: `geometry` read 1.57x slower for arm C
+before that fix and 0.38x after. `build/link-wasm.sh` passed no `-O` flag at all, so `em++` defaulted
+to `-O0` and arm D's C++ was built unoptimized against arm C's `-O3` Rust, which manufactured a 25 to
+33 percent Rust-over-C++ win in all seven rounds that vanished the moment the flags were equalized.
+And arm order was never rotated within a round while background load decayed inside every round, so
+arm A systematically ran under the heaviest machine. Every one of the three lived in code this plan
+specified. I think that is worth more to a future reader than any single number above: the gate
+proves the arms agree, and it will never tell you they are agreeing for different amounts of work.
+
+One number in `RESULTS.md` looks like a native wrapper tax and is not. Native arm A is
+`node-addon-api` C++ with BigInt pointers and native arm B is `napi-rs` Rust with `f64` pointers, so
+the 8.374 ms against 4.000 ms on `geometry`, and the 38.0 ns against 14.7 ns on `null-peek`, mix
+language, binding framework and pointer representation in one gap. It cannot be reported as a
+wrapper tax and I am not reporting it as one. But it is a 2x difference on the read that
+`PageGeometryReader` performs up to 21 times per glyph, and separating the two conventions is cheap:
+add an f64 entry point to the existing C++ addon and time both through one framework. If the BigInt
+convention is most of it, that is a change to argument marshalling with no port attached to it.
+
+All of this is one machine, one fixture page, one PDF. It says nothing about whether the 16,281
+lines of `engine-services` port well, and nothing about iOS or Android, which is the actual argument
+for the port. The case was never performance. It still isn't.

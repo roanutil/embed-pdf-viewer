@@ -155,9 +155,25 @@ ported so much as replaced, since a Rust core would embed `rquickjs` directly.
 The PDFium linkage question is genuinely open and I have not tried any of the three options. Until
 someone does, wave 2 onward is contingent.
 
-I also have no measurement of what a realistic WASM crossing costs on our actual `Geom` payloads.
-Everything above argues from the shape of the boundary rather than from numbers, which is enough to
-pick an order but not enough to promise a result.
+Update: the linkage question above is answered, and it went the friendly way. A Rust `staticlib` built for
+`wasm32-unknown-emscripten` goes on the same `em++` command line as `libembedpdf.a` and links, with
+no second module, no cross-module calls and no shared-memory problem. `pdfium-rust-spike/` does it
+four times over, and `build/link-wasm.sh` in that directory is the proof, so wave 2 onward is not
+contingent on it any more.
+
+I do have a number for the crossing now, and it is in
+[the PDFium wrapper benchmark](./pdfium-rust-wrapper-benchmarks.md). A wasm call into PDFium costs
+around 340 ns through a hand-written `cwrap`. Putting a Rust frame in front of it costs 1 to 4
+percent on workloads that do real PDFium work, and the null probe built to price that frame in
+isolation could not resolve it at all. Collapsing the per-glyph loop in
+`PageGeometryReader` into a single crossing is worth about 2.6x in wasm and 7.10x to 15.08x
+natively, because `mem.peek` is a typed-array read in one place and a full N-API round trip in the
+other.
+
+So the boundary is priced and the answer is that a thin one is nearly free and a chatty one is
+expensive, which is what the ordering above already assumed. What it does not settle is the thing I
+actually said I wanted: those are PDFium payloads, not `Geom` payloads, and the coarse win came out
+identical whether Rust or C++ sat behind it. One machine, one fixture page, one PDF.
 
 And I have assumed mobile needs display, search, and annotation read and write, but not interactive
 drawing. If that assumption is wrong, wave 4 stops being optional and the total roughly grows from
