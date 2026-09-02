@@ -21,12 +21,11 @@
  */
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { relative, resolve } from 'node:path';
 import { canonicalFor, canonicalForNative, compare } from './gate.mjs';
 import { GATE_FIXTURES } from './fixture.mjs';
 
 const here = import.meta.dirname;
-const RESULTS = resolve(here, 'results');
 const ARMS = ['a', 'b', 'c', 'd'];
 
 const arg = (name, fallback) => {
@@ -36,6 +35,14 @@ const arg = (name, fallback) => {
 const native = process.argv.includes('--native');
 const rounds = Number(arg('rounds', '7'));
 const budgetMs = Number(arg('budget', '500'));
+// `--out` writes the round files somewhere other than bench/results/.
+//
+// bench/results/ holds 56 COMMITTED files, the raw data behind every table in
+// RESULTS.md, and any run clears the ones it is about to replace. That makes a
+// short run destructive: `run.mjs --rounds 2 --budget 100` swapped seven rounds
+// of real data for two rounds of noise. Tests pass --out and never touch the
+// committed set.
+const RESULTS = resolve(arg('out', resolve(here, 'results')));
 
 if (native) {
   // Arm a is packages/engine/runtime's own shipping addon; arms b and c
@@ -101,8 +108,7 @@ console.log(
 
 // Clear only the files THIS run is about to write. Wiping the whole directory
 // destroyed the wasm result set the first time a --native run followed a wasm
-// one, and the published wasm tables in RESULTS.md have no raw data behind
-// them because of it.
+// one; commit a31c1123 re-ran wasm to restore it.
 mkdirSync(RESULTS, { recursive: true });
 for (const f of readdirSync(RESULTS)) {
   if (!f.endsWith('.json')) continue;
@@ -122,6 +128,7 @@ for (let r = 1; r <= rounds; r++) {
       stdio: ['ignore', 'inherit', 'inherit'],
       env: {
         ...process.env,
+        BENCH_OUT: RESULTS,
         BENCH_ARM: a,
         BENCH_ROUND: String(r),
         BENCH_BUDGET_MS: String(budgetMs),
@@ -135,7 +142,8 @@ for (let r = 1; r <= rounds; r++) {
   }
 }
 
+const shown = relative(process.cwd(), RESULTS);
 console.log(
-  `\n${readdirSync(RESULTS).length} result files in bench/results. ` +
+  `\n${readdirSync(RESULTS).length} result files in ${shown && !shown.startsWith('..') ? shown : RESULTS}. ` +
     `Now run: node bench/compare.mjs${native ? ' --native' : ''}`,
 );

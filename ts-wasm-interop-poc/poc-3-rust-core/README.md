@@ -59,10 +59,13 @@ model would allocate every render and spin React forever. Rust's monotonic `vers
 satisfies the contract by construction. That one substitution is worth more than any interop
 cleverness, and it is why the store's public shape is `getVersion()` rather than `getModel()`.
 
-The display list is split by change frequency. Quads change every frame; ids and colours change only
-when the shape set does. So `scene()` returns a flat buffer of `[handle, 8 coords, flags]` per shape
-and nothing else, and `shapeTable()` returns the slow half, re-read only when Rust's `topologyVersion`
-moves. Zooming never touches it.
+The display list is split by change frequency. Quads change every frame; ids, colours, `rot` and
+`anchored` change only when a shape is edited. So `scene()` returns a flat buffer of
+`[handle, 8 coords, flags]` per shape and nothing else, and `shapeTable()` returns the slow half,
+re-read only when Rust's `tableVersion` moves. Zooming never touches it. `affects_shape_table` in
+`crates/core/src/model.rs` is the list of messages that do, and it has to cover every `ShapeRow`
+field: gating on the shape count alone left `setRot` and `setAnchored` invisible to the cache, so the
+demo's rot readout and anchored checkbox rendered stale values until an unrelated add came along.
 
 ## Two bugs worth stealing
 

@@ -158,6 +158,17 @@ if (alloc.length) {
   }
 }
 
+if (!cold) {
+  // Loud, because this section going missing is how the last regeneration lost
+  // it: `run.mjs` used to delete the whole results directory, cold-start.json
+  // included, and RESULTS.md came back a section short with no complaint.
+  console.error(
+    `\nWARNING: results/cold-start.json is missing, so RESULTS.md has no Cold start section.\n` +
+      `  It is hand-collected from a browser run. See bench/README.md, and restore it with\n` +
+      `  \`git checkout ts-wasm-interop-poc/bench/results/cold-start.json\` if it was deleted.`,
+  );
+}
+
 if (cold) {
   md.push(`\n### Cold start\n`);
   md.push(`${cold.collectedBy}.\n`);

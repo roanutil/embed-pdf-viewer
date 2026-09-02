@@ -4,7 +4,7 @@
 //! the logic is now shareable with a Swift or Kotlin binding, and it is no
 //! longer testable from TypeScript without going through wasm.
 
-use poc_core::geom::{quad_bounds, rect_quad, Rect};
+use poc_core::geom::{quad_bounds, rect_quad, Rect, Vec2};
 use poc_core::model::{
     anchor_factors, hit_test, project_quad, scene_buffer, shape_quad, update, Effect, Model, Msg,
     Point, ViewEnv, FLAG_PROJECTED, FLAG_SELECTED, ITEM_STRIDE,
@@ -158,13 +158,14 @@ fn drag_is_absolute_from_the_down_origin_not_cumulative() {
 }
 
 #[test]
-fn an_anchored_drag_scales_by_the_projection_factor() {
+fn an_anchored_drag_tracks_the_pointer_one_to_one() {
     let mut m = with_one_shape(true);
+    let view = v(2.0, 0.0);
     update(
         &mut m,
         Msg::PointerDown {
             at: Point { x: 70.0, y: 76.0 },
-            view: v(2.0, 0.0),
+            view,
         },
     );
     assert!(m.drag.is_some(), "the down should have hit the projected quad");
@@ -174,7 +175,16 @@ fn an_anchored_drag_scales_by_the_projection_factor() {
             at: Point { x: 80.0, y: 76.0 },
         },
     );
-    assert!((m.shapes[0].rect.x - 75.0).abs() < 1e-9);
+    // The projection holds the unprojected bounds top-left fixed, so the
+    // projected quad already sits at the stored rect position: 10 pointer units
+    // is 10 stored units. Scaling the delta by max(zoom, 1) sent it 20 and left
+    // the cursor behind the shape.
+    assert!((m.shapes[0].rect.x - 65.0).abs() < 1e-9);
+    assert_eq!(
+        hit_test(&m, Vec2 { x: 80.0, y: 76.0 }, view),
+        Some(1),
+        "the cursor must still be on the shape it is dragging"
+    );
 }
 
 #[test]

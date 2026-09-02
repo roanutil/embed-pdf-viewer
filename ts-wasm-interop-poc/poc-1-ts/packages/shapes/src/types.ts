@@ -30,8 +30,6 @@ export interface Drag {
   from: Vec;
   /** The shape's rect at DOWN, so a drag is always absolute, never cumulative. */
   origin: Rect;
-  /** The view captured at DOWN, so an anchored drag commits under the view it started in. */
-  view: ViewEnv;
 }
 
 export interface Model {

@@ -32,9 +32,5 @@ export function useScene(view: ViewEnv): DisplayList {
 }
 
 export function useInteropStats(): InteropStats {
-  return useSyncExternalStore(
-    subscribeStats,
-    () => stats,
-    () => stats,
-  );
+  return useSyncExternalStore(subscribeStats, stats, stats);
 }

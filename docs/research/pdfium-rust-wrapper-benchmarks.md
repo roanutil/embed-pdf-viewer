@@ -10,6 +10,11 @@ PDFium is the opposite case. So this is a plan to measure the same boundary with
 behind it: what does it cost to put Rust between TypeScript and the PDFium fork in
 `packages/engine/runtime`, first in wasm and then native?
 
+Read this as the measurement, not as the decision. It was written while the open question was still
+whether to add Rust at all. That question is settled, and the live recommendation for the fork lives
+in [the runtime decision](./pdfium-rust-wrapper-decision.md): bind to the C ABI from Rust, don't add
+coarse `EPDF*` wrappers. Where the closing section below disagrees with that, the decision wins.
+
 ## What this cannot tell us
 
 Worth saying first, because there are two ways to over-read the result and I expect to be tempted by
@@ -263,17 +268,22 @@ measured anywhere in the run. Natively it is 577.05 µs against 579.94 µs, rati
 The one near-exception was wasm `search`, where arm C beat arm D in six of the seven rounds by 4 to
 9 percent (arm D edged ahead in the seventh, by about 3 percent), and that gap did not reproduce
 natively at all. I do not know whether it was a real difference between `rs_search_page` and
-`cc_search_page` on this fixture's six hundred hits or something Binaryen did to one static library
+`cc_search_page` on this fixture's 120 hits or something Binaryen did to one static library
 and not the other.
 
-So the coarse win belongs to moving the loop, not to the language that holds it. Which argues that
-the fork should keep growing coarse `EPDF*` functions in C++, the way
+So the coarse win belongs to moving the loop, not to the language that holds it. That much is the
+measurement, and it stands.
+
+What I drew from it at the time does not. I read it as an argument that the fork should keep growing
+coarse `EPDF*` functions in C++, the way
 `packages/engine/services/src/features/text/PageTextReader.ts:93` already pulls a whole page of text
-through one `EPDFText_GetTextFull` call. No Rust layer is needed to collect this win, and on
-performance grounds these numbers do not support adding one. The cost of that recommendation is that
-every new coarse operation is C++ written against PDFium's headers by hand, with no borrow checker
-and no `Result`, in the part of the stack where a mistake is a memory-safety bug rather than an
-exception. That is a real price. It is just not one this benchmark can put a number on.
+through one `EPDFText_GetTextFull` call, and that no Rust layer was needed to collect the win. That
+recommendation is superseded by [the runtime decision](./pdfium-rust-wrapper-decision.md). It
+assumed the live question was whether to add Rust at all. Under the port that actually got decided,
+a new coarse `EPDF*` function buys a win the port already deletes the crossings for, and charges the
+same price the old recommendation charged: another coarse operation in C++ written against PDFium's
+headers by hand, with no borrow checker and no `Result`, in the part of the stack where a mistake is
+a memory-safety bug rather than an exception. Same price, no remaining reason to pay it.
 
 The coarsening win itself is large and real, and it is much larger natively, for the reason the
 prediction gave. In wasm, collapsing the per-glyph loop into one crossing takes `geometry` to 0.39x

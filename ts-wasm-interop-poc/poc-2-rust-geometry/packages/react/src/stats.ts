@@ -61,13 +61,34 @@ export function resetStats(): void {
   publish();
 }
 
+/**
+ * The crossings mirror is REFCOUNTED, not one subscription per subscriber.
+ *
+ * Crossings move without any `bumpStats()` call, because geometry counts them
+ * from inside, so this channel has to be mirrored or the meter freezes between
+ * renders. Mirroring it per subscriber does not work: `subscribeCrossings`
+ * keeps its listeners in a `Set` and `publish` is one module-level function, so
+ * a second subscribe deduped to the same entry while still handing back a
+ * deleter for it. Two components calling `useInteropStats()` and one
+ * unmounting then froze the survivor's crossings meter, which reads as "the
+ * port is free" rather than as a broken subscription.
+ */
+let wasmMirrors = 0;
+let offWasm: (() => void) | null = null;
+
 export function subscribeStats(listener: () => void): () => void {
   listeners.add(listener);
-  // Crossings move without any bumpStats() call, because geometry counts them
-  // from inside. Mirror that channel or the meter freezes between renders.
-  const offWasm = subscribeCrossings(publish);
+  if (wasmMirrors === 0) offWasm = subscribeCrossings(publish);
+  wasmMirrors += 1;
+  let live = true;
   return () => {
+    if (!live) return;
+    live = false;
     listeners.delete(listener);
-    offWasm();
+    wasmMirrors -= 1;
+    if (wasmMirrors === 0) {
+      offWasm?.();
+      offWasm = null;
+    }
   };
 }

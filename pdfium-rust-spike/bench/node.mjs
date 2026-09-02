@@ -54,7 +54,9 @@ const out = {
   cells,
 };
 
-const dir = resolve(here, 'results');
+// `BENCH_OUT` exists so a test run can write somewhere disposable instead of
+// over the committed result set in bench/results/. run.mjs sets it from --out.
+const dir = process.env.BENCH_OUT ? resolve(process.env.BENCH_OUT) : resolve(here, 'results');
 mkdirSync(dir, { recursive: true });
 const filename = native ? `native-${armName}-r${round}.json` : `${armName}-r${round}.json`;
 writeFileSync(resolve(dir, filename), `${JSON.stringify(out, null, 2)}\n`);

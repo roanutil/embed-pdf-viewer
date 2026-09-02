@@ -25,7 +25,7 @@ describe('the boundary', () => {
 
     resetCrossings();
     store.scene(V(3, 90));
-    // topologyVersion, then shapeTable because it moved, then scene.
+    // tableVersion, then shapeTable because it moved, then scene.
     expect(crossings()).toBe(3);
     store.destroy();
   });
@@ -65,16 +65,19 @@ describe('the boundary', () => {
     store.destroy();
   });
 
-  it('costs TWO crossings on the frame after a non-topological change', () => {
+  it('costs TWO crossings on the frame after a change that misses the table', () => {
     const store = fresh();
     store.seed(3, true);
     store.scene(V(2));
 
-    store.dispatch({ t: 'setRot', id: 's1', rot: 45 });
+    // Selection is a scene flag, not a `ShapeRow` field, so the rows are still
+    // good. `setRot` would NOT do here: rot is a row, and pretending otherwise
+    // is what froze the demo's rot readout.
+    store.dispatch({ t: 'select', id: 's1' });
     resetCrossings();
     store.scene(V(2));
     // The change listener marked the cache dirty, so we pay once to learn the
-    // shape SET did not move, then once for the frame.
+    // table did not move, then once for the frame.
     expect(crossings()).toBe(2);
     store.destroy();
   });
@@ -112,18 +115,38 @@ describe('the version counter', () => {
     store.destroy();
   });
 
-  it('separates the topology version from the state version', () => {
+  it('separates the table version from the state version', () => {
+    const store = fresh();
+    store.dispatch({ t: 'add', at: { x: 10, y: 10 }, color: '#c00' });
+    store.dispatch({ t: 'add', at: { x: 200, y: 200 }, color: '#0c0' });
+    const rowsBefore = store.rows();
+
+    // Selecting changes state but touches nothing the table carries, so the
+    // cached array survives. That identity IS the optimisation.
+    store.dispatch({ t: 'select', id: 's1' });
+    expect(store.rows()).toBe(rowsBefore);
+
+    store.dispatch({ t: 'add', at: { x: 300, y: 300 }, color: '#00c' });
+    expect(store.rows()).not.toBe(rowsBefore);
+    store.destroy();
+  });
+
+  it('refetches the table when a row field changes without a count change', () => {
     const store = fresh();
     store.dispatch({ t: 'add', at: { x: 10, y: 10 }, color: '#c00' });
     const rowsBefore = store.rows();
+    expect(rowsBefore[0]).toMatchObject({ rot: 0, anchored: false });
 
-    // A rotation changes state but not the shape set, so the cached table
-    // object survives. That identity IS the optimisation.
+    // `rot` and `anchored` are `ShapeRow` fields, so the cache has to see them
+    // even though the shape SET has not moved. Gating on the shape count alone
+    // served the stale row here: the demo's rot readout and anchored checkbox
+    // kept rendering 0 and false until an unrelated add came along.
     store.dispatch({ t: 'setRot', id: 's1', rot: 45 });
-    expect(store.rows()).toBe(rowsBefore);
-
-    store.dispatch({ t: 'add', at: { x: 200, y: 200 }, color: '#0c0' });
     expect(store.rows()).not.toBe(rowsBefore);
+    expect(store.selectedRow()).toMatchObject({ rot: 45, anchored: false });
+
+    store.dispatch({ t: 'setAnchored', id: 's1', anchored: true });
+    expect(store.selectedRow()).toMatchObject({ rot: 45, anchored: true });
     store.destroy();
   });
 });

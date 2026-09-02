@@ -17,6 +17,14 @@ Chrome on an M-series Mac): 1.015 µs through a flat `Float64Array`, 2.735 µs t
 `serde-wasm-bindgen` objects, 0.225 µs for a Rust to TypeScript callback. So the ergonomic object
 surface costs about 2.7x the flat one, and calling back into JS is the cheapest direction.
 
+That 0.225 µs is an upper bound rather than a measurement of the crossing. The callback arm ran with
+the demo's own host logger installed, so it timed 20,000 React `setState` enqueues along with the
+callbacks while the other two arms timed crossings alone. `runBench` in
+`poc-2-rust-geometry/apps/demo/src/App.tsx` swaps a trivial logger in for that arm now, so pressing
+`measure` again reports a smaller figure. The conclusion survives the correction: run the same three
+arms in Node and the callback costs 0.085 µs with a trivial logger, 0.153 µs with one that rebuilds
+a six-element array per call, against 0.303 µs for a flat `rectQuad` in the same process.
+
 ## The domain
 
 Rectangles on a page, with the one interesting behavior lifted from the real annotation core: a

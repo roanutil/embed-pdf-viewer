@@ -14,7 +14,19 @@ export interface InteropStats {
   crossings: number;
 }
 
-export const stats: InteropStats = {
+let sceneCalls = 0;
+let hitTests = 0;
+
+/**
+ * The snapshot `useSyncExternalStore` compares, replaced on every publish.
+ *
+ * It has to be a NEW object. The first version exported one mutable
+ * `InteropStats` and handed that same reference over as `getSnapshot`; React
+ * compares snapshots with `Object.is`, so every notification bailed out, the
+ * Interop panel froze at its first-render values, and "reset counters" did
+ * nothing visible.
+ */
+let snapshot: InteropStats = {
   kind: 'TypeScript only',
   sceneCalls: 0,
   hitTests: 0,
@@ -38,21 +50,23 @@ function publish(): void {
   scheduled = true;
   queueMicrotask(() => {
     scheduled = false;
+    // A fresh object, so useSyncExternalStore sees the change.
+    snapshot = { kind: snapshot.kind, sceneCalls, hitTests, crossings: 0 };
     listeners.forEach((l) => l());
   });
 }
 
-export function bumpStats(patch: Partial<InteropStats>): void {
-  stats.sceneCalls += patch.sceneCalls ?? 0;
-  stats.hitTests += patch.hitTests ?? 0;
-  stats.crossings += patch.crossings ?? 0;
+export const stats = (): InteropStats => snapshot;
+
+export function bumpStats(patch: { sceneCalls?: number; hitTests?: number }): void {
+  sceneCalls += patch.sceneCalls ?? 0;
+  hitTests += patch.hitTests ?? 0;
   publish();
 }
 
 export function resetStats(): void {
-  stats.sceneCalls = 0;
-  stats.hitTests = 0;
-  stats.crossings = 0;
+  sceneCalls = 0;
+  hitTests = 0;
   publish();
 }
 

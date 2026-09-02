@@ -279,7 +279,7 @@ arm d was faster instead, by about 3 percent (31.51 µs against 32.35 µs). That
 either arm's own round-to-round spread in the rounds where it shows up. This is the one
 place in this benchmark where a consistent, repeatable difference between the Rust and C++
 implementations of the same coarse operation shows up. It is a difference between
-`rs_search_page` and `cc_search_page` specifically, on this fixture's roughly six hundred search
+`rs_search_page` and `cc_search_page` specifically, on this fixture's 120 search
 hits, not a general claim about the two languages: `geometry`, the workload with far more records
 crossing per call, shows no such gap. The two operations were written independently and are not
 required to compile to identical code; the fact that one shows a small, consistent gap and the
@@ -321,7 +321,7 @@ One more asymmetry runs the other way, against the coarse arm, and is also not f
 `geometryCoarse` follows the rule that the coarse and thin decodes must differ only in where the
 data comes from, never in how much garbage they make (`bench/workloads.mjs`'s comment above
 `dvRectAt`); `searchCoarse` does not. Its hit loop builds `hits[i] = [0, 4, 8, 12].map(...)`, one
-throwaway array literal and closure per hit, about 600 per call on this fixture. That is the same
+throwaway array literal and closure per hit, 120 per call on this fixture. That is the same
 class of allocation bug this run's Finding 6 already fixed elsewhere, and it is left in place rather
 than fixed, because fixing it would change a published number, and re-running the benchmark to
 correct it is not worth a change that can only improve the coarse arm's own result. So the published
@@ -530,8 +530,8 @@ not smoothed over to match the geometry finding or the pre-registered prediction
 
 The likely reason is visible in the same null-probe cells that explain `geometry`. `searchThin`
 (`bench/workloads.mjs`) is dominated by function calls, not peeks: `FPDFText_FindNext`,
-`GetSchResultIndex`, `GetSchCount`, `CountRects`, and `GetRect` per hit, against roughly six hundred
-hits on this fixture, with only four `peekF64` calls per matched rect. `null-call` costs 205.1 ns
+`GetSchResultIndex`, `GetSchCount`, `CountRects`, and `GetRect` per hit, 602 PDFium calls against
+120 hit rects on this fixture, with only four `peekF64` calls per matched rect. `null-call` costs 205.1 ns
 natively against 350.6 ns in wasm for arm a, a native call costing a bit over half (0.58x) a wasm
 one on this machine. `search`'s thin loop is call-bound rather than peek-bound, and the operation
 being

@@ -16,7 +16,7 @@ export class Core {
   constructor();
   free(): void;
   readonly version: number;
-  readonly topologyVersion: number;
+  readonly tableVersion: number;
   readonly shapeCount: number;
   readonly selectedHandle: number | undefined;
   readonly isDragging: boolean;

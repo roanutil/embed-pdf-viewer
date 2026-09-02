@@ -42,7 +42,7 @@ export type Msg =
 
 export type Effect = { t: 'log'; message: string } | { t: 'persist'; ids: readonly Id[] };
 
-/** The slowly-changing half of a shape: read on a topology bump, not per frame. */
+/** The slowly-changing half of a shape: read on a `tableVersion` bump, not per frame. */
 export interface ShapeRow {
   handle: number;
   id: Id;

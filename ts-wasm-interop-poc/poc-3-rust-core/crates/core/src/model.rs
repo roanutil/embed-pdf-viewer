@@ -50,7 +50,6 @@ pub struct Drag {
     pub handle: u32,
     pub from: Vec2,
     pub origin: Rect,
-    pub view: ViewEnv,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -211,7 +210,6 @@ pub fn update(model: &mut Model, msg: Msg) -> (bool, Vec<Effect>) {
                         handle,
                         from: at.into(),
                         origin,
-                        view,
                     });
                     (true, vec![])
                 }
@@ -225,21 +223,17 @@ pub fn update(model: &mut Model, msg: Msg) -> (bool, Vec<Effect>) {
             let Some(shape) = model.shapes.iter_mut().find(|s| s.handle == drag.handle) else {
                 return (false, vec![]);
             };
-            // An anchored shape follows the POINTER, so the delta is scaled by
-            // the same factor its geometry is projected through.
-            let s = if shape.anchored {
-                let z = if drag.view.zoom == 0.0 {
-                    1.0
-                } else {
-                    drag.view.zoom
-                };
-                z.max(1.0)
-            } else {
-                1.0
-            };
+            // The delta is NOT scaled by zoom, not even for an anchored shape.
+            // `project_quad` is a similarity about the shape's own unprojected
+            // bounds top-left, which makes that point a fixed point of the
+            // projection: the projected quad sits at the stored rect position
+            // at every zoom. Pointer coordinates already live in that space,
+            // so a 1:1 delta is what makes the shape follow the cursor.
+            // Scaling by max(zoom, 1) moved it that many times too far and the
+            // next pointer_down missed it.
             shape.rect = Rect {
-                x: drag.origin.x + (at.x - drag.from.x) * s,
-                y: drag.origin.y + (at.y - drag.from.y) * s,
+                x: drag.origin.x + (at.x - drag.from.x),
+                y: drag.origin.y + (at.y - drag.from.y),
                 ..drag.origin
             };
             (true, vec![])
@@ -329,7 +323,7 @@ pub const FLAG_PROJECTED: f64 = 2.0;
 ///
 /// Colors and ids are deliberately absent: they change when the shape set
 /// changes, not when the view does, so they live in `shape_table` and the
-/// TypeScript side caches them against a topology version.
+/// TypeScript side caches them against the table version.
 pub fn scene_buffer(model: &Model, view: ViewEnv) -> Vec<f64> {
     let mut out = Vec::with_capacity(1 + model.shapes.len() * ITEM_STRIDE);
     out.push(model.shapes.len() as f64);
@@ -361,7 +355,8 @@ pub struct ShapeRow {
     pub anchored: bool,
 }
 
-/// The slowly-changing half of the model. Fetched only when topology moves.
+/// The slowly-changing half of the model. Fetched only when the table version
+/// moves, so every field here has to be covered by `affects_shape_table`.
 pub fn shape_table(model: &Model) -> Vec<ShapeRow> {
     model
         .shapes
@@ -374,4 +369,30 @@ pub fn shape_table(model: &Model) -> Vec<ShapeRow> {
             anchored: s.anchored,
         })
         .collect()
+}
+
+/// Whether a message can change anything `shape_table` returns.
+///
+/// The TypeScript side refetches the table only when the version this drives
+/// moves, so a field in `ShapeRow` that is not covered here goes stale on the
+/// other side and the UI renders the old value until something else bumps it.
+/// `rot` and `anchored` are exactly that case: the first version of this
+/// compared `shapes.len()` instead, so `SetRot` and `SetAnchored` were
+/// invisible to the cache.
+///
+/// Deliberately a match on the message rather than a hash of the rows: it is
+/// O(1), and it fails loudly when a variant is added because the match is
+/// exhaustive.
+pub fn affects_shape_table(msg: &Msg) -> bool {
+    match msg {
+        // Adds and removes rows.
+        Msg::Add { .. } | Msg::Delete { .. } => true,
+        // Writes a `ShapeRow` field.
+        Msg::SetRot { .. } | Msg::SetAnchored { .. } => true,
+        // Selection is a scene flag and a drag only moves the rect; neither is
+        // in the table.
+        Msg::Select { .. } | Msg::PointerDown { .. } | Msg::PointerMove { .. } | Msg::PointerUp => {
+            false
+        }
+    }
 }

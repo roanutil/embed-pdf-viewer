@@ -56,7 +56,7 @@ export function update(model: Model, msg: Msg): [Model, Effect[]] {
         {
           ...model,
           selected: hit,
-          drag: { id: hit, from: msg.at, origin: shape.rect, view: msg.view },
+          drag: { id: hit, from: msg.at, origin: shape.rect },
         },
         [],
       ];
@@ -65,13 +65,16 @@ export function update(model: Model, msg: Msg): [Model, Effect[]] {
     case 'pointerMove': {
       const d = model.drag;
       if (!d) return [model, []];
-      // An anchored shape moves with the POINTER, not with the page, so the
-      // delta is divided by the same factor its geometry is projected through.
-      const shape = model.shapes.find((s) => s.id === d.id);
-      if (!shape) return [model, []];
-      const s = shape.anchored ? Math.max(d.view.zoom || 1, 1) : 1;
-      const dx = (msg.at.x - d.from.x) * s;
-      const dy = (msg.at.y - d.from.y) * s;
+      if (!model.shapes.some((s) => s.id === d.id)) return [model, []];
+      // The delta is NOT scaled by zoom, not even for an anchored shape.
+      // `projectQuad` is a similarity about the shape's own unprojected bounds
+      // top-left, which makes that point a fixed point of the projection: the
+      // projected quad sits at the stored rect position at every zoom. Pointer
+      // coordinates already live in that space, so a 1:1 delta is what makes
+      // the shape follow the cursor. Scaling by max(zoom, 1) moved it that
+      // many times too far and the next pointerDown missed it.
+      const dx = msg.at.x - d.from.x;
+      const dy = msg.at.y - d.from.y;
       return [
         {
           ...model,

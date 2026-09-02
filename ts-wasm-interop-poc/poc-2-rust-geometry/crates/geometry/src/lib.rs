@@ -45,12 +45,19 @@ pub fn set_host_logger(f: &js_sys::Function) {
     HOST_LOG.with(|slot| *slot.borrow_mut() = Some(f.clone()));
 }
 
+/// The borrow ends BEFORE the call into JS, and that ordering is the point.
+///
+/// Holding a `RefCell` borrow across a call into JavaScript is how a Rust core
+/// kills itself: the host callback can re-enter Rust, and `set_host_logger`
+/// takes `borrow_mut()`. `init.ts` re-registers the logger on every
+/// `initGeometry()` call, including when the module is already up, so a host
+/// logger that reached back through it panicked with `BorrowMutError`, and a
+/// wasm panic leaves the instance dead for the rest of the page.
 fn host_log(message: &str) {
-    HOST_LOG.with(|slot| {
-        if let Some(f) = slot.borrow().as_ref() {
-            let _ = f.call1(&JsValue::NULL, &JsValue::from_str(message));
-        }
-    });
+    let logger = HOST_LOG.with(|slot| slot.borrow().clone());
+    if let Some(f) = logger {
+        let _ = f.call1(&JsValue::NULL, &JsValue::from_str(message));
+    }
 }
 
 /// Calls the host logger `n` times and reports how many calls actually landed.
@@ -58,16 +65,17 @@ fn host_log(message: &str) {
 /// guessing at it.
 #[wasm_bindgen(js_name = benchHostCalls)]
 pub fn bench_host_calls(n: u32) -> u32 {
+    // Cloned out for the same reason as `host_log`, and it matters more here:
+    // this held one borrow across `n` calls into JS.
+    let Some(f) = HOST_LOG.with(|slot| slot.borrow().clone()) else {
+        return 0;
+    };
     let mut landed = 0u32;
-    HOST_LOG.with(|slot| {
-        if let Some(f) = slot.borrow().as_ref() {
-            for i in 0..n {
-                if f.call1(&JsValue::NULL, &JsValue::from_f64(i as f64)).is_ok() {
-                    landed += 1;
-                }
-            }
+    for i in 0..n {
+        if f.call1(&JsValue::NULL, &JsValue::from_f64(i as f64)).is_ok() {
+            landed += 1;
         }
-    });
+    }
     landed
 }
 

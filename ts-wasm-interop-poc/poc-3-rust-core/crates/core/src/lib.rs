@@ -16,19 +16,26 @@ pub mod geom;
 pub mod model;
 
 use crate::model::{
-    hit_test, scene_buffer, shape_table, update, Model, Msg, Point, ViewEnv, ITEM_STRIDE,
+    affects_shape_table, hit_test, scene_buffer, shape_table, update, Model, Msg, Point, ViewEnv,
+    ITEM_STRIDE,
 };
 
 thread_local! {
     static HOST_LOG: RefCell<Option<js_sys::Function>> = const { RefCell::new(None) };
 }
 
+/// The borrow ends BEFORE the call into JS, and that ordering is the point.
+///
+/// Holding a `RefCell` borrow across a call into JavaScript is how a Rust core
+/// kills itself: the host callback can re-enter Rust, and `set_host_logger`
+/// takes `borrow_mut()`. A host logger that re-registered a logger, or a second
+/// `createCoreStore()` running inside one, panicked with `BorrowMutError`, and
+/// a wasm panic leaves the instance dead for the rest of the page.
 fn host_log(message: &str) {
-    HOST_LOG.with(|slot| {
-        if let Some(f) = slot.borrow().as_ref() {
-            let _ = f.call1(&JsValue::NULL, &JsValue::from_str(message));
-        }
-    });
+    let logger = HOST_LOG.with(|slot| slot.borrow().clone());
+    if let Some(f) = logger {
+        let _ = f.call1(&JsValue::NULL, &JsValue::from_str(message));
+    }
 }
 
 /// The layout of `scene()`'s buffer, handed to TypeScript so the decoder is not
@@ -48,9 +55,15 @@ pub struct Core {
     /// to, because the model itself lives in linear memory and there is no
     /// object identity for React to compare.
     version: u32,
-    /// Bumped only when the SET of shapes changes, so the TypeScript side knows
-    /// when its id and color cache is stale. Panning and zooming never move it.
-    topology: u32,
+    /// Bumped only when something `shape_table()` returns changes, so the
+    /// TypeScript side knows when its row cache is stale. Panning, zooming,
+    /// selecting and dragging never move it.
+    ///
+    /// This used to track the shape COUNT, which was wrong: `rot` and
+    /// `anchored` are table fields that no count change accompanies, so
+    /// `SetRot` and `SetAnchored` left the cache serving stale rows.
+    /// `affects_shape_table` is the list, and it lives next to `ShapeRow`.
+    table: u32,
 }
 
 /// What `dispatch` reports back. `changed` is what drives invalidation on the
@@ -85,7 +98,7 @@ impl Core {
         Core {
             model: Model::default(),
             version: 1,
-            topology: 1,
+            table: 1,
         }
     }
 
@@ -106,9 +119,9 @@ impl Core {
         self.version
     }
 
-    #[wasm_bindgen(getter, js_name = topologyVersion)]
-    pub fn topology_version(&self) -> u32 {
-        self.topology
+    #[wasm_bindgen(getter, js_name = tableVersion)]
+    pub fn table_version(&self) -> u32 {
+        self.table
     }
 
     #[wasm_bindgen(getter, js_name = shapeCount)]
@@ -133,13 +146,13 @@ impl Core {
         let parsed: Msg = serde_wasm_bindgen::from_value(msg)
             .map_err(|e| JsValue::from_str(&format!("bad message: {e}")))?;
 
-        let topology_before = self.model.shapes.len();
+        let touches_table = affects_shape_table(&parsed);
         let (changed, effects) = update(&mut self.model, parsed);
 
         if changed {
             self.version = self.version.wrapping_add(1);
-            if self.model.shapes.len() != topology_before {
-                self.topology = self.topology.wrapping_add(1);
+            if touches_table {
+                self.table = self.table.wrapping_add(1);
             }
         }
 
@@ -195,7 +208,7 @@ impl Core {
         }
         self.model.selected = None;
         self.version = self.version.wrapping_add(1);
-        self.topology = self.topology.wrapping_add(1);
+        self.table = self.table.wrapping_add(1);
         // No host_log here. `seed_shapes` takes `&mut self`, and calling into JS
         // under a mutable borrow is the trap documented on DispatchResult. The
         // wrapper logs this instead.

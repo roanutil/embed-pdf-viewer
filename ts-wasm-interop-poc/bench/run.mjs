@@ -44,8 +44,21 @@ for (const poc of POCS) {
   }
 }
 
-rmSync(RESULTS, { recursive: true, force: true });
+/**
+ * Clears only the per-round files THIS run regenerates.
+ *
+ * Not `rmSync(RESULTS, { recursive: true })`. `results/cold-start.json` is
+ * hand-collected from a browser run (see `bench/README.md`) and is the one
+ * results file the repo commits, so the recursive form deleted it and
+ * `compare.mjs` then dropped the whole Cold start section from `RESULTS.md`
+ * without saying anything. The patterns here are the ones `.gitignore` lists as
+ * regenerable.
+ */
+const PER_ROUND = /-(?:timing|alloc)-r\d+\.json$/;
 mkdirSync(RESULTS, { recursive: true });
+for (const f of readdirSync(RESULTS)) {
+  if (PER_ROUND.test(f)) rmSync(resolve(RESULTS, f));
+}
 
 function runOne(dir, mode, round) {
   execFileSync('node', ['--expose-gc', '--import', 'tsx', 'bench/node.ts'], {
@@ -101,5 +114,5 @@ for (let r = 1; r <= allocRounds; r++) {
   for (const poc of POCS) runOne(poc.dir, 'alloc', r);
 }
 
-const written = readdirSync(RESULTS).length;
-console.log(`\n${written} result files in bench/results. Now run: node bench/compare.mjs`);
+const written = readdirSync(RESULTS).filter((f) => PER_ROUND.test(f)).length;
+console.log(`\n${written} per-round result files in bench/results. Now run: node bench/compare.mjs`);

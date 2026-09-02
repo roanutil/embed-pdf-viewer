@@ -88,9 +88,15 @@ int cc_read_page_geometry(FPDF_TEXTPAGE text_page, uint8_t* out, int cap) {
       // when there is an oriented quad to read them from, not merely when
       // the glyph is non-upright.
       if (!(geo.flags & EPDF_CHARGEO_UPRIGHT)) {
+        // Promoted to double before the math, matching arm C and the thin
+        // arms, which read the same float matrix and compute in JS doubles
+        // (`readGlyphRaw` in bench/workloads.mjs). std::atan2(float, float)
+        // resolves to the float overload, and an f32 atan2 or determinant can
+        // round differently at the gate's fixed 1e-6 comparison.
         const FS_MATRIX& m = geo.matrix;
-        rec.rotation = std::atan2(m.b, m.a);
-        if (m.a * m.d - m.b * m.c < 0) rec.flags |= kFlagAscentFlip;
+        const double a = m.a, b = m.b, c = m.c, d = m.d;
+        rec.rotation = static_cast<float>(std::atan2(b, a));
+        if (a * d - b * c < 0) rec.flags |= kFlagAscentFlip;
       }
     }
 
@@ -109,8 +115,14 @@ int cc_render_page(FPDF_PAGE page, FPDF_BITMAP bitmap, int w, int h, int rotate)
   return 1;
 }
 
-// Runs the whole FindNext loop in C++. Returns the hit-rect count; writes
-// four little-endian f32s per rect (left, top, right, bottom).
+// Runs the whole FindNext loop in C++. Writes four little-endian f32s per rect
+// (left, top, right, bottom), at most `cap` rects.
+//
+// Returns the hit-rect count, or NEGATIVE the count found when it did not fit
+// in `cap`, matching rs_search_page in crates/ops/src/lib.rs. The count used to
+// come back unclamped on overflow, which let searchCoarse
+// (bench/workloads.mjs) read past the end of its allocation with no error
+// anywhere.
 int cc_search_page(FPDF_TEXTPAGE text_page, const unsigned short* term, float* out, int cap) {
   FPDF_SCHHANDLE handle = FPDFText_FindStart(text_page, term, 0, 0);
   if (handle == nullptr) return 0;
@@ -137,7 +149,7 @@ int cc_search_page(FPDF_TEXTPAGE text_page, const unsigned short* term, float* o
     }
   }
   FPDFText_FindClose(handle);
-  return written;
+  return written > cap ? -written : written;
 }
 
 }  // extern "C"

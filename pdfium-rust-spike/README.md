@@ -41,7 +41,9 @@ fresh `emsdk.sh` install will hit the rejection until the same substitution is m
 
 `node --test bench/run.test.mjs` is the smoke test: two short rounds, checked for plausible shapes
 (render at 4x costs more than at 1x, the glyph loop dwarfs a single null call), not for
-publishable numbers.
+publishable numbers. It passes `--out` a temp directory, because `bench/results/` holds the 56
+committed files behind every table in `RESULTS.md` and any run clears the ones it is about to
+replace. Use `--out` for any exploratory run you don't want in the published set.
 
 ## Native
 

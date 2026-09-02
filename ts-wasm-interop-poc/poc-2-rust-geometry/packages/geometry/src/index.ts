@@ -96,6 +96,19 @@ export function rectQuadObjects(rect: Rect, rot = 0): Quad {
   return [pts[0]!, pts[1]!, pts[2]!, pts[3]!] as Quad;
 }
 
+/**
+ * Host registration on its own, without `initGeometry`'s greeting.
+ *
+ * `initGeometry({ host })` is the normal way in and stays the normal way in.
+ * This exists because the demo's bench has to measure the Rust -> TypeScript
+ * crossing with a TRIVIAL logger attached: the app's real logger calls React
+ * setState, and timing 20,000 of those measured the React scheduler rather than
+ * the boundary. Swap, measure, swap back.
+ */
+export function setHostLogger(log: (message: string) => void): void {
+  required().setHostLogger((m: unknown) => log(String(m)));
+}
+
 /** Measures the Rust -> TypeScript direction: n calls out of wasm into a JS fn. */
 export function benchHostCalls(n: number): number {
   countCrossing();

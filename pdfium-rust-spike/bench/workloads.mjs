@@ -109,12 +109,17 @@ const quadAt = (mem, ptr, off) => {
  *
  * geometryCoarse obeys this rule; searchCoarse below does not. Its hit loop
  * builds `[0, 4, 8, 12].map(...)`, one throwaway array literal and closure
- * per hit, about 600 per call on this fixture. That is the same class of bug
- * this rule exists to catch, and it runs against the coarse arm, so the
- * published 3.3x and 3.1x search-coarsening numbers understate the true win
- * slightly. It is left rather than fixed, because fixing it would change a
- * published number and re-running the benchmark to correct it is not worth
- * a change that can only improve the coarse arm's result.
+ * per hit, 120 per call on this fixture. That is the same class of bug this
+ * rule exists to catch, and it runs against the coarse arm, so the published
+ * 3.3x and 3.1x search-coarsening numbers understate the true win slightly.
+ * It is left rather than fixed, because fixing it would change a published
+ * number and re-running the benchmark to correct it is not worth a change
+ * that can only improve the coarse arm's result.
+ *
+ * The count used to read "about 600 per call", which was searchThin's PDFium
+ * lookup count (602 on this fixture: one FindStart, one FindNext and three
+ * index calls per match, one GetRect per rect, one FindClose), not the hit
+ * count. Measured: "the" on page 4 of report.pdf finds 120 hit rects.
  */
 const dvRectAt = (dv, off) => [
   dv.getFloat32(off, true),
@@ -396,6 +401,17 @@ export function makeWorkloads(arm, fx) {
 
   const searchCoarse = () => {
     const n = fn[`${coarse}_search_page`](fx.textPage, termPtr, searchPtr, searchCap);
+    // A negative count means the hits did not fit: `searchCap` rects were
+    // written and `-n` were found. Reading `n` records would run off the end of
+    // the allocation, which the wasm arms cannot detect for themselves
+    // (bench/arm.mjs's viewBuffer ignores its length) and which the native arms
+    // reject inside view_buffer. Fail loudly rather than publish coordinates
+    // read from unrelated heap.
+    if (n < 0) {
+      throw new Error(
+        `${coarse}_search_page: ${-n} hit rects exceed searchCap=${searchCap}. Raise searchCap.`,
+      );
+    }
     // A view over the LIVE memory, not a copy: `mem.readBytes` here would
     // memcpy the packed rect buffer every call, a cost the thin arm never
     // pays since it reads the heap in place — the same asymmetry Finding 6

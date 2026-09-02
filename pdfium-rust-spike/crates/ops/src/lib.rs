@@ -20,14 +20,21 @@ pub extern "C" fn rs_read_page_geometry(text_page: FPDF_TEXTPAGE, out: *mut u8, 
         return count;
     }
     let mut w = unsafe { Writer::new(out, cap as usize) };
-    let mut prev_key: Option<u32> = None;
+    let mut prev_key: Option<u64> = None;
     let mut geo = EPDF_CHAR_GEOMETRY::default();
 
     for i in 0..count {
-        // `object_key` is a grouping key compared for equality within one
-        // page (see record.rs), not a pointer dereferenced later, so
-        // truncating it to u32 on a 64-bit target is safe.
-        let object_key = unsafe { FPDFText_GetTextObject(text_page as _, i) } as u32;
+        // Two widths on purpose. The RECORD's key is 32 bits (record.rs), and
+        // arm D truncates it the same way (cpp/record.h), so the packed buffers
+        // agree. The COMPARISON below must stay full width: `FPDF_PAGEOBJECT`
+        // is a `u32` on wasm32 but a pointer on 64-bit natives, and arm D plus
+        // both thin arms compare the whole handle. Comparing the truncated one
+        // made arm C skip an `FPDFText_GetFontSize` call the other three make
+        // whenever two consecutive text objects agreed in their low 32 bits,
+        // writing `font_size` 0 and making arm C measurably cheaper than the
+        // arms it is compared against.
+        let object = unsafe { FPDFText_GetTextObject(text_page as _, i) } as u64;
+        let object_key = object as u32;
         let ok = unsafe { EPDFText_GetCharGeometry(text_page as _, i, &mut geo) };
 
         let mut rec = Record {
@@ -42,10 +49,10 @@ pub extern "C" fn rs_read_page_geometry(text_page: FPDF_TEXTPAGE, out: *mut u8, 
         // So this assignment must happen for every glyph, empty or not, and
         // must happen before the empty/ok early-return below -- an empty
         // glyph that begins a new text object still carries a real font size.
-        if prev_key != Some(object_key) {
+        if prev_key != Some(object) {
             rec.font_size = unsafe { FPDFText_GetFontSize(text_page as _, i) } as f32;
         }
-        prev_key = Some(object_key);
+        prev_key = Some(object);
 
         if ok == 0 || (geo.flags & EPDF_CHARGEO_EMPTY) != 0 {
             rec.flags = EPDF_CHARGEO_EMPTY | EPDF_CHARGEO_UPRIGHT;
@@ -80,9 +87,18 @@ pub extern "C" fn rs_read_page_geometry(text_page: FPDF_TEXTPAGE, out: *mut u8, 
             // exist when there is an oriented quad to read them from, not
             // merely when the glyph is non-upright.
             if (geo.flags & EPDF_CHARGEO_UPRIGHT) == 0 {
+                // Promoted to f64 before the math, because the thin arms read
+                // the same f32 matrix and compute in JS doubles
+                // (`readGlyphRaw` in bench/workloads.mjs). An f32 `atan2` and
+                // an f32 determinant can round to a different value at the
+                // gate's fixed 1e-6 comparison, which has no tolerance, and a
+                // near-singular matrix can flip `ascentFlip` outright. The
+                // rotated fixture only exercises 4 exact angles, so this was
+                // passing on lucky samples rather than on agreement.
                 let m = geo.matrix;
-                rec.rotation = m.b.atan2(m.a);
-                if m.a * m.d - m.b * m.c < 0.0 {
+                let (a, b, c, d) = (m.a as f64, m.b as f64, m.c as f64, m.d as f64);
+                rec.rotation = b.atan2(a) as f32;
+                if a * d - b * c < 0.0 {
                     rec.flags |= FLAG_ASCENT_FLIP;
                 }
             }
@@ -111,8 +127,18 @@ pub extern "C" fn rs_render_page(page: FPDF_PAGE, bitmap: FPDF_BITMAP, w: i32, h
     1
 }
 
-/// Runs the whole FindNext loop in Rust. Returns the hit-rect count; writes
-/// four little-endian f32s per rect (left, top, right, bottom).
+/// Runs the whole FindNext loop in Rust. Writes four little-endian f32s per
+/// rect (left, top, right, bottom), at most `cap` rects.
+///
+/// Returns the hit-rect count, or NEGATIVE the count found when it did not fit
+/// in `cap`. The count used to come back unclamped on overflow, which let
+/// `searchCoarse` (bench/workloads.mjs) build a `DataView` over `n * 16` bytes
+/// of a `cap * 16`-byte allocation and read whatever followed it: at `cap = 16`
+/// on the timing fixture this returned 920, spanned 14,720 bytes of a 256-byte
+/// allocation, and reported 904 rects with real-looking coordinates read from
+/// unrelated Emscripten heap. The wasm arms cannot catch that themselves
+/// (bench/arm.mjs's `viewBuffer` ignores its length argument), so overflow has
+/// to be a distinct answer rather than a plausible one.
 #[no_mangle]
 pub extern "C" fn rs_search_page(text_page: FPDF_TEXTPAGE, term: *const u16, out: *mut f32, cap: i32) -> i32 {
     let handle = unsafe { FPDFText_FindStart(text_page as _, term, 0, 0) };
@@ -146,5 +172,9 @@ pub extern "C" fn rs_search_page(text_page: FPDF_TEXTPAGE, term: *const u16, out
         }
         FPDFText_FindClose(handle);
     }
-    written
+    if written > cap {
+        -written
+    } else {
+        written
+    }
 }

@@ -116,14 +116,19 @@ describe('update', () => {
     expect(m.shapes[0]!.rect.x).toBeCloseTo(75, 9);
   });
 
-  it('scales an anchored drag by the factor its geometry is projected through', () => {
+  it('drags an anchored shape 1:1 with the pointer, cursor still on it', () => {
     let m = withOneShape(true);
+    const view = V(2);
     // Grab an interior point of the PROJECTED quad, not a corner.
-    m = update(m, { t: 'pointerDown', at: { x: 70, y: 76 }, view: V(2) })[0];
+    m = update(m, { t: 'pointerDown', at: { x: 70, y: 76 }, view })[0];
     expect(m.drag).not.toBeNull();
     m = update(m, { t: 'pointerMove', at: { x: 80, y: 76 } })[0];
-    // 10 view units at zoom 2 is 20 stored units, so the projected quad moves 10.
-    expect(m.shapes[0]!.rect.x).toBeCloseTo(55 + 20, 9);
+    // The projection holds the unprojected bounds top-left fixed, so the
+    // projected quad already sits at the stored rect position: 10 pointer
+    // units is 10 stored units. Scaling the delta by max(zoom, 1) sent it 20
+    // and left the cursor behind the shape.
+    expect(m.shapes[0]!.rect.x).toBeCloseTo(55 + 10, 9);
+    expect(hitTest(m, { x: 80, y: 76 }, view)).toBe('s1');
   });
 
   it('drops a drag when its shape is deleted mid-gesture', () => {

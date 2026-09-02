@@ -70,16 +70,22 @@ export function createCoreStore(host: CoreHost = {}): CoreStore {
   const listeners = new Set<() => void>();
   const effectHandlers = new Set<EffectHandler>();
 
-  // The id/colour cache, and the reason a frame costs exactly one crossing.
+  // The row cache, and the reason a frame costs exactly one crossing.
   //
-  // The obvious implementation reads `core.topologyVersion` every frame to
-  // decide whether the cache is stale. That is a crossing per frame spent
-  // asking a question whose answer is almost always no. Instead Rust tells us
-  // when anything changed at all, and only then do we pay to ask whether the
-  // change was topological. A pure view change dispatches nothing, so it never
-  // marks the cache dirty and `scene()` is the only hop.
+  // The obvious implementation reads `core.tableVersion` every frame to decide
+  // whether the cache is stale. That is a crossing per frame spent asking a
+  // question whose answer is almost always no. Instead Rust tells us when
+  // anything changed at all, and only then do we pay to ask whether the change
+  // touched the table. A pure view change dispatches nothing, so it never marks
+  // the cache dirty and `scene()` is the only hop.
+  //
+  // What counts as touching the table is `affects_shape_table` in
+  // `crates/core/src/model.rs`, and it covers every `ShapeRow` field rather
+  // than just the shape count. It has to: `rot` and `anchored` are rows, and
+  // gating on the count alone left this cache serving stale values through
+  // every `setRot` and `setAnchored`.
   let tableDirty = true;
-  let tableVersion = -1;
+  let cachedTableVersion = -1;
   let rows: readonly ShapeRow[] = [];
   /**
    * handle -> row, rebuilt with the table.
@@ -131,12 +137,12 @@ export function createCoreStore(host: CoreHost = {}): CoreStore {
   const table = (): readonly ShapeRow[] => {
     if (!tableDirty) return rows;
     countCrossing();
-    const v = core.topologyVersion;
-    if (v !== tableVersion) {
+    const v = core.tableVersion;
+    if (v !== cachedTableVersion) {
       countCrossing();
       rows = core.shapeTable() as ShapeRow[];
       rowByHandle = new Map(rows.map((r) => [r.handle, r]));
-      tableVersion = v;
+      cachedTableVersion = v;
     }
     tableDirty = false;
     return rows;

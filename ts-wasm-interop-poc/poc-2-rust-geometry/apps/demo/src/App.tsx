@@ -1,5 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
-import { benchHostCalls, initGeometry, rectQuad, rectQuadObjects, resetCrossings } from '@poc/geometry';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  benchHostCalls,
+  initGeometry,
+  rectQuad,
+  rectQuadObjects,
+  resetCrossings,
+  setHostLogger,
+} from '@poc/geometry';
 import wasmUrl from '@poc/geometry/wasm-url';
 import { createStore } from '@poc/store';
 import type { Effect, Rotation, ViewEnv } from '@poc/shapes';
@@ -28,30 +35,35 @@ export function App() {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hostLines, setHostLines] = useState<string[]>([]);
+  const live = useRef(true);
+
+  // Stable identity on purpose. The bench swaps the host logger out for a
+  // trivial one and has to put THIS one back, so it cannot be a fresh closure
+  // per render.
+  const hostLog = useCallback((m: string) => {
+    if (live.current) setHostLines((l) => [m, ...l].slice(0, 6));
+  }, []);
 
   useEffect(() => {
-    let live = true;
-    initGeometry({
-      wasmUrl,
-      host: { log: (m) => live && setHostLines((l) => [m, ...l].slice(0, 6)) },
-    })
+    live.current = true;
+    initGeometry({ wasmUrl, host: { log: hostLog } })
       .then(() => {
-        if (!live) return;
+        if (!live.current) return;
         markWasmReady();
         setReady(true);
       })
-      .catch((e: unknown) => live && setError(String(e)));
+      .catch((e: unknown) => live.current && setError(String(e)));
     return () => {
-      live = false;
+      live.current = false;
     };
-  }, []);
+  }, [hostLog]);
 
   if (error) return <div className="app gate error">wasm init failed: {error}</div>;
   if (!ready) return <div className="app gate">initializing wasm…</div>;
-  return <Ready hostLines={hostLines} />;
+  return <Ready hostLines={hostLines} hostLog={hostLog} />;
 }
 
-function Ready({ hostLines }: { hostLines: string[] }) {
+function Ready({ hostLines, hostLog }: { hostLines: string[]; hostLog: (m: string) => void }) {
   // Seeded at CREATION, not in an effect. StrictMode double-invokes effects, and
   // a seeding effect would put four shapes on the page instead of two.
   const store = useMemo(() => {
@@ -73,7 +85,7 @@ function Ready({ hostLines }: { hostLines: string[] }) {
 
   return (
     <StoreContext.Provider value={store}>
-      <Shell log={log} hostLines={hostLines} />
+      <Shell log={log} hostLines={hostLines} hostLog={hostLog} />
     </StoreContext.Provider>
   );
 }
@@ -84,7 +96,17 @@ interface Bench {
   hostUs: number;
 }
 
-function runBench(): Bench {
+/**
+ * All three arms have to measure the same thing: one boundary crossing and
+ * nothing else.
+ *
+ * That is why the host arm swaps the logger. The app's logger appends to React
+ * state, so timing `benchHostCalls(20000)` with it attached timed 20,000
+ * setState enqueues plus the crossings, while the flat and object arms timed
+ * only the crossings. The number that came out was quoted as evidence that
+ * calling back into JS is the cheapest direction.
+ */
+function runBench(hostLog: (m: string) => void): Bench {
   const N = 20000;
   const rect = { x: 10, y: 20, width: 80, height: 40 };
 
@@ -97,15 +119,29 @@ function runBench(): Bench {
   for (let i = 0; i < N; i++) rectQuadObjects(rect, i % 360);
   const objectUs = ((performance.now() - t) * 1000) / N;
 
+  let landed = 0;
+  setHostLogger(() => {
+    landed += 1;
+  });
   t = performance.now();
   benchHostCalls(N);
   const hostUs = ((performance.now() - t) * 1000) / N;
+  setHostLogger(hostLog);
+  if (landed !== N) console.warn(`host arm landed ${landed} of ${N} calls`);
 
   resetCrossings();
   return { flatUs, objectUs, hostUs };
 }
 
-function Shell({ log, hostLines }: { log: string[]; hostLines: string[] }) {
+function Shell({
+  log,
+  hostLines,
+  hostLog,
+}: {
+  log: string[];
+  hostLines: string[];
+  hostLog: (m: string) => void;
+}) {
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState<Rotation>(0);
   const [bench, setBench] = useState<Bench | null>(null);
@@ -227,7 +263,7 @@ function Shell({ log, hostLines }: { log: string[]; hostLines: string[] }) {
             ) : (
               <p className="dim">20,000 calls each.</p>
             )}
-            <button onClick={() => setBench(runBench())}>{bench ? 'run again' : 'measure'}</button>
+            <button onClick={() => setBench(runBench(hostLog))}>{bench ? 'run again' : 'measure'}</button>
           </section>
 
           <section>
