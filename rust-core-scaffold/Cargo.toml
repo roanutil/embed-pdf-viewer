@@ -4,7 +4,7 @@ resolver = "2"
 # `cargo test --workspace` succeed at every commit on this branch. The final
 # shape is crates/{pdfium-sys, pdfium, test-support, epdf-ops, epdf-uniffi,
 # epdf-node, epdf-wasm, uniffi-bindgen}.
-members = ["crates/build-support", "crates/pdfium-sys", "crates/test-support", "crates/pdfium"]
+members = ["crates/build-support", "crates/pdfium-sys", "crates/test-support", "crates/pdfium", "crates/epdf-ops"]
 
 [profile.release]
 opt-level = 3
