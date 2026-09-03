@@ -1,0 +1,11 @@
+[package]
+name = "pdfium-sys"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[lib]
+crate-type = ["rlib"]
+
+[build-dependencies]
+bindgen = "=0.72.1"
