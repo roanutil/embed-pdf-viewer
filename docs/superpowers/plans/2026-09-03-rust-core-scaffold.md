@@ -4770,7 +4770,16 @@ class DocumentViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }
         } catch (error: Throwable) {
-            failure = error.toString()
+            // NOT error.message for an OpsException: uniffi's Kotlin generator
+            // renders every variant's `message` as a field dump, so EngineFailed
+            // and Internal read "detail=..." rather than the thiserror sentence.
+            // Their `detail` property holds the raw text. See
+            // packages/kotlin/README.md.
+            failure = when (error) {
+                is OpsException.EngineFailed -> error.detail
+                is OpsException.Internal -> error.detail
+                else -> error.toString()
+            }
         }
     }
 
