@@ -92,7 +92,7 @@ resolved, and the pins above are the real ones.)
 One pin that is a decision rather than a lookup: `[profile.release]` does not set `panic = "abort"`,
 which is what `pdfium-rust-spike/Cargo.toml` uses. Both uniffi and napi map a Rust panic to a
 host-language exception through `catch_unwind`, and `panic = "abort"` deletes that. So this scaffold
-unwinds, and pays the code size for it.
+unwinds natively, and pays the code size for it.
 
 `build/fetch-libpdfium.sh` is adapted from `packages/engine/runtime/scripts/fetch-libpdfium.sh` and
 `build/link-wasm.sh` from `pdfium-rust-spike/build/link-wasm.sh`. Neither is interesting. Both are
@@ -103,19 +103,19 @@ already known to work.
 Six operations on two uniffi objects, and nothing finer:
 
 ```rust
-Engine::new() -> Arc<Engine>
+Engine::new() -> Result<Arc<Engine>, OpsError>
 Engine::open(bytes: Vec<u8>, password: Option<String>) -> Result<Arc<Document>, OpsError>
-Document::page_count() -> u32
+Document::page_count() -> Result<u32, OpsError>
 Document::page_size(index: u32) -> Result<Size, OpsError>
 Document::render_page(index: u32, scale: f32) -> Result<Bitmap, OpsError>
 Document::page_text(index: u32) -> Result<String, OpsError>
-Document::search(query: String, case_sensitive: bool) -> Result<Vec<SearchHit>, OpsError>
+Document::search(index: u32, query: String, case_sensitive: bool) -> Result<Vec<SearchHit>, OpsError>
 ```
 
 `Size` is two `f32` in points. `Bitmap` is `width`, `height`, `stride` and a BGRA `Vec<u8>`, which
 uniffi copies once on the way out. `SearchHit` is `char_index`, `char_count` and a `Vec<Rect>` of
 page-space rects. `OpsError` is a uniffi error enum: `LoadFailed`, `PasswordRequired`,
-`PageOutOfRange`, `RenderFailed`, `Internal(String)`.
+`PageOutOfRange`, `RenderFailed`, `Closed`, `EngineFailed(String)`, `Internal(String)`.
 
 Both objects also get an explicit `close()`. Swift releases a uniffi object on ARC and that is fine,
 but Kotlin releases it on the GC, whenever that is, and a PDFium document holding a file's worth of
@@ -199,10 +199,10 @@ task. That is the mechanism `ts-wasm-interop-poc/vectors/anchor-vectors.json`
 established and the one the port plan leans on for wave 2.
 
 Exact assertions on page count, page 4 size, extracted text, glyph count and search hits. Rendering
-is different: I compare against a committed PNG by pixel diff with a tolerance, not by hash. A hash
-pins float behavior and rasterization across four architectures, and it would fail for reasons that
-have nothing to do with our code. Wave 2 step 1 of the port plan says "verified by pixel diff" for
-the same job, so this is not a new invention.
+is different: I compare against a committed golden by pixel diff with a tolerance, not by hash. A
+hash pins float behavior and rasterization across four architectures, and it would fail for reasons
+that have nothing to do with our code. Wave 2 step 1 of the port plan says "verified by pixel diff"
+for the same job, so this is not a new invention.
 
 I do not know whether the fixture's page 4 text will come out byte-identical from the `wasm32` and
 `darwin-arm64` builds of the same fork SHA. It should. If it doesn't, that is a genuinely useful
@@ -216,3 +216,20 @@ The fork matrix gets its own design doc and its own PR to `embedpdf/runtime`: `t
 output, and matrix rows in `.github/workflows/release-libpdfium.yml`.
 
 Until that lands, this scaffold proves the bindings and leaves the phones alone.
+
+Update: this record was written before implementation, and I never came back to true it up
+afterward, so four things above are now wrong rather than just provisional. Every method above
+gained a `Result` I did not write in: `Engine::new` returns `Result<Arc<Engine>, OpsError>` and
+`Document::page_count` returns `Result<u32, OpsError>`, and `search` takes the page index as its
+first argument, which the sketch above omitted entirely. `OpsError` shipped with seven variants, not
+five: implementation added `Closed`, for a call against a document that already closed itself, and
+`EngineFailed`, for a call against an engine whose worker thread is gone. The panic posture above is
+half true: native still unwinds, exactly as decided, but `wasm32-unknown-emscripten` does not,
+because rustc's std for that target lowers a panic through native WebAssembly exception handling
+that needs `em++`'s `-fwasm-exceptions`, while the fork's prebuilt archive needs the older, JS-based
+`setjmp`/`longjmp` support instead, and `em++` refuses both on the same link; `build/link-wasm.sh`
+resolves it by building `epdf-wasm` alone with `-C panic=abort`. And the golden shipped as a raw
+`.bgra` buffer, not the PNG I say above I'd compare against, since a PNG would have put a decoder on
+every host's comparison path for no reason the golden needs. None of that changes the case this
+record argues; it changes what a reader would find if they went looking for the artifacts it
+describes.

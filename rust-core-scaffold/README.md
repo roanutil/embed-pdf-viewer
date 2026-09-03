@@ -22,13 +22,13 @@ the same contract `pdfium-rust-spike/README.md` opens with.
 Two uniffi objects, six methods:
 
 ```
-Engine::new() -> Arc<Engine>
+Engine::new() -> Result<Arc<Engine>, OpsError>
 Engine::open(bytes, password) -> Result<Arc<Document>, OpsError>
-Document::page_count() -> u32
+Document::page_count() -> Result<u32, OpsError>
 Document::page_size(index) -> Result<Size, OpsError>
 Document::render_page(index, scale) -> Result<Bitmap, OpsError>
 Document::page_text(index) -> Result<String, OpsError>
-Document::search(query, case_sensitive) -> Result<Vec<SearchHit>, OpsError>
+Document::search(index, query, case_sensitive) -> Result<Vec<SearchHit>, OpsError>
 ```
 
 No host reaches an arbitrary `FPDF_*` call. `pdfium-sys` stays internal to the crate graph, and every
@@ -50,12 +50,16 @@ JavaScript through the em++ module's linear memory, and Kotlin through JNA. Six 
 five of them crossing a language boundary, and none of them move a byte. The golden was not produced
 by any of the six, so none of this is self-referential.
 
-That match does not, on its own, prove channel order. Page 4 is entirely grayscale: B == G == R in
-every one of its 30,294 pixels, alpha 255 throughout. A host that read PDFium's BGRA output as RGBA,
-or swapped any two of B, G and R, would diff against this golden at mean 0 and max 0 too.
-`apps/web-demo/bgra-to-rgba.test.mjs`, `bgraToCGImagePreservesChannelOrder` in `VectorsTests.swift`,
-and `bgraToArgbPacksChannelsCorrectly` in `VectorsTest.kt` cover that gap directly, with synthetic
-buffers whose three channels are never equal.
+What that six-way match proves is that the byte pipeline is transparent: nothing between PDFium's
+render call and a host's own buffer inserts, drops, or reorders a byte. It does not prove channel
+order, because page 4 is entirely grayscale: B == G == R in every one of its 30,294 pixels, alpha 255
+throughout. Transforming the committed golden with a B<->R swap and re-running this scaffold's own
+diff against it gives mean 0.0 and max 0, the same result a correct host reports. A grayscale golden
+cannot tell a correct BGRA read from an RGBA-for-BGRA one, or from any other two-channel swap, so
+channel order has to be established separately: `apps/web-demo/bgra-to-rgba.test.mjs`,
+`bgraToCGImagePreservesChannelOrder` in `VectorsTests.swift`, and `bgraToArgbPacksChannelsCorrectly`
+in `VectorsTest.kt` each carry a synthetic buffer whose three channels are never equal, and check the
+channel order directly rather than through this golden.
 
 ## The crates
 
@@ -112,35 +116,99 @@ each instance already isolates its globals in its own linear memory.
 ## The frozen vectors
 
 `vectors/report-page4.json` and `vectors/report-p4-scale0.25.bgra` were written once by
-`build/generate-vectors.mjs`, which drives `@embedpdf/engine-runtime` and
-`@embedpdf/engine-services` over `fixtures/report.pdf` and prints page 4's page size, extracted
-text, glyph count, search hits and a rendered bitmap. Page 4, because that is the page
-`pdfium-rust-spike/bench/fixture.mjs` uses, so the numbers were already a committed receipt rather
-than one this scaffold invented. `build/generate-vectors.mjs` is never run by any test or by
-`build/test-all.sh`; it is a one-time generator, and every suite in this repository only ever reads
-the two files it already wrote. A host that drifts from those numbers fails a test instead of being
-discovered in a browser.
+`build/generate-vectors.mjs`, which imports `createPdfRuntime` and `engineRuntimeBuildId` from
+`packages/engine/runtime`'s built `dist` (`dist/index.node.js` and `dist/build-id.js`) and drives
+that over `fixtures/report.pdf`, printing page 4's page size, extracted text, `charCount`, search
+hits and a rendered bitmap. Page 4, because that is the page `pdfium-rust-spike/bench/fixture.mjs`
+uses, so the numbers were already a committed receipt rather than one this scaffold invented.
+`build/generate-vectors.mjs` is never run by any test or by `build/test-all.sh`; it is a one-time
+generator, and every suite in this repository only ever reads the two files it already wrote.
+
+What "drifts from those numbers" means for the render vector is not byte-identity. `render` in
+`vectors/report-page4.json` sets `meanAbsDiffTolerance: 2` and `maxAbsDiffTolerance: 16`, and every
+host's test diffs its own render against the golden with those two gates, not a hash (see "The
+tolerances, measured" below for what that does and does not catch). Every other field, page count,
+page size, text, `charCount`, search hits, is an exact assertion: any drift there fails a test
+outright.
+
+## The tolerances, measured
+
+`meanAbsDiffTolerance: 2` and `maxAbsDiffTolerance: 16` are not zero, and it is worth knowing what
+they do and do not catch before trusting the six-way match above. Scored against the golden with
+`crates/test-support/src/lib.rs`'s own `mean_abs_diff` and `max_abs_diff`: an all-white buffer scores
+mean 16.78, an all-black buffer 238.22, the golden shifted one pixel horizontally 6.12, the golden
+with its alpha channel zeroed 63.75. All four fail both gates by a wide margin, so a host that
+renders nothing, or renders the wrong page, or misaligns a row, or drops alpha, is caught with room
+to spare. But darkening every non-white byte by 6, which is the signature a wrong color space or an
+unapplied gamma curve would leave, scores mean 1.74 and max 6, and passes both gates. A tolerance
+this wide would let that class of bug through today; none of the six code paths currently produce
+it, so the gap is theoretical for this scaffold, not a bug it has already missed.
+
+The fix is not to tighten the tolerance to zero. `crates/test-support/src/lib.rs` compares by
+pixel diff rather than by hash for a specific reason: a hash pins float and rasterization behavior
+across four architectures, and it would fail for reasons that have nothing to do with this scaffold's
+code. That reasoning does not change with the numbers above; it just means the tolerance's job is to
+catch gross drift, not to prove exact reproduction, and a subtler color-handling bug needs a test
+that is not this golden.
 
 ## Every host
 
-| Host | Build | Test | Runs today |
-|---|---|---|---|
-| Rust (native) | `cargo build --workspace` | `cargo test --workspace` | yes |
-| Rust (wasm32-unknown-emscripten) | `bash build/link-wasm.sh` | (covered by the web suite below) | yes |
-| Swift, macOS destination | `bash build/build-swift.sh` | `bash build/test-swift.sh` | yes |
-| Swift, iOS destination | `bash build/build-swift.sh ios-arm64` | n/a | no, `ios-arm64` is pending |
-| Kotlin, JVM desktop | `bash build/build-kotlin.sh` | `cd packages/kotlin && ./gradlew :epdf-ops:test` | yes |
-| Kotlin, Android | `bash build/build-kotlin.sh android-arm64` | n/a | no, `android-arm64` is pending |
-| Node (napi) | `bash build/build-node.sh` | `node --test packages/node/*.test.mjs` | yes |
-| Web (em++ module) | `bash build/link-wasm.sh` | `node --test packages/web/*.test.mjs` | yes |
-| `apps/node-cli` | n/a | `node --test apps/node-cli/*.test.mjs` | yes |
-| `apps/web-demo` | `npm run build` (in `apps/web-demo`) | `node --test bgra-to-rgba.test.mjs`, not wired into any script | builds; its one test passes when run by hand |
-| `apps/ios`, macOS destination | `bash build/build-ios-app.sh` | none wired | yes, builds |
-| `apps/ios`, iOS destination | `bash build/build-ios-app.sh 'platform=iOS Simulator,name=iPhone 16'` | none wired | no, `ios-sim-arm64` is pending |
-| `apps/android` | `./gradlew :app:compileDebugKotlin` | `./gradlew :app:testDebugUnitTest` | compiles and tests; `assembleDebug` and every other packaging task fail on purpose, `android-arm64` is pending |
+| Host | Build | Test | Tests | Runs today |
+|---|---|---|---|---|
+| Rust (native) | `cargo build --workspace` | `cargo test --workspace` | 22 | yes |
+| Rust (wasm32-unknown-emscripten) | `bash build/link-wasm.sh` | (covered by the web suite below) | see Web | yes |
+| Swift, macOS destination | `bash build/build-swift.sh` | `bash build/test-swift.sh` | 4 | yes |
+| Swift, iOS destination | `bash build/build-swift.sh ios-arm64` | n/a | n/a | no, `ios-arm64` is pending |
+| Kotlin, JVM desktop | `bash build/build-kotlin.sh` | `cd packages/kotlin && ./gradlew :epdf-ops:test` | 5 | yes |
+| Kotlin, Android | `bash build/build-kotlin.sh android-arm64` | n/a | n/a | no, `android-arm64` is pending |
+| Node (napi) | `bash build/build-node.sh` | `node --test packages/node/*.test.mjs` | 6 | yes |
+| Web (em++ module) | `bash build/link-wasm.sh` | `node --test packages/web/*.test.mjs` | 4 | yes |
+| `apps/node-cli` | n/a | `node --test apps/node-cli/*.test.mjs` | 1 | yes |
+| `apps/web-demo` | `npm run build` (in `apps/web-demo`) | `node --test bgra-to-rgba.test.mjs` | 1 | yes, wired into `npm test`'s glob |
+| `apps/ios`, macOS destination | `bash build/build-ios-app.sh` | none wired | 0 | builds; see "What this scaffold has not shown" below |
+| `apps/ios`, iOS destination | `bash build/build-ios-app.sh 'platform=iOS Simulator,name=iPhone 16'` | none wired | n/a | no, `ios-sim-arm64` is pending |
+| `apps/android` | `./gradlew :app:compileDebugKotlin` | `./gradlew :app:testDebugUnitTest` | 11 | compiles and tests; `assembleDebug` and every other packaging task fail on purpose, `android-arm64` is pending; see below |
 
-`bash build/test-all.sh` runs every row marked yes in the Test column, in the order above, and prints
-what it did not run and why.
+`cargo test --workspace`'s 22, the Swift row's 4, the Kotlin row's 5 and the Android row's 11 (3 in
+`ErrorMappingTest`, 8 in `DocumentLifecycleTest`) are each their own process. The Node and Web rows'
+6 and 4, plus `apps/node-cli`'s 1 and `apps/web-demo`'s 1, are not: all six run inside one `npm test`
+invocation, along with two suites this table names nowhere else, `build/fetch-libpdfium.test.mjs`
+(7 tests) and `vectors/vectors.test.mjs` (1 test, asserting the frozen vectors file is internally
+consistent). That is 7 + 1 + 6 + 4 + 1 + 1 = 20 for `npm test`. `bash build/test-all.sh` does not run
+the rows above in the table's order; it runs `build/build-node.sh`, then `cargo test --workspace`,
+then `build/link-wasm.sh`, then `npm test`, then the Swift build and test scripts, then Kotlin, then
+Android, skipping what a stock checkout can't reach and printing what it did not run and why. 22 +
+20 + 4 + 5 + 11 = 62 tests, zero failures, the last time this was run in full.
+
+## What this scaffold has not shown
+
+The table above says "yes" or "builds" for several rows that still leave real gaps unproven, and
+those gaps are worth naming rather than leaving for a reader to find.
+
+`apps/ios` builds and runs on its macOS destination, and its data path, opening a document,
+rendering a page, running a search, was checked through a standalone CLI rather than the app itself.
+The SwiftUI window has never been displayed by anything: `ContentView`, the `CGImage` produced
+inside a live render loop, and `@Observable` state propagating out to the view are all unproven code
+paths. `apps/android` compiles and its 11 unit tests pass, but nothing has run the Compose UI: there
+is no `android-arm64` artifact to link against and no emulator image to run one on, so the app has
+never been launched.
+
+win32 gets its own caveat below, in "Five things a reader will otherwise be surprised by": it is
+reasoned, not built.
+
+`linuxmusl-x64` and `linuxmusl-arm64` get no caveat anywhere else in this document, which is its own
+problem: this scaffold has never linked or run either one. Their static-link decision follows from
+`runtime-src/scripts/embedpdf-runtime/build-target.sh:47-55`, which builds them with GCC against
+libstdc++ rather than LLVM's libc++, a fact recorded only in a comment at
+`crates/build-support/src/lib.rs:145-152`. `build/build-node.sh` cannot even name a musl target
+today.
+
+And the honest scope line: nothing in `.github/workflows/` references this scaffold,
+`pnpm-workspace.yaml` excludes it from the pnpm workspace by design (it globs `packages/**`,
+`examples/**`, `cloudpdf/**`, `tooling/*`, `website` and `docs/*`, and this directory is none of
+those), and the six-way render agreement above is one manual run on one darwin-arm64 machine, not a
+CI matrix. That is a reasonable place for a scaffold meant to be deletable to sit. It should be
+written down, not discovered by whoever reads this next.
 
 ## Tool versions, measured on the machine that verified this scaffold
 
@@ -168,17 +236,24 @@ resolves it by building `epdf-wasm` alone with `panic=abort`, which costs recove
 correctness: a genuine Rust panic aborts the wasm instance instead of surfacing as `OpsError::Internal`,
 so the engine dies and the page has to reload. Native is unaffected and still unwinds.
 
-**The Kotlin API is not name-identical to Swift's.** `EpdfDocument.close` is `closeSync` in Kotlin,
-and the `EngineFailed` and `Internal` error variants' `message` fields are `detail`, all renamed by
-`packages/kotlin/uniffi.toml` because uniffi's Kotlin generator claims `close()` and `message` for
-its own `AutoCloseable` boilerplate and would otherwise collide. `use { }` calls uniffi's own
-non-blocking `close()`; reach for the explicit `closeSync()` when a call site needs the document's
-slot in the engine to be gone the instant the call returns. `packages/kotlin/README.md` has the full
-account.
+**The Kotlin API is not name-identical to Swift's.** Two separate collisions, both renamed by
+`packages/kotlin/uniffi.toml`. `EpdfDocument.close` is `closeSync` in Kotlin because uniffi's Kotlin
+generator makes every object `AutoCloseable` and emits its own `override fun close()`, and the
+UDL-exported `close` would otherwise be a second method with the same signature in the same class.
+The `EngineFailed` and `Internal` error variants' `message` fields are `detail` for a different
+reason: uniffi's Kotlin generator gives every exception variant its own `override val message` for
+the human-readable string, and `OpsError::EngineFailed` and `::Internal` each carry a Rust field
+literally named `message`, which collides with that generated property, not with `AutoCloseable`.
+`use { }` calls uniffi's own non-blocking `close()`; reach for the explicit `closeSync()` when a call
+site needs the document's slot in the engine to be gone the instant the call returns.
+`packages/kotlin/README.md` has the full account.
 
-**win32 builds but cannot run.** PE has no rpath equivalent, so `build-support`'s link directives
-have nothing to emit for locating `embedpdf.dll` at runtime, and the import-library link name
-(`embedpdf.dll`, not `embedpdf`) has never been exercised on a real MSVC toolchain.
+**win32 has never been linked.** Not "builds but cannot run": nothing has built it, because no win32
+artifact has ever been fetched here. PE has no rpath equivalent, so `build-support`'s link directives
+have nothing to emit for locating `embedpdf.dll` at runtime even if one were. `rust-toolchain.toml`
+installs `aarch64-apple-darwin`, `wasm32-unknown-emscripten`, `aarch64-linux-android` and
+`x86_64-linux-android`, and no Windows Rust target at all, and the import-library link name
+(`embedpdf.dll`, not `embedpdf`) has never touched a real MSVC toolchain.
 
 **`swift build` does not resolve on a fresh checkout.** `packages/swift/EpdfOps`'s generated
 sources, its modulemap, and the staged dylibs are all gitignored. Run `bash build/build-swift.sh`

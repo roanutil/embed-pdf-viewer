@@ -150,8 +150,9 @@ that `packages/engine/runtime/npm` ships wasm32 plus darwin, linux, linuxmusl an
 today, and no iOS or Android target at all. Adding those two to the PDFium build is a prerequisite,
 and it is independent of every port above, so it can run in parallel from wave 0.
 `rust-core-scaffold/` at the repo root already scaffolded this binding surface, uniffi to Swift and
-to Kotlin over the same six coarse operations, and it is waiting on exactly those two missing
-targets, `ios-arm64` and `android-arm64`, before its own iOS destination and Android APK can build.
+to Kotlin over the same six coarse operations, and it is waiting on exactly those four missing
+targets, `ios-arm64`, `ios-sim-arm64`, `android-arm64` and `android-x64`, before its own iOS
+destination and Android APK can build.
 
 Wave 4 is `packages/core/annotation`, 7,288 production lines, and it exists only if mobile needs
 interactive editing rather than display and read. In dependency order that is `types.ts` and
