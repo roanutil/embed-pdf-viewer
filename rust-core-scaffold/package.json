@@ -1,0 +1,9 @@
+{
+  "name": "epdf-rust-core-scaffold",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "node --test build/*.test.mjs vectors/*.test.mjs packages/node/*.test.mjs packages/web/*.test.mjs"
+  }
+}
