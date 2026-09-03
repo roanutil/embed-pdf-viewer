@@ -12,6 +12,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createPdfRuntime } from '../../packages/engine/runtime/dist/index.node.js';
+import { engineRuntimeBuildId } from '../../packages/engine/runtime/dist/build-id.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '..');
@@ -21,7 +22,24 @@ const QUERY = 'the';
 
 const pdfBytes = readFileSync(resolve(root, 'fixtures/report.pdf'));
 const rt = await createPdfRuntime({ prefer: 'native' });
+// createPdfRuntime({ prefer: 'native' }) still falls through to
+// createWasmRuntime() when resolveRuntimeTarget() returns null or
+// 'wasm32' (see packages/engine/runtime/src/index.node.ts) — the
+// 'native' preference only guards the catch around a *failed* native
+// load, not that fall-through. The golden buffer's entire purpose is to
+// pin native PDFium rasterization, so a wasm-backed regeneration must
+// never write over it silently.
+if (rt.kind !== 'native') {
+  throw new Error(
+    `generate-vectors.mjs must run against the native runtime to produce ` +
+      `the golden buffer, but createPdfRuntime({ prefer: 'native' }) resolved ` +
+      `kind=${rt.kind} platform=${rt.platform}. Run this on a platform with a ` +
+      `native PDFium addon (see resolveRuntimeTarget in ` +
+      `packages/engine/runtime/src/core/platform.node.ts).`,
+  );
+}
 const { fn, mem } = rt;
+const runtimeProvenance = { kind: rt.kind, platform: rt.platform, buildId: engineRuntimeBuildId() };
 
 fn.FPDF_InitLibrary();
 
@@ -80,13 +98,19 @@ const search = (() => {
     const count = fn.FPDFText_GetSchCount(handle);
     if (firstHits.length < 3) {
       const rectCount = fn.FPDFText_CountRects(textPage, charIndex, count);
+      if (rectCount < 0) {
+        throw new Error(`FPDFText_CountRects failed for charIndex ${charIndex}, count ${count}`);
+      }
       const rects = [];
       for (let i = 0; i < rectCount; i += 1) {
         const out = mem.alloc(8 * 4);
         // FPDFText_GetRect takes four distinct double* out-params; Ptr is
         // bigint, so BigInt arithmetic is required for the pointer
         // arguments themselves.
-        fn.FPDFText_GetRect(textPage, i, out, out + 8n, out + 16n, out + 24n);
+        const ok = fn.FPDFText_GetRect(textPage, i, out, out + 8n, out + 16n, out + 24n);
+        if (!ok) {
+          throw new Error(`FPDFText_GetRect failed for rect ${i} of charIndex ${charIndex}`);
+        }
         rects.push([
           Number(mem.peek(out, 'f64', 0)),
           Number(mem.peek(out, 'f64', 8)),
@@ -101,7 +125,11 @@ const search = (() => {
   }
   fn.FPDFText_FindClose(handle);
   mem.free(queryBuf);
-  return { query: QUERY, caseSensitive: false, hitCount, firstHits };
+  // The third argument to FPDFText_FindStart is the FPDF_FIND_OPTIONS
+  // flags bitmask. 0 means neither FPDF_MATCHCASE nor FPDF_CONSECUTIVE:
+  // the search is case-insensitive, and overlapping matches are skipped
+  // rather than all reported.
+  return { query: QUERY, caseSensitive: false, flags: 0, hitCount, firstHits };
 })();
 
 const width = Math.max(1, Math.round(size.width * SCALE));
@@ -109,6 +137,9 @@ const height = Math.max(1, Math.round(size.height * SCALE));
 const stride = width * 4;
 const pixels = mem.alloc(stride * height);
 const bitmap = fn.FPDFBitmap_CreateEx(width, height, 4 /* FPDFBitmap_BGRA */, pixels, stride);
+if (!bitmap) {
+  throw new Error(`FPDFBitmap_CreateEx failed for ${width}x${height} stride ${stride}`);
+}
 fn.FPDFBitmap_FillRect(bitmap, 0, 0, width, height, 0xffffffff);
 fn.FPDF_RenderPageBitmap(bitmap, page, 0, 0, width, height, 0, 0);
 const golden = Buffer.from(mem.readBytes(pixels, stride * height));
@@ -145,7 +176,22 @@ writeFileSync(
         stride,
         golden: 'report-p4-scale0.25.bgra',
         meanAbsDiffTolerance: 2.0,
+        // FPDFBitmap_CreateEx's format argument and FPDFBitmap_FillRect's
+        // fill color, plus FPDF_RenderPageBitmap's rotate/flags arguments
+        // and the fact that FPDF_FFLDraw is never called (no form
+        // rendering) — a reimplementation must reproduce all five exactly
+        // or the golden comparison fails.
+        format: 4, // FPDFBitmap_BGRA
+        fillColor: 4294967295, // 0xFFFFFFFF, passed to FPDFBitmap_FillRect
+        rotate: 0, // FPDF_RenderPageBitmap's rotate argument
+        flags: 0, // FPDF_RenderPageBitmap's flags argument
+        drawForms: false, // FPDF_FFLDraw is deliberately never called
       },
+      // Provenance: the golden buffer only means anything if it was
+      // produced by the native runtime (see the rt.kind check above).
+      // buildId is `version:target` from
+      // packages/engine/runtime/src/build-id.ts#engineRuntimeBuildId.
+      runtime: runtimeProvenance,
     },
     null,
     2,

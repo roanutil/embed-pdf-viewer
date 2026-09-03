@@ -14,6 +14,7 @@
   "search": {
     "query": "the",
     "caseSensitive": false,
+    "flags": 0,
     "hitCount": 120,
     "firstHits": [
       {
@@ -60,6 +61,16 @@
     "height": 198,
     "stride": 612,
     "golden": "report-p4-scale0.25.bgra",
-    "meanAbsDiffTolerance": 2
+    "meanAbsDiffTolerance": 2,
+    "format": 4,
+    "fillColor": 4294967295,
+    "rotate": 0,
+    "flags": 0,
+    "drawForms": false
+  },
+  "runtime": {
+    "kind": "native",
+    "platform": "darwin-arm64",
+    "buildId": "3.0.0-next.11:darwin-arm64"
   }
 }
