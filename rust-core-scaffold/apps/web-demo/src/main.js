@@ -1,4 +1,5 @@
 import { createEpdf } from '../../../packages/web/index.mjs';
+import { bgraToRgba } from './bgra-to-rgba.mjs';
 
 const PAGE_INDEX = 4;
 const SCALE = 2;
@@ -23,11 +24,11 @@ canvas.width = bitmap.width;
 canvas.height = bitmap.height;
 canvas.style.width = `${bitmap.width / SCALE}px`;
 
-// PDFium gives BGRA; ImageData wants RGBA. Swap in place, one pass.
-const rgba = new Uint8ClampedArray(bitmap.bgra);
-for (let i = 0; i < rgba.length; i += 4) {
-  const b = rgba[i];
-  rgba[i] = rgba[i + 2];
-  rgba[i + 2] = b;
-}
+const rgba = bgraToRgba(bitmap.bgra);
 canvas.getContext('2d').putImageData(new ImageData(rgba, bitmap.width, bitmap.height), 0, 0);
+
+// Everything the page needs is already in the DOM and on the canvas; the
+// document itself isn't touched again, so close it right here rather than
+// waiting on a pagehide that may never fire (or fire late) for a one-shot
+// demo like this one.
+doc.close();
