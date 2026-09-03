@@ -262,12 +262,11 @@ without naming a mechanism. I think that is the right call, and it is also why n
 percent in that file should be read as a finding.)
 
 Arm D landed within noise of arm C on both platforms, and that is the finding this whole document
-was written to obtain. In wasm the `geometry` medians are 1.055 ms and 1.050 ms, with the per-round
-ratio of D over C running 0.977x to 1.029x, tighter than the worst same-arm round-to-round spread
-measured anywhere in the run. Natively it is 577.05 µs against 579.94 µs, ratio 0.994x to 1.024x.
-The one near-exception was wasm `search`, where arm C beat arm D in six of the seven rounds by 4 to
-9 percent (arm D edged ahead in the seventh, by about 3 percent), and that gap did not reproduce
-natively at all. I do not know whether it was a real difference between `rs_search_page` and
+was written to obtain. In wasm the `geometry` medians are 1.070 ms and 1.057 ms, with the per-round
+ratio of D over C running 0.962x to 1.048x, tighter than the worst same-arm round-to-round spread
+measured anywhere in the run. Natively it is 577.37 µs against 581.16 µs, ratio 0.993x to 1.034x.
+The one near-exception was wasm `search`, where arm C beat arm D in all seven rounds by 0.1 to
+7.4 percent, and that gap did not reproduce natively at all. I do not know whether it was a real difference between `rs_search_page` and
 `cc_search_page` on this fixture's 120 hits or something Binaryen did to one static library
 and not the other.
 
@@ -286,13 +285,13 @@ headers by hand, with no borrow checker and no `Result`, in the part of the stac
 a memory-safety bug rather than an exception. Same price, no remaining reason to pay it.
 
 The coarsening win itself is large and real, and it is much larger natively, for the reason the
-prediction gave. In wasm, collapsing the per-glyph loop into one crossing takes `geometry` to 0.39x
+prediction gave. In wasm, collapsing the per-glyph loop into one crossing takes `geometry` to 0.38x
 for both coarse arms, about 2.6x faster than arm A, which is just under the 3x-to-10x band I
-predicted. Natively, held within one language and framework, it is 7.19x (arm B against arm C, both
-`napi-rs`) and 14.85x (arm A against arm D, both `node-addon-api`). The mechanism is visible in the
+predicted. Natively, held within one language and framework, it is 7.16x (arm B against arm C, both
+`napi-rs`) and 14.87x (arm A against arm D, both `node-addon-api`). The mechanism is visible in the
 null probe, but it is not the same peek for both pairings. Arm A's `mem.peek32` costs 4.0 ns in wasm
-and 38.8 ns natively, roughly 9.7x, and that gap is behind the 14.85x figure. Arm B's costs 4.0 ns in
-wasm and 14.9 ns natively, about 3.7x, and that gap is behind 7.19x. Ten times is the wrong multiple
+and 39.2 ns natively, roughly 9.8x, and that gap is behind the 14.87x figure. Arm B's costs 3.7 ns in
+wasm and 15.0 ns natively, about 4x, and that gap is behind 7.16x. Ten times is the wrong multiple
 for the pairing that isolates the language.
 
 Arm A's peek is expensive for reasons that have nothing to do with coarsening. It goes through
@@ -300,16 +299,16 @@ Arm A's peek is expensive for reasons that have nothing to do with coarsening. I
 a JavaScript string type tag on every call, the same shape as the shipping addon's `peek(ptr, kind)`
 at `packages/engine/runtime/src/native/native-runtime.ts:57`. `readGlyphRaw` makes up to 21 of those
 per glyph, so 8,106 glyphs is on the order of 170,000 calls through that path in one `geometry`
-iteration. So 14.85x is pricing string-tag dispatch, BigInt marshalling, and node-addon-api's own
+iteration. So 14.87x is pricing string-tag dispatch, BigInt marshalling, and node-addon-api's own
 per-call cost together, not "coarsening held within C++" on its own, and arm D's coarse call never
 pays any of those three. That is three distinct effects riding on one number, not one effect scaled
-up. 7.19x is the figure I trust more: arm B's peek is a direct `f64` call into `napi-rs` with no
+up. 7.16x is the figure I trust more: arm B's peek is a direct `f64` call into `napi-rs` with no
 string dispatch and no BigInt conversion, so it avoids all three.
 
 `search` went the other way, and it is the only place the direction of a prediction failed. Native
-coarsening wins only 1.62x and 2.05x on that workload, smaller than wasm's 3.1x to 3.3x, not larger.
+coarsening wins only 1.62x and 2.06x on that workload, smaller than wasm's 3.2x to 3.3x, not larger.
 The likely reason is that `searchThin` is call-bound rather than peek-bound, and a native call costs
-205.1 ns against wasm's 350.6 ns, so the thing being collapsed away was already the cheaper of the
+200.3 ns against wasm's 351.2 ns, so the thing being collapsed away was already the cheaper of the
 two. That is inferred from the shape of the loop and the null-probe cells, not measured directly.
 The `text` prediction failed more quietly: I said arm C would win natively on the buffer copy, and
 all four arms land within about 2 percent of each other. That is not a coarsening result at all.
@@ -333,7 +332,7 @@ proves the arms agree, and it will never tell you they are agreeing for differen
 
 One number in `RESULTS.md` looks like a native wrapper tax and is not. Native arm A is
 `node-addon-api` C++ with BigInt pointers and native arm B is `napi-rs` Rust with `f64` pointers, so
-the 8.612 ms against 4.148 ms on `geometry`, and the 38.8 ns against 14.9 ns on `null-peek`, mix
+the 8.642 ms against 4.134 ms on `geometry`, and the 39.2 ns against 15.0 ns on `null-peek`, mix
 language, binding framework and pointer representation in one gap. It cannot be reported as a
 wrapper tax and I am not reporting it as one. But it is a 2x difference on the read that
 `PageGeometryReader` performs up to 21 times per glyph, and separating the two conventions is cheap:

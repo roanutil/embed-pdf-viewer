@@ -126,7 +126,7 @@ Step 1 is also where the boundary win lands, which is worth knowing before anyon
 ordering. `PageGeometryReader` makes two PDFium calls per glyph plus up to 21 `mem.peek` reads to
 decode each geometry struct, so a page with 8,106 glyphs costs something like 25,000
 JavaScript-to-PDFium crossings today. Moving that loop into the core does not make the calls
-cheaper. It stops them being crossings, and that alone measured about 2.6x in wasm and 7.10x on
+cheaper. It stops them being crossings, and that alone measured about 2.6x in wasm and 7.16x on
 Node. Nothing has to be redesigned to collect it.
 
 Step 4 is where the plan earns its cost back. `runAnnotationMutationConformance.ts` is 2,255 lines
@@ -186,9 +186,9 @@ ported so much as replaced, since a Rust core would embed `rquickjs` directly.
 
 Update: the two things this section used to open with are answered, and the answers moved up into
 wave 0 and into [the PDFium wrapper benchmark](./pdfium-rust-wrapper-benchmarks.md). The linkage
-works. The boundary is priced: a wasm call into PDFium costs around 340 ns through a hand-written
+works. The boundary is priced: a wasm call into PDFium costs around 350 ns through a hand-written
 `cwrap`, putting a Rust frame in front of it costs 1 to 4 percent, and collapsing the per-glyph loop
-is worth about 2.6x in wasm and 7.10x on Node.
+is worth about 2.6x in wasm and 7.16x on Node.
 
 What that does not settle is the thing I actually said I wanted. Those are PDFium payloads, not
 `Geom` payloads, and the coarse win came out identical whether Rust or C++ sat behind it, so it

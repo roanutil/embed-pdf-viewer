@@ -21,11 +21,10 @@ now clears only the files it is about to write, and `--out <dir>` keeps an
 exploratory run out of this directory altogether, which is what
 `bench/run.test.mjs` uses.
 
-All 56 files predate the fixes for the code review's findings 3, 9 and 10
-(`rs_search_page` overflow reporting, f64 promotion in the rotation branch,
-full-width text-object keys). None of the three moves a published timing cell:
-the rotation branch never runs on the timing fixture (`report.pdf` page 4 has 0
-non-upright glyphs of 8,106), and the other two add one integer comparison per
-call. The `wasm bytes` row is the exception, since the new code is compiled in:
-a fresh `bash build/link-wasm.sh` now links arm c at 4,682,602 bytes and arm d
-at 4,685,976, against the 4,681,488 and 4,684,877 in the published table.
+All 56 files are current with the sources beside them. They were re-run for
+commit `1566b1fb`, which taught `rs_read_page_geometry` and
+`cc_read_page_geometry` to report overflow as a negative count and gave
+`geometryCoarse` and `searchCoarse` one shared guard against reading one, so the
+`wasm bytes` row moved with them: a fresh `bash build/link-wasm.sh` links arm c
+at 4,682,622 bytes and arm d at 4,685,996, which is what the published table
+says.
