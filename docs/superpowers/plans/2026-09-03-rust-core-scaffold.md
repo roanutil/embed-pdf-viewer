@@ -15,7 +15,7 @@
 - Everything lives under `rust-core-scaffold/` at the repo root. Nothing in `packages/`, `cloudpdf/`, `examples/`, `tooling/` or `website/` may import from it or reference it.
 - Outside the pnpm workspace by construction: `pnpm-workspace.yaml` globs `packages/**`, `examples/**`, `cloudpdf/**`, `tooling/*`, `website`, `docs/*`. Do not add a glob for the scaffold.
 - JavaScript inside the scaffold uses `npm` with its own `package-lock.json`, not `pnpm`. This matches `pdfium-rust-spike/package-lock.json`.
-- `rust-toolchain.toml` pins channel `1.98.0`.
+- `rust-toolchain.toml` pins channel `1.98.0`. Its `targets` list is authoritative and must name every target any script in `build/` cross-compiles for: `aarch64-apple-darwin`, `wasm32-unknown-emscripten`, `aarch64-linux-android`, `x86_64-linux-android`. A target added with `rustup target add` from the repo root lands on the default toolchain, not this one, and the resulting failure is `E0463: can't find crate for 'std'`.
 - Every Rust crate uses `edition = "2024"`. It stabilized in Rust 1.85 and the toolchain is pinned to 1.98.0. Verified free: the five completed crates build and pass all 17 tests under 2024 with zero warnings, because nothing here has an `unsafe fn`, a `static mut`, a `gen` identifier, or an `-> impl Trait`, and bindgen 0.72.1 already emits `unsafe extern "C"` blocks. `pdfium-rust-spike` and `ts-wasm-interop-poc` use 2021 because they predate 1.85; do not copy that.
 - Exact dependency pins: `uniffi = "=0.32.0"`, `napi = "=3.12.2"`, `napi-derive = "=3.6.3"`, `napi-build = "=2.4.1"`, `bindgen = "=0.72.1"`. `cargo-ndk` is installed at `4.1.2`.
 - `[profile.release]` sets `opt-level = 3`, `lto = true`, `codegen-units = 1`. It must NOT set `panic = "abort"`, even though `pdfium-rust-spike/Cargo.toml` does: uniffi and napi both map panics to host exceptions through `catch_unwind`, which `panic = "abort"` deletes.
@@ -4612,13 +4612,16 @@ Android Studio 2026.1 already installed most of this at `~/Library/Android/sdk`:
 
 `sdkmanager` is not on `PATH`. Either install the command-line tools, or use Android Studio's SDK Manager UI to add an NDK. Then:
 
+This is already done. NDK `29.0.14206865` (clang 21.0.0) is installed at `$HOME/Library/Android/sdk/ndk/29.0.14206865`, `cargo-ndk 4.1.2` is on `PATH`, and `aarch64-linux-android` plus `x86_64-linux-android` are in `rust-toolchain.toml`'s `targets`. Verified by cross-compiling `test-support` for both ABIs and confirming `llvm-objdump` reports `file format elf64-littleaarch64`, `architecture: aarch64`.
+
+`build/build-kotlin.sh` must export both:
+
 ```bash
 export ANDROID_HOME="$HOME/Library/Android/sdk"
-ls "$ANDROID_HOME/ndk"                 # must list an NDK version
-cargo install cargo-ndk --version 4.1.2 --locked
+export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/29.0.14206865"
 ```
 
-Record the exact NDK version installed; Task 15's README needs it, and `build/build-kotlin.sh` resolves against it.
+One trap worth knowing, because its error message points at the wrong thing. The Android targets MUST be listed in `rust-toolchain.toml`, not just added with `rustup target add`. The scaffold pins channel `1.98.0`, so `rustup target add` run from the repo root installs into the DEFAULT toolchain instead, and a build inside the scaffold then fails with `E0463: can't find crate for 'std'`, which reads like a broken NDK rather than a missing target.
 
 Use `compileSdk = 37` and `build-tools 36.0.0` to match what is installed rather than the 35 this plan originally guessed. If Android Studio has moved on again by the time you run this, use what is there and record it.
 
