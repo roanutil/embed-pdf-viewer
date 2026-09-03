@@ -30,13 +30,36 @@ targets:
         UILaunchScreen: {}
     settings:
       base:
-        # Where build/build-swift.sh stages libepdf_uniffi and libembedpdf.
-        LIBRARY_SEARCH_PATHS:
+        # Where build/build-swift.sh stages libepdf_uniffi and libembedpdf, one
+        # slice per SDK. Each destination only ever links its own slice, so
+        # these are SDK-conditional rather than one shared path: a macOS build
+        # must never see the macOS dylib while linking an iOS Simulator
+        # destination (and vice versa) or the linker fails with a platform
+        # mismatch instead of a "library not found" it can actually explain.
+        # embedpdf/runtime does not build ios-arm64 or ios-sim-arm64 yet (see
+        # the requireStagedLibrary run-script phase below), so those two
+        # directories do not exist yet, but the search path is declared for
+        # them regardless, the same as the macOS one, so the day they are
+        # staged nothing here needs to change.
+        LIBRARY_SEARCH_PATHS[sdk=macosx*]:
           - $(SRCROOT)/../../packages/swift/EpdfOps/Frameworks/macos-arm64
-        LD_RUNPATH_SEARCH_PATHS:
+        LIBRARY_SEARCH_PATHS[sdk=iphonesimulator*]:
+          - $(SRCROOT)/../../packages/swift/EpdfOps/Frameworks/ios-sim-arm64
+        LIBRARY_SEARCH_PATHS[sdk=iphoneos*]:
+          - $(SRCROOT)/../../packages/swift/EpdfOps/Frameworks/ios-arm64
+        LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]:
           - $(SRCROOT)/../../packages/swift/EpdfOps/Frameworks/macos-arm64
+        LD_RUNPATH_SEARCH_PATHS[sdk=iphonesimulator*]:
+          - $(SRCROOT)/../../packages/swift/EpdfOps/Frameworks/ios-sim-arm64
+        LD_RUNPATH_SEARCH_PATHS[sdk=iphoneos*]:
+          - $(SRCROOT)/../../packages/swift/EpdfOps/Frameworks/ios-arm64
         # No Apple developer team is configured for this scaffold. Ad-hoc
         # signing needs no team and is enough to build and run locally.
         CODE_SIGN_IDENTITY: "-"
         CODE_SIGN_STYLE: Manual
         DEVELOPMENT_TEAM: ""
+    preBuildScripts:
+      - name: Require staged EpdfOps native library
+        path: require-staged-library.sh
+        shell: /bin/bash
+        basedOnDependencyAnalysis: false
