@@ -278,6 +278,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "epdf-wasm"
+version = "0.0.0"
+dependencies = [
+ "build-support",
+ "epdf-ops",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "equivalent"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
