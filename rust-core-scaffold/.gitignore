@@ -18,6 +18,9 @@ packages/web/dist/
 .gradle/
 .kotlin/
 apps/ios/*.xcodeproj
+# Per-user Xcode state, written whenever the Swift package or the
+# generated project is opened in the IDE.
+packages/swift/EpdfOps/.swiftpm/
 apps/ios/EpdfScaffold/Info.plist
 apps/android/build/
 apps/android/app/build/
