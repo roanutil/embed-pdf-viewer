@@ -65,16 +65,7 @@ class DocumentViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }
         } catch (error: Throwable) {
-            // NOT error.message for an OpsException: uniffi's Kotlin generator
-            // renders every variant's `message` as a field dump, so EngineFailed
-            // and Internal read "detail=..." rather than the human sentence.
-            // Their `detail` property holds the raw text. See
-            // packages/kotlin/README.md.
-            failure = when (error) {
-                is OpsException.EngineFailed -> error.detail
-                is OpsException.Internal -> error.detail
-                else -> error.toString()
-            }
+            failure = mapOpsError(error)
         }
     }
 
@@ -87,4 +78,20 @@ class DocumentViewModel(app: Application) : AndroidViewModel(app) {
         document?.closeSync()
         document = null
     }
+}
+
+/**
+ * NOT error.message for an OpsException: uniffi's Kotlin generator renders
+ * every variant's `message` as a field dump, so EngineFailed and Internal
+ * read "detail=..." rather than the human sentence. Their `detail` property
+ * holds the raw text. See packages/kotlin/README.md.
+ *
+ * Standalone (no Android/ViewModel dependency) so it can be exercised by a
+ * JVM test without a device or the native library: OpsException instances
+ * construct directly.
+ */
+fun mapOpsError(error: Throwable): String = when (error) {
+    is OpsException.EngineFailed -> error.detail
+    is OpsException.Internal -> error.detail
+    else -> error.toString()
 }

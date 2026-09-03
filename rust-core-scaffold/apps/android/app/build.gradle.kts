@@ -36,6 +36,7 @@ android {
 
     buildFeatures { compose = true }
     sourceSets["main"].java.srcDirs("src/main/kotlin")
+    sourceSets["test"].java.srcDirs("src/test/kotlin")
 
     // Without an explicit target, compileDebugJavaWithJavac (AGP's own
     // default, JVM 11) and compileDebugKotlin (whatever the host JDK falls
@@ -66,6 +67,9 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.activity:activity-compose:1.13.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0")
+    // mapOpsError needs no native library or device, so it's covered by a
+    // plain JVM unit test (src/test/kotlin) rather than an instrumented one.
+    testImplementation(kotlin("test"))
 }
 
 /**
@@ -103,11 +107,29 @@ val requireNativeLibraries = tasks.register("requireNativeLibraries") {
 // off that instead. Confirmed by `./gradlew :app:compileDebugKotlin
 // --dry-run`, which still lists `:app:requireNativeLibraries` when it hangs
 // off preBuild.
-// tasks.named("assembleDebug") fails configuration outright: AGP registers
-// per-variant tasks lazily, inside its own afterEvaluate/variant callback,
-// so "assembleDebug" does not exist yet when this script's top level runs.
-// configureEach reacts as tasks are added instead of requiring the name to
-// already be registered.
+//
+// NOT a name match against "assembleDebug" alone, either: that only catches
+// the one lifecycle task named literally, and AGP creates several other paths
+// to a packaged or installed artifact that all bypass it -
+// assembleRelease (AGP creates a release build type by default even when
+// none is declared), bundleDebug (a separate task producing an AAB), and
+// installDebug (what Android Studio's Run button invokes). Enumerating
+// lifecycle task names is also fragile: AGP is free to rename or add them
+// across versions. Gating on the per-variant native-library merge task
+// instead catches all of the above in one match, because every packaging
+// path for a variant - assemble, bundle, or install, debug or release -
+// depends on that variant's merge<Variant>NativeLibs task. Confirmed for
+// AGP 9.4.0 with `--dry-run` on assembleDebug, assembleRelease, bundleDebug,
+// and installDebug: all four list a mergeDebugNativeLibs or
+// mergeReleaseNativeLibs task.
+//
+// tasks.named("mergeDebugNativeLibs") fails configuration outright: AGP
+// registers per-variant tasks lazily, inside its own
+// afterEvaluate/variant callback, so neither that task nor "assembleDebug"
+// exists yet when this script's top level runs. configureEach reacts as
+// tasks are added instead of requiring the name to already be registered.
 tasks.configureEach {
-    if (name == "assembleDebug") dependsOn(requireNativeLibraries)
+    if (name.startsWith("merge") && name.endsWith("NativeLibs")) {
+        dependsOn(requireNativeLibraries)
+    }
 }
