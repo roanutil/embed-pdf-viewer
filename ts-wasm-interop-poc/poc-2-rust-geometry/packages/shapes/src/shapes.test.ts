@@ -63,11 +63,24 @@ describe('projectQuad', () => {
     expect(projectQuad(base, V(4, 90), false)).toBe(base);
   });
 
-  it('but the identity path is no longer free: deciding it costs a crossing', () => {
+  it('but an anchored identity is no longer free: deciding it costs a crossing', () => {
+    // The quad is built BEFORE the counter is reset. `rectQuad` is itself a
+    // crossing, so counting it here would let this test pass on its own setup
+    // no matter what the decision path cost.
+    const base = q();
+
+    // Unanchored decides in TypeScript and never reaches wasm: `anchorFactors`
+    // returns null on its first line, before it calls `normalizeDeg`.
     resetCrossings();
-    projectQuad(q(), V(4, 90), false);
-    // anchorFactors -> normalizeDeg, which now lives in wasm.
-    expect(crossings()).toBeGreaterThan(0);
+    projectQuad(base, V(4, 90), false);
+    expect(crossings()).toBe(0);
+
+    // Anchored is the case that costs. Even at the identity view, where there
+    // is no transform to run, `anchorFactors` has to call `normalizeDeg` to
+    // find that out, and `normalizeDeg` now lives in wasm.
+    resetCrossings();
+    projectQuad(base, V(1, 0), true);
+    expect(crossings()).toBe(1);
   });
 
   it('holds the bounds top-left fixed while shrinking by 1/zoom', () => {

@@ -54,7 +54,7 @@ for (const poc of POCS) {
  * without saying anything. The patterns here are the ones `.gitignore` lists as
  * regenerable.
  */
-const PER_ROUND = /-(?:timing|alloc)-r\d+\.json$/;
+const PER_ROUND = /-(?:probe|timing|alloc)-r\d+\.json$/;
 mkdirSync(RESULTS, { recursive: true });
 for (const f of readdirSync(RESULTS)) {
   if (PER_ROUND.test(f)) rmSync(resolve(RESULTS, f));
@@ -68,8 +68,8 @@ function runOne(dir, mode, round) {
   });
 }
 
-function readProbe(dir, round) {
-  const file = resolve(RESULTS, `${dir}-timing-r${round}.json`);
+function readProbe(dir) {
+  const file = resolve(RESULTS, `${dir}-probe-r1.json`);
   return JSON.parse(readFileSync(file, 'utf8')).probe;
 }
 
@@ -77,9 +77,14 @@ function readProbe(dir, round) {
  * The fairness gate. poc-3 builds models by dispatching into Rust while poc-1
  * and poc-2 build them in TypeScript, so different shape sets are a live risk
  * and nothing about the timings would reveal it. Compare display lists first.
+ *
+ * FIRST means first. This used to read the probe out of each POC's round-1
+ * timing file, so a run whose implementations disagreed published three sets of
+ * timings before it aborted, and `bench/README.md` promised a guarantee the
+ * order did not deliver. The probe is its own pass now.
  */
 function fairnessGate() {
-  const probes = POCS.map((p) => ({ dir: p.dir, probe: readProbe(p.dir, 1) }));
+  const probes = POCS.map((p) => ({ dir: p.dir, probe: readProbe(p.dir) }));
   const baseline = JSON.stringify(probes[0].probe);
   let ok = true;
   for (const { dir, probe } of probes.slice(1)) {
@@ -103,10 +108,13 @@ function fairnessGate() {
 
 console.log(`rounds=${rounds} budget=${budgetMs}ms alloc-rounds=${allocRounds}\n`);
 
+console.log('── fairness probe ──');
+for (const poc of POCS) runOne(poc.dir, 'probe', 1);
+fairnessGate();
+
 for (let r = 1; r <= rounds; r++) {
   console.log(`── timing round ${r}/${rounds} ──`);
   for (const poc of POCS) runOne(poc.dir, 'timing', r);
-  if (r === 1) fairnessGate();
 }
 
 for (let r = 1; r <= allocRounds; r++) {
@@ -115,4 +123,4 @@ for (let r = 1; r <= allocRounds; r++) {
 }
 
 const written = readdirSync(RESULTS).filter((f) => PER_ROUND.test(f)).length;
-console.log(`\n${written} per-round result files in bench/results. Now run: node bench/compare.mjs`);
+console.log(`\n${written} result files in bench/results. Now run: node bench/compare.mjs`);

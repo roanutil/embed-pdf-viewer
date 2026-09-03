@@ -11,6 +11,8 @@ export default function init(
 ): Promise<unknown>;
 
 export function itemStride(): number;
+export function flagSelected(): number;
+export function flagProjected(): number;
 
 export class Core {
   constructor();

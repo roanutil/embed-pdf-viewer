@@ -12,7 +12,19 @@ const _: () = assert!(RECORD_BYTES == 112);
 
 /// Transcribes the loop in
 /// packages/engine/services/src/features/geometry/PageGeometryReader.ts:109.
-/// Returns the total glyph count; writes at most `cap` records.
+/// Writes at most `cap` records.
+///
+/// Returns the glyph count, or NEGATIVE the count when it did not fit in `cap`,
+/// the same overflow contract `rs_search_page` uses below and for the same
+/// reason: `geometryCoarse` (bench/workloads.mjs) builds a `DataView` over
+/// `n * RECORD_BYTES` of a `cap * RECORD_BYTES` allocation, and the wasm arms
+/// cannot catch the overrun themselves because bench/arm.mjs's `viewBuffer`
+/// ignores its length argument. No caller passes a short `cap` today
+/// (`recordCap` is the fixture's glyph count), so this was latent rather than
+/// live, but a count that cannot be read is not an answer.
+///
+/// `out == null` or `cap <= 0` is the sizing probe, not an overflow: it writes
+/// nothing and returns the positive count so a caller can allocate for it.
 #[no_mangle]
 pub extern "C" fn rs_read_page_geometry(text_page: FPDF_TEXTPAGE, out: *mut u8, cap: i32) -> i32 {
     let count = unsafe { FPDFText_CountChars(text_page as _) }.max(0);
@@ -106,7 +118,11 @@ pub extern "C" fn rs_read_page_geometry(text_page: FPDF_TEXTPAGE, out: *mut u8, 
 
         w.write(i as usize, &rec);
     }
-    count
+    if count > cap {
+        -count
+    } else {
+        count
+    }
 }
 
 fn quad(q: &FS_QUADPOINTSF) -> [f32; 8] {

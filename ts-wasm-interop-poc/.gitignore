@@ -23,5 +23,6 @@ dist/
 # --- benchmarks ---------------------------------------------------------
 # Per-round JSON is machine-specific and regenerable. The aggregated
 # RESULTS.md and the hand-collected cold-start.json ARE committed.
+bench/results/*-probe-r*.json
 bench/results/*-timing-r*.json
 bench/results/*-alloc-r*.json

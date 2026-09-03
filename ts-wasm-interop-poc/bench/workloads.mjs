@@ -46,17 +46,27 @@ function moveLoop(down, count) {
   return out;
 }
 
+/**
+ * The fairness probe, on its own, so the gate can run before any timing.
+ *
+ * This used to be an untimed block at the top of `runAll`, which meant the gate
+ * in `bench/run.mjs` could only read it back out of a round-1 timing file: by
+ * the time a disagreement could be caught, all three POCs had already run a
+ * full round and written their results. Building one 10-shape model and
+ * reading one display list is cheap enough to pay for in its own pass.
+ */
+export async function runProbe(adapter) {
+  await adapter.init();
+  const s = adapter.build(seedLayout(PROBE.n, PROBE.anchored));
+  const probe = normalizeDisplayList(s.displayList(PROBE.view));
+  s.dispose();
+  return { adapter: adapter.name, probe };
+}
+
 export async function runAll(adapter, { budgetMs = 500 } = {}) {
   await adapter.init();
 
   const results = { adapter: adapter.name, frame: [], frameRaw: [], hit: [], gesture: [] };
-
-  // --- the fairness probe, not timed -------------------------------------
-  {
-    const s = adapter.build(seedLayout(PROBE.n, PROBE.anchored));
-    results.probe = normalizeDisplayList(s.displayList(PROBE.view));
-    s.dispose();
-  }
 
   // --- per-frame projection ---------------------------------------------
   for (const n of FRAME_SIZES) {

@@ -49,7 +49,11 @@ Rust's `seedShapes` while poc-1 and poc-2 build theirs in TypeScript, so
 different shape sets are a live risk that no timing would reveal. Instead the
 seed layout lives in `seeds.mjs` as data, each adapter applies it through its own
 dispatch path, and the gate compares all three display lists corner by corner
-before continuing. It aborts the run on any disagreement.
+before continuing. It aborts the run on any disagreement. The probe is its own
+pass (`BENCH_MODE=probe`, one 10-shape model per POC), not a block inside the
+timing run. That ordering is the point. Reading the probe back out of a round-1
+timing file, which is how this worked at first, meant all three POCs had already
+published a full round of numbers by the time the gate could fail.
 
 ## Measurement notes
 

@@ -279,9 +279,32 @@ export function makeWorkloads(arm, fx) {
     return out;
   };
 
+  /**
+   * Overflow, reported the same way for both coarse ops.
+   *
+   * `_read_page_geometry` and `_search_page` both return NEGATIVE the count
+   * found when it did not fit in the cap. Reading `n` records past a `cap`-sized
+   * allocation is not something the wasm arms can catch for themselves
+   * (bench/arm.mjs's `viewBuffer` ignores its length argument) and it is what
+   * the native arms reject inside `view_buffer`, so a count that cannot be read
+   * has to fail loudly rather than come back as plausible coordinates from
+   * unrelated heap.
+   */
+  const fits = (n, name, what, cap) => {
+    if (n < 0) {
+      throw new Error(`${coarse}_${name}: ${-n} ${what} exceed cap=${cap}. Raise the cap.`);
+    }
+    return n;
+  };
+
   /** Arms c and d. One crossing, then one typed-array walk. */
   const geometryCoarse = () => {
-    const n = fn[`${coarse}_read_page_geometry`](fx.textPage, recordPtr, recordCap);
+    const n = fits(
+      fn[`${coarse}_read_page_geometry`](fx.textPage, recordPtr, recordCap),
+      'read_page_geometry',
+      'glyphs',
+      recordCap,
+    );
     // A view over the LIVE memory, not a copy: `mem.readBytes` here would
     // memcpy this arm's 908 KB record buffer every call, a cost the thin arm
     // never pays since it reads the heap in place — see Finding 6.
@@ -400,18 +423,12 @@ export function makeWorkloads(arm, fx) {
   };
 
   const searchCoarse = () => {
-    const n = fn[`${coarse}_search_page`](fx.textPage, termPtr, searchPtr, searchCap);
-    // A negative count means the hits did not fit: `searchCap` rects were
-    // written and `-n` were found. Reading `n` records would run off the end of
-    // the allocation, which the wasm arms cannot detect for themselves
-    // (bench/arm.mjs's viewBuffer ignores its length) and which the native arms
-    // reject inside view_buffer. Fail loudly rather than publish coordinates
-    // read from unrelated heap.
-    if (n < 0) {
-      throw new Error(
-        `${coarse}_search_page: ${-n} hit rects exceed searchCap=${searchCap}. Raise searchCap.`,
-      );
-    }
+    const n = fits(
+      fn[`${coarse}_search_page`](fx.textPage, termPtr, searchPtr, searchCap),
+      'search_page',
+      'hit rects',
+      searchCap,
+    );
     // A view over the LIVE memory, not a copy: `mem.readBytes` here would
     // memcpy the packed rect buffer every call, a cost the thin arm never
     // pays since it reads the heap in place — the same asymmetry Finding 6
@@ -440,7 +457,12 @@ export function makeWorkloads(arm, fx) {
   // re-cross into the coarse read on every timed iteration.
   let geometryCopyoutN = 0;
   if (coarse) {
-    geometryCopyoutN = fn[`${coarse}_read_page_geometry`](fx.textPage, recordPtr, recordCap);
+    geometryCopyoutN = fits(
+      fn[`${coarse}_read_page_geometry`](fx.textPage, recordPtr, recordCap),
+      'read_page_geometry',
+      'glyphs',
+      recordCap,
+    );
   }
 
   // Warm the 4x bitmap once, untimed, so `render-copyout-4x` always copies

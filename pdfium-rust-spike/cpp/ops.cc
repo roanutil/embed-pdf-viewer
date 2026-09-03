@@ -19,7 +19,16 @@ extern "C" {
 
 // Transcribes the loop in
 // packages/engine/services/src/features/geometry/PageGeometryReader.ts:109.
-// Returns the total glyph count; writes at most `cap` records.
+// Writes at most `cap` records.
+//
+// Returns the glyph count, or NEGATIVE the count when it did not fit in `cap`,
+// matching rs_read_page_geometry in crates/ops/src/lib.rs and cc_search_page
+// below. geometryCoarse (bench/workloads.mjs) builds a DataView over
+// n * kRecordBytes of a cap * kRecordBytes allocation, and the wasm arms cannot
+// catch the overrun themselves (bench/arm.mjs's viewBuffer ignores its length).
+//
+// out == nullptr or cap <= 0 is the sizing probe, not an overflow: it writes
+// nothing and returns the positive count.
 int cc_read_page_geometry(FPDF_TEXTPAGE text_page, uint8_t* out, int cap) {
   int count = FPDFText_CountChars(text_page);
   if (count < 0) count = 0;
@@ -102,7 +111,7 @@ int cc_read_page_geometry(FPDF_TEXTPAGE text_page, uint8_t* out, int cap) {
 
     WriteRecord(out, static_cast<size_t>(i), static_cast<size_t>(cap), rec);
   }
-  return count;
+  return count > cap ? -count : count;
 }
 
 int cc_read_page_text(FPDF_TEXTPAGE text_page, unsigned short* buf, int len) {

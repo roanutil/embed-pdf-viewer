@@ -6,9 +6,6 @@ import type { DisplayItem, DisplayList, Effect, Msg, ShapeRow, ViewEnv } from '.
 export type Unsubscribe = () => void;
 export type EffectHandler = (effect: Effect) => void;
 
-const FLAG_SELECTED = 1;
-const FLAG_PROJECTED = 2;
-
 /**
  * The TypeScript face of the Rust-owned store.
  *
@@ -63,6 +60,25 @@ export interface CoreStore {
 export function createCoreStore(host: CoreHost = {}): CoreStore {
   const wasm = required();
   const core = new wasm.Core();
+
+  // The scene buffer's layout, from the side that writes it.
+  //
+  // These were `const stride = 10` and a pair of flag literals in this file,
+  // which is exactly the drift `crates/core/src/model.rs` exports them to
+  // prevent: adding one field to the record and bumping `ITEM_STRIDE` would
+  // have left this decoder reading quad coordinates from the wrong offsets for
+  // every shape past the first, with no type error and nothing thrown. Three
+  // crossings per store, none per frame.
+  countCrossing();
+  const stride = wasm.itemStride();
+  countCrossing();
+  const flagSelected = wasm.flagSelected();
+  countCrossing();
+  const flagProjected = wasm.flagProjected();
+  // Flags are the record's last slot: `scene_buffer` pushes them after the
+  // eight quad coordinates, so this follows the stride instead of being a
+  // second literal that has to be remembered separately.
+  const flagsAt = stride - 1;
 
   countCrossing();
   if (host.log) core.setHostLogger((m: unknown) => host.log!(String(m)));
@@ -193,13 +209,12 @@ export function createCoreStore(host: CoreHost = {}): CoreStore {
       table();
       countCrossing();
       const buf = core.scene(view.zoom, view.rotation);
-      const stride = 10;
       const count = buf[0] ?? 0;
       const items: DisplayItem[] = [];
       for (let i = 0; i < count; i++) {
         const o = 1 + i * stride;
         const handle = buf[o]!;
-        const flags = buf[o + 9]!;
+        const flags = buf[o + flagsAt]!;
         const row = rowByHandle.get(handle);
         items.push({
           handle,
@@ -211,8 +226,8 @@ export function createCoreStore(host: CoreHost = {}): CoreStore {
             { x: buf[o + 7]!, y: buf[o + 8]! },
           ],
           color: row?.color ?? '#888',
-          selected: (flags & FLAG_SELECTED) !== 0,
-          projected: (flags & FLAG_PROJECTED) !== 0,
+          selected: (flags & flagSelected) !== 0,
+          projected: (flags & flagProjected) !== 0,
         });
       }
       return { items };

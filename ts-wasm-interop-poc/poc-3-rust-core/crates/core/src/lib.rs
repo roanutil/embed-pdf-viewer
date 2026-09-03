@@ -17,7 +17,7 @@ pub mod model;
 
 use crate::model::{
     affects_shape_table, hit_test, scene_buffer, shape_table, update, Model, Msg, Point, ViewEnv,
-    ITEM_STRIDE,
+    FLAG_PROJECTED, FLAG_SELECTED, ITEM_STRIDE,
 };
 
 thread_local! {
@@ -40,9 +40,23 @@ fn host_log(message: &str) {
 
 /// The layout of `scene()`'s buffer, handed to TypeScript so the decoder is not
 /// a magic number on the other side.
+///
+/// All three are read once at store construction (`packages/core/src/store.ts`)
+/// and never per frame, so the drift they prevent costs three crossings for the
+/// lifetime of a store.
 #[wasm_bindgen(js_name = itemStride)]
 pub fn item_stride() -> usize {
     ITEM_STRIDE
+}
+
+#[wasm_bindgen(js_name = flagSelected)]
+pub fn flag_selected() -> f64 {
+    FLAG_SELECTED
+}
+
+#[wasm_bindgen(js_name = flagProjected)]
+pub fn flag_projected() -> f64 {
+    FLAG_PROJECTED
 }
 
 /// The Rust-owned store.
