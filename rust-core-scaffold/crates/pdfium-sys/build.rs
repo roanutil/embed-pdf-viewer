@@ -16,7 +16,14 @@ fn main() {
     }
 
     println!("cargo:rerun-if-changed=wrapper.h");
+    // wrapper.h #includes 30 headers that live under here, populated by
+    // build/fetch-libpdfium.sh. A directory path is enough: Cargo walks it.
+    println!("cargo:rerun-if-changed={}", include.display());
     println!("cargo:rerun-if-env-changed=EPDF_SCAFFOLD_LIB_DIR");
+    // fork_target() reads this directly; without tracking it, flipping it
+    // alone (no wrapper.h touch) would not trigger regeneration once any
+    // rerun-if-* directive is emitted.
+    println!("cargo:rerun-if-env-changed=EPDF_SCAFFOLD_TARGET");
 
     let bindings = bindgen::Builder::default()
         .header("wrapper.h")
@@ -29,7 +36,7 @@ fn main() {
         .derive_debug(true)
         .derive_default(true)
         .derive_copy(true)
-        .layout_tests(false)
+        .layout_tests(true)
         .generate()
         .expect("bindgen failed over the fork headers");
 
@@ -59,7 +66,21 @@ fn emit_link_directives(dir: &PathBuf) {
         println!("cargo:rustc-link-arg=-Wl,-rpath,{}", lib.display());
     } else {
         println!("cargo:rustc-link-lib=static=embedpdf");
-        println!("cargo:rustc-link-lib=dylib=c++");
+        // build-target.sh:47-55 sets is_clang=false and use_custom_libcxx=false
+        // for linuxmusl-x64 and linuxmusl-arm64, so those artifacts are built
+        // with GCC against libstdc++, not LLVM's libc++. Apple targets (macOS,
+        // iOS) use libc++.
+        let target_os = env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
+        let target_env = env::var("CARGO_CFG_TARGET_ENV").unwrap_or_default();
+        let cxx_runtime = match (target_os.as_str(), target_env.as_str()) {
+            ("macos", _) | ("ios", _) => "c++",
+            ("linux", "musl") => "stdc++",
+            _ => panic!(
+                "no known C++ runtime for static embedpdf link on \
+                 target_os=`{target_os}` target_env=`{target_env}`"
+            ),
+        };
+        println!("cargo:rustc-link-lib=dylib={cxx_runtime}");
     }
 
     if env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("macos") {
