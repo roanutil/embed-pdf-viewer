@@ -30,6 +30,7 @@
 - The workspace `members` list grows one line per crate task, so `cargo metadata` and `cargo test --workspace` succeed at every commit on the branch.
 - `crates/build-support` is a `[build-dependencies]`-only crate holding `lib_root()`, `fork_target()`, `emit_link_directives()` and `emit_rpath_only()`. Every crate that links libembedpdf uses it, and no crate re-declares the target-name mapping.
 - Every crate that links libembedpdf needs its OWN `build.rs` calling `build_support::emit_rpath_only()`. Cargo propagates `rustc-link-lib` and `rustc-link-search` from a dependency's build script but NOT `rustc-link-arg`, so an inherited rpath never reaches a dependent package's test binaries: `cargo test -p <crate>` then links and fails at runtime.
+- The Kotlin API is NOT name-identical to Swift's. `packages/kotlin/uniffi.toml` renames two things for Kotlin only, because uniffi's Kotlin generator emits names that collide with ours and Kotlin rejects the duplicates outright: the exported `EpdfDocument.close` becomes `closeSync` (uniffi's own `AutoCloseable.close` frees the FFI handle and keeps that name), and `OpsError::EngineFailed.message` and `OpsError::Internal.message` become `detail` (uniffi gives every exception variant an `override val message`). Swift and the other hosts are unaffected: that config is passed only to the Kotlin generator run.
 - `pdfium::Document::from_bytes` takes `Rc<Library>`, not `&Library`. The document holds the clone, so `FPDF_DestroyLibrary` cannot run while a handle is open. `Rc` rather than `Arc` because `Library`'s refcount is a `thread_local` and `Rc` being `!Send` reinforces that.
 - The render comparison asserts BOTH `mean_abs_diff <= render.meanAbsDiffTolerance` (2.0) and `max_abs_diff <= render.maxAbsDiffTolerance` (16). The mean alone lets one wrong region hide inside 121,176 bytes.
 - `charCount` (8,106) is UTF-16 CODE UNITS, which is what PDFium's `FPDFText_CountChars` returns. JavaScript's `String.length` and Kotlin's `String.length` agree. Swift's default `String.count` does NOT: it counts grapheme clusters and returns 7,992, because the page text holds 114 combining sequences. A Swift host asserting a text length must use `utf16.count`, or compare the whole string instead of its length.
@@ -4774,7 +4775,12 @@ class DocumentViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     override fun onCleared() {
-        document?.close()
+        // closeSync(), NOT close(). uniffi's Kotlin generator makes every
+        // exported object implement AutoCloseable with its own
+        // `override fun close()` that frees the FFI handle, which collides
+        // with epdf-uniffi's exported `close`. packages/kotlin/uniffi.toml
+        // renames ours to closeSync for Kotlin only; Swift still says close().
+        document?.closeSync()
         document = null
     }
 }
