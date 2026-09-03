@@ -108,4 +108,26 @@ class VectorsTest {
             doc.closeSync()
         }
     }
+
+    /**
+     * The frozen golden is grayscale (B == G == R in every pixel), so it
+     * cannot catch a channel-order bug in `bgraToArgb`: a B<->R swap still
+     * produces a mean and max abs diff of 0 against it. This test uses a
+     * synthetic two-pixel buffer with distinct channel values instead, and
+     * asserts the packed ints directly against ARGB values built from the
+     * same raw components, not by calling `bgraToArgb` a second time.
+     */
+    @Test
+    fun bgraToArgbPacksChannelsCorrectly() {
+        // Pixel 0: B=10, G=20, R=30, A=255. Pixel 1: B=200, G=150, R=100, A=128.
+        val bgra = byteArrayOf(
+            10.toByte(), 20.toByte(), 30.toByte(), 255.toByte(),
+            200.toByte(), 150.toByte(), 100.toByte(), 128.toByte(),
+        )
+
+        val pixels = bgraToArgb(bgra, width = 2, height = 1, stride = 8)
+
+        assertEquals((255 shl 24) or (30 shl 16) or (20 shl 8) or 10, pixels[0])
+        assertEquals((128 shl 24) or (100 shl 16) or (150 shl 8) or 200, pixels[1])
+    }
 }

@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 import Testing
 @testable import EpdfOps
@@ -126,4 +127,52 @@ private func openFixture() throws -> EpdfDocument {
     let image = try doc.renderPageCGImage(index: v.pageIndex, scale: v.renderScale)
     #expect(image.width == Int(v.renderWidth))
     #expect(image.height == Int(v.renderHeight))
+}
+
+/// The frozen golden is grayscale (B == G == R in every pixel), so it cannot
+/// catch a channel-order bug in `bgraToCGImage` -- a B<->R swap still
+/// produces a mean and max abs diff of 0 against it. This test uses a
+/// synthetic two-pixel buffer with distinct channel values instead, and
+/// reads the pixels back out of the CGImage by drawing it into a CGContext
+/// with a known (premultiplied-last, default byte order) layout, so the
+/// assertion does not depend on `bgraToCGImage`'s own byte-order choice.
+@Test func bgraToCGImagePreservesChannelOrder() throws {
+    // Pixel 0: B=10, G=20, R=30, A=255. Pixel 1: B=200, G=150, R=100, A=255.
+    let bgra = Data([10, 20, 30, 255, 200, 150, 100, 255])
+    let image = try bgraToCGImage(bgra: bgra, width: 2, height: 1, stride: 8)
+
+    let width = 2
+    let height = 1
+    let bytesPerRow = width * 4
+    let buffer = UnsafeMutableRawPointer.allocate(byteCount: bytesPerRow * height, alignment: 1)
+    defer { buffer.deallocate() }
+    buffer.initializeMemory(as: UInt8.self, repeating: 0, count: bytesPerRow * height)
+
+    guard
+        let context = CGContext(
+            data: buffer,
+            width: width,
+            height: height,
+            bitsPerComponent: 8,
+            bytesPerRow: bytesPerRow,
+            space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        )
+    else {
+        Issue.record("could not create a CGContext to read the CGImage back")
+        return
+    }
+    context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+
+    // premultipliedLast with the default (big-endian) byte order lays out
+    // R,G,B,A per pixel in memory.
+    let pixels = buffer.bindMemory(to: UInt8.self, capacity: bytesPerRow * height)
+    #expect(pixels[0] == 30)  // R
+    #expect(pixels[1] == 20)  // G
+    #expect(pixels[2] == 10)  // B
+    #expect(pixels[3] == 255)  // A
+    #expect(pixels[4] == 100)  // R
+    #expect(pixels[5] == 150)  // G
+    #expect(pixels[6] == 200)  // B
+    #expect(pixels[7] == 255)  // A
 }

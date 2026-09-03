@@ -4,6 +4,22 @@ use std::sync::Arc;
 use crate::dispatch::Worker;
 use crate::{Bitmap, OpsError, Rect, SearchHit, Size};
 
+/// Upper bound on a rendered bitmap's byte size (`stride * height`), checked
+/// before `render_bgra` allocates. `scale` reaches `render_page` straight
+/// from every host -- `epdf_render` in crates/epdf-wasm/src/lib.rs is
+/// callable from a browser page, and crates/epdf-node/src/lib.rs takes any
+/// JavaScript number -- and an allocation that fails aborts the process
+/// instead of unwinding, which none of the five bindings can recover from.
+///
+/// 256 MiB is generous relative to every render this scaffold actually
+/// produces: the frozen golden is 121,176 bytes at scale 0.25, and
+/// `apps/ios` renders a 7.7 MB bitmap at scale 2.0, both for a 612x792-point
+/// page. Bytes grow with the square of scale, so 256 MiB leaves room to
+/// render that same page at just under scale 12 -- about 6x what apps/ios
+/// asks for today -- while still refusing a multi-gigabyte allocation
+/// outright before it reaches the allocator.
+const MAX_RENDER_BYTES: u64 = 256 * 1024 * 1024;
+
 pub struct Engine {
     worker: Arc<Worker>,
 }
@@ -70,11 +86,25 @@ impl Document {
 
     pub fn render_page(&self, index: u32, scale: f32) -> Result<Bitmap, OpsError> {
         self.with(move |doc| {
+            // A non-finite or non-positive scale, or one whose buffer would
+            // blow past MAX_RENDER_BYTES, reaches here straight from every
+            // host's own numeric type (an untrusted f64/Double/Float), and
+            // `render_bgra`'s allocation aborts the process rather than
+            // returning an error if we let it through. Checked inside the
+            // closure, not before calling `with`, so a closed document
+            // still reports `Closed` rather than `RenderFailed`.
+            if !scale.is_finite() || scale <= 0.0 {
+                return Err(OpsError::RenderFailed);
+            }
             let page = doc.page(index)?;
             // Same rounding as build/generate-vectors.mjs. Changing it breaks
             // the golden buffer comparison in every host.
             let width = ((page.width() * scale).round() as u32).max(1);
             let height = ((page.height() * scale).round() as u32).max(1);
+            let bytes = u64::from(width) * 4 * u64::from(height);
+            if bytes > MAX_RENDER_BYTES {
+                return Err(OpsError::RenderFailed);
+            }
             let bitmap = page.render_bgra(width, height)?;
             Ok(Bitmap {
                 width: bitmap.width,

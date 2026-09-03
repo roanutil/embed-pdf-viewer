@@ -50,6 +50,13 @@ JavaScript through the em++ module's linear memory, and Kotlin through JNA. Six 
 five of them crossing a language boundary, and none of them move a byte. The golden was not produced
 by any of the six, so none of this is self-referential.
 
+That match does not, on its own, prove channel order. Page 4 is entirely grayscale: B == G == R in
+every one of its 30,294 pixels, alpha 255 throughout. A host that read PDFium's BGRA output as RGBA,
+or swapped any two of B, G and R, would diff against this golden at mean 0 and max 0 too.
+`apps/web-demo/bgra-to-rgba.test.mjs`, `bgraToCGImagePreservesChannelOrder` in `VectorsTests.swift`,
+and `bgraToArgbPacksChannelsCorrectly` in `VectorsTest.kt` cover that gap directly, with synthetic
+buffers whose three channels are never equal.
+
 ## The crates
 
 Nine crates for six operations is more ceremony than the code deserves, and that is deliberate.

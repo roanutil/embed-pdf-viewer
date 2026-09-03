@@ -176,11 +176,18 @@ writeFileSync(
         stride,
         golden: 'report-p4-scale0.25.bgra',
         meanAbsDiffTolerance: 2.0,
-        // FPDFBitmap_CreateEx's format argument and FPDFBitmap_FillRect's
-        // fill color, plus FPDF_RenderPageBitmap's rotate/flags arguments
-        // and the fact that FPDF_FFLDraw is never called (no form
-        // rendering) — a reimplementation must reproduce all five exactly
-        // or the golden comparison fails.
+        // FPDFBitmap_FillRect's fill color, FPDF_RenderPageBitmap's
+        // rotate/flags arguments, and the fact that FPDF_FFLDraw is never
+        // called (no form rendering): a reimplementation that gets any of
+        // those four wrong changes a pixel on this page, so the golden
+        // comparison catches it. `format` does not: page 4 is entirely
+        // grayscale (B == G == R in every pixel, alpha 255 throughout), so
+        // a reimplementation that returns RGBA, or any other permutation of
+        // B, G and R, produces byte-identical output against this golden.
+        // See packages/swift/EpdfOps/Tests/EpdfOpsTests/VectorsTests.swift
+        // and packages/kotlin/epdf-ops/src/test/kotlin/com/embedpdf/scaffold/VectorsTest.kt
+        // for the synthetic, non-grayscale tests that actually cover
+        // channel order, plus apps/web-demo/bgra-to-rgba.test.mjs.
         format: 4, // FPDFBitmap_BGRA
         fillColor: 4294967295, // 0xFFFFFFFF, passed to FPDFBitmap_FillRect
         rotate: 0, // FPDF_RenderPageBitmap's rotate argument

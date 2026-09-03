@@ -70,20 +70,30 @@ fun EpdfDocument.renderPageArgb(index: UInt, scale: Float): ArgbImage {
     val width = bitmap.width.toInt()
     val height = bitmap.height.toInt()
     val stride = bitmap.stride.toInt()
+    return ArgbImage(bgraToArgb(bitmap.bgra, width, height, stride), width, height)
+}
+
+/**
+ * Packs a BGRA buffer, byte order B,G,R,A per pixel, into ARGB ints. Split
+ * out of `renderPageArgb` so this channel logic can be exercised with a
+ * synthetic buffer, not only through a real PDFium render; see
+ * `bgraToArgbPacksChannelsCorrectly` in VectorsTest.kt.
+ */
+fun bgraToArgb(bgra: ByteArray, width: Int, height: Int, stride: Int): IntArray {
     val out = IntArray(width * height)
 
     for (y in 0 until height) {
         var source = y * stride
         var target = y * width
         for (x in 0 until width) {
-            val b = bitmap.bgra[source].toInt() and 0xFF
-            val g = bitmap.bgra[source + 1].toInt() and 0xFF
-            val r = bitmap.bgra[source + 2].toInt() and 0xFF
-            val a = bitmap.bgra[source + 3].toInt() and 0xFF
+            val b = bgra[source].toInt() and 0xFF
+            val g = bgra[source + 1].toInt() and 0xFF
+            val r = bgra[source + 2].toInt() and 0xFF
+            val a = bgra[source + 3].toInt() and 0xFF
             out[target] = (a shl 24) or (r shl 16) or (g shl 8) or b
             source += 4
             target += 1
         }
     }
-    return ArgbImage(out, width, height)
+    return out
 }
