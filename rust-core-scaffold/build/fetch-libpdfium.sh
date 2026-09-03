@@ -26,15 +26,25 @@ sha256_file() {
   fi
 }
 
-STATUS="$(node -e "
+RECORD="$(node -e "
 const fs = require('node:fs');
 const pin = JSON.parse(fs.readFileSync(process.argv[1], 'utf8'));
 const artifact = pin.artifacts && pin.artifacts[process.argv[2]];
-if (!artifact) process.stdout.write('unknown');
-else if (artifact.status === 'pending') process.stdout.write('pending');
-else if (!artifact.url || !artifact.sha256) process.stdout.write('incomplete');
-else process.stdout.write('ok');
+const field = (s) => String(s).replace(/[\t\n]/g, '');
+let status = 'ok';
+let url = '';
+let sha256 = '';
+if (!artifact) status = 'unknown';
+else if (artifact.status === 'pending') status = 'pending';
+else if (!artifact.url || !artifact.sha256) status = 'incomplete';
+else {
+  url = field(artifact.url);
+  sha256 = field(artifact.sha256);
+}
+process.stdout.write([status, url, sha256].join('\t'));
 " "$PIN_FILE" "$TARGET")"
+
+IFS=$'\t' read -r STATUS URL SHA256 <<<"$RECORD"
 
 case "$STATUS" in
   unknown)
@@ -59,9 +69,6 @@ MSG
     exit 1
     ;;
 esac
-
-URL="$(node -e "process.stdout.write(JSON.parse(require('node:fs').readFileSync(process.argv[1],'utf8')).artifacts[process.argv[2]].url)" "$PIN_FILE" "$TARGET")"
-SHA256="$(node -e "process.stdout.write(JSON.parse(require('node:fs').readFileSync(process.argv[1],'utf8')).artifacts[process.argv[2]].sha256)" "$PIN_FILE" "$TARGET")"
 
 DEST="$OUT_DIR/$TARGET"
 CACHE="$ROOT/build/cache"

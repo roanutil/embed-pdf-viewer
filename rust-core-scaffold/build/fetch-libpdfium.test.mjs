@@ -1,18 +1,20 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile, mkdtemp, rm } from 'node:fs/promises';
 import { promisify } from 'node:util';
-import { dirname, resolve } from 'node:path';
+import { tmpdir } from 'node:os';
+import { dirname, resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const script = resolve(here, 'fetch-libpdfium.sh');
 const run = promisify(execFile);
 
-async function fetchTarget(target) {
+async function fetchTarget(target, env = {}) {
   try {
-    const { stdout } = await run('bash', [script, target]);
+    const { stdout } = await run('bash', [script, target], { env: { ...process.env, ...env } });
     return { code: 0, stdout, stderr: '' };
   } catch (error) {
     return { code: error.code, stdout: error.stdout ?? '', stderr: error.stderr ?? '' };
@@ -65,4 +67,87 @@ test('darwin-arm64 extracts a dylib and an include tree', async () => {
   const dir = stdout.trim();
   await readFile(resolve(dir, 'lib/libembedpdf.dylib'));
   await readFile(resolve(dir, 'include/fpdfview.h'));
+});
+
+test('a pin entry missing url or sha256 exits 1', async () => {
+  const scratch = await mkdtemp(join(tmpdir(), 'fetch-libpdfium-incomplete-'));
+  try {
+    const pinFile = join(scratch, 'pin.json');
+    await writeFile(
+      pinFile,
+      JSON.stringify({
+        artifacts: {
+          'incomplete-target': { note: 'missing url and sha256' },
+        },
+      }),
+    );
+    const libDir = join(scratch, 'lib');
+
+    const { code, stderr } = await fetchTarget('incomplete-target', {
+      EPDF_SCAFFOLD_PIN_FILE: pinFile,
+      EPDF_SCAFFOLD_LIB_DIR: libDir,
+    });
+    assert.equal(code, 1);
+    assert.match(stderr, /missing url or sha256 for target: incomplete-target/);
+  } finally {
+    await rm(scratch, { recursive: true, force: true });
+  }
+});
+
+test('a sha256 mismatch exits 1, reports expected and actual, and deletes the archive', async () => {
+  const scratch = await mkdtemp(join(tmpdir(), 'fetch-libpdfium-mismatch-'));
+  try {
+    const sourceFile = join(scratch, 'source.bin');
+    await writeFile(sourceFile, 'not the bytes the pin expects');
+    const actualSha256 = createHash('sha256').update(await readFile(sourceFile)).digest('hex');
+    const wrongSha256 = actualSha256.startsWith('f') ? actualSha256.replace(/^f/, '0') : `f${actualSha256.slice(1)}`;
+
+    const pinFile = join(scratch, 'pin.json');
+    await writeFile(
+      pinFile,
+      JSON.stringify({
+        artifacts: {
+          'mismatch-target': {
+            url: `file://${sourceFile}`,
+            sha256: wrongSha256,
+          },
+        },
+      }),
+    );
+    const libDir = join(scratch, 'lib');
+
+    // This target's archive lands in the real build/cache/ dir (the script does
+    // not let EPDF_SCAFFOLD_LIB_DIR redirect it), so the target name must not
+    // collide with a real one. The mismatch branch deletes it, verified below.
+    const archivePath = resolve(here, 'cache', 'libembedpdf-runtime-mismatch-target.tar.gz');
+    try {
+      const { code, stderr } = await fetchTarget('mismatch-target', {
+        EPDF_SCAFFOLD_PIN_FILE: pinFile,
+        EPDF_SCAFFOLD_LIB_DIR: libDir,
+      });
+      assert.equal(code, 1);
+      assert.match(stderr, /sha256 mismatch for .*mismatch-target\.tar\.gz/);
+      assert.match(stderr, new RegExp(`expected: ${wrongSha256}`));
+      assert.match(stderr, new RegExp(`actual:   ${actualSha256}`));
+      await assert.rejects(readFile(archivePath));
+    } finally {
+      await rm(archivePath, { force: true });
+    }
+  } finally {
+    await rm(scratch, { recursive: true, force: true });
+  }
+});
+
+test('a missing pin file fails loudly instead of proceeding with empty values', async () => {
+  const scratch = await mkdtemp(join(tmpdir(), 'fetch-libpdfium-badpin-'));
+  try {
+    const { code, stdout, stderr } = await fetchTarget('darwin-arm64', {
+      EPDF_SCAFFOLD_PIN_FILE: join(scratch, 'does-not-exist.json'),
+    });
+    assert.notEqual(code, 0);
+    assert.equal(stdout, '');
+    assert.match(stderr, /ENOENT/);
+  } finally {
+    await rm(scratch, { recursive: true, force: true });
+  }
 });
