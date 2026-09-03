@@ -1560,7 +1560,12 @@ pub enum OpsError {
     PasswordRequired,
     PageOutOfRange { index: u32 },
     RenderFailed,
+    /// The caller used a document it had closed, or the slab has no such entry.
     Closed,
+    /// The worker thread is gone. Every document from this engine is dead and
+    /// the engine must be recreated. Distinct from `Closed`, which is a caller
+    /// mistake with an obvious remedy.
+    EngineFailed { message: String },
     Internal { message: String },
 }
 
@@ -2287,6 +2292,8 @@ pub enum OpsError {
     RenderFailed,
     #[error("the document is closed")]
     Closed,
+    #[error("the PDF engine failed and must be recreated: {message}")]
+    EngineFailed { message: String },
     #[error("{message}")]
     Internal { message: String },
 }
@@ -2299,6 +2306,7 @@ impl From<epdf_ops::OpsError> for OpsError {
             epdf_ops::OpsError::PageOutOfRange { index } => Self::PageOutOfRange { index },
             epdf_ops::OpsError::RenderFailed => Self::RenderFailed,
             epdf_ops::OpsError::Closed => Self::Closed,
+            epdf_ops::OpsError::EngineFailed { message } => Self::EngineFailed { message },
             epdf_ops::OpsError::Internal { message } => Self::Internal { message },
         }
     }
