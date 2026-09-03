@@ -78,3 +78,12 @@ test('errors carry a stable code distinct from the message', () => {
   }
   assert.notEqual(closedCode, loadFailedCode);
 });
+
+test('a page past the end carries PAGE_OUT_OF_RANGE', () => {
+  const doc = openDocument(fixture);
+  try {
+    assert.throws(() => doc.pageSize(doc.pageCount()), (err) => err.code === 'PAGE_OUT_OF_RANGE');
+  } finally {
+    doc.close();
+  }
+});
