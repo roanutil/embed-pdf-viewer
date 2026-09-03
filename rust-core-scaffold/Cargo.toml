@@ -1,0 +1,15 @@
+[workspace]
+resolver = "2"
+# One line is added here by each crate task, so `cargo metadata` and
+# `cargo test --workspace` succeed at every commit on this branch. The final
+# shape is crates/{pdfium-sys, pdfium, test-support, epdf-ops, epdf-uniffi,
+# epdf-node, epdf-wasm, uniffi-bindgen}.
+members = []
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+# Deliberately NOT panic = "abort", unlike pdfium-rust-spike/Cargo.toml. uniffi
+# and napi both turn a Rust panic into a host-language exception via
+# catch_unwind, and panic = "abort" removes that path.

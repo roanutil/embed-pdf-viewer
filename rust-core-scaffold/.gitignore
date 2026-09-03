@@ -1,0 +1,13 @@
+build/cache/
+build/libpdfium/
+build/out/
+target/
+node_modules/
+packages/swift/EpdfOps/Frameworks/
+packages/swift/EpdfOps/Sources/EpdfOps/Generated/
+packages/kotlin/epdf-ops/src/main/kotlin/generated/
+packages/kotlin/epdf-ops/src/main/resources/
+packages/node/*.node
+packages/web/dist/
+.build/
+.gradle/
