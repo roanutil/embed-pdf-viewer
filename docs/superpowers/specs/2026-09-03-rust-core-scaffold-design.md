@@ -31,8 +31,10 @@ the reason both spikes have been safe to be wrong in.
 rust-core-scaffold/
   README.md  rust-toolchain.toml  Cargo.toml
   crates/
+    build-support/  shared build.rs logic: resolves the fork's libpdfium per target, emits link directives
     pdfium-sys/   bindgen over the fork headers, FPDF|EPDF|FORM|PDFiumExt_ filter
     pdfium/       safe RAII: Library, Document, Page, TextPage, Bitmap
+    test-support/ fixture bytes, frozen vectors, pixel-diff helpers shared by every Rust test
     epdf-ops/     the six coarse operations, the only surface any host sees
     epdf-uniffi/  uniffi's newtype view of epdf-ops, for Swift and Kotlin
     epdf-node/    napi-rs addon over epdf-ops
@@ -55,10 +57,17 @@ rust-core-scaffold/
   vectors/report-page4.json  committed parity vectors, read by all four test suites
 ```
 
-Seven crates for six operations is more ceremony than the code deserves. I want it anyway, because
+Nine crates for six operations is more ceremony than the code deserves. I want it anyway, because
 `pdfium-sys` and `pdfium` are the two that survive into the real port while the rest are per-host
 adapters that get thrown away or rewritten. Keeping that line visible now is cheaper than discovering
 it later.
+
+`build-support` earns its place for a narrower reason: Cargo does not propagate a dependency's
+`cargo:rustc-link-arg` to a dependent package's own test or bin targets, so every crate that links
+`libembedpdf`, `pdfium-sys` directly and `pdfium`, `epdf-ops`, `epdf-uniffi`, `epdf-node` and
+`epdf-wasm` by re-emitting the rpath half, needs its own `build.rs`. The fork's per-target artifact
+shape and its Node-spelled target names were duplicated across those build scripts before this crate
+existed, and had already diverged.
 
 uniffi lives in `epdf-uniffi` rather than on `epdf-ops`'s own types for one reason: `epdf-ops` has to
 compile for `wasm32-unknown-emscripten`, and whether `uniffi::setup_scaffolding!()` builds for that
