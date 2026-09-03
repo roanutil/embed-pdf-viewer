@@ -25,6 +25,10 @@
 - No changesets. Nothing here is a published package.
 - Test helpers are shared, not copied. `crates/test-support` (a dev-dependency, created in Task 4) holds the frozen-vectors loader and `mean_abs_diff` for every Rust suite. `packages/test-support/vectors.mjs` (created in Task 9) holds the same two things for every JS suite. No suite re-declares either.
 - The workspace `members` list grows one line per crate task, so `cargo metadata` and `cargo test --workspace` succeed at every commit on the branch.
+- `crates/build-support` is a `[build-dependencies]`-only crate holding `lib_root()`, `fork_target()`, `emit_link_directives()` and `emit_rpath_only()`. Every crate that links libembedpdf uses it, and no crate re-declares the target-name mapping.
+- Every crate that links libembedpdf needs its OWN `build.rs` calling `build_support::emit_rpath_only()`. Cargo propagates `rustc-link-lib` and `rustc-link-search` from a dependency's build script but NOT `rustc-link-arg`, so an inherited rpath never reaches a dependent package's test binaries: `cargo test -p <crate>` then links and fails at runtime.
+- `pdfium::Document::from_bytes` takes `Rc<Library>`, not `&Library`. The document holds the clone, so `FPDF_DestroyLibrary` cannot run while a handle is open. `Rc` rather than `Arc` because `Library`'s refcount is a `thread_local` and `Rc` being `!Send` reinforces that.
+- The render comparison asserts BOTH `mean_abs_diff <= render.meanAbsDiffTolerance` (2.0) and `max_abs_diff <= render.maxAbsDiffTolerance` (16). The mean alone lets one wrong region hide inside 121,176 bytes.
 - Out of scope for this plan: adding `ios-arm64`, `ios-sim-arm64`, `android-arm64` and `android-x64` to `embedpdf/runtime`. That is a separate spec and a separate PR to a separate repository, running in parallel. Tasks 8 and 14 end at the gate rather than working around it.
 
 ---
@@ -1589,7 +1593,7 @@ bindings use this four-argument form.
 Create `rust-core-scaffold/crates/epdf-ops/tests/vectors.rs`, reading the frozen file through `test_support`, the shared loader Task 4 created. Do not re-declare the loader or `mean_abs_diff`.
 
 ```rust
-use test_support::{fixture_bytes, mean_abs_diff, vectors};
+use test_support::{fixture_bytes, max_abs_diff, mean_abs_diff, vectors};
 
 #[test]
 fn the_six_operations_match_the_frozen_vectors() {
@@ -1620,8 +1624,10 @@ fn the_six_operations_match_the_frozen_vectors() {
     assert_eq!(bitmap.width, v.render_width);
     assert_eq!(bitmap.height, v.render_height);
     assert_eq!(bitmap.stride, v.render_stride);
-    let diff = mean_abs_diff(&bitmap.bgra, &v.golden);
-    assert!(diff <= v.tolerance, "mean abs diff {diff} exceeds {}", v.tolerance);
+    let mean = mean_abs_diff(&bitmap.bgra, &v.golden);
+    assert!(mean <= v.tolerance, "mean abs diff {mean} exceeds {}", v.tolerance);
+    let worst = max_abs_diff(&bitmap.bgra, &v.golden);
+    assert!(worst <= v.max_tolerance, "max abs diff {worst} exceeds {}", v.max_tolerance);
 
     doc.close();
     doc.close(); // idempotent
@@ -1728,8 +1734,22 @@ crate-type = ["rlib"]
 [dependencies]
 pdfium = { path = "../pdfium" }
 
+[build-dependencies]
+build-support = { path = "../build-support" }
+
 [dev-dependencies]
 test-support = { path = "../test-support" }
+```
+
+`crates/epdf-ops/build.rs`, three lines. Cargo does not propagate
+`cargo:rustc-link-arg` from a dependency's build script to a dependent package's
+own test binaries, so without this `cargo test -p epdf-ops` links but the test
+binary cannot find `libembedpdf` at runtime:
+
+```rust
+fn main() {
+    build_support::emit_rpath_only();
+}
 ```
 
 Add `"crates/epdf-ops"` to the `members` array in `rust-core-scaffold/Cargo.toml`.
@@ -1745,6 +1765,9 @@ impl From<pdfium::PdfiumError> for OpsError {
             pdfium::PdfiumError::Load => Self::LoadFailed,
             pdfium::PdfiumError::Password => Self::PasswordRequired,
             pdfium::PdfiumError::PageOutOfRange(index) => Self::PageOutOfRange { index },
+            pdfium::PdfiumError::PageLoad(index) => Self::Internal {
+                message: format!("page {index} exists but PDFium could not load it"),
+            },
             pdfium::PdfiumError::Bitmap => Self::RenderFailed,
             other => Self::Internal { message: other.to_string() },
         }
@@ -1760,13 +1783,17 @@ Also give `OpsError` a `Display` impl and `impl std::error::Error`, because Task
 
 ```rust
 use std::collections::HashMap;
+use std::rc::Rc;
 
 use crate::OpsError;
 
 /// Everything that must live on the PDFium thread. Held by whichever dispatch
 /// implementation is compiled in, and only ever touched from that thread.
 pub struct State {
-    lib: pdfium::Library,
+    /// An `Rc` so every `pdfium::Document` in `docs` holds its own share. That
+    /// is what keeps `FPDF_DestroyLibrary` from running while a document handle
+    /// is still open, and it makes this struct's field order irrelevant.
+    lib: Rc<pdfium::Library>,
     docs: HashMap<u64, pdfium::Document>,
     next_id: u64,
 }
@@ -1787,8 +1814,10 @@ impl State {
         id
     }
 
-    pub fn library(&self) -> &pdfium::Library {
-        &self.lib
+    /// Clones the handle rather than lending it: `Document::from_bytes` takes
+    /// `Rc<Library>` so the library outlives every document opened from it.
+    pub fn library(&self) -> Rc<pdfium::Library> {
+        Rc::clone(&self.lib)
     }
 
     pub fn get(&self, id: u64) -> Result<&pdfium::Document, OpsError> {
@@ -2158,8 +2187,19 @@ epdf-ops = { path = "../epdf-ops" }
 thiserror = "2"
 uniffi = "=0.32.0"
 
+[build-dependencies]
+build-support = { path = "../build-support" }
+
 [dev-dependencies]
 test-support = { path = "../test-support" }
+```
+
+`crates/epdf-uniffi/build.rs`, for the same reason `epdf-ops` needs one:
+
+```rust
+fn main() {
+    build_support::emit_rpath_only();
+}
 ```
 
 Add `"crates/epdf-uniffi"` and `"crates/uniffi-bindgen"` to the `members` array in `rust-core-scaffold/Cargo.toml`.
@@ -3089,6 +3129,7 @@ napi-derive = "=3.6.3"
 
 [build-dependencies]
 napi-build = "=2.4.1"
+build-support = { path = "../build-support" }
 ```
 
 Add `"crates/epdf-node"` to the `members` array in `rust-core-scaffold/Cargo.toml`.
@@ -3098,6 +3139,9 @@ Add `"crates/epdf-node"` to the `members` array in `rust-core-scaffold/Cargo.tom
 ```rust
 fn main() {
     napi_build::setup();
+    // Cargo does not propagate cargo:rustc-link-arg from a dependency's build
+    // script, so the addon needs its own rpath to find libembedpdf at runtime.
+    build_support::emit_rpath_only();
 }
 ```
 
