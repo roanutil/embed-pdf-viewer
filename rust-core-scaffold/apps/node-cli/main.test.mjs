@@ -6,12 +6,12 @@ import { tmpdir } from 'node:os';
 import { promisify } from 'node:util';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadVectors } from '../../packages/test-support/vectors.mjs';
+import { loadVectors, meanAbsDiff, maxAbsDiff } from '../../packages/test-support/vectors.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const run = promisify(execFile);
 
-const { vectors } = await loadVectors();
+const { vectors, golden } = await loadVectors();
 
 test('the CLI reports the frozen numbers and writes a readable BMP', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'epdf-cli-'));
@@ -34,4 +34,24 @@ test('the CLI reports the frozen numbers and writes a readable BMP', async () =>
   assert.equal(bmp.readUInt32LE(2), bmp.length);
   assert.equal(bmp.readInt32LE(18), vectors.render.width);
   assert.equal(bmp.readInt32LE(22), vectors.render.height);
+
+  // None of the assertions above touch a single pixel byte: a scrambled copy
+  // loop that preserves width, height and file size would still pass them.
+  // Undo the BMP's bottom-up row order and diff against the frozen golden.
+  const bfOffBits = bmp.readUInt32LE(10);
+  const width = bmp.readInt32LE(18);
+  const height = bmp.readInt32LE(22);
+  const rowBytes = width * 4;
+  const pixels = Buffer.alloc(rowBytes * height);
+  for (let fileRow = 0; fileRow < height; fileRow += 1) {
+    const imageRow = height - 1 - fileRow;
+    const source = bfOffBits + fileRow * rowBytes;
+    bmp.copy(pixels, imageRow * rowBytes, source, source + rowBytes);
+  }
+
+  const diff = meanAbsDiff(pixels, golden);
+  assert.ok(diff <= vectors.render.meanAbsDiffTolerance, `mean abs diff ${diff}`);
+
+  const maxDiff = maxAbsDiff(pixels, golden);
+  assert.ok(maxDiff <= vectors.render.maxAbsDiffTolerance, `max abs diff ${maxDiff}`);
 });
