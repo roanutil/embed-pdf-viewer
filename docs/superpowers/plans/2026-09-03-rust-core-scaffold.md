@@ -2662,9 +2662,12 @@ extension EpdfDocument {
     public func renderPageCGImage(index: UInt32, scale: Float) throws -> CGImage {
         let bitmap = try renderPage(index: index, scale: scale)
 
-        // bitmap.bgra is already Data: uniffi maps Vec<u8> that way.
+        // bitmap.bgra is already Data: uniffi maps Vec<u8> that way. And the
+        // case is UpperCamelCase: uniffi 0.32.0 does NOT lowercase Rust enum
+        // variant names in Swift. Verified against the generated
+        // Sources/EpdfOps/Generated/epdf_uniffi.swift.
         guard let provider = CGDataProvider(data: bitmap.bgra as CFData) else {
-            throw OpsError.renderFailed
+            throw OpsError.RenderFailed
         }
 
         // PDFium's FPDFBitmap_BGRA is byte order B,G,R,A in memory, which on a
@@ -2686,7 +2689,7 @@ extension EpdfDocument {
                 intent: .defaultIntent
             )
         else {
-            throw OpsError.renderFailed
+            throw OpsError.RenderFailed
         }
         return image
     }
