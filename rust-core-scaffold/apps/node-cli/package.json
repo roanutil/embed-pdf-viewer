@@ -1,0 +1,7 @@
+{
+  "name": "@epdf-scaffold/node-cli",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "bin": { "epdf-scaffold": "./main.mjs" }
+}
