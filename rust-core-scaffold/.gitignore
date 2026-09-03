@@ -12,3 +12,4 @@ packages/node/*.node
 packages/web/dist/
 .build/
 .gradle/
+apps/ios/*.xcodeproj
