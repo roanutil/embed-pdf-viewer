@@ -18,8 +18,15 @@ Run from the `rust-core-scaffold` root. The first step builds
 under `Frameworks/macos-arm64/`, and runs `uniffi-bindgen` to generate
 `Sources/EpdfOps/Generated/epdf_uniffi.swift` plus the C header and
 modulemap under `Sources/EpdfOpsFFI/`. The second step exports
-`LIBRARY_PATH` and `DYLD_LIBRARY_PATH` so the linker and loader can find the
-staged dylibs, then runs `swift test`.
+`LIBRARY_PATH` so the linker can find the staged dylibs, then runs
+`swift test` with `-Xlinker -rpath -Xlinker <path to Frameworks/macos-arm64>`
+so the test binary can find them again at load time. That flag exists
+because `swift test` runs the compiled bundle through
+`swiftpm-testing-helper`, an Apple-signed binary with the hardened runtime
+and no `allow-dyld-environment-variables` entitlement, so macOS strips
+`DYLD_LIBRARY_PATH` before it reaches the test process. Baking the path
+into the binary's rpath survives that strip; setting the environment
+variable does not.
 
 `swift build` fails on a fresh clone, before `build-swift.sh` has run: the
 `EpdfOpsFFI` system-library target points at a directory

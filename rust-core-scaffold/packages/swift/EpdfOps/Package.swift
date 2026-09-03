@@ -16,9 +16,10 @@ let package = Package(
             dependencies: ["EpdfOpsFFI"],
             linkerSettings: [
                 // No -L here on purpose: build/test-swift.sh exports
-                // LIBRARY_PATH and DYLD_LIBRARY_PATH, and the Xcode project
-                // sets its own search paths. Hardcoding a relative path would
-                // depend on the directory `swift build` was run from.
+                // LIBRARY_PATH for link time and passes -Xlinker -rpath for
+                // load time, and the Xcode project sets its own search
+                // paths. Hardcoding a relative path would depend on the
+                // directory `swift build` was run from.
                 .linkedLibrary("epdf_uniffi"),
                 .linkedLibrary("embedpdf"),
             ]

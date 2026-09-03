@@ -11,6 +11,8 @@ private struct Vectors {
     let height: Float
     let charCount: UInt32
     let text: String
+    let searchQuery: String
+    let searchCaseSensitive: Bool
     let searchHitCount: Int
     let renderScale: Float
     let renderWidth: UInt32
@@ -41,6 +43,8 @@ private struct Vectors {
             height: Float(size["height"] as! Double),
             charCount: UInt32(json["charCount"] as! Int),
             text: json["text"] as! String,
+            searchQuery: search["query"] as! String,
+            searchCaseSensitive: search["caseSensitive"] as! Bool,
             searchHitCount: search["hitCount"] as! Int,
             renderScale: Float(render["scale"] as! Double),
             renderWidth: UInt32(render["width"] as! Int),
@@ -94,7 +98,7 @@ private func openFixture() throws -> EpdfDocument {
 
     #expect(try doc.pageText(index: v.pageIndex) == v.text)
 
-    let hits = try doc.search(index: v.pageIndex, query: "the", caseSensitive: false)
+    let hits = try doc.search(index: v.pageIndex, query: v.searchQuery, caseSensitive: v.searchCaseSensitive)
     #expect(hits.count == v.searchHitCount)
 
     let bitmap = try doc.renderPage(index: v.pageIndex, scale: v.renderScale)
@@ -112,7 +116,7 @@ private func openFixture() throws -> EpdfDocument {
     let doc = try openFixture()
     defer { doc.close() }
     let index = try doc.pageCount()
-    #expect(throws: OpsError.self) { try doc.pageSize(index: index) }
+    #expect(throws: OpsError.PageOutOfRange(index: index)) { try doc.pageSize(index: index) }
 }
 
 @Test func rendersACGImage() throws {
