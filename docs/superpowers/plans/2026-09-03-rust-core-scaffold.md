@@ -4263,13 +4263,20 @@ This task is verifiable on this machine only after a JDK is installed. It does n
 
 `/usr/libexec/java_home` currently fails on this machine, so:
 
+Android Studio 2026.1 is installed and ships a JDK, so no `brew install openjdk` is needed. Point `JAVA_HOME` at its bundled runtime:
+
 ```bash
-brew install openjdk@21 gradle
-sudo ln -sfn /opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk /Library/Java/JavaVirtualMachines/openjdk-21.jdk
-/usr/libexec/java_home -V
+export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
+"$JAVA_HOME/bin/java" -version     # OpenJDK 25.0.3
+brew install gradle                # one-time, only to generate the wrapper
 gradle --version
 ```
-Expected: `java_home -V` lists a 21 JDK and `gradle --version` prints. Record both versions for the README in Task 15.
+
+`/usr/bin/java` is the macOS stub that errors with "Unable to locate a Java Runtime", and `/usr/libexec/java_home` fails too, because the JBR is not registered as a system JVM. So every script and Gradle invocation must set `JAVA_HOME` explicitly. Put that export in `build/build-kotlin.sh` and in the Gradle test task's environment rather than relying on the shell.
+
+`gradle` is installed only to run `gradle wrapper` once. After that the committed wrapper is what runs, and the system Gradle is no longer needed.
+
+Kotlin's `jvmToolchain` must be reconcilable with JDK 25. If `jvmToolchain(21)` fails because no 21 JDK is installed, either set it to the JBR's version or enable Gradle's toolchain auto-provisioning; pick one and record which in the report. Do not install a second JDK just to satisfy a toolchain pin without saying why.
 
 - [ ] **Step 2: Write the failing test**
 
@@ -4601,12 +4608,19 @@ This is the one task that cannot be finished on this machine. There is no Androi
 - [ ] **Step 1: Install the Android SDK and NDK**
 
 Run:
+Android Studio 2026.1 already installed most of this at `~/Library/Android/sdk`: `platforms/android-37.0`, `build-tools/36.0.0`, `platform-tools`, and the emulator. What is missing is the NDK, which `cargo-ndk` needs to cross-compile the Rust library.
+
+`sdkmanager` is not on `PATH`. Either install the command-line tools, or use Android Studio's SDK Manager UI to add an NDK. Then:
+
 ```bash
-brew install --cask android-commandlinetools
-sdkmanager --install "platforms;android-35" "build-tools;35.0.0" "platform-tools" "ndk;27.2.12479018"
-sdkmanager --licenses
+export ANDROID_HOME="$HOME/Library/Android/sdk"
+ls "$ANDROID_HOME/ndk"                 # must list an NDK version
+cargo install cargo-ndk --version 4.1.2 --locked
 ```
-Expected: `sdkmanager --list_installed` shows all four. Record the exact versions for the README in Task 15. If a newer NDK or platform is current when you run this, use it and record what you used.
+
+Record the exact NDK version installed; Task 15's README needs it, and `build/build-kotlin.sh` resolves against it.
+
+Use `compileSdk = 37` and `build-tools 36.0.0` to match what is installed rather than the 35 this plan originally guessed. If Android Studio has moved on again by the time you run this, use what is there and record it.
 
 - [ ] **Step 2: Write the Gradle build with an explicit native-library gate**
 
@@ -4628,11 +4642,11 @@ plugins {
 
 android {
     namespace = "com.embedpdf.scaffold.app"
-    compileSdk = 35
+    compileSdk = 37
     defaultConfig {
         applicationId = "com.embedpdf.scaffold.app"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 37
         versionCode = 1
         versionName = "0.0.0"
         ndk { abiFilters += listOf("arm64-v8a") }
