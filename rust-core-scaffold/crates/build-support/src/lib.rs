@@ -9,6 +9,19 @@
 //! (pdfium).
 use std::env;
 use std::path::{Path, PathBuf};
+use std::sync::Once;
+
+/// The shape of the prebuilt libembedpdf artifact at a target: Unix dylib,
+/// Windows import library, or static archive.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ArtifactShape {
+    UnixDylib,
+    WindowsImportLib,
+    StaticArchive,
+}
+
+static EMIT_LIB_DIR_ONCE: Once = Once::new();
+static EMIT_TARGET_ONCE: Once = Once::new();
 
 /// Resolves the fork's per-target library root: `build/libpdfium` relative to
 /// the scaffold root, or `EPDF_SCAFFOLD_LIB_DIR` when that's set.
@@ -22,6 +35,10 @@ use std::path::{Path, PathBuf};
 /// scaffold root — confirmed by `cargo test -p pdfium-sys -p pdfium` after
 /// wiring both build scripts through this crate.
 pub fn lib_root() -> PathBuf {
+    EMIT_LIB_DIR_ONCE.call_once(|| {
+        println!("cargo:rerun-if-env-changed=EPDF_SCAFFOLD_LIB_DIR");
+    });
+
     if let Ok(dir) = env::var("EPDF_SCAFFOLD_LIB_DIR") {
         return PathBuf::from(dir);
     }
@@ -34,6 +51,10 @@ pub fn lib_root() -> PathBuf {
 /// pdfium-rust-spike/crates/napi-arms/build.rs:56-78 and extended with the two
 /// mobile OSes.
 pub fn fork_target() -> String {
+    EMIT_TARGET_ONCE.call_once(|| {
+        println!("cargo:rerun-if-env-changed=EPDF_SCAFFOLD_TARGET");
+    });
+
     if let Ok(target) = env::var("EPDF_SCAFFOLD_TARGET") {
         return target;
     }
@@ -66,6 +87,27 @@ pub fn fork_target() -> String {
     format!("{platform}-{arch}")
 }
 
+/// Classifies a prebuilt libembedpdf artifact by its filename pattern in the
+/// provided library directory. Inspects artifact filenames exactly once in the file.
+pub fn classify_artifact(lib: &Path) -> ArtifactShape {
+    // The fork ships a Unix dylib where build-target.sh sets
+    // pdf_is_complete_lib=false (darwin, linux-gnu): package-target.sh:29-36
+    // stages lib/libembedpdf.{dylib,so}. It ships a Windows import library +
+    // DLL for win32 (also pdf_is_complete_lib=false, but neither
+    // libembedpdf.dylib nor libembedpdf.so exists there):
+    // package-target.sh:22-28 stages lib/embedpdf.dll.lib and
+    // bin/embedpdf.dll, never a libembedpdf.* file. Everything else is a
+    // static archive, where build-target.sh sets pdf_is_complete_lib=true
+    // (wasm32, linuxmusl). iOS will be static; Android will be a .so.
+    if lib.join("libembedpdf.dylib").exists() || lib.join("libembedpdf.so").exists() {
+        ArtifactShape::UnixDylib
+    } else if lib.join("embedpdf.dll.lib").exists() {
+        ArtifactShape::WindowsImportLib
+    } else {
+        ArtifactShape::StaticArchive
+    }
+}
+
 /// Emits the full link setup for a crate that links libembedpdf directly:
 /// search path, the library itself, the C++ runtime for a static link, and
 /// macOS frameworks. `dir` is `lib_root().join(fork_target())`.
@@ -82,43 +124,39 @@ pub fn emit_link_directives(dir: &Path) {
     println!("cargo:rustc-link-search=native={}", lib.display());
 
     let target_os = env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
+    let shape = classify_artifact(&lib);
 
-    // The fork ships a Unix dylib where build-target.sh sets
-    // pdf_is_complete_lib=false (darwin, linux-gnu): package-target.sh:29-36
-    // stages lib/libembedpdf.{dylib,so}. It ships a Windows import library +
-    // DLL for win32 (also pdf_is_complete_lib=false, but neither
-    // libembedpdf.dylib nor libembedpdf.so exists there):
-    // package-target.sh:22-28 stages lib/embedpdf.dll.lib and
-    // bin/embedpdf.dll, never a libembedpdf.* file. Everything else is a
-    // static archive, where build-target.sh sets pdf_is_complete_lib=true
-    // (wasm32, linuxmusl). iOS will be static; Android will be a .so.
-    if lib.join("libembedpdf.dylib").exists() || lib.join("libembedpdf.so").exists() {
-        println!("cargo:rustc-link-lib=dylib=embedpdf");
-        println!("cargo:rustc-link-arg=-Wl,-rpath,{}", lib.display());
-    } else if lib.join("embedpdf.dll.lib").exists() {
-        // MSVC's link.exe resolves a `/DEFAULTLIB:NAME.lib` from whatever name
-        // rustc-link-lib passes, so "embedpdf.dll" (not "embedpdf") is what
-        // resolves to the fork's embedpdf.dll.lib import library. No rpath:
-        // PE has no equivalent, and locating embedpdf.dll at runtime (PATH,
-        // or copying it next to the binary) is a separate problem this build
-        // script does not solve.
-        println!("cargo:rustc-link-lib=dylib=embedpdf.dll");
-    } else {
-        println!("cargo:rustc-link-lib=static=embedpdf");
-        // build-target.sh:47-55 sets is_clang=false and use_custom_libcxx=false
-        // for linuxmusl-x64 and linuxmusl-arm64, so those artifacts are built
-        // with GCC against libstdc++, not LLVM's libc++. Apple targets (macOS,
-        // iOS) use libc++.
-        let target_env = env::var("CARGO_CFG_TARGET_ENV").unwrap_or_default();
-        let cxx_runtime = match (target_os.as_str(), target_env.as_str()) {
-            ("macos", _) | ("ios", _) => "c++",
-            ("linux", "musl") => "stdc++",
-            _ => panic!(
-                "no known C++ runtime for static embedpdf link on \
-                 target_os=`{target_os}` target_env=`{target_env}`"
-            ),
-        };
-        println!("cargo:rustc-link-lib=dylib={cxx_runtime}");
+    match shape {
+        ArtifactShape::UnixDylib => {
+            println!("cargo:rustc-link-lib=dylib=embedpdf");
+            println!("cargo:rustc-link-arg=-Wl,-rpath,{}", lib.display());
+        }
+        ArtifactShape::WindowsImportLib => {
+            // MSVC's link.exe resolves a `/DEFAULTLIB:NAME.lib` from whatever name
+            // rustc-link-lib passes, so "embedpdf.dll" (not "embedpdf") is what
+            // resolves to the fork's embedpdf.dll.lib import library. No rpath:
+            // PE has no equivalent, and locating embedpdf.dll at runtime (PATH,
+            // or copying it next to the binary) is a separate problem this build
+            // script does not solve.
+            println!("cargo:rustc-link-lib=dylib=embedpdf.dll");
+        }
+        ArtifactShape::StaticArchive => {
+            println!("cargo:rustc-link-lib=static=embedpdf");
+            // build-target.sh:47-55 sets is_clang=false and use_custom_libcxx=false
+            // for linuxmusl-x64 and linuxmusl-arm64, so those artifacts are built
+            // with GCC against libstdc++, not LLVM's libc++. Apple targets (macOS,
+            // iOS) use libc++.
+            let target_env = env::var("CARGO_CFG_TARGET_ENV").unwrap_or_default();
+            let cxx_runtime = match (target_os.as_str(), target_env.as_str()) {
+                ("macos", _) | ("ios", _) => "c++",
+                ("linux", "musl") => "stdc++",
+                _ => panic!(
+                    "no known C++ runtime for static embedpdf link on \
+                     target_os=`{target_os}` target_env=`{target_env}`"
+                ),
+            };
+            println!("cargo:rustc-link-lib=dylib={cxx_runtime}");
+        }
     }
 
     if target_os == "macos" {
@@ -142,12 +180,10 @@ pub fn emit_rpath_only() {
         return;
     }
 
-    println!("cargo:rerun-if-env-changed=EPDF_SCAFFOLD_LIB_DIR");
-    println!("cargo:rerun-if-env-changed=EPDF_SCAFFOLD_TARGET");
-
     let lib = lib_root().join(fork_target()).join("lib");
+    let shape = classify_artifact(&lib);
 
-    if lib.join("libembedpdf.dylib").exists() || lib.join("libembedpdf.so").exists() {
+    if shape == ArtifactShape::UnixDylib {
         println!("cargo:rustc-link-arg=-Wl,-rpath,{}", lib.display());
     }
 }
