@@ -31,3 +31,16 @@ export function meanAbsDiff(a, b) {
   for (let i = 0; i < a.length; i += 1) total += Math.abs(a[i] - b[i]);
   return total / a.length;
 }
+
+/**
+ * Largest single-byte absolute difference. `meanAbsDiff` can stay near zero
+ * while one byte is wildly off; this catches that case.
+ */
+export function maxAbsDiff(a, b) {
+  if (a.length !== b.length) {
+    throw new Error(`buffer lengths differ: ${a.length} vs ${b.length}`);
+  }
+  let max = 0;
+  for (let i = 0; i < a.length; i += 1) max = Math.max(max, Math.abs(a[i] - b[i]));
+  return max;
+}

@@ -10,8 +10,38 @@ use std::sync::Arc;
 use napi::bindgen_prelude::*;
 use napi_derive::napi;
 
-fn to_napi(err: epdf_ops::OpsError) -> Error {
-    Error::from_reason(err.to_string())
+/// Maps every `epdf_ops::OpsError` variant to a stable code on the thrown
+/// error's `.code` property, so a JS caller can `switch` on `err.code`
+/// instead of regex-matching `err.message` (which stays the unchanged,
+/// human-readable half). The codes:
+///
+/// - `LOAD_FAILED`: the bytes are not a document PDFium can open.
+/// - `PASSWORD_REQUIRED`: the document is encrypted and the password was
+///   wrong or missing.
+/// - `PAGE_OUT_OF_RANGE`: the page index named is past the end of the
+///   document.
+/// - `RENDER_FAILED`: rendering the page failed.
+/// - `CLOSED`: the document is closed, either by the caller or because it
+///   never existed in this engine's slab. Caller error: open a new document.
+/// - `ENGINE_FAILED`: the worker thread that owns every document in this
+///   engine is gone. Every document from this engine is unusable; the
+///   remedy is a new `Engine`, not a new document.
+/// - `INTERNAL`: an unexpected failure with no more specific code.
+///
+/// The match is exhaustive with no `_` arm: a new `OpsError` variant must
+/// fail this build rather than silently collapse into `INTERNAL`, the same
+/// guarantee `crates/epdf-uniffi`'s mirror gives Swift and Kotlin.
+fn to_napi(err: epdf_ops::OpsError) -> Error<String> {
+    let code = match &err {
+        epdf_ops::OpsError::LoadFailed => "LOAD_FAILED",
+        epdf_ops::OpsError::PasswordRequired => "PASSWORD_REQUIRED",
+        epdf_ops::OpsError::PageOutOfRange { .. } => "PAGE_OUT_OF_RANGE",
+        epdf_ops::OpsError::RenderFailed => "RENDER_FAILED",
+        epdf_ops::OpsError::Closed => "CLOSED",
+        epdf_ops::OpsError::EngineFailed { .. } => "ENGINE_FAILED",
+        epdf_ops::OpsError::Internal { .. } => "INTERNAL",
+    };
+    Error::new(code.to_string(), err.to_string())
 }
 
 #[napi(object)]
@@ -51,29 +81,29 @@ pub struct Document {
 #[napi]
 impl Document {
     #[napi]
-    pub fn page_count(&self) -> Result<u32> {
+    pub fn page_count(&self) -> Result<u32, String> {
         self.inner.page_count().map_err(to_napi)
     }
 
     #[napi]
-    pub fn page_size(&self, index: u32) -> Result<JsSize> {
+    pub fn page_size(&self, index: u32) -> Result<JsSize, String> {
         let size = self.inner.page_size(index).map_err(to_napi)?;
         Ok(JsSize { width: size.width as f64, height: size.height as f64 })
     }
 
     #[napi]
-    pub fn render_page(&self, index: u32, scale: f64) -> Result<JsBitmap> {
+    pub fn render_page(&self, index: u32, scale: f64) -> Result<JsBitmap, String> {
         let b = self.inner.render_page(index, scale as f32).map_err(to_napi)?;
         Ok(JsBitmap { width: b.width, height: b.height, stride: b.stride, bgra: b.bgra.into() })
     }
 
     #[napi]
-    pub fn page_text(&self, index: u32) -> Result<String> {
+    pub fn page_text(&self, index: u32) -> Result<String, String> {
         self.inner.page_text(index).map_err(to_napi)
     }
 
     #[napi]
-    pub fn search(&self, index: u32, query: String, case_sensitive: bool) -> Result<Vec<JsSearchHit>> {
+    pub fn search(&self, index: u32, query: String, case_sensitive: bool) -> Result<Vec<JsSearchHit>, String> {
         Ok(self
             .inner
             .search(index, query, case_sensitive)
@@ -106,7 +136,7 @@ fn engine() -> &'static Arc<epdf_ops::Engine> {
 }
 
 #[napi]
-pub fn open_document(bytes: Buffer, password: Option<String>) -> Result<Document> {
+pub fn open_document(bytes: Buffer, password: Option<String>) -> Result<Document, String> {
     let inner = engine().open(bytes.to_vec(), password).map_err(to_napi)?;
     Ok(Document { inner })
 }

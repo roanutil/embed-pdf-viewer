@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { loadVectors, meanAbsDiff } from '../test-support/vectors.mjs';
+import { loadVectors, meanAbsDiff, maxAbsDiff } from '../test-support/vectors.mjs';
 import { openDocument } from './index.mjs';
 
 const { vectors, golden, fixture } = await loadVectors();
@@ -30,10 +30,7 @@ test('the six operations match the frozen vectors', () => {
     const diff = meanAbsDiff(bitmap.bgra, golden);
     assert.ok(diff <= vectors.render.meanAbsDiffTolerance, `mean abs diff ${diff}`);
 
-    let maxDiff = 0;
-    for (let i = 0; i < bitmap.bgra.length; i += 1) {
-      maxDiff = Math.max(maxDiff, Math.abs(bitmap.bgra[i] - golden[i]));
-    }
+    const maxDiff = maxAbsDiff(bitmap.bgra, golden);
     assert.ok(maxDiff <= vectors.render.maxAbsDiffTolerance, `max abs diff ${maxDiff}`);
   } finally {
     doc.close();
@@ -58,4 +55,26 @@ test('using a closed document throws', () => {
   doc.close();
   doc.close();
   assert.throws(() => doc.pageCount(), /closed/);
+});
+
+test('errors carry a stable code distinct from the message', () => {
+  const doc = openDocument(fixture);
+  doc.close();
+  assert.throws(() => doc.pageCount(), (err) => err.code === 'CLOSED');
+
+  assert.throws(() => openDocument(Buffer.from('not a pdf')), (err) => err.code === 'LOAD_FAILED');
+
+  let closedCode;
+  try {
+    doc.pageCount();
+  } catch (err) {
+    closedCode = err.code;
+  }
+  let loadFailedCode;
+  try {
+    openDocument(Buffer.from('not a pdf'));
+  } catch (err) {
+    loadFailedCode = err.code;
+  }
+  assert.notEqual(closedCode, loadFailedCode);
 });
