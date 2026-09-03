@@ -16,6 +16,7 @@
 - Outside the pnpm workspace by construction: `pnpm-workspace.yaml` globs `packages/**`, `examples/**`, `cloudpdf/**`, `tooling/*`, `website`, `docs/*`. Do not add a glob for the scaffold.
 - JavaScript inside the scaffold uses `npm` with its own `package-lock.json`, not `pnpm`. This matches `pdfium-rust-spike/package-lock.json`.
 - `rust-toolchain.toml` pins channel `1.98.0`.
+- Every Rust crate uses `edition = "2024"`. It stabilized in Rust 1.85 and the toolchain is pinned to 1.98.0. Verified free: the five completed crates build and pass all 17 tests under 2024 with zero warnings, because nothing here has an `unsafe fn`, a `static mut`, a `gen` identifier, or an `-> impl Trait`, and bindgen 0.72.1 already emits `unsafe extern "C"` blocks. `pdfium-rust-spike` and `ts-wasm-interop-poc` use 2021 because they predate 1.85; do not copy that.
 - Exact dependency pins: `uniffi = "=0.32.0"`, `napi = "=3.12.2"`, `napi-derive = "=3.6.3"`, `napi-build = "=2.4.1"`, `bindgen = "=0.72.1"`. `cargo-ndk` is installed at `4.1.2`.
 - `[profile.release]` sets `opt-level = 3`, `lto = true`, `codegen-units = 1`. It must NOT set `panic = "abort"`, even though `pdfium-rust-spike/Cargo.toml` does: uniffi and napi both map panics to host exceptions through `catch_unwind`, which `panic = "abort"` deletes.
 - Fork pin is `d7b4caa26289d4846e94ff54e63b586b9bbe9fd6`, copied verbatim from `packages/engine/runtime/engine-runtime-build.json`.
@@ -667,7 +668,7 @@ Add `"crates/pdfium-sys"` to the `members` array in `rust-core-scaffold/Cargo.to
 [package]
 name = "pdfium-sys"
 version = "0.0.0"
-edition = "2021"
+edition = "2024"
 publish = false
 
 [lib]
@@ -1040,7 +1041,7 @@ pub fn mean_abs_diff(a: &[u8], b: &[u8]) -> f64 {
 [package]
 name = "test-support"
 version = "0.0.0"
-edition = "2021"
+edition = "2024"
 publish = false
 
 [lib]
@@ -1119,7 +1120,7 @@ Expected: FAIL, `failed to read .../crates/pdfium/Cargo.toml`.
 [package]
 name = "pdfium"
 version = "0.0.0"
-edition = "2021"
+edition = "2024"
 publish = false
 
 [lib]
@@ -1730,7 +1731,7 @@ Expected: FAIL, `failed to read .../crates/epdf-ops/Cargo.toml`.
 [package]
 name = "epdf-ops"
 version = "0.0.0"
-edition = "2021"
+edition = "2024"
 publish = false
 
 [lib]
@@ -2178,7 +2179,7 @@ Expected: FAIL, `failed to read .../crates/epdf-uniffi/Cargo.toml`.
 [package]
 name = "epdf-uniffi"
 version = "0.0.0"
-edition = "2021"
+edition = "2024"
 publish = false
 
 [lib]
@@ -2215,7 +2216,7 @@ Add `"crates/epdf-uniffi"` and `"crates/uniffi-bindgen"` to the `members` array 
 [package]
 name = "uniffi-bindgen"
 version = "0.0.0"
-edition = "2021"
+edition = "2024"
 publish = false
 
 [[bin]]
@@ -3123,7 +3124,7 @@ Expected: FAIL, `ERR_MODULE_NOT_FOUND` on `./index.mjs`.
 [package]
 name = "epdf-node"
 version = "0.0.0"
-edition = "2021"
+edition = "2024"
 publish = false
 
 [lib]
@@ -3624,7 +3625,7 @@ Expected: FAIL, `ERR_MODULE_NOT_FOUND` on `./index.mjs`.
 [package]
 name = "epdf-wasm"
 version = "0.0.0"
-edition = "2021"
+edition = "2024"
 publish = false
 
 [lib]
