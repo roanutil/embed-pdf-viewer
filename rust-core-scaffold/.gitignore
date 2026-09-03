@@ -5,6 +5,7 @@ target/
 node_modules/
 packages/swift/EpdfOps/Frameworks/
 packages/swift/EpdfOps/Sources/EpdfOps/Generated/
+packages/swift/EpdfOps/Sources/EpdfOpsFFI/
 packages/kotlin/epdf-ops/src/main/kotlin/generated/
 packages/kotlin/epdf-ops/src/main/resources/
 packages/node/*.node
