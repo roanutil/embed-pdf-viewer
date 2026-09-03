@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+# Builds libepdf_uniffi for the JVM host and, when the fork ships them, for the
+# Android ABIs, then generates the Kotlin bindings.
+#
+#   bash build/build-kotlin.sh                 # host JVM (darwin-aarch64)
+#   bash build/build-kotlin.sh android-arm64   # exits 2 until the fork builds it
+set -euo pipefail
+
+# /usr/bin/java is the macOS stub and /usr/libexec/java_home does not see the
+# JBR Android Studio ships, so every script sets JAVA_HOME explicitly rather
+# than relying on the invoking shell.
+export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SLICE="${1:-host}"
+MODULE="$ROOT/packages/kotlin/epdf-ops"
+GENERATED="$MODULE/src/main/kotlin/generated"
+
+case "$SLICE" in
+  host)
+    RUST_TARGET=aarch64-apple-darwin
+    FORK_TARGET=darwin-arm64
+    DEST="$MODULE/libs/darwin-aarch64"
+    ;;
+  android-arm64)
+    RUST_TARGET=aarch64-linux-android
+    FORK_TARGET=android-arm64
+    DEST="$MODULE/src/main/jniLibs/arm64-v8a"
+    ;;
+  android-x64)
+    RUST_TARGET=x86_64-linux-android
+    FORK_TARGET=android-x64
+    DEST="$MODULE/src/main/jniLibs/x86_64"
+    ;;
+  *)
+    echo "unknown slice: $SLICE (known: host, android-arm64, android-x64)" >&2
+    exit 1
+    ;;
+esac
+
+# Exits 2 with its own message for the pending Android targets.
+bash "$ROOT/build/fetch-libpdfium.sh" "$FORK_TARGET"
+
+rustup target add "$RUST_TARGET"
+mkdir -p "$DEST"
+
+if [[ "$SLICE" == host ]]; then
+  ( cd "$ROOT" && EPDF_SCAFFOLD_TARGET="$FORK_TARGET" cargo build --release -p epdf-uniffi --target "$RUST_TARGET" )
+  cp "$ROOT/target/$RUST_TARGET/release/libepdf_uniffi.dylib" "$DEST/"
+  cp "$ROOT/build/libpdfium/$FORK_TARGET/lib/libembedpdf."* "$DEST/"
+  # JNA dlopens libepdf_uniffi from an absolute path, so @loader_path resolves
+  # to this directory and libembedpdf is found beside it. Checked the actual
+  # install name first: libembedpdf.dylib carries @rpath/libembedpdf.dylib
+  # (verified with otool -D), so adding the rpath is enough; no
+  # install_name_tool -change needed.
+  otool -L "$DEST/libepdf_uniffi.dylib"
+  install_name_tool -add_rpath "@loader_path" "$DEST/libepdf_uniffi.dylib"
+else
+  cargo install cargo-ndk --version 4.1.2 --locked
+  ( cd "$ROOT" && EPDF_SCAFFOLD_TARGET="$FORK_TARGET" cargo ndk -t "$RUST_TARGET" build --release -p epdf-uniffi )
+  cp "$ROOT/target/$RUST_TARGET/release/libepdf_uniffi.so" "$DEST/"
+  cp "$ROOT/build/libpdfium/$FORK_TARGET/lib/libembedpdf.so" "$DEST/"
+fi
+
+mkdir -p "$GENERATED"
+LIBRARY="$DEST/libepdf_uniffi.dylib"
+[[ -f "$LIBRARY" ]] || LIBRARY="$DEST/libepdf_uniffi.so"
+# --config points at packages/kotlin/uniffi.toml (outside crates/, which this
+# task does not touch) so the generated bindings land in package
+# com.embedpdf.scaffold, the same package as Epdf.kt and VectorsTest.kt.
+# Without it uniffi-bindgen defaults to `uniffi.epdf_uniffi`, and the
+# handwritten files would need imports the brief's verbatim code doesn't have.
+( cd "$ROOT" && cargo run --release --bin uniffi-bindgen -- generate \
+    --library "$LIBRARY" --language kotlin --out-dir "$GENERATED" \
+    --config "$ROOT/packages/kotlin/uniffi.toml" )
+
+echo "staged $SLICE -> $DEST; bindings -> $GENERATED"

@@ -8,9 +8,14 @@ packages/swift/EpdfOps/Sources/EpdfOps/Generated/
 packages/swift/EpdfOps/Sources/EpdfOpsFFI/
 packages/kotlin/epdf-ops/src/main/kotlin/generated/
 packages/kotlin/epdf-ops/src/main/resources/
+packages/kotlin/epdf-ops/libs/
+packages/kotlin/epdf-ops/src/main/jniLibs/
+packages/kotlin/build/
+packages/kotlin/epdf-ops/build/
 packages/node/*.node
 packages/web/dist/
 .build/
 .gradle/
+.kotlin/
 apps/ios/*.xcodeproj
 apps/ios/EpdfScaffold/Info.plist

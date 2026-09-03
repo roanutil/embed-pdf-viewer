@@ -1,0 +1,111 @@
+package com.embedpdf.scaffold
+
+import java.io.File
+import kotlin.math.abs
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
+import kotlin.test.assertFailsWith
+import org.json.JSONObject
+
+/**
+ * Reads rust-core-scaffold/vectors/report-page4.json, the same frozen file the
+ * Rust, Swift and JS suites read. `epdf.scaffold.root` is set by the Gradle
+ * test task.
+ */
+private val root = File(System.getProperty("epdf.scaffold.root"))
+private val vectors = JSONObject(File(root, "vectors/report-page4.json").readText())
+private val render = vectors.getJSONObject("render")
+private val golden = File(root, "vectors/${render.getString("golden")}").readBytes()
+private val fixture = File(root, "fixtures/report.pdf").readBytes()
+
+private fun meanAbsDiff(a: ByteArray, b: ByteArray): Double {
+    assertEquals(a.size, b.size, "buffer lengths differ")
+    var total = 0L
+    for (i in a.indices) {
+        total += abs((a[i].toInt() and 0xFF) - (b[i].toInt() and 0xFF)).toLong()
+    }
+    return total.toDouble() / a.size
+}
+
+/**
+ * Largest single-byte absolute difference. `meanAbsDiff` averages over the
+ * whole buffer, so one badly wrong region can hide under a mean-based
+ * tolerance as long as most of the buffer matches. This bounds the worst
+ * byte instead, mirroring test-support's max_abs_diff on the Rust side and
+ * the Swift and JS suites' maxAbsDiff.
+ */
+private fun maxAbsDiff(a: ByteArray, b: ByteArray): Int {
+    assertEquals(a.size, b.size, "buffer lengths differ")
+    var worst = 0
+    for (i in a.indices) {
+        worst = maxOf(worst, abs((a[i].toInt() and 0xFF) - (b[i].toInt() and 0xFF)))
+    }
+    return worst
+}
+
+class VectorsTest {
+    private fun open(): EpdfDocument = EpdfEngine().open(fixture, null)
+
+    @Test
+    fun matchesTheFrozenVectors() {
+        val pageIndex = vectors.getInt("pageIndex").toUInt()
+        val doc = open()
+        try {
+            assertEquals(vectors.getInt("pageCount").toUInt(), doc.pageCount())
+
+            val size = doc.pageSize(pageIndex)
+            val want = vectors.getJSONObject("size")
+            assertTrue(abs(size.width - want.getDouble("width").toFloat()) < 0.001f)
+            assertTrue(abs(size.height - want.getDouble("height").toFloat()) < 0.001f)
+
+            assertEquals(vectors.getString("text"), doc.pageText(pageIndex))
+
+            val search = vectors.getJSONObject("search")
+            val hits = doc.search(pageIndex, search.getString("query"), search.getBoolean("caseSensitive"))
+            assertEquals(search.getInt("hitCount"), hits.size)
+
+            val bitmap = doc.renderPage(pageIndex, render.getDouble("scale").toFloat())
+            assertEquals(render.getInt("width").toUInt(), bitmap.width)
+            assertEquals(render.getInt("height").toUInt(), bitmap.height)
+            assertEquals(render.getInt("stride").toUInt(), bitmap.stride)
+            val diff = meanAbsDiff(bitmap.bgra, golden)
+            assertTrue(diff <= render.getDouble("meanAbsDiffTolerance"), "mean abs diff $diff")
+            val worst = maxAbsDiff(bitmap.bgra, golden)
+            assertTrue(worst <= render.getInt("maxAbsDiffTolerance"), "max abs diff $worst")
+        } finally {
+            doc.closeSync()
+        }
+    }
+
+    @Test
+    fun aPagePastTheEndThrows() {
+        val doc = open()
+        try {
+            assertFailsWith<OpsException.PageOutOfRange> { doc.pageSize(doc.pageCount()) }
+        } finally {
+            doc.closeSync()
+        }
+    }
+
+    @Test
+    fun garbageBytesThrow() {
+        assertFailsWith<OpsException.LoadFailed> {
+            EpdfEngine().open("not a pdf".toByteArray(), null)
+        }
+    }
+
+    @Test
+    fun rendersAnArgbIntArray() {
+        val pageIndex = vectors.getInt("pageIndex").toUInt()
+        val doc = open()
+        try {
+            val image = doc.renderPageArgb(pageIndex, render.getDouble("scale").toFloat())
+            assertEquals(render.getInt("width"), image.width)
+            assertEquals(render.getInt("height"), image.height)
+            assertEquals(image.width * image.height, image.pixels.size)
+        } finally {
+            doc.closeSync()
+        }
+    }
+}

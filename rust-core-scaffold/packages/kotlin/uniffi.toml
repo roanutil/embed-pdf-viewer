@@ -1,0 +1,30 @@
+# Global uniffi-bindgen config for the Kotlin generator. Kept outside
+# crates/epdf-uniffi (which we do not touch) and passed via --config in
+# build-kotlin.sh. Puts the generated bindings in the same package as the
+# handwritten Epdf.kt and VectorsTest.kt so neither needs an import for
+# EpdfEngine, EpdfDocument, OpsException, Size, Rect, SearchHit or Bitmap.
+[defaults.bindings.kotlin]
+package_name = "com.embedpdf.scaffold"
+
+# uniffi's Kotlin generator makes every Object implement Disposable and
+# AutoCloseable and always emits its own `override fun close()` (calling
+# destroy(), which frees the FFI handle). epdf-uniffi's UDL also exports an
+# EpdfDocument method named `close` (the blocking, synchronous close the
+# engine needs on top of GC-timed AutoCloseable cleanup). Both land as
+# `override fun close(): Unit` in the same class, which Kotlin rejects as
+# "Conflicting overloads" -- not a strictness setting, a hard JVM rule
+# against two methods with the same signature in one class. This can't be
+# fixed in crates/epdf-uniffi (out of scope for this task) or in the Kotlin
+# template (no config disables the AutoCloseable boilerplate), so the
+# UDL-exported method is renamed for Kotlin only. Swift and the other hosts
+# are unaffected: this file is never passed to their generator runs.
+[defaults.bindings.kotlin.rename]
+"EpdfDocument.close" = "closeSync"
+# Same collision, different reserved name: uniffi's Kotlin generator gives
+# every OpsException variant `override val message` for the human-readable
+# string. OpsError::EngineFailed and ::Internal each carry a Rust field
+# literally named `message`, which becomes a second `val message` in the
+# same class -- "Conflicting declarations", again a hard JVM/Kotlin rule
+# rather than a strictness setting. Renamed for Kotlin only.
+"OpsError.EngineFailed.message" = "detail"
+"OpsError.Internal.message" = "detail"
