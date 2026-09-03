@@ -1,7 +1,7 @@
 //! Every expected value comes from vectors/report-page4.json through
 //! test_support, the one loader in this workspace.
 
-use test_support::{fixture_bytes, mean_abs_diff, vectors};
+use test_support::{fixture_bytes, max_abs_diff, mean_abs_diff, vectors};
 
 #[test]
 fn matches_the_frozen_vectors() {
@@ -9,7 +9,7 @@ fn matches_the_frozen_vectors() {
     let bytes = fixture_bytes();
 
     let lib = pdfium::Library::acquire().unwrap();
-    let doc = pdfium::Document::from_bytes(&lib, &bytes, None).unwrap();
+    let doc = pdfium::Document::from_bytes(lib, &bytes, None).unwrap();
     assert_eq!(doc.page_count(), v.page_count);
 
     let page = doc.page(v.page_index).unwrap();
@@ -29,13 +29,15 @@ fn matches_the_frozen_vectors() {
     assert_eq!(bitmap.stride, v.render_stride);
     let diff = mean_abs_diff(&bitmap.bgra, &v.golden);
     assert!(diff <= v.tolerance, "mean abs diff {diff} exceeds {}", v.tolerance);
+    let max_diff = max_abs_diff(&bitmap.bgra, &v.golden);
+    assert!(max_diff <= v.max_tolerance, "max abs diff {max_diff} exceeds {}", v.max_tolerance);
 }
 
 #[test]
 fn rejects_a_page_past_the_end() {
     let bytes = fixture_bytes();
     let lib = pdfium::Library::acquire().unwrap();
-    let doc = pdfium::Document::from_bytes(&lib, &bytes, None).unwrap();
+    let doc = pdfium::Document::from_bytes(lib, &bytes, None).unwrap();
     let index = doc.page_count();
     assert!(matches!(
         doc.page(index),
@@ -46,6 +48,6 @@ fn rejects_a_page_past_the_end() {
 #[test]
 fn rejects_bytes_that_are_not_a_pdf() {
     let lib = pdfium::Library::acquire().unwrap();
-    let err = pdfium::Document::from_bytes(&lib, b"not a pdf at all", None).unwrap_err();
+    let err = pdfium::Document::from_bytes(lib, b"not a pdf at all", None).unwrap_err();
     assert!(matches!(err, pdfium::PdfiumError::Load));
 }

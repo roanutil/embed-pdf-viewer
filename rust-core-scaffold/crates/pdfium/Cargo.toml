@@ -10,5 +10,8 @@ crate-type = ["rlib"]
 [dependencies]
 pdfium-sys = { path = "../pdfium-sys" }
 
+[build-dependencies]
+build-support = { path = "../build-support" }
+
 [dev-dependencies]
 test-support = { path = "../test-support" }

@@ -13,7 +13,10 @@ impl<'a> Page<'a> {
     pub(crate) fn load(doc: pdfium_sys::FPDF_DOCUMENT, index: u32) -> Result<Self, PdfiumError> {
         let handle = unsafe { pdfium_sys::FPDF_LoadPage(doc, index as i32) };
         if handle.is_null() {
-            return Err(PdfiumError::PageOutOfRange(index));
+            // Document::page already checked index < page_count(), so a null
+            // handle here is not an out-of-range index; it's PDFium refusing
+            // to load a page object that exists but is corrupt.
+            return Err(PdfiumError::PageLoad(index));
         }
         Ok(Self { handle, _doc: PhantomData, _not_send: PhantomData })
     }

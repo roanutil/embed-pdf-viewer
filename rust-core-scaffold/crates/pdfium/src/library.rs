@@ -1,4 +1,5 @@
 use std::cell::Cell;
+use std::rc::Rc;
 
 use crate::PdfiumError;
 
@@ -13,19 +14,26 @@ thread_local! {
 
 /// A per-thread init guard. Not `Send`: dropping it on another thread would
 /// call FPDF_DestroyLibrary against globals that thread never initialized.
+#[derive(Debug)]
 pub struct Library {
     _not_send: std::marker::PhantomData<*const ()>,
 }
 
 impl Library {
-    pub fn acquire() -> Result<Self, PdfiumError> {
+    /// Returns an `Rc` rather than a bare `Library` so a `Document` can hold
+    /// a clone and keep the library alive for its own lifetime: see
+    /// `Document::from_bytes`. `Rc`, not `Arc` — `Library` is thread-confined
+    /// (DEPTH above is a `thread_local`), and `Rc` being `!Send` reinforces
+    /// that rather than papering over it with atomics that would let a
+    /// `Library` cross threads only to panic, or worse, misbehave, later.
+    pub fn acquire() -> Result<Rc<Self>, PdfiumError> {
         DEPTH.with(|depth| {
             if depth.get() == 0 {
                 unsafe { pdfium_sys::FPDF_InitLibrary() };
             }
             depth.set(depth.get() + 1);
         });
-        Ok(Self { _not_send: std::marker::PhantomData })
+        Ok(Rc::new(Self { _not_send: std::marker::PhantomData }))
     }
 }
 

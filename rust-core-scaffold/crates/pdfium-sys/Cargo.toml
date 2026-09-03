@@ -9,3 +9,4 @@ crate-type = ["rlib"]
 
 [build-dependencies]
 bindgen = "=0.72.1"
+build-support = { path = "../build-support" }

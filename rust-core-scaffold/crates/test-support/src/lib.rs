@@ -20,6 +20,7 @@ pub struct Vectors {
     pub render_stride: u32,
     pub golden: Vec<u8>,
     pub tolerance: f64,
+    pub max_tolerance: u8,
 }
 
 /// The scaffold root, from this crate's own manifest directory.
@@ -67,6 +68,7 @@ pub fn vectors() -> Vectors {
         render_stride: render["stride"].as_u64().unwrap() as u32,
         golden: std::fs::read(root.join("vectors").join(render["golden"].as_str().unwrap())).unwrap(),
         tolerance: render["meanAbsDiffTolerance"].as_f64().unwrap(),
+        max_tolerance: render["maxAbsDiffTolerance"].as_u64().unwrap() as u8,
     }
 }
 
@@ -77,4 +79,13 @@ pub fn mean_abs_diff(a: &[u8], b: &[u8]) -> f64 {
     assert_eq!(a.len(), b.len(), "buffer lengths differ: {} vs {}", a.len(), b.len());
     let total: u64 = a.iter().zip(b).map(|(x, y)| u64::from(x.abs_diff(*y))).sum();
     total as f64 / a.len() as f64
+}
+
+/// Largest single-byte absolute difference. `mean_abs_diff` averages over the
+/// whole buffer, so one badly wrong region (a missing glyph, say, which
+/// produces deltas near 255) can hide under a mean-based tolerance as long as
+/// most of the buffer matches. This bounds the worst byte instead.
+pub fn max_abs_diff(a: &[u8], b: &[u8]) -> u8 {
+    assert_eq!(a.len(), b.len(), "buffer lengths differ: {} vs {}", a.len(), b.len());
+    a.iter().zip(b).map(|(x, y)| x.abs_diff(*y)).max().unwrap_or(0)
 }

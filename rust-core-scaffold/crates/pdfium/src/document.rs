@@ -1,5 +1,6 @@
 use std::ffi::{c_void, CString};
 use std::marker::PhantomData;
+use std::rc::Rc;
 
 use crate::{Library, Page, PdfiumError};
 
@@ -13,11 +14,21 @@ pub struct Document {
     /// it exists to keep the allocation PDFium points into alive.
     #[allow(dead_code)]
     bytes: Vec<u8>,
+    /// FPDF_LoadMemDocument's handle is only valid while the library that
+    /// created it stays initialized, and this Document has no other tie to
+    /// Library's lifetime. Holding a clone of the caller's `Rc<Library>`
+    /// means FPDF_DestroyLibrary runs only once the last Document (and the
+    /// caller's own handle, if it drops theirs first) has gone — not when
+    /// whichever one of them happens to drop first. As with `bytes`, this
+    /// runs no code itself; it exists only to be dropped after the
+    /// FPDF_CloseDocument call in `Drop::drop` below.
+    #[allow(dead_code)]
+    library: Rc<Library>,
     _not_send: PhantomData<*const ()>,
 }
 
 impl Document {
-    pub fn from_bytes(_lib: &Library, bytes: &[u8], password: Option<&str>) -> Result<Self, PdfiumError> {
+    pub fn from_bytes(lib: Rc<Library>, bytes: &[u8], password: Option<&str>) -> Result<Self, PdfiumError> {
         // One copy, owned by the Document. Moving the Document moves the Vec's
         // three words, never the heap allocation, so the pointer PDFium holds
         // stays valid. A borrowed &[u8] would need a lifetime on Document,
@@ -43,7 +54,7 @@ impl Document {
             return Err(if err == pdfium_sys::FPDF_ERR_PASSWORD as _ { PdfiumError::Password } else { PdfiumError::Load });
         }
 
-        Ok(Self { handle, bytes, _not_send: PhantomData })
+        Ok(Self { handle, bytes, library: lib, _not_send: PhantomData })
     }
 
     pub fn page_count(&self) -> u32 {
