@@ -51,7 +51,17 @@ fn document(id: u32) -> Result<Arc<epdf_ops::Document>, epdf_ops::OpsError> {
 /// length, so shrink before leaking.
 fn leak(mut bytes: Vec<u8>, out_len: *mut u32) -> *mut u8 {
     bytes.shrink_to_fit();
-    debug_assert_eq!(bytes.len(), bytes.capacity());
+    // A real assert, not debug_assert: this compiles out under `cargo build
+    // --release`, which is what link-wasm.sh uses to produce the shipped
+    // build, and `epdf_free` rebuilds the Vec with
+    // `from_raw_parts(ptr, len, len)` -- undefined behaviour the moment
+    // capacity differs from length. Both callers land on an exact size today
+    // (the render buffer is allocated exactly; `serde_json::to_vec` plus this
+    // `shrink_to_fit` reaches one through `realloc`), but `Vec::shrink_to_fit`
+    // only documents "the resulting vector might still have some excess
+    // capacity", so that exactness is an allocator implementation detail, not
+    // a promise. One integer comparison per crossing is free.
+    assert_eq!(bytes.len(), bytes.capacity());
     let len = bytes.len();
     let ptr = bytes.as_mut_ptr();
     std::mem::forget(bytes);

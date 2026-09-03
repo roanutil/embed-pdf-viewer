@@ -38,7 +38,12 @@ if ! wasm-opt --version 2>/dev/null | grep -qE 'version 1[2-9][0-9]'; then
   echo "         install a newer binaryen and put it ahead of emsdk's on PATH." >&2
 fi
 
-rustup target add wasm32-unknown-emscripten
+# Not `rustup target add wasm32-unknown-emscripten` here: run from outside any
+# subshell that has `cd`'d to $ROOT, that would resolve the toolchain from the
+# caller's working directory and mutate the developer's DEFAULT toolchain,
+# exactly the trap rust-toolchain.toml:3-8 documents. It is also redundant:
+# rust-toolchain.toml already lists this target in `targets`, so cargo
+# installs it for the pinned toolchain automatically on first use below.
 
 # pdfium-sys's build.rs runs bindgen over the fork's headers for every target,
 # including this one, and bindgen needs help for wasm32-unknown-emscripten
@@ -66,8 +71,25 @@ rustup target add wasm32-unknown-emscripten
 # None of this touches crates/pdfium-sys: bindgen reads BINDGEN_EXTRA_CLANG_ARGS
 # from the environment automatically (bindgen-0.72.1/lib.rs:257-265), so these
 # three flags apply without a code change in a crate this task must not modify.
-EM_BIN_DIR="$(dirname "$(command -v em++)")"
-export BINDGEN_EXTRA_CLANG_ARGS="--target=wasm32-unknown-emscripten -isystem${EM_BIN_DIR}/cache/sysroot/include -fvisibility=default"
+#
+# The sysroot include path is asked of emscripten, not inferred from where
+# em++ lives: `dirname "$(command -v em++)"` only resolves for an emsdk tree
+# (.../emsdk/upstream/emscripten/em++ -> .../upstream/emscripten, which does
+# hold cache/sysroot/include). For a Homebrew or system em++ on PATH --
+# precisely the case the `if ! command -v em++` branch above exists to serve
+# -- `command -v` returns e.g. /opt/homebrew/bin/em++, and the flag becomes
+# -isystem/opt/homebrew/bin/cache/sysroot/include. clang ignores a
+# nonexistent -isystem silently, so bindgen would then fail with an "unknown
+# type name 'uint32_t'" cascade pointing at a cause that is actually already
+# fixed by flag (1) above. `em-config CACHE` asks emscripten for its actual
+# cache root and is correct in both cases.
+# Not assigned to BINDGEN_EXTRA_CLANG_ARGS here as a script-scoped variable:
+# sourcing this script (see line 17) would leave that variable sitting in the
+# caller's shell even without `export`, since a sourced script's plain
+# assignments persist in the sourcing shell regardless of export status. Built
+# inline on the cargo command below instead, alongside RUSTFLAGS, so neither
+# survives past that one command.
+EM_SYSROOT_INCLUDE="$(em-config CACHE)/sysroot/include"
 
 # epdf-ops uses std::panic::catch_unwind (crates/epdf-ops/src/dispatch/inline.rs
 # and threaded.rs), which needs the panic strategy to be "unwind", and the root
@@ -100,22 +122,47 @@ export BINDGEN_EXTRA_CLANG_ARGS="--target=wasm32-unknown-emscripten -isystem${EM
 #
 # The only working option found: build epdf-wasm itself with `-C panic=abort`
 # for this ONE target, which drops libpanic_unwind (and the `__cpp_exception`
-# reference) in favor of libpanic_abort. This is scoped to this cargo
-# invocation via RUSTFLAGS, not to Cargo.toml, so every other target keeps
-# panic=unwind. The real cost: on wasm32-unknown-emscripten specifically,
+# reference) in favor of libpanic_abort. This is scoped to the one cargo
+# invocation below by putting RUSTFLAGS and BINDGEN_EXTRA_CLANG_ARGS on that
+# command's own environment rather than exporting them into the script's
+# (and, if this script is ever sourced instead of run, the caller shell's)
+# environment: an `export` here would silently discard any RUSTFLAGS the
+# caller already had set (say `-D warnings` or `-C target-cpu=native`, with
+# no message that it was dropped), and if a developer sourced this script --
+# this script's own precedent at line 17 above is that emsdk setup is
+# something you source -- both variables would persist in their shell
+# afterward, so a later native `cargo test` would silently run with
+# panic=abort (a genuine panic would then abort the test binary instead of
+# failing a test, which reads like a harness crash) and a later native
+# `cargo build` would run bindgen with --target=wasm32-unknown-emscripten.
+# Because --target is passed on this same command, RUSTFLAGS does not reach
+# host build scripts, so crates/pdfium-sys's own bindgen build script (which
+# runs against the host target, not this one) is unaffected either way.
+#
+# every other target keeps panic=unwind, since neither variable touches
+# Cargo.toml. The real cost: on wasm32-unknown-emscripten specifically,
 # `epdf_ops::dispatch::inline::Worker::run`'s `catch_unwind` can no longer
-# actually catch anything — a genuine Rust panic aborts the wasm instance
-# rather than becoming `OpsError::Internal`, and the `BorrowGuard` release on
-# unwind (dispatch/mod.rs) never runs because there is no unwind to release it
-# during. None of the four required tests trigger an actual Rust panic (they
-# are all ordinary `Result::Err` returns), so this does not show up as a test
-# failure; it is a real, silent gap between this target and the other three
-# host boundaries, which this script cannot close without either a
-# differently-built libembedpdf.a or a nightly `-Z build-std` (both out of
-# scope here). Flagged in the task report; not fixed.
-export RUSTFLAGS="-C panic=abort"
-
-( cd "$ROOT" && cargo build --release -p epdf-wasm --target wasm32-unknown-emscripten )
+# actually catch anything -- a genuine Rust panic aborts the wasm instance
+# (there is no `OpsError::Internal` to receive; the engine dies and the page
+# must reload) rather than becoming one. The reentrancy guard itself is
+# unaffected: its aliasing invariant rests on `try_borrow` refusing a second
+# borrow while one is live, not on the `Drop`-releases-on-unwind property,
+# and with no unwinding there is no stuck flag and no surviving instance to
+# observe one -- see the SAFETY comment on `Worker` in
+# crates/epdf-ops/src/dispatch/inline.rs. None of the four required tests
+# trigger an actual Rust panic (they are all ordinary `Result::Err` returns),
+# so this does not show up as a test failure; it is a real, silent gap
+# between this target and the other three host boundaries, which this script
+# cannot close without either a differently-built libembedpdf.a or a nightly
+# `-Z build-std` (both out of scope here). Flagged in the task report; not
+# fixed. A plain `cargo build -p epdf-wasm --target wasm32-unknown-emscripten`
+# run after this script, without these flags, rebuilds with panic=unwind and
+# produces an archive that cannot be linked -- with no hint that this
+# script's flags were load-bearing to get here.
+( cd "$ROOT" \
+  && RUSTFLAGS="-C panic=abort" \
+     BINDGEN_EXTRA_CLANG_ARGS="--target=wasm32-unknown-emscripten -isystem${EM_SYSROOT_INCLUDE} -fvisibility=default" \
+     cargo build --release -p epdf-wasm --target wasm32-unknown-emscripten )
 
 EXPORTS="_malloc,_free\
 ,_epdf_open,_epdf_page_count,_epdf_json,_epdf_render,_epdf_free,_epdf_close,_epdf_last_error"
@@ -134,7 +181,7 @@ em++ \
   -sASSERTIONS=1 \
   -O3 \
   -sERROR_ON_UNDEFINED_SYMBOLS=0 \
-  -sEXPORTED_RUNTIME_METHODS=cwrap,getValue,setValue,UTF8ToString,HEAPU8 \
+  -sEXPORTED_RUNTIME_METHODS=cwrap,UTF8ToString,HEAPU8,HEAPU32 \
   -sEXPORTED_FUNCTIONS="$EXPORTS" \
   -I"$LIB_DIR/include" \
   -std=c++17 --no-entry \

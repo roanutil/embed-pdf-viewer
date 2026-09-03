@@ -59,6 +59,18 @@ pub struct Worker {
 // releases it even if `f` panics, so a panic cannot leave it stuck set. (`run`
 // also wraps `f` in `catch_unwind`, matching `threaded`, so in the ordinary
 // case the panic never gets as far as unwinding through the guard at all.)
+// That `Drop`-releases-on-unwind property is what stops a panic leaving the
+// flag stuck set on a target that actually unwinds; on the one target this
+// file compiles for it is unexercised rather than load-bearing, since
+// build/link-wasm.sh builds epdf-wasm with `-C panic=abort` to satisfy
+// libembedpdf.a's prebuilt linkage, and `catch_unwind` cannot catch anything
+// under that panic strategy. That is unnecessary, not unsound: with no
+// unwinding there is no stuck flag and no surviving `Worker` instance left to
+// observe one. What that build flag actually costs is recoverability alone --
+// a genuine panic aborts the wasm instance instead of `run` turning it into
+// `OpsError::Internal`, so the engine dies and the page must reload. This
+// `#[cfg(target_feature = "atomics")] compile_error!` above, which is what
+// actually guards the `Sync` claim, is untouched by any of this.
 unsafe impl Send for Worker {}
 unsafe impl Sync for Worker {}
 
