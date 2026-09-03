@@ -1,0 +1,14 @@
+[package]
+name = "pdfium"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[lib]
+crate-type = ["rlib"]
+
+[dependencies]
+pdfium-sys = { path = "../pdfium-sys" }
+
+[dev-dependencies]
+test-support = { path = "../test-support" }
