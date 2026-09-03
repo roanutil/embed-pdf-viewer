@@ -85,6 +85,12 @@ impl Worker {
                 let _ = tx.send(result);
             }))
             .map_err(|_| OpsError::EngineFailed { message: "the worker thread's job queue is gone".to_string() })?;
+        // In practice this only fires if `tx` above was dropped without a
+        // send, which the job closure always does on every path (including
+        // a caught panic), so this is nearly unreachable. If it ever does
+        // fire, note the asymmetry: the worker thread is still alive and
+        // serving other jobs, yet `OpsError::EngineFailed`'s own doc comment
+        // tells the caller to discard the whole engine anyway.
         rx.recv().map_err(|_| OpsError::EngineFailed { message: "the worker thread's reply channel is gone".to_string() })?
     }
 
@@ -115,15 +121,34 @@ mod tests {
     }
 
     #[test]
-    fn a_panicking_job_reports_internal_not_closed_and_the_worker_survives() {
+    fn a_panicking_job_reports_internal_and_the_slab_stays_usable() {
         let worker = Worker::spawn().unwrap();
+
+        // A job that ignores `State` entirely would only prove the thread
+        // survives, not that its slab does. Open a real document first, so
+        // the panic below has something in `State` to potentially corrupt.
+        let bytes = test_support::fixture_bytes();
+        let id = worker
+            .run({
+                let bytes = bytes.clone();
+                move |state| {
+                    let doc = pdfium::Document::from_bytes(state.library(), &bytes, None)?;
+                    Ok(state.insert(doc))
+                }
+            })
+            .unwrap();
 
         // Expected: the default panic hook still prints this panic's
         // message to stderr, even though catch_unwind stops it from
         // unwinding any further. That is a property of
-        // std::panic::catch_unwind itself, not a bug here.
+        // std::panic::catch_unwind itself, not a bug here. The job touches
+        // the document opened above before panicking, so the panic happens
+        // with a live borrow of the slab entry in scope.
         let err = worker
-            .run(|_state| -> Result<(), OpsError> { panic!("deliberate panic for the recovery test") })
+            .run(move |state| -> Result<(), OpsError> {
+                let _doc = state.get(id)?;
+                panic!("deliberate panic for the recovery test")
+            })
             .expect_err("a panicking job must not be reported as success");
         assert!(
             matches!(err, OpsError::Internal { .. }),
@@ -131,8 +156,21 @@ mod tests {
         );
         assert_ne!(err, OpsError::Closed, "a panic must not be conflated with a closed document");
 
-        // The worker thread must still be alive and answering afterwards,
-        // proving one panicking job did not take the whole worker down.
-        assert!(worker.run(|_state| Ok(())).is_ok());
+        // The document that was open before the panic must still be usable:
+        // proof the slab entry itself, not just the worker thread, survived.
+        let page_count = worker.run(move |state| Ok(state.get(id)?.page_count())).unwrap();
+        assert!(page_count > 0);
+
+        // Opening a brand-new document on the same worker must also still
+        // work, proving the slab as a whole (not merely the one entry
+        // touched above) is unharmed.
+        let other_id = worker
+            .run(move |state| {
+                let doc = pdfium::Document::from_bytes(state.library(), &bytes, None)?;
+                Ok(state.insert(doc))
+            })
+            .unwrap();
+        let other_page_count = worker.run(move |state| Ok(state.get(other_id)?.page_count())).unwrap();
+        assert_eq!(other_page_count, page_count);
     }
 }

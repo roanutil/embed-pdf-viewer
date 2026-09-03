@@ -1,6 +1,22 @@
-use std::cell::{Cell, UnsafeCell};
+use std::any::Any;
+use std::cell::UnsafeCell;
+use std::panic::{self, AssertUnwindSafe};
 
 use crate::{OpsError, State};
+
+use super::BorrowFlag;
+
+/// Extracts a human-readable message from a `catch_unwind` payload the same
+/// way `threaded::panic_message` does.
+fn panic_message(payload: Box<dyn Any + Send>) -> String {
+    if let Some(message) = payload.downcast_ref::<&str>() {
+        (*message).to_string()
+    } else if let Some(message) = payload.downcast_ref::<String>() {
+        message.clone()
+    } else {
+        "worker job panicked with a non-string payload".to_string()
+    }
+}
 
 // If this scaffold ever grows a pthreads wasm build (embedpdf_thread_local_globals
 // on for wasm32, per dispatch/mod.rs), this file's `unsafe impl Sync` is no
@@ -12,13 +28,15 @@ compile_error!("inline dispatch is unsound with pthreads; use the threaded dispa
 
 pub struct Worker {
     state: UnsafeCell<State>,
-    /// True while a `&mut State` borrowed by `run` is live. `run` checks and
-    /// sets this before touching `state`, and clears it on every exit path,
-    /// including an `Err` return. It is what actually enforces the aliasing
-    /// invariant the SAFETY comment below describes; without it, `run` would
-    /// just be handing out `&mut *state.get()` from a `&self` with nothing
-    /// stopping a second live borrow.
-    borrowed: Cell<bool>,
+    /// Set while a `&mut State` borrowed by `run` is live. `run` claims it
+    /// with `try_borrow` before touching `state`, and the resulting
+    /// `BorrowGuard`'s `Drop` clears it on every exit path, including a
+    /// panic inside `f` unwinding past the point `run` catches it. It is
+    /// what actually enforces the aliasing invariant the SAFETY comment
+    /// below describes; without it, `run` would just be handing out
+    /// `&mut *state.get()` from a `&self` with nothing stopping a second
+    /// live borrow.
+    borrowed: BorrowFlag,
 }
 
 // SAFETY: this file compiles only for wasm32-unknown-emscripten, which is
@@ -36,14 +54,17 @@ pub struct Worker {
 // re-enters `run` before the outer call returns) would produce two live
 // `&mut State` at once. That is undefined behaviour even with a single
 // thread involved; it is not merely the deadlock the same reentrancy causes
-// on `threaded`. The `borrowed` flag is what rules it out: `run` refuses to
-// hand out a second `&mut State` while one is already live.
+// on `threaded`. The `borrowed` guard is what rules it out: `run` refuses to
+// hand out a second `&mut State` while one is already live, and its `Drop`
+// releases it even if `f` panics, so a panic cannot leave it stuck set. (`run`
+// also wraps `f` in `catch_unwind`, matching `threaded`, so in the ordinary
+// case the panic never gets as far as unwinding through the guard at all.)
 unsafe impl Send for Worker {}
 unsafe impl Sync for Worker {}
 
 impl Worker {
     pub fn spawn() -> Result<Self, OpsError> {
-        Ok(Self { state: UnsafeCell::new(State::new()?), borrowed: Cell::new(false) })
+        Ok(Self { state: UnsafeCell::new(State::new()?), borrowed: BorrowFlag::new() })
     }
 
     pub fn run<T, F>(&self, f: F) -> Result<T, OpsError>
@@ -51,16 +72,21 @@ impl Worker {
         T: Send + 'static,
         F: FnOnce(&mut State) -> Result<T, OpsError> + Send + 'static,
     {
-        if self.borrowed.replace(true) {
-            return Err(OpsError::Internal {
-                message: "epdf_ops::Worker::run was called reentrantly on the inline dispatch \
-                          (a job captured or dropped a Document, or otherwise called back into \
-                          the worker while already running on it)"
-                    .to_string(),
-            });
-        }
-        let result = f(unsafe { &mut *self.state.get() });
-        self.borrowed.set(false);
+        let guard = self.borrowed.try_borrow().ok_or_else(|| OpsError::Internal {
+            message: "epdf_ops::Worker::run was called reentrantly on the inline dispatch \
+                      (a job captured or dropped a Document, or otherwise called back into \
+                      the worker while already running on it)"
+                .to_string(),
+        })?;
+        let state = self.state.get();
+        // Caught here, matching threaded.rs:83-84, so a panic in `f` becomes
+        // an `OpsError::Internal` for this one call instead of propagating
+        // out of `run` (and out of a uniffi/wasm boundary that does not want
+        // it). `guard`'s `Drop` clears `borrowed` regardless, whether we get
+        // here or an unwind skips straight past this function.
+        let result = panic::catch_unwind(AssertUnwindSafe(|| f(unsafe { &mut *state })))
+            .unwrap_or_else(|payload| Err(OpsError::Internal { message: panic_message(payload) }));
+        drop(guard);
         result
     }
 
