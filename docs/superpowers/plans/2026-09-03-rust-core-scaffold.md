@@ -22,6 +22,8 @@
 - Fork pin is `d7b4caa26289d4846e94ff54e63b586b9bbe9fd6`, copied verbatim from `packages/engine/runtime/engine-runtime-build.json`.
 - Target names follow the fork's spelling (`darwin-arm64`, `wasm32`, `ios-arm64`), which is Node's spelling, not Rust's. `pdfium-rust-spike/crates/napi-arms/build.rs:56-78` has the mapping function to copy.
 - emsdk 3.1.72 is already cloned at `pdfium-rust-spike/build/emsdk`; source `pdfium-rust-spike/build/emsdk.sh` to get `em++`. A newer `wasm-opt` must be symlinked over emsdk's bundled v119, which rejects two wasm features present in rustc 1.98.0's precompiled std.
+- `build/test-swift.sh` passes `-Xlinker -rpath -Xlinker "$LIBS"` to `swift test`. macOS strips `DYLD_*` from Apple-signed binaries under the hardened runtime, and `swiftpm-testing-helper` is one, so `DYLD_LIBRARY_PATH` never reaches the test bundle. `LIBRARY_PATH` still handles link-time resolution.
+- `packages/swift/EpdfOps/Sources/EpdfOpsFFI/`, `Sources/EpdfOps/Generated/` and `Frameworks/` are all gitignored, so a fresh clone must run `bash build/build-swift.sh` before `swift build` can resolve the `systemLibrary` target. Task 7's `packages/swift/EpdfOps/README.md` documents that two-step contract.
 - Prose in `README.md` files follows the house voice: no em dashes, exact versions and paths, receipts for claims. Rust doc comments and commit messages follow repo convention (Conventional Commits, as in `bench: re-run both halves` and `fix: correct four code review findings`).
 - No changesets. Nothing here is a published package.
 - Test helpers are shared, not copied. `crates/test-support` (a dev-dependency, created in Task 4) holds the frozen-vectors loader and `mean_abs_diff` for every Rust suite. `packages/test-support/vectors.mjs` (created in Task 9) holds the same two things for every JS suite. No suite re-declares either.
@@ -2717,10 +2719,16 @@ if [[ ! -f "$LIBS/libepdf_uniffi.dylib" ]]; then
 fi
 
 export LIBRARY_PATH="$LIBS${LIBRARY_PATH:+:$LIBRARY_PATH}"
-export DYLD_LIBRARY_PATH="$LIBS${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}"
 
 cd "$ROOT/packages/swift/EpdfOps"
-swift test "${@:2}"
+
+# LIBRARY_PATH covers link time. Load time needs a baked-in rpath, NOT
+# DYLD_LIBRARY_PATH: `swift test` runs through `swiftpm-testing-helper`, which
+# is Apple-signed with the hardened runtime and carries no
+# allow-dyld-environment-variables entitlement, so macOS strips every DYLD_*
+# variable before it reaches the test bundle. Do not "simplify" this back to an
+# environment variable; it silently stops working.
+swift test -Xlinker -rpath -Xlinker "$LIBS" "${@:2}"
 ```
 
 Then `chmod +x rust-core-scaffold/build/test-swift.sh`.
