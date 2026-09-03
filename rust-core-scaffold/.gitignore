@@ -13,3 +13,4 @@ packages/web/dist/
 .build/
 .gradle/
 apps/ios/*.xcodeproj
+apps/ios/EpdfScaffold/Info.plist

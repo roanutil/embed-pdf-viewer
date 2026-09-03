@@ -3,9 +3,9 @@ import Foundation
 import Observation
 import EpdfOps
 
-/// All six operations, driven off the main thread. epdf-ops routes every call
-/// to the one thread that owns the PDFium handle, so this actor's job is only
-/// to keep the UI responsive, not to protect the handle.
+/// All six operations, driven off the main thread. `load()` hands the open
+/// and all five reads to one detached task; only the finished values cross
+/// back to the main actor, in a single assignment.
 @Observable
 @MainActor
 final class DocumentModel {
@@ -18,29 +18,75 @@ final class DocumentModel {
 
     private let pageIndex: UInt32 = 4
     private var document: EpdfDocument?
+    private var loadTask: Task<Void, Never>?
+    private var closed = false
 
-    func load() async {
-        do {
-            guard let url = Bundle.main.url(forResource: "report", withExtension: "pdf") else {
-                failure = "report.pdf is not in the app bundle"
-                return
+    private struct MissingResource: Error {}
+
+    func load() {
+        let pageIndex = self.pageIndex
+        loadTask = Task.detached { [weak self] in
+            do {
+                guard let url = Bundle.main.url(forResource: "report", withExtension: "pdf") else {
+                    throw MissingResource()
+                }
+                let bytes = try Data(contentsOf: url)
+                let doc = try EpdfEngine().open(bytes: bytes, password: nil)
+
+                let count = try doc.pageCount()
+                let size = try doc.pageSize(index: pageIndex)
+                let text = String(try doc.pageText(index: pageIndex).prefix(600))
+                let hits = try doc.search(index: pageIndex, query: "the", caseSensitive: false).count
+                let image = try doc.renderPageCGImage(index: pageIndex, scale: 2.0)
+
+                await self?.finishLoad(
+                    document: doc,
+                    pageCount: count,
+                    pageSize: size,
+                    textPreview: text,
+                    searchHitCount: hits,
+                    image: image
+                )
+            } catch is MissingResource {
+                await self?.finishFailure("report.pdf is not in the app bundle")
+            } catch {
+                await self?.finishFailure(String(describing: error))
             }
-            let bytes = try Data(contentsOf: url)
-
-            let doc = try await Task.detached { try EpdfEngine().open(bytes: bytes, password: nil) }.value
-            document = doc
-
-            pageCount = try doc.pageCount()
-            pageSize = try doc.pageSize(index: pageIndex)
-            textPreview = String(try doc.pageText(index: pageIndex).prefix(600))
-            searchHitCount = try doc.search(index: pageIndex, query: "the", caseSensitive: false).count
-            image = try doc.renderPageCGImage(index: pageIndex, scale: 2.0)
-        } catch {
-            failure = String(describing: error)
         }
     }
 
+    /// Called back on the main actor once the detached task has a document
+    /// and all five reads. If `close()` already ran while that work was in
+    /// flight, the freshly opened document is closed instead of stored, so
+    /// no document ever ends up leaked.
+    private func finishLoad(
+        document doc: EpdfDocument,
+        pageCount: UInt32,
+        pageSize: Size,
+        textPreview: String,
+        searchHitCount: Int,
+        image: CGImage
+    ) {
+        guard !closed else {
+            doc.close()
+            return
+        }
+        document = doc
+        self.pageCount = pageCount
+        self.pageSize = pageSize
+        self.textPreview = textPreview
+        self.searchHitCount = searchHitCount
+        self.image = image
+    }
+
+    private func finishFailure(_ message: String) {
+        guard !closed else { return }
+        failure = message
+    }
+
     func close() {
+        closed = true
+        loadTask?.cancel()
         document?.close()
         document = nil
     }

@@ -31,7 +31,7 @@ struct ContentView: View {
             }
             .padding()
         }
-        .task { await model.load() }
+        .task { model.load() }
         .onDisappear { model.close() }
     }
 }
