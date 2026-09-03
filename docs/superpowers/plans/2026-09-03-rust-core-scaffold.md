@@ -32,6 +32,7 @@
 - Every crate that links libembedpdf needs its OWN `build.rs` calling `build_support::emit_rpath_only()`. Cargo propagates `rustc-link-lib` and `rustc-link-search` from a dependency's build script but NOT `rustc-link-arg`, so an inherited rpath never reaches a dependent package's test binaries: `cargo test -p <crate>` then links and fails at runtime.
 - `pdfium::Document::from_bytes` takes `Rc<Library>`, not `&Library`. The document holds the clone, so `FPDF_DestroyLibrary` cannot run while a handle is open. `Rc` rather than `Arc` because `Library`'s refcount is a `thread_local` and `Rc` being `!Send` reinforces that.
 - The render comparison asserts BOTH `mean_abs_diff <= render.meanAbsDiffTolerance` (2.0) and `max_abs_diff <= render.maxAbsDiffTolerance` (16). The mean alone lets one wrong region hide inside 121,176 bytes.
+- `charCount` (8,106) is UTF-16 CODE UNITS, which is what PDFium's `FPDFText_CountChars` returns. JavaScript's `String.length` and Kotlin's `String.length` agree. Swift's default `String.count` does NOT: it counts grapheme clusters and returns 7,992, because the page text holds 114 combining sequences. A Swift host asserting a text length must use `utf16.count`, or compare the whole string instead of its length.
 - Out of scope for this plan: adding `ios-arm64`, `ios-sim-arm64`, `android-arm64` and `android-x64` to `embedpdf/runtime`. That is a separate spec and a separate PR to a separate repository, running in parallel. Tasks 8 and 14 end at the gate rather than working around it.
 
 ---
