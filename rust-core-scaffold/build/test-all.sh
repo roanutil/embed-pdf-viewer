@@ -7,6 +7,23 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
+# Suites this run skipped because the local environment couldn't provide them
+# (as opposed to the suites in "Not run, and why" below, which are skipped on
+# every machine because embedpdf/runtime hasn't shipped the artifact yet).
+SKIPPED=()
+
+echo "== build/build-node.sh =="
+# build/libpdfium/ is gitignored (.gitignore:2); crates/pdfium-sys/build.rs
+# panics without the fork's headers for the host target, and nothing fetched
+# them before cargo test --workspace ran below. build-node.sh already does
+# that fetch (via fetch-libpdfium.sh) as a prerequisite for building the napi
+# addon, for the same host target cargo test resolves by default, so running
+# it first satisfies both: cargo test gets its headers, and npm test below
+# gets the addon packages/node/index.mjs throws without (packages/node/*.node
+# is gitignored, .gitignore:15). README.md:127 already documents this as the
+# Build step for the Node row; it just wasn't wired in here.
+bash build/build-node.sh
+
 echo "== cargo test --workspace =="
 cargo test --workspace
 
@@ -32,9 +49,11 @@ echo "== kotlin (jvm desktop) =="
 # is never registered as a system JVM (docs/superpowers/specs/2026-09-03-
 # rust-core-scaffold-design.md, "What actually gets verified"). Every gradlew
 # invocation below needs JAVA_HOME set explicitly rather than discovered.
-export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
+export JAVA_HOME="${JAVA_HOME:-/Applications/Android Studio.app/Contents/jbr/Contents/Home}"
 if [[ ! -x "$JAVA_HOME/bin/java" ]]; then
   echo "skipped: no JDK at $JAVA_HOME. Fix with: install Android Studio, or set JAVA_HOME to a JDK 21+." >&2
+  SKIPPED+=("kotlin (jvm desktop): no JDK at $JAVA_HOME")
+  SKIPPED+=("android (jvm unit test, no device or APK): gated on the same JAVA_HOME, not reached")
 else
   bash build/build-kotlin.sh
   ( cd packages/kotlin && ./gradlew :epdf-ops:test )
@@ -46,6 +65,7 @@ else
   export ANDROID_HOME="${ANDROID_HOME:-$HOME/Library/Android/sdk}"
   if [[ ! -d "$ANDROID_HOME" ]]; then
     echo "skipped: no Android SDK at $ANDROID_HOME. Fix with: install the Android SDK and set ANDROID_HOME." >&2
+    SKIPPED+=("android (jvm unit test, no device or APK): no Android SDK at $ANDROID_HOME")
   else
     ( cd apps/android && ./gradlew :app:testDebugUnitTest )
   fi
@@ -63,3 +83,12 @@ Not run, and why:
                                       crash on launch
   apps/web-demo, apps/ios's window   nothing drives them; they are demo surfaces, not test suites
 MSG
+
+if [[ ${#SKIPPED[@]} -gt 0 ]]; then
+  echo
+  echo "Skipped this run, and why (unlike the suites above, these could run"
+  echo "here if the environment were configured for them; a green run that"
+  echo "silently skipped them would be reporting untested code as passing):"
+  printf '  %s\n' "${SKIPPED[@]}"
+  exit 1
+fi

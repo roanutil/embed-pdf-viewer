@@ -9,7 +9,7 @@ set -euo pipefail
 # /usr/bin/java is the macOS stub and /usr/libexec/java_home does not see the
 # JBR Android Studio ships, so every script sets JAVA_HOME explicitly rather
 # than relying on the invoking shell.
-export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
+export JAVA_HOME="${JAVA_HOME:-/Applications/Android Studio.app/Contents/jbr/Contents/Home}"
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SLICE="${1:-host}"
