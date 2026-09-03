@@ -1,7 +1,21 @@
+use std::any::Any;
+use std::panic::{self, AssertUnwindSafe};
 use std::sync::mpsc::{channel, Sender};
 use std::thread;
 
 use crate::{OpsError, State};
+
+/// Extracts a human-readable message from a `catch_unwind` payload the same
+/// way `Engine::new` already does for a panic during `State::new`.
+fn panic_message(payload: Box<dyn Any + Send>) -> String {
+    if let Some(message) = payload.downcast_ref::<&str>() {
+        (*message).to_string()
+    } else if let Some(message) = payload.downcast_ref::<String>() {
+        message.clone()
+    } else {
+        "worker job panicked with a non-string payload".to_string()
+    }
+}
 
 type Job = Box<dyn FnOnce(&mut State) + Send>;
 
@@ -27,11 +41,17 @@ impl Worker {
                         return;
                     }
                 };
-                // Ends when every Sender drops, which drops State and therefore
-                // FPDF_DestroyLibrary on this thread. That is the only thread
-                // allowed to call it.
+                // Ends when the process outlives the last handle: every Sender
+                // drops, which drops State and therefore FPDF_DestroyLibrary on
+                // this thread. That is the only thread allowed to call it.
                 while let Ok(job) = rx.recv() {
-                    job(&mut state);
+                    // Jobs built by `run` already catch their own panics and
+                    // reply with `OpsError::Internal` before this point, so
+                    // `state` should never be observed unwinding through here.
+                    // This is defense in depth: it keeps one panicking job
+                    // from taking every future document on this engine down
+                    // with it.
+                    let _ = panic::catch_unwind(AssertUnwindSafe(|| job(&mut state)));
                 }
             })
             .map_err(|err| OpsError::Internal { message: err.to_string() })?;
@@ -54,10 +74,65 @@ impl Worker {
     {
         let (tx, rx) = channel();
         self.tx
-            .send(Box::new(move |state| {
-                let _ = tx.send(f(state));
+            .send(Box::new(move |state: &mut State| {
+                // Caught here, not in the worker loop: `tx` is captured by
+                // this closure, so it is only still alive to carry the
+                // answer back while we are still inside it. By the time an
+                // unwind reaches the loop that calls this closure, `tx` has
+                // already been dropped and there is no one left to tell.
+                let result = panic::catch_unwind(AssertUnwindSafe(|| f(state)))
+                    .unwrap_or_else(|payload| Err(OpsError::Internal { message: panic_message(payload) }));
+                let _ = tx.send(result);
             }))
-            .map_err(|_| OpsError::Closed)?;
-        rx.recv().map_err(|_| OpsError::Closed)?
+            .map_err(|_| OpsError::EngineFailed { message: "the worker thread's job queue is gone".to_string() })?;
+        rx.recv().map_err(|_| OpsError::EngineFailed { message: "the worker thread's reply channel is gone".to_string() })?
+    }
+
+    /// Enqueues `f` and returns immediately, without waiting for it to run
+    /// or observing its result. Unlike `run`, this cannot block the caller
+    /// on whatever is already ahead of it in the queue. `f` still runs, in
+    /// queue order, once the worker gets to it; there is simply no reply to
+    /// wait for, and a panic inside it is swallowed by the loop's own
+    /// `catch_unwind` rather than reported anywhere. Used by
+    /// `Drop for Document`, where blocking is not acceptable.
+    pub fn send<F>(&self, f: F)
+    where
+        F: FnOnce(&mut State) + Send + 'static,
+    {
+        let _ = self.tx.send(Box::new(f));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn jobs_really_run_on_the_named_pdfium_thread() {
+        let worker = Worker::spawn().unwrap();
+        let name = worker.run(|_state| Ok(thread::current().name().map(str::to_string))).unwrap();
+        assert_eq!(name.as_deref(), Some("epdf-pdfium"));
+    }
+
+    #[test]
+    fn a_panicking_job_reports_internal_not_closed_and_the_worker_survives() {
+        let worker = Worker::spawn().unwrap();
+
+        // Expected: the default panic hook still prints this panic's
+        // message to stderr, even though catch_unwind stops it from
+        // unwinding any further. That is a property of
+        // std::panic::catch_unwind itself, not a bug here.
+        let err = worker
+            .run(|_state| -> Result<(), OpsError> { panic!("deliberate panic for the recovery test") })
+            .expect_err("a panicking job must not be reported as success");
+        assert!(
+            matches!(err, OpsError::Internal { .. }),
+            "expected OpsError::Internal from a caught panic, got {err:?}"
+        );
+        assert_ne!(err, OpsError::Closed, "a panic must not be conflated with a closed document");
+
+        // The worker thread must still be alive and answering afterwards,
+        // proving one panicking job did not take the whole worker down.
+        assert!(worker.run(|_state| Ok(())).is_ok());
     }
 }

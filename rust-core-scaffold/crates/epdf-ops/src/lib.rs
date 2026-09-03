@@ -11,5 +11,5 @@ mod types;
 
 pub use engine::{Document, Engine};
 pub use error::OpsError;
-pub use state::State;
+pub(crate) use state::State;
 pub use types::{Bitmap, Rect, SearchHit, Size};

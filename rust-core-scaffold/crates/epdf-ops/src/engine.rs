@@ -12,6 +12,12 @@ impl Engine {
     /// Spawns the PDFium thread eagerly, so a failure to initialize surfaces
     /// here rather than on the first `open`. Fallible on purpose: uniffi
     /// constructors may return `Result`, and Task 6 exports it that way.
+    ///
+    /// Each call spawns its own OS thread and calls `FPDF_InitLibrary` on it,
+    /// so an `Engine` is meant to be constructed once and held for as long as
+    /// documents need opening, not created per document. uniffi exports this
+    /// as a plain constructor to Swift and Kotlin, where a per-document
+    /// `Engine` is the obvious mistake to make.
     pub fn new() -> Result<Arc<Self>, OpsError> {
         Ok(Arc::new(Self { worker: Arc::new(Worker::spawn()?) }))
     }
@@ -35,6 +41,10 @@ pub struct Document {
 }
 
 impl Document {
+    /// A closure passed to `Worker::run` (or `Worker::send`) must never
+    /// capture or drop an `epdf_ops::Document`: doing so re-enters the
+    /// worker from inside a job running on it, which deadlocks on the
+    /// `threaded` dispatch and is undefined behaviour on `inline`.
     fn with<T, F>(&self, f: F) -> Result<T, OpsError>
     where
         T: Send + 'static,
@@ -96,6 +106,12 @@ impl Document {
         })
     }
 
+    /// Blocks until every operation enqueued before this call has run,
+    /// including the removal itself: the post-condition is that nothing
+    /// enqueued earlier is still outstanding when this returns. Idempotent.
+    /// `Drop` does not use this; it uses the weaker, non-blocking
+    /// `drop_close` instead, so that dropping a `Document` never stalls the
+    /// caller behind whatever else the worker is doing.
     pub fn close(&self) {
         if self.closed.swap(true, Ordering::AcqRel) {
             return;
@@ -106,10 +122,26 @@ impl Document {
             Ok(())
         });
     }
+
+    /// The non-blocking half of `close`, used by `Drop`. Sets the closed
+    /// flag synchronously, so no operation started after this call can
+    /// reach the slab entry, then enqueues the removal without waiting for
+    /// it to run. The removal still happens: the worker processes its queue
+    /// in order and cannot skip a job. What `Drop` gives up, relative to
+    /// `close`, is the guarantee that the removal has *already* happened by
+    /// the time the call returns; a render already in flight ahead of it in
+    /// the queue is not waited on.
+    fn drop_close(&self) {
+        if self.closed.swap(true, Ordering::AcqRel) {
+            return;
+        }
+        let id = self.id;
+        self.worker.send(move |state| state.remove(id));
+    }
 }
 
 impl Drop for Document {
     fn drop(&mut self) {
-        self.close();
+        self.drop_close();
     }
 }
