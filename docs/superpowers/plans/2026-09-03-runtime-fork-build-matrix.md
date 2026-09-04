@@ -571,7 +571,7 @@ grep -A1 '^Verdict:' /Users/andrew/repos/embed-pdf-viewer/docs/research/wasm-eh-
 
 If the verdict is `final`: use emsdk 3.1.72 for `wasm32-eh`, same as `wasm32`. Nothing in this step changes.
 
-If the verdict is `legacy`: `wasm32-eh` needs a newer emsdk, because a module Firefox cannot load is not worth building. Use 4.0.0, the first release whose `-fwasm-exceptions` defaults to the final encoding, and install it alongside rather than replacing the pinned one:
+If the verdict is `legacy`: `wasm32-eh` needs both a newer emsdk AND a flag. I measured this rather than assuming it, and my original claim here was wrong: 4.0.0 does NOT default to the final encoding either. Its `src/settings.js:785` sets `WASM_LEGACY_EXCEPTIONS = true`, and its ChangeLog says plainly that this is deliberate because major browsers did not support the final encoding by default at that release. What 4.0.0 does have, and 3.1.72 does not have at all, is the setting itself, so the encoding is forceable. Verified on this machine with 4.0.0: `-fwasm-exceptions -sWASM_LEGACY_EXCEPTIONS=0 -sSUPPORT_LONGJMP=wasm` compiles, links, disassembles to 12 `try_table`, 3 `throw_ref` and 2 `catch_all_ref`, and the resulting module runs under Node returning the expected value. Install 4.0.0:
 
 ```bash
 cd /Users/andrew/repos/embed-pdf-viewer/packages/engine/runtime/runtime-src
@@ -663,11 +663,19 @@ config("compiler") {
   cflags = [
     "-fwasm-exceptions",
     "-sSUPPORT_LONGJMP=wasm",
+
+    # emsdk 4.0.0 still defaults -fwasm-exceptions to the LEGACY encoding
+    # (settings.js:785, WASM_LEGACY_EXCEPTIONS = true). Firefox never shipped
+    # legacy in a release build, so the legacy default is the one thing that
+    # makes this target pointless. Forcing 0 emits try_table / throw_ref /
+    # catch_all_ref instead, measured on this toolchain.
+    "-sWASM_LEGACY_EXCEPTIONS=0",
   ]
 
   ldflags = [
     "-fwasm-exceptions",
     "-sSUPPORT_LONGJMP=wasm",
+    "-sWASM_LEGACY_EXCEPTIONS=0",
   ]
 }
 ```
@@ -1308,6 +1316,8 @@ and change line 74 to:
 ```
 
 Every non-wasm row leaves `emsdk` unset and falls back to 3.1.72, which no non-wasm target reads anyway.
+
+One thing the runner setup must handle, found the hard way in Task 4: emsdk does NOT support two mainline releases installed side by side in one checkout. Running `emsdk activate 4.0.0` in a tree that had 3.1.72 silently removes the 3.1.72 install. Each matrix row is a fresh runner so they do not collide with each other, but the install step must not assume a pre-existing SDK survives an activate. If a future local workflow needs both, use two separate emsdk checkouts rather than two versions in one.
 
 - [ ] **Step 3: Widen the Emscripten install condition**
 

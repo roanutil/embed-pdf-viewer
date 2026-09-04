@@ -74,3 +74,35 @@ Firefox: not installed on this machine, same as the 3.1.72 run. Unobserved, not 
 The brief for Task 4 assumed 4.0.0 is "the first release whose `-fwasm-exceptions` defaults to the final encoding." It is not: the flag exists starting in 4.0.0, but its default is still legacy, by Emscripten's own stated choice, because Firefox and other browsers did not yet support the final encoding by default at the time of that release. Getting the final encoding out of 4.0.0 would require passing `-sWASM_LEGACY_EXCEPTIONS=0` explicitly, which is a different, larger decision than "use a newer pinned emsdk": it means diverging `wasm32-eh` from every other emscripten default `wasm32` relies on, on a setting Emscripten itself does not yet trust as a default.
 
 This is the stop condition the brief anticipated for a legacy result, and it applies here too even though the version was raised. Whether to build `wasm32-eh` against 4.0.0 with `-sWASM_LEGACY_EXCEPTIONS=0` forced on, to try a later emsdk release in case that default has since changed, or to drop the target's browser-compatibility goal and accept legacy encoding, is a decision this research cannot make on its own.
+
+## Forcing the final encoding on 4.0.0
+
+4.0.0 defaults to legacy, but unlike 3.1.72 it has the setting to override,
+`WASM_LEGACY_EXCEPTIONS` at `src/settings.js:785`. Measured on this machine
+with emsdk 4.0.0, compiling the same probe with
+`-fwasm-exceptions -sWASM_LEGACY_EXCEPTIONS=0 -sSUPPORT_LONGJMP=wasm`:
+
+```
+  12 try_table
+   8 catch_all
+   3 throw_ref
+   2 catch_all_ref
+   1 catch
+```
+
+That is the final encoding. The link succeeded with `SUPPORT_LONGJMP=wasm`
+set at the same time, which is the combination PDFium needs, and the module
+ran under Node 24 returning the expected value 42.
+
+So `wasm32-eh` is viable: emsdk 4.0.0 plus one flag, not a version hunt.
+
+What this does NOT establish. No browser was tested, here or anywhere above,
+because Firefox is not installed on this machine. Forcing the final encoding
+trades one compatibility risk for another: legacy is what older Chrome and
+Safari understand, and 4.0.0's own ChangeLog says it kept the legacy default
+because major browsers lacked final support at its release in early 2025.
+Current browser support for the final encoding is unmeasured. That risk is
+contained for now, because `wasm32-eh` is a second artifact consumed only by
+the Rust scaffold's web demo, and the published `wasm32` target is unchanged.
+Anyone promoting `wasm32-eh` to a shipping artifact needs to settle the
+browser question first.
