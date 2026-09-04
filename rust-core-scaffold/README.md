@@ -4,24 +4,23 @@
 linuxmusl and two win32. `ios-arm64`, `ios-sim-arm64`, `android-arm64`, `android-x64` and `wasm32-eh`
 are pending: `build/runtime-build.json` carries all five with `"status": "pending"` instead of a
 `url` and `sha256`, and `build/fetch-libpdfium.sh <target>` exits 2 naming the target when you ask
-for one. The fork does build all five now, from commit `76e25559b`; there just isn't a release
+for one. The fork does build all five now, from commit `7f0fa5dbe`; there just isn't a release
 publishing them yet, and this checkout has no push access to cut one. Verifying that the scaffold's
 code was ready for them meant pinning local `file://` builds of that commit temporarily (never
 committed) and fetching, building, and running against them for real.
 
-That verification surfaced a real problem: `ios-arm64`, `ios-sim-arm64`, `android-arm64` and
-`android-x64` are "complete" static archives (`pdf_is_complete_lib=true`), and none of the four
-statically bundles libc++. `nm` on `lib/libembedpdf.a` shows 33 to 36 undefined `std::__Cr::`
-symbols (`locale`, `ios_base`, `basic_ostream`, `mutex`, `condition_variable`), a gap the darwin
-dylib doesn't have because it's built `pdf_is_complete_lib=false` and pulls libc++ in at its own
-link step. On iOS this is fatal: Mach-O needs every symbol resolved at link time, so `cargo build
---target aarch64-apple-ios-sim` fails outright. On Android it isn't fatal at build time: ELF defers
-undefined symbols to `dlopen`, so `cargo ndk` links `libepdf_uniffi.so` and `./gradlew assembleDebug`
-passes; the `.so` that ships still carries the same 36 unresolved symbols and hasn't been proven
-safe to load on a device. That's a fork-side defect, not this scaffold's: adding the two mobile
-targets was recommendation 6 of
-[the runtime decision](../docs/research/pdfium-rust-wrapper-decision.md); this is a new finding
-against that work, not yet filed upstream.
+An earlier verification, against fork commit `76e25559b`, found a real problem: `ios-arm64`,
+`ios-sim-arm64`, `android-arm64` and `android-x64` are "complete" static archives
+(`pdf_is_complete_lib=true`) that didn't statically bundle libc++, 33 to 36 undefined `std::__Cr::`
+symbols (`locale`, `ios_base`, `basic_ostream`, `mutex`, `condition_variable`) in each one. That's
+fixed as of `7f0fa5dbe`: the fork now also sets `use_clang_modules=false` alongside the existing
+`use_custom_libcxx=false` for these targets (Chromium builds libc++ header modules from its vendored
+copy regardless of the latter flag alone), on iOS and, since confirmed, on Android too. `llvm-nm` on
+all four rebuilt `lib/libembedpdf.a` archives shows zero `std::__Cr::` symbols, defined or undefined.
+Re-verified locally: `bash build/build-swift.sh ios-sim-arm64` now links, `xcodebuild` reaches
+`** BUILD SUCCEEDED **` for the iOS simulator destination, and the Android `.so` staged into
+`jniLibs` carries zero unresolved `std::__Cr::` symbols (still, no device has actually loaded it).
+Full account in `.superpowers/sdd/task-9-report.md`.
 
 ## What this is
 
@@ -172,9 +171,9 @@ that is not this golden.
 | Rust (native) | `cargo build --workspace` | `cargo test --workspace` | 22 | yes |
 | Rust (wasm32-unknown-emscripten) | `bash build/link-wasm.sh` | (covered by the web suite below) | see Web | no, `wasm32-eh` is pending |
 | Swift, macOS destination | `bash build/build-swift.sh` | `bash build/test-swift.sh` | 4 | yes |
-| Swift, iOS destination | `bash build/build-swift.sh ios-arm64` | n/a | n/a | no, `ios-arm64` is pending; verified locally that the artifact doesn't link yet either, see above |
+| Swift, iOS destination | `bash build/build-swift.sh ios-arm64` | n/a | n/a | no, `ios-arm64` is pending; verified locally that it now links and `xcodebuild` succeeds, see above |
 | Kotlin, JVM desktop | `bash build/build-kotlin.sh` | `cd packages/kotlin && ./gradlew :epdf-ops:test` | 5 | yes |
-| Kotlin, Android | `bash build/build-kotlin.sh android-arm64` | n/a | n/a | no, `android-arm64` is pending; verified locally that it links but the `.so` carries unresolved symbols, see above |
+| Kotlin, Android | `bash build/build-kotlin.sh android-arm64` | n/a | n/a | no, `android-arm64` is pending; verified locally that it links and `assembleDebug` succeeds with zero unresolved symbols, see above |
 | Node (napi) | `bash build/build-node.sh` | `node --test packages/node/*.test.mjs` | 6 | yes |
 | Web (em++ module) | `bash build/link-wasm.sh` | `node --test packages/web/*.test.mjs` | 4 | no, `wasm32-eh` is pending |
 | `apps/node-cli` | n/a | `node --test apps/node-cli/*.test.mjs` | 1 | yes |
@@ -209,18 +208,18 @@ paths. `apps/android` compiles and its 11 unit tests pass, but nothing has run t
 is no `android-arm64` artifact to link against and no emulator image to run one on, so the app has
 never been launched.
 
-Both of those gaps are still true against the fork's actual `ios-arm64`, `ios-sim-arm64`,
-`android-arm64` and `android-x64` builds (commit `76e25559b`), not just against their pending
-status. Verified locally with `file://`-pinned copies of all four (see the top of this document):
-the iOS ones don't link at all (`cargo build --target aarch64-apple-ios-sim` fails with 33 undefined
-`std::__Cr::` symbols, PDFium's own libc++ never got bundled into the "complete" static archive),
-and the Android ones link into a `.so` that `./gradlew assembleDebug` happily packages with the
-same 36 symbols still undefined, because ELF doesn't check at build time the way Mach-O does. No
-device has loaded that `.so`; `dlopen` might refuse it outright, or it might run fine until a code
-path that actually touches `locale`, `basic_ostream`, `mutex` or `condition_variable` crashes it.
-That's a fork-side gap, not this scaffold's, but it means neither mobile platform is proven safe to
-ship even once the pending artifacts land, only proven to compile against (Android) or not even
-that (iOS).
+Both of those gaps are narrower than they were: the fork's `ios-arm64`, `ios-sim-arm64`,
+`android-arm64` and `android-x64` builds went through two rounds of local verification (never
+committed, `file://`-pinned). Against commit `76e25559b`, none of the four static archives bundled
+libc++, 33 to 36 undefined `std::__Cr::` symbols each, fatal on iOS (Mach-O link) and silent on
+Android (ELF defers to `dlopen`, so `./gradlew assembleDebug` passed anyway while shipping a broken
+`.so`). Against commit `7f0fa5dbe`, with `use_clang_modules=false` added alongside the existing
+`use_custom_libcxx=false`, `llvm-nm` shows zero `std::__Cr::` symbols in any of the four archives,
+`bash build/build-swift.sh ios-sim-arm64` links, `xcodebuild` reaches `** BUILD SUCCEEDED **` for the
+iOS simulator, and the `.so` `build-kotlin.sh android-arm64` stages also carries zero unresolved
+`std::__Cr::` symbols. What's still unproven: nothing has run either app on a device or emulator, so
+"links cleanly" is as far as either mobile platform has been taken. Full account in
+`.superpowers/sdd/task-9-report.md`.
 
 win32 gets its own caveat below, in "Five things a reader will otherwise be surprised by": it is
 reasoned, not built.
@@ -252,7 +251,7 @@ needs as `JAVA_HOME` because neither `/usr/bin/java` nor `/usr/libexec/java_home
 own; and Eclipse Adoptium 21.0.12.1+1, provisioned by Gradle's Foojay resolver, because Kotlin 2.2.20
 refuses a JVM target of 25. Node 24.20.0, npm 11.19.0, Vite 6.x. Fork pin
 `d7b4caa26289d4846e94ff54e63b586b9bbe9fd6` for the nine published targets; `wasm32-eh` and the four
-mobile targets were verified against fork commit `76e25559b`, locally built, never published.
+mobile targets were verified against fork commit `7f0fa5dbe`, locally built, never published.
 
 ## Five things a reader will otherwise be surprised by
 
@@ -264,7 +263,7 @@ needed the older `-sSUPPORT_LONGJMP=emscripten` instead, because PDFium genuinel
 `core/fxcodec/jpeg/jpeg_common.c`), and `em++` refuses both flags on the same link. `wasm32-eh` is
 the same source built with `-sSUPPORT_LONGJMP=wasm` instead, so both sides agree on the native
 mechanism and `RUSTFLAGS="-C panic=abort"` is gone from `build/link-wasm.sh`. Verified locally
-against a `file://`-pinned build of fork commit `76e25559b` (see above): `epdf-wasm`'s new
+against a `file://`-pinned build of fork commit `7f0fa5dbe` (see above): `epdf-wasm`'s new
 `panic-probe` feature (`crates/epdf-wasm/src/lib.rs`) panics on purpose, and the panic surfaces to
 the JS caller as a catchable `RuntimeError` rather than killing the module. Calling the probe twice
 in a row still throws twice, proof the instance survives. `wasm32-eh` isn't in a published release
