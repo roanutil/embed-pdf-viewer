@@ -178,7 +178,7 @@ done
 wc -l /tmp/args-golden/*.gn
 ```
 
-Expected: nine files, each 16 or 17 lines (17 where `EXTRA_ARGS` is set: `wasm32`, `linux-arm64`, `linuxmusl-x64`, `linuxmusl-arm64`).
+Expected: nine files. Lengths vary with how many lines each target's `EXTRA_ARGS` adds to the 15-line base: 15 for the targets that set none, 16 for `linux-arm64`, 17 for `wasm32`, and 21 for the two `linuxmusl` targets, which set six. Do not treat a length outside that set as fine; it means the capture did not pick up a target's `EXTRA_ARGS`.
 
 - [ ] **Step 2: Write the failing test**
 
