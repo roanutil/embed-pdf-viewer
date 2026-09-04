@@ -32,10 +32,34 @@ echo "== build/link-wasm.sh =="
 # checkout node --test packages/web/vectors.test.mjs fails with
 # ERR_MODULE_NOT_FOUND instead of exercising anything. npm test below reads
 # packages/web/index.mjs, which imports that pair, so link it first.
-bash build/link-wasm.sh
+#
+# link-wasm.sh's own first step is fetch-libpdfium.sh wasm32-eh, which exits 2
+# while embedpdf/runtime hasn't published that target (build/runtime-build.json,
+# "status": "pending"). That's a "not run, and why" case, not a SKIPPED one:
+# every checkout hits it today, not just ones missing local tooling. Any other
+# nonzero exit is a real failure and should still stop the script.
+if bash build/link-wasm.sh; then
+  WEB_LINKED=1
+else
+  code=$?
+  if [[ $code -eq 2 ]]; then
+    echo "skipped: wasm32-eh is pending (build/runtime-build.json); the web module can't link yet" >&2
+    WEB_LINKED=0
+  else
+    exit "$code"
+  fi
+fi
 
 echo "== npm test =="
-npm test
+if [[ "$WEB_LINKED" == 1 ]]; then
+  npm test
+else
+  # Same suites as npm test's glob (package.json's "test" script), minus
+  # packages/web/*.test.mjs: that one imports the module link-wasm.sh above
+  # didn't produce, and ERR_MODULE_NOT_FOUND there would read as a bug rather
+  # than the pending artifact it actually is.
+  node --test build/*.test.mjs vectors/*.test.mjs packages/node/*.test.mjs apps/node-cli/*.test.mjs apps/web-demo/*.test.mjs
+fi
 
 echo "== swift (macOS destination) =="
 # packages/swift/EpdfOps/{Frameworks,Sources/EpdfOps/Generated,Sources/EpdfOpsFFI}
@@ -74,13 +98,8 @@ fi
 cat <<'MSG'
 
 Not run, and why:
-  apps/ios on an iOS destination     embedpdf/runtime does not build ios-arm64 or ios-sim-arm64
+  Web (em++ module) test suite       embedpdf/runtime does not publish wasm32-eh yet
                                       (build/runtime-build.json, "status": "pending")
-  apps/android packaging             embedpdf/runtime does not build android-arm64 or android-x64;
-                                      apps/android/app/build.gradle.kts's requireNativeLibraries task
-                                      fails assembleDebug, assembleRelease, bundleDebug and
-                                      installDebug on purpose rather than ship an APK that would
-                                      crash on launch
   apps/web-demo, apps/ios's window   nothing drives them; they are demo surfaces, not test suites
 MSG
 

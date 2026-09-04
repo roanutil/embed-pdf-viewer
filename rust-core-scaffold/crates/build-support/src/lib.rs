@@ -60,7 +60,7 @@ pub fn fork_target() -> String {
     }
     let os = env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
     if os == "emscripten" {
-        return "wasm32".to_string();
+        return "wasm32-eh".to_string();
     }
 
     let target_env = env::var("CARGO_CFG_TARGET_ENV").unwrap_or_default();
@@ -153,6 +153,10 @@ pub fn emit_link_directives(dir: &Path) {
             let cxx_runtime = match (target_os.as_str(), target_env.as_str()) {
                 ("macos", _) | ("ios", _) => "c++",
                 ("linux", "musl") => "stdc++",
+                // The Android NDK's sysroot provides libc++ as `c++` (either
+                // libc++_shared.so or, for a static link, the NDK's libc++.a),
+                // the same link name as the two Apple platforms above.
+                ("android", _) => "c++",
                 _ => panic!(
                     "no known C++ runtime for static embedpdf link on \
                      target_os=`{target_os}` target_env=`{target_env}`"
@@ -164,6 +168,13 @@ pub fn emit_link_directives(dir: &Path) {
 
     if target_os == "macos" {
         for framework in ["AppKit", "CoreFoundation", "CoreGraphics", "Foundation"] {
+            println!("cargo:rustc-link-lib=framework={framework}");
+        }
+    } else if target_os == "ios" {
+        // No AppKit on iOS; CQuartz2D (fx_apple_impl.o) and CPDF_Type1Font's
+        // glyph lookup still need CoreGraphics and CoreFoundation on this
+        // platform too, same as macOS.
+        for framework in ["CoreFoundation", "CoreGraphics", "Foundation"] {
             println!("cargo:rustc-link-lib=framework={framework}");
         }
     }

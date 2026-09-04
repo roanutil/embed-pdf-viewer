@@ -59,7 +59,11 @@ else
   cargo install cargo-ndk --version 4.1.2 --locked
   ( cd "$ROOT" && EPDF_SCAFFOLD_TARGET="$FORK_TARGET" cargo ndk -t "$RUST_TARGET" build --release -p epdf-uniffi )
   cp "$ROOT/target/$RUST_TARGET/release/libepdf_uniffi.so" "$DEST/"
-  cp "$ROOT/build/libpdfium/$FORK_TARGET/lib/libembedpdf.so" "$DEST/"
+  # No separate libembedpdf copy here: the fork's android-* artifact is a
+  # static archive (lib/libembedpdf.a), not a shared library. build-support's
+  # emit_link_directives already statically links it into libepdf_uniffi.so
+  # above (ArtifactShape::StaticArchive), so there is no libembedpdf.so to
+  # stage into jniLibs, unlike the host branch's darwin-arm64 dylib above.
 fi
 
 mkdir -p "$GENERATED"

@@ -219,3 +219,12 @@ pub extern "C" fn epdf_close(doc: u32) {
 pub extern "C" fn epdf_last_error() -> *const std::os::raw::c_char {
     LAST_ERROR.with(|cell| cell.borrow().as_ptr())
 }
+
+/// Panics on purpose, so a test can prove a panic crossing the wasm boundary
+/// surfaces as an error rather than aborting the instance. Behind a feature so
+/// it is absent from a normal build.
+#[cfg(feature = "panic-probe")]
+#[unsafe(no_mangle)]
+pub extern "C" fn epdf_test_panic() -> i32 {
+    panic!("epdf_test_panic: deliberate panic for the wasm EH test");
+}

@@ -21,7 +21,7 @@ async function fetchTarget(target, env = {}) {
   }
 }
 
-test('pin file carries the nine published targets and four pending mobile ones', async () => {
+test('pin file carries the nine published targets and five pending ones', async () => {
   const pin = JSON.parse(await readFile(resolve(here, 'runtime-build.json'), 'utf8'));
   assert.equal(pin.sha, 'd7b4caa26289d4846e94ff54e63b586b9bbe9fd6');
 
@@ -37,11 +37,19 @@ test('pin file carries the nine published targets and four pending mobile ones',
     'win32-arm64', 'win32-x64',
   ]);
 
+  // wasm32-eh joins the four mobile targets here: the fork builds it (same as
+  // ios-arm64, ios-sim-arm64, android-arm64 and android-x64 now do, from
+  // commit 76e25559b), but none of the five has shipped in a published
+  // release yet.
   const pending = Object.entries(pin.artifacts)
     .filter(([, a]) => a.status === 'pending')
     .map(([t]) => t)
     .sort();
-  assert.deepEqual(pending, ['android-arm64', 'android-x64', 'ios-arm64', 'ios-sim-arm64']);
+  assert.deepEqual(pending, [
+    'android-arm64', 'android-x64',
+    'ios-arm64', 'ios-sim-arm64',
+    'wasm32-eh',
+  ]);
   for (const target of pending) {
     assert.equal(pin.artifacts[target].url, undefined);
     assert.equal(pin.artifacts[target].sha256, undefined);

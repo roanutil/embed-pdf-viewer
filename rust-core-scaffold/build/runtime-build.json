@@ -40,19 +40,23 @@
     },
     "ios-arm64": {
       "status": "pending",
-      "note": "embedpdf/runtime does not build this target yet; see docs/research/pdfium-rust-wrapper-decision.md recommendation 6"
+      "note": "embedpdf/runtime builds this target as of fork commit 76e25559b, but has not published it in a release yet; see docs/research/pdfium-rust-wrapper-decision.md recommendation 6"
     },
     "ios-sim-arm64": {
       "status": "pending",
-      "note": "embedpdf/runtime does not build this target yet; see docs/research/pdfium-rust-wrapper-decision.md recommendation 6"
+      "note": "embedpdf/runtime builds this target as of fork commit 76e25559b, but has not published it in a release yet; see docs/research/pdfium-rust-wrapper-decision.md recommendation 6"
     },
     "android-arm64": {
       "status": "pending",
-      "note": "embedpdf/runtime does not build this target yet; see docs/research/pdfium-rust-wrapper-decision.md recommendation 6"
+      "note": "embedpdf/runtime builds this target as of fork commit 76e25559b, but has not published it in a release yet; see docs/research/pdfium-rust-wrapper-decision.md recommendation 6"
     },
     "android-x64": {
       "status": "pending",
-      "note": "embedpdf/runtime does not build this target yet; see docs/research/pdfium-rust-wrapper-decision.md recommendation 6"
+      "note": "embedpdf/runtime builds this target as of fork commit 76e25559b, but has not published it in a release yet; see docs/research/pdfium-rust-wrapper-decision.md recommendation 6"
+    },
+    "wasm32-eh": {
+      "status": "pending",
+      "note": "embedpdf/runtime builds this target as of fork commit 76e25559b, but has not published it in a release yet; the web build needs it instead of wasm32 for a recoverable panic, see rust-core-scaffold/README.md"
     }
   }
 }

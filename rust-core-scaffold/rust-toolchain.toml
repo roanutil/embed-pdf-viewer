@@ -8,6 +8,8 @@ channel = "1.98.0"
 # missing target.
 targets = [
   "aarch64-apple-darwin",
+  "aarch64-apple-ios",
+  "aarch64-apple-ios-sim",
   "wasm32-unknown-emscripten",
   "aarch64-linux-android",
   "x86_64-linux-android",
