@@ -1,22 +1,41 @@
 # Can PDFium's standalone build target iOS?
 
-Fork sha: `1be49158d2525fe4c9d0eba90c509e9deaef595d`
+Fork sha: `73c64bcaa082869b7de182a2edd50ea3a52bbecc` (packages/engine/runtime/runtime-src, branch `embedpdf/feature/mobile-and-wasm-eh`)
 Sync: `PDF_RUNTIME_TARGET_OS_LIST=ios`
 
-## Verdict: blocked, but not the way Android was
+## Verdict: gn gen succeeds
 
-The good news first: there's no host-OS assert for iOS. `build/config/BUILDCONFIG.gn`
-picks a `//build/toolchain/ios:ios_clang_$target_cpu` toolchain for `target_os == "ios"`
+There's no host-OS assert for iOS. `build/config/BUILDCONFIG.gn` picks a
+`//build/toolchain/ios:ios_clang_$target_cpu` toolchain for `target_os == "ios"`
 unconditionally, no `host_os` check at all, unlike the `assert(host_os == "linux", ...)`
-that sank Android in the previous task. `gn gen` does not refuse iOS on principle.
-
-It still fails, though. With only the patch this task is scoped to produce
-(`apple/pdfium.patch`, touching `BUILD.gn` and `core/fxge/BUILD.gn`), `gn gen` for
-`ios-sim-arm64` dies here:
+that sank Android in the previous task. `gn gen` doesn't refuse iOS on principle, and with
+two small fixes now committed alongside `apple/pdfium.patch`, it doesn't refuse it in
+practice either:
 
 ```
+$ bash scripts/embedpdf-runtime/apply-patches.sh ios-sim-arm64
 $ bash scripts/embedpdf-runtime/target-args.sh ios-sim-arm64 > out/embedpdf-runtime/ios-sim-arm64/args.gn
 $ gn gen out/embedpdf-runtime/ios-sim-arm64
+Done. Made 637 targets from 176 files in 3116ms
+```
+
+`ios-arm64` (the device slice) generates the same 637 targets from the same 176 files.
+Both ran from committed state: a clean tree, `unapply-patches.sh`, then `apply-patches.sh`
+for the target in question, no scratch edits.
+
+This wasn't the shape I expected going in. The first pass at this patch (touching only
+`BUILD.gn` and `core/fxge/BUILD.gn`) hit a real wall, chased below, and I wrote it up here
+as blocked. It turned out to be two narrow, independently fixable gaps rather than a wall,
+and both fixes are now part of `apple/pdfium.patch` and `target-args.sh`.
+
+## Why: two independent gaps, not one
+
+I chased this down before writing it off as a wall like Android's. It isn't one.
+
+With only `BUILD.gn` and `core/fxge/BUILD.gn` patched, `gn gen` for `ios-sim-arm64` died
+here:
+
+```
 ERROR at //testing/test.gni:210:11: Undefined identifier
       if (ios_automatically_manage_certs) {
           ^-----------------------------
@@ -24,10 +43,6 @@ See //BUILD.gn:323:1: whence it was called.
 test("pdfium_unittests") {
 ^-------------------------
 ```
-
-## Why: two independent gaps, not one
-
-I chased this down before writing it off as a wall like Android's. It isn't one.
 
 `pdf_is_standalone=true` is required by every EmbedPDF target, not just iOS, and it pulls
 `pdfium_all` into `group("default")` (`BUILD.gn:13-14`), which depends on `pdfium_unittests`
@@ -42,18 +57,21 @@ neither `is_android` nor `is_ios`, so this branch of `test()` was simply never r
 before. iOS is the first target to touch it, and it fell straight through a gap between
 PDFium's own `testing/test.gni` and the `build/` revision `DEPS` pins alongside it.
 
-I confirmed the fix works, without committing it: guarding the reference with GN's
-`defined()`,
+The fix is to guard the reference with GN's `defined()`,
 
 ```gn
 if (defined(ios_automatically_manage_certs) && ios_automatically_manage_certs) {
 ```
 
-in place of `testing/test.gni:210`'s bare `if (ios_automatically_manage_certs)`, gets past
-this error. That's a one-line change to a file PDFium tracks directly (not a vendored
-`build/` dependency, so nothing like the Android assert's "no patch, wrong repo" problem
-applies here). But it isn't the whole story: with just that guard in place, `gn gen` fails
-again, differently:
+in place of `testing/test.gni:210`'s bare `if (ios_automatically_manage_certs)`. That's a
+one-line change to a file PDFium tracks directly (`git ls-files --error-unmatch
+testing/test.gni` confirms it, mode `100644`, not a gitlink), not a vendored `build/`
+dependency, so none of the Android assert's "no patch, wrong repo" problem applies here. It
+is now part of `apple/pdfium.patch`, alongside the `BUILD.gn` and `core/fxge/BUILD.gn`
+edits below.
+
+But it wasn't the whole story: with just that guard in place, `gn gen` failed again,
+differently:
 
 ```
 ERROR at //third_party/libjpeg_turbo/BUILD.gn:14:1: Assertion failed.
@@ -74,34 +92,28 @@ only for iOS among every target_os this fork touches. PDFium's own `third_party/
 pulls in `libjpeg_turbo` unconditionally through its `group("jpeg")` meta-target, and
 `libjpeg_turbo`'s own `BUILD.gn` asserts `use_blink` as a guard against exactly this kind of
 accidental non-Blink inclusion. Nothing about JPEG decoding needs Blink; PDFium has never
-used Blink for anything. Adding `use_blink=true` to `args.gn` clears it.
+used Blink for anything. The fix is `use_blink=true` in `args.gn` for both iOS targets, now
+part of `target-args.sh`'s `EXTRA_ARGS` for `ios-arm64` and `ios-sim-arm64`, with a two-line
+comment explaining why it's there. Without that comment, `use_blink=true` in a PDF library's
+iOS build reads like a mistake, and a later cleanup would delete it as unused, right back
+into this same assert.
 
-With both fixes in place (the `defined()` guard and `use_blink=true`), `gn gen` succeeds:
-
-```
-$ bash scripts/embedpdf-runtime/target-args.sh ios-sim-arm64 > out/embedpdf-runtime/ios-sim-arm64/args.gn
-$ echo 'use_blink=true' >> out/embedpdf-runtime/ios-sim-arm64/args.gn
-$ gn gen out/embedpdf-runtime/ios-sim-arm64
-Done. Made 637 targets from 176 files in 841ms
-```
-
-I didn't fold either fix into `apple/pdfium.patch`. This task's Step 7 captures the patch
-as `git diff -- BUILD.gn core/fxge/BUILD.gn`, deliberately scoped to those two files, and
-Step 3 fixes `target-args.sh`'s two iOS cases to a specific, reviewed set of args that
-doesn't include `use_blink`. Both fixes are real and I verified them together, not
-separately, but committing them is a scope decision for whoever picks this back up, not
-mine to make by editing files this task was never handed.
+With both fixes committed, `gn gen` succeeds from a clean checkout, no scratch edits, as
+shown in the verdict above. `scripts/embedpdf-runtime/tests/target-args.test.sh` now also
+asserts `use_blink=true` for both iOS targets, the same way it already asserted
+`target_environment`, so a future edit that drops the arg fails the test before it fails
+`gn gen`.
 
 ## Source changes needed
 
 `BUILD.gn:287` split `AppKit` (`is_mac`) from `CoreFoundation` (`is_apple`).
 `core/fxge/BUILD.gn:173` widened from `is_mac` to `is_apple`; the five `apple/*` sources
-include only `<CoreGraphics/CoreGraphics.h>` and standard headers.
+include only `<CoreGraphics/CoreGraphics.h>` and standard headers. `testing/test.gni:210`
+guards `ios_automatically_manage_certs` with `defined()`, since nothing in this fork's
+pinned `build/` revision declares it. All three are in `patches/embedpdf-runtime/apple/pdfium.patch`.
 
-Two more edits are needed to get `gn gen` itself past this checkout's actual state,
-neither committed here:
-- `testing/test.gni:210`, guard `ios_automatically_manage_certs` with `defined()`.
-- `ios-arm64`/`ios-sim-arm64`'s `args.gn`, add `use_blink=true`.
+`target-args.sh`'s `ios-arm64`/`ios-sim-arm64` cases carry `use_blink=true` in `EXTRA_ARGS`,
+alongside `target_environment` and `ios_enable_code_signing=false`.
 
 ## What is still unproven
 
