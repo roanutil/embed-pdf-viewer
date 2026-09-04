@@ -94,7 +94,7 @@ That is the final encoding. The link succeeded with `SUPPORT_LONGJMP=wasm`
 set at the same time, which is the combination PDFium needs, and the module
 ran under Node 24 returning the expected value 42.
 
-So `wasm32-eh` is viable: emsdk 4.0.0 plus one flag, not a version hunt.
+So the toolchain side of `wasm32-eh` is settled: emsdk 4.0.0 plus one flag, not a version hunt. Whether the result is viable in a browser is a separate question, and it is still open. See below.
 
 What this does NOT establish. No browser was tested, here or anywhere above,
 because Firefox is not installed on this machine. Forcing the final encoding
