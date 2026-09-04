@@ -1015,7 +1015,23 @@ bash scripts/embedpdf-runtime/tests/target-args.test.sh
 
 Expected: `all target-args assertions passed`, including ten new iOS lines.
 
-- [ ] **Step 5: Make the two gn edits by hand**
+- [ ] **Step 5: Start from a clean tree, or the patch you generate will be wrong**
+
+`apply-patches.sh` applies `shared-library.patch` for `darwin-*`, `linux-*` and `win32-*` targets, and it edits `BUILD.gn`: it rewrites `component("pdfium")` to `shared_library("pdfium")` at line 247 and adds a `resources.rc` sources block at line 285. If any of those targets was built last, `BUILD.gn` is still modified right now.
+
+That matters because the next two steps edit `BUILD.gn` and then capture the result with `git diff`. On a dirty tree that diff silently swallows the shared-library changes too, and `apple/pdfium.patch` would end up turning iOS into a shared-library build. The plan's Global Constraints require iOS to be static, and nothing later would catch the contradiction: the patch would apply cleanly and produce the wrong artifact.
+
+The line numbers in the next step also assume a clean tree. With `shared-library.patch` applied, everything below line 285 shifts by three.
+
+```bash
+cd /Users/andrew/repos/embed-pdf-viewer/packages/engine/runtime/runtime-src
+bash scripts/embedpdf-runtime/unapply-patches.sh
+git status --short
+```
+
+Expected: `git status --short` shows no modified tracked files. Untracked entries are fine and expected: `third_party/emsdk/` was cloned by another task, and `BUILD.gn.orig` is a GNU patch backup that `unapply-patches.sh` removes on its own. If `BUILD.gn` or `core/fxge/BUILD.gn` still show as modified, STOP: something applied a patch that this script does not know how to reverse, and generating a patch on top of it would bake the mystery in.
+
+- [ ] **Step 6: Make the two gn edits by hand**
 
 Edit `packages/engine/runtime/runtime-src/BUILD.gn`. Replace the block at lines 287-292:
 
@@ -1059,7 +1075,7 @@ Then edit `packages/engine/runtime/runtime-src/core/fxge/BUILD.gn`. At line 173,
 
 Those five files include only `<CoreGraphics/CoreGraphics.h>` plus standard headers, and CoreGraphics exists on iOS. Do not touch the `is_linux || is_chromeos || is_wasm` branch above it; iOS must not take that path.
 
-- [ ] **Step 6: Turn the edits into a patch file and revert the working tree**
+- [ ] **Step 7: Turn the edits into a patch file and revert the working tree**
 
 The patch set is applied with `patch -p1` from `$SOURCE_DIR`, so generate it from git and then restore the originals:
 
@@ -1074,7 +1090,7 @@ git status --short -- BUILD.gn core/fxge/BUILD.gn
 
 Expected: the patch begins `diff --git a/BUILD.gn b/BUILD.gn`, and `git status --short` prints nothing for those two paths.
 
-- [ ] **Step 7: Route the patch both ways**
+- [ ] **Step 8: Route the patch both ways**
 
 In `packages/engine/runtime/runtime-src/scripts/embedpdf-runtime/apply-patches.sh`, add a case:
 
@@ -1100,7 +1116,7 @@ remove_patch_backup "$SOURCE_DIR/core/fxge/BUILD.gn.orig"
 
 (`$SOURCE_DIR/BUILD.gn.orig` is already listed there.)
 
-- [ ] **Step 8: Verify apply and unapply round-trip**
+- [ ] **Step 9: Verify apply and unapply round-trip**
 
 ```bash
 cd /Users/andrew/repos/embed-pdf-viewer/packages/engine/runtime/runtime-src
@@ -1112,7 +1128,7 @@ git status --short -- BUILD.gn core/fxge/BUILD.gn
 
 Expected: after the first `apply-patches.sh`, `is_apple` appears in both files. After switching to `darwin-arm64`, `git status --short` prints nothing for those two paths, proving the reverse worked.
 
-- [ ] **Step 9: Sync for iOS and run gn gen**
+- [ ] **Step 10: Sync for iOS and run gn gen**
 
 This is the unknown. Run it and record exactly what happens.
 
@@ -1129,7 +1145,7 @@ Expected on success: `Done. Made N targets from M files in Xms`.
 
 Expected failure modes, and what each means. `Unsupported target_os: ios` from `build/config/BUILDCONFIG.gn` means Chromium's build does not accept iOS in this configuration, which is the outcome that sinks the target. An error naming a missing `//build/config/ios/...` file means the sync did not fetch the iOS toolchain, so try `PDF_RUNTIME_TARGET_OS_LIST="mac ios"` and re-run. An error about an undefined `target_environment` or `ios_enable_code_signing` means the arg names are wrong for this Chromium revision: run `gn args out/embedpdf-runtime/ios-sim-arm64 --list | grep -E "^(target_environment|ios_)"` and correct Step 3 to match.
 
-- [ ] **Step 10: Record the outcome and commit**
+- [ ] **Step 11: Record the outcome and commit**
 
 Create `docs/research/pdfium-ios-toolchain.md` in `embed-pdf-viewer` on `research/runtime-fork-build-matrix`, recording the actual command output rather than a summary:
 
@@ -1176,7 +1192,7 @@ git add docs/research/pdfium-ios-toolchain.md
 git commit -m "research: record whether PDFium's standalone build accepts iOS"
 ```
 
-- [ ] **Step 11: Stop here if gn gen failed**
+- [ ] **Step 12: Stop here if gn gen failed**
 
 If Step 9 did not succeed after trying the documented failure modes, report BLOCKED with the verbatim error. Task 7 is not attemptable, and Task 8 ships three new targets instead of five. That is an acceptable outcome of this plan and the spec says so.
 
