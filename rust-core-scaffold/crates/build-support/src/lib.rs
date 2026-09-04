@@ -98,7 +98,10 @@ pub fn classify_artifact(lib: &Path) -> ArtifactShape {
     // package-target.sh:22-28 stages lib/embedpdf.dll.lib and
     // bin/embedpdf.dll, never a libembedpdf.* file. Everything else is a
     // static archive, where build-target.sh sets pdf_is_complete_lib=true
-    // (wasm32, linuxmusl). iOS will be static; Android will be a .so.
+    // (wasm32, linuxmusl). iOS and Android are both static: an Android
+    // shared_library links empty, because Chromium's Android config exports
+    // nothing and --gc-sections then drops all of PDFium, so the fork builds
+    // android-* with pdf_is_complete_lib=true like every other static target.
     if lib.join("libembedpdf.dylib").exists() || lib.join("libembedpdf.so").exists() {
         ArtifactShape::UnixDylib
     } else if lib.join("embedpdf.dll.lib").exists() {

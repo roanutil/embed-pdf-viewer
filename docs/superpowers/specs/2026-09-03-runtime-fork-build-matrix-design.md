@@ -55,6 +55,14 @@ So the work is: sync with `checkout_android: True`, add two cases to `build-targ
 existing thread-confinement rule already covers it, since `build-target.sh:76` turns on
 `embedpdf_thread_local_globals` for every non-wasm target and Android is one.
 
+Android artifacts are static, not shared. I originally specified a `.so` here and that was wrong,
+found by building one: Chromium's Android configuration exports nothing from a shared library, so
+`--gc-sections` drops all of PDFium and you get a structurally valid `libembedpdf.so` with a 190 KB
+`.text`, no `FPDF_` exports, and not one occurrence of the string `FPDF` anywhere in the binary. The
+build succeeds and `file` reports exactly what you expect. Static sidesteps the whole problem: the
+Rust `cdylib` absorbs the archive, `jniLibs` ships one `.so` rather than two, and Android now matches
+iOS, wasm and linuxmusl instead of being the only target needing an export list.
+
 `android-arm64` maps to the `arm64-v8a` ABI and `android-x64` to `x86_64`, which is what
 `rust-core-scaffold/build/build-kotlin.sh:25-33` already expects. I'm deliberately not adding
 `armeabi-v7a` or `x86`. The goal is proving the runtime works on a phone and an emulator, and two

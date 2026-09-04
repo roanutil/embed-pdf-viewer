@@ -14,7 +14,7 @@
 - All fourteen artifacts (nine existing plus five new) are cut from ONE fork sha. Task 9 re-pins all fourteen entries in `rust-core-scaffold/build/runtime-build.json`, not just the four currently marked `"status": "pending"`.
 - `wasm32` output must stay byte-identical. Any change that alters the existing `wasm32` `args.gn` is a defect.
 - New target names, exactly: `wasm32-eh`, `ios-arm64`, `ios-sim-arm64`, `android-arm64`, `android-x64`. These are the strings already used by `rust-core-scaffold/build/build-swift.sh:20-21`, `build-kotlin.sh:25-33` and the four `"status": "pending"` keys in `rust-core-scaffold/build/runtime-build.json`.
-- iOS artifacts are static (`pdf_is_complete_lib=true`, staged as `lib/libembedpdf.a`). Android artifacts are shared (`pdf_is_complete_lib=false`, staged as `lib/libembedpdf.so`). This is what `rust-core-scaffold/crates/build-support/src/lib.rs:101` already documents.
+- iOS AND Android artifacts are both static (`pdf_is_complete_lib=true`, staged as `lib/libembedpdf.a`). Android was specified as shared and that was wrong: Chromium's Android config exports nothing from a `.so`, so `--gc-sections` strips all of PDFium and the build silently produces an empty library that still passes a `file` check. Static also means `jniLibs` ships one `.so` (the Rust `cdylib`) instead of two.
 - `embedpdf_thread_local_globals` must be `false` for every wasm target and `true` for every other target.
 - Every fork script keeps its existing header: `# Copyright 2026 CloudPDF LTD` then `# SPDX-License-Identifier: Apache-2.0`.
 - Do not run `git clean` in the submodule. `apply-patches.sh` mutates gclient-fetched trees in place and `unapply-patches.sh` is how they are reverted.
