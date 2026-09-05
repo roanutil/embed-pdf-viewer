@@ -38,6 +38,14 @@ android {
     sourceSets["main"].java.srcDirs("src/main/kotlin")
     sourceSets["test"].java.srcDirs("src/test/kotlin")
 
+    // packages/kotlin/epdf-ops is a kotlin("jvm") library, not an Android
+    // library, because its host test suite runs on the JVM. That means its
+    // src/main/jniLibs is inert there: jniLibs is an Android packaging
+    // convention and a JVM jar ignores it. So libepdf_uniffi.so never reached
+    // the APK, and the app launched, ran, and reported UnsatisfiedLinkError at
+    // the first call. Point the app's own jniLibs at that directory.
+    sourceSets["main"].jniLibs.srcDirs("../../../packages/kotlin/epdf-ops/src/main/jniLibs")
+
     // Without an explicit target, compileDebugJavaWithJavac (AGP's own
     // default, JVM 11) and compileDebugKotlin (whatever the host JDK falls
     // back to; on this machine's JBR 25.0.3, Kotlin 2.2.20 falls back to
@@ -59,7 +67,21 @@ android {
 kotlin { jvmToolchain(21) }
 
 dependencies {
-    implementation("com.embedpdf.scaffold:epdf-ops")
+    // The plain jna jar arrives transitively from epdf-ops and collides with
+    // the @aar variant below: same classes in both, so AGP fails
+    // checkDebugDuplicateClasses. Exclude it here and let the aar be the only
+    // JNA on the Android classpath.
+    implementation("com.embedpdf.scaffold:epdf-ops") {
+        exclude(group = "net.java.dev.jna", module = "jna")
+    }
+    // epdf-ops pulls in net.java.dev.jna:jna, whose plain jar carries
+    // libjnidispatch.so for desktop platforms only. On Android JNA needs the
+    // @aar variant, which packages libjnidispatch.so per ABI. Without it the
+    // app fails at the first FFI call with
+    //   Native library (com/sun/jna/android-aarch64/libjnidispatch.so)
+    //   not found in resource path (.)
+    // Keep the version in step with packages/kotlin/gradle/libs.versions.toml.
+    implementation("net.java.dev.jna:jna:5.14.0@aar")
     // 2026.08.00: the newest stable Compose BOM (dl.google.com's
     // maven-metadata.xml for androidx.compose:compose-bom), the release that
     // moved to compileSdk 37 / AGP 9.1.1 minimum.

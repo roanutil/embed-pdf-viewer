@@ -59,6 +59,27 @@ else
   cargo install cargo-ndk --version 4.1.2 --locked
   ( cd "$ROOT" && EPDF_SCAFFOLD_TARGET="$FORK_TARGET" cargo ndk -t "$RUST_TARGET" build --release -p epdf-uniffi )
   cp "$ROOT/target/$RUST_TARGET/release/libepdf_uniffi.so" "$DEST/"
+
+  # libc++_shared.so must ship alongside it. The fork builds android-* with
+  # use_custom_libcxx=false, so libembedpdf.a uses the NDK's libc++ rather than
+  # Chromium's bundled copy, and the NDK links that dynamically: without this
+  # the app installs and launches fine, then dies at the first FFI call with
+  #   dlopen failed: library "libc++_shared.so" not found:
+  #   needed by .../lib/arm64-v8a/libepdf_uniffi.so
+  # Take it from the same NDK cargo-ndk just built against rather than a
+  # hardcoded version, so the two cannot drift apart.
+  NDK_ROOT="${ANDROID_NDK_HOME:-${ANDROID_NDK_ROOT:-}}"
+  if [[ -z "$NDK_ROOT" ]]; then
+    NDK_ROOT="$(ls -d "${ANDROID_HOME:-$HOME/Library/Android/sdk}"/ndk/* 2>/dev/null | sort -V | tail -1)"
+  fi
+  CXX_SHARED="$(find "$NDK_ROOT" -path "*${RUST_TARGET%%-*}-linux-android*" -name libc++_shared.so 2>/dev/null | head -1)"
+  if [[ -z "$CXX_SHARED" ]]; then
+    echo "no libc++_shared.so for $RUST_TARGET under NDK ${NDK_ROOT:-<not found>}" >&2
+    echo "libepdf_uniffi.so links it dynamically; the app would fail at its first call." >&2
+    exit 1
+  fi
+  cp "$CXX_SHARED" "$DEST/"
+  echo "staged $(basename "$CXX_SHARED") from $NDK_ROOT"
   # No separate libembedpdf copy here: the fork's android-* artifact is a
   # static archive (lib/libembedpdf.a), not a shared library. build-support's
   # emit_link_directives already statically links it into libepdf_uniffi.so
