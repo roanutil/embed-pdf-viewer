@@ -97,7 +97,9 @@ private func openFixture() throws -> EpdfDocument {
     #expect(abs(size.width - v.width) < 0.001)
     #expect(abs(size.height - v.height) < 0.001)
 
-    #expect(try doc.pageText(index: v.pageIndex) == v.text)
+    let text = try doc.pageText(index: v.pageIndex)
+    #expect(text == v.text)
+    #expect(text.utf16.count == Int(v.charCount))
 
     let hits = try doc.search(index: v.pageIndex, query: v.searchQuery, caseSensitive: v.searchCaseSensitive)
     #expect(hits.count == v.searchHitCount)
@@ -175,4 +177,24 @@ private func openFixture() throws -> EpdfDocument {
     #expect(pixels[5] == 150)  // G
     #expect(pixels[6] == 200)  // B
     #expect(pixels[7] == 255)  // A
+}
+
+@Test func rendersExactDeviceRGBColors() throws {
+    let root = URL(fileURLWithPath: #filePath)
+        .deletingLastPathComponent().deletingLastPathComponent()
+        .deletingLastPathComponent().deletingLastPathComponent()
+        .deletingLastPathComponent().deletingLastPathComponent()
+    let vector = try JSONSerialization.jsonObject(
+        with: Data(contentsOf: root.appendingPathComponent("vectors/colors.json"))
+    ) as! [String: Any]
+    let doc = try EpdfEngine().open(
+        bytes: Data(contentsOf: root.appendingPathComponent("fixtures/colors.pdf")), password: nil)
+    defer { doc.close() }
+    let bitmap = try doc.renderPage(index: 0, scale: Float(vector["scale"] as! Int))
+    #expect(Int(bitmap.width) == vector["width"] as! Int)
+    #expect(Int(bitmap.height) == vector["height"] as! Int)
+    for sample in vector["samples"] as! [[String: Any]] {
+        let offset = (sample["y"] as! Int) * Int(bitmap.stride) + (sample["x"] as! Int) * 4
+        #expect(Array(bitmap.bgra[offset..<offset + 4]) == (sample["bgra"] as! [Int]).map { UInt8($0) })
+    }
 }

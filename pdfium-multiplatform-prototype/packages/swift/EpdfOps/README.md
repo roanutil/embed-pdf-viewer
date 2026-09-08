@@ -38,10 +38,11 @@ variable does not.
 The iOS app rebuilt and displayed a rendered page, extracted text, and search
 results in the iOS 26.5 simulator during the [September 8 audit](../../../../docs/research/platform-gap-audit.md).
 Use the prototype's [local artifact pin](../../../README.md#building-with-local-artifacts)
-until the fork publishes mobile artifacts. The simulator currently resolves its
-native dylib through an absolute checkout runpath. Physical-device distribution
-still requires a self-contained framework/XCFramework or static link, signing,
-and a device test. Moving the checkout also requires rebuilding generated binaries.
+until the fork publishes mobile artifacts. The mobile build now stages static archives and links Rust/PDFium into the app;
+the simulator was rebuilt and rendered without dynamic Rust/PDFium dependencies.
+Physical-device distribution still requires signing/provisioning and a device
+test. macOS continues using dylibs. Moving the checkout requires rebuilding
+generated binaries.
 
 ## Why the generated files aren't tracked
 
@@ -69,3 +70,6 @@ compared byte-for-byte with `meanAbsDiffTolerance` and
 the test; every one comes from the vectors file, so a Swift binding that
 drifts from the Rust core fails here instead of only looking fine on
 screen.
+
+The suite also asserts UTF-16 text length and exact interior DeviceRGB colors from
+`fixtures/colors.pdf` / `vectors/colors.json`, independently of the grayscale golden.

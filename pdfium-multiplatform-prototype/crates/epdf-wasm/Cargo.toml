@@ -17,4 +17,4 @@ serde_json = "1"
 build-support = { path = "../build-support" }
 
 [features]
-panic-probe = []
+panic-probe = ["epdf-ops/panic-probe"]

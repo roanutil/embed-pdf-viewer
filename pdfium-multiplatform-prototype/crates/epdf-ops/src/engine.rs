@@ -38,6 +38,15 @@ impl Engine {
         Ok(Arc::new(Self { worker: Arc::new(Worker::spawn()?) }))
     }
 
+    /// Test-only probe: unwind while dispatch holds its state borrow.
+    #[cfg(feature = "panic-probe")]
+    pub fn test_panic(&self) -> Result<(), OpsError> {
+        self.worker.run(|state| {
+            let _library = state.library();
+            panic!("deliberate panic inside PDFium dispatch");
+        })
+    }
+
     pub fn open(&self, bytes: Vec<u8>, password: Option<String>) -> Result<Arc<Document>, OpsError> {
         let worker = Arc::clone(&self.worker);
         let id = worker.run(move |state| {

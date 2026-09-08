@@ -71,11 +71,18 @@ test('an unknown target exits 1', async () => {
 });
 
 test('darwin-arm64 extracts a dylib and an include tree', async () => {
-  const { code, stdout } = await fetchTarget('darwin-arm64');
-  assert.equal(code, 0);
-  const dir = stdout.trim();
-  await readFile(resolve(dir, 'lib/libembedpdf.dylib'));
-  await readFile(resolve(dir, 'include/fpdfview.h'));
+  // Other npm suites load the real addon concurrently. Never remove its live
+  // library directory while testing extraction.
+  const scratch = await mkdtemp(join(tmpdir(), 'fetch-libpdfium-darwin-'));
+  try {
+    const { code, stdout } = await fetchTarget('darwin-arm64', { EPDF_SCAFFOLD_LIB_DIR: scratch });
+    assert.equal(code, 0);
+    const dir = stdout.trim();
+    await readFile(resolve(dir, 'lib/libembedpdf.dylib'));
+    await readFile(resolve(dir, 'include/fpdfview.h'));
+  } finally {
+    await rm(scratch, { recursive: true, force: true });
+  }
 });
 
 test('a pin entry missing url or sha256 exits 1', async () => {

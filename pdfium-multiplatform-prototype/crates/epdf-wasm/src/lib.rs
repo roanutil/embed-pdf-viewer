@@ -46,27 +46,11 @@ fn document(id: u32) -> Result<Arc<epdf_ops::Document>, epdf_ops::OpsError> {
     DOCS.with(|cell| cell.borrow().get(&id).cloned().ok_or(epdf_ops::OpsError::Closed))
 }
 
-/// Hands a buffer to JavaScript. `epdf_free` rebuilds the Vec with
-/// `from_raw_parts(ptr, len, len)`, which is sound only when capacity equals
-/// length, so shrink before leaking.
-fn leak(mut bytes: Vec<u8>, out_len: *mut u32) -> *mut u8 {
-    bytes.shrink_to_fit();
-    // A real assert, not debug_assert: this compiles out under `cargo build
-    // --release`, which is what link-wasm.sh uses to produce the shipped
-    // build, and `epdf_free` rebuilds the Vec with
-    // `from_raw_parts(ptr, len, len)` -- undefined behaviour the moment
-    // capacity differs from length. Both callers land on an exact size today
-    // (the render buffer is allocated exactly; `serde_json::to_vec` plus this
-    // `shrink_to_fit` reaches one through `realloc`), but `Vec::shrink_to_fit`
-    // only documents "the resulting vector might still have some excess
-    // capacity", so that exactness is an allocator implementation detail, not
-    // a promise. One integer comparison per crossing is free.
-    assert_eq!(bytes.len(), bytes.capacity());
-    let len = bytes.len();
-    let ptr = bytes.as_mut_ptr();
-    std::mem::forget(bytes);
-    unsafe { *out_len = len as u32 };
-    ptr
+/// Transfers an exactly sized allocation to JavaScript; epdf_free reclaims it.
+fn leak(bytes: Vec<u8>, out_len: *mut u32) -> *mut u8 {
+    let bytes = bytes.into_boxed_slice();
+    unsafe { *out_len = bytes.len() as u32 };
+    Box::into_raw(bytes) as *mut u8
 }
 
 #[derive(Serialize)]
@@ -94,9 +78,16 @@ struct JsonSearchHit {
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn epdf_open(bytes: *const u8, len: u32) -> u32 {
+pub extern "C" fn epdf_open(bytes: *const u8, len: u32, password: *const u8, password_len: u32) -> u32 {
     let slice = unsafe { std::slice::from_raw_parts(bytes, len as usize) };
-    let result = engine().and_then(|engine| engine.open(slice.to_vec(), None));
+    let password = if password.is_null() {
+        None
+    } else {
+        Some(String::from_utf8_lossy(unsafe {
+            std::slice::from_raw_parts(password, password_len as usize)
+        }).into_owned())
+    };
+    let result = engine().and_then(|engine| engine.open(slice.to_vec(), password));
     match result {
         Ok(doc) => {
             let id = NEXT_ID.with(|cell| {
@@ -203,7 +194,7 @@ pub extern "C" fn epdf_free(ptr: *mut u8, len: u32) {
     if ptr.is_null() {
         return;
     }
-    unsafe { drop(Vec::from_raw_parts(ptr, len as usize, len as usize)) };
+    unsafe { drop(Box::from_raw(std::ptr::slice_from_raw_parts_mut(ptr, len as usize))) };
 }
 
 #[unsafe(no_mangle)]
@@ -220,11 +211,13 @@ pub extern "C" fn epdf_last_error() -> *const std::os::raw::c_char {
     LAST_ERROR.with(|cell| cell.borrow().as_ptr())
 }
 
-/// Panics on purpose, so a test can prove a panic crossing the wasm boundary
-/// surfaces as an error rather than aborting the instance. Behind a feature so
-/// it is absent from a normal build.
+/// Exercises catch_unwind and borrow-guard release inside the real dispatch.
+/// Returns the same error sentinel as other exports; absent from normal builds.
 #[cfg(feature = "panic-probe")]
 #[unsafe(no_mangle)]
 pub extern "C" fn epdf_test_panic() -> i32 {
-    panic!("epdf_test_panic: deliberate panic for the wasm EH test");
+    match engine().and_then(|engine| engine.test_panic()) {
+        Ok(()) => 0,
+        Err(err) => { set_error(err); -1 }
+    }
 }

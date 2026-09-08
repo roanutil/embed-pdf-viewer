@@ -13,7 +13,7 @@ const OP_SEARCH = 2;
 export async function createEpdf() {
   const module = await createEpdfModule();
 
-  const epdf_open = module.cwrap('epdf_open', 'number', ['number', 'number']);
+  const epdf_open = module.cwrap('epdf_open', 'number', ['number', 'number', 'number', 'number']);
   const epdf_page_count = module.cwrap('epdf_page_count', 'number', ['number']);
   const epdf_json = module.cwrap('epdf_json', 'number',
     ['number', 'number', 'number', 'number', 'number', 'number', 'number']);
@@ -30,7 +30,8 @@ export async function createEpdf() {
 
   /** Copy bytes into the module heap; the caller frees. */
   const push = (bytes) => {
-    const ptr = module._malloc(bytes.length);
+    const ptr = module._malloc(Math.max(1, bytes.length));
+    if (ptr === 0) throw new Error('WASM allocation failed');
     module.HEAPU8.set(bytes, ptr);
     return ptr;
   };
@@ -109,13 +110,20 @@ export async function createEpdf() {
   }
 
   return {
-    openDocument(bytes) {
+    openDocument(bytes, password = null) {
+      if (password !== null && typeof password !== 'string') {
+        throw new TypeError('password must be a string or null');
+      }
+      const passwordBytes = password === null ? null : new TextEncoder().encode(password);
       const ptr = push(bytes);
+      let passwordPtr = 0;
       try {
-        const handle = epdf_open(ptr, bytes.length);
+        if (passwordBytes !== null) passwordPtr = push(passwordBytes);
+        const handle = epdf_open(ptr, bytes.length, passwordPtr, passwordBytes?.length ?? 0);
         if (handle === 0) fail();
         return new Document(handle);
       } finally {
+        if (passwordPtr !== 0) module._free(passwordPtr);
         module._free(ptr);
       }
     },

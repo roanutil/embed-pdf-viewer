@@ -85,7 +85,8 @@ needs_refresh() {
 if needs_refresh; then
   echo "Downloading $TARGET from $URL" >&2
   if [[ "$URL" == file://* ]]; then
-    cp "${URL#file://}" "$ARCHIVE"
+    LOCAL_ARCHIVE="$(node --input-type=module -e 'import { fileURLToPath } from "node:url"; console.log(fileURLToPath(process.argv[1]));' "$URL")"
+    cp "$LOCAL_ARCHIVE" "$ARCHIVE"
   else
     curl -fL "$URL" -o "$ARCHIVE"
   fi

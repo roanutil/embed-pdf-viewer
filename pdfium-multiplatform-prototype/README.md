@@ -21,23 +21,29 @@ that runtime check establishes more than inspecting unresolved symbols alone.
 
 ## Building with local artifacts
 
-Keep `build/runtime-build.json` unchanged. Copy it to a local file and replace each
-pending entry you want to build with the corresponding archive URL and checksum,
-omitting `status: pending` for that entry:
+Generate a separate, gitignored local pin from your archives:
 
-```json
-"wasm32-eh": {
-  "url": "file:///absolute/path/to/libembedpdf-runtime-wasm32-eh.tar.gz",
-  "sha256": "<SHA-256 of that archive>"
-}
+```bash
+node build/local-pin.mjs \
+  wasm32-eh=/absolute/path/to/libembedpdf-runtime-wasm32-eh.tar.gz \
+  ios-sim-arm64=/absolute/path/to/libembedpdf-runtime-ios-sim-arm64.tar.gz \
+  android-arm64=/absolute/path/to/libembedpdf-runtime-android-arm64.tar.gz \
+  > build/runtime-build.local.json
+export EPDF_SCAFFOLD_PIN_FILE="$PWD/build/runtime-build.local.json"
 ```
+
+The helper computes SHA-256 hashes, encodes file URLs (including paths with spaces),
+and preserves other release-pin entries. It does not verify archive provenance;
+use matching fork builds. `build/runtime-build.json` is never modified. You can
+also create the local pin manually with `url` and `sha256` fields in place of each
+selected target's `status: pending`.
 
 Use `shasum -a 256 /absolute/path/to/archive.tar.gz` to obtain the checksum. The
 archive must contain the matching fork headers and library in the same layout as
 the published artifacts. From this directory:
 
 ```bash
-export EPDF_SCAFFOLD_PIN_FILE=/absolute/path/to/local-runtime-build.json
+export EPDF_SCAFFOLD_PIN_FILE="$PWD/build/runtime-build.local.json"
 # Select a compatible Binaryen explicitly; setting PATH alone may not override emsdk.
 export EM_BINARYEN_ROOT=/absolute/path/to/binaryen
 bash build/link-wasm.sh
@@ -179,7 +185,7 @@ host's test diffs its own render against the golden with those two gates, not a 
 tolerances, measured" below for what that does and does not catch). Every other field, page count,
 page size, text, and search hits, is checked exactly. The JavaScript vector-consistency
 test also checks `charCount` against the frozen text's UTF-16 length; Swift and Kotlin
-do not yet make that length assertion against their extracted strings.
+now assert UTF-16 length against their extracted strings.
 
 ## The tolerances, measured
 
@@ -199,7 +205,9 @@ pixel diff rather than by hash for a specific reason: a hash pins float and rast
 across four architectures, and it would fail for reasons that have nothing to do with this scaffold's
 code. That reasoning does not change with the numbers above; it just means the tolerance's job is to
 catch gross drift, not to prove exact reproduction, and a subtler color-handling bug needs a test
-that is not this golden.
+that is not this golden. `fixtures/colors.pdf` now supplies four DeviceRGB patches
+with exact interior BGRA expectations in `vectors/colors.json`. Node, WASM, Swift,
+and Kotlin test them without relaxing the expected channel values.
 
 ## Every host
 
@@ -207,31 +215,31 @@ that is not this golden.
 |---|---|---|---|---|
 | Rust (native) | `cargo build --workspace` | `cargo test --workspace` | 22 | yes |
 | Rust (wasm32-unknown-emscripten) | `bash build/link-wasm.sh` | (covered by the web suite below) | see Web | passes with local artifacts; committed `wasm32-eh` pin is pending |
-| Swift, macOS destination | `bash build/build-swift.sh` | `bash build/test-swift.sh` | 4 | historical pass; not rerun in September 8 audit |
+| Swift, macOS destination | `bash build/build-swift.sh` | `bash build/test-swift.sh` | 5 | passes, including exact colors and UTF-16 count |
 | Swift, iOS destination | `bash build/build-swift.sh ios-arm64` | n/a | n/a | local link verified; release pin pending; physical device not tested |
-| Kotlin, JVM desktop | `bash build/build-kotlin.sh` | `cd packages/kotlin && ./gradlew :epdf-ops:test` | 5 | historical pass on ARM64 macOS; not rerun in September 8 audit |
+| Kotlin, JVM desktop | `bash build/build-kotlin.sh` | `cd packages/kotlin && ./gradlew :epdf-ops:test` | 6 | passes on ARM64 macOS, including exact colors and UTF-16 count |
 | Kotlin, Android | `bash build/build-kotlin.sh android-arm64` | n/a | n/a | local APK loaded on ARM64 emulator; release pin pending |
-| Node (napi) | `bash build/build-node.sh` | `node --test packages/node/*.test.mjs` | 6 | yes |
-| Web (em++ module) | `bash build/link-wasm.sh` | `node --test packages/web/*.test.mjs` | 4 | passes with local artifacts; committed `wasm32-eh` pin is pending |
+| Node (napi) | `bash build/build-node.sh` | `node --test packages/node/*.test.mjs` | 10 | passes, including passwords, colors, and target selection |
+| Web (em++ module) | `bash build/link-wasm.sh` | `node --test packages/web/*.test.mjs` | 6 | passes with local artifacts; committed `wasm32-eh` pin is pending |
 | `apps/node-cli` | n/a | `node --test apps/node-cli/*.test.mjs` | 1 | yes |
 | `apps/web-demo` | `npm run build` (in `apps/web-demo`) | `node --test bgra-to-rgba.test.mjs` | 1 | yes, wired into `npm test`'s glob |
 | `apps/ios`, macOS destination | `bash build/build-ios-app.sh` | none wired | 0 | historically built; macOS window not verified |
 | `apps/ios`, iOS destination | `bash build/build-ios-app.sh 'platform=iOS Simulator,name=iPhone 17'` | none wired | n/a | rebuilt and rendered on iOS 26.5 simulator with staged libraries; release pin pending |
 | `apps/android` | `./gradlew :app:compileDebugKotlin` | `./gradlew :app:testDebugUnitTest` | 11 | 11 historical unit tests; existing local APK rendered on emulator; packaging requires staged native libraries |
 
-`cargo test --workspace`'s 22, the Swift row's 4, the Kotlin row's 5 and the Android row's 11 (3 in
-`ErrorMappingTest`, 8 in `DocumentLifecycleTest`) are each their own process. The Node and Web rows'
-6 and 4, plus `apps/node-cli`'s 1 and `apps/web-demo`'s 1, are not: all four rows run inside one `npm test`
-invocation, along with two suites this table names nowhere else, `build/fetch-libpdfium.test.mjs`
-(7 tests) and `vectors/vectors.test.mjs` (1 test, asserting the frozen vectors file is internally
-consistent), for 7 + 1 + 6 + 4 + 1 + 1 = 20 when the web module is built, including
-via a local pin. `bash build/test-all.sh` does not
-run the rows above in the table's order; it runs `build/build-node.sh`, then `cargo test --workspace`,
-then `build/link-wasm.sh`, then `npm test` (dropping the Web row's 4 and running the other 16 by name
-if `link-wasm.sh` exits 2 for a pending `wasm32-eh`, which is what a stock checkout does today), then
-the Swift build and test scripts, then Kotlin, then Android, skipping what a stock checkout can't
-reach and printing what it did not run and why. On a stock checkout that is 22 + 16 + 4 + 5 + 11 = 58
-tests, zero failures, the last time this was run in full.
+`npm test` runs 27 tests: 8 build-helper tests, 1 frozen-vector check, 10 Node
+tests, 6 web tests, and one test each for the CLI and browser color conversion.
+`build/test-all.sh` builds Node before running Rust tests, then attempts the WASM
+build and runs the JavaScript suites. With a pending WASM pin it omits the web
+suite's six tests. Swift, Kotlin, and Android JVM tests follow; the script reports
+missing toolchains explicitly. The current Rust, JavaScript, Swift, and Kotlin
+suites were run separately after the fixes. The full aggregate script and Android
+JVM suite were not rerun during this follow-up.
+
+Web now accepts `openDocument(bytes, password = null)`, matching Node's optional
+password argument. Both adapters test missing, incorrect, and UTF-8 passwords
+against the same encrypted fixture. Rebuild the WASM module with the JS adapter:
+the internal `epdf_open` ABI now also receives password pointer and length.
 
 ## What remains unverified
 
@@ -241,17 +249,20 @@ rendered page, and extracted text. These are manual smoke tests, not automated
 lifecycle or visual-regression suites. The macOS SwiftUI window was not checked in
 that audit; the earlier macOS evidence covered compilation and a standalone CLI.
 
-The iOS simulator uses an absolute checkout runpath to find `libepdf_uniffi.dylib`.
-The app does not embed that library, so a self-contained device build still needs
-framework/XCFramework packaging or static linking, signing, and a physical-device
-test. Android was tested using an existing ARM64 APK; a fresh Android build, x64,
+The iOS device and simulator slices now link Rust/PDFium statically into the app.
+The simulator renders without a dynamic dependency on `libepdf_uniffi` or
+`libembedpdf`; native library search paths are only needed at link time. An unsigned
+ARM64 device app also built successfully with the same static-library arrangement.
+Physical-device signing/provisioning and an actual device run remain unverified.
+Android was tested using an existing ARM64 APK; a fresh Android build, x64,
 and physical devices were not verified in the audit.
 
 Windows and both musl targets remain unbuilt/unrun in this prototype's recorded
 verification. The musl C++ runtime choice follows
 `runtime-src/scripts/embedpdf-runtime/target-args.sh` (GCC/libstdc++).
-`build/build-node.sh` accepts an explicit `linuxmusl-*` argument, but its automatic
-host selection does not detect musl and it does not select a Rust cross-target.
+`build/build-node.sh` now uses the same musl detector as the runtime loader. It
+rejects an explicit target that differs from the host, rather than silently
+labeling a host build as a cross-build. An actual musl build/run remains unverified.
 Kotlin's `host` build is ARM64 macOS, and `test-all.sh` assumes Apple tools.
 
 The rebuilt legacy-EH WASM module ran in Chrome 152 and cached Playwright Firefox
@@ -288,15 +299,19 @@ needed the older `-sSUPPORT_LONGJMP=emscripten` instead, because PDFium genuinel
 `core/fxcodec/jpeg/jpeg_common.c`), and `em++` refuses both flags on the same link. `wasm32-eh` is
 the same source built with `-sSUPPORT_LONGJMP=wasm` instead, so both sides agree on the native
 mechanism and `RUSTFLAGS="-C panic=abort"` is gone from `build/link-wasm.sh`. Verified locally
-against a `file://`-pinned build of fork commit `7f0fa5dbe` (see above): `epdf-wasm`'s new
-`panic-probe` feature (`crates/epdf-wasm/src/lib.rs`) panics on purpose, and the panic surfaces to
-the JS caller as a catchable `RuntimeError`. The September 8 audit called the probe
-twice and then verified that a real
-`page_count` call on the same document still returned 14. This establishes that
-limited recovery case, not arbitrary state recovery or inline borrow-guard unwinding.
-The probe is opt-in, so reproducing that
-check means `EPDF_PANIC_PROBE=1 bash build/link-wasm.sh`; a plain run ships neither the feature nor
-the `_epdf_test_panic` export. `wasm32-eh` isn't in a published release
+with local artifacts: the optional `panic-probe` now panics inside the real
+`Worker::run` dispatch. It returns the error sentinel after `catch_unwind`, and the
+probe script verifies twice that a subsequent operation on the same document
+succeeds. This exercises inline state-borrow release, not arbitrary rollback after
+partially mutating state. Run:
+
+```bash
+EPDF_PANIC_PROBE=1 bash build/link-wasm.sh
+node packages/web/panic-probe.mjs
+bash build/link-wasm.sh  # restore the normal module without the test export
+```
+
+`wasm32-eh` isn't in a published release
 yet, same as the four mobile targets; use the local-pin procedure above to build it. `wasm32`
 stays in `runtime-build.json` with its working URL, just unused by any code path now.
 
@@ -328,5 +343,5 @@ first.
 `text.utf16.count` in Swift too. Swift's default `String.count` gives 7,992 on the same text,
 because it counts grapheme clusters and the fixture's page 4 text holds 114 combining sequences.
 Neither number is wrong; they count different things. The JS vector-consistency
-test asserts the UTF-16 length. Swift and Kotlin tests still need explicit length
-assertions against their extracted strings.
+test asserts the UTF-16 length. Swift and Kotlin now assert the same count against
+their extracted strings. A fixture with non-BMP characters remains useful additional coverage.

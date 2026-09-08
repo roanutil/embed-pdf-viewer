@@ -11,6 +11,36 @@ limitations. This is an audit, not a claim of production readiness or a full aud
 of the shipping SDK/server. Historical plans describe their original constraints;
 they are not evidence that those constraints remain technical blockers.
 
+## Implementation follow-up
+
+The following gaps were addressed after the original audit (the findings below
+remain a record of what was found):
+
+- Web password support now matches Node's optional password argument; shared
+  tests cover missing/wrong passwords and the UTF-8 password `hôtel`.
+- A colored PDF and specified interior BGRA samples now run through Node, WASM,
+  Swift, and Kotlin. Swift/Kotlin also assert the extracted text's UTF-16 length.
+- Node build and runtime target selection share one glibc/musl detector. Cross-host
+  labels are rejected rather than silently producing the wrong architecture.
+  Actual Windows/musl execution is still unverified.
+- `build/local-pin.mjs` generates a separate pin and checksums from local archives.
+  The fetcher decodes file URLs correctly, including paths with spaces.
+- The optional WASM panic probe now runs inside dispatch; two caught panics each
+  leave the same document usable, testing borrow-guard release.
+- WASM returned buffers use boxed slices, removing reliance on `Vec::shrink_to_fit`
+  producing exact capacity.
+- iOS native libraries now link statically. The simulator build rendered successfully
+  and the unsigned ARM64 device build also succeeded. Both builds
+  have no dynamic Rust/PDFium dependency. Physical-device
+  signing/provisioning and execution remain separate requirements.
+
+Verified follow-up suites: 22 Rust tests, 27 JavaScript tests, 5 Swift tests, and
+6 Kotlin JVM tests. The fetcher extraction test now uses an isolated temporary
+library directory, fixing a race with parallel native-addon tests.
+The normal WASM build was restored after running the optional panic test. Release
+publication, full platform/browser CI, cancellation, admission/memory budgets,
+and process crash containment remain open.
+
 ## Verification performed
 
 - `cargo test --workspace --offline`: **22 passed**.

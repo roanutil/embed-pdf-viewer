@@ -22,6 +22,7 @@ let package = Package(
                 // directory `swift build` was run from.
                 .linkedLibrary("epdf_uniffi"),
                 .linkedLibrary("embedpdf"),
+                .linkedLibrary("c++", .when(platforms: [.iOS])),
             ]
         ),
         .testTarget(name: "EpdfOpsTests", dependencies: ["EpdfOps"]),

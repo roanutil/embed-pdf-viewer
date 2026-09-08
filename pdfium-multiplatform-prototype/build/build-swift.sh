@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # Builds libepdf_uniffi for the requested Apple targets, generates the Swift
-# bindings, and stages both dylibs where Package.swift and the Xcode project
-# expect them.
+# bindings, and stages macOS dylibs or iOS static libraries for SwiftPM/Xcode.
 #
 #   bash build/build-swift.sh            # macos-arm64 only, the default today
 #   bash build/build-swift.sh ios-arm64  # exits 2 until embedpdf/runtime ships it
@@ -41,9 +40,16 @@ for slice in "${SLICES[@]}"; do
 
   dest="$SWIFT_PKG/Frameworks/$slice"
   mkdir -p "$dest"
-  cp "$ROOT/target/$rust/release/libepdf_uniffi.dylib" "$dest/"
-  cp "$ROOT/build/libpdfium/$fork/lib/libembedpdf."* "$dest/"
-  install_name_tool -id "@rpath/libepdf_uniffi.dylib" "$dest/libepdf_uniffi.dylib"
+  if [[ "$slice" == macos-* ]]; then
+    cp "$ROOT/target/$rust/release/libepdf_uniffi.dylib" "$dest/"
+    cp "$ROOT/build/libpdfium/$fork/lib/libembedpdf."* "$dest/"
+    install_name_tool -id "@rpath/libepdf_uniffi.dylib" "$dest/libepdf_uniffi.dylib"
+  else
+    # Link into the app; remove the old generated dylib so ld cannot prefer it.
+    cp "$ROOT/target/$rust/release/libepdf_uniffi.a" "$dest/"
+    cp "$ROOT/build/libpdfium/$fork/lib/libembedpdf.a" "$dest/"
+    rm -f "$dest/libepdf_uniffi.dylib"
+  fi
   echo "staged $slice -> $dest"
 done
 
@@ -52,7 +58,7 @@ done
 first="${SLICES[0]}"
 mkdir -p "$GENERATED" "$FFI_TARGET"
 ( cd "$ROOT" && cargo run --release --bin uniffi-bindgen -- generate \
-    --library "$SWIFT_PKG/Frameworks/$first/libepdf_uniffi.dylib" \
+    --library "$ROOT/target/${RUST_TARGET[$first]}/release/libepdf_uniffi.dylib" \
     --language swift \
     --out-dir "$GENERATED" )
 

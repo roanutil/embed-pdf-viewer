@@ -59,7 +59,9 @@ class VectorsTest {
             assertTrue(abs(size.width - want.getDouble("width").toFloat()) < 0.001f)
             assertTrue(abs(size.height - want.getDouble("height").toFloat()) < 0.001f)
 
-            assertEquals(vectors.getString("text"), doc.pageText(pageIndex))
+            val text = doc.pageText(pageIndex)
+            assertEquals(vectors.getString("text"), text)
+            assertEquals(vectors.getInt("charCount"), text.length)
 
             val search = vectors.getJSONObject("search")
             val hits = doc.search(pageIndex, search.getString("query"), search.getBoolean("caseSensitive"))
@@ -129,5 +131,26 @@ class VectorsTest {
 
         assertEquals((255 shl 24) or (30 shl 16) or (20 shl 8) or 10, pixels[0])
         assertEquals((128 shl 24) or (100 shl 16) or (150 shl 8) or 200, pixels[1])
+    }
+
+    @Test
+    fun rendersExactDeviceRGBColors() {
+        val vector = JSONObject(File(root, "vectors/colors.json").readText())
+        EpdfEngine().use { engine ->
+            engine.open(File(root, "fixtures/colors.pdf").readBytes(), null).use { doc ->
+                val bitmap = doc.renderPage(0u, vector.getDouble("scale").toFloat())
+                assertEquals(vector.getInt("width").toUInt(), bitmap.width)
+                assertEquals(vector.getInt("height").toUInt(), bitmap.height)
+                val samples = vector.getJSONArray("samples")
+                for (i in 0 until samples.length()) {
+                    val sample = samples.getJSONObject(i)
+                    val offset = sample.getInt("y") * bitmap.stride.toInt() + sample.getInt("x") * 4
+                    val bgra = sample.getJSONArray("bgra")
+                    for (channel in 0..3) {
+                        assertEquals(bgra.getInt(channel), bitmap.bgra[offset + channel].toInt() and 255)
+                    }
+                }
+            }
+        }
     }
 }

@@ -38,8 +38,8 @@ targets:
         # mismatch instead of a "library not found" it can actually explain.
         # Mobile artifacts are pending in the committed release pin. Local
         # builds can stage them using EPDF_SCAFFOLD_PIN_FILE; see README.md.
-        # These absolute runpaths support simulator development only. Device
-        # distribution needs embedded frameworks or static linking and signing.
+        # iOS slices are static archives: these are link-time search paths.
+        # Only the macOS development dylibs need a runtime search path.
         LIBRARY_SEARCH_PATHS[sdk=macosx*]:
           - $(SRCROOT)/../../packages/swift/EpdfOps/Frameworks/macos-arm64
         LIBRARY_SEARCH_PATHS[sdk=iphonesimulator*]:
@@ -48,10 +48,6 @@ targets:
           - $(SRCROOT)/../../packages/swift/EpdfOps/Frameworks/ios-arm64
         LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]:
           - $(SRCROOT)/../../packages/swift/EpdfOps/Frameworks/macos-arm64
-        LD_RUNPATH_SEARCH_PATHS[sdk=iphonesimulator*]:
-          - $(SRCROOT)/../../packages/swift/EpdfOps/Frameworks/ios-sim-arm64
-        LD_RUNPATH_SEARCH_PATHS[sdk=iphoneos*]:
-          - $(SRCROOT)/../../packages/swift/EpdfOps/Frameworks/ios-arm64
         # No Apple developer team is configured for this scaffold. Ad-hoc
         # signing needs no team and is enough to build and run locally.
         CODE_SIGN_IDENTITY: "-"

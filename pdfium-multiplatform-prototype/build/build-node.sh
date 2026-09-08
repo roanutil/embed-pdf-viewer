@@ -5,7 +5,20 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-TARGET="${1:-$(node -p "process.platform === 'darwin' ? 'darwin' : process.platform === 'win32' ? 'win32' : 'linux'")-$(node -p "process.arch === 'arm64' ? 'arm64' : 'x64'")}"
+HOST_TARGET="$(node --input-type=module -e '
+  import { pathToFileURL } from "node:url";
+  const { resolveTarget } = await import(pathToFileURL(process.argv[1]));
+  const target = resolveTarget();
+  if (!target) throw new Error(`unsupported host: ${process.platform}-${process.arch}`);
+  console.log(target);
+' "$ROOT/packages/node/platform.mjs")"
+TARGET="${1:-$HOST_TARGET}"
+# This script builds for its native host. Reject mislabeled cross-builds before
+# fetching anything; a Cargo cross-target needs its own linker/toolchain setup.
+if [[ "$TARGET" != "$HOST_TARGET" ]]; then
+  echo "target $TARGET does not match host $HOST_TARGET; run this script on the target host" >&2
+  exit 1
+fi
 
 bash "$ROOT/build/fetch-libpdfium.sh" "$TARGET"
 ( cd "$ROOT" && EPDF_SCAFFOLD_TARGET="$TARGET" cargo build --release -p epdf-node )

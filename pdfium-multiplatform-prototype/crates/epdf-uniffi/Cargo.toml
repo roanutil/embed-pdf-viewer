@@ -7,7 +7,7 @@ publish = false
 [lib]
 name = "epdf_uniffi"
 # cdylib for `uniffi-bindgen generate --library` and for JNA on the JVM;
-# staticlib for the iOS slice once embedpdf/runtime ships ios-arm64.
+# staticlib for the iOS device and simulator slices.
 crate-type = ["cdylib", "staticlib", "rlib"]
 
 [dependencies]

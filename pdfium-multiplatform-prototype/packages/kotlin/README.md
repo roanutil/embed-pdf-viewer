@@ -67,3 +67,7 @@ Treat `.message` as fit for a debug log, not for display. For `EngineFailed` and
 
 `./gradlew :epdf-ops:test` runs `epdf-ops/src/test/kotlin/com/embedpdf/scaffold/VectorsTest.kt`
 against real fixtures.
+
+The six JVM tests now include exact DeviceRGB samples from the shared colored
+fixture and a UTF-16 length assertion against the extracted text. Android device
+coverage remains separate from these host JVM tests.

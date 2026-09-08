@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Run-script build phase (see project.yml's preBuildScripts) that checks the
 # slice directory for whatever SDK Xcode is currently building against
-# actually contains libepdf_uniffi.dylib, and fails the build with a plain
+# actually contains the matching native library, and fails the build with a plain
 # explanation if not, instead of letting the compiler or linker fail first
 # with something inscrutable.
 #
@@ -33,14 +33,16 @@ case "${PLATFORM_NAME:-}" in
     ;;
 esac
 
-LIB="$FRAMEWORKS_DIR/$SLICE/libepdf_uniffi.dylib"
+EXT=a
+[[ "$SLICE" == macos-* ]] && EXT=dylib
+LIB="$FRAMEWORKS_DIR/$SLICE/libepdf_uniffi.$EXT"
 
 if [[ -f "$LIB" ]]; then
   exit 0
 fi
 
 cat >&2 <<MSG
-error: EpdfScaffold cannot link against $SLICE: no libepdf_uniffi.dylib at
+error: EpdfScaffold cannot link against $SLICE: no libepdf_uniffi.$EXT at
 $LIB
 
 Generate and stage this slice with build/build-swift.sh $SLICE from the
@@ -49,8 +51,8 @@ to a separate pin containing the matching local archive URL and checksum.
 See README.md, "Building with local artifacts".
 
 The local fork supports mobile targets; the committed release pin is pending.
-Staging enables local builds. Device distribution still needs self-contained
-native-library packaging, signing, and verification on a physical device.
+Mobile slices link statically into the app. Device distribution still needs
+signing/provisioning and verification on a physical device.
 
 What already works:
   - the macOS destination of this same scheme: bash build/build-ios-app.sh

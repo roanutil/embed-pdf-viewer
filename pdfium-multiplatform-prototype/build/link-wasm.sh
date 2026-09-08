@@ -111,13 +111,10 @@ EM_SYSROOT_INCLUDE="$(em-config CACHE)/sysroot/include"
 # not incidental: core/fxcodec/png/pngmodule.cpp and
 # core/fxcodec/jpeg/jpeg_common.c use it for libpng and libjpeg error handling.
 #
-# `epdf_test_panic` is the manual check that a Rust panic reaches the JS caller
-# as a catchable RuntimeError instead of killing the instance (README.md, "Five
-# things a reader will otherwise be surprised by"). It is a probe, not an API,
-# and crates/epdf-wasm/src/lib.rs:224 says it is "absent from a normal build",
-# so it has to be opt-in here rather than always on:
-#
+# Exercise catch_unwind and borrow release inside the actual inline dispatch:
 #   EPDF_PANIC_PROBE=1 bash build/link-wasm.sh
+#   node packages/web/panic-probe.mjs
+# Rebuild without the feature afterward; the probe is not a public API.
 CARGO_FEATURES=()
 PROBE_EXPORT=""
 if [[ "${EPDF_PANIC_PROBE:-0}" != "0" ]]; then
