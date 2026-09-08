@@ -124,11 +124,16 @@ export async function runAll(adapter, { budgetMs = 500 } = {}) {
  *
  * Getting this wrong twice was instructive, so both dead ends are recorded here.
  *
- * First attempt counted scavenges through `PerformanceObserver({entryTypes:['gc']})`.
- * Node 24 does not emit a perf entry per scavenge: a loop churning two million
- * objects produced exactly one entry, and it was a MAJOR collection. The kind
- * constants are also not what you would guess, MINOR=1 but MAJOR=4 and
- * INCREMENTAL=8, so the original mapping mislabelled everything it did see.
+ * First attempt counted scavenges through `PerformanceObserver({entryTypes:['gc']})`
+ * and read back almost nothing, which was blamed on Node not emitting an entry
+ * per scavenge. That was wrong, and the same mistake is why the check below
+ * used to be dead: Node delivers `gc` entries to the observer several
+ * event-loop TURNS after the collection, and never on the turn that triggered
+ * it. Drained with four `setTimeout(0)` turns, a loop churning two million
+ * objects on Node v24.20.0 reports 15 entries, all MINOR. What was right in
+ * that post-mortem is the kind constants, which are not what you would guess:
+ * MINOR=1 but MAJOR=4 and INCREMENTAL=8, so the original mapping mislabelled
+ * everything it did see.
  *
  * Second attempt measured `heapUsed` growth over 2,000 frames. That is
  * confounded by its own premise: 2,000 frames allocate enough to trigger
@@ -139,7 +144,24 @@ export async function runAll(adapter, { budgetMs = 500 } = {}) {
  * What works is a window short enough that no collection intervenes. Force a
  * GC, run a few hundred frames, read the delta, and verify no GC fired. If one
  * did, the sample is discarded and the window halves.
+ *
+ * That verification only works if the observer is drained, per the note above.
+ * A single `await setImmediate` is not enough: it reports zero entries where
+ * four timer turns report the collections that really happened. So `gcSeen`
+ * was unconditionally 0, no sample was ever discarded, the halving below was
+ * dead code, and the window stayed at 512 frames -- which is long enough to
+ * collect, so this measured what survived after all. Exactly the failure the
+ * rewrite existed to avoid, wearing the rewrite's clothes.
  */
+
+/**
+ * Waits long enough for the PerformanceObserver to receive `gc` entries for
+ * collections that have already finished. Timer turns, not `setImmediate`;
+ * see the note above.
+ */
+async function drainGcEntries() {
+  for (let i = 0; i < 4; i++) await new Promise((r) => setTimeout(r, 0));
+}
 export async function runAlloc(adapter) {
   await adapter.init();
   const { PerformanceObserver, constants } = await import('node:perf_hooks');
@@ -161,16 +183,20 @@ export async function runAlloc(adapter) {
 
   while (frames >= 8 && attempts < 8) {
     attempts++;
+    obs.observe({ entryTypes: ['gc'] });
+    globalThis.gc();
+    globalThis.gc();
+    // Let the two forced collections report themselves BEFORE the window
+    // opens. Zeroing the counter first would count them against the window
+    // and discard every sample.
+    await drainGcEntries();
     gcSeen = 0;
-    obs.observe({ entryTypes: ['gc'], buffered: true });
-    globalThis.gc();
-    globalThis.gc();
     const before = process.memoryUsage().heapUsed;
 
     for (let i = 0; i < frames; i++) acc += s.frame(VIEW_PROJECTING);
 
     const after = process.memoryUsage().heapUsed;
-    await new Promise((r) => setImmediate(r));
+    await drainGcEntries();
     obs.disconnect();
 
     if (gcSeen === 0 && after > before) {

@@ -75,12 +75,15 @@ comparison between implementations is sound because all three are measured
 identically.
 
 Two earlier attempts at the allocation metric are documented in `workloads.mjs`,
-because both failed quietly rather than loudly. Counting scavenges through
-`PerformanceObserver` does not work: Node 24 emits no perf entry per scavenge,
-and its GC kind constants are MINOR=1, MAJOR=4, INCREMENTAL=8, not the 1/2/4 you
-would guess. Measuring heap growth over 2,000 frames does not work either, since
-that many frames trigger collections which free the garbage mid-loop; it
-reported 150 bytes per frame for work that allocates five objects per shape.
+because both failed quietly rather than loudly. Measuring heap growth over 2,000
+frames does not work, since that many frames trigger collections which free the
+garbage mid-loop; it reported 150 bytes per frame for work that allocates five
+objects per shape. The `PerformanceObserver` attempt before it read back almost
+nothing and got written up as "Node 24 emits no perf entry per scavenge", which
+is false. Node delivers `gc` entries several event-loop turns after the
+collection: drained with four `setTimeout(0)` turns, two million churned objects
+report 15 MINOR entries on Node v24.20.0. Its GC kind constants really are
+MINOR=1, MAJOR=4, INCREMENTAL=8, not the 1/2/4 you would guess.
 
 ## Cold start procedure
 

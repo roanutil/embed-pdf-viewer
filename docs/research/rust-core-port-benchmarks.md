@@ -113,12 +113,14 @@ In Node, force a collection and then run a window of frames SHORT enough that no
 intervenes, reporting the `heapUsed` delta divided by the frame count. Verify no GC fired; if one
 did, halve the window and retry.
 
-(Two earlier designs for this are recorded in `bench/workloads.mjs` because both failed quietly.
-Counting scavenges through `PerformanceObserver` does not work: Node 24 emits no perf entry per
-scavenge, and its kind constants are MINOR=1, MAJOR=4, INCREMENTAL=8, not the 1/2/4 I assumed. And a
+(Two earlier designs for this are recorded in `bench/workloads.mjs` because both failed quietly. A
 10,000-frame window is self-defeating, because that many frames trigger the very collections whose
 absence the measurement depends on: it reported 150 bytes per frame for work that allocates five
-objects per shape.)
+objects per shape. Before that I counted scavenges through `PerformanceObserver`, read back almost
+nothing, and concluded Node 24 emits no perf entry per scavenge. It does. The entries arrive several
+event-loop turns after the collection, and I was draining with a single `setImmediate`: with four
+`setTimeout(0)` turns, two million churned objects report 15 MINOR entries on Node v24.20.0. The
+kind constants really are MINOR=1, MAJOR=4, INCREMENTAL=8, not the 1/2/4 I assumed.)
 
 poc-2 is the one to watch: every geometry call allocates a `Float64Array` on the way in and four
 `{x, y}` objects plus a tuple on the way out, in `packages/geometry/src/index.ts`. Seven of those per
