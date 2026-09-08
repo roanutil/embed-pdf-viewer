@@ -19,6 +19,19 @@ describe('the boundary', () => {
     store.destroy();
   });
 
+  it('costs three crossings to construct, and one more only when a host logger is installed', () => {
+    resetCrossings();
+    const silent = createCoreStore();
+    // itemStride, flagSelected, flagProjected, then the version mirror.
+    expect(crossings()).toBe(4);
+    silent.destroy();
+
+    resetCrossings();
+    const logged = createCoreStore({ log: () => {} });
+    expect(crossings()).toBe(5);
+    logged.destroy();
+  });
+
   it('costs THREE crossings on the first frame after the shape set changes', () => {
     const store = fresh();
     store.seed(10, true);

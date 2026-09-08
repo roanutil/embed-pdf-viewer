@@ -219,7 +219,7 @@ impl Core {
     pub fn hit_test(&self, x: f64, y: f64, zoom: f64, rotation: f64) -> i32 {
         hit_test(
             &self.model,
-            Point { x, y }.into(),
+            Point { x, y },
             ViewEnv { zoom, rotation },
         )
         .map_or(-1, |h| h as i32)

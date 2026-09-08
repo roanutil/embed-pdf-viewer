@@ -7,7 +7,7 @@
  * type error. See `wasm-types.d.ts` for the note on generating this instead.
  */
 
-export interface Vec {
+export interface Point {
   x: number;
   y: number;
 }
@@ -19,7 +19,7 @@ export interface Rect {
   height: number;
 }
 
-export type Quad = readonly [Vec, Vec, Vec, Vec];
+export type Quad = readonly [Point, Point, Point, Point];
 
 export type Rotation = 0 | 90 | 180 | 270;
 
@@ -31,10 +31,10 @@ export interface ViewEnv {
 export type Id = string;
 
 export type Msg =
-  | { t: 'add'; at: Vec; color: string }
+  | { t: 'add'; at: Point; color: string }
   | { t: 'select'; id: Id | null }
-  | { t: 'pointerDown'; at: Vec; view: ViewEnv }
-  | { t: 'pointerMove'; at: Vec }
+  | { t: 'pointerDown'; at: Point; view: ViewEnv }
+  | { t: 'pointerMove'; at: Point }
   | { t: 'pointerUp' }
   | { t: 'setAnchored'; id: Id; anchored: boolean }
   | { t: 'setRot'; id: Id; rot: number }

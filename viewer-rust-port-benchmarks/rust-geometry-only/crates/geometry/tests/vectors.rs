@@ -6,7 +6,7 @@
 //! discovered later in a browser.
 
 use poc_geometry::core::{
-    anchor_factors, point_in_quad, project_quad, rect_quad, Quad, Rect, Vec2,
+    anchor_factors, point_in_quad, project_quad, rect_quad, Quad, Rect, Point,
 };
 use serde_json::Value;
 use std::fs;
@@ -97,7 +97,7 @@ fn hit_vectors_match_the_typescript_reference() {
     for case in cases {
         let name = case["name"].as_str().unwrap_or("<unnamed>");
         let q = rect_quad(rect_of(case), f(case, "rot"));
-        let p = Vec2 {
+        let p = Point {
             x: f(&case["point"], "x"),
             y: f(&case["point"], "y"),
         };

@@ -1,7 +1,7 @@
 //! The same frozen `vectors/anchor-vectors.json` typescript-baseline's TypeScript suite and
 //! rust-geometry-only's Rust crate read. Three implementations, one contract.
 
-use poc_core::geom::{point_in_quad, rect_quad, Rect, Vec2};
+use poc_core::geom::{point_in_quad, rect_quad, Rect, Point};
 use poc_core::model::{anchor_factors, project_quad, ViewEnv};
 use serde_json::Value;
 use std::fs;
@@ -74,7 +74,7 @@ fn hit_vectors_match_the_typescript_reference() {
     for case in data["hit"].as_array().expect("hit array") {
         let name = case["name"].as_str().unwrap_or("<unnamed>");
         let q = rect_quad(rect_of(case), f(case, "rot"));
-        let p = Vec2 {
+        let p = Point {
             x: f(&case["point"], "x"),
             y: f(&case["point"], "y"),
         };

@@ -26,7 +26,7 @@ pub use crate::core::{
     normalize_deg as core_normalize_deg, point_in_quad as core_point_in_quad,
     quad_bounds as core_quad_bounds, quad_rotate_about as core_quad_rotate_about,
     quad_scale_about as core_quad_scale_about, quad_translate as core_quad_translate,
-    rect_quad as core_rect_quad, rotate_point as core_rotate_point, Quad, Rect, Vec2,
+    rect_quad as core_rect_quad, rotate_point as core_rotate_point, Quad, Rect, Point,
 };
 
 // ---------------------------------------------------------------------------
@@ -95,10 +95,10 @@ fn quad_from_slice(q: &[f64]) -> Option<Quad> {
         return None;
     }
     Some(Quad([
-        Vec2 { x: q[0], y: q[1] },
-        Vec2 { x: q[2], y: q[3] },
-        Vec2 { x: q[4], y: q[5] },
-        Vec2 { x: q[6], y: q[7] },
+        Point { x: q[0], y: q[1] },
+        Point { x: q[2], y: q[3] },
+        Point { x: q[4], y: q[5] },
+        Point { x: q[6], y: q[7] },
     ]))
 }
 
@@ -123,7 +123,7 @@ pub fn normalize_deg(deg: f64) -> f64 {
 
 #[wasm_bindgen(js_name = rotatePoint)]
 pub fn rotate_point(px: f64, py: f64, ax: f64, ay: f64, deg: f64) -> Vec<f64> {
-    let r = crate::core::rotate_point(Vec2 { x: px, y: py }, Vec2 { x: ax, y: ay }, deg);
+    let r = crate::core::rotate_point(Point { x: px, y: py }, Point { x: ax, y: ay }, deg);
     vec![r.x, r.y]
 }
 
@@ -145,7 +145,7 @@ pub fn quad_scale_about(q: &[f64], ax: f64, ay: f64, s: f64) -> Vec<f64> {
     match quad_from_slice(q) {
         Some(quad) => quad_to_vec(crate::core::quad_scale_about(
             quad,
-            Vec2 { x: ax, y: ay },
+            Point { x: ax, y: ay },
             s,
         )),
         None => bad_quad("quadScaleAbout"),
@@ -157,7 +157,7 @@ pub fn quad_rotate_about(q: &[f64], ax: f64, ay: f64, deg: f64) -> Vec<f64> {
     match quad_from_slice(q) {
         Some(quad) => quad_to_vec(crate::core::quad_rotate_about(
             quad,
-            Vec2 { x: ax, y: ay },
+            Point { x: ax, y: ay },
             deg,
         )),
         None => bad_quad("quadRotateAbout"),
@@ -167,7 +167,7 @@ pub fn quad_rotate_about(q: &[f64], ax: f64, ay: f64, deg: f64) -> Vec<f64> {
 #[wasm_bindgen(js_name = quadTranslate)]
 pub fn quad_translate(q: &[f64], dx: f64, dy: f64) -> Vec<f64> {
     match quad_from_slice(q) {
-        Some(quad) => quad_to_vec(crate::core::quad_translate(quad, Vec2 { x: dx, y: dy })),
+        Some(quad) => quad_to_vec(crate::core::quad_translate(quad, Point { x: dx, y: dy })),
         None => bad_quad("quadTranslate"),
     }
 }
@@ -189,7 +189,7 @@ pub fn quad_bounds(q: &[f64]) -> Vec<f64> {
 #[wasm_bindgen(js_name = pointInQuad)]
 pub fn point_in_quad(px: f64, py: f64, q: &[f64]) -> bool {
     match quad_from_slice(q) {
-        Some(quad) => crate::core::point_in_quad(Vec2 { x: px, y: py }, quad),
+        Some(quad) => crate::core::point_in_quad(Point { x: px, y: py }, quad),
         None => {
             host_log("pointInQuad: expected 8 floats, got a malformed quad");
             false

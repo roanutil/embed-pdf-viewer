@@ -1,6 +1,6 @@
-import type { Quad, Rect, Rotation, Vec } from '@poc/geometry';
+import type { Quad, Rect, Rotation, Point } from '@poc/geometry';
 
-export type { Quad, Rect, Rotation, Vec };
+export type { Quad, Rect, Rotation, Point };
 
 export type Id = string;
 
@@ -27,7 +27,7 @@ export interface ViewEnv {
 export interface Drag {
   id: Id;
   /** Pointer position at DOWN, in content space. */
-  from: Vec;
+  from: Point;
   /** The shape's rect at DOWN, so a drag is always absolute, never cumulative. */
   origin: Rect;
 }
@@ -40,10 +40,10 @@ export interface Model {
 }
 
 export type Msg =
-  | { t: 'add'; at: Vec; color: string }
+  | { t: 'add'; at: Point; color: string }
   | { t: 'select'; id: Id | null }
-  | { t: 'pointerDown'; at: Vec; view: ViewEnv }
-  | { t: 'pointerMove'; at: Vec }
+  | { t: 'pointerDown'; at: Point; view: ViewEnv }
+  | { t: 'pointerMove'; at: Point }
   | { t: 'pointerUp' }
   | { t: 'setAnchored'; id: Id; anchored: boolean }
   | { t: 'setRot'; id: Id; rot: number }

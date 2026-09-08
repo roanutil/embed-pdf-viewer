@@ -1,5 +1,5 @@
 import { pointInQuad } from '@poc/geometry';
-import type { Vec } from '@poc/geometry';
+import type { Point } from '@poc/geometry';
 import type { Effect, Id, Model, Msg, Shape, ViewEnv } from './types';
 import { shapeQuad } from './anchor';
 
@@ -7,7 +7,7 @@ const DEFAULT_W = 90;
 const DEFAULT_H = 64;
 
 /** Topmost shape under `at`, or null. Reverse order: last drawn wins. */
-export function hitTest(model: Model, at: Vec, view: ViewEnv): Id | null {
+export function hitTest(model: Model, at: Point, view: ViewEnv): Id | null {
   for (let i = model.shapes.length - 1; i >= 0; i--) {
     const s = model.shapes[i]!;
     if (pointInQuad(at, shapeQuad(s, view))) return s.id;

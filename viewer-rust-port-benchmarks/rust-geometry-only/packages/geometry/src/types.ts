@@ -1,7 +1,7 @@
 /** The value types are unchanged from the TypeScript original. Only the
  *  implementation moved, so consumers keep the same vocabulary. */
 
-export interface Vec {
+export interface Point {
   x: number;
   y: number;
 }
@@ -13,6 +13,6 @@ export interface Rect {
   height: number;
 }
 
-export type Quad = readonly [Vec, Vec, Vec, Vec];
+export type Quad = readonly [Point, Point, Point, Point];
 
 export type Rotation = 0 | 90 | 180 | 270;

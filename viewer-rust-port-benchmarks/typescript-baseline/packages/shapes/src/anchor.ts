@@ -1,5 +1,5 @@
 import { normalizeDeg, quadRotateAbout, quadScaleAbout, quadBounds, rectQuad } from '@poc/geometry';
-import type { Quad, Vec } from '@poc/geometry';
+import type { Quad, Point } from '@poc/geometry';
 import type { Shape, ViewEnv } from './types';
 
 /**
@@ -30,7 +30,7 @@ export function anchorFactors(
 }
 
 /** The fixed page point: the shape's unprojected bounds top-left. */
-export const anchorOf = (q: Quad): Vec => {
+export const anchorOf = (q: Quad): Point => {
   const b = quadBounds(q);
   return { x: b.x, y: b.y };
 };

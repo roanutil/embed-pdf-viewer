@@ -82,8 +82,11 @@ export function createCoreStore(host: CoreHost = {}): CoreStore {
   // second literal that has to be remembered separately.
   const flagsAt = stride - 1;
 
-  countCrossing();
-  if (host.log) core.setHostLogger((m: unknown) => host.log!(String(m)));
+  // Installing the logger is a crossing only when there is a logger to install.
+  if (host.log) {
+    countCrossing();
+    core.setHostLogger((m: unknown) => host.log!(String(m)));
+  }
 
   const listeners = new Set<() => void>();
   const effectHandlers = new Set<EffectHandler>();

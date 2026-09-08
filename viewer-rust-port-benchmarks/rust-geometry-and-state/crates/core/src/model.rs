@@ -7,6 +7,9 @@
 use serde::{Deserialize, Serialize};
 
 use crate::geom::*;
+// Messages carry the same `Point` the geometry layer uses; keep it reachable
+// from `model` so message builders need only one import path.
+pub use crate::geom::Point;
 
 pub const DEFAULT_W: f64 = 90.0;
 pub const DEFAULT_H: f64 = 64.0;
@@ -15,18 +18,6 @@ pub const DEFAULT_H: f64 = 64.0;
 pub struct ViewEnv {
     pub zoom: f64,
     pub rotation: f64,
-}
-
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
-pub struct Point {
-    pub x: f64,
-    pub y: f64,
-}
-
-impl From<Point> for Vec2 {
-    fn from(p: Point) -> Vec2 {
-        Vec2 { x: p.x, y: p.y }
-    }
 }
 
 #[derive(Clone, Debug)]
@@ -48,7 +39,7 @@ impl Shape {
 #[derive(Clone, Debug)]
 pub struct Drag {
     pub handle: u32,
-    pub from: Vec2,
+    pub from: Point,
     pub origin: Rect,
 }
 
@@ -81,7 +72,7 @@ pub enum Msg {
     Delete { id: String },
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "t", rename_all = "camelCase")]
 pub enum Effect {
     Log { message: String },
@@ -113,7 +104,7 @@ pub fn project_quad(q: Quad, anchored: bool, view: ViewEnv) -> Quad {
         return q;
     };
     let b = quad_bounds(q);
-    let anchor = Vec2 { x: b.x, y: b.y };
+    let anchor = Point { x: b.x, y: b.y };
     let mut out = q;
     if s != 1.0 {
         out = quad_scale_about(out, anchor, 1.0 / s);
@@ -135,7 +126,7 @@ pub fn is_projected(shape: &Shape, view: ViewEnv) -> bool {
 // --- hit-testing -----------------------------------------------------------
 
 /// Topmost shape under `at`, or None. Reverse order: last drawn wins.
-pub fn hit_test(model: &Model, at: Vec2, view: ViewEnv) -> Option<u32> {
+pub fn hit_test(model: &Model, at: Point, view: ViewEnv) -> Option<u32> {
     model
         .shapes
         .iter()
@@ -184,14 +175,30 @@ pub fn update(model: &mut Model, msg: Msg) -> (bool, Vec<Effect>) {
         }
 
         Msg::Select { id } => {
-            let next = id.as_deref().and_then(handle_of);
+            // typescript-baseline stores whatever string it is handed. This
+            // model holds a `u32` handle, so an id it cannot represent is a
+            // caller bug; report it rather than rewriting it into a deselect.
+            let next = match id.as_deref() {
+                None => None,
+                Some(raw) => match handle_of(raw) {
+                    Some(handle) => Some(handle),
+                    None => {
+                        return (
+                            false,
+                            vec![Effect::Log {
+                                message: format!("select: ignored malformed id {raw:?}"),
+                            }],
+                        )
+                    }
+                },
+            };
             let changed = next != model.selected;
             model.selected = next;
             (changed, vec![])
         }
 
         Msg::PointerDown { at, view } => {
-            let hit = hit_test(model, at.into(), view);
+            let hit = hit_test(model, at, view);
             match hit {
                 None => {
                     let changed = model.selected.is_some();
@@ -208,7 +215,7 @@ pub fn update(model: &mut Model, msg: Msg) -> (bool, Vec<Effect>) {
                     model.selected = Some(handle);
                     model.drag = Some(Drag {
                         handle,
-                        from: at.into(),
+                        from: at,
                         origin,
                     });
                     (true, vec![])

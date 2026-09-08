@@ -6,7 +6,7 @@
  * survive a similarity transform without gaining a second rotation field.
  */
 
-export interface Vec {
+export interface Point {
   x: number;
   y: number;
 }
@@ -19,13 +19,13 @@ export interface Rect {
 }
 
 /** Four positional corners, clockwise from the unrotated top-left. */
-export type Quad = readonly [Vec, Vec, Vec, Vec];
+export type Quad = readonly [Point, Point, Point, Point];
 
 export type Rotation = 0 | 90 | 180 | 270;
 
 export const normalizeDeg = (deg: number): number => ((deg % 360) + 360) % 360;
 
-export function rotatePoint(p: Vec, about: Vec, deg: number): Vec {
+export function rotatePoint(p: Point, about: Point, deg: number): Point {
   if (deg === 0) return p;
   const rad = (deg * Math.PI) / 180;
   const cos = Math.cos(rad);
@@ -38,7 +38,7 @@ export function rotatePoint(p: Vec, about: Vec, deg: number): Vec {
   };
 }
 
-export function scalePoint(p: Vec, about: Vec, s: number): Vec {
+export function scalePoint(p: Point, about: Point, s: number): Point {
   if (s === 1) return p;
   return { x: about.x + (p.x - about.x) * s, y: about.y + (p.y - about.y) * s };
 }
@@ -46,7 +46,7 @@ export function scalePoint(p: Vec, about: Vec, s: number): Vec {
 /** The corners of `rect`, rotated by `rot` about the rect's own centre. */
 export function rectQuad(rect: Rect, rot = 0): Quad {
   const { x, y, width: w, height: h } = rect;
-  const corners: [Vec, Vec, Vec, Vec] = [
+  const corners: [Point, Point, Point, Point] = [
     { x, y },
     { x: x + w, y },
     { x: x + w, y: y + h },
@@ -57,11 +57,11 @@ export function rectQuad(rect: Rect, rot = 0): Quad {
   return corners.map((p) => rotatePoint(p, c, rot)) as unknown as Quad;
 }
 
-export function quadScaleAbout(q: Quad, about: Vec, s: number): Quad {
+export function quadScaleAbout(q: Quad, about: Point, s: number): Quad {
   return q.map((p) => scalePoint(p, about, s)) as unknown as Quad;
 }
 
-export function quadRotateAbout(q: Quad, about: Vec, deg: number): Quad {
+export function quadRotateAbout(q: Quad, about: Point, deg: number): Quad {
   return q.map((p) => rotatePoint(p, about, deg)) as unknown as Quad;
 }
 
@@ -80,7 +80,7 @@ export function quadBounds(q: Quad): Rect {
 }
 
 /** Winding test. Works for any convex quad, which is all a similarity can produce. */
-export function pointInQuad(p: Vec, q: Quad): boolean {
+export function pointInQuad(p: Point, q: Quad): boolean {
   let sign = 0;
   for (let i = 0; i < 4; i++) {
     const a = q[i]!;
@@ -94,6 +94,6 @@ export function pointInQuad(p: Vec, q: Quad): boolean {
   return true;
 }
 
-export function quadTranslate(q: Quad, by: Vec): Quad {
+export function quadTranslate(q: Quad, by: Point): Quad {
   return q.map((p) => ({ x: p.x + by.x, y: p.y + by.y })) as unknown as Quad;
 }

@@ -133,3 +133,30 @@ export function normalizeDisplayList(items) {
     }))
     .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 }
+
+/**
+ * Indices of display items that differ between two normalized lists.
+ *
+ * `normalizeDisplayList` rounds to 1e-9 so the lists print comparably, but a
+ * byte compare of the rounded output can still fail when two implementations
+ * land one ulp apart on either side of a rounding boundary. Coordinates are
+ * compared within `tolerance`; ids, colours and flags must match exactly. A
+ * length mismatch reports every index only one side has.
+ */
+export function displayListDifferences(a, b, tolerance = 1e-9) {
+  const out = [];
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    if (!sameItem(a[i], b[i], tolerance)) out.push(i);
+  }
+  return out;
+}
+
+function sameItem(x, y, tolerance) {
+  if (!x || !y) return false;
+  if (x.id !== y.id || x.color !== y.color || x.selected !== y.selected || x.projected !== y.projected) return false;
+  if (x.quad.length !== y.quad.length) return false;
+  return x.quad.every(([px, py], i) => {
+    const [qx, qy] = y.quad[i];
+    return Math.abs(px - qx) <= tolerance && Math.abs(py - qy) <= tolerance;
+  });
+}

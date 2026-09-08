@@ -4,7 +4,7 @@ The baseline. Four packages and a demo, all TypeScript, no wasm anywhere. Everyt
 POCs do is measured against this.
 
 ```
-packages/geometry    99 lines. Vec, Rect, Quad, rotate/scale, point-in-quad. Zero deps.
+packages/geometry    99 lines. Point, Rect, Quad, rotate/scale, point-in-quad. Zero deps.
 packages/shapes     276 lines. The brain: update(msg) -> [model, effects], scene, hitTest, anchor.
 packages/store       97 lines. Reducer store with two channels, after core/main/src/store.ts.
 packages/react      255 lines. The useSyncExternalStore binding and the ShapeCanvas surface.

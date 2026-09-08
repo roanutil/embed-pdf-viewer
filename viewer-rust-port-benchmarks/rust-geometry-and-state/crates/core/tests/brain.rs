@@ -4,10 +4,10 @@
 //! the logic is now shareable with a Swift or Kotlin binding, and it is no
 //! longer testable from TypeScript without going through wasm.
 
-use poc_core::geom::{quad_bounds, rect_quad, Rect, Vec2};
+use poc_core::geom::{quad_bounds, rect_quad, Rect, Point};
 use poc_core::model::{
     anchor_factors, hit_test, project_quad, scene_buffer, shape_quad, update, Effect, Model, Msg,
-    Point, ViewEnv, FLAG_PROJECTED, FLAG_SELECTED, ITEM_STRIDE,
+    ViewEnv, FLAG_PROJECTED, FLAG_SELECTED, ITEM_STRIDE,
 };
 
 fn v(zoom: f64, rotation: f64) -> ViewEnv {
@@ -181,7 +181,7 @@ fn an_anchored_drag_tracks_the_pointer_one_to_one() {
     // the cursor behind the shape.
     assert!((m.shapes[0].rect.x - 65.0).abs() < 1e-9);
     assert_eq!(
-        hit_test(&m, Vec2 { x: 80.0, y: 76.0 }, view),
+        hit_test(&m, Point { x: 80.0, y: 76.0 }, view),
         Some(1),
         "the cursor must still be on the shape it is dragging"
     );
@@ -216,14 +216,14 @@ fn hit_test_follows_the_projection() {
     let m = with_one_shape(true);
     let q = shape_quad(&m.shapes[0], v(4.0, 0.0));
     let b = quad_bounds(q);
-    let centre = poc_core::geom::Vec2 {
+    let centre = poc_core::geom::Point {
         x: b.x + b.width / 2.0,
         y: b.y + b.height / 2.0,
     };
     assert_eq!(hit_test(&m, centre, v(4.0, 0.0)), Some(1));
     // The unprojected centre is outside the shrunken shape.
     assert_eq!(
-        hit_test(&m, poc_core::geom::Vec2 { x: 100.0, y: 100.0 }, v(4.0, 0.0)),
+        hit_test(&m, poc_core::geom::Point { x: 100.0, y: 100.0 }, v(4.0, 0.0)),
         None
     );
 }
@@ -239,7 +239,7 @@ fn hit_test_returns_the_topmost_of_two_overlapping_shapes() {
         },
     );
     assert_eq!(
-        hit_test(&m, poc_core::geom::Vec2 { x: 100.0, y: 100.0 }, v(1.0, 0.0)),
+        hit_test(&m, poc_core::geom::Point { x: 100.0, y: 100.0 }, v(1.0, 0.0)),
         Some(2)
     );
 }
@@ -314,4 +314,35 @@ fn effects_serialize_to_the_typescript_shapes() {
     })
     .unwrap();
     assert_eq!(persist, r##"{"t":"persist","ids":["s1"]}"##);
+}
+
+/// typescript-baseline stores any string handed to `select`. This model keeps a
+/// `u32` handle, so an id it cannot represent must not be silently rewritten
+/// into a deselect: leave the selection alone and say so through an effect.
+#[test]
+fn select_with_a_malformed_id_is_a_logged_no_op() {
+    let mut m = with_one_shape(false);
+    assert_eq!(m.selected, Some(1));
+
+    let (changed, effects) = update(
+        &mut m,
+        Msg::Select {
+            id: Some("not-a-handle".into()),
+        },
+    );
+
+    assert!(!changed);
+    assert_eq!(m.selected, Some(1));
+    assert_eq!(
+        effects,
+        vec![Effect::Log {
+            message: "select: ignored malformed id \"not-a-handle\"".into(),
+        }]
+    );
+
+    // The well-formed shapes of the message still behave as before.
+    let (changed, effects) = update(&mut m, Msg::Select { id: None });
+    assert!(changed);
+    assert!(effects.is_empty());
+    assert_eq!(m.selected, None);
 }

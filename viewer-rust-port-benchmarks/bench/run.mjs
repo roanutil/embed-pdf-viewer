@@ -14,6 +14,8 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { displayListDifferences } from './harness.mjs';
+import { parseRunOptions } from './run-options.mjs';
 
 const here = import.meta.dirname;
 const root = resolve(here, '..');
@@ -25,14 +27,14 @@ const POCS = [
   { dir: 'rust-geometry-and-state', wasm: 'packages/core/wasm/poc_core_bg.wasm' },
 ];
 
-const arg = (name, fallback) => {
-  const i = process.argv.indexOf(`--${name}`);
-  return i === -1 ? fallback : process.argv[i + 1];
-};
-
-const rounds = Number(arg('rounds', '5'));
-const budgetMs = Number(arg('budget', '500'));
-const allocRounds = Number(arg('alloc-rounds', '3'));
+let options;
+try {
+  options = parseRunOptions(process.argv.slice(2));
+} catch (error) {
+  console.error(`Invalid benchmark arguments: ${error.message}`);
+  process.exit(1);
+}
+const { rounds, budgetMs, allocRounds } = options;
 
 for (const poc of POCS) {
   if (poc.wasm && !existsSync(resolve(root, poc.dir, poc.wasm))) {
@@ -85,17 +87,18 @@ function readProbe(dir) {
  */
 function fairnessGate() {
   const probes = POCS.map((p) => ({ dir: p.dir, probe: readProbe(p.dir) }));
-  const baseline = JSON.stringify(probes[0].probe);
   let ok = true;
   for (const { dir, probe } of probes.slice(1)) {
-    if (JSON.stringify(probe) !== baseline) {
+    // Coordinates are compared within a tolerance rather than byte for byte:
+    // the probes are rounded to 1e-9 for display, and two values one ulp apart
+    // can round to different decimals while being the same answer.
+    const differing = displayListDifferences(probes[0].probe, probe);
+    if (differing.length) {
       ok = false;
       console.error(`\nFAIRNESS GATE FAILED: ${dir} disagrees with ${probes[0].dir}.`);
       const a = probes[0].probe;
-      for (let i = 0; i < Math.max(a.length, probe.length); i++) {
-        if (JSON.stringify(a[i]) !== JSON.stringify(probe[i])) {
-          console.error(`  item ${i}\n    ${probes[0].dir}: ${JSON.stringify(a[i])}\n    ${dir}: ${JSON.stringify(probe[i])}`);
-        }
+      for (const i of differing) {
+        console.error(`  item ${i}\n    ${probes[0].dir}: ${JSON.stringify(a[i])}\n    ${dir}: ${JSON.stringify(probe[i])}`);
       }
     }
   }

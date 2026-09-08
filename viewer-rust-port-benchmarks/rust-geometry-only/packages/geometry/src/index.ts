@@ -13,9 +13,9 @@
  */
 import { countCrossing } from './crossings';
 import { required } from './init';
-import type { Quad, Rect, Vec } from './types';
+import type { Quad, Rect, Point } from './types';
 
-export type { Quad, Rect, Rotation, Vec } from './types';
+export type { Quad, Rect, Rotation, Point } from './types';
 export { initGeometry, isReady, type GeometryHost, type GeometryWasm } from './init';
 // initGeometryFromDisk is NOT re-exported here: it is `@poc/geometry/node`.
 export {
@@ -46,7 +46,7 @@ export function normalizeDeg(deg: number): number {
   return required().normalizeDeg(deg);
 }
 
-export function rotatePoint(p: Vec, about: Vec, deg: number): Vec {
+export function rotatePoint(p: Point, about: Point, deg: number): Point {
   countCrossing();
   const out = required().rotatePoint(p.x, p.y, about.x, about.y, deg);
   return { x: out[0]!, y: out[1]! };
@@ -57,17 +57,17 @@ export function rectQuad(rect: Rect, rot = 0): Quad {
   return unpackQuad(required().rectQuad(rect.x, rect.y, rect.width, rect.height, rot));
 }
 
-export function quadScaleAbout(q: Quad, about: Vec, s: number): Quad {
+export function quadScaleAbout(q: Quad, about: Point, s: number): Quad {
   countCrossing();
   return unpackQuad(required().quadScaleAbout(packQuad(q), about.x, about.y, s));
 }
 
-export function quadRotateAbout(q: Quad, about: Vec, deg: number): Quad {
+export function quadRotateAbout(q: Quad, about: Point, deg: number): Quad {
   countCrossing();
   return unpackQuad(required().quadRotateAbout(packQuad(q), about.x, about.y, deg));
 }
 
-export function quadTranslate(q: Quad, by: Vec): Quad {
+export function quadTranslate(q: Quad, by: Point): Quad {
   countCrossing();
   return unpackQuad(required().quadTranslate(packQuad(q), by.x, by.y));
 }
@@ -78,7 +78,7 @@ export function quadBounds(q: Quad): Rect {
   return { x: b[0]!, y: b[1]!, width: b[2]!, height: b[3]! };
 }
 
-export function pointInQuad(p: Vec, q: Quad): boolean {
+export function pointInQuad(p: Point, q: Quad): boolean {
   countCrossing();
   return required().pointInQuad(p.x, p.y, packQuad(q));
 }
