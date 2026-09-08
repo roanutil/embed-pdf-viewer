@@ -190,7 +190,7 @@ private func openFixture() throws -> EpdfDocument {
     let doc = try EpdfEngine().open(
         bytes: Data(contentsOf: root.appendingPathComponent("fixtures/colors.pdf")), password: nil)
     defer { doc.close() }
-    let bitmap = try doc.renderPage(index: 0, scale: Float(vector["scale"] as! Int))
+    let bitmap = try doc.renderPage(index: 0, scale: Float(truncating: vector["scale"] as! NSNumber))
     #expect(Int(bitmap.width) == vector["width"] as! Int)
     #expect(Int(bitmap.height) == vector["height"] as! Int)
     for sample in vector["samples"] as! [[String: Any]] {
