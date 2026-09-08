@@ -27,11 +27,19 @@ With those set:
 
 ```
 ./gradlew :app:compileDebugKotlin   # succeeds: no native library needed to compile
-./gradlew :app:assembleDebug        # fails on purpose, naming the missing .so
+./gradlew :app:assembleDebug        # requires the staged native libraries
 ```
 
-The `assembleDebug` failure is expected. `embedpdf/runtime` doesn't build
-`android-arm64` yet (see `app/build.gradle.kts`'s `requireNativeLibraries` task for
-the full message), so this app can't be packaged or installed until that lands. Every
-packaging and install path (`assembleRelease`, `bundleDebug`, `installDebug` included)
-fails the same way rather than producing an APK that would crash on launch.
+The packaging failure occurs when the staged native libraries are missing.
+The fork builds Android, but the committed release pin has no Android artifacts.
+Use the [local artifact procedure](../../README.md#building-with-local-artifacts),
+then run `bash build/build-kotlin.sh android-arm64` from the prototype root.
+That stages both `libepdf_uniffi.so` and its matching `libc++_shared.so`.
+The Gradle guard checks for staged files; it does not inspect the release pin.
+Packaging and installation can proceed once those files are present.
+
+On 2026-09-08, the existing local debug APK installed and rendered successfully on
+an ARM64 Android emulator with 16 KB pages. The Compose UI displayed 14 pages,
+612 × 792 pt, 120 search hits, the rendered page, and extracted text. This was an
+existing APK smoke test, not a fresh build or a physical-device/x64 test. See the
+[full audit](../../../docs/research/platform-gap-audit.md).

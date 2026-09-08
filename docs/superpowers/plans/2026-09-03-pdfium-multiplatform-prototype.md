@@ -1,5 +1,11 @@
 # Rust Core Scaffold Implementation Plan
 
+> Historical planning record. For verified status as of 2026-09-08, see the
+> [platform-gap audit](../../research/platform-gap-audit.md). Local mobile builds,
+> simulator/emulator renders, and local-pin WASM builds now work; release artifacts,
+> portable device packaging, and full platform/browser coverage remain incomplete.
+
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build `pdfium-multiplatform-prototype/`, a self-contained multiplatform scaffold where one Rust crate exposes six coarse PDF operations over the EmbedPDF PDFium fork, wrapped by Swift, Kotlin, Node and wasm packages, each driving a demo app.

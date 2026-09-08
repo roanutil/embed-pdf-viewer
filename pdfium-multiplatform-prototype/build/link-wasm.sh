@@ -31,11 +31,11 @@ fi
 
 # emsdk 3.1.72 bundles wasm-opt v119, which rejects two wasm feature names
 # present in rustc 1.98.0's precompiled std. -O3 makes em++ run it, so a newer
-# wasm-opt has to shadow the bundled one. pdfium-binding-benchmarks/README.md documents
-# the same substitution.
+# Binaryen must be selected explicitly via EM_BINARYEN_ROOT or the SDK config.
+# The PATH check below is advisory and may inspect a different binary than em++.
 if ! wasm-opt --version 2>/dev/null | grep -qE 'version 1[2-9][0-9]'; then
-  echo "warning: wasm-opt is older than v120; the -O3 link will fail." >&2
-  echo "         install a newer binaryen and put it ahead of emsdk's on PATH." >&2
+  echo "warning: PATH does not report wasm-opt v120-v199; check the Binaryen selected by em++." >&2
+  echo "         set EM_BINARYEN_ROOT to a compatible Binaryen installation (containing bin/wasm-opt)." >&2
 fi
 
 # Not `rustup target add wasm32-unknown-emscripten` here: run from outside any

@@ -37,7 +37,11 @@ can be fast, and no timing table would reveal it on its own.
 `-O3` makes `em++` run `wasm-opt` over the linked module. emsdk 3.1.72 bundles `wasm-opt` v119, which
 rejects two wasm feature names present in rustc 1.98's precompiled std. The numbers in `RESULTS.md`
 were produced on a machine where a newer `wasm-opt` had been symlinked over that bundled binary; a
-fresh `emsdk.sh` install will hit the rejection until the same substitution is made.
+fresh `emsdk.sh` install needs a compatible Binaryen. Replacing SDK binaries is not
+required: set `EM_BINARYEN_ROOT` to a Binaryen installation containing `bin/wasm-opt`.
+The [September 8 audit](../docs/research/platform-gap-audit.md) rebuilt the multiplatform
+prototype with the same Emscripten 3.1.72 and Binaryen 132 using this override.
+Emscripten may take Binaryen from its config rather than `PATH`, so select it explicitly.
 
 `node --test bench/run.test.mjs` is the smoke test: two short rounds, checked for plausible shapes
 (render at 4x costs more than at 1x, the glyph loop dwarfs a single null call), not for

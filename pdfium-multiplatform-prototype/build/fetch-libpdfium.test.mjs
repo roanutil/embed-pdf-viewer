@@ -60,7 +60,8 @@ test('a pending mobile target exits 2 and names itself', async () => {
   const { code, stderr } = await fetchTarget('ios-arm64');
   assert.equal(code, 2);
   assert.match(stderr, /ios-arm64/);
-  assert.match(stderr, /embedpdf\/runtime does not build it yet/);
+  assert.match(stderr, /no published libembedpdf/);
+  assert.match(stderr, /EPDF_SCAFFOLD_PIN_FILE/);
 });
 
 test('an unknown target exits 1', async () => {

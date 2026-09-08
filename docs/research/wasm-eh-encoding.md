@@ -1,5 +1,15 @@
 # Which Wasm EH encoding does emsdk 3.1.72 emit?
 
+> Status update, 2026-09-08: the measurements below are historical toolchain probes.
+> The [platform audit](./platform-gap-audit.md) rebuilt the real module with
+> Emscripten 3.1.72 and Binaryen 132 via `EM_BINARYEN_ROOT`, and confirmed legacy
+> EH instructions. It opened, searched, and rendered in Chrome 152 and cached
+> Playwright Firefox 132 Nightly. Firefox was therefore available for testing
+> through the Playwright cache, although no `/Applications/Firefox.app` exists.
+> Nightly success does not verify release Firefox; release Firefox and Safari
+> remain untested. The final-EH 4.0.0 probe below is not a full Rust/PDFium build.
+
+
 `em++ --version`:
 ```
 emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 3.1.72 (437140d149d9c977ffc8b09dbaf9b0f5a02db190)
@@ -30,11 +40,11 @@ Verdict: **legacy**
 
 No `try_table`, `throw_ref`, or `catch_all_ref` appear anywhere in the histogram. `try` / `catch` / `catch_all` / `delegate` / `rethrow` are the legacy exception-handling opcodes.
 
-Firefox: not installed on this machine (absent from `/Applications`, `mdfind`, and `which firefox`). The browser confirmation step in the task brief could not be run. This is recorded as unverified, not as a passing or failing result, the opcode histogram above is the evidence actually collected.
+Firefox at the time of this probe: not found on this machine (absent from `/Applications`, `mdfind`, and `which firefox`). The browser confirmation step in the task brief could not be run. This is recorded as unverified, not as a passing or failing result, the opcode histogram above is the evidence actually collected.
 
 ## What this means for wasm32-eh
 
-emsdk 3.1.72 emits the legacy exception-handling encoding, not the final one. Firefox never shipped legacy Wasm EH in a release build and only gained support for the final encoding in Firefox 131, so a module built this way would fail to load in Firefox with a `CompileError`, consistent with what the task brief predicted for this outcome, though that specific failure was not directly observed here because Firefox is not installed on this machine.
+emsdk 3.1.72 emits the legacy exception-handling encoding, not the final one. Firefox never shipped legacy Wasm EH in a release build and only gained support for the final encoding in Firefox 131, so a module built this way would fail to load in Firefox with a `CompileError`, consistent with what the task brief predicted for this outcome, though that failure was not observed in the original probes. The later Nightly result is recorded above; release Firefox remains unverified.
 
 3.1.72 is the version pinned at `.github/workflows/release-libpdfium.yml:74` for the rest of the build matrix, and it predates Emscripten's switch to the final encoding. Given that, `wasm32-eh` as planned is not viable at 3.1.72: raising emsdk to a version that emits the final encoding is a toolchain change scoped to one target: none of the other four new targets (ios-arm64, ios-sim-arm64, android-arm64, android-x64) use emscripten at all, and the only other consumer of the 3.1.72 pin is the existing wasm32 target. That raise, and whatever compatibility fallout it brings for a PDFium build that has otherwise standardized on 3.1.72, is Task 4's decision to make now that the encoding question is settled. Building `wasm32-eh` against 3.1.72 as-is would ship a module that browsers supporting only the final encoding cannot load, and Firefox is the browser that matters here, so it is not worth doing at this pinned version.
 
@@ -67,7 +77,7 @@ Byte-for-byte the same histogram as 3.1.72: 12 `try`, 9 `catch_all`, 2 `rethrow`
 
 The toolchain confirms this itself. 4.0.0's `src/settings.js:785` reads `var WASM_LEGACY_EXCEPTIONS = true;`, a setting that does not exist in 3.1.72 at all. Its `ChangeLog.md` entry for 4.0.0 introduces the flag and states the default directly: "This option defaults to true, given that major web browsers do not support the new proposal by default yet." Emscripten added the ability to opt into the final encoding in 4.0.0; it did not make it the default.
 
-Firefox: not installed on this machine, same as the 3.1.72 run. Unobserved, not failing; the histogram is the evidence collected here.
+Firefox at the time of this probe: not found on this machine, same as the 3.1.72 run. Unobserved, not failing; the histogram is the evidence collected here.
 
 ## Task 4's premise does not hold at 4.0.0 either
 
@@ -96,12 +106,12 @@ ran under Node 24 returning the expected value 42.
 
 So the toolchain side of `wasm32-eh` is settled: emsdk 4.0.0 plus one flag, not a version hunt. Whether the result is viable in a browser is a separate question, and it is still open. See below.
 
-What this does NOT establish. No browser was tested, here or anywhere above,
-because Firefox is not installed on this machine. Forcing the final encoding
+What this does NOT establish. No browser was tested in these original probes; see the dated update above
+for the later real-module browser tests. Forcing the final encoding
 trades one compatibility risk for another: legacy is what older Chrome and
 Safari understand, and 4.0.0's own ChangeLog says it kept the legacy default
 because major browsers lacked final support at its release in early 2025.
-Current browser support for the final encoding is unmeasured. That risk is
+Final-encoding browser support for the complete Rust/PDFium module remains unmeasured. That risk is
 contained for now, because `wasm32-eh` is a second artifact consumed only by
 the Rust scaffold's web demo, and the published `wasm32` target is unchanged.
 Anyone promoting `wasm32-eh` to a shipping artifact needs to settle the

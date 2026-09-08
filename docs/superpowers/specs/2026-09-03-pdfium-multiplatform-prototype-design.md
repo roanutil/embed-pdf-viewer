@@ -1,5 +1,11 @@
 # A multiplatform scaffold for the Rust core
 
+> Historical planning record. For verified status as of 2026-09-08, see the
+> [platform-gap audit](../../research/platform-gap-audit.md). Local mobile builds,
+> simulator/emulator renders, and local-pin WASM builds now work; release artifacts,
+> portable device packaging, and full platform/browser coverage remain incomplete.
+
+
 I went looking for the iOS `libembedpdf` and there isn't one.
 
 `packages/engine/runtime/engine-runtime-build.json` pins nine targets: `wasm32`, two darwin, two

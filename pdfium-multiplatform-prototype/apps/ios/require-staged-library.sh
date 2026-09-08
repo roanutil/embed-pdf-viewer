@@ -6,8 +6,7 @@
 # with something inscrutable.
 #
 # Without this, a build for the iOS Simulator or iOS device destination finds
-# no dylib in its slice directory (embedpdf/runtime does not build ios-arm64
-# or ios-sim-arm64 yet) and either:
+# no dylib in its slice directory (the committed pin has no published mobile artifacts) and either:
 #   - links against a leftover macOS dylib on a stale search path and fails
 #     with "Building for 'iOS-simulator', but linking in dylib ... built for
 #     'macOS'", or
@@ -44,14 +43,14 @@ cat >&2 <<MSG
 error: EpdfScaffold cannot link against $SLICE: no libepdf_uniffi.dylib at
 $LIB
 
-embedpdf/runtime does not build $SLICE yet. Its release matrix in
-.github/workflows/release-libpdfium.yml covers nine targets (wasm32, two
-darwin, two linux, two linuxmusl, two win32) and neither mobile one.
-Adding ios-arm64 and ios-sim-arm64 is recommendation 6 of
-docs/research/pdfium-rust-wrapper-decision.md, and has its own design doc.
-Until that lands, the $PLATFORM_NAME destination of this scaffold cannot be
-built, the same way build/fetch-libpdfium.sh already refuses to fetch either
-mobile slice.
+Generate and stage this slice with build/build-swift.sh $SLICE from the
+prototype root. For a pending mobile target, first set EPDF_SCAFFOLD_PIN_FILE
+to a separate pin containing the matching local archive URL and checksum.
+See README.md, "Building with local artifacts".
+
+The local fork supports mobile targets; the committed release pin is pending.
+Staging enables local builds. Device distribution still needs self-contained
+native-library packaging, signing, and verification on a physical device.
 
 What already works:
   - the macOS destination of this same scheme: bash build/build-ios-app.sh

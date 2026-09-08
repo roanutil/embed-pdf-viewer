@@ -36,11 +36,10 @@ targets:
         # must never see the macOS dylib while linking an iOS Simulator
         # destination (and vice versa) or the linker fails with a platform
         # mismatch instead of a "library not found" it can actually explain.
-        # embedpdf/runtime does not build ios-arm64 or ios-sim-arm64 yet (see
-        # the requireStagedLibrary run-script phase below), so those two
-        # directories do not exist yet, but the search path is declared for
-        # them regardless, the same as the macOS one, so the day they are
-        # staged nothing here needs to change.
+        # Mobile artifacts are pending in the committed release pin. Local
+        # builds can stage them using EPDF_SCAFFOLD_PIN_FILE; see README.md.
+        # These absolute runpaths support simulator development only. Device
+        # distribution needs embedded frameworks or static linking and signing.
         LIBRARY_SEARCH_PATHS[sdk=macosx*]:
           - $(SRCROOT)/../../packages/swift/EpdfOps/Frameworks/macos-arm64
         LIBRARY_SEARCH_PATHS[sdk=iphonesimulator*]:

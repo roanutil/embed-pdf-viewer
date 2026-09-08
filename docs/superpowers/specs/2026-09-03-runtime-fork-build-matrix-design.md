@@ -1,5 +1,11 @@
 # Adding mobile and a Wasm-EH wasm target to embedpdf/runtime
 
+> Historical planning record. For verified status as of 2026-09-08, see the
+> [platform-gap audit](../../research/platform-gap-audit.md). Local mobile builds,
+> simulator/emulator renders, and local-pin WASM builds now work; release artifacts,
+> portable device packaging, and full platform/browser coverage remain incomplete.
+
+
 Someone opened `pdfium-multiplatform-prototype/apps/ios/EpdfScaffold.xcodeproj`, picked an iOS Simulator, and
 pressed build. Xcode said this:
 

@@ -2,7 +2,7 @@
 # Fetch one prebuilt libembedpdf artifact from the fork's releases, verified by
 # sha256. Adapted from packages/engine/runtime/scripts/fetch-libpdfium.sh; the
 # only additions are the `status: pending` branch, which is how this scaffold
-# reports the iOS and Android artifacts embedpdf/runtime does not build yet.
+# reports targets without a published artifact in the selected pin.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -53,14 +53,15 @@ case "$STATUS" in
     ;;
   pending)
     cat >&2 <<MSG
-no libembedpdf for $TARGET: embedpdf/runtime does not build it yet.
+no published libembedpdf for $TARGET in the selected pin: $PIN_FILE
 
-The fork's release matrix in .github/workflows/release-libpdfium.yml covers nine
-targets and neither mobile one. Adding them is recommendation 6 of
-docs/research/pdfium-rust-wrapper-decision.md and has its own design doc.
+The local fork builds this target, but the committed release pin is pending.
+To use a local build, set EPDF_SCAFFOLD_PIN_FILE to a separate JSON pin with
+this target's file:// archive URL and sha256 (without status: pending).
+See pdfium-multiplatform-prototype/README.md, "Building with local artifacts".
 
-Until that lands, this target cannot be built. Everything that does not need it
-still works: see pdfium-multiplatform-prototype/README.md.
+A reproducible published build requires completing the fork's release matrix,
+publishing the artifacts, and updating build/runtime-build.json.
 MSG
     exit 2
     ;;

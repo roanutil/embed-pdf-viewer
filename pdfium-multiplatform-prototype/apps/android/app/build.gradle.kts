@@ -106,9 +106,11 @@ val requireNativeLibraries = tasks.register("requireNativeLibraries") {
             """
             no libepdf_uniffi.so for arm64-v8a at ${so.path}
 
-            embedpdf/runtime does not build android-arm64 yet. That is
-            recommendation 6 of docs/research/pdfium-rust-wrapper-decision.md and
-            has its own design doc. Until it lands this app cannot be packaged.
+            The local fork builds Android, but the committed release pin is pending.
+            Set EPDF_SCAFFOLD_PIN_FILE to a separate pin with a local Android archive
+            URL and checksum, then run build/build-kotlin.sh android-arm64 from the
+            prototype root. See README.md, "Building with local artifacts".
+            Packaging can proceed once the required native libraries are staged.
 
             Everything else in the scaffold still works:
               bash build/test-swift.sh

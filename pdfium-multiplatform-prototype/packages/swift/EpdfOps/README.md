@@ -33,6 +33,16 @@ variable does not.
 (`Sources/EpdfOpsFFI`) that does not exist yet, and there is no generated
 `epdf_uniffi.swift` for `EpdfOps` to compile against.
 
+## Mobile verification and packaging
+
+The iOS app rebuilt and displayed a rendered page, extracted text, and search
+results in the iOS 26.5 simulator during the [September 8 audit](../../../../docs/research/platform-gap-audit.md).
+Use the prototype's [local artifact pin](../../../README.md#building-with-local-artifacts)
+until the fork publishes mobile artifacts. The simulator currently resolves its
+native dylib through an absolute checkout runpath. Physical-device distribution
+still requires a self-contained framework/XCFramework or static link, signing,
+and a device test. Moving the checkout also requires rebuilding generated binaries.
+
 ## Why the generated files aren't tracked
 
 `Frameworks/`, `Sources/EpdfOps/Generated/`, and `Sources/EpdfOpsFFI/` are

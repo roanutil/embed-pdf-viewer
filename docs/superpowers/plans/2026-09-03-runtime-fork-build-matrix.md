@@ -1,5 +1,11 @@
 # Fork Build Matrix Implementation Plan
 
+> Historical planning record. For verified status as of 2026-09-08, see the
+> [platform-gap audit](../../research/platform-gap-audit.md). Local mobile builds,
+> simulator/emulator renders, and local-pin WASM builds now work; release artifacts,
+> portable device packaging, and full platform/browser coverage remain incomplete.
+
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add `ios-arm64`, `ios-sim-arm64`, `android-arm64`, `android-x64` and `wasm32-eh` to the embedpdf/runtime build matrix, and consume them from `pdfium-multiplatform-prototype`.

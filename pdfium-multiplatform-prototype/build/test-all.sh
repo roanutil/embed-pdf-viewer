@@ -9,7 +9,7 @@ cd "$ROOT"
 
 # Suites this run skipped because the local environment couldn't provide them
 # (as opposed to the suites in "Not run, and why" below, which are skipped on
-# every machine because embedpdf/runtime hasn't shipped the artifact yet).
+# a checkout using the committed pending pin; a local override can supply it).
 SKIPPED=()
 
 echo "== build/build-node.sh =="
@@ -36,7 +36,7 @@ echo "== build/link-wasm.sh =="
 # link-wasm.sh's own first step is fetch-libpdfium.sh wasm32-eh, which exits 2
 # while embedpdf/runtime hasn't published that target (build/runtime-build.json,
 # "status": "pending"). That's a "not run, and why" case, not a SKIPPED one:
-# every checkout hits it today, not just ones missing local tooling. Any other
+# the committed pin hits it; EPDF_SCAFFOLD_PIN_FILE can supply a local artifact. Any other
 # nonzero exit is a real failure and should still stop the script.
 if bash build/link-wasm.sh; then
   WEB_LINKED=1
@@ -95,13 +95,13 @@ else
   fi
 fi
 
-cat <<'MSG'
-
-Not run, and why:
-  Web (em++ module) test suite       embedpdf/runtime does not publish wasm32-eh yet
-                                      (build/runtime-build.json, "status": "pending")
-  apps/web-demo, apps/ios's window   nothing drives them; they are demo surfaces, not test suites
-MSG
+echo
+echo "Not run by this script:"
+if [[ "$WEB_LINKED" == 0 ]]; then
+  echo "  Web (em++ module) test suite: wasm32-eh is pending in the selected pin."
+fi
+echo "  Browser and mobile UI smoke tests: no UI automation is wired into this script."
+echo "  Manual simulator/emulator and browser results: docs/research/platform-gap-audit.md."
 
 if [[ ${#SKIPPED[@]} -gt 0 ]]; then
   echo

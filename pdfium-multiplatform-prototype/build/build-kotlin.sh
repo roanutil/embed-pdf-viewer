@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Builds libepdf_uniffi for the JVM host and, when the fork ships them, for the
+# Builds libepdf_uniffi for the JVM host and, when artifacts are available, for the
 # Android ABIs, then generates the Kotlin bindings.
 #
 #   bash build/build-kotlin.sh                 # host JVM (darwin-aarch64)
-#   bash build/build-kotlin.sh android-arm64   # exits 2 until the fork builds it
+#   bash build/build-kotlin.sh android-arm64   # needs a published or local pin
 set -euo pipefail
 
 # /usr/bin/java is the macOS stub and /usr/libexec/java_home does not see the

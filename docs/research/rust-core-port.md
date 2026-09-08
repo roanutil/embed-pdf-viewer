@@ -147,12 +147,14 @@ surface at runtime.
 Wave 3 is the Swift and Kotlin bindings, and it is the first real payoff: a native SDK that opens,
 renders, searches, and reads and writes annotations, with no JavaScript runtime on the device. Note
 that `packages/engine/runtime/npm` ships wasm32 plus darwin, linux, linuxmusl and win32 natives
-today, and no iOS or Android target at all. Adding those two to the PDFium build is a prerequisite,
-and it is independent of every port above, so it can run in parallel from wave 0.
+today, and no published iOS or Android artifact. The local fork now builds both;
+the [September 8 audit](./platform-gap-audit.md) verified local simulator/emulator renders.
+Completing release automation and device packaging is a prerequisite to shipping,
+and is independent of every port above, so it can run in parallel from wave 0.
 `pdfium-multiplatform-prototype/` at the repo root already scaffolded this binding surface, uniffi to Swift and
-to Kotlin over the same six coarse operations, and it is waiting on exactly those four missing
-targets, `ios-arm64`, `ios-sim-arm64`, `android-arm64` and `android-x64`, before its own iOS
-destination and Android APK can build.
+to Kotlin over the same six coarse operations. Local pins can supply `ios-arm64`,
+`ios-sim-arm64`, `android-arm64`, and `android-x64` now; a fresh checkout still needs
+those artifacts published and pinned to reproduce the mobile builds.
 
 Wave 4 is `packages/core/annotation`, 7,288 production lines, and it exists only if mobile needs
 interactive editing rather than display and read. In dependency order that is `types.ts` and

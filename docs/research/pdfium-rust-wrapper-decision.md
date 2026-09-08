@@ -78,10 +78,12 @@ no measured performance cost.
    `-O3` makes `em++` run `wasm-opt`, and emsdk 3.1.72's bundled v119 rejects two wasm features in
    rustc 1.98.0's precompiled std, so a newer `wasm-opt` is needed.
 
-6. **Add iOS and Android to the fork's build matrix.** `packages/engine/runtime/npm` ships wasm32
-   plus darwin, linux, linuxmusl and win32 today and neither mobile target. This is independent of
-   every port wave and can start now. The benchmark says nothing about it; the port can't ship
-   without it.
+6. **Publish iOS and Android artifacts through the fork's release matrix.** As of
+   the [2026-09-08 audit](./platform-gap-audit.md), the local fork builds the mobile
+   targets, but release CI and the latest published release still cover nine targets.
+   Local artifacts supported successful iOS simulator and Android emulator renders.
+   Complete release automation, publish through an authorized maintainer, and verify
+   device packaging before shipping. This benchmark does not establish mobile performance.
 
 ## The one real tradeoff
 
