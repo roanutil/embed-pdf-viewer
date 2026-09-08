@@ -36,6 +36,13 @@ for (const [arm, fname] of [
         assert.ok(total > 0, `expected hits for "${SEARCH_TERM}", got ${total}`);
         mem.free(ptr);
 
+        // The sizing probe, same contract as the geometry op below: no buffer,
+        // so nothing is written and the count comes back POSITIVE. Both spellings
+        // of "no buffer" count, because a caller that reached for the geometry
+        // op's convention writes the cap it wants and passes a null pointer.
+        assert.equal(fn[fname](fx.textPage, termPtr, 0, 0), total);
+        assert.equal(fn[fname](fx.textPage, termPtr, 0, cap), total);
+
         // One rect short of fitting: the count still has to be reported, and it
         // has to be reported as an overflow.
         const tight = total - 1;

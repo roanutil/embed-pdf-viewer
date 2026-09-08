@@ -155,12 +155,19 @@ pub extern "C" fn rs_render_page(page: FPDF_PAGE, bitmap: FPDF_BITMAP, w: i32, h
 /// unrelated Emscripten heap. The wasm arms cannot catch that themselves
 /// (bench/arm.mjs's `viewBuffer` ignores its length argument), so overflow has
 /// to be a distinct answer rather than a plausible one.
+///
+/// `out == null` or `cap <= 0` is the sizing probe, the same contract as
+/// `rs_read_page_geometry`: it writes nothing and returns the positive count.
+/// Without the null test a caller following the geometry op's convention,
+/// `rs_search_page(tp, term, null, cap)` with a nonzero cap, dereferenced null
+/// on the first hit.
 #[no_mangle]
 pub extern "C" fn rs_search_page(text_page: FPDF_TEXTPAGE, term: *const u16, out: *mut f32, cap: i32) -> i32 {
     let handle = unsafe { FPDFText_FindStart(text_page as _, term, 0, 0) };
     if handle == 0 {
         return 0;
     }
+    let probe = out.is_null() || cap <= 0;
     let mut written = 0i32;
     unsafe {
         while FPDFText_FindNext(handle) != 0 {
@@ -176,7 +183,7 @@ pub extern "C" fn rs_search_page(text_page: FPDF_TEXTPAGE, term: *const u16, out
                 // records that zero rect and counts it. Match that here:
                 // write and count regardless of status.
                 FPDFText_GetRect(text_page as _, r, &mut l, &mut t, &mut ri, &mut b);
-                if written < cap {
+                if !probe && written < cap {
                     let p = out.add((written * 4) as usize);
                     core::ptr::write_unaligned(p, l as f32);
                     core::ptr::write_unaligned(p.add(1), t as f32);
@@ -188,7 +195,7 @@ pub extern "C" fn rs_search_page(text_page: FPDF_TEXTPAGE, term: *const u16, out
         }
         FPDFText_FindClose(handle);
     }
-    if written > cap {
+    if !probe && written > cap {
         -written
     } else {
         written

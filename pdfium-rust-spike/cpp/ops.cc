@@ -138,9 +138,16 @@ int cc_render_page(FPDF_PAGE page, FPDF_BITMAP bitmap, int w, int h, int rotate)
 // come back unclamped on overflow, which let searchCoarse
 // (bench/workloads.mjs) read past the end of its allocation with no error
 // anywhere.
+//
+// `out == nullptr` or `cap <= 0` is the sizing probe, the same contract as
+// cc_read_page_geometry: it writes nothing and returns the positive count.
+// Without the null test a caller following the geometry op's convention,
+// cc_search_page(tp, term, nullptr, cap) with a nonzero cap, dereferenced null
+// on the first hit.
 int cc_search_page(FPDF_TEXTPAGE text_page, const unsigned short* term, float* out, int cap) {
   FPDF_SCHHANDLE handle = FPDFText_FindStart(text_page, term, 0, 0);
   if (handle == nullptr) return 0;
+  const bool probe = out == nullptr || cap <= 0;
   int written = 0;
   while (FPDFText_FindNext(handle)) {
     int start = FPDFText_GetSchResultIndex(handle);
@@ -154,7 +161,7 @@ int cc_search_page(FPDF_TEXTPAGE text_page, const unsigned short* term, float* o
       // return value, so it records that zero rect and counts it. Match
       // that here: write and count regardless of status.
       FPDFText_GetRect(text_page, r, &l, &t, &ri, &b);
-      if (written < cap) {
+      if (!probe && written < cap) {
         out[written * 4 + 0] = static_cast<float>(l);
         out[written * 4 + 1] = static_cast<float>(t);
         out[written * 4 + 2] = static_cast<float>(ri);
@@ -164,7 +171,7 @@ int cc_search_page(FPDF_TEXTPAGE text_page, const unsigned short* term, float* o
     }
   }
   FPDFText_FindClose(handle);
-  return written > cap ? -written : written;
+  return !probe && written > cap ? -written : written;
 }
 
 }  // extern "C"
