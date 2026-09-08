@@ -110,13 +110,29 @@ EM_SYSROOT_INCLUDE="$(em-config CACHE)/sysroot/include"
 # RUSTFLAGS on the cargo command below. PDFium's setjmp/longjmp use is real,
 # not incidental: core/fxcodec/png/pngmodule.cpp and
 # core/fxcodec/jpeg/jpeg_common.c use it for libpng and libjpeg error handling.
+#
+# `epdf_test_panic` is the manual check that a Rust panic reaches the JS caller
+# as a catchable RuntimeError instead of killing the instance (README.md, "Five
+# things a reader will otherwise be surprised by"). It is a probe, not an API,
+# and crates/epdf-wasm/src/lib.rs:224 says it is "absent from a normal build",
+# so it has to be opt-in here rather than always on:
+#
+#   EPDF_PANIC_PROBE=1 bash build/link-wasm.sh
+CARGO_FEATURES=()
+PROBE_EXPORT=""
+if [[ "${EPDF_PANIC_PROBE:-0}" != "0" ]]; then
+  CARGO_FEATURES=(--features panic-probe)
+  PROBE_EXPORT=",_epdf_test_panic"
+  echo "building WITH the panic probe: epdf_test_panic is exported" >&2
+fi
+
 ( cd "$ROOT" \
   && BINDGEN_EXTRA_CLANG_ARGS="--target=wasm32-unknown-emscripten -isystem${EM_SYSROOT_INCLUDE} -fvisibility=default" \
-     cargo build --release -p epdf-wasm --features panic-probe --target wasm32-unknown-emscripten )
+     cargo build --release -p epdf-wasm "${CARGO_FEATURES[@]}" --target wasm32-unknown-emscripten )
 
 EXPORTS="_malloc,_free\
 ,_epdf_open,_epdf_page_count,_epdf_json,_epdf_render,_epdf_free,_epdf_close,_epdf_last_error\
-,_epdf_test_panic"
+${PROBE_EXPORT}"
 
 mkdir -p "$OUT_DIR"
 em++ \

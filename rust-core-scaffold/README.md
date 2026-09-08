@@ -266,7 +266,9 @@ mechanism and `RUSTFLAGS="-C panic=abort"` is gone from `build/link-wasm.sh`. Ve
 against a `file://`-pinned build of fork commit `7f0fa5dbe` (see above): `epdf-wasm`'s new
 `panic-probe` feature (`crates/epdf-wasm/src/lib.rs`) panics on purpose, and the panic surfaces to
 the JS caller as a catchable `RuntimeError` rather than killing the module. Calling the probe twice
-in a row still throws twice, proof the instance survives. `wasm32-eh` isn't in a published release
+in a row still throws twice, proof the instance survives. The probe is opt-in, so reproducing that
+check means `EPDF_PANIC_PROBE=1 bash build/link-wasm.sh`; a plain run ships neither the feature nor
+the `_epdf_test_panic` export. `wasm32-eh` isn't in a published release
 yet, same as the four mobile targets, so a stock checkout still can't build this today; `wasm32`
 stays in `runtime-build.json` with its working URL, just unused by any code path now.
 
