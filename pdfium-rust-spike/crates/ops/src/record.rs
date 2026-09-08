@@ -4,7 +4,9 @@
 
 pub const RECORD_BYTES: usize = 112;
 /// Set alongside the EPDF_CHARGEO bits when the char matrix has det < 0.
-pub const FLAG_ASCENT_FLIP: u32 = 1 << 6;
+/// Bit 7, the first bit above EPDF_CHARGEO_SYNTHESIZED (1u << 6); the record
+/// copies PDFium's flags verbatim, so this must not collide with any of them.
+pub const FLAG_ASCENT_FLIP: u32 = 1 << 7;
 
 pub struct Writer {
     base: *mut u8,

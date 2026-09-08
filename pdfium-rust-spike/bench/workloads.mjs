@@ -53,8 +53,13 @@ const F = {
   UPRIGHT: 1 << 3,
   SPACE: 1 << 4,
   EMPTY: 1 << 5,
-  /** Set by the record producer (rs_/cc_), not by PDFium itself. */
-  ASCENT_FLIP: 1 << 6,
+  SYNTHESIZED: 1 << 6,
+  /**
+   * Set by the record producer (rs_/cc_), not by PDFium itself. Bit 7, the
+   * first bit above SYNTHESIZED, because the record copies PDFium's flags
+   * verbatim before OR-ing this in.
+   */
+  ASCENT_FLIP: 1 << 7,
 };
 
 /** The packed record arms c and d write, one per glyph. See cpp/record.h. */

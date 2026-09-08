@@ -15,6 +15,12 @@
 static_assert(sizeof(FPDF_TEXTPAGE) == sizeof(void*) || sizeof(FPDF_TEXTPAGE) == 4,
               "unexpected PDFium handle width");
 
+// The record copies EPDF_CHAR_GEOMETRY::flags verbatim and then ORs
+// kFlagAscentFlip in, so the producer bit must sit above every EPDF_CHARGEO
+// bit. EPDF_CHARGEO_SYNTHESIZED is the highest one PDFium defines.
+static_assert(kFlagAscentFlip > EPDF_CHARGEO_SYNTHESIZED,
+              "kFlagAscentFlip collides with a PDFium EPDF_CHARGEO flag");
+
 extern "C" {
 
 // Transcribes the loop in
