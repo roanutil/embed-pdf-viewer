@@ -23,24 +23,34 @@ impl<'a> TextPage<'a> {
 
     /// EPDFText_GetTextFull is a fork extension: one call for the whole page,
     /// UTF-16, returning the code-unit count including the NUL terminator.
+    ///
+    /// The fork extracts and re-encodes the whole page on every call, sizing
+    /// call included (fpdf_text.cpp, EPDFText_GetTextFull), so the classic
+    /// two-call pattern does that work twice. Every character contributes at
+    /// most two UTF-16 units, so `2 * CountChars + 1` is a true upper bound
+    /// and one call normally suffices; the resize-and-retry path below is
+    /// only for a fork that stops honouring that bound.
     pub fn text(&self) -> Result<String, PdfiumError> {
-        let needed = unsafe { pdfium_sys::EPDFText_GetTextFull(self.handle, std::ptr::null_mut(), 0) };
-        if needed <= 0 {
-            return Err(PdfiumError::TextRead);
-        }
-        if needed == 1 {
-            return Ok(String::new());
-        }
-
-        let mut buf = vec![0u16; needed as usize];
-        let written = unsafe {
-            pdfium_sys::EPDFText_GetTextFull(self.handle, buf.as_mut_ptr(), needed)
+        let capacity = (self.char_count() as usize) * 2 + 1;
+        let capacity = i32::try_from(capacity).map_err(|_| PdfiumError::TextRead)?;
+        let mut buf = vec![0u16; capacity as usize];
+        let mut required = unsafe {
+            pdfium_sys::EPDFText_GetTextFull(self.handle, buf.as_mut_ptr(), capacity)
         };
-        if written <= 0 || written > needed {
+        if required > capacity {
+            buf.resize(required as usize, 0);
+            required = unsafe {
+                pdfium_sys::EPDFText_GetTextFull(self.handle, buf.as_mut_ptr(), required)
+            };
+            if required as usize > buf.len() {
+                return Err(PdfiumError::TextRead);
+            }
+        }
+        if required <= 0 {
             return Err(PdfiumError::TextRead);
         }
 
-        buf.truncate((written as usize).saturating_sub(1)); // drop the terminator
+        buf.truncate((required as usize).saturating_sub(1)); // drop the terminator
         // The fork preserves lone surrogate units. Replace those units rather
         // than discarding all the otherwise usable text on the page.
         Ok(decode_text(&buf))
