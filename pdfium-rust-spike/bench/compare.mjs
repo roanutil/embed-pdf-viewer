@@ -8,13 +8,22 @@
  * that may also be sitting in bench/results/ from an earlier wasm run (and
  * vice versa without the flag), and skips the wasm-size table: `wasmBytes` is
  * null in every native result file, since there is no wasm module to size.
+ *
+ * `--out <dir>` reads a directory other than bench/results/, matching
+ * bench/run.mjs's own `--out`. Without it, `run.mjs --out /tmp/x` followed by
+ * the `Now run: node bench/compare.mjs` that run.mjs prints tabulated the 56
+ * committed files instead of the run that just finished, and said nothing.
  */
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { WORKLOAD_TABLE } from './workloads.mjs';
 
 const here = import.meta.dirname;
-const RESULTS = resolve(here, 'results');
+const arg = (name, fallback) => {
+  const i = process.argv.indexOf(`--${name}`);
+  return i === -1 ? fallback : process.argv[i + 1];
+};
+const RESULTS = resolve(arg('out', resolve(here, 'results')));
 const ARMS = ['a', 'b', 'c', 'd'];
 const LABEL = {
   a: 'a direct',
@@ -25,12 +34,13 @@ const LABEL = {
 
 const native = process.argv.includes('--native');
 
-const files = readdirSync(RESULTS).filter((f) =>
+const files = (existsSync(RESULTS) ? readdirSync(RESULTS) : []).filter((f) =>
   native ? f.startsWith('native-') && f.endsWith('.json') : !f.startsWith('native-') && f.endsWith('.json'),
 );
 if (files.length === 0) {
   console.error(
-    `no ${native ? 'native ' : ''}results; run: node bench/run.mjs${native ? ' --native' : ''}`,
+    `no ${native ? 'native ' : ''}results in ${RESULTS}; ` +
+      `run: node bench/run.mjs${native ? ' --native' : ''}`,
   );
   process.exit(1);
 }

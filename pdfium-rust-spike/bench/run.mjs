@@ -143,7 +143,11 @@ for (let r = 1; r <= rounds; r++) {
 }
 
 const shown = relative(process.cwd(), RESULTS);
+// Repeat --out in the suggested command. Without it the reader follows this
+// line, compare.mjs reads bench/results/, and tabulates the committed data
+// rather than the run that just finished.
+const outFlag = arg('out', null) === null ? '' : ` --out ${arg('out', '')}`;
 console.log(
   `\n${readdirSync(RESULTS).length} result files in ${shown && !shown.startsWith('..') ? shown : RESULTS}. ` +
-    `Now run: node bench/compare.mjs${native ? ' --native' : ''}`,
+    `Now run: node bench/compare.mjs${native ? ' --native' : ''}${outFlag}`,
 );
