@@ -93,4 +93,11 @@ fn an_absurdly_large_scale_is_a_render_failure_not_an_abort() {
     let doc = engine.open(bytes, None).unwrap();
 
     assert_eq!(doc.render_page(0, 1_000_000.0), Err(epdf_ops::OpsError::RenderFailed));
+
+    // Both dimensions saturate at u32::MAX here, and u32::MAX * 4 * u32::MAX
+    // is about 7.4e19, past u64::MAX. The byte count used to be a plain
+    // multiply: debug panicked inside the worker job and catch_unwind
+    // reported Internal, release wrapped to a small number and let the render
+    // through. 1e6 above stays just under, which is why it never fired.
+    assert_eq!(doc.render_page(0, 1e30), Err(epdf_ops::OpsError::RenderFailed));
 }

@@ -101,8 +101,18 @@ impl Document {
             // the golden buffer comparison in every host.
             let width = ((page.width() * scale).round() as u32).max(1);
             let height = ((page.height() * scale).round() as u32).max(1);
-            let bytes = u64::from(width) * 4 * u64::from(height);
-            if bytes > MAX_RENDER_BYTES {
+            // checked_mul, because both casts saturate at u32::MAX and
+            // u32::MAX * 4 * u32::MAX is about 7.4e19, past u64::MAX. Any
+            // scale over roughly 7e6 on the 612x792 fixture gets there. In
+            // debug, which is what `cargo test` builds, the plain multiply
+            // panicked inside the worker job and catch_unwind reported
+            // Internal instead of the RenderFailed this guard promises;
+            // release wrapped to a small number and let the render through.
+            let too_big = u64::from(width)
+                .checked_mul(4)
+                .and_then(|b| b.checked_mul(u64::from(height)))
+                .is_none_or(|bytes| bytes > MAX_RENDER_BYTES);
+            if too_big {
                 return Err(OpsError::RenderFailed);
             }
             let bitmap = page.render_bgra(width, height)?;
