@@ -231,7 +231,9 @@ and Kotlin test them without relaxing the expected channel values.
 tests, 6 web tests, and one test each for the CLI and browser color conversion.
 `build/test-all.sh` builds Node before running Rust tests, then attempts the WASM
 build and runs the JavaScript suites. With a pending WASM pin it omits the web
-suite's six tests. Swift, Kotlin, and Android JVM tests follow; the script reports
+suite's six tests and exits nonzero after running the remaining suites. Supply a
+local `wasm32-eh` artifact through `EPDF_SCAFFOLD_PIN_FILE` for a complete run.
+Swift, Kotlin, and Android JVM tests follow; the script reports
 missing toolchains explicitly. The current Rust, JavaScript, Swift, and Kotlin
 suites were run separately after the fixes. The full aggregate script and Android
 JVM suite were not rerun during this follow-up.

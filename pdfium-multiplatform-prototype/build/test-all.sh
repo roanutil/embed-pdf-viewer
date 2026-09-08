@@ -7,9 +7,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-# Suites this run skipped because the local environment couldn't provide them
-# (as opposed to the suites in "Not run, and why" below, which are skipped on
-# a checkout using the committed pending pin; a local override can supply it).
+# Required suites that could not run, including unpublished pinned artifacts.
+# Continue collecting other results, but never report full coverage as passing.
 SKIPPED=()
 
 echo "== build/build-node.sh =="
@@ -35,8 +34,8 @@ echo "== build/link-wasm.sh =="
 #
 # link-wasm.sh's own first step is fetch-libpdfium.sh wasm32-eh, which exits 2
 # while embedpdf/runtime hasn't published that target (build/runtime-build.json,
-# "status": "pending"). That's a "not run, and why" case, not a SKIPPED one:
-# the committed pin hits it; EPDF_SCAFFOLD_PIN_FILE can supply a local artifact. Any other
+# "status": "pending"). This is incomplete coverage and must fail the gate;
+# EPDF_SCAFFOLD_PIN_FILE can supply a local artifact. Any other
 # nonzero exit is a real failure and should still stop the script.
 if bash build/link-wasm.sh; then
   WEB_LINKED=1
@@ -45,6 +44,7 @@ else
   if [[ $code -eq 2 ]]; then
     echo "skipped: wasm32-eh is pending (build/runtime-build.json); the web module can't link yet" >&2
     WEB_LINKED=0
+    SKIPPED+=("web (em++ module): wasm32-eh is pending; supply EPDF_SCAFFOLD_PIN_FILE with a built artifact")
   else
     exit "$code"
   fi
@@ -97,17 +97,12 @@ fi
 
 echo
 echo "Not run by this script:"
-if [[ "$WEB_LINKED" == 0 ]]; then
-  echo "  Web (em++ module) test suite: wasm32-eh is pending in the selected pin."
-fi
 echo "  Browser and mobile UI smoke tests: no UI automation is wired into this script."
 echo "  Manual simulator/emulator and browser results: docs/research/platform-gap-audit.md."
 
 if [[ ${#SKIPPED[@]} -gt 0 ]]; then
   echo
-  echo "Skipped this run, and why (unlike the suites above, these could run"
-  echo "here if the environment were configured for them; a green run that"
-  echo "silently skipped them would be reporting untested code as passing):"
+  echo "Required suites skipped: this run is incomplete and cannot pass."
   printf '  %s\n' "${SKIPPED[@]}"
   exit 1
 fi
