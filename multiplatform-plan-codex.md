@@ -83,6 +83,16 @@ Preserve visible-first tile scheduling and retained low-resolution imagery while
 
 For interactions, batch sampled pointer input where appropriate, preserve order, and avoid crossing for every primitive. Keep immediate scroll/zoom and presentation feedback on the UI thread. If a Rust interaction core is introduced, move a complete state/command/result loop; its output should be consumable without rebuilding a large object tree. Benchmark simple and complex annotations, ink, cloudy borders, snapping, and hit-test misses against improved TypeScript.
 
+### Disposition of existing fork helpers
+
+Inventory `EPDF*` helpers as their callers migrate. Record each helper's callers, semantic contract, reason for existing, and replacement or retention decision. Classify them into three groups:
+
+- Helpers that only batch host crossings: remove or internalize them once a coarse Rust operation replaces every caller and conformance/performance checks pass. During the TypeScript transition they may still be necessary; do not delete them on the first Rust call site's arrival.
+- Helpers that reduce work inside PDFium: retain them when they avoid repeated traversal or expose information unavailable efficiently through the public ABI. `EPDFText_GetCharGeometry`, for example, gathers related geometry in one traversal; that benefit can survive Rust integration.
+- Helpers that implement fork behavior, lifecycle, or capabilities absent upstream: preserve their semantics and evaluate them independently of boundary overhead.
+
+Do not add a new public C helper solely as temporary migration glue without identifying its consumers and retirement path. Conversely, do not replace useful native work with multiple Rust-to-PDFium calls merely to reduce the fork's function count. Check other runtime and server consumers before removing any exported ABI.
+
 ### Explicit exclusions for this release
 
 Keep `packages/core/annotation`, `packages/core/main`, and `packages/core/stage` in TypeScript on web throughout this program. Do not replace the web kernel/store, port web framework adapters or viewer chrome into Rust, or require WASM initialization for existing synchronous pure TypeScript packages. Native annotation interaction logic may be implemented in Rust with shared vectors while web retains its existing implementation.
@@ -109,6 +119,74 @@ Specify shared coordinate semantics: normalized page points, origin and axis dir
 Expose feature availability and the existing `can`-twin semantics through natural platform APIs. Native UI must use the capability's answer instead of reinterpreting scope strings. Engine/server enforcement remains authoritative. Preserve optimistic rollback and changes to permission-derived state. A missing mobile feature is explicitly unsupported, not a no-op that looks successful.
 
 Host extensions remain platform-native: TypeScript plugins, Swift integrations, Kotlin integrations. Share stable commands, effects, and feature contracts when useful; do not attempt to execute arbitrary existing TypeScript plugins in Rust or bundle a JS runtime just to reuse web UI. Treat PDF form JavaScript separately: retain the current web path until a native sandbox and behavior contract are validated; mobile must explicitly report any unsupported scripts.
+
+### Native consumer examples as API acceptance tests
+
+The examples below are proposed facade designs, not APIs implemented or compiled in this checkout. Implement and compile equivalent examples against the distributable Swift and Kotlin SDKs in Phase 2; run them in fresh consumer apps in Phase 3. Review these workflows before expanding the generated binding surface.
+
+Swift: a scoped engine and document, with observation running alongside rendering. `show` and `handle` are application UI functions.
+
+```swift
+@MainActor
+func preview(_ data: Data) async throws {
+    try await PDFEngine.withEngine { engine in
+        try await engine.withDocument(data: data) { document in
+            try await withThrowingTaskGroup(of: Void.self) { group in
+                group.addTask {
+                    for try await event in document.events {
+                        await handle(event)
+                    }
+                }
+                defer { group.cancelAll() }
+
+                let page = try document.page(at: 0)
+                let image = try await page.render(scale: 2)
+                let text = try await page.text()
+                show(image: image, text: text)
+            }
+        }
+    }
+}
+
+// Owned by the screen; cancel when the preview is replaced or dismissed.
+let previewTask = Task { try await preview(pdfData) }
+// In the screen's dismissal callback:
+previewTask.cancel()
+```
+
+Kotlin: the same workflow uses structured coroutines and suspending resource scopes. `show` and `handle` are application UI functions; the caller runs on the UI dispatcher while SDK methods dispatch native work internally.
+
+```kotlin
+suspend fun preview(bytes: ByteArray) {
+    PdfEngine.withEngine { engine ->
+        engine.withDocument(bytes) { document ->
+            coroutineScope {
+                val observation = launch {
+                    document.events.collect { event -> handle(event) }
+                }
+                try {
+                    val page = document.page(0)
+                    val bitmap = page.render(scale = 2f)
+                    val text = page.text()
+                    show(bitmap, text)
+                } finally {
+                    withContext(NonCancellable) {
+                        observation.cancelAndJoin()
+                    }
+                }
+            }
+        }
+    }
+}
+
+val previewJob = screenScope.launch { preview(pdfBytes) }
+// In the screen's dismissal callback:
+previewJob.cancel()
+```
+
+The resource scopes await document cleanup before engine cleanup on success, error, and cancellation. Cleanup must continue after caller cancellation, without blocking the UI thread or abandoning native resources; Kotlin helpers use a bounded cleanup policy within a non-cancellable context. Swift helpers explicitly await cleanup rather than relying on an asynchronous `defer`. Observation cancellation must release the stream subscription and finish promptly; the Swift task group waits for its child before the document scope exits. Native calls that cannot yet stop may delay resource release according to the documented cancellation contract.
+
+These one-shot samples stop observation after the preview is produced; a persistent viewer ties the same scopes to its screen lifetime. Returned CGImage/Bitmap values must own or retain their pixels independently of the closed document. Add executable sample variants for wrong passwords/typed errors, cancellation while queued and in flight, and explicit `closeAndAwait` when scoped ownership is unsuitable. Verify no late events reach a disposed screen. Include all imports and application stubs in the compiled sample projects; the abbreviated snippets here are the review target.
 
 ## Incremental migration without two owners of one document
 
@@ -152,6 +230,29 @@ These are dependency milestones, not calendar estimates. After Phase 1, estimate
 
 Phases 3 and 4 can overlap after the read contract stabilizes. A mobile reader release may precede native editing, but documentation must distinguish that from full web feature parity. The web default must not switch to an incomplete backend simply because the mobile reader milestone passed.
 
+### Operation inventory and port order
+
+Track progress against the actual `WorkerRequest` union in `packages/engine/core/src/wire/worker-protocol.ts`, with one entry per kind: owner, dependencies, phase, supported platforms, cancellation/apply boundary, corpus coverage, performance result, and legacy-bridge retirement condition. CI should flag newly added kinds without an inventory entry. Wire kinds identify existing behavior; they do not become the Swift/Kotlin public API.
+
+The initial ordering below names existing suites under `packages/engine/core/src/conformance`. Named suites cover their existing assertions, not necessarily every operation in the row; add focused tests for gaps. Never count a file-based or server-only operation as mobile-supported merely because its shared computation has been ported.
+
+| Order / phase | Operations and dependencies | Verification and delivery |
+|---|---|---|
+| 0 / Phase 0 | `pages.geometry` through the Stage A borrowed-handle bridge; existing TS session opens the web document. | `runPageGeometryOrientationConformance`; geometry fairness vectors and comparative timing. |
+| 1 / Phases 1–2 | Native session creation, `open.fatMem`, `document.checkPasswordPermissions`, `close`, `abort`, `shutdown`; password-locked bytes, page identity, resource ownership and admission. | Open/password/error/close/cancellation traces and owner-thread tests. Required before any native reader operation; session authority remains TS on the legacy web path until Stage B. |
+| 2 / Phase 2 | `metadata.read`, `pages.list`, `actions.read`, `pages.render`, `pages.renderEncoded`; bring required font registration/fallback behavior forward for faithful renders. | `runMetadataConformance`, `runActionsConformance`, geometry/orientation tests, exact color samples, raster tolerances, tile and image-lifetime tests. |
+| 3 / Phase 2 | `pages.text`, `search.query`; text layout, fold, cursor/index mapping and cancellation dependencies. | `runPageTextConformance`, `runTextDivergenceConformance`, `runSearchConformance`; non-BMP, combining and RTL fixtures. |
+| 4 / Phase 2 | `annotations.listRawAll`, `annotations.listRawPage`, `annotations.listFullPage`, `annotations.renderAppearances`, `annotations.renderAppearancesEncoded`. | `runAnnotationReadConformance`, `runAnnotationAppearanceConformance`; permission and weak-annotation-state propagation through the session owner. |
+| 5 / Phases 2–4 | `attachments.list`, `attachments.readFile`, `annotations.readFile`, `pieceInfo.read`, `pieceInfo.applications`, `forms.list`, `forms.export`. Read-model dependencies may move a family earlier. | `runAttachmentConformance`, `runPieceInfoConformance`, `runFormConformance`, plus focused file/annotation tests. Expose each mobile capability only when its source/output contract is supported. |
+| 6 / start of Phase 4 | Stage B session-authority transfer on web; establish save/reopen (`document.saveBuffer`) before claiming mutation parity. | Revision, page lease, retained-source, password-state and close tests; `runDocumentEventsConformance`; persisted-output assertions. No mutation family proceeds with two authorities. |
+| 7 / Phase 4 | `annotations.create`, `annotations.update`, `annotations.delete`, `annotations.move`; shared appearance and save dependencies. | `runAnnotationMutationConformance`, appearance and document-event suites; partial failure, cancellation-after-apply and save/reopen traces. |
+| 8 / Phase 4 | `forms.setValue`, `forms.reset`, `forms.applyEffects`, `forms.import`, `forms.repair`, `forms.createField`, `forms.updateField`, `forms.deleteField`, `forms.attachWidget`, `forms.detachWidget`. | `runFormConformance`, annotation/event coverage and persisted-output tests; explicitly track form-JavaScript support and restrictions. |
+| 9 / Phase 4 | `pages.rotate`, `pages.move`, `pages.delete`, `pages.insertBlank`, `pages.extract`, `pages.insert`, `pages.flatten`, then `redaction.apply`. Imports depend on source retention and owner-compatible source access. | `runPageRotateConformance`, `runPageReorderConformance`, `runPageDeleteConformance`, `runPageInsertBlankConformance`, `runPageExtractConformance`, `runPageInsertConformance`, `runPageFlattenConformance`, `runRedactionApplyConformance`; save/reopen and identity checks. |
+| 10 / Phase 4 | `metadata.update`, `pieceInfo.update`, `pieceInfo.clear`, `attachments.create`, `attachments.delete`; complete `fonts.register`, `fonts.addFallback`, `fonts.clearFallbacks`, `fonts.clear` where not already required. | Corresponding metadata/piece-info/attachment suites; focused font invalidation and multi-document tests. |
+| 11 / before retiring legacy web services | `open.layerMemBase`, `open.layerFileBase`, `layer.close`, `document.saveFile`, `document.saveLayerBuffer`, `document.probeSecurityFile`, `document.renderPageFile`, `document.renderPageFileEncoded`. | Add layer/source-retention and file-adapter conformance, security checks, and output equivalence. Preserve web/server behavior; track native source/sink adaptations separately. |
+
+Layer/file operations can move earlier when a ported feature depends on them. Phase 2's reader milestone does not require every read operation in the full inventory; the later compatibility rollout does require coverage of every existing supported web operation. Each completed slice adds facade/corpus coverage and records payload size, latency and bridge removal status.
+
 ## Lifecycle, scheduling, and failure semantics
 
 Implement these in the production foundation, rather than inheriting the prototype's unbounded channel:
@@ -170,7 +271,31 @@ Keep npm names, framework component/hook patterns, configuration vocabulary, plu
 
 Preserve the built-in viewer entry point and the engine-injected `/core` entry point. The latter must remain free of PDFium symbols and WASM assets when used with a remote/custom engine. Framework wrappers remain engine-blind and boot once. Keep SSR import safe: defer workers/WASM initialization until the appropriate client lifecycle. Keep synchronous pure TypeScript packages usable without asynchronous Rust initialization.
 
+### Concrete web compatibility commitments
+
+Treat these as acceptance requirements for the Rust-backed web engine, not general preferences:
+
+| Surface | Compatibility target | Evidence required |
+|---|---|---|
+| `localEngine(options)` and `EngineFactory` | Construction stays synchronous and cheap; no worker/WASM startup until first use or explicit warmup. | Existing consumer code typechecks unchanged; construction and SSR-import tests observe no live worker allocation. |
+| `Engine.open(input, options)` | Preserve `AbortablePromise<DocumentHandle>`, input/options vocabulary and progress behavior. No new caller-visible Rust initialization await. | Compile-time API comparison and open/password/progress/initialization tests. |
+| `Engine.warmup?()` | Preserve optional, idempotent, non-blocking `void` behavior; first operation remains sufficient to initialize. | Repeated warmup/first-open tests and custom-engine compatibility. |
+| `DocumentHandle` and its services | Preserve existing signatures, DTO meaning, page identity, revisions and event semantics through adapters. | API declarations plus relevant conformance suites and representative plugin integrations. |
+| Engine ownership and destruction | Preserve borrowed engine instances versus adapter-owned factories and existing `destroy()` return shape. | Mount/unmount, duplicate mount, shared-engine and pending-operation cleanup tests. |
+| Viewer/framework entry points | Preserve existing names/configuration and engine injection; `/core` stays runtime-free. | Compiled framework samples, boot-once tests and bundle assertions. |
+
+Cancellation is an explicit contract decision, not an implied promise that every native call becomes interruptible. Preserve the current `abort(): void` signature and immediate public-promise rejection unless a separately documented major-version change is accepted. Distinguish cancellation of waiting from execution and mutation outcome; test late results and events. Any necessary exception to the table must enter the compatibility ledger with rationale, before/after code, migration guidance, and a regression test before implementation lands. An empty package is not a compatibility shim for removed exports.
+
+### DTO and HTTP schema compatibility
+
+
 Generate or mechanically check internal wire DTOs from a canonical schema/Rust definition; retain adapters where public web DTOs intentionally differ. Validate wire inputs at runtime and define numeric widths and unknown-enum behavior. Version the internal protocol/buffer layout and detect mismatched JS/WASM/native artifacts. Do not expose the generated Rust serialization layout as the public API.
+
+Choose a canonical Rust/schema definition for migrated DTOs in Phase 0, prove TypeScript generation on the geometry slice, pin the generator, and fail CI on an uncommitted regeneration diff. Keep handwritten public adapters where source compatibility requires them. The handwritten HTTP schemas in `packages/engine/core/src/wire/schemas.ts` remain a separate boundary that must be tested explicitly.
+
+Add a schema compatibility matrix per migrated DTO. Test both directions: canonical Rust values serialized for HTTP must pass the existing request/response schema, and supported schema-valid HTTP values must decode into Rust and return semantically equivalent values through the adapter. Account for intentional schema transforms/defaults in the expected normalization. Use representative and generated boundary cases for omitted versus null fields, enum variants and unknown values, numeric widths/safe-integer limits, nested unions, empty collections, and invalid inputs. Require agreement on rejection behavior where the contracts coincide; explicit adapter mappings document intended differences. A few successful parse examples or TypeScript assignability alone cannot establish compatibility.
+
+Keep internal worker envelopes separate from HTTP authorization/transport behavior. A schema change is reviewed as a public cloud compatibility change even when Rust code generation caused it. Run these checks with custom/CloudPDF engine tests so the local port cannot silently redefine remote payloads.
 
 Maintain a compatibility ledger per exported surface: unchanged, adapter-preserved, deprecated, or intentionally breaking. Likely breaks to evaluate include direct runtime/pointer access, undocumented worker protocol use, resource disposal guarantees, and cancellation behavior. Do not remove such surfaces merely because the version is major; document concrete before/after examples and provide codemods where practical. Typecheck representative downstream integrations and custom plugins, and exercise custom/CloudPDF engines independently.
 
@@ -189,6 +314,17 @@ Create a baseline before choosing final budgets. The following are proposed star
 | Boundary design | Count calls, transferred bytes, allocations, and decode time. No per-glyph host calls in geometry/search. A batched frame path still has to pass actual timing gates. |
 
 Use the existing `packages/engine/core/src/conformance` suites as behavioral oracles for geometry/orientation, text/search, annotation reads/mutations/appearance, forms, page edits, redaction, attachments, piece-info, and document events. Run them against the existing and Rust-backed web engine. Extract language-neutral vectors/traces for Swift/Kotlin and test their native facades; do not replace rich conformance coverage with the prototype's six operations.
+
+### Cross-language conformance corpus deliverable
+
+Create a versioned corpus under `vectors/conformance/` with a schema version, fixture hashes, stable case IDs, capability requirements, operation sequences, expected results/errors, event expectations, revision relationships, and save/reopen assertions. Represent returned document/page/annotation identities by symbolic references so runners compare semantics rather than incidental generated IDs. Encode partial-order event requirements where ordering is guaranteed only within a document; use controllable barriers for cancellation/race tests instead of wall-clock sleeps.
+
+Phase 0 delivers the format and geometry case; Phase 2 delivers Rust, web/Node, Swift and Kotlin runners for the supported read subset. Phases 4–5 extend the corpus as each mutation/interaction family lands. Swift/Kotlin runners call handwritten public facades, including conversion and cleanup, rather than bypassing them for generated bindings. A platform reports unsupported cases explicitly with a tracked capability reason; required cases may not silently skip. Produce a per-operation coverage report alongside release artifacts.
+
+Derive cases from existing conformance suites and freeze independently reviewed expected behavior using the current engine where appropriate. Keep existing TypeScript suites intact: not every orchestration, race, transport, or platform lifecycle assertion can become JSON. Add native/platform tests for the remainder and record the coverage mapping. Expected data is never regenerated during test execution; updates require reviewing the behavioral change and fixture provenance.
+
+Differential mutation tests replay the same sequence against independent, identically initialized legacy and Rust documents. Never execute both implementations' writes on one live document. Compare outputs, revision relationships, emitted events, and saved/reopened contents. Production operation routing is separate from this test machinery; deleting a routing entry is not a safe rollback for an already-mutated live session.
+
 
 Expand fixtures to rotated/cropped pages, non-BMP/combining/RTL text, large scanned PDFs, complex vector pages, fonts and ICC profiles, encrypted documents, forms, embedded attachments, malformed input, and dense annotations/ink. Check exact structural results and stable error codes. Use explicit color-channel/alpha tests alongside raster tolerances; a grayscale golden cannot detect channel swaps.
 
