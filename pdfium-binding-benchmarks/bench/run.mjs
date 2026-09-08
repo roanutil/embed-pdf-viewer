@@ -24,17 +24,19 @@ import { existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
 import { relative, resolve } from 'node:path';
 import { canonicalFor, canonicalForNative, compare } from './gate.mjs';
 import { GATE_FIXTURES } from './fixture.mjs';
+import { parseRunOptions } from './run-options.mjs';
 
 const here = import.meta.dirname;
 const ARMS = ['a', 'b', 'c', 'd'];
 
-const arg = (name, fallback) => {
-  const i = process.argv.indexOf(`--${name}`);
-  return i === -1 ? fallback : process.argv[i + 1];
-};
-const native = process.argv.includes('--native');
-const rounds = Number(arg('rounds', '7'));
-const budgetMs = Number(arg('budget', '500'));
+let options;
+try {
+  options = parseRunOptions(process.argv.slice(2));
+} catch (error) {
+  console.error(`Invalid benchmark arguments: ${error.message}`);
+  process.exit(1);
+}
+const { native, rounds, budgetMs, out } = options;
 // `--out` writes the round files somewhere other than bench/results/.
 //
 // bench/results/ holds 56 COMMITTED files, the raw data behind every table in
@@ -42,7 +44,7 @@ const budgetMs = Number(arg('budget', '500'));
 // short run destructive: `run.mjs --rounds 2 --budget 100` swapped seven rounds
 // of real data for two rounds of noise. Tests pass --out and never touch the
 // committed set.
-const RESULTS = resolve(arg('out', resolve(here, 'results')));
+const RESULTS = resolve(out ?? resolve(here, 'results'));
 
 if (native) {
   // Arm a is packages/engine/runtime's own shipping addon; arms b and c
@@ -146,7 +148,7 @@ const shown = relative(process.cwd(), RESULTS);
 // Repeat --out in the suggested command. Without it the reader follows this
 // line, compare.mjs reads bench/results/, and tabulates the committed data
 // rather than the run that just finished.
-const outFlag = arg('out', null) === null ? '' : ` --out ${arg('out', '')}`;
+const outFlag = out === undefined ? '' : ` --out ${out}`;
 console.log(
   `\n${readdirSync(RESULTS).length} result files in ${shown && !shown.startsWith('..') ? shown : RESULTS}. ` +
     `Now run: node bench/compare.mjs${native ? ' --native' : ''}${outFlag}`,
