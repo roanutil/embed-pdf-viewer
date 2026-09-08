@@ -55,3 +55,13 @@ test('the CLI reports the frozen numbers and writes a readable BMP', async () =>
   const maxDiff = maxAbsDiff(pixels, golden);
   assert.ok(maxDiff <= vectors.render.maxAbsDiffTolerance, `max abs diff ${maxDiff}`);
 });
+
+test('a non-numeric --page or --scale is rejected before any PDFium call', async () => {
+  for (const args of [['--page', 'four'], ['--page', ''], ['--page', '1.5'], ['--scale', 'big'], ['--scale', '0']]) {
+    await assert.rejects(
+      run('node', [resolve(here, 'main.mjs'), ...args, '--out', join(tmpdir(), 'epdf-cli-invalid.bmp')]),
+      (err) => err.code === 1 && /invalid --(page|scale)/.test(err.stderr),
+      `expected ${args.join(' ')} to be rejected`,
+    );
+  }
+});
