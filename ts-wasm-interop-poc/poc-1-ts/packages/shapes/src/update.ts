@@ -29,14 +29,18 @@ const replace = (
   id: Id,
   fn: (s: Shape) => Shape,
 ): readonly Shape[] | null => {
-  // findIndex + slice, not map: one scan and one copy either way, and it gives
-  // the caller the miss for free. `shapes.map` cannot, and pointerMove was
-  // paying for a separate `some` scan to get the same answer.
-  const i = shapes.findIndex((s) => s.id === id);
-  if (i === -1) return null;
-  const next = shapes.slice();
-  next[i] = fn(shapes[i]!);
-  return next;
+  // Still `shapes.map`, with a flag, and deliberately not findIndex + slice.
+  // The per-element closure IS the cost this POC is measuring against Rust
+  // mutating one shape in place, so replacing it with a memcpy would be
+  // hand-optimising the side under test. All the flag buys is the miss, which
+  // pointerMove was paying a separate `some` scan to learn.
+  let found = false;
+  const next = shapes.map((s) => {
+    if (s.id !== id) return s;
+    found = true;
+    return fn(s);
+  });
+  return found ? next : null;
 };
 
 /**

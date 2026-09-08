@@ -8,26 +8,26 @@ Medians across rounds. "worst spread" is the widest (max-min)/median of any sing
 
 | cell | poc-1 | poc-2 | poc-3 | poc-2/poc-1 | poc-3/poc-1 | worst spread |
 |---|---|---|---|---|---|---|
-| n=1 plain flat | 23 ns | 150 ns | 239 ns | 6.37x | 10.17x | 8% |
-| n=1 plain projecting | 23 ns | 151 ns | 242 ns | 6.58x | 10.55x | 8% |
-| n=1 anchored flat | 27 ns | 175 ns | 249 ns | 6.39x | 9.06x | 24% |
-| n=1 anchored projecting | 147 ns | 972 ns | 394 ns | 6.60x | 2.68x | 12% |
-| n=10 plain flat | 276 ns | 1.39 µs | 795 ns | 5.04x | 2.88x | 9% |
-| n=10 plain projecting | 240 ns | 1.38 µs | 783 ns | 5.76x | 3.26x | 22% |
-| n=10 anchored flat | 225 ns | 1.61 µs | 821 ns | 7.15x | 3.65x | 40% |
-| n=10 anchored projecting | 1.34 µs | 9.47 µs | 2.24 µs | 7.08x | 1.68x | 7% |
-| n=100 plain flat | 2.22 µs | 13.59 µs | 6.27 µs | 6.11x | 2.82x | 21% |
-| n=100 plain projecting | 2.22 µs | 13.62 µs | 6.33 µs | 6.13x | 2.85x | 22% |
-| n=100 anchored flat | 2.36 µs | 15.95 µs | 6.62 µs | 6.77x | 2.81x | 24% |
-| n=100 anchored projecting | 12.70 µs | 94.61 µs | 20.43 µs | 7.45x | 1.61x | 6% |
-| n=1000 plain flat | 22.32 µs | 134.91 µs | 64.66 µs | 6.04x | 2.90x | 18% |
-| n=1000 plain projecting | 21.37 µs | 135.52 µs | 63.08 µs | 6.34x | 2.95x | 17% |
-| n=1000 anchored flat | 24.71 µs | 155.94 µs | 66.92 µs | 6.31x | 2.71x | 18% |
-| n=1000 anchored projecting | 126.96 µs | 929.54 µs | 204.69 µs | 7.32x | 1.61x | 12% |
-| n=10000 plain flat | 215.16 µs | 1.35 ms | 681.15 µs | 6.27x | 3.17x | 32% |
-| n=10000 plain projecting | 215.63 µs | 1.34 ms | 684.06 µs | 6.19x | 3.17x | 28% |
-| n=10000 anchored flat | 233.52 µs | 1.55 ms | 707.90 µs | 6.63x | 3.03x | 30% |
-| n=10000 anchored projecting | 1.30 ms | 9.41 ms | 2.10 ms | 7.25x | 1.62x | 12% |
+| n=1 plain flat | 23 ns | 147 ns | 239 ns | 6.33x | 10.27x | 2% |
+| n=1 plain projecting | 23 ns | 148 ns | 241 ns | 6.50x | 10.57x | 2% |
+| n=1 anchored flat | 27 ns | 172 ns | 246 ns | 6.37x | 9.08x | 3% |
+| n=1 anchored projecting | 147 ns | 958 ns | 387 ns | 6.51x | 2.63x | 8% |
+| n=10 plain flat | 271 ns | 1.37 µs | 787 ns | 5.06x | 2.90x | 3% |
+| n=10 plain projecting | 234 ns | 1.36 µs | 774 ns | 5.80x | 3.31x | 17% |
+| n=10 anchored flat | 250 ns | 1.59 µs | 813 ns | 6.36x | 3.25x | 31% |
+| n=10 anchored projecting | 1.28 µs | 9.34 µs | 2.20 µs | 7.31x | 1.72x | 4% |
+| n=100 plain flat | 2.20 µs | 13.55 µs | 6.21 µs | 6.17x | 2.83x | 17% |
+| n=100 plain projecting | 2.19 µs | 13.40 µs | 6.21 µs | 6.13x | 2.84x | 17% |
+| n=100 anchored flat | 2.33 µs | 15.63 µs | 6.55 µs | 6.70x | 2.81x | 19% |
+| n=100 anchored projecting | 12.57 µs | 93.23 µs | 20.14 µs | 7.41x | 1.60x | 4% |
+| n=1000 plain flat | 21.98 µs | 131.89 µs | 62.66 µs | 6.00x | 2.85x | 12% |
+| n=1000 plain projecting | 20.98 µs | 132.37 µs | 62.27 µs | 6.31x | 2.97x | 10% |
+| n=1000 anchored flat | 22.30 µs | 153.36 µs | 66.22 µs | 6.88x | 2.97x | 16% |
+| n=1000 anchored projecting | 121.96 µs | 913.60 µs | 200.76 µs | 7.49x | 1.65x | 4% |
+| n=10000 plain flat | 211.16 µs | 1.32 ms | 663.84 µs | 6.23x | 3.14x | 15% |
+| n=10000 plain projecting | 210.89 µs | 1.31 ms | 662.15 µs | 6.21x | 3.14x | 15% |
+| n=10000 anchored flat | 198.93 µs | 1.54 ms | 699.43 µs | 7.72x | 3.52x | 15% |
+| n=10000 anchored projecting | 1.26 ms | 9.23 ms | 2.04 ms | 7.35x | 1.63x | 7% |
 
 ### poc-3: what the object decode costs
 
@@ -35,45 +35,45 @@ poc-3 crosses the boundary once per frame either way. The only difference betwee
 
 | cell | poc-1 (objects) | poc-3 (objects) | poc-3 (raw buffer) | decode share | raw vs poc-1 |
 |---|---|---|---|---|---|
-| n=1 plain flat | 23 ns | 239 ns | 200 ns | 16% | 8.53x |
-| n=1 plain projecting | 23 ns | 242 ns | 201 ns | 17% | 8.76x |
-| n=1 anchored flat | 27 ns | 249 ns | 212 ns | 15% | 7.72x |
-| n=1 anchored projecting | 147 ns | 394 ns | 352 ns | 11% | 2.39x |
-| n=10 plain flat | 276 ns | 795 ns | 496 ns | 38% | 1.80x |
-| n=10 plain projecting | 240 ns | 783 ns | 500 ns | 36% | 2.08x |
-| n=10 anchored flat | 225 ns | 821 ns | 536 ns | 35% | 2.38x |
-| n=10 anchored projecting | 1.34 µs | 2.24 µs | 1.94 µs | 14% | 1.45x |
-| n=100 plain flat | 2.22 µs | 6.27 µs | 3.66 µs | 42% | 1.65x |
-| n=100 plain projecting | 2.22 µs | 6.33 µs | 3.68 µs | 42% | 1.66x |
-| n=100 anchored flat | 2.36 µs | 6.62 µs | 4.06 µs | 39% | 1.72x |
-| n=100 anchored projecting | 12.70 µs | 20.43 µs | 17.87 µs | 13% | 1.41x |
-| n=1000 plain flat | 22.32 µs | 64.66 µs | 33.73 µs | 48% | 1.51x |
-| n=1000 plain projecting | 21.37 µs | 63.08 µs | 33.50 µs | 47% | 1.57x |
-| n=1000 anchored flat | 24.71 µs | 66.92 µs | 37.23 µs | 44% | 1.51x |
-| n=1000 anchored projecting | 126.96 µs | 204.69 µs | 174.95 µs | 15% | 1.38x |
-| n=10000 plain flat | 215.16 µs | 681.15 µs | 329.31 µs | 52% | 1.53x |
-| n=10000 plain projecting | 215.63 µs | 684.06 µs | 330.81 µs | 52% | 1.53x |
-| n=10000 anchored flat | 233.52 µs | 707.90 µs | 367.24 µs | 48% | 1.57x |
-| n=10000 anchored projecting | 1.30 ms | 2.10 ms | 1.74 ms | 17% | 1.34x |
+| n=1 plain flat | 23 ns | 239 ns | 199 ns | 17% | 8.56x |
+| n=1 plain projecting | 23 ns | 241 ns | 200 ns | 17% | 8.78x |
+| n=1 anchored flat | 27 ns | 246 ns | 207 ns | 16% | 7.66x |
+| n=1 anchored projecting | 147 ns | 387 ns | 346 ns | 11% | 2.35x |
+| n=10 plain flat | 271 ns | 787 ns | 491 ns | 38% | 1.81x |
+| n=10 plain projecting | 234 ns | 774 ns | 494 ns | 36% | 2.11x |
+| n=10 anchored flat | 250 ns | 813 ns | 529 ns | 35% | 2.11x |
+| n=10 anchored projecting | 1.28 µs | 2.20 µs | 1.91 µs | 13% | 1.50x |
+| n=100 plain flat | 2.20 µs | 6.21 µs | 3.59 µs | 42% | 1.63x |
+| n=100 plain projecting | 2.19 µs | 6.21 µs | 3.59 µs | 42% | 1.64x |
+| n=100 anchored flat | 2.33 µs | 6.55 µs | 3.99 µs | 39% | 1.71x |
+| n=100 anchored projecting | 12.57 µs | 20.14 µs | 17.57 µs | 13% | 1.40x |
+| n=1000 plain flat | 21.98 µs | 62.66 µs | 33.03 µs | 47% | 1.50x |
+| n=1000 plain projecting | 20.98 µs | 62.27 µs | 32.95 µs | 47% | 1.57x |
+| n=1000 anchored flat | 22.30 µs | 66.22 µs | 36.68 µs | 45% | 1.64x |
+| n=1000 anchored projecting | 121.96 µs | 200.76 µs | 171.43 µs | 15% | 1.41x |
+| n=10000 plain flat | 211.16 µs | 663.84 µs | 323.85 µs | 51% | 1.53x |
+| n=10000 plain projecting | 210.89 µs | 662.15 µs | 323.74 µs | 51% | 1.54x |
+| n=10000 anchored flat | 198.93 µs | 699.43 µs | 361.97 µs | 48% | 1.82x |
+| n=10000 anchored projecting | 1.26 ms | 2.04 ms | 1.71 ms | 17% | 1.36x |
 
 ### Hit-test
 
 | cell | poc-1 | poc-2 | poc-3 | poc-2/poc-1 | poc-3/poc-1 | worst spread |
 |---|---|---|---|---|---|---|
-| n=10 hit | 130 ns | 1.03 µs | 178 ns | 7.96x | 1.37x | 6% |
-| n=10 miss | 1.25 µs | 10.22 µs | 1.55 µs | 8.19x | 1.24x | 5% |
-| n=100 hit | 126 ns | 1.03 µs | 183 ns | 8.12x | 1.44x | 6% |
-| n=100 miss | 12.03 µs | 101.85 µs | 15.15 µs | 8.47x | 1.26x | 6% |
-| n=1000 hit | 127 ns | 1.02 µs | 183 ns | 8.07x | 1.44x | 5% |
-| n=1000 miss | 119.84 µs | 1.02 ms | 152.48 µs | 8.51x | 1.27x | 6% |
+| n=10 hit | 128 ns | 1.01 µs | 177 ns | 7.89x | 1.38x | 2% |
+| n=10 miss | 1.24 µs | 10.13 µs | 1.54 µs | 8.17x | 1.24x | 2% |
+| n=100 hit | 126 ns | 1.02 µs | 181 ns | 8.06x | 1.43x | 3% |
+| n=100 miss | 11.95 µs | 100.82 µs | 15.10 µs | 8.44x | 1.26x | 4% |
+| n=1000 hit | 126 ns | 1.02 µs | 182 ns | 8.06x | 1.44x | 2% |
+| n=1000 miss | 119.60 µs | 1.01 ms | 150.76 µs | 8.46x | 1.26x | 2% |
 
 ### Dispatch (ns per pointerMove)
 
 | shapes | poc-1 | poc-2 | poc-3 | poc-2/poc-1 | poc-3/poc-1 | worst spread |
 |---|---|---|---|---|---|---|
-| n=10 | 90 ns | 92 ns | 1.68 µs | 1.03x | 18.78x | 9% |
-| n=100 | 493 ns | 496 ns | 1.70 µs | 1.01x | 3.45x | 8% |
-| n=1000 | 5.89 µs | 5.81 µs | 1.95 µs | 0.99x | 0.33x | 23% |
+| n=10 | 76 ns | 78 ns | 1.66 µs | 1.02x | 21.94x | 2% |
+| n=100 | 348 ns | 352 ns | 1.68 µs | 1.01x | 4.82x | 2% |
+| n=1000 | 3.70 µs | 3.66 µs | 1.92 µs | 0.99x | 0.52x | 15% |
 
 ### Allocation (100 anchored shapes, GC-free window)
 
