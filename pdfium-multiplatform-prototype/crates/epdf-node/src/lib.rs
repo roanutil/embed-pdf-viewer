@@ -32,15 +32,7 @@ use napi_derive::napi;
 /// fail this build rather than silently collapse into `INTERNAL`, the same
 /// guarantee `crates/epdf-uniffi`'s mirror gives Swift and Kotlin.
 fn to_napi(err: epdf_ops::OpsError) -> Error<String> {
-    let code = match &err {
-        epdf_ops::OpsError::LoadFailed => "LOAD_FAILED",
-        epdf_ops::OpsError::PasswordRequired => "PASSWORD_REQUIRED",
-        epdf_ops::OpsError::PageOutOfRange { .. } => "PAGE_OUT_OF_RANGE",
-        epdf_ops::OpsError::RenderFailed => "RENDER_FAILED",
-        epdf_ops::OpsError::Closed => "CLOSED",
-        epdf_ops::OpsError::EngineFailed { .. } => "ENGINE_FAILED",
-        epdf_ops::OpsError::Internal { .. } => "INTERNAL",
-    };
+    let code = err.code();
     Error::new(code.to_string(), err.to_string())
 }
 
@@ -130,17 +122,25 @@ impl Document {
 /// One process-wide engine, and therefore one PDFium thread. A scaffold does
 /// not need a pool, and a second engine would mean a second thread with its own
 /// FPDF_InitLibrary, which is legal but pointless here.
-type EngineResult = std::result::Result<Arc<epdf_ops::Engine>, epdf_ops::OpsError>;
-
-fn initialize_engine(
-    cell: &std::sync::OnceLock<EngineResult>,
-    initialize: impl FnOnce() -> EngineResult,
-) -> std::result::Result<&Arc<epdf_ops::Engine>, epdf_ops::OpsError> {
-    cell.get_or_init(initialize).as_ref().map_err(Clone::clone)
+/// Initializes the shared value once, but only caches a success. A failed
+/// `Engine::new` (a thread-spawn EAGAIN, say) is returned to this caller and
+/// the next call tries again, rather than one transient failure poisoning
+/// every later `openDocument` in the process.
+fn initialize_engine<T: Clone>(
+    cell: &std::sync::Mutex<Option<T>>,
+    initialize: impl FnOnce() -> std::result::Result<T, epdf_ops::OpsError>,
+) -> std::result::Result<T, epdf_ops::OpsError> {
+    let mut slot = cell.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+    if let Some(value) = slot.as_ref() {
+        return Ok(value.clone());
+    }
+    let value = initialize()?;
+    *slot = Some(value.clone());
+    Ok(value)
 }
 
-fn engine() -> Result<&'static Arc<epdf_ops::Engine>, String> {
-    static ENGINE: std::sync::OnceLock<EngineResult> = std::sync::OnceLock::new();
+fn engine() -> Result<Arc<epdf_ops::Engine>, String> {
+    static ENGINE: std::sync::Mutex<Option<Arc<epdf_ops::Engine>>> = std::sync::Mutex::new(None);
     initialize_engine(&ENGINE, epdf_ops::Engine::new).map_err(to_napi)
 }
 
@@ -155,17 +155,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn initialization_failure_is_a_stable_error_without_unwinding() {
-        for failure in [
-            epdf_ops::OpsError::Internal { message: "thread creation failed".into() },
-            epdf_ops::OpsError::EngineFailed { message: "worker exited".into() },
-        ] {
-            let cell = std::sync::OnceLock::new();
-            let expected = failure.clone();
-            let first = initialize_engine(&cell, || Err(failure)).err().unwrap();
-            assert_eq!(first, expected);
-            let again = initialize_engine(&cell, || panic!("must initialize only once")).err().unwrap();
-            assert_eq!(again, first);
-        }
+    fn initialization_failure_is_reported_and_retried_on_the_next_call() {
+        let failure = epdf_ops::OpsError::Internal { message: "thread creation failed".into() };
+        let cell = std::sync::Mutex::new(None);
+        let first = initialize_engine(&cell, || Err(failure.clone())).unwrap_err();
+        assert_eq!(first, failure);
+        // A transient failure must not poison the process: the next call
+        // initializes again instead of replaying the cached error.
+        assert_eq!(initialize_engine(&cell, || Ok(7u32)).unwrap(), 7);
+        assert_eq!(initialize_engine(&cell, || panic!("must not initialize twice")).unwrap(), 7);
     }
 }

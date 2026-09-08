@@ -10,6 +10,10 @@ members = ["crates/build-support", "crates/pdfium-sys", "crates/test-support", "
 opt-level = 3
 lto = true
 codegen-units = 1
-# Deliberately NOT panic = "abort", unlike pdfium-binding-benchmarks/Cargo.toml. uniffi
-# and napi both turn a Rust panic into a host-language exception via
-# catch_unwind, and panic = "abort" removes that path.
+# Deliberately NOT panic = "abort", unlike pdfium-binding-benchmarks/Cargo.toml.
+# epdf-ops's dispatch wraps every PDFium call in catch_unwind and reports a
+# panic as OpsError::EngineFailed, and panic = "abort" would remove that path.
+# Neither host layer relies on catching panics itself: uniffi does wrap calls in
+# catch_unwind, but napi-derive only does so for functions that opt in with
+# #[napi(catch_unwind)], which crates/epdf-node does not use. Its exports must
+# therefore return Result rather than panic (see epdf-node's engine()).
