@@ -67,12 +67,15 @@ Every measured function returns a number that the harness accumulates. Without
 that, V8 is entitled to delete the call, and a benchmark of nothing looks
 excellent.
 
-Allocation figures are `heapUsed` deltas over a window short enough that no
-collection intervenes, not an allocation counter. `RESULTS.md` carries the
-calibration: a `{x, y}` object measures about 73 bytes by this method against a
-~24 byte theoretical minimum, so absolutes are good to roughly 3x. The
-comparison between implementations is sound because all three are measured
-identically.
+Allocation figures sum `heapUsed` and `arrayBuffers` deltas over a window with
+no observed collection. This includes the copied `Float64Array` returned by
+wasm-bindgen as well as the decoded JavaScript objects. Results report both
+components separately and identify the metric as `heapUsed+arrayBuffers`;
+`compare.mjs` rejects old heap-only samples. These are JavaScript allocation
+estimates, excluding Rust's internal allocations and other external memory.
+The object calibration describes only the heap component.
+
+Run the backing-store regression with `node --expose-gc --test bench/alloc.test.mjs`.
 
 Two earlier attempts at the allocation metric are documented in `workloads.mjs`,
 because both failed quietly rather than loudly. Measuring heap growth over 2,000

@@ -31,7 +31,12 @@ let cold = null;
 for (const f of files) {
   const j = JSON.parse(readFileSync(resolve(RESULTS, f), 'utf8'));
   if (j.mode === 'cold-start') cold = j;
-  else if (j.mode === 'alloc') alloc.push(j);
+  else if (j.mode === 'alloc') {
+    if (j.allocationMetric !== 'heapUsed+arrayBuffers') {
+      throw new Error(`${f}: obsolete allocation metric; rerun allocation rounds before comparing`);
+    }
+    alloc.push(j);
+  }
   else if (j.mode === 'timing') timing.push(j);
 }
 
@@ -144,20 +149,23 @@ if (alloc.length) {
   const calib = median(alloc.map((r) => r.calibration?.bytesPerObject ?? NaN));
   md.push(`\n### Allocation (${first.shapes} anchored shapes, GC-free window)\n`);
   md.push(
-    `These are \`heapUsed\` deltas, not an allocation counter. Calibration: a \`{x, y}\` object ` +
+    `These are \`heapUsed + arrayBuffers\` deltas over a GC-free window, not an allocation counter. ` +
+      `They include copied typed-array backing stores but exclude Rust's internal allocations. ` +
+      `Heap calibration: a \`{x, y}\` object ` +
       `measures ${calib.toFixed(0)} bytes here against a ~24 byte theoretical minimum, so treat the ` +
-      `absolute figures as good to about 3x. The comparison between implementations is sound, since ` +
-      `all three are measured the same way.\n`,
+      `heap figures as estimates. Backing-store bytes are accounted separately.\n`,
   );
-  md.push(`| | bytes/frame | bytes/shape | window | vs typescript-baseline |`);
-  md.push(`|---|---|---|---|---|`);
+  md.push(`| | bytes/frame | heap/frame | backing stores/frame | bytes/shape | window | vs typescript-baseline |`);
+  md.push(`|---|---|---|---|---|---|---|`);
   const base = median((byAdapter.get('typescript-baseline') ?? []).map((r) => r.bytesPerFrame));
   for (const a of ORDER) {
     const runs = byAdapter.get(a) ?? [];
     if (!runs.length) continue;
     const bpf = median(runs.map((r) => r.bytesPerFrame));
     md.push(
-      `| ${SHORT[a]} | ${bpf.toFixed(0)} | ${(bpf / first.shapes).toFixed(1)} | ` +
+      `| ${SHORT[a]} | ${bpf.toFixed(0)} | ` +
+        `${median(runs.map((r) => r.heapBytesPerFrame)).toFixed(0)} | ` +
+        `${median(runs.map((r) => r.arrayBufferBytesPerFrame)).toFixed(0)} | ${(bpf / first.shapes).toFixed(1)} | ` +
         `${median(runs.map((r) => r.frames)).toFixed(0)} frames | ${ratio(bpf, base)} |`,
     );
   }

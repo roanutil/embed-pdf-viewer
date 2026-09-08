@@ -77,7 +77,11 @@ rust-geometry-and-state crosses the boundary once per frame either way. The only
 
 ### Allocation (100 anchored shapes, GC-free window)
 
-These are `heapUsed` deltas, not an allocation counter. Calibration: a `{x, y}` object measures 73 bytes here against a ~24 byte theoretical minimum, so treat the absolute figures as good to about 3x. The comparison between implementations is sound, since all three are measured the same way.
+These historical samples use the obsolete heap-only metric and undercount the
+Rust-owned-state variant’s copied typed-array backing stores. Rerun allocation
+rounds with the current harness before using this table to compare variants.
+
+These are `heapUsed` deltas, not an allocation counter. Calibration: a `{x, y}` object measures 73 bytes here against a ~24 byte theoretical minimum, so treat the absolute figures as good to about 3x. The figures omit backing stores and are not a complete allocation comparison.
 
 | | bytes/frame | bytes/shape | window | vs typescript-baseline |
 |---|---|---|---|---|

@@ -120,7 +120,7 @@ export async function runAll(adapter, { budgetMs = 500 } = {}) {
 }
 
 /**
- * Allocation pressure, as bytes allocated per frame.
+ * JavaScript allocation pressure, as heap and ArrayBuffer bytes per frame.
  *
  * Getting this wrong twice was instructive, so both dead ends are recorded here.
  *
@@ -142,7 +142,9 @@ export async function runAll(adapter, { budgetMs = 500 } = {}) {
  * shape. It was measuring what survived, not what was produced.
  *
  * What works is a window short enough that no collection intervenes. Force a
- * GC, run a few hundred frames, read the delta, and verify no GC fired. If one
+ * GC, run a few hundred frames, read both heapUsed and arrayBuffers deltas,
+ * and verify no GC fired. Typed-array backing stores are not in heapUsed;
+ * wasm-bindgen's copied scene buffer must be counted too. If a collection
  * did, the sample is discarded and the window halves.
  *
  * That verification only works if the observer is drained, per the note above.
@@ -178,6 +180,8 @@ export async function runAlloc(adapter) {
 
   let frames = ALLOC_FRAMES;
   let bytesPerFrame = NaN;
+  let heapBytesPerFrame = NaN;
+  let arrayBufferBytesPerFrame = NaN;
   let acc = 0;
   let attempts = 0;
 
@@ -191,16 +195,20 @@ export async function runAlloc(adapter) {
     // and discard every sample.
     await drainGcEntries();
     gcSeen = 0;
-    const before = process.memoryUsage().heapUsed;
+    const before = process.memoryUsage();
 
     for (let i = 0; i < frames; i++) acc += s.frame(VIEW_PROJECTING);
 
-    const after = process.memoryUsage().heapUsed;
+    const after = process.memoryUsage();
     await drainGcEntries();
     obs.disconnect();
 
-    if (gcSeen === 0 && after > before) {
-      bytesPerFrame = (after - before) / frames;
+    const heapBytes = after.heapUsed - before.heapUsed;
+    const arrayBufferBytes = after.arrayBuffers - before.arrayBuffers;
+    if (gcSeen === 0 && heapBytes >= 0 && arrayBufferBytes >= 0 && heapBytes + arrayBufferBytes > 0) {
+      heapBytesPerFrame = heapBytes / frames;
+      arrayBufferBytesPerFrame = arrayBufferBytes / frames;
+      bytesPerFrame = heapBytesPerFrame + arrayBufferBytesPerFrame;
       break;
     }
     // A collection landed inside the window, so the delta undercounts. Shrink.
@@ -215,8 +223,8 @@ export async function runAlloc(adapter) {
    * A `{x, y}` object with unboxed doubles should be about 24 bytes under V8
    * pointer compression. Measuring a known quantity the same way the workload is
    * measured tells the reader how much to trust the absolute figures. The
-   * comparison between implementations is sound either way; the absolute number
-   * is only as good as this ratio.
+   * calibration applies to the heap component, not the separately accounted
+   * ArrayBuffer backing stores. Neither component counts Rust's own allocations.
    */
   const calibration = (() => {
     const count = 100_000;
@@ -237,6 +245,9 @@ export async function runAlloc(adapter) {
     shapes: ALLOC_SIZE,
     attempts,
     calibration,
+    allocationMetric: 'heapUsed+arrayBuffers',
+    heapBytesPerFrame,
+    arrayBufferBytesPerFrame,
     bytesPerFrame,
     bytesPerShape: bytesPerFrame / ALLOC_SIZE,
     gcDuringWindow: gcSeen,
