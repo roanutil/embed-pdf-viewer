@@ -75,6 +75,15 @@ impl<'a> TextPage<'a> {
 
     /// Returns `(char_index, char_count)` per hit, in document order.
     pub fn find(&self, query: &str, case_sensitive: bool) -> Result<Vec<(u32, u32)>, PdfiumError> {
+        // PDFium's empty-word search can fail to advance on non-whitespace.
+        if query.is_empty() {
+            return Ok(Vec::new());
+        }
+        // The native API accepts a NUL-terminated string, not a length. Do not
+        // silently truncate a query (including turning it into an empty one).
+        if query.contains('\0') {
+            return Err(PdfiumError::Search);
+        }
         let needle: Vec<u16> = query.encode_utf16().chain(std::iter::once(0)).collect();
         let flags = if case_sensitive { pdfium_sys::FPDF_MATCHCASE } else { 0 };
 

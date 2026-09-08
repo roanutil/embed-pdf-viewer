@@ -22,6 +22,10 @@ fn matches_the_frozen_vectors() {
 
     let hits = text_page.find("the", false).unwrap();
     assert!(!hits.is_empty(), "the fixture contains the query");
+    assert!(text_page.find("", false).unwrap().is_empty());
+    for query in ["\0", "the\0ignored"] {
+        assert_eq!(text_page.find(query, false), Err(pdfium::PdfiumError::Search));
+    }
 
     let bitmap = page.render_bgra(v.render_width, v.render_height).unwrap();
     assert_eq!(bitmap.width, v.render_width);
