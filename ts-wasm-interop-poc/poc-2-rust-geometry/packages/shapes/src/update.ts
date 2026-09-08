@@ -15,8 +15,29 @@ export function hitTest(model: Model, at: Vec, view: ViewEnv): Id | null {
   return null;
 }
 
-const replace = (shapes: readonly Shape[], id: Id, fn: (s: Shape) => Shape): readonly Shape[] =>
-  shapes.map((s) => (s.id === id ? fn(s) : s));
+/**
+ * Returns null when `id` matches nothing, so the caller can tell a no-op from
+ * an edit and hand the caller's own model straight back. `shapes.map` always
+ * builds a new array, so the store's `if (next !== model)` at
+ * packages/store/src/index.ts:65 rebuilt the display list for a message that
+ * changed nothing. poc-3's Rust `update` reports `changed: false` for the same
+ * case (crates/core/src/model.rs:257), and this benchmark exists to compare
+ * those two, not one of them against a version that skipped the check.
+ */
+const replace = (
+  shapes: readonly Shape[],
+  id: Id,
+  fn: (s: Shape) => Shape,
+): readonly Shape[] | null => {
+  // findIndex + slice, not map: one scan and one copy either way, and it gives
+  // the caller the miss for free. `shapes.map` cannot, and pointerMove was
+  // paying for a separate `some` scan to get the same answer.
+  const i = shapes.findIndex((s) => s.id === id);
+  if (i === -1) return null;
+  const next = shapes.slice();
+  next[i] = fn(shapes[i]!);
+  return next;
+};
 
 /**
  * The one entry point. Pure: same model and msg give the same result, and
@@ -46,11 +67,12 @@ export function update(model: Model, msg: Msg): [Model, Effect[]] {
     }
 
     case 'select':
+      if (msg.id === model.selected) return [model, []];
       return [{ ...model, selected: msg.id }, []];
 
     case 'pointerDown': {
       const hit = hitTest(model, msg.at, msg.view);
-      if (!hit) return [{ ...model, selected: null }, []];
+      if (!hit) return model.selected === null ? [model, []] : [{ ...model, selected: null }, []];
       const shape = model.shapes.find((s) => s.id === hit)!;
       return [
         {
@@ -65,7 +87,6 @@ export function update(model: Model, msg: Msg): [Model, Effect[]] {
     case 'pointerMove': {
       const d = model.drag;
       if (!d) return [model, []];
-      if (!model.shapes.some((s) => s.id === d.id)) return [model, []];
       // The delta is NOT scaled by zoom, not even for an anchored shape.
       // `projectQuad` is a similarity about the shape's own unprojected bounds
       // top-left, which makes that point a fixed point of the projection: the
@@ -75,16 +96,13 @@ export function update(model: Model, msg: Msg): [Model, Effect[]] {
       // many times too far and the next pointerDown missed it.
       const dx = msg.at.x - d.from.x;
       const dy = msg.at.y - d.from.y;
-      return [
-        {
-          ...model,
-          shapes: replace(model.shapes, d.id, (sh) => ({
-            ...sh,
-            rect: { ...d.origin, x: d.origin.x + dx, y: d.origin.y + dy },
-          })),
-        },
-        [],
-      ];
+      // A drag whose shape was deleted mid-gesture is a no-op, not a crash.
+      const shapes = replace(model.shapes, d.id, (sh) => ({
+        ...sh,
+        rect: { ...d.origin, x: d.origin.x + dx, y: d.origin.y + dy },
+      }));
+      if (!shapes) return [model, []];
+      return [{ ...model, shapes }, []];
     }
 
     case 'pointerUp': {
@@ -93,17 +111,20 @@ export function update(model: Model, msg: Msg): [Model, Effect[]] {
       return [{ ...model, drag: null }, [{ t: 'persist', ids: [d.id] }]];
     }
 
-    case 'setAnchored':
+    case 'setAnchored': {
+      const shapes = replace(model.shapes, msg.id, (s) => ({ ...s, anchored: msg.anchored }));
+      if (!shapes) return [model, []];
       return [
-        { ...model, shapes: replace(model.shapes, msg.id, (s) => ({ ...s, anchored: msg.anchored })) },
+        { ...model, shapes },
         [{ t: 'log', message: `${msg.id} anchored=${msg.anchored}` }, { t: 'persist', ids: [msg.id] }],
       ];
+    }
 
-    case 'setRot':
-      return [
-        { ...model, shapes: replace(model.shapes, msg.id, (s) => ({ ...s, rot: msg.rot })) },
-        [{ t: 'persist', ids: [msg.id] }],
-      ];
+    case 'setRot': {
+      const shapes = replace(model.shapes, msg.id, (s) => ({ ...s, rot: msg.rot }));
+      if (!shapes) return [model, []];
+      return [{ ...model, shapes }, [{ t: 'persist', ids: [msg.id] }]];
+    }
 
     case 'delete': {
       const shapes = model.shapes.filter((s) => s.id !== msg.id);
