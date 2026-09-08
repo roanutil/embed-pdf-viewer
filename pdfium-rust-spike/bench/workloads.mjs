@@ -517,7 +517,15 @@ export function makeWorkloads(arm, fx) {
           g.flags,
           objectKeyChanged,
           g.fontSize,
-          g.rotation,
+          // Compared at the record's storage width, not at the thin arms'.
+          // Every other field here came out of PDFium as a float and survives
+          // the record byte-for-byte; `rotation` is the one value computed in
+          // doubles and then narrowed to the f32 slot at record.rs:60. Near
+          // 1 rad the f32 step is ~6e-8, about 6% of the 1e-6 interval
+          // `round` below quantises to, so an arbitrary angle would report a
+          // divergence that is purely storage width. rotated_text.pdf only
+          // carries the four exact angles, which is why this never fired.
+          Math.fround(g.rotation),
           g.ascentFlip ? 1 : 0,
           g.upright ? 1 : 0,
           g.looseBox,
