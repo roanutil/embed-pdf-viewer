@@ -16,7 +16,7 @@ proposal. Performance on web is still not the goal. But it is no longer obviousl
 the distinction turns out to depend on which layer you mean. At the `engine-services` boundary the
 port makes web faster, because the per-glyph loop stops crossing anything; measured, that is about
 2.6x on glyph geometry. At the `core/annotation` layer the earlier toy benchmark in
-`ts-wasm-interop-poc/` still says the opposite, that V8 beats Rust-in-wasm on arithmetic that cheap.
+`viewer-rust-port-benchmarks/` still says the opposite, that V8 beats Rust-in-wasm on arithmetic that cheap.
 Both can be true because they are different amounts of compute behind each crossing, which is the
 argument the rest of this document already makes.
 
@@ -84,7 +84,7 @@ makes thousands, so I expect it is unusable.
 Update: the first option works, and it is the one to use. A Rust `staticlib` built for
 `wasm32-unknown-emscripten` goes on the same `em++` line as `libembedpdf.a` and links, with no
 second module, no cross-module calls and no shared-memory problem.
-`pdfium-rust-spike/build/link-wasm.sh` does it four times over, and it was proven first on
+`pdfium-binding-benchmarks/build/link-wasm.sh` does it four times over, and it was proven first on
 `EPDF_GetPageSizeByIndexNormalized`, exactly as this paragraph asked. One snag for whoever wires it
 into the real build: `-O3` makes `em++` run `wasm-opt`, and emsdk 3.1.72's bundled v119 rejects two
 wasm features present in rustc 1.98.0's precompiled std, so it needs a newer `wasm-opt` than the one
@@ -149,7 +149,7 @@ renders, searches, and reads and writes annotations, with no JavaScript runtime 
 that `packages/engine/runtime/npm` ships wasm32 plus darwin, linux, linuxmusl and win32 natives
 today, and no iOS or Android target at all. Adding those two to the PDFium build is a prerequisite,
 and it is independent of every port above, so it can run in parallel from wave 0.
-`rust-core-scaffold/` at the repo root already scaffolded this binding surface, uniffi to Swift and
+`pdfium-multiplatform-prototype/` at the repo root already scaffolded this binding surface, uniffi to Swift and
 to Kotlin over the same six coarse operations, and it is waiting on exactly those four missing
 targets, `ios-arm64`, `ios-sim-arm64`, `android-arm64` and `android-x64`, before its own iOS
 destination and Android APK can build.

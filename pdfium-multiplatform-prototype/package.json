@@ -1,0 +1,11 @@
+{
+  "name": "epdf-pdfium-multiplatform-prototype",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "node --test build/*.test.mjs vectors/*.test.mjs packages/node/*.test.mjs packages/web/*.test.mjs apps/node-cli/*.test.mjs apps/web-demo/*.test.mjs",
+    "_note": "packages/test-support holds no tests of its own; it is the shared loader the four suites above read.",
+    "test:all": "bash build/test-all.sh"
+  }
+}

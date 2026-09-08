@@ -9,7 +9,7 @@ That premise changes what the benchmark means. An earlier version of this file r
 as an argument against adding Rust at all; that reading is moot now, and the numbers say something
 more useful under the premise that actually holds.
 
-Full tables and caveats are in [`pdfium-rust-spike/RESULTS.md`](../../pdfium-rust-spike/RESULTS.md).
+Full tables and caveats are in [`pdfium-binding-benchmarks/RESULTS.md`](../../pdfium-binding-benchmarks/RESULTS.md).
 One machine (Apple M4 Max, Node 24.20.0, emsdk 3.1.72, rustc 1.98.0), one fixture page
 (`examples/snippet-react/public/report.pdf` page 4, 8,106 glyphs), seven interleaved rounds with arm
 order rotated per round, behind a fairness gate proving all four arms compute identical answers. The
@@ -46,7 +46,7 @@ no measured performance cost.
 1. **Bind, don't extend.** Keep the fork's C ABI as the interface and generate Rust bindings with
    `bindgen` over the same headers `packages/engine/runtime/build/generate-functions.mjs` already
    walks, using the same `FPDF|EPDF|FORM|PDFiumExt_` filter. The spike hand-wrote 21 declarations in
-   `pdfium-rust-spike/crates/pdfium-sys/src/lib.rs` to dodge a sysroot configuration problem; that
+   `pdfium-binding-benchmarks/crates/pdfium-sys/src/lib.rs` to dodge a sysroot configuration problem; that
    shortcut isn't worth carrying into the real thing.
 
 2. **Stop adding `EPDF*` functions whose only job is collapsing crossings.** That was the right
@@ -72,7 +72,7 @@ no measured performance cost.
 
 5. **Link Rust into the existing Emscripten module.** A Rust staticlib built for
    `wasm32-unknown-emscripten` links into the same `em++` command as `libembedpdf.a`, proven in
-   `pdfium-rust-spike/build/link-wasm.sh`. This answers wave 0 of [the port plan](./rust-core-port.md),
+   `pdfium-binding-benchmarks/build/link-wasm.sh`. This answers wave 0 of [the port plan](./rust-core-port.md),
    which called the question genuinely open and made everything after it contingent. No second
    module, no `wasm32-wasip1` rebuild, no cross-module import cost. One caveat for whoever does it:
    `-O3` makes `em++` run `wasm-opt`, and emsdk 3.1.72's bundled v119 rejects two wasm features in
@@ -86,7 +86,7 @@ no measured performance cost.
 ## The one real tradeoff
 
 If wave 2 of the port is far out, there's a case for adding a coarse `EPDF_GetPageGeometryFull` to
-the fork now as a bridge. `pdfium-rust-spike/cpp/ops.cc`'s `cc_read_page_geometry` is a working
+the fork now as a bridge. `pdfium-binding-benchmarks/cpp/ops.cc`'s `cc_read_page_geometry` is a working
 reference that already passes the fairness gate against the current reader, so it's close to free to
 land, and it buys 2.6x on web and 7.16x on Node against today's TypeScript reader.
 

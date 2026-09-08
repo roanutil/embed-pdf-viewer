@@ -1,13 +1,13 @@
 # Benchmarking the interop spike
 
-The three POCs in `ts-wasm-interop-poc/` already count boundary crossings, and the counts are pinned
+The three POCs in `viewer-rust-port-benchmarks/` already count boundary crossings, and the counts are pinned
 as assertions: 10 crossings for ten unanchored shapes and 70 for ten anchored ones in
-`poc-2-rust-geometry/packages/shapes/src/shapes.test.ts:183` and `:196`, and exactly 1 per frame at
-any shape count in `poc-3-rust-core/packages/core/src/store.test.ts:40` and `:53`.
+`rust-geometry-only/packages/shapes/src/shapes.test.ts:183` and `:196`, and exactly 1 per frame at
+any shape count in `rust-geometry-and-state/packages/core/src/store.test.ts:40` and `:53`.
 
 A count is not a cost. We measured a single crossing at 1.015 µs through a flat `Float64Array` and
 2.735 µs through `serde-wasm-bindgen` objects, from the demo's `measure` button. Multiply that out
-and poc-2 spends something like 7 µs per anchored shape per frame, which at 60 fps and 100
+and rust-geometry-only spends something like 7 µs per anchored shape per frame, which at 60 fps and 100
 annotations would be catastrophic and at 5 annotations would be free. Nobody should be guessing which
 end of that range the real viewer sits at.
 
@@ -26,7 +26,7 @@ not evidence about that, in either direction.
 
 And the toy's geometry is one variant, a rectangle's four corners, 8 floats. The real `Geom` in
 `packages/core/annotation/src/types.ts:121` is a seven-variant union including `{ t: 'ink';
-strokes: Vec[][] }`. Marshalling that costs far more than marshalling a quad. So every poc-2 number
+strokes: Vec[][] }`. Marshalling that costs far more than marshalling a quad. So every rust-geometry-only number
 here is a LOWER bound on what the real boundary would cost, and I would not be surprised by a factor
 of five.
 
@@ -51,7 +51,7 @@ enough to be meaningful. Start at k=7 and look at the spread before trusting any
 
 This is the part I would most expect to get wrong, so it runs before any timing.
 
-poc-3 builds a model through `seedShapes` in `crates/core/src/lib.rs`, while poc-1 and poc-2 build
+rust-geometry-and-state builds a model through `seedShapes` in `crates/core/src/lib.rs`, while typescript-baseline and rust-geometry-only build
 one through `update(model, { t: 'add' })`. Those are different code paths with different default
 sizes and different colour cycling. If the three end up with different shape sets, every number
 downstream is void and nothing about the numbers themselves would reveal it.
@@ -61,7 +61,7 @@ and each adapter applies it through its own dispatch path. Then, before timing, 
 three for one display list at a fixed view and compares them corner by corner to 1e-9. Any
 disagreement aborts the run.
 
-The frozen vectors in `ts-wasm-interop-poc/vectors/anchor-vectors.json` already cover the projection
+The frozen vectors in `viewer-rust-port-benchmarks/vectors/anchor-vectors.json` already cover the projection
 math across all three implementations. They do not cover the full `scene()` path, the flags word, or
 the id and colour table. This gate does.
 
@@ -75,28 +75,28 @@ Four, in the order they should be built. Each cell reports median and p95 in nan
 {a view that projects (`zoom: 3, rotation: 90`), a view that does not (`zoom: 1, rotation: 0`)}.
 Twenty cells per POC.
 
-This is the headline. It is also where the crossover should be visible: poc-1 should win at N=1
-because a crossing costs a microsecond and the TypeScript work is nanoseconds, and poc-3 should win
-by a wide margin at N=1000 because it does one crossing where poc-2 does seven thousand.
+This is the headline. It is also where the crossover should be visible: typescript-baseline should win at N=1
+because a crossing costs a microsecond and the TypeScript work is nanoseconds, and rust-geometry-and-state should win
+by a wide margin at N=1000 because it does one crossing where rust-geometry-only does seven thousand.
 
 ### 2. Hit-test and dispatch
 
 Hit-test at N ∈ {10, 100, 1000}, with a point over the topmost shape and a point over nothing. The
-miss is the interesting case: `hit_test` in `poc-3-rust-core/crates/core/src/model.rs:139` walks
-every shape in reverse before giving up, so a miss is the worst case and it costs poc-3 exactly one
+miss is the interesting case: `hit_test` in `rust-geometry-and-state/crates/core/src/model.rs:139` walks
+every shape in reverse before giving up, so a miss is the worst case and it costs rust-geometry-and-state exactly one
 crossing.
 
 Dispatch runs a synthetic gesture: one `pointerDown`, 100 `pointerMove`, one `pointerUp`, reported as
-µs per `pointerMove`. I expect poc-3 to win this at large N, and for a reason that has nothing to do
-with wasm: `replace` in `poc-1-ts/packages/shapes/src/update.ts:19` is `shapes.map(...)`, so poc-1
+µs per `pointerMove`. I expect rust-geometry-and-state to win this at large N, and for a reason that has nothing to do
+with wasm: `replace` in `typescript-baseline/packages/shapes/src/update.ts:19` is `shapes.map(...)`, so typescript-baseline
 allocates N objects on every single pointer move, while `update` in
-`poc-3-rust-core/crates/core/src/model.rs:157` takes `&mut Model` and mutates in place. If that shows
+`rust-geometry-and-state/crates/core/src/model.rs:157` takes `&mut Model` and mutates in place. If that shows
 up, it is a finding about immutable-model reducers, not about Rust.
 
 ### 3. Cold start
 
-Browser only, and the only workload where poc-1 wins by construction: 0 bytes of wasm against
-130.7 kB for poc-2 and 277.2 kB for poc-3.
+Browser only, and the only workload where typescript-baseline wins by construction: 0 bytes of wasm against
+130.7 kB for rust-geometry-only and 277.2 kB for rust-geometry-and-state.
 
 Each demo gets `performance.mark` calls at four points: navigation start, wasm instantiate resolved,
 first `scene()` returned, first paint. Then five hard reloads with the cache disabled, driven through
@@ -122,7 +122,7 @@ event-loop turns after the collection, and I was draining with a single `setImme
 `setTimeout(0)` turns, two million churned objects report 15 MINOR entries on Node v24.20.0. The
 kind constants really are MINOR=1, MAJOR=4, INCREMENTAL=8, not the 1/2/4 I assumed.)
 
-poc-2 is the one to watch: every geometry call allocates a `Float64Array` on the way in and four
+rust-geometry-only is the one to watch: every geometry call allocates a `Float64Array` on the way in and four
 `{x, y}` objects plus a tuple on the way out, in `packages/geometry/src/index.ts`. Seven of those per
 anchored shape per frame is a lot of garbage for arithmetic that fits in registers.
 
@@ -156,7 +156,7 @@ the spread across rounds is wide, say so in the write-up rather than picking the
 ## Shape of it
 
 ```
-ts-wasm-interop-poc/
+viewer-rust-port-benchmarks/
   bench/
     seeds.mjs        shared seed layouts as data, so the three models are provably identical
     harness.mjs      zero-dep sampling and statistics, imported by relative path
@@ -175,8 +175,8 @@ that a generic runner fights, and because adding a devDependency to three worksp
 is a poor trade. The cost is real, though: I own the statistics, and mine will be less battle-tested
 than `tinybench`'s. If the numbers come out strange, that is the first thing to suspect.
 
-Adapters are the only per-POC code, and each is thin. poc-1 and poc-2 expose the same pure functions,
-so their adapters differ by one `await initGeometryFromDisk()`. poc-3's adapter wraps
+Adapters are the only per-POC code, and each is thin. typescript-baseline and rust-geometry-only expose the same pure functions,
+so their adapters differ by one `await initGeometryFromDisk()`. rust-geometry-and-state's adapter wraps
 `createCoreStore()` instead, because state lives in Rust there.
 
 ## Predictions
@@ -185,15 +185,15 @@ Written down before measuring, so that a mismeasurement is obvious rather than p
 
 | Workload | Expected winner | Reason |
 |---|---|---|
-| Frame, N=1, unanchored | poc-1 | one crossing costs ~1 µs; the TypeScript work is nanoseconds |
-| Frame, N=1000, anchored | poc-3, by a lot | 1 crossing against roughly 7,000 |
+| Frame, N=1, unanchored | typescript-baseline | one crossing costs ~1 µs; the TypeScript work is nanoseconds |
+| Frame, N=1000, anchored | rust-geometry-and-state, by a lot | 1 crossing against roughly 7,000 |
 | Frame crossover | N somewhere between 10 and 50 | where marshalling stops dominating |
-| `pointerMove`, N=1000 | poc-3 | poc-1 allocates N objects per move; Rust mutates in place |
-| Hit-test miss, N=1000 | poc-3 | walks all N in Rust for one crossing |
-| Cold start | poc-1 | 0 kB of wasm against 130.7 kB and 277.2 kB |
-| Anything at all | never poc-2 | it pays the boundary without moving any work across it |
+| `pointerMove`, N=1000 | rust-geometry-and-state | typescript-baseline allocates N objects per move; Rust mutates in place |
+| Hit-test miss, N=1000 | rust-geometry-and-state | walks all N in Rust for one crossing |
+| Cold start | typescript-baseline | 0 kB of wasm against 130.7 kB and 277.2 kB |
+| Anything at all | never rust-geometry-only | it pays the boundary without moving any work across it |
 
-If poc-2 wins a single cell, the harness is wrong and the numbers should be thrown away.
+If rust-geometry-only wins a single cell, the harness is wrong and the numbers should be thrown away.
 
 ## What a good outcome looks like
 
@@ -210,42 +210,42 @@ I do not know which. That is the point of measuring.
 ## What actually happened
 
 Built, run over five interleaved rounds, and the predictions above were mostly wrong. The full
-tables are in [`ts-wasm-interop-poc/bench/RESULTS.md`](../../ts-wasm-interop-poc/bench/RESULTS.md);
+tables are in [`viewer-rust-port-benchmarks/bench/RESULTS.md`](../../viewer-rust-port-benchmarks/bench/RESULTS.md);
 what follows is what I did not expect.
 
-**poc-3 never beat poc-1 on a single frame cell.** Not at 10 shapes, not at 10,000. It ran 1.6x to
+**rust-geometry-and-state never beat typescript-baseline on a single frame cell.** Not at 10 shapes, not at 10,000. It ran 1.6x to
 3.1x slower everywhere, and the crossover I predicted between n=10 and n=50 does not exist. At
-n=1000 anchored and projecting, the workload the whole port plan cares about, poc-1 takes 127 µs and
-poc-3 takes 207 µs, for a frame that crosses the boundary exactly once against poc-1's zero.
+n=1000 anchored and projecting, the workload the whole port plan cares about, typescript-baseline takes 127 µs and
+rust-geometry-and-state takes 207 µs, for a frame that crosses the boundary exactly once against typescript-baseline's zero.
 
 So I added a measurement that was not in this plan: `sceneRaw`, which returns the flat
 `Float64Array` without decoding it into `DisplayList` objects. That decode allocates one item plus
-four points per shape, which is the same allocation poc-1 performs, so I expected it to be the whole
-explanation. It is about half of it. The decode is 44% to 53% of poc-3's frame cost at n=1000 and
-above. Strip it entirely and poc-3 is STILL 1.35x to 1.75x slower than poc-1.
+four points per shape, which is the same allocation typescript-baseline performs, so I expected it to be the whole
+explanation. It is about half of it. The decode is 44% to 53% of rust-geometry-and-state's frame cost at n=1000 and
+above. Strip it entirely and rust-geometry-and-state is STILL 1.35x to 1.75x slower than typescript-baseline.
 
 Which leaves one conclusion I cannot argue my way out of: for arithmetic this simple, V8's JIT beats
 Rust in wasm plus a single boundary crossing. Not by a little. The hit-test numbers say the same
-thing from another angle, where poc-3 loses even the n=1000 miss case, 154 µs against 128 µs, and
-that case walks all thousand shapes in Rust for one crossing while poc-1 walks all thousand in
+thing from another angle, where rust-geometry-and-state loses even the n=1000 miss case, 154 µs against 128 µs, and
+that case walks all thousand shapes in Rust for one crossing while typescript-baseline walks all thousand in
 JavaScript.
 
-**poc-2 won 0 of 20 frame cells**, which is the one prediction that held cleanly. It ran 4.6x to 8.4x
-slower than poc-1 across the board. A fine-grained boundary is exactly as bad as the plan said.
+**rust-geometry-only won 0 of 20 frame cells**, which is the one prediction that held cleanly. It ran 4.6x to 8.4x
+slower than typescript-baseline across the board. A fine-grained boundary is exactly as bad as the plan said.
 
-**Dispatch was the only place Rust won**, and for a reason that has nothing to do with Rust. poc-3
-costs 18.7x poc-1 per `pointerMove` at 10 shapes, because every message pays a serde crossing. At
-1,000 shapes it costs 0.33x, because `replace` at `poc-1-ts/packages/shapes/src/update.ts:19` is
+**Dispatch was the only place Rust won**, and for a reason that has nothing to do with Rust. rust-geometry-and-state
+costs 18.7x typescript-baseline per `pointerMove` at 10 shapes, because every message pays a serde crossing. At
+1,000 shapes it costs 0.33x, because `replace` at `typescript-baseline/packages/shapes/src/update.ts:19` is
 `shapes.map(...)` and allocates a thousand objects on every pointer move while Rust mutates in place.
-That is a finding about immutable-model reducers, and poc-1 could win it back with a targeted fix.
+That is a finding about immutable-model reducers, and typescript-baseline could win it back with a targeted fix.
 
 **Cold start** cost 6.3 ms to instantiate 130.7 kB and 7.8 ms for 277.2 kB, pushing first frame from
 19.0 ms to 21.2 ms and 24.8 ms. Smaller than I feared, though that is localhost with the hashed
 assets served from cache, so the download is not in those numbers.
 
-**The benchmark found two bugs**, which is a decent argument for having built it. poc-3's decode
+**The benchmark found two bugs**, which is a decent argument for having built it. rust-geometry-and-state's decode
 looked up ids with `rows.find(...)` inside the per-item loop, making `scene()` O(n^2): invisible at
-demo sizes and 184x slower than poc-1 at 10,000 shapes, for a frame that still crossed the boundary
+demo sizes and 184x slower than typescript-baseline at 10,000 shapes, for a frame that still crossed the boundary
 exactly once. And the first allocation metric reported 0 scavenges for all three implementations,
 which is not a plausible answer for 200,000 object allocations and should have been the giveaway.
 

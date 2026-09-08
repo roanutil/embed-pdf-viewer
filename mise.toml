@@ -4,7 +4,7 @@
 pnpm = "10.34.0"
 node = "24.20.0"
 
-# The Kotlin and Android builds under rust-core-scaffold both declare
+# The Kotlin and Android builds under pdfium-multiplatform-prototype both declare
 # jvmToolchain(21), and apps/android/app/build.gradle.kts:49-50 sets source and
 # target compatibility to VERSION_21. Gradle can fetch its own toolchain through
 # the foojay resolver, so this is not strictly required to build, but without a

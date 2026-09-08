@@ -4,7 +4,7 @@
 
 **Goal:** Measure what it costs to put Rust between TypeScript and the PDFium fork in `packages/engine/runtime`, in wasm first and then native, across four arms and five workloads.
 
-**Architecture:** A self-contained `pdfium-rust-spike/` directory at the repo root, sibling to `ts-wasm-interop-poc/`. It fetches the same prebuilt `libembedpdf.a` the shipping build uses, relinks it four ways with `em++` (baseline, plus a Rust thin shim, plus a Rust coarse layer, plus a C++ coarse layer), and drives all four through one zero-dependency benchmark harness borrowed from `ts-wasm-interop-poc/bench/harness.mjs`. A fairness gate compares canonical outputs before any timing runs. The native phase reuses every workload and the whole harness, swapping Emscripten exports for `napi-rs` and `cmake-js`.
+**Architecture:** A self-contained `pdfium-binding-benchmarks/` directory at the repo root, sibling to `viewer-rust-port-benchmarks/`. It fetches the same prebuilt `libembedpdf.a` the shipping build uses, relinks it four ways with `em++` (baseline, plus a Rust thin shim, plus a Rust coarse layer, plus a C++ coarse layer), and drives all four through one zero-dependency benchmark harness borrowed from `viewer-rust-port-benchmarks/bench/harness.mjs`. A fairness gate compares canonical outputs before any timing runs. The native phase reuses every workload and the whole harness, swapping Emscripten exports for `napi-rs` and `cmake-js`.
 
 **Tech Stack:** Rust 1.98.0 (`wasm32-unknown-emscripten`, `aarch64-apple-darwin`), Emscripten 3.1.72, `napi-rs` 2.x, `cmake-js` 7.3.1, Node 24.20.0, plain ESM with no test framework beyond `node:test`.
 
@@ -15,8 +15,8 @@
 - Node 24.20.0 and pnpm 10.34.0, pinned in `mise.toml`. Run `mise install` if either is missing.
 - Emscripten 3.1.72, matching `scripts/dev.sh:7`. Do not use 3.1.70 from `packages/engine/runtime/Dockerfile:2`; the two disagree and 3.1.72 is the one the local dev path installs.
 - The wasm artifact is built **without** `WASM_BIGINT`. Emscripten legalizes every `i64` parameter into an `(i32 low, i32 high)` pair at the JS boundary. Every function this spike exports must therefore use `i32`/`f32`/`f64` parameters only. No `i64`, no `u64`, no pointers wider than 32 bits.
-- `pdfium-rust-spike/` must not be added to `pnpm-workspace.yaml` and must not be referenced by `turbo.json`. It is a spike; nothing published depends on it.
-- Never modify `packages/engine/runtime/build/compile.esm.sh`. `pdfium-rust-spike/build/link-wasm.sh` is a deliberate copy.
+- `pdfium-binding-benchmarks/` must not be added to `pnpm-workspace.yaml` and must not be referenced by `turbo.json`. It is a spike; nothing published depends on it.
+- Never modify `packages/engine/runtime/build/compile.esm.sh`. `pdfium-binding-benchmarks/build/link-wasm.sh` is a deliberate copy.
 - Every benchmark function passed to `measure()` must return a number. The harness accumulates it into a sink; an unconsumed call is one V8 may delete.
 - Report median and p95. Never mean.
 - Timing runs are round-robin across arms, `k = 7` rounds.
@@ -34,7 +34,7 @@ Two, both deliberate, both cheaper than what the spec described.
 ## File Structure
 
 ```
-pdfium-rust-spike/
+pdfium-binding-benchmarks/
   .gitignore              build outputs, fetched archives, results
   README.md               what this is, how to run it, and that it is a spike
   Cargo.toml              workspace: pdfium-sys, shim, ops, napi-arms
@@ -75,17 +75,17 @@ Responsibilities are split so that `arm.mjs` is the only file that knows how an 
 The whole spike is contingent on this. One Rust function, linked into an `em++` command line alongside `libembedpdf.a`, called from Node. **Timebox: one day.** If it does not link, stop and write up why; that is a more valuable result than any timing.
 
 **Files:**
-- Create: `pdfium-rust-spike/.gitignore`
-- Create: `pdfium-rust-spike/Cargo.toml`
-- Create: `pdfium-rust-spike/rust-toolchain.toml`
-- Create: `pdfium-rust-spike/crates/pdfium-sys/Cargo.toml`
-- Create: `pdfium-rust-spike/crates/pdfium-sys/src/lib.rs`
-- Create: `pdfium-rust-spike/crates/shim/Cargo.toml`
-- Create: `pdfium-rust-spike/crates/shim/src/lib.rs`
-- Create: `pdfium-rust-spike/build/fetch.sh`
-- Create: `pdfium-rust-spike/build/emsdk.sh`
-- Create: `pdfium-rust-spike/build/link-probe.sh`
-- Test: `pdfium-rust-spike/bench/probe.test.mjs`
+- Create: `pdfium-binding-benchmarks/.gitignore`
+- Create: `pdfium-binding-benchmarks/Cargo.toml`
+- Create: `pdfium-binding-benchmarks/rust-toolchain.toml`
+- Create: `pdfium-binding-benchmarks/crates/pdfium-sys/Cargo.toml`
+- Create: `pdfium-binding-benchmarks/crates/pdfium-sys/src/lib.rs`
+- Create: `pdfium-binding-benchmarks/crates/shim/Cargo.toml`
+- Create: `pdfium-binding-benchmarks/crates/shim/src/lib.rs`
+- Create: `pdfium-binding-benchmarks/build/fetch.sh`
+- Create: `pdfium-binding-benchmarks/build/emsdk.sh`
+- Create: `pdfium-binding-benchmarks/build/link-probe.sh`
+- Test: `pdfium-binding-benchmarks/bench/probe.test.mjs`
 
 **Interfaces:**
 - Consumes: nothing.
@@ -93,7 +93,7 @@ The whole spike is contingent on this. One Rust function, linked into an `em++` 
 
 - [ ] **Step 1: Create the directory skeleton and Rust workspace**
 
-`pdfium-rust-spike/.gitignore`:
+`pdfium-binding-benchmarks/.gitignore`:
 
 ```gitignore
 target/
@@ -105,7 +105,7 @@ bench/results/
 node_modules/
 ```
 
-`pdfium-rust-spike/rust-toolchain.toml`:
+`pdfium-binding-benchmarks/rust-toolchain.toml`:
 
 ```toml
 [toolchain]
@@ -113,7 +113,7 @@ channel = "1.98.0"
 targets = ["wasm32-unknown-emscripten", "aarch64-apple-darwin"]
 ```
 
-`pdfium-rust-spike/Cargo.toml`:
+`pdfium-binding-benchmarks/Cargo.toml`:
 
 ```toml
 [workspace]
@@ -127,7 +127,7 @@ codegen-units = 1
 panic = "abort"
 ```
 
-`pdfium-rust-spike/crates/pdfium-sys/Cargo.toml`:
+`pdfium-binding-benchmarks/crates/pdfium-sys/Cargo.toml`:
 
 ```toml
 [package]
@@ -140,7 +140,7 @@ publish = false
 crate-type = ["rlib"]
 ```
 
-`pdfium-rust-spike/crates/shim/Cargo.toml`:
+`pdfium-binding-benchmarks/crates/shim/Cargo.toml`:
 
 ```toml
 [package]
@@ -158,7 +158,7 @@ pdfium-sys = { path = "../pdfium-sys" }
 
 - [ ] **Step 2: Declare the four PDFium functions the probe needs**
 
-`pdfium-rust-spike/crates/pdfium-sys/src/lib.rs`:
+`pdfium-binding-benchmarks/crates/pdfium-sys/src/lib.rs`:
 
 ```rust
 //! Hand-written declarations for the slice of the PDFium C API this spike
@@ -196,7 +196,7 @@ extern "C" {
 
 - [ ] **Step 3: Write the probe function**
 
-`pdfium-rust-spike/crates/shim/src/lib.rs`:
+`pdfium-binding-benchmarks/crates/shim/src/lib.rs`:
 
 ```rust
 //! Arm B. Every export is `rs_`-prefixed, takes and returns only i32/f32/f64,
@@ -225,7 +225,7 @@ pub extern "C" fn rs_probe_page_size(doc: u32, index: i32, out: *mut f32) -> i32
 
 - [ ] **Step 4: Write the fetch and emsdk scripts**
 
-`pdfium-rust-spike/build/fetch.sh`:
+`pdfium-binding-benchmarks/build/fetch.sh`:
 
 ```bash
 #!/usr/bin/env bash
@@ -244,7 +244,7 @@ PDF_RUNTIME_LIB_DIR="$ROOT/build/libpdfium" \
 echo "libembedpdf for $TARGET in $ROOT/build/libpdfium/$TARGET"
 ```
 
-`pdfium-rust-spike/build/emsdk.sh`:
+`pdfium-binding-benchmarks/build/emsdk.sh`:
 
 ```bash
 #!/usr/bin/env bash
@@ -267,7 +267,7 @@ source "$EMSDK_DIR/emsdk_env.sh"
 
 - [ ] **Step 5: Write the probe link script**
 
-`pdfium-rust-spike/build/link-probe.sh`:
+`pdfium-binding-benchmarks/build/link-probe.sh`:
 
 ```bash
 #!/usr/bin/env bash
@@ -310,7 +310,7 @@ echo "linked $OUT_DIR/probe.mjs"
 
 - [ ] **Step 6: Write the failing test**
 
-`pdfium-rust-spike/bench/probe.test.mjs`:
+`pdfium-binding-benchmarks/bench/probe.test.mjs`:
 
 ```js
 import assert from 'node:assert/strict';
@@ -368,7 +368,7 @@ test('a Rust function linked into the PDFium wasm module returns the same page s
 - [ ] **Step 7: Run the test to verify it fails**
 
 ```bash
-cd pdfium-rust-spike && node --test bench/probe.test.mjs
+cd pdfium-binding-benchmarks && node --test bench/probe.test.mjs
 ```
 
 Expected: FAIL with `Cannot find module '.../build/out/probe.mjs'`.
@@ -376,7 +376,7 @@ Expected: FAIL with `Cannot find module '.../build/out/probe.mjs'`.
 - [ ] **Step 8: Fetch, link, and run**
 
 ```bash
-cd pdfium-rust-spike
+cd pdfium-binding-benchmarks
 chmod +x build/*.sh
 bash build/fetch.sh wasm32
 bash build/link-probe.sh
@@ -390,7 +390,7 @@ If `em++` fails with an error naming an unsupported wasm object version or a rel
 - [ ] **Step 9: Commit**
 
 ```bash
-git add pdfium-rust-spike
+git add pdfium-binding-benchmarks
 git commit -m "spike: link a Rust staticlib into the PDFium wasm module"
 ```
 
@@ -401,12 +401,12 @@ git commit -m "spike: link a Rust staticlib into the PDFium wasm module"
 Every workload runs against one page of one PDF. The page has to be chosen by measurement, not by guess, and its glyph count has to end up in the results header.
 
 **Files:**
-- Create: `pdfium-rust-spike/crates/pdfium-sys/src/lib.rs` (extend; full contents below)
-- Create: `pdfium-rust-spike/build/link-wasm.sh`
-- Create: `pdfium-rust-spike/bench/arm.mjs`
-- Create: `pdfium-rust-spike/bench/fixture.mjs`
-- Test: `pdfium-rust-spike/bench/fixture.test.mjs`
-- Delete: `pdfium-rust-spike/build/link-probe.sh` (superseded)
+- Create: `pdfium-binding-benchmarks/crates/pdfium-sys/src/lib.rs` (extend; full contents below)
+- Create: `pdfium-binding-benchmarks/build/link-wasm.sh`
+- Create: `pdfium-binding-benchmarks/bench/arm.mjs`
+- Create: `pdfium-binding-benchmarks/bench/fixture.mjs`
+- Test: `pdfium-binding-benchmarks/bench/fixture.test.mjs`
+- Delete: `pdfium-binding-benchmarks/build/link-probe.sh` (superseded)
 
 **Interfaces:**
 - Consumes: `rs_probe_page_size` from Task 1 (kept, as a liveness check).
@@ -414,7 +414,7 @@ Every workload runs against one page of one PDF. The page has to be chosen by me
 
 - [ ] **Step 1: Extend the sys crate to the full 21 functions**
 
-Replace `pdfium-rust-spike/crates/pdfium-sys/src/lib.rs` entirely:
+Replace `pdfium-binding-benchmarks/crates/pdfium-sys/src/lib.rs` entirely:
 
 ```rust
 //! Hand-written declarations for the slice of the PDFium C API this spike
@@ -580,7 +580,7 @@ extern "C" {
 
 - [ ] **Step 2: Write the real link script**
 
-`pdfium-rust-spike/build/link-wasm.sh`:
+`pdfium-binding-benchmarks/build/link-wasm.sh`:
 
 ```bash
 #!/usr/bin/env bash
@@ -665,7 +665,7 @@ done
 
 - [ ] **Step 3: Write the arm loader**
 
-`pdfium-rust-spike/bench/arm.mjs`:
+`pdfium-binding-benchmarks/bench/arm.mjs`:
 
 ```js
 /**
@@ -795,7 +795,7 @@ export async function wasmBytes(name) {
 
 - [ ] **Step 4: Write the fixture chooser**
 
-`pdfium-rust-spike/bench/fixture.mjs`:
+`pdfium-binding-benchmarks/bench/fixture.mjs`:
 
 ```js
 /**
@@ -869,7 +869,7 @@ if (import.meta.filename === process.argv[1]) {
 
 - [ ] **Step 5: Write the failing test**
 
-`pdfium-rust-spike/bench/fixture.test.mjs`:
+`pdfium-binding-benchmarks/bench/fixture.test.mjs`:
 
 ```js
 import assert from 'node:assert/strict';
@@ -890,7 +890,7 @@ test('arm a opens the fixture and finds a page with real text on it', async () =
 - [ ] **Step 6: Run the test to verify it fails**
 
 ```bash
-cd pdfium-rust-spike && node --test bench/fixture.test.mjs
+cd pdfium-binding-benchmarks && node --test bench/fixture.test.mjs
 ```
 
 Expected: FAIL, `Cannot find module '.../build/out/a/arm.mjs'`.
@@ -898,7 +898,7 @@ Expected: FAIL, `Cannot find module '.../build/out/a/arm.mjs'`.
 - [ ] **Step 7: Build arm a, pick the page, make it pass**
 
 ```bash
-cd pdfium-rust-spike
+cd pdfium-binding-benchmarks
 rm build/link-probe.sh
 bash build/link-wasm.sh a
 node bench/fixture.mjs
@@ -915,8 +915,8 @@ Expected: PASS, one test.
 - [ ] **Step 8: Commit**
 
 ```bash
-git add pdfium-rust-spike
-git rm --cached pdfium-rust-spike/build/link-probe.sh 2>/dev/null || true
+git add pdfium-binding-benchmarks
+git rm --cached pdfium-binding-benchmarks/build/link-probe.sh 2>/dev/null || true
 git commit -m "spike: arm loader, four-arm link script, and fixture selection"
 ```
 
@@ -927,9 +927,9 @@ git commit -m "spike: arm loader, four-arm link script, and fixture selection"
 Nothing is timed yet. This task produces a canonical answer per workload so later arms can be checked against it.
 
 **Files:**
-- Create: `pdfium-rust-spike/bench/workloads.mjs`
-- Create: `pdfium-rust-spike/bench/gate.mjs`
-- Test: `pdfium-rust-spike/bench/gate.test.mjs`
+- Create: `pdfium-binding-benchmarks/bench/workloads.mjs`
+- Create: `pdfium-binding-benchmarks/bench/gate.mjs`
+- Test: `pdfium-binding-benchmarks/bench/gate.test.mjs`
 
 **Interfaces:**
 - Consumes: `loadArm`, `wasmBytes` from `bench/arm.mjs`; `openFixture`, `SEARCH_TERM` from `bench/fixture.mjs`.
@@ -937,7 +937,7 @@ Nothing is timed yet. This task produces a canonical answer per workload so late
 
 - [ ] **Step 1: Write the workloads**
 
-`pdfium-rust-spike/bench/workloads.mjs`:
+`pdfium-binding-benchmarks/bench/workloads.mjs`:
 
 ```js
 /**
@@ -1267,7 +1267,7 @@ export function makeWorkloads(arm, fx) {
 
 - [ ] **Step 2: Write the gate**
 
-`pdfium-rust-spike/bench/gate.mjs`:
+`pdfium-binding-benchmarks/bench/gate.mjs`:
 
 ```js
 #!/usr/bin/env node
@@ -1335,7 +1335,7 @@ if (import.meta.filename === process.argv[1]) {
 
 - [ ] **Step 3: Write the failing test**
 
-`pdfium-rust-spike/bench/gate.test.mjs`:
+`pdfium-binding-benchmarks/bench/gate.test.mjs`:
 
 ```js
 import assert from 'node:assert/strict';
@@ -1364,7 +1364,7 @@ test('arm a produces a stable canonical answer for every workload it runs', asyn
 - [ ] **Step 4: Run the test to verify it fails**
 
 ```bash
-cd pdfium-rust-spike && node --test bench/gate.test.mjs
+cd pdfium-binding-benchmarks && node --test bench/gate.test.mjs
 ```
 
 Expected: FAIL. The likely first failure is a `GEO` offset mismatch producing wrong `looseBox` values or a zero glyph count.
@@ -1376,7 +1376,7 @@ The struct at `packages/engine/runtime/runtime-src/public/epdf_text.h:35` is `FS
 Confirm rather than trust. Compile a one-line check:
 
 ```bash
-cd pdfium-rust-spike
+cd pdfium-binding-benchmarks
 source build/emsdk.sh
 cat > /tmp/geo.cc <<'EOF'
 #include <cstdio>
@@ -1400,7 +1400,7 @@ Expected: `sizeof=124 loose=0 tight=16 lq=32 tq=64 m=96 flags=120`. If it prints
 - [ ] **Step 6: Run the test to verify it passes**
 
 ```bash
-cd pdfium-rust-spike && node --test bench/gate.test.mjs && node bench/gate.mjs a
+cd pdfium-binding-benchmarks && node --test bench/gate.test.mjs && node bench/gate.mjs a
 ```
 
 Expected: PASS, one test, then a line reading `fairness gate: a agree on <N> glyphs, page <i>`.
@@ -1408,7 +1408,7 @@ Expected: PASS, one test, then a line reading `fairness gate: a agree on <N> gly
 - [ ] **Step 7: Commit**
 
 ```bash
-git add pdfium-rust-spike
+git add pdfium-binding-benchmarks
 git commit -m "spike: five workloads and the fairness gate against arm a"
 ```
 
@@ -1417,8 +1417,8 @@ git commit -m "spike: five workloads and the fairness gate against arm a"
 ### Task 4: Arm B, the thin Rust shim
 
 **Files:**
-- Modify: `pdfium-rust-spike/crates/shim/src/lib.rs` (append; full contents below)
-- Test: `pdfium-rust-spike/bench/arm-b.test.mjs`
+- Modify: `pdfium-binding-benchmarks/crates/shim/src/lib.rs` (append; full contents below)
+- Test: `pdfium-binding-benchmarks/bench/arm-b.test.mjs`
 
 **Interfaces:**
 - Consumes: every `extern "C"` in `crates/pdfium-sys/src/lib.rs`.
@@ -1426,7 +1426,7 @@ git commit -m "spike: five workloads and the fairness gate against arm a"
 
 - [ ] **Step 1: Write the failing test**
 
-`pdfium-rust-spike/bench/arm-b.test.mjs`:
+`pdfium-binding-benchmarks/bench/arm-b.test.mjs`:
 
 ```js
 import assert from 'node:assert/strict';
@@ -1444,14 +1444,14 @@ test('arm b agrees with arm a on every workload they share', async () => {
 - [ ] **Step 2: Run the test to verify it fails**
 
 ```bash
-cd pdfium-rust-spike && node --test bench/arm-b.test.mjs
+cd pdfium-binding-benchmarks && node --test bench/arm-b.test.mjs
 ```
 
 Expected: FAIL, `Cannot find module '.../build/out/b/arm.mjs'`.
 
 - [ ] **Step 3: Write the shim**
 
-Replace `pdfium-rust-spike/crates/shim/src/lib.rs` entirely:
+Replace `pdfium-binding-benchmarks/crates/shim/src/lib.rs` entirely:
 
 ```rust
 //! Arm B. Every export is `rs_`-prefixed, takes and returns only i32/f32/f64,
@@ -1587,7 +1587,7 @@ pub extern "C" fn rs_peek_i32(ptr: *const i32) -> i32 {
 - [ ] **Step 4: Build arm b and run the test**
 
 ```bash
-cd pdfium-rust-spike
+cd pdfium-binding-benchmarks
 bash build/link-wasm.sh b
 node --test bench/arm-b.test.mjs
 node bench/gate.mjs a b
@@ -1598,7 +1598,7 @@ Expected: PASS, one test, then `fairness gate: a, b agree on <N> glyphs, page <i
 - [ ] **Step 5: Commit**
 
 ```bash
-git add pdfium-rust-spike
+git add pdfium-binding-benchmarks
 git commit -m "spike: arm b, a 1:1 Rust shim over the PDFium calls the workloads make"
 ```
 
@@ -1607,11 +1607,11 @@ git commit -m "spike: arm b, a 1:1 Rust shim over the PDFium calls the workloads
 ### Task 5: Arm C, the coarse Rust layer
 
 **Files:**
-- Create: `pdfium-rust-spike/crates/ops/Cargo.toml`
-- Create: `pdfium-rust-spike/crates/ops/src/record.rs`
-- Create: `pdfium-rust-spike/crates/ops/src/lib.rs`
-- Modify: `pdfium-rust-spike/Cargo.toml:3` (add `crates/ops` to `members`)
-- Test: `pdfium-rust-spike/bench/arm-c.test.mjs`
+- Create: `pdfium-binding-benchmarks/crates/ops/Cargo.toml`
+- Create: `pdfium-binding-benchmarks/crates/ops/src/record.rs`
+- Create: `pdfium-binding-benchmarks/crates/ops/src/lib.rs`
+- Modify: `pdfium-binding-benchmarks/Cargo.toml:3` (add `crates/ops` to `members`)
+- Test: `pdfium-binding-benchmarks/bench/arm-c.test.mjs`
 
 **Interfaces:**
 - Consumes: every `extern "C"` in `crates/pdfium-sys/src/lib.rs`.
@@ -1632,7 +1632,7 @@ The 112-byte record layout, shared with arm D:
 
 - [ ] **Step 1: Write the failing test**
 
-`pdfium-rust-spike/bench/arm-c.test.mjs`:
+`pdfium-binding-benchmarks/bench/arm-c.test.mjs`:
 
 ```js
 import assert from 'node:assert/strict';
@@ -1650,20 +1650,20 @@ test('arm c agrees with arm a on every workload they share', async () => {
 - [ ] **Step 2: Run the test to verify it fails**
 
 ```bash
-cd pdfium-rust-spike && node --test bench/arm-c.test.mjs
+cd pdfium-binding-benchmarks && node --test bench/arm-c.test.mjs
 ```
 
 Expected: FAIL, `Cannot find module '.../build/out/c/arm.mjs'`.
 
 - [ ] **Step 3: Add the ops crate to the workspace**
 
-`pdfium-rust-spike/Cargo.toml`, replace the `members` line:
+`pdfium-binding-benchmarks/Cargo.toml`, replace the `members` line:
 
 ```toml
 members = ["crates/pdfium-sys", "crates/shim", "crates/ops"]
 ```
 
-`pdfium-rust-spike/crates/ops/Cargo.toml`:
+`pdfium-binding-benchmarks/crates/ops/Cargo.toml`:
 
 ```toml
 [package]
@@ -1681,7 +1681,7 @@ pdfium-sys = { path = "../pdfium-sys" }
 
 - [ ] **Step 4: Write the record writer**
 
-`pdfium-rust-spike/crates/ops/src/record.rs`:
+`pdfium-binding-benchmarks/crates/ops/src/record.rs`:
 
 ```rust
 //! The 112-byte glyph record arms C and D both write. The layout is duplicated
@@ -1749,7 +1749,7 @@ pub struct Record {
 
 - [ ] **Step 5: Write the coarse operations**
 
-`pdfium-rust-spike/crates/ops/src/lib.rs`:
+`pdfium-binding-benchmarks/crates/ops/src/lib.rs`:
 
 ```rust
 //! Arm C. Four operations that each run a whole loop inside Rust and hand back
@@ -1888,7 +1888,7 @@ pub extern "C" fn rs_search_page(text_page: u32, term: *const u16, out: *mut f32
 - [ ] **Step 6: Build arm c and run the test**
 
 ```bash
-cd pdfium-rust-spike
+cd pdfium-binding-benchmarks
 bash build/link-wasm.sh c
 node --test bench/arm-c.test.mjs
 ```
@@ -1901,7 +1901,7 @@ The likeliest failure is the `search` workload disagreeing, because `FPDFText_Ge
 
 ```bash
 node bench/gate.mjs a b c
-git add pdfium-rust-spike
+git add pdfium-binding-benchmarks
 git commit -m "spike: arm c, four coarse Rust operations over one boundary crossing"
 ```
 
@@ -1914,9 +1914,9 @@ Expected gate output: `fairness gate: a, b, c agree on <N> glyphs, page <i>`.
 This is the arm that separates "Rust helped" from "moving the loop helped". `packages/engine/services/src/features/text/PageTextReader.ts:93` already reads a whole page of text through one `EPDFText_GetTextFull` call, so the fork has been collapsing these loops in C++ for a while and can keep doing so without any Rust.
 
 **Files:**
-- Create: `pdfium-rust-spike/cpp/record.h`
-- Create: `pdfium-rust-spike/cpp/ops.cc`
-- Test: `pdfium-rust-spike/bench/arm-d.test.mjs`
+- Create: `pdfium-binding-benchmarks/cpp/record.h`
+- Create: `pdfium-binding-benchmarks/cpp/ops.cc`
+- Test: `pdfium-binding-benchmarks/bench/arm-d.test.mjs`
 
 **Interfaces:**
 - Consumes: the PDFium headers in `build/libpdfium/wasm32/include`.
@@ -1924,7 +1924,7 @@ This is the arm that separates "Rust helped" from "moving the loop helped". `pac
 
 - [ ] **Step 1: Write the failing test**
 
-`pdfium-rust-spike/bench/arm-d.test.mjs`:
+`pdfium-binding-benchmarks/bench/arm-d.test.mjs`:
 
 ```js
 import assert from 'node:assert/strict';
@@ -1947,14 +1947,14 @@ test('arm d agrees with arm a, and matches arm c byte for byte', async () => {
 - [ ] **Step 2: Run the test to verify it fails**
 
 ```bash
-cd pdfium-rust-spike && node --test bench/arm-d.test.mjs
+cd pdfium-binding-benchmarks && node --test bench/arm-d.test.mjs
 ```
 
 Expected: FAIL, `Cannot find module '.../build/out/d/arm.mjs'`.
 
 - [ ] **Step 3: Write the record header**
 
-`pdfium-rust-spike/cpp/record.h`:
+`pdfium-binding-benchmarks/cpp/record.h`:
 
 ```cpp
 // The 112-byte glyph record, duplicated from crates/ops/src/record.rs and
@@ -1995,7 +1995,7 @@ inline void WriteRecord(uint8_t* base, size_t index, size_t cap, const Record& r
 
 - [ ] **Step 4: Write the C++ operations**
 
-`pdfium-rust-spike/cpp/ops.cc`:
+`pdfium-binding-benchmarks/cpp/ops.cc`:
 
 ```cpp
 // Arm D. The same four coarse operations as crates/ops/src/lib.rs, in C++,
@@ -2116,7 +2116,7 @@ int cc_search_page(FPDF_TEXTPAGE text_page, const unsigned short* term, float* o
 - [ ] **Step 5: Build arm d and run the test**
 
 ```bash
-cd pdfium-rust-spike
+cd pdfium-binding-benchmarks
 bash build/link-wasm.sh d
 node --test bench/arm-d.test.mjs
 node bench/gate.mjs a b c d
@@ -2129,7 +2129,7 @@ If arms C and D disagree on `geometry`, the cause is almost always the object ke
 - [ ] **Step 6: Commit**
 
 ```bash
-git add pdfium-rust-spike
+git add pdfium-binding-benchmarks
 git commit -m "spike: arm d, the same coarse operations in C++ as a control"
 ```
 
@@ -2138,20 +2138,20 @@ git commit -m "spike: arm d, the same coarse operations in C++ as a control"
 ### Task 7: Timing, the round-robin driver, and the wasm results
 
 **Files:**
-- Create: `pdfium-rust-spike/bench/node.mjs`
-- Create: `pdfium-rust-spike/bench/run.mjs`
-- Create: `pdfium-rust-spike/bench/compare.mjs`
-- Create: `pdfium-rust-spike/RESULTS.md`
-- Create: `pdfium-rust-spike/README.md`
-- Test: `pdfium-rust-spike/bench/run.test.mjs`
+- Create: `pdfium-binding-benchmarks/bench/node.mjs`
+- Create: `pdfium-binding-benchmarks/bench/run.mjs`
+- Create: `pdfium-binding-benchmarks/bench/compare.mjs`
+- Create: `pdfium-binding-benchmarks/RESULTS.md`
+- Create: `pdfium-binding-benchmarks/README.md`
+- Test: `pdfium-binding-benchmarks/bench/run.test.mjs`
 
 **Interfaces:**
-- Consumes: `measure`, `environment`, `sinkValue` from `../../ts-wasm-interop-poc/bench/harness.mjs`; `loadArm`, `wasmBytes`; `openFixture`; `makeWorkloads`; `canonicalFor`, `compare`.
+- Consumes: `measure`, `environment`, `sinkValue` from `../../viewer-rust-port-benchmarks/bench/harness.mjs`; `loadArm`, `wasmBytes`; `openFixture`; `makeWorkloads`; `canonicalFor`, `compare`.
 - Produces: `bench/results/<arm>-r<round>.json` shaped `{ arm, round, env, fixture: { pageIndex, glyphCount }, wasmBytes, cells: { <workloadId>: { ns, p95, batches, batch, iters } } }`.
 
 - [ ] **Step 1: Write the per-arm, per-round runner**
 
-`pdfium-rust-spike/bench/node.mjs`:
+`pdfium-binding-benchmarks/bench/node.mjs`:
 
 ```js
 #!/usr/bin/env node
@@ -2163,7 +2163,7 @@ git commit -m "spike: arm d, the same coarse operations in C++ as a control"
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { environment, measure, sinkValue } from '../../ts-wasm-interop-poc/bench/harness.mjs';
+import { environment, measure, sinkValue } from '../../viewer-rust-port-benchmarks/bench/harness.mjs';
 import { loadArm, wasmBytes } from './arm.mjs';
 import { openFixture } from './fixture.mjs';
 import { makeWorkloads } from './workloads.mjs';
@@ -2210,7 +2210,7 @@ arm.close();
 
 - [ ] **Step 2: Write the round-robin driver**
 
-`pdfium-rust-spike/bench/run.mjs`:
+`pdfium-binding-benchmarks/bench/run.mjs`:
 
 ```js
 #!/usr/bin/env node
@@ -2296,7 +2296,7 @@ console.log(
 
 - [ ] **Step 3: Write the aggregator**
 
-`pdfium-rust-spike/bench/compare.mjs`:
+`pdfium-binding-benchmarks/bench/compare.mjs`:
 
 ```js
 #!/usr/bin/env node
@@ -2400,7 +2400,7 @@ console.log('A spread past about 1.3x means thermal drift; say so in the write-u
 
 - [ ] **Step 4: Write the smoke test**
 
-`pdfium-rust-spike/bench/run.test.mjs`:
+`pdfium-binding-benchmarks/bench/run.test.mjs`:
 
 ```js
 import assert from 'node:assert/strict';
@@ -2444,7 +2444,7 @@ test('a two-round run writes eight result files with plausible cells', () => {
 - [ ] **Step 5: Run the test to verify it fails, then passes**
 
 ```bash
-cd pdfium-rust-spike && node --test bench/run.test.mjs
+cd pdfium-binding-benchmarks && node --test bench/run.test.mjs
 ```
 
 Expected before writing the files: FAIL, `Cannot find module '.../bench/run.mjs'`. After Steps 1 through 3 are in place: PASS, one test, taking a few minutes.
@@ -2452,7 +2452,7 @@ Expected before writing the files: FAIL, `Cannot find module '.../bench/run.mjs'
 - [ ] **Step 6: Run the real measurement**
 
 ```bash
-cd pdfium-rust-spike
+cd pdfium-binding-benchmarks
 bash build/link-wasm.sh
 node bench/run.mjs --rounds 7
 node bench/compare.mjs | tee /tmp/wasm-tables.md
@@ -2462,14 +2462,14 @@ Expected: the gate line, seven rounds of four arms, then two markdown tables and
 
 - [ ] **Step 7: Write the results and the README**
 
-Create `pdfium-rust-spike/RESULTS.md` with an `## Environment` section (paste the header `compare.mjs` printed), a `## Wasm` section (paste both tables), and a `## What the numbers say` section written against the predictions in `docs/research/pdfium-rust-wrapper-benchmarks.md`. State plainly, in that last section: that `geometry` is a transcription of `PageGeometryReader` and not the reader itself; that the arm loader skips the engine's per-call argument bridge, so these are lower bounds on real per-call cost; and what the arm C versus arm D comparison came out at, because that is the result the port decision turns on.
+Create `pdfium-binding-benchmarks/RESULTS.md` with an `## Environment` section (paste the header `compare.mjs` printed), a `## Wasm` section (paste both tables), and a `## What the numbers say` section written against the predictions in `docs/research/pdfium-rust-wrapper-benchmarks.md`. State plainly, in that last section: that `geometry` is a transcription of `PageGeometryReader` and not the reader itself; that the arm loader skips the engine's per-call argument bridge, so these are lower bounds on real per-call cost; and what the arm C versus arm D comparison came out at, because that is the result the port decision turns on.
 
-Create `pdfium-rust-spike/README.md` saying what the four arms are, the three commands to reproduce (`bash build/fetch.sh wasm32`, `bash build/link-wasm.sh`, `node bench/run.mjs --rounds 7`), and that this is a spike nothing published depends on.
+Create `pdfium-binding-benchmarks/README.md` saying what the four arms are, the three commands to reproduce (`bash build/fetch.sh wasm32`, `bash build/link-wasm.sh`, `node bench/run.mjs --rounds 7`), and that this is a spike nothing published depends on.
 
 - [ ] **Step 8: Commit**
 
 ```bash
-git add pdfium-rust-spike
+git add pdfium-binding-benchmarks
 git commit -m "bench: wasm results for four PDFium wrapper arms over five workloads"
 ```
 
@@ -2480,13 +2480,13 @@ git commit -m "bench: wasm results for four PDFium wrapper arms over five worklo
 The native baseline is the addon that actually ships, so arm A here is `packages/engine/runtime/npm/darwin-arm64/lib/pdf-runtime.node` and not a spike rebuild. That introduces one confound worth naming in the write-up: arm A is `node-addon-api` C++ and arm B is `napi-rs` Rust, so an A-versus-B difference mixes the Rust hop with the binding framework. Arm C versus arm B is clean, and arm A versus arm D is clean.
 
 **Files:**
-- Create: `pdfium-rust-spike/crates/napi-arms/Cargo.toml`
-- Create: `pdfium-rust-spike/crates/napi-arms/build.rs`
-- Create: `pdfium-rust-spike/crates/napi-arms/src/lib.rs`
-- Create: `pdfium-rust-spike/build/build-native.sh`
-- Modify: `pdfium-rust-spike/Cargo.toml:3` (add `crates/napi-arms` to `members`)
-- Modify: `pdfium-rust-spike/bench/arm.mjs` (add the native loader; full replacement of `loadArm` shown below)
-- Test: `pdfium-rust-spike/bench/native-b.test.mjs`
+- Create: `pdfium-binding-benchmarks/crates/napi-arms/Cargo.toml`
+- Create: `pdfium-binding-benchmarks/crates/napi-arms/build.rs`
+- Create: `pdfium-binding-benchmarks/crates/napi-arms/src/lib.rs`
+- Create: `pdfium-binding-benchmarks/build/build-native.sh`
+- Modify: `pdfium-binding-benchmarks/Cargo.toml:3` (add `crates/napi-arms` to `members`)
+- Modify: `pdfium-binding-benchmarks/bench/arm.mjs` (add the native loader; full replacement of `loadArm` shown below)
+- Test: `pdfium-binding-benchmarks/bench/native-b.test.mjs`
 
 **Interfaces:**
 - Consumes: `crates/pdfium-sys`, `crates/shim`, `crates/ops`.
@@ -2495,7 +2495,7 @@ The native baseline is the addon that actually ships, so arm A here is `packages
 - [ ] **Step 1: Fetch the native PDFium and build the shipping addon**
 
 ```bash
-cd pdfium-rust-spike && bash build/fetch.sh darwin-arm64
+cd pdfium-binding-benchmarks && bash build/fetch.sh darwin-arm64
 cd ../packages/engine/runtime && pnpm build:target darwin-arm64
 ls -la npm/darwin-arm64/lib/
 ```
@@ -2504,7 +2504,7 @@ Expected: `pdf-runtime.node` and `libembedpdf.dylib` present. If `cmake-js` fail
 
 - [ ] **Step 2: Write the failing test**
 
-`pdfium-rust-spike/bench/native-b.test.mjs`:
+`pdfium-binding-benchmarks/bench/native-b.test.mjs`:
 
 ```js
 import assert from 'node:assert/strict';
@@ -2521,7 +2521,7 @@ test('native arm b agrees with native arm a on every workload they share', async
 
 - [ ] **Step 3: Add `canonicalForNative` to the gate**
 
-Append to `pdfium-rust-spike/bench/gate.mjs`, before the `import.meta.filename` block:
+Append to `pdfium-binding-benchmarks/bench/gate.mjs`, before the `import.meta.filename` block:
 
 ```js
 export async function canonicalForNative(armName) {
@@ -2543,7 +2543,7 @@ export async function canonicalForNative(armName) {
 
 - [ ] **Step 4: Write the napi crate**
 
-`pdfium-rust-spike/crates/napi-arms/Cargo.toml`:
+`pdfium-binding-benchmarks/crates/napi-arms/Cargo.toml`:
 
 ```toml
 [package]
@@ -2566,7 +2566,7 @@ ops = { path = "../ops" }
 napi-build = "2"
 ```
 
-`pdfium-rust-spike/crates/napi-arms/build.rs`:
+`pdfium-binding-benchmarks/crates/napi-arms/build.rs`:
 
 ```rust
 fn main() {
@@ -2578,7 +2578,7 @@ fn main() {
 }
 ```
 
-`pdfium-rust-spike/crates/napi-arms/src/lib.rs`:
+`pdfium-binding-benchmarks/crates/napi-arms/src/lib.rs`:
 
 ```rust
 //! Native arms B and C behind one addon. Every export mirrors the wasm arm of
@@ -2782,7 +2782,7 @@ Repeat the same pair for `FPDF_PAGE`, `FPDF_TEXTPAGE`, `FPDF_PAGEOBJECT`, `FPDF_
 
 - [ ] **Step 5: Write the native build script**
 
-`pdfium-rust-spike/build/build-native.sh`:
+`pdfium-binding-benchmarks/build/build-native.sh`:
 
 ```bash
 #!/usr/bin/env bash
@@ -2812,7 +2812,7 @@ The `.tmp`-then-`mv` dance is not decoration. Copying onto an existing binary re
 
 - [ ] **Step 6: Add the native loader**
 
-Append to `pdfium-rust-spike/bench/arm.mjs`:
+Append to `pdfium-binding-benchmarks/bench/arm.mjs`:
 
 ```js
 /**
@@ -2997,7 +2997,7 @@ and its `close()` to `if (buf) mem.free(buf);`.
 - [ ] **Step 7: Build and run the test**
 
 ```bash
-cd pdfium-rust-spike
+cd pdfium-binding-benchmarks
 bash build/build-native.sh darwin-arm64
 node --test bench/native-b.test.mjs
 ```
@@ -3007,7 +3007,7 @@ Expected: PASS.
 - [ ] **Step 8: Commit**
 
 ```bash
-git add pdfium-rust-spike
+git add pdfium-binding-benchmarks
 git commit -m "spike: native arms a and b, shipping C++ addon against a napi-rs shim"
 ```
 
@@ -3016,14 +3016,14 @@ git commit -m "spike: native arms a and b, shipping C++ addon against a napi-rs 
 ### Task 9: Native arms C and D, and the native results
 
 **Files:**
-- Create: `pdfium-rust-spike/build/CMakeLists.txt`
-- Create: `pdfium-rust-spike/cpp/ops_napi.cc`
-- Modify: `pdfium-rust-spike/build/build-native.sh` (append the arm D build)
-- Modify: `pdfium-rust-spike/bench/arm.mjs` (add arm d to `loadNativeArm`)
-- Modify: `pdfium-rust-spike/bench/run.mjs` (add `--native`)
-- Modify: `pdfium-rust-spike/bench/node.mjs` (honour `BENCH_NATIVE`)
-- Modify: `pdfium-rust-spike/RESULTS.md`
-- Test: `pdfium-rust-spike/bench/native-cd.test.mjs`
+- Create: `pdfium-binding-benchmarks/build/CMakeLists.txt`
+- Create: `pdfium-binding-benchmarks/cpp/ops_napi.cc`
+- Modify: `pdfium-binding-benchmarks/build/build-native.sh` (append the arm D build)
+- Modify: `pdfium-binding-benchmarks/bench/arm.mjs` (add arm d to `loadNativeArm`)
+- Modify: `pdfium-binding-benchmarks/bench/run.mjs` (add `--native`)
+- Modify: `pdfium-binding-benchmarks/bench/node.mjs` (honour `BENCH_NATIVE`)
+- Modify: `pdfium-binding-benchmarks/RESULTS.md`
+- Test: `pdfium-binding-benchmarks/bench/native-cd.test.mjs`
 
 **Interfaces:**
 - Consumes: `cpp/ops.cc` and `cpp/record.h` from Task 6, unchanged.
@@ -3031,7 +3031,7 @@ git commit -m "spike: native arms a and b, shipping C++ addon against a napi-rs 
 
 - [ ] **Step 1: Write the failing test**
 
-`pdfium-rust-spike/bench/native-cd.test.mjs`:
+`pdfium-binding-benchmarks/bench/native-cd.test.mjs`:
 
 ```js
 import assert from 'node:assert/strict';
@@ -3051,14 +3051,14 @@ test('native arms c and d agree with native arm a, and with each other', async (
 - [ ] **Step 2: Run the test to verify it fails**
 
 ```bash
-cd pdfium-rust-spike && node --test bench/native-cd.test.mjs
+cd pdfium-binding-benchmarks && node --test bench/native-cd.test.mjs
 ```
 
 Expected: FAIL, `unknown arm: d` from `loadNativeArm`.
 
 - [ ] **Step 3: Write the C++ N-API wrapper for arm D**
 
-`pdfium-rust-spike/cpp/ops_napi.cc`:
+`pdfium-binding-benchmarks/cpp/ops_napi.cc`:
 
 ```cpp
 // Arm D, native. Wraps the SAME cpp/ops.cc used by the wasm arm in a
@@ -3132,7 +3132,7 @@ static_assert(sizeof(FPDF_TEXTPAGE) == sizeof(void*) || sizeof(FPDF_TEXTPAGE) ==
 
 - [ ] **Step 4: Write the CMake file**
 
-`pdfium-rust-spike/build/CMakeLists.txt`:
+`pdfium-binding-benchmarks/build/CMakeLists.txt`:
 
 ```cmake
 # Mirrors packages/engine/runtime/build/CMakeLists.txt, trimmed to macOS and to
@@ -3179,11 +3179,11 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 )
 ```
 
-`cmake-js` needs `node-addon-api` on disk. Add `pdfium-rust-spike/package.json`:
+`cmake-js` needs `node-addon-api` on disk. Add `pdfium-binding-benchmarks/package.json`:
 
 ```json
 {
-  "name": "pdfium-rust-spike",
+  "name": "pdfium-binding-benchmarks",
   "private": true,
   "type": "module",
   "devDependencies": {
@@ -3193,11 +3193,11 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 }
 ```
 
-Install it with `npm install --prefix pdfium-rust-spike` rather than `pnpm`, so the spike stays out of the workspace lockfile.
+Install it with `npm install --prefix pdfium-binding-benchmarks` rather than `pnpm`, so the spike stays out of the workspace lockfile.
 
 - [ ] **Step 5: Append arm D to the native build script**
 
-Append to `pdfium-rust-spike/build/build-native.sh`:
+Append to `pdfium-binding-benchmarks/build/build-native.sh`:
 
 ```bash
 INCLUDE_DIR="$ROOT/build/libpdfium/$TARGET/include"
@@ -3214,7 +3214,7 @@ echo "native arm d -> $OUT_DIR/cc-ops.node"
 
 - [ ] **Step 6: Wire arms c and d into the native loader**
 
-In `pdfium-rust-spike/bench/arm.mjs`, inside `loadNativeArm`, after the `const addon = require(...napi-arms.node)` line, add:
+In `pdfium-binding-benchmarks/bench/arm.mjs`, inside `loadNativeArm`, after the `const addon = require(...napi-arms.node)` line, add:
 
 ```js
   if (name === 'd') {
@@ -3232,7 +3232,7 @@ and declare `const fnExtra = {};` above the `fn` literal, then spread it in: cha
 
 - [ ] **Step 7: Teach the driver about native**
 
-In `pdfium-rust-spike/bench/run.mjs`, add after the `budgetMs` line:
+In `pdfium-binding-benchmarks/bench/run.mjs`, add after the `budgetMs` line:
 
 ```js
 const native = process.argv.includes('--native');
@@ -3240,7 +3240,7 @@ const native = process.argv.includes('--native');
 
 Change the build-check loop to skip when `native` is set, and check `build/out/native/napi-arms.node` and `build/out/native/cc-ops.node` instead. Change the gate loop to call `canonicalForNative` when `native` is set (import it alongside `canonicalFor`). Pass `BENCH_NATIVE: native ? '1' : ''` in the spawn env.
 
-In `pdfium-rust-spike/bench/node.mjs`, change the arm load to:
+In `pdfium-binding-benchmarks/bench/node.mjs`, change the arm load to:
 
 ```js
 const arm = process.env.BENCH_NATIVE
@@ -3253,7 +3253,7 @@ and guard the size field: `wasmBytes: process.env.BENCH_NATIVE ? null : await wa
 - [ ] **Step 8: Run the test, then the measurement**
 
 ```bash
-cd pdfium-rust-spike
+cd pdfium-binding-benchmarks
 bash build/build-native.sh darwin-arm64
 node --test bench/native-cd.test.mjs
 node bench/run.mjs --native --rounds 7
@@ -3267,7 +3267,7 @@ Expected: PASS on the test, then the gate line, seven rounds of four arms, then 
 Add a `## Native` section with the table, and add to `## What the numbers say`: the native arm C-versus-arm D comparison, and an explicit note that native arm A is `node-addon-api` C++ while arm B is `napi-rs` Rust, so an A-versus-B gap mixes the Rust hop with the binding framework and only B-versus-C and A-versus-D are clean comparisons.
 
 ```bash
-git add pdfium-rust-spike
+git add pdfium-binding-benchmarks
 git commit -m "bench: native results for four PDFium wrapper arms"
 ```
 
@@ -3280,12 +3280,12 @@ git commit -m "bench: native results for four PDFium wrapper arms"
 - Modify: `docs/research/rust-core-port.md:203-210` (the `## What I do not know` section)
 
 **Interfaces:**
-- Consumes: `pdfium-rust-spike/RESULTS.md`.
+- Consumes: `pdfium-binding-benchmarks/RESULTS.md`.
 - Produces: nothing code depends on.
 
 - [ ] **Step 1: Append the findings section**
 
-Add `## What actually happened` to the end of `docs/research/pdfium-rust-wrapper-benchmarks.md`, following the shape `docs/research/rust-core-port-benchmarks.md` uses for the same section: lead with the predictions that were wrong, link to `pdfium-rust-spike/RESULTS.md` for the full tables, and give each surprise its own short paragraph.
+Add `## What actually happened` to the end of `docs/research/pdfium-rust-wrapper-benchmarks.md`, following the shape `docs/research/rust-core-port-benchmarks.md` uses for the same section: lead with the predictions that were wrong, link to `pdfium-binding-benchmarks/RESULTS.md` for the full tables, and give each surprise its own short paragraph.
 
 Cover, at minimum: the thin shim's measured tax against the predicted 15%; the arm C versus arm D result and what it means for whether the fork should grow `EPDF*` functions in C++ instead; whether wasm and native disagreed the way the `mem.peek` asymmetry predicted; and the wasm size delta.
 
@@ -3310,7 +3310,7 @@ git commit -m "docs: record what the PDFium Rust wrapper benchmark measured"
 
 ## Self-Review
 
-**Spec coverage.** Gate: Task 1. Four arms: Tasks 2, 4, 5, 6 for wasm, Tasks 8 and 9 for native. Fairness gate: Task 3, enforced before timing in Task 7's `run.mjs`. Five workloads: Task 3, including both render scales and the three separate null probes. Method (warmup, budget, median and p95, sink, round-robin at k=7, environment stamp): Task 7, inherited from `ts-wasm-interop-poc/bench/harness.mjs`. Wasm byte size: Task 7. Native phase: Tasks 8 and 9. Write-up: Tasks 7, 9 and 10.
+**Spec coverage.** Gate: Task 1. Four arms: Tasks 2, 4, 5, 6 for wasm, Tasks 8 and 9 for native. Fairness gate: Task 3, enforced before timing in Task 7's `run.mjs`. Five workloads: Task 3, including both render scales and the three separate null probes. Method (warmup, budget, median and p95, sink, round-robin at k=7, environment stamp): Task 7, inherited from `viewer-rust-port-benchmarks/bench/harness.mjs`. Wasm byte size: Task 7. Native phase: Tasks 8 and 9. Write-up: Tasks 7, 9 and 10.
 
 Two spec items are deliberately not implemented, both recorded under "Deviations from the spec" above: `bindgen`, replaced by 21 hand-written declarations, and importing `PageGeometryReader`, replaced by a transcription of its loop.
 

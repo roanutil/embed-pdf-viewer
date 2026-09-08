@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add `ios-arm64`, `ios-sim-arm64`, `android-arm64`, `android-x64` and `wasm32-eh` to the embedpdf/runtime build matrix, and consume them from `rust-core-scaffold`.
+**Goal:** Add `ios-arm64`, `ios-sim-arm64`, `android-arm64`, `android-x64` and `wasm32-eh` to the embedpdf/runtime build matrix, and consume them from `pdfium-multiplatform-prototype`.
 
 **Architecture:** Every target flows through the same five scripts in `scripts/embedpdf-runtime/`: `ensure-deps.sh` syncs, `apply-patches.sh` patches, `build-target.sh` writes `args.gn` and runs ninja, `package-target.sh` tars, `write-manifest.sh` publishes. Adding a target means a case in each place that needs one, plus a matrix row in `.github/workflows/release-libpdfium.yml`. Task 2 first extracts the target-to-gn-args mapping into a pure script so every later target can be verified in milliseconds instead of hours.
 
@@ -11,9 +11,9 @@
 ## Global Constraints
 
 - Two repos. Fork changes commit to the submodule at `packages/engine/runtime/runtime-src` (remote `https://github.com/embedpdf/runtime.git`), on a new branch `embedpdf/feature/mobile-and-wasm-eh` cut from `fce2b000cc7a9e2cabc92db41cd57ca03233f07d`. Consumer changes commit to `embed-pdf-viewer` on `research/runtime-fork-build-matrix`. Never mix the two in one commit.
-- All fourteen artifacts (nine existing plus five new) are cut from ONE fork sha. Task 9 re-pins all fourteen entries in `rust-core-scaffold/build/runtime-build.json`, not just the four currently marked `"status": "pending"`.
+- All fourteen artifacts (nine existing plus five new) are cut from ONE fork sha. Task 9 re-pins all fourteen entries in `pdfium-multiplatform-prototype/build/runtime-build.json`, not just the four currently marked `"status": "pending"`.
 - `wasm32` output must stay byte-identical. Any change that alters the existing `wasm32` `args.gn` is a defect.
-- New target names, exactly: `wasm32-eh`, `ios-arm64`, `ios-sim-arm64`, `android-arm64`, `android-x64`. These are the strings already used by `rust-core-scaffold/build/build-swift.sh:20-21`, `build-kotlin.sh:25-33` and the four `"status": "pending"` keys in `rust-core-scaffold/build/runtime-build.json`.
+- New target names, exactly: `wasm32-eh`, `ios-arm64`, `ios-sim-arm64`, `android-arm64`, `android-x64`. These are the strings already used by `pdfium-multiplatform-prototype/build/build-swift.sh:20-21`, `build-kotlin.sh:25-33` and the four `"status": "pending"` keys in `pdfium-multiplatform-prototype/build/runtime-build.json`.
 - iOS AND Android artifacts are both static (`pdf_is_complete_lib=true`, staged as `lib/libembedpdf.a`). Android was specified as shared and that was wrong: Chromium's Android config exports nothing from a `.so`, so `--gc-sections` strips all of PDFium and the build silently produces an empty library that still passes a `file` check. Static also means `jniLibs` ships one `.so` (the Rust `cdylib`) instead of two.
 - `embedpdf_thread_local_globals` must be `false` for every wasm target and `true` for every other target.
 - Every fork script keeps its existing header: `# Copyright 2026 CloudPDF LTD` then `# SPDX-License-Identifier: Apache-2.0`.
@@ -797,7 +797,7 @@ Expected from the `tar -tzf`: `./lib/libembedpdf.a`.
 
 ### Task 5: The Android targets
 
-Two targets, `android-arm64` and `android-x64`, mapping to the `arm64-v8a` and `x86_64` ABIs that `rust-core-scaffold/build/build-kotlin.sh:25-33` expects. Upstream PDFium already supports Android, so this is additive.
+Two targets, `android-arm64` and `android-x64`, mapping to the `arm64-v8a` and `x86_64` ABIs that `pdfium-multiplatform-prototype/build/build-kotlin.sh:25-33` expects. Upstream PDFium already supports Android, so this is additive.
 
 **Files:**
 - Modify: `packages/engine/runtime/runtime-src/scripts/embedpdf-runtime/target-args.sh` (two cases)
@@ -1382,12 +1382,12 @@ Pushing this branch and dispatching the workflow needs write access to `embedpdf
 ### Task 9: Consume the new targets from the scaffold
 
 **Files:**
-- Modify: `rust-core-scaffold/build/runtime-build.json` (all fourteen entries)
-- Modify: `rust-core-scaffold/build/link-wasm.sh:9,12,100-140,163-164,171-188`
-- Modify: `rust-core-scaffold/crates/build-support/src/lib.rs:63`
-- Modify: `rust-core-scaffold/crates/epdf-wasm/src/lib.rs` (add the panic probe)
-- Modify: `rust-core-scaffold/build/test-all.sh:77-79`
-- Modify: `rust-core-scaffold/README.md:227-236`
+- Modify: `pdfium-multiplatform-prototype/build/runtime-build.json` (all fourteen entries)
+- Modify: `pdfium-multiplatform-prototype/build/link-wasm.sh:9,12,100-140,163-164,171-188`
+- Modify: `pdfium-multiplatform-prototype/crates/build-support/src/lib.rs:63`
+- Modify: `pdfium-multiplatform-prototype/crates/epdf-wasm/src/lib.rs` (add the panic probe)
+- Modify: `pdfium-multiplatform-prototype/build/test-all.sh:77-79`
+- Modify: `pdfium-multiplatform-prototype/README.md:227-236`
 
 **Interfaces:**
 - Consumes: a published release containing fourteen artifacts, from Task 8
@@ -1398,7 +1398,7 @@ Pushing this branch and dispatching the workflow needs write access to `embedpdf
 The Global Constraints require every artifact to come from one sha. The nine existing entries currently point at `d7b4caa26289d4846e94ff54e63b586b9bbe9fd6`; they must move to the new release too, not just the five new ones.
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/rust-core-scaffold
+cd /Users/andrew/repos/embed-pdf-viewer/pdfium-multiplatform-prototype
 SHA=<the sha the release was cut from>
 for t in wasm32 wasm32-eh darwin-arm64 darwin-x64 linux-x64 linux-arm64 \
          linuxmusl-x64 linuxmusl-arm64 win32-x64 win32-arm64 \
@@ -1413,7 +1413,7 @@ Write the resulting URL and sha256 into each entry of `build/runtime-build.json`
 - [ ] **Step 2: Verify every artifact fetches and verifies**
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/rust-core-scaffold
+cd /Users/andrew/repos/embed-pdf-viewer/pdfium-multiplatform-prototype
 for t in wasm32 wasm32-eh ios-arm64 ios-sim-arm64 android-arm64 android-x64; do
   bash build/fetch-libpdfium.sh "$t" >/dev/null && echo "ok: $t" || echo "FAILED: $t"
 done
@@ -1423,7 +1423,7 @@ Expected: six `ok:` lines. A sha256 mismatch here means Step 1 pasted a hash for
 
 - [ ] **Step 3: Add a panic probe to the wasm crate**
 
-The whole point of `wasm32-eh` is that a Rust panic becomes a recoverable error instead of killing the instance. That needs something that panics on purpose. In `rust-core-scaffold/crates/epdf-wasm/src/lib.rs`, add:
+The whole point of `wasm32-eh` is that a Rust panic becomes a recoverable error instead of killing the instance. That needs something that panics on purpose. In `pdfium-multiplatform-prototype/crates/epdf-wasm/src/lib.rs`, add:
 
 ```rust
 /// Panics on purpose, so a test can prove a panic crossing the wasm boundary
@@ -1436,7 +1436,7 @@ pub extern "C" fn epdf_test_panic() -> i32 {
 }
 ```
 
-and in `rust-core-scaffold/crates/epdf-wasm/Cargo.toml`:
+and in `pdfium-multiplatform-prototype/crates/epdf-wasm/Cargo.toml`:
 
 ```toml
 [features]
@@ -1445,7 +1445,7 @@ panic-probe = []
 
 - [ ] **Step 4: Point the web build at wasm32-eh and drop panic=abort**
 
-First, `rust-core-scaffold/crates/build-support/src/lib.rs:63`. `fork_target()` returns the directory name under `build/libpdfium/` that a crate's build script reads, and `pdfium-sys` uses it to find the fork's headers for bindgen. It currently hardcodes the old name:
+First, `pdfium-multiplatform-prototype/crates/build-support/src/lib.rs:63`. `fork_target()` returns the directory name under `build/libpdfium/` that a crate's build script reads, and `pdfium-sys` uses it to find the fork's headers for bindgen. It currently hardcodes the old name:
 
 ```rust
     if os == "emscripten" {
@@ -1455,7 +1455,7 @@ First, `rust-core-scaffold/crates/build-support/src/lib.rs:63`. `fork_target()` 
 
 Change the string to `"wasm32-eh"`. Miss this and `cargo build --target wasm32-unknown-emscripten` looks in `build/libpdfium/wasm32/`, which `link-wasm.sh` no longer fetches, so bindgen fails on missing headers rather than on anything related to exceptions. Do not instead set `EPDF_SCAFFOLD_TARGET` on the cargo command: the override at line 58 exists for cross-compiles, and relying on it would leave a bare `cargo build` for that target silently wrong.
 
-Then four edits in `rust-core-scaffold/build/link-wasm.sh`:
+Then four edits in `pdfium-multiplatform-prototype/build/link-wasm.sh`:
 
 Line 9, change `LIB_DIR="$ROOT/build/libpdfium/wasm32"` to:
 
@@ -1486,7 +1486,7 @@ In the `em++` invocation at lines 171-188, add two flags after `-sWASM=1`:
 
 - [ ] **Step 5: Replace the obsolete comment block**
 
-Lines 100-140 of `rust-core-scaffold/build/link-wasm.sh` explain at length why `panic=abort` was necessary. That reasoning is now history and leaving it would mislead. Replace the whole block with:
+Lines 100-140 of `pdfium-multiplatform-prototype/build/link-wasm.sh` explain at length why `panic=abort` was necessary. That reasoning is now history and leaving it would mislead. Replace the whole block with:
 
 ```bash
 # rustc's precompiled std for wasm32-unknown-emscripten lowers a Rust panic's
@@ -1513,7 +1513,7 @@ Lines 100-140 of `rust-core-scaffold/build/link-wasm.sh` explain at length why `
 - [ ] **Step 6: Build the web target and prove a panic is recoverable**
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/rust-core-scaffold
+cd /Users/andrew/repos/embed-pdf-viewer/pdfium-multiplatform-prototype
 bash build/link-wasm.sh
 node -e "
 const { default: create } = await import('./build/out/web/epdf.mjs');
@@ -1539,7 +1539,7 @@ Expected: `ok: panic surfaced as ...` followed by `ok: the instance survived and
 - [ ] **Step 7: Run the iOS gate that started this**
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/rust-core-scaffold
+cd /Users/andrew/repos/embed-pdf-viewer/pdfium-multiplatform-prototype
 bash build/build-swift.sh ios-sim-arm64
 cd apps/ios && xcodebuild -project EpdfScaffold.xcodeproj -scheme EpdfScaffold \
   -destination "platform=iOS Simulator,name=iPhone 17" build 2>&1 | tail -5
@@ -1550,7 +1550,7 @@ Expected: `build-swift.sh` no longer exits 2, and `xcodebuild` prints `** BUILD 
 - [ ] **Step 8: Run the Android gate**
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/rust-core-scaffold
+cd /Users/andrew/repos/embed-pdf-viewer/pdfium-multiplatform-prototype
 bash build/build-kotlin.sh android-arm64
 ls -l packages/kotlin/epdf-ops/src/main/jniLibs/arm64-v8a/libepdf_uniffi.so
 cd apps/android && ./gradlew assembleDebug 2>&1 | tail -5
@@ -1561,7 +1561,7 @@ Expected: the `.so` exists and `BUILD SUCCESSFUL`. The `requireNativeLibraries` 
 - [ ] **Step 9: Run the whole suite**
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/rust-core-scaffold
+cd /Users/andrew/repos/embed-pdf-viewer/pdfium-multiplatform-prototype
 bash build/test-all.sh
 ```
 
@@ -1569,21 +1569,21 @@ Expected: every previously-skipped section now runs. Report the counts verbatim,
 
 - [ ] **Step 10: Correct the two documents that now lie**
 
-`rust-core-scaffold/README.md:227-236` states that `epdf-wasm` builds with `-C panic=abort` and that a panic kills the engine. That is no longer true. Rewrite that entry to say the web build links the fork's `wasm32-eh` artifact, that both sides use native Wasm EH, and that a panic surfaces as `OpsError::Internal`. Also update the passage naming the four unproven platforms: iOS, Android and web are now proven, so say what actually remains.
+`pdfium-multiplatform-prototype/README.md:227-236` states that `epdf-wasm` builds with `-C panic=abort` and that a panic kills the engine. That is no longer true. Rewrite that entry to say the web build links the fork's `wasm32-eh` artifact, that both sides use native Wasm EH, and that a panic surfaces as `OpsError::Internal`. Also update the passage naming the four unproven platforms: iOS, Android and web are now proven, so say what actually remains.
 
-`rust-core-scaffold/build/test-all.sh:77-79` prints skip messages saying `embedpdf/runtime does not build ios-arm64 or ios-sim-arm64` and the same for Android, pointing at `"status": "pending"` in a file that no longer has any. Those branches are now dead. Delete them rather than rewording, and let the sections they guarded run unconditionally.
+`pdfium-multiplatform-prototype/build/test-all.sh:77-79` prints skip messages saying `embedpdf/runtime does not build ios-arm64 or ios-sim-arm64` and the same for Android, pointing at `"status": "pending"` in a file that no longer has any. Those branches are now dead. Delete them rather than rewording, and let the sections they guarded run unconditionally.
 
 - [ ] **Step 11: Commit**
 
 ```bash
 cd /Users/andrew/repos/embed-pdf-viewer
-git add rust-core-scaffold/build/runtime-build.json \
-        rust-core-scaffold/build/link-wasm.sh \
-        rust-core-scaffold/build/test-all.sh \
-        rust-core-scaffold/crates/build-support/src/lib.rs \
-        rust-core-scaffold/crates/epdf-wasm/src/lib.rs \
-        rust-core-scaffold/crates/epdf-wasm/Cargo.toml \
-        rust-core-scaffold/README.md
+git add pdfium-multiplatform-prototype/build/runtime-build.json \
+        pdfium-multiplatform-prototype/build/link-wasm.sh \
+        pdfium-multiplatform-prototype/build/test-all.sh \
+        pdfium-multiplatform-prototype/crates/build-support/src/lib.rs \
+        pdfium-multiplatform-prototype/crates/epdf-wasm/src/lib.rs \
+        pdfium-multiplatform-prototype/crates/epdf-wasm/Cargo.toml \
+        pdfium-multiplatform-prototype/README.md
 git commit -m "feat(scaffold): consume the fork's mobile and wasm32-eh artifacts
 
 All fourteen artifacts are re-pinned to one fork sha. The web build links

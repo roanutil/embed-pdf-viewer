@@ -1,6 +1,6 @@
 # Adding mobile and a Wasm-EH wasm target to embedpdf/runtime
 
-Someone opened `rust-core-scaffold/apps/ios/EpdfScaffold.xcodeproj`, picked an iOS Simulator, and
+Someone opened `pdfium-multiplatform-prototype/apps/ios/EpdfScaffold.xcodeproj`, picked an iOS Simulator, and
 pressed build. Xcode said this:
 
 ```
@@ -25,7 +25,7 @@ release workflow at `.github/workflows/release-libpdfium.yml:63-71` matches them
 one produces a tarball, and `write-manifest.sh` turns those into a JSON manifest of URLs and
 sha256s.
 
-The scaffold consumes that manifest directly. `rust-core-scaffold/build/runtime-build.json` holds
+The scaffold consumes that manifest directly. `pdfium-multiplatform-prototype/build/runtime-build.json` holds
 thirteen entries: the nine real ones, pinned to fork sha `d7b4caa26289d4846e94ff54e63b586b9bbe9fd6`,
 plus `ios-arm64`, `ios-sim-arm64`, `android-arm64` and `android-x64` marked `"status": "pending"`.
 `fetch-libpdfium.sh` reads that field and prints an explanation instead of a 404.
@@ -64,7 +64,7 @@ Rust `cdylib` absorbs the archive, `jniLibs` ships one `.so` rather than two, an
 iOS, wasm and linuxmusl instead of being the only target needing an export list.
 
 `android-arm64` maps to the `arm64-v8a` ABI and `android-x64` to `x86_64`, which is what
-`rust-core-scaffold/build/build-kotlin.sh:25-33` already expects. I'm deliberately not adding
+`pdfium-multiplatform-prototype/build/build-kotlin.sh:25-33` already expects. I'm deliberately not adding
 `armeabi-v7a` or `x86`. The goal is proving the runtime works on a phone and an emulator, and two
 ABIs do that. Adding the other two doubles Android CI time for devices this project has no user on
 yet.
@@ -115,7 +115,7 @@ which matches what the scaffold's `build-swift.sh` wants to link.
 
 This one is unrelated to mobile and I'm folding it in anyway, because it touches the same six files.
 
-`rust-core-scaffold/build/link-wasm.sh:100-121` records a genuine standoff. rustc 1.98.0's
+`pdfium-multiplatform-prototype/build/link-wasm.sh:100-121` records a genuine standoff. rustc 1.98.0's
 precompiled std for `wasm32-unknown-emscripten` lowers Rust panics through native WebAssembly
 exception handling, and the compiled object imports `__cpp_exception` as a wasm tag. Without
 `em++ -fwasm-exceptions`, Node refuses to instantiate the module at all:
@@ -161,7 +161,7 @@ result. Settling it is a task, and it comes before the build.)
 A target is not done when ninja exits 0. It's done when the scaffold's own gates go green.
 
 For the four mobile targets: flip the `pending` entries in
-`rust-core-scaffold/build/runtime-build.json`, then `bash build/build-swift.sh ios-sim-arm64` links
+`pdfium-multiplatform-prototype/build/runtime-build.json`, then `bash build/build-swift.sh ios-sim-arm64` links
 instead of exiting 2, the Xcode project builds for a simulator instead of hitting the gate script,
 and `bash build/build-kotlin.sh android-arm64` produces a `.so` that the Android app packages.
 

@@ -2,9 +2,9 @@
 
 The last benchmark on this branch closed with a sentence I have not stopped thinking about: a real
 port should pick its first slice by asking how much compute sits behind each crossing. The three
-toys in `ts-wasm-interop-poc/` had almost none, and Rust lost every frame cell to plain TypeScript,
+toys in `viewer-rust-port-benchmarks/` had almost none, and Rust lost every frame cell to plain TypeScript,
 1.6x to 3.1x, with the tables in
-[`ts-wasm-interop-poc/bench/RESULTS.md`](../../ts-wasm-interop-poc/bench/RESULTS.md).
+[`viewer-rust-port-benchmarks/bench/RESULTS.md`](../../viewer-rust-port-benchmarks/bench/RESULTS.md).
 
 PDFium is the opposite case. So this is a plan to measure the same boundary with a real workload
 behind it: what does it cost to put Rust between TypeScript and the PDFium fork in
@@ -148,7 +148,7 @@ with small work behind each.
 
 ## Method
 
-Reuse `ts-wasm-interop-poc/bench/harness.mjs` by relative path rather than writing new statistics.
+Reuse `viewer-rust-port-benchmarks/bench/harness.mjs` by relative path rather than writing new statistics.
 Warm up 10,000 iterations or 200 ms, whichever comes first. Sample against a 500 ms budget per cell
 and count iterations, rather than fixing the iteration count. Consume every result into an
 accumulator the harness prints, because an unconsumed call is a call V8 may delete. Report median and
@@ -160,14 +160,14 @@ numbers here are machine-specific and a results file without that header is a tr
 it in six months.
 
 Node only. The question is per-operation cost, and cold start is already covered in
-`ts-wasm-interop-poc/bench/RESULTS.md`. But collect one static number while you are there: the byte
+`viewer-rust-port-benchmarks/bench/RESULTS.md`. But collect one static number while you are there: the byte
 size of `embedpdf.wasm` for each arm. A Rust staticlib grows the module, and on web that is a real
 cost native does not pay.
 
 ## Shape of it
 
 ```
-pdfium-rust-spike/
+pdfium-binding-benchmarks/
   crates/
     pdfium-sys/          bindgen over the fetched headers
     shim/                arm B, 1:1 exports
@@ -182,7 +182,7 @@ pdfium-rust-spike/
     results/
 ```
 
-Top-level and self-contained, like `ts-wasm-interop-poc/`, so nothing published is touched and a dead
+Top-level and self-contained, like `viewer-rust-port-benchmarks/`, so nothing published is touched and a dead
 end costs one `rm -rf`. The cost is that `build/link-wasm.sh` is a copy of `compile.esm.sh` and will
 drift from it. I think that is the right trade for a spike, but it is a trade.
 
@@ -228,7 +228,7 @@ work. I genuinely do not know which way it goes.
 
 Built, gated, and run over seven interleaved rounds in wasm and seven more natively. The full
 tables, the environment stamps and every caveat are in
-[`pdfium-rust-spike/RESULTS.md`](../../pdfium-rust-spike/RESULTS.md), which is the source of record;
+[`pdfium-binding-benchmarks/RESULTS.md`](../../pdfium-binding-benchmarks/RESULTS.md), which is the source of record;
 what follows is what I got wrong and what I did not expect. The numbers below are from a re-run: the
 first version of `RESULTS.md` had wasm tables with no raw data behind them, because `bench/run.mjs`
 used to clear its whole results directory at the start of a run and a native run wiped the wasm
