@@ -20,24 +20,6 @@ use crate::model::{
     FLAG_PROJECTED, FLAG_SELECTED, ITEM_STRIDE,
 };
 
-thread_local! {
-    static HOST_LOG: RefCell<Option<js_sys::Function>> = const { RefCell::new(None) };
-}
-
-/// The borrow ends BEFORE the call into JS, and that ordering is the point.
-///
-/// Holding a `RefCell` borrow across a call into JavaScript is how a Rust core
-/// kills itself: the host callback can re-enter Rust, and `set_host_logger`
-/// takes `borrow_mut()`. A host logger that re-registered a logger, or a second
-/// `createCoreStore()` running inside one, panicked with `BorrowMutError`, and
-/// a wasm panic leaves the instance dead for the rest of the page.
-fn host_log(message: &str) {
-    let logger = HOST_LOG.with(|slot| slot.borrow().clone());
-    if let Some(f) = logger {
-        let _ = f.call1(&JsValue::NULL, &JsValue::from_str(message));
-    }
-}
-
 /// The layout of `scene()`'s buffer, handed to TypeScript so the decoder is not
 /// a magic number on the other side.
 ///
@@ -78,6 +60,19 @@ pub struct Core {
     /// `SetRot` and `SetAnchored` left the cache serving stale rows.
     /// `affects_shape_table` is the list, and it lives next to `ShapeRow`.
     table: u32,
+    /// Per-Core, not a module thread_local.
+    ///
+    /// A module-level slot is one slot for the whole wasm instance: a second
+    /// `createCoreStore({log})` silently replaced the first store's logger, and
+    /// `destroy()` calling `core.free()` left the instance holding a
+    /// `js_sys::Function` that closed over an unmounted component's
+    /// `setHostLines`. Owned by the Core, it goes away when the Core does.
+    ///
+    /// `RefCell` and not a plain field, so `set_host_logger` can keep `&self`.
+    /// A `&mut self` export holds wasm-bindgen's borrow for the whole call, and
+    /// calling into JS under it is the recursive-borrow failure documented on
+    /// `DispatchResult` below.
+    host_log: RefCell<Option<js_sys::Function>>,
 }
 
 /// What `dispatch` reports back. `changed` is what drives invalidation on the
@@ -113,6 +108,7 @@ impl Core {
             model: Model::default(),
             version: 1,
             table: 1,
+            host_log: RefCell::new(None),
         }
     }
 
@@ -124,8 +120,31 @@ impl Core {
     /// down next to it.
     #[wasm_bindgen(js_name = setHostLogger)]
     pub fn set_host_logger(&self, f: &js_sys::Function) {
-        HOST_LOG.with(|slot| *slot.borrow_mut() = Some(f.clone()));
-        host_log(&format!("poc-core {} ready", env!("CARGO_PKG_VERSION")));
+        *self.host_log.borrow_mut() = Some(f.clone());
+        self.host_log(&format!("poc-core {} ready", env!("CARGO_PKG_VERSION")));
+    }
+
+    /// Drops the host callback. The store calls this from `destroy()`, before
+    /// `free()`, so a torn-down store stops holding the closure it registered
+    /// even if something else still holds the Core.
+    #[wasm_bindgen(js_name = clearHostLogger)]
+    pub fn clear_host_logger(&self) {
+        *self.host_log.borrow_mut() = None;
+    }
+
+    /// The borrow ends BEFORE the call into JS, and that ordering is the point.
+    ///
+    /// Holding a `RefCell` borrow across a call into JavaScript is how a Rust
+    /// core kills itself: the host callback can re-enter Rust, and
+    /// `set_host_logger` takes `borrow_mut()`. A host logger that re-registered
+    /// a logger, or a second `createCoreStore()` running inside one, panicked
+    /// with `BorrowMutError`, and a wasm panic leaves the instance dead for the
+    /// rest of the page.
+    fn host_log(&self, message: &str) {
+        let logger = self.host_log.borrow().clone();
+        if let Some(f) = logger {
+            let _ = f.call1(&JsValue::NULL, &JsValue::from_str(message));
+        }
     }
 
     #[wasm_bindgen(getter)]

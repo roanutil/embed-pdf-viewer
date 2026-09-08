@@ -273,6 +273,11 @@ export function createCoreStore(host: CoreHost = {}): CoreStore {
     destroy() {
       listeners.clear();
       effectHandlers.clear();
+      // Before free(), and not only for tidiness: the logger closure captures
+      // the caller's `host`, which in the React demo captures an unmounted
+      // component's setState.
+      countCrossing();
+      core.clearHostLogger();
       core.free();
     },
   };

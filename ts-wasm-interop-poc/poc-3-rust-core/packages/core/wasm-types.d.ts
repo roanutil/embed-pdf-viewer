@@ -23,6 +23,7 @@ export class Core {
   readonly selectedHandle: number | undefined;
   readonly isDragging: boolean;
   setHostLogger(f: (message: unknown) => void): void;
+  clearHostLogger(): void;
   dispatch(msg: unknown): { changed: boolean; effects: unknown[] };
   scene(zoom: number, rotation: number): Float64Array;
   shapeTable(): unknown;
