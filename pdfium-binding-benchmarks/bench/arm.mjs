@@ -341,7 +341,9 @@ export async function loadNativeArm(name, target = 'darwin-arm64') {
     peek32: addon.peek32,
     peekF32: addon.peekF32,
     peekF64: addon.peekF64,
-    readBytes: (p, len) => new Uint8Array(addon.readBytes(p, len)),
+    // readBytes already returns an owned Buffer (a Uint8Array). Wrapping it
+    // in new Uint8Array would add a second copy inside the timed workload.
+    readBytes: (p, len) => addon.readBytes(p, len),
     writeBytes: (p, d) => addon.writeBytes(p, Buffer.from(d)),
     // A zero-copy view onto native memory: `addon.viewBuffer` returns a real
     // external ArrayBuffer that ALIASES `[ptr, ptr+len)` rather than copying
@@ -353,7 +355,7 @@ export async function loadNativeArm(name, target = 'darwin-arm64') {
     viewBuffer: (ptr, len) => ({ buffer: addon.viewBuffer(ptr, len), byteOffset: 0 }),
     writeU16: addon.writeU16,
     readU16: (p, units) => {
-      const bytes = new Uint8Array(addon.readBytes(p, units * 2));
+      const bytes = addon.readBytes(p, units * 2);
       const u16 = new Uint16Array(bytes.buffer, bytes.byteOffset, units);
       let out = '';
       const CHUNK = 0x2000;

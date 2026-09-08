@@ -1,5 +1,10 @@
 # Results: four PDFium wrapper arms, wasm, seven rounds
 
+The committed native measurements predate the readback-copy fix in `bench/arm.mjs`.
+Arms b/c/d paid an extra JavaScript copy in `readBytes` and `readU16`; native
+comparisons involving those paths need a fresh interleaved run. The recorded
+values below are historical and have not been regenerated for that fix.
+
 The fairness gate ran before any timing, over both gate fixtures (`report-p4` and `rotated-p0`),
 and passed:
 
