@@ -12,7 +12,7 @@ impl<'a> TextPage<'a> {
     pub(crate) fn load(page: pdfium_sys::FPDF_PAGE) -> Result<Self, PdfiumError> {
         let handle = unsafe { pdfium_sys::FPDFText_LoadPage(page) };
         if handle.is_null() {
-            return Err(PdfiumError::Text);
+            return Err(PdfiumError::TextLoad);
         }
         Ok(Self { handle, _page: PhantomData, _not_send: PhantomData })
     }
@@ -25,7 +25,10 @@ impl<'a> TextPage<'a> {
     /// UTF-16, returning the code-unit count including the NUL terminator.
     pub fn text(&self) -> Result<String, PdfiumError> {
         let needed = unsafe { pdfium_sys::EPDFText_GetTextFull(self.handle, std::ptr::null_mut(), 0) };
-        if needed <= 1 {
+        if needed <= 0 {
+            return Err(PdfiumError::TextRead);
+        }
+        if needed == 1 {
             return Ok(String::new());
         }
 
@@ -33,12 +36,14 @@ impl<'a> TextPage<'a> {
         let written = unsafe {
             pdfium_sys::EPDFText_GetTextFull(self.handle, buf.as_mut_ptr(), needed)
         };
-        if written <= 0 {
-            return Err(PdfiumError::Text);
+        if written <= 0 || written > needed {
+            return Err(PdfiumError::TextRead);
         }
 
         buf.truncate((written as usize).saturating_sub(1)); // drop the terminator
-        String::from_utf16(&buf).map_err(|_| PdfiumError::Text)
+        // The fork preserves lone surrogate units. Replace those units rather
+        // than discarding all the otherwise usable text on the page.
+        Ok(decode_text(&buf))
     }
 
     /// FPDFText_CountRects has to run before FPDFText_GetRect: it is what
@@ -66,7 +71,7 @@ impl<'a> TextPage<'a> {
                 )
             };
             if ok == 0 {
-                return Err(PdfiumError::Text);
+                return Err(PdfiumError::TextRect);
             }
             out.push([left, top, right, bottom]);
         }
@@ -104,6 +109,27 @@ impl<'a> TextPage<'a> {
             pdfium_sys::FPDFText_FindClose(search);
         }
         Ok(hits)
+    }
+}
+
+fn decode_text(units: &[u16]) -> String {
+    String::from_utf16_lossy(units)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn preserves_text_around_unpaired_surrogates() {
+        assert_eq!(decode_text(&[0x41, 0xd800, 0x42, 0xdc00, 0xd83d, 0xde00]), "A\u{fffd}B\u{fffd}\u{1f600}");
+    }
+
+    #[test]
+    fn text_errors_identify_the_failed_operation() {
+        assert_eq!(PdfiumError::TextLoad.to_string(), "FPDFText_LoadPage failed");
+        assert_eq!(PdfiumError::TextRead.to_string(), "EPDFText_GetTextFull failed");
+        assert_eq!(PdfiumError::TextRect.to_string(), "FPDFText_GetRect failed");
     }
 }
 
