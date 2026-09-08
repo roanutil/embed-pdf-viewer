@@ -25,13 +25,22 @@ export const PAGE_INDEX = Number(process.env.BENCH_PAGE ?? 4);
 /**
  * Fixtures the fairness gate compares every arm on. `report-p4` is the
  * timing fixture above; `rotated-p0` is entirely non-upright with SPACE
- * glyphs, covering the two branches `report-p4` never touches.
+ * glyphs, covering the two branches `report-p4` never touches; `flipped-p0`
+ * has text matrices with a negative determinant, the only way to make the
+ * ascent-flip bit true.
  */
 export const GATE_FIXTURES = [
   { label: 'report-p4', pdfPath: PDF_PATH, pageIndex: PAGE_INDEX },
   {
     label: 'rotated-p0',
     pdfPath: resolve(here, '../../examples/viewer-react/public/rotated_text.pdf'),
+    pageIndex: 0,
+  },
+  {
+    // Every matrix in rotated_text.pdf has det > 0, so it never sets
+    // ascentFlip. This page does (bench/tools/make-flipped-fixture.mjs).
+    label: 'flipped-p0',
+    pdfPath: resolve(here, 'fixtures/flipped_text.pdf'),
     pageIndex: 0,
   },
 ];

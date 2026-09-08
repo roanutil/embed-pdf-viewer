@@ -45,6 +45,24 @@ test('arm a produces a stable canonical answer for every workload it runs', asyn
     rotated.geometry.some((g) => g[3] !== 0),
     'expected at least one glyph with a non-zero rotation on the rotated fixture',
   );
+
+  // Every matrix in rotated_text.pdf has a positive determinant, so neither
+  // fixture above ever set ascentFlip (index 4), and the producer bit that
+  // arms c and d OR into the record was never once compared against arm a.
+  // That is how FLAG_ASCENT_FLIP sat on PDFium's SYNTHESIZED bit (fixed in
+  // b26d9f314) with the gate green. `flipped-p0` is a page whose text
+  // matrices have det < 0, and this is the assertion that the gate really
+  // runs that branch.
+  const flipped = first.fixtures['flipped-p0'];
+  assert.ok(flipped, 'expected the flipped fixture to be present in the canonical answer');
+  assert.ok(
+    flipped.geometry.some((g) => g[4] === 1),
+    'expected at least one glyph with ascentFlip set on the flipped fixture',
+  );
+  assert.ok(
+    flipped.geometry.some((g) => g[4] === 0 && g[5] === 0),
+    'expected a non-upright glyph WITHOUT ascentFlip too, so the bit is not simply "non-upright"',
+  );
 });
 
 /** Shaped like a `canonicalFor()` result: a `.fixtures` map keyed by label. */
@@ -68,6 +86,16 @@ const SHARED_FIXTURE = {
       text: '',
       'render-1x': { hash: 'b', len: 1, firstNonWhite: 0 },
       'render-4x': { hash: 'b', len: 1, firstNonWhite: 0 },
+      search: [],
+    },
+    'flipped-p0': {
+      glyphCount: 3,
+      pageIndex: 0,
+      'null-call': [5, 6],
+      geometry: [],
+      text: '',
+      'render-1x': { hash: 'c', len: 1, firstNonWhite: 0 },
+      'render-4x': { hash: 'c', len: 1, firstNonWhite: 0 },
       search: [],
     },
   },
