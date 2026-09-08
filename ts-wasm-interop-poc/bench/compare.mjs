@@ -23,11 +23,16 @@ if (files.length === 0) {
 const timing = [];
 const alloc = [];
 let cold = null;
+// Match `mode` exactly rather than treating everything that is not cold-start
+// or alloc as timing. `bench/run.mjs` writes `*-probe-r1.json` for the fairness
+// gate and only clears per-round files at the START of a run, so the probes are
+// still on disk when compare.mjs runs. A probe payload has no `frame` array,
+// and `collect()` below would throw `run[workload] is not iterable` on it.
 for (const f of files) {
   const j = JSON.parse(readFileSync(resolve(RESULTS, f), 'utf8'));
   if (j.mode === 'cold-start') cold = j;
   else if (j.mode === 'alloc') alloc.push(j);
-  else timing.push(j);
+  else if (j.mode === 'timing') timing.push(j);
 }
 
 const median = (xs) => {
