@@ -7,14 +7,14 @@ use crate::{Library, Page, PdfiumError};
 #[derive(Debug)]
 pub struct Document {
     handle: pdfium_sys::FPDF_DOCUMENT,
-    /// FPDF_LoadMemDocument does NOT copy: PDFium reads from this buffer for the
+    /// FPDF_LoadMemDocument64 does NOT copy: PDFium reads from this buffer for the
     /// document's whole life, so the Document owns it. Field order matters,
     /// because fields drop after the Drop impl body runs, which is what puts
     /// FPDF_CloseDocument ahead of freeing these bytes. Never read directly;
     /// it exists to keep the allocation PDFium points into alive.
     #[allow(dead_code)]
     bytes: Vec<u8>,
-    /// FPDF_LoadMemDocument's handle is only valid while the library that
+    /// FPDF_LoadMemDocument64's handle is only valid while the library that
     /// created it stays initialized, and this Document has no other tie to
     /// Library's lifetime. Holding a clone of the caller's `Rc<Library>`
     /// means FPDF_DestroyLibrary runs only once the last Document (and the
@@ -39,9 +39,9 @@ impl Document {
         let password_ptr = c_password.as_ref().map_or(std::ptr::null(), |c| c.as_ptr());
 
         let handle = unsafe {
-            pdfium_sys::FPDF_LoadMemDocument(
+            pdfium_sys::FPDF_LoadMemDocument64(
                 bytes.as_ptr() as *const c_void,
-                bytes.len() as i32,
+                bytes.len(),
                 password_ptr,
             )
         };
