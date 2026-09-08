@@ -2,7 +2,9 @@
  * JS glue over the em++ module built by build/link-wasm.sh. Same six methods as
  * packages/node/index.mjs, so packages/web/vectors.test.mjs and
  * packages/node/vectors.test.mjs assert the same frozen numbers through the
- * same shapes.
+ * same shapes. Errors follow the same contract too: every thrown error carries
+ * the `.code` from `OpsError::code()` (see packages/node/README.md) beside its
+ * message, so a caller can switch on `err.code` on either host.
  */
 import createEpdfModule from '../../build/out/web/epdf.mjs';
 
@@ -22,10 +24,13 @@ export async function createEpdf() {
   const epdf_free = module.cwrap('epdf_free', null, ['number', 'number']);
   const epdf_close = module.cwrap('epdf_close', null, ['number']);
   const epdf_last_error = module.cwrap('epdf_last_error', 'number', []);
+  const epdf_last_error_code = module.cwrap('epdf_last_error_code', 'number', []);
 
-  /** Read the error string immediately: the next failing call overwrites it. */
+  /** Read the error immediately: the next failing call overwrites both halves. */
   const fail = () => {
-    throw new Error(module.UTF8ToString(epdf_last_error()));
+    const err = new Error(module.UTF8ToString(epdf_last_error()));
+    err.code = module.UTF8ToString(epdf_last_error_code());
+    throw err;
   };
 
   /** Copy bytes into the module heap; the caller frees. */

@@ -7,8 +7,10 @@ Thin Node bindings over the PDFium engine in `crates/epdf-node`, six methods on 
 
 Every thrown error carries a `.code` property distinct from its `.message`, so you can switch on
 the code instead of matching against the human-readable text. The codes come from
-`epdf_ops::OpsError` (see `crates/epdf-node/src/lib.rs`'s `to_napi`), and the match there has no
-`_` arm: a new `OpsError` variant fails the Rust build rather than silently landing on `INTERNAL`.
+`epdf_ops::OpsError::code()` in `crates/epdf-ops/src/error.rs`, and the match there has no `_` arm:
+a new `OpsError` variant fails the Rust build rather than silently landing on `INTERNAL`. The web
+glue in `packages/web/index.mjs` reads the same code through `epdf_last_error_code`, so `err.code`
+means the same thing on both hosts.
 
 ```js
 try {

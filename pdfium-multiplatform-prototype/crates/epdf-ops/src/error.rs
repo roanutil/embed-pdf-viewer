@@ -30,6 +30,24 @@ impl std::fmt::Display for OpsError {
     }
 }
 
+impl OpsError {
+    /// A stable, host-neutral code for switching on the failure without
+    /// matching the human-readable message. Every host binding (napi, wasm
+    /// glue, uniffi) reports this same string so their error contracts cannot
+    /// drift. Exhaustive on purpose: a new variant fails the build here.
+    pub fn code(&self) -> &'static str {
+        match self {
+            Self::LoadFailed => "LOAD_FAILED",
+            Self::PasswordRequired => "PASSWORD_REQUIRED",
+            Self::PageOutOfRange { .. } => "PAGE_OUT_OF_RANGE",
+            Self::RenderFailed => "RENDER_FAILED",
+            Self::Closed => "CLOSED",
+            Self::EngineFailed { .. } => "ENGINE_FAILED",
+            Self::Internal { .. } => "INTERNAL",
+        }
+    }
+}
+
 impl std::error::Error for OpsError {}
 
 impl From<pdfium::PdfiumError> for OpsError {
@@ -43,6 +61,28 @@ impl From<pdfium::PdfiumError> for OpsError {
             },
             pdfium::PdfiumError::Bitmap => Self::RenderFailed,
             other => Self::Internal { message: other.to_string() },
+        }
+    }
+}
+
+#[cfg(test)]
+mod code_tests {
+    use super::OpsError;
+
+    #[test]
+    fn every_variant_has_a_stable_code_distinct_from_its_message() {
+        let cases = [
+            (OpsError::LoadFailed, "LOAD_FAILED"),
+            (OpsError::PasswordRequired, "PASSWORD_REQUIRED"),
+            (OpsError::PageOutOfRange { index: 3 }, "PAGE_OUT_OF_RANGE"),
+            (OpsError::RenderFailed, "RENDER_FAILED"),
+            (OpsError::Closed, "CLOSED"),
+            (OpsError::EngineFailed { message: "gone".into() }, "ENGINE_FAILED"),
+            (OpsError::Internal { message: "oops".into() }, "INTERNAL"),
+        ];
+        for (err, code) in cases {
+            assert_eq!(err.code(), code);
+            assert_ne!(err.to_string(), code);
         }
     }
 }

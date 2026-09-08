@@ -128,7 +128,8 @@ fi
      cargo build --release -p epdf-wasm "${CARGO_FEATURES[@]}" --target wasm32-unknown-emscripten )
 
 EXPORTS="_malloc,_free\
-,_epdf_open,_epdf_page_count,_epdf_json,_epdf_render,_epdf_free,_epdf_close,_epdf_last_error\
+,_epdf_open,_epdf_page_count,_epdf_json,_epdf_render,_epdf_free,_epdf_close\
+,_epdf_last_error,_epdf_last_error_code\
 ${PROBE_EXPORT}"
 
 mkdir -p "$OUT_DIR"

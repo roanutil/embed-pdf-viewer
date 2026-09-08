@@ -57,3 +57,14 @@ test('using a closed document throws', () => {
   doc.close();
   assert.throws(() => doc.pageCount(), /closed/);
 });
+
+test('errors carry the same stable code as the Node addon, distinct from the message', () => {
+  const doc = epdf.openDocument(fixture);
+  try {
+    assert.throws(() => doc.pageSize(doc.pageCount()), (err) => err.code === 'PAGE_OUT_OF_RANGE' && err.message !== err.code);
+  } finally {
+    doc.close();
+  }
+  assert.throws(() => doc.pageCount(), (err) => err.code === 'CLOSED');
+  assert.throws(() => epdf.openDocument(Buffer.from('not a pdf')), (err) => err.code === 'LOAD_FAILED');
+});

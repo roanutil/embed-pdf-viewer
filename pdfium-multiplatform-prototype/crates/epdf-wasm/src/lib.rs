@@ -25,11 +25,16 @@ thread_local! {
     static DOCS: RefCell<HashMap<u32, Arc<epdf_ops::Document>>> = RefCell::new(HashMap::new());
     static NEXT_ID: RefCell<u32> = const { RefCell::new(1) };
     static LAST_ERROR: RefCell<CString> = RefCell::new(CString::new("").unwrap());
+    static LAST_ERROR_CODE: RefCell<CString> = RefCell::new(CString::new("").unwrap());
 }
 
-fn set_error(message: impl std::fmt::Display) {
-    let text = message.to_string().replace('\0', " ");
+/// Records both halves of the error contract packages/node/README.md documents:
+/// the stable `OpsError::code()` and the human-readable message. The JS glue
+/// reads them back through `epdf_last_error_code` and `epdf_last_error`.
+fn set_error(err: epdf_ops::OpsError) {
+    let text = err.to_string().replace('\0', " ");
     LAST_ERROR.with(|cell| *cell.borrow_mut() = CString::new(text).unwrap());
+    LAST_ERROR_CODE.with(|cell| *cell.borrow_mut() = CString::new(err.code()).unwrap());
 }
 
 fn engine() -> Result<Arc<epdf_ops::Engine>, epdf_ops::OpsError> {
@@ -211,6 +216,13 @@ pub extern "C" fn epdf_last_error() -> *const std::os::raw::c_char {
     LAST_ERROR.with(|cell| cell.borrow().as_ptr())
 }
 
+/// The `OpsError::code()` of the last failure, e.g. "PAGE_OUT_OF_RANGE". Read it
+/// together with `epdf_last_error`; the next failing call overwrites both.
+#[unsafe(no_mangle)]
+pub extern "C" fn epdf_last_error_code() -> *const std::os::raw::c_char {
+    LAST_ERROR_CODE.with(|cell| cell.borrow().as_ptr())
+}
+
 /// Exercises catch_unwind and borrow-guard release inside the real dispatch.
 /// Returns the same error sentinel as other exports; absent from normal builds.
 #[cfg(feature = "panic-probe")]
@@ -219,5 +231,20 @@ pub extern "C" fn epdf_test_panic() -> i32 {
     match engine().and_then(|engine| engine.test_panic()) {
         Ok(()) => 0,
         Err(err) => { set_error(err); -1 }
+    }
+}
+
+#[cfg(test)]
+mod error_code_tests {
+    use super::*;
+    use std::ffi::CStr;
+
+    #[test]
+    fn last_error_reports_the_ops_code_beside_the_message() {
+        set_error(epdf_ops::OpsError::PageOutOfRange { index: 9 });
+        let code = unsafe { CStr::from_ptr(epdf_last_error_code()) }.to_str().unwrap();
+        let message = unsafe { CStr::from_ptr(epdf_last_error()) }.to_str().unwrap();
+        assert_eq!(code, "PAGE_OUT_OF_RANGE");
+        assert_eq!(message, "page index 9 is past the end of the document");
     }
 }
