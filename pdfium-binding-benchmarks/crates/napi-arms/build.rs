@@ -7,6 +7,22 @@ fn main() {
     println!("cargo:rustc-link-search=native={}", lib_dir.display());
     println!("cargo:rustc-link-lib=dylib=embedpdf");
     println!("cargo:rustc-link-arg=-Wl,-rpath,{}", lib_dir.display());
+    // The absolute rpath above dies the moment the checkout moves or is
+    // renamed (it did: build/out/native/napi-arms.node kept pointing into the
+    // old `pdfium-rust-spike/` path after 8a8cdeca3, so `run.mjs --native`
+    // passed its existsSync check and failed in dlopen). build-native.sh
+    // copies libembedpdf.dylib next to the .node, and the fetched copy sits at
+    // build/libpdfium/<target>/lib two levels up from build/out/native, so
+    // both relative rpaths keep resolving wherever the tree lands.
+    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("macos") {
+        println!("cargo:rustc-link-arg=-Wl,-rpath,@loader_path");
+        if let Some(target) = lib_dir.parent().and_then(|p| p.file_name()) {
+            println!(
+                "cargo:rustc-link-arg=-Wl,-rpath,@loader_path/../../libpdfium/{}/lib",
+                target.to_string_lossy()
+            );
+        }
+    }
 }
 
 /// Where `libembedpdf` lives.
