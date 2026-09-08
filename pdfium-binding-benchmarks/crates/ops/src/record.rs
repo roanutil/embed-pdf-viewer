@@ -8,6 +8,27 @@ pub const RECORD_BYTES: usize = 112;
 /// copies PDFium's flags verbatim, so this must not collide with any of them.
 pub const FLAG_ASCENT_FLIP: u32 = 1 << 7;
 
+/// Every flag pdfium-sys mirrors from epdf_text.h. The producer bit must be
+/// exactly one above the highest of them and overlap none. pdfium-sys is a
+/// hand-written mirror, so this only sees the flags it names;
+/// bench/record-flags.test.mjs reads the real header and checks the mirror
+/// is complete.
+const ALL_PDFIUM_FLAGS: u32 = pdfium_sys::EPDF_CHARGEO_HAS_TIGHT_BOX
+    | pdfium_sys::EPDF_CHARGEO_HAS_LOOSE_QUAD
+    | pdfium_sys::EPDF_CHARGEO_HAS_TIGHT_QUAD
+    | pdfium_sys::EPDF_CHARGEO_UPRIGHT
+    | pdfium_sys::EPDF_CHARGEO_SPACE
+    | pdfium_sys::EPDF_CHARGEO_EMPTY
+    | pdfium_sys::EPDF_CHARGEO_SYNTHESIZED;
+const _: () = assert!(
+    FLAG_ASCENT_FLIP == pdfium_sys::EPDF_CHARGEO_SYNTHESIZED << 1,
+    "FLAG_ASCENT_FLIP must be the bit directly above PDFium's highest EPDF_CHARGEO flag"
+);
+const _: () = assert!(
+    FLAG_ASCENT_FLIP & ALL_PDFIUM_FLAGS == 0,
+    "FLAG_ASCENT_FLIP collides with a PDFium EPDF_CHARGEO flag"
+);
+
 pub struct Writer {
     base: *mut u8,
     cap: usize,

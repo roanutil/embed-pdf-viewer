@@ -16,9 +16,18 @@ static_assert(sizeof(FPDF_TEXTPAGE) == sizeof(void*) || sizeof(FPDF_TEXTPAGE) ==
               "unexpected PDFium handle width");
 
 // The record copies EPDF_CHAR_GEOMETRY::flags verbatim and then ORs
-// kFlagAscentFlip in, so the producer bit must sit above every EPDF_CHARGEO
-// bit. EPDF_CHARGEO_SYNTHESIZED is the highest one PDFium defines.
-static_assert(kFlagAscentFlip > EPDF_CHARGEO_SYNTHESIZED,
+// kFlagAscentFlip in, so the producer bit must sit directly above every
+// EPDF_CHARGEO bit. `>` was not enough: it would still pass if PDFium added a
+// flag at bit 7 without renaming SYNTHESIZED. Pin the exact relationship and
+// the non-overlap with every flag the header names today; a flag this list
+// does not know about is caught by bench/record-flags.test.mjs, which reads
+// the header itself.
+constexpr uint32_t kAllPdfiumChargeoFlags =
+    EPDF_CHARGEO_HAS_TIGHT_BOX | EPDF_CHARGEO_HAS_LOOSE_QUAD | EPDF_CHARGEO_HAS_TIGHT_QUAD |
+    EPDF_CHARGEO_UPRIGHT | EPDF_CHARGEO_SPACE | EPDF_CHARGEO_EMPTY | EPDF_CHARGEO_SYNTHESIZED;
+static_assert(kFlagAscentFlip == (EPDF_CHARGEO_SYNTHESIZED << 1),
+              "kFlagAscentFlip must be the bit directly above PDFium's highest EPDF_CHARGEO flag");
+static_assert((kFlagAscentFlip & kAllPdfiumChargeoFlags) == 0,
               "kFlagAscentFlip collides with a PDFium EPDF_CHARGEO flag");
 
 extern "C" {

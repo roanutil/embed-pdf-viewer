@@ -99,6 +99,7 @@ pub const EPDF_CHARGEO_HAS_TIGHT_QUAD: u32 = 1 << 2;
 pub const EPDF_CHARGEO_UPRIGHT: u32 = 1 << 3;
 pub const EPDF_CHARGEO_SPACE: u32 = 1 << 4;
 pub const EPDF_CHARGEO_EMPTY: u32 = 1 << 5;
+pub const EPDF_CHARGEO_SYNTHESIZED: u32 = 1 << 6;
 
 extern "C" {
     pub fn FPDF_InitLibrary();
