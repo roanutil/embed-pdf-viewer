@@ -47,10 +47,26 @@ its globals in its own linear memory. This is the contract in
 `.agents/skills/embedpdf-conventions/references/runtime-confinement.md`, and the prototype's
 `crates/epdf-ops/src/dispatch/{threaded,inline}.rs` is the two-target implementation of it.
 
-Text offsets and lengths at every boundary are UTF-16 code units. The frozen `charCount` for
-`fixtures/report.pdf` page 4 is 8,106 code units and 7,992 grapheme clusters, and Swift's default
-`String.count` gives the second number. A Swift convenience that returns `String.Index` ranges maps
-through a checked conversion or does not ship.
+A page has two text index spaces, and the port carries both.
+`packages/engine/core/src/text/charmap.ts` is the one place they meet. CHARACTER space is PDFium's
+internal character list: the space geometry runs tile (`PageGeometryRun.charStart`), hit-testing
+addresses and selection ranges live in, sized by `PageTextSnapshot.charCount`. TEXT space is UTF-16
+code-unit offsets into the extracted string, which is what search matching and slicing operate on.
+They diverge in exactly two ways, both encoded by `PageTextSnapshot.charMap`: a non-printing character
+occupies a character slot and contributes zero text units, and a supplementary-plane character
+contributes two. So every boundary DTO says which space it is in, and the Rust port carries
+`charmap.ts`'s conversion semantics rather than reinventing them, including the shared
+`charMapViolation` validator that makes a malformed map a rejection instead of a silent repair.
+
+The fixtures cannot establish that contract today.
+`pdfium-multiplatform-prototype/vectors/report-page4.json` has `charCount` 8,106 over a `text` of
+exactly 8,106 UTF-16 units and no `charMap`, so the two spaces coincide and every reading of the
+number passes. (Which is why `pdfium-multiplatform-prototype/README.md:343` calls 8,106 "UTF-16 code
+units". On that page it is true. It is not the contract.) So the text slice in Phase 2 does not start
+until the corpus holds fixtures with surrogate pairs and with non-printing characters, where
+`charCount !== text.length` and `charMap` is non-empty. Swift's default `String.count` gives 7,992 on the
+same page, counting grapheme clusters, which is a third thing again: a Swift convenience returning
+`String.Index` ranges maps through a checked conversion or does not ship.
 
 The Rust definition is canonical for internal wire DTOs, generated into TypeScript and checked in;
 a dirty diff fails CI. Public web DTOs that intentionally differ keep an adapter. The generated
@@ -155,8 +171,23 @@ TypeScript and the burden of proof is on moving a piece, measured against an opt
 baseline rather than against the current one. `packages/core/main` and `packages/core/stage` carry
 the strongest presumption against: the store is the one piece of infrastructure every plugin loads.
 
-`worker-host/WorkerHost.ts` is excluded on purpose. It is 1,459 lines of web transport, and on mobile
-the transport is a direct function call.
+`worker-host/WorkerHost.ts` is mostly excluded, and "mostly" is the part an earlier draft got wrong.
+Most of its 1,459 lines are web transport, and on mobile the transport is a direct function call. But
+`finishMutation` at `packages/engine/services/src/worker-host/WorkerHost.ts:1380` is not transport. It
+owns the mutation-sequence bump that invalidates version-keyed caches, the per-tag exemptions for
+`forms.*`, `pages.flatten` and `redaction.apply` that already bump themselves, and layer-artifact
+persistence. That is engine behavior living in a file named after its transport. It ports with the
+write families in Phase 4, with an exactly-once test, rather than being left behind with the message
+loop.
+
+Which points at the rule the package-shaped version of this section was hiding: draw the boundary by
+responsibility. Permission enforcement is the other thing that gets lost otherwise, because it does
+not all live in `engine/services`. `packages/engine/main/src/document/LocalPageTextService.ts:48`
+calls `this.guard.assertCapability('doc.text.copy')` before it enqueues `pages.text`, mirroring the
+cloud route's `requireResource`. A native host calling the ported worker operation directly walks
+straight past it. So the port inventory names an owner for each of permission enforcement, mutation
+finalization, layer-artifact persistence and document-event publication, and native denial tests are
+part of the read-services exit rather than something to notice after a security review.
 
 What mobile cannot inherit is the presentation layer, and this is the part an engine-shaped plan
 hides. Tile scheduling lives in `packages/plugin/render` (2,013 lines), selection in
@@ -212,6 +243,8 @@ never close it, and never construct a second owning wrapper around it. Any trans
 released before return, and a read that would update a cache or weak-annotation knowledge returns
 that information for the session owner to apply. This path is internal, hidden from every consumer
 package, tested for close-and-borrow ordering, and forbidden from crossing a worker or WASM instance.
+Cancelling a Stage A read cancels the waiting, not the execution: a chunked operation would need state
+retained across a yield, which is exactly what Stage A forbids.
 Native hosts do not use it: they get a Rust-owned session over the same service code from the start.
 Stage A buys the coarse-boundary win on reads without making full engine parity a prerequisite for
 anything.
@@ -280,9 +313,24 @@ single-threaded. An abort arriving while a synchronous handler runs is not obser
 returns, which is why `WorkerHost.ts:225` already notes that some operations are "intentionally
 non-abortable". So cooperative cancellation inside one long WASM call needs either an operation split
 across several messages so the loop returns to the pump, or a shared-memory flag the WASM side polls,
-and a `SharedArrayBuffer` needs COOP and COEP headers that not every embedder can set. Phase 0 picks
-one per operation family and writes down what the other choice would have cost. Guessing here is how
-a cancellation contract ends up true only in Node.
+and a `SharedArrayBuffer` needs COOP and COEP headers that not every embedder can set.
+
+The message-split option collides with Stage A, and the collision is better stated here than
+discovered in Phase 2. Stage A borrows a handle synchronously for one operation and retains nothing.
+A chunked operation is the opposite. It needs continuation state that survives between messages, and
+the pump it yields to can deliver a `close` or a mutation before the next chunk arrives. Those do not
+fit together, so the promise is per stage rather than global.
+
+Under Stage A, web cancellation of a coarse Rust read is cancellation of waiting. The job is dropped
+before it starts, or the caller's promise rejects while the native call runs to completion and its
+result is discarded. Nothing chunks, because nothing can hold a lease across a yield. Under Stage B,
+where Rust owns the session, chunking becomes expressible, and it ships only with a named continuation
+owner, a page lease held by that continuation, a revision check on resume that fails the operation
+rather than mixing revisions, and a close ordering that either drains outstanding continuations or
+cancels them. Shared-memory polling stays the alternative for embedders that can set COOP and COEP.
+
+Phase 0 picks one per operation family and writes down what the other choice would have cost. Guessing
+here is how a cancellation contract ends up true only in Node.
 
 ## Native APIs that feel native
 
@@ -405,16 +453,35 @@ whole-page gate kept only for gross drift.
 
 The cross-language conformance corpus is the main new investment, and without it mobile drifts. The
 21 suites are TypeScript functions taking a TypeScript `Engine`, so Swift and Kotlin currently get
-five and six smoke tests against sixty operations. Express each suite's cases as data, a fixture id
-plus an operation plus an expected result, emitted from the existing suites into
-`vectors/conformance/*.json`, with a runner per host reading that corpus through the platform facade
-rather than through `uniffi`'s output, so a facade bug is a test failure. This is the piece most
-likely to be skipped under pressure, and skipping it means shipping mobile SDKs verified by smoke
-test.
+five and six smoke tests against sixty operations. Express each suite's cases as data, emitted from the
+existing suites into `vectors/conformance/*.json`, with a runner per host reading that corpus through
+the platform facade rather than through `uniffi`'s output, so a facade bug is a test failure. This is
+the piece most likely to be skipped under pressure, and skipping it means shipping mobile SDKs
+verified by smoke test.
 
-The fixture corpus has to grow with it: rotated and cropped pages, non-BMP, combining and RTL text,
-large scanned documents, complex vector pages, embedded fonts and ICC profiles, encrypted documents,
-forms, attachments, malformed input, and dense annotation and ink pages.
+A fixture plus an operation plus an expected result is not enough, which is worth saying because that
+is the shape a corpus defaults to. It cannot express a mutation sequence, where step three operates on
+the annotation step one created. It cannot express a returned identifier, because the id is assigned at
+run time and differs per host. It cannot express event ordering, a cancellation race, or a lifetime
+failure, which are assertions about what happened between steps rather than about a value.
+
+So the format is a scenario: an ordered list of steps, each binding its result to a name that later
+steps refer to, each carrying its expected result and the events expected to have been published by
+that point. Nondeterminism gets injected rather than sampled. The suites do not do that today
+(`runAnnotationMutationConformance.ts:1217` and `:1257` build contents strings out of `Date.now()`),
+so a scenario names a clock and a seed and the runner supplies them.
+
+Some things stay procedural host tests, and claiming otherwise would be worse than admitting it.
+Concurrency, cleanup ordering, close-under-load and lease violation are properties of a host runtime,
+not of a data vector. Saved documents compare semantically after reopening, by reading back the
+structure the mutation was supposed to produce. Byte equality is an assertion only where deterministic
+serialization has been established for that operation, and it has not been established for any of them
+yet.
+
+The fixture corpus has to grow with it: rotated and cropped pages, non-BMP and non-printing text (the
+two things that drive `charCount` and `text.length` apart), combining and RTL text, large scanned
+documents, complex vector pages, embedded fonts and ICC profiles, encrypted documents, forms,
+attachments, malformed input, and dense annotation and ink pages.
 
 And then the discipline the benchmarks taught, which is about not believing our own numbers. That
 study found three of its own measurement bugs in development, each of which reversed or manufactured
@@ -464,11 +531,18 @@ exception-handling module rather than a small probe.
 
 Exit: the shipping `@embedpdf/engine` worker answers one operation, `pages.geometry`, through the
 Stage A borrowed-handle bridge at differential parity with `PageGeometryReader`, reproducibly from a
-clean checkout, with the lifecycle contracts implemented rather than promised, and today's end-to-end
-performance recorded.
+clean checkout, with the lifecycle contracts implemented rather than promised, the operation matrix
+written, and today's end-to-end performance recorded.
 
-`pages.geometry` first because it is where the measured WASM win lands and because its output is a
-flat numeric buffer that shared vectors pin exactly.
+`pages.geometry` first because it is where the measured WASM win lands. Its internal representation
+can be a flat numeric buffer that shared vectors pin exactly. Its public result is not one.
+`PageGeometrySnapshot` is a discriminated union of upright and rotated runs, each holding an array of
+glyph objects with an optional `tightBox` or `tightQuad` and an optional `fontSize`, and
+`packages/engine/services/src/features/geometry/PageGeometryReader.ts:86` materializes all of it on
+every read. So the packed buffer is an internal encoding with a decode on the far side, and the Phase 0
+measurement runs through the unchanged service boundary with grouping, run materialization, transfer
+and allocation counted. Until that number exists, the benchmark ratios are a hypothesis about the inner
+loop rather than a claim about the operation.
 
 The crates follow the prototype's split, keeping only what survives it. `crates/build-support` holds
 shared `build.rs` logic, and it exists because Cargo does not propagate a dependency's
@@ -546,14 +620,22 @@ maintenance and payload cost explicitly before adopting it.
 
 ## Phase 2: read services
 
-Exit: every read operation answered by Rust through Stage A on web and through a Rust-owned session on
-native, conformance green on both backends, and a native headless SDK preview that is usable.
+Exit: every read operation in the operation matrix answered by Rust through Stage A on web and
+through a Rust-owned session on native, the read conformance suites green on both backends, and a
+native headless SDK preview that is usable. "Conformance green" means the read suites, and the
+qualifier is load-bearing: the mutation, save and document-event suites still run against the
+TypeScript backend here, because native writes do not exist until Phase 4.
 
 Slices, read-before-write and easiest-to-verify-first:
 
-1. `pages.geometry` (Phase 0) and `pages.render` / `pages.renderEncoded`, verified by pixel diff
-   against the colored fixture plus the loose whole-page gate. Coarsening buys nothing on render
-   itself; the reason to move it is that native hosts need it and the pixel path needs one owner.
+1. `pages.geometry` (Phase 0) and `pages.render`, verified by pixel diff against the colored fixture
+   plus the loose whole-page gate. Coarsening buys nothing on render itself; the reason to move it is
+   that native hosts need it and the pixel path needs one owner. `pages.renderEncoded` splits instead
+   of moving: the raster generation is the same ported code, but the encode is not engine behavior.
+   `packages/engine/core/src/wire/worker-protocol.ts:446` says it is a cloud-server surface where the
+   host injects the encoder, and that browser and local workers reject the kind with `NotImplemented`.
+   So Rust owns the raster, the server host keeps owning encoder injection, and `pages.renderEncoded`
+   is not part of the web read exit.
 2. `pages.text`, `search.query`, and the text layout and fold logic in `engine-core`, verified by
    `runSearchConformance`, `runPageTextConformance` and `runTextDivergenceConformance`. Text is
    already coarse, so expect no boundary win there and gate it on correctness.
@@ -564,17 +646,29 @@ Slices, read-before-write and easiest-to-verify-first:
    `runAnnotationAppearanceConformance`.
 5. `attachments.list`, `attachments.readFile`, `annotations.readFile`, `pieceInfo.read`,
    `pieceInfo.applications`.
+6. `forms.list` and `forms.export`, verified by the read half of `runFormConformance`. Both are reads.
+   An earlier draft left them in Phase 4 with the other ten `forms.*` operations because they share a
+   package prefix, which is filing by name rather than by behavior. The ten mutating ones stay in
+   Phase 4.
 
 Each slice runs its conformance suites differentially on independent sessions, extends the frozen
 vectors and the cross-language corpus, reports the WASM size delta, and passes the cancellation,
 memory and lifecycle stress tests from Phase 0.
+
+Those slices summarize a file Phase 0 has to produce first: an operation matrix covering all 64
+`WorkerRequest` kinds, each with the platforms that support it, what it depends on, the migration
+stage it lands in, and the conformance suites that gate it. It is what catches a
+`pages.renderEncoded` filed as a web read, or a `forms.list` filed as a write. Both of those slipped
+past this document's own review, which is most of the argument for keeping the matrix somewhere a
+diff can check it rather than in prose.
 
 ## Phase 3: native reader products
 
 Exit: SwiftUI/UIKit and Compose/View readers with continuous scrolling, pinch zoom, page
 virtualization, text selection and copy, search navigation, links, annotation display, accessibility
 and file lifecycle, verified on physical devices, installing from distributable SDK artifacts alone,
-with no PDF work on the UI thread.
+with no PDF work on the UI thread, and the concurrent-engine soak green or one active engine per
+process enforced in the API.
 
 This is the phase an engine-shaped plan omits, and it can overlap Phase 2 once the read contract
 stabilizes. The behavioral references are TypeScript: `packages/plugin/render` for visible-first tile
@@ -608,7 +702,8 @@ mutation sequence, password-locked state and retained import dependencies, moved
 TypeScript session becoming a facade and the private owner-worker bridge carrying its removal
 criterion.
 
-Then Stage C by family: annotation writes and appearances; the twelve `forms.*` operations; page
+Then Stage C by family: annotation writes and appearances; the ten mutating `forms.*` operations
+(`forms.list` and `forms.export` landed in Phase 2); page
 assembly (`pages.rotate`, `pages.delete`, `pages.flatten`, `pages.extract`, `pages.insert`,
 `pages.insertBlank`, `pages.move`); `redaction.apply`; `metadata.update`; `pieceInfo.update` and
 `pieceInfo.clear`; `attachments.create` and `attachments.delete`; the four `fonts.*` operations; and
@@ -628,13 +723,25 @@ tree. That is the price of not attempting 16,620 lines in one commit.
 
 ## Phase 5: scale and isolation
 
-Exit: budgets validated under load rather than in unit tests, the native threading model gated the way
+Exit: budgets validated under load rather than in unit tests, native worker-pool scaling gated the way
 the server's is, and a written mobile crash-containment assessment.
 
-The threading gate runs against the mobile arrangement rather than being assumed from the server's:
-`testing/tools:epdf_thread_soak` under `EMBEDPDF_TSAN=1`, plus the single-thread embeddertest
-regression with `EMBEDPDF_TLS_GLOBALS=false` as the baseline. Additional native workers require the
-TLS-enabled build, sticky-by-document routing and those gates before the pool size moves.
+The threading gate splits, because half of it cannot wait for this phase. Each engine owns one
+dedicated OS thread, so an app holding two engine instances is already running PDFium on two threads,
+and it gets there without anyone enabling a worker pool. `EMBEDPDF_TLS_GLOBALS=true` is supposed to
+make that safe by giving each thread its own globals.
+
+Supposed to.
+
+So the concurrent-engine soak is a prerequisite for native distribution rather than a Phase 5 item:
+`testing/tools:epdf_thread_soak` under `EMBEDPDF_TSAN=1` with multiple simultaneous engines, plus the
+single-thread embeddertest regression with `EMBEDPDF_TLS_GLOBALS=false` as the baseline, run against
+the mobile arrangement rather than assumed from the server's. If it is not green before Phase 3 ships,
+the SDK enforces one active engine per process until it is, and it enforces it in the API rather than
+mentioning it in a release note.
+
+What genuinely belongs here is throughput at scale. Additional native workers require the TLS-enabled
+build, sticky-by-document routing and sustained-load numbers before the pool size moves.
 
 Crash containment needs two separate answers. On the server, reuse `cloudpdf/server/src/runtime/`'s
 supervised host, `QuarantiningEnginePool` and `EngineRecycler`. On mobile there is no equivalent: an
