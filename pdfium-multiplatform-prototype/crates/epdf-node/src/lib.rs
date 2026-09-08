@@ -130,13 +130,42 @@ impl Document {
 /// One process-wide engine, and therefore one PDFium thread. A scaffold does
 /// not need a pool, and a second engine would mean a second thread with its own
 /// FPDF_InitLibrary, which is legal but pointless here.
-fn engine() -> &'static Arc<epdf_ops::Engine> {
-    static ENGINE: std::sync::OnceLock<Arc<epdf_ops::Engine>> = std::sync::OnceLock::new();
-    ENGINE.get_or_init(|| epdf_ops::Engine::new().expect("PDFium engine"))
+type EngineResult = std::result::Result<Arc<epdf_ops::Engine>, epdf_ops::OpsError>;
+
+fn initialize_engine(
+    cell: &std::sync::OnceLock<EngineResult>,
+    initialize: impl FnOnce() -> EngineResult,
+) -> std::result::Result<&Arc<epdf_ops::Engine>, epdf_ops::OpsError> {
+    cell.get_or_init(initialize).as_ref().map_err(Clone::clone)
+}
+
+fn engine() -> Result<&'static Arc<epdf_ops::Engine>, String> {
+    static ENGINE: std::sync::OnceLock<EngineResult> = std::sync::OnceLock::new();
+    initialize_engine(&ENGINE, epdf_ops::Engine::new).map_err(to_napi)
 }
 
 #[napi]
 pub fn open_document(bytes: Buffer, password: Option<String>) -> Result<Document, String> {
-    let inner = engine().open(bytes.to_vec(), password).map_err(to_napi)?;
+    let inner = engine()?.open(bytes.to_vec(), password).map_err(to_napi)?;
     Ok(Document { inner })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn initialization_failure_is_a_stable_error_without_unwinding() {
+        for failure in [
+            epdf_ops::OpsError::Internal { message: "thread creation failed".into() },
+            epdf_ops::OpsError::EngineFailed { message: "worker exited".into() },
+        ] {
+            let cell = std::sync::OnceLock::new();
+            let expected = failure.clone();
+            let first = initialize_engine(&cell, || Err(failure)).err().unwrap();
+            assert_eq!(first, expected);
+            let again = initialize_engine(&cell, || panic!("must initialize only once")).err().unwrap();
+            assert_eq!(again, first);
+        }
+    }
 }
