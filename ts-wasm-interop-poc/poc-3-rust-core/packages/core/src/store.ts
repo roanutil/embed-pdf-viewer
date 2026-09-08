@@ -47,6 +47,8 @@ export interface CoreStore {
 
   /** Cheap reads that do not need the whole model. */
   shapeCount(): number;
+  /** Monotonic add counter, poc-1 and poc-2's `model.seq`. Never lowered by a delete. */
+  seq(): number;
   selectedId(): string | null;
   selectedRow(): ShapeRow | null;
   isDragging(): boolean;
@@ -242,6 +244,11 @@ export function createCoreStore(host: CoreHost = {}): CoreStore {
     shapeCount() {
       countCrossing();
       return core.shapeCount;
+    },
+
+    seq() {
+      countCrossing();
+      return core.seq;
     },
 
     selectedId() {

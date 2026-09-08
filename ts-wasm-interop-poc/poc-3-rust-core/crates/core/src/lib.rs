@@ -162,6 +162,15 @@ impl Core {
         self.model.shapes.len()
     }
 
+    /// Monotonic: every `Add` bumps it and nothing lowers it. This is what the
+    /// demo's colour cycle needs, and `shapeCount` is not: a delete lowers the
+    /// count, so cycling on the count reissues the colour just handed out.
+    /// poc-1 and poc-2 cycle on `model.seq`, which is this.
+    #[wasm_bindgen(getter)]
+    pub fn seq(&self) -> u32 {
+        self.model.seq
+    }
+
     #[wasm_bindgen(getter, js_name = selectedHandle)]
     pub fn selected_handle(&self) -> Option<u32> {
         self.model.selected

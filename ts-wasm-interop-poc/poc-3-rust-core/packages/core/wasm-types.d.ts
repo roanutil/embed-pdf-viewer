@@ -20,6 +20,7 @@ export class Core {
   readonly version: number;
   readonly tableVersion: number;
   readonly shapeCount: number;
+  readonly seq: number;
   readonly selectedHandle: number | undefined;
   readonly isDragging: boolean;
   setHostLogger(f: (message: unknown) => void): void;

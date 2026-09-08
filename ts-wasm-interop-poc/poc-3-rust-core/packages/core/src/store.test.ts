@@ -169,6 +169,26 @@ describe('messages and effects cross intact', () => {
     store.destroy();
   });
 
+  it('keeps seq monotonic across a delete, so the colour cycle does not repeat', () => {
+    // ShapeCanvas cycles the palette on seq. shapeCount() drops on a delete and
+    // seq does not, so cycling on the count reissued the colour just handed
+    // out. bench/seeds.mjs supplies colours explicitly, which is why the
+    // fairness gate never saw it.
+    const store = fresh();
+    store.dispatch({ t: 'add', at: { x: 10, y: 10 }, color: '#c00' });
+    store.dispatch({ t: 'add', at: { x: 20, y: 20 }, color: '#0c0' });
+    expect(store.seq()).toBe(2);
+    expect(store.shapeCount()).toBe(2);
+
+    store.dispatch({ t: 'delete', id: 's2' });
+    expect(store.shapeCount()).toBe(1);
+    expect(store.seq()).toBe(2);
+
+    store.dispatch({ t: 'add', at: { x: 30, y: 30 }, color: '#00c' });
+    expect(store.seq()).toBe(3);
+    store.destroy();
+  });
+
   it('rejects a message the Rust union does not know', () => {
     const store = fresh();
     // The drift failure the hand-written types invite: a runtime error, not a

@@ -73,7 +73,10 @@ export function ShapeCanvas({ view, scene, page }: ShapeCanvasProps) {
       if (!at) return;
       bumpStats({ hitTests: 1 });
       if (!store.hitTest(at, view)) {
-        dispatch({ t: 'add', at, color: nextColor(store.shapeCount()) });
+        // seq(), not shapeCount(): poc-1 and poc-2 cycle on `model.seq`, and a
+        // delete lowers the count but not the seq, so cycling on the count
+        // reissued the colour that had just been handed out.
+        dispatch({ t: 'add', at, color: nextColor(store.seq()) });
       }
     },
     [dispatch, store, toContent, view],
