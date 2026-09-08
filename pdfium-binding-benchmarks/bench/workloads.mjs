@@ -433,12 +433,15 @@ export function makeWorkloads(arm, fx) {
   };
 
   const searchCoarse = () => {
-    const n = fits(
-      fn[`${coarse}_search_page`](fx.textPage, termPtr, searchPtr, searchCap),
-      'search_page',
-      'hit rects',
-      searchCap,
-    );
+    const raw = fn[`${coarse}_search_page`](fx.textPage, termPtr, searchPtr, searchCap);
+    // -1 is FindStart failing, not one hit rect that did not fit: overflow
+    // needs `written > cap >= 1`, so it is always <= -2. The thin arm would
+    // have looped zero times on a null handle and reported an empty page,
+    // which is the wrong answer dressed as a plausible one.
+    if (raw === -1) {
+      throw new Error(`${coarse}_search_page: FPDFText_FindStart failed`);
+    }
+    const n = fits(raw, 'search_page', 'hit rects', searchCap);
     // A view over the LIVE memory, not a copy: `mem.readBytes` here would
     // memcpy the packed rect buffer every call, a cost the thin arm never
     // pays since it reads the heap in place — the same asymmetry Finding 6

@@ -161,11 +161,16 @@ pub extern "C" fn rs_render_page(page: FPDF_PAGE, bitmap: FPDF_BITMAP, w: i32, h
 /// Without the null test a caller following the geometry op's convention,
 /// `rs_search_page(tp, term, null, cap)` with a nonzero cap, dereferenced null
 /// on the first hit.
+///
+/// Returns -1 when `FPDFText_FindStart` itself fails (null text page or term).
+/// That used to come back as 0, indistinguishable from a page the term does
+/// not appear on. -1 cannot collide with the overflow answer: overflow needs
+/// `written > cap >= 1`, so it is always <= -2.
 #[no_mangle]
 pub extern "C" fn rs_search_page(text_page: FPDF_TEXTPAGE, term: *const u16, out: *mut f32, cap: i32) -> i32 {
     let handle = unsafe { FPDFText_FindStart(text_page as _, term, 0, 0) };
     if handle == 0 {
-        return 0;
+        return -1;
     }
     let probe = out.is_null() || cap <= 0;
     let mut written = 0i32;

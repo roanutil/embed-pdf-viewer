@@ -101,3 +101,32 @@ for (const [arm, fname] of [
     }
   });
 }
+
+/**
+ * A failed FPDFText_FindStart is not "zero hits". PDFium returns a null
+ * search handle for a null text page (and for a null term); the coarse ops
+ * used to answer 0 for that, indistinguishable from a page the term simply
+ * does not appear on. -1 is free for the purpose: overflow is reported as
+ * NEGATIVE the count, but only when `written > cap >= 1`, so an overflow is
+ * always <= -2.
+ */
+for (const [arm, fname] of [
+  ['c', 'rs_search_page'],
+  ['d', 'cc_search_page'],
+]) {
+  test(`${fname} (arm ${arm}) returns -1, not 0, when FindStart fails`, async () => {
+    const loaded = await loadArm(arm);
+    try {
+      const { fn, mem } = loaded;
+      const termPtr = mem.writeU16(SEARCH_TERM);
+      const ptr = mem.alloc(16 * 16);
+      // Null text page, both with and without a buffer.
+      assert.equal(fn[fname](0, termPtr, 0, 0), -1);
+      assert.equal(fn[fname](0, termPtr, ptr, 16), -1);
+      mem.free(ptr);
+      mem.free(termPtr);
+    } finally {
+      loaded.close();
+    }
+  });
+}

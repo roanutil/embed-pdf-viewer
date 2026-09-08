@@ -153,9 +153,14 @@ int cc_render_page(FPDF_PAGE page, FPDF_BITMAP bitmap, int w, int h, int rotate)
 // Without the null test a caller following the geometry op's convention,
 // cc_search_page(tp, term, nullptr, cap) with a nonzero cap, dereferenced null
 // on the first hit.
+//
+// Returns -1 when FPDFText_FindStart itself fails (null text page or term),
+// matching rs_search_page. That used to come back as 0, indistinguishable from
+// a page the term does not appear on. -1 cannot collide with the overflow
+// answer: overflow needs written > cap >= 1, so it is always <= -2.
 int cc_search_page(FPDF_TEXTPAGE text_page, const unsigned short* term, float* out, int cap) {
   FPDF_SCHHANDLE handle = FPDFText_FindStart(text_page, term, 0, 0);
-  if (handle == nullptr) return 0;
+  if (handle == nullptr) return -1;
   const bool probe = out == nullptr || cap <= 0;
   int written = 0;
   while (FPDFText_FindNext(handle)) {
