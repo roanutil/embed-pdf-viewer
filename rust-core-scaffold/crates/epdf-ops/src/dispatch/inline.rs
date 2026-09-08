@@ -59,16 +59,17 @@ pub struct Worker {
 // releases it even if `f` panics, so a panic cannot leave it stuck set. (`run`
 // also wraps `f` in `catch_unwind`, matching `threaded`, so in the ordinary
 // case the panic never gets as far as unwinding through the guard at all.)
-// That `Drop`-releases-on-unwind property is what stops a panic leaving the
-// flag stuck set on a target that actually unwinds; on the one target this
-// file compiles for it is unexercised rather than load-bearing, since
-// build/link-wasm.sh builds epdf-wasm with `-C panic=abort` to satisfy
-// libembedpdf.a's prebuilt linkage, and `catch_unwind` cannot catch anything
-// under that panic strategy. That is unnecessary, not unsound: with no
-// unwinding there is no stuck flag and no surviving `Worker` instance left to
-// observe one. What that build flag actually costs is recoverability alone --
-// a genuine panic aborts the wasm instance instead of `run` turning it into
-// `OpsError::Internal`, so the engine dies and the page must reload. This
+// That `Drop`-releases-on-unwind property is load-bearing on this target, and
+// it did not used to be. build/link-wasm.sh once built epdf-wasm with
+// `-C panic=abort` to satisfy libembedpdf.a's prebuilt linkage, and under that
+// strategy nothing unwound, `catch_unwind` could not catch anything, and the
+// guard's `Drop` was unexercised: a panic took the whole instance with it, so
+// there was no surviving `Worker` to observe a stuck flag. f1a48f51 dropped
+// that `RUSTFLAGS` when the fork gained wasm32-eh, and the em++ link now
+// passes `-fwasm-exceptions`, so a Rust panic really does unwind here and
+// `catch_unwind` really does turn it into `OpsError::Internal` for one call
+// while the instance stays alive. Which means the flag can be left set by an
+// unwind, and `BorrowGuard`'s `Drop` is the only thing that clears it. The
 // `#[cfg(target_feature = "atomics")] compile_error!` above, which is what
 // actually guards the `Sync` claim, is untouched by any of this.
 unsafe impl Send for Worker {}
