@@ -32,8 +32,11 @@ for slice in "${SLICES[@]}"; do
     exit 1
   fi
 
-  # Exits 2 with its own message for the pending mobile targets.
-  bash "$ROOT/build/fetch-libpdfium.sh" "$fork"
+  # Exits 2 with its own message for the pending mobile targets. Prints the
+  # directory it populated: build/libpdfium/<target>, or EPDF_SCAFFOLD_LIB_DIR's
+  # when that override is set, which is also where cargo (crates/build-support)
+  # links from, so the copies below must come from the same place.
+  lib_dir="$(bash "$ROOT/build/fetch-libpdfium.sh" "$fork")"
 
   rustup target add "$rust"
   ( cd "$ROOT" && EPDF_SCAFFOLD_TARGET="$fork" cargo build --release -p epdf-uniffi --target "$rust" )
@@ -42,12 +45,12 @@ for slice in "${SLICES[@]}"; do
   mkdir -p "$dest"
   if [[ "$slice" == macos-* ]]; then
     cp "$ROOT/target/$rust/release/libepdf_uniffi.dylib" "$dest/"
-    cp "$ROOT/build/libpdfium/$fork/lib/libembedpdf."* "$dest/"
+    cp "$lib_dir/lib/libembedpdf."* "$dest/"
     install_name_tool -id "@rpath/libepdf_uniffi.dylib" "$dest/libepdf_uniffi.dylib"
   else
     # Link into the app; remove the old generated dylib so ld cannot prefer it.
     cp "$ROOT/target/$rust/release/libepdf_uniffi.a" "$dest/"
-    cp "$ROOT/build/libpdfium/$fork/lib/libembedpdf.a" "$dest/"
+    cp "$lib_dir/lib/libembedpdf.a" "$dest/"
     rm -f "$dest/libepdf_uniffi.dylib"
   fi
   echo "staged $slice -> $dest"

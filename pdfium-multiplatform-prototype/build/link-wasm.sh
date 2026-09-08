@@ -6,10 +6,13 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SPIKE="$ROOT/../pdfium-binding-benchmarks"
-LIB_DIR="$ROOT/build/libpdfium/wasm32-eh"
 OUT_DIR="$ROOT/build/out/web"
 
-bash "$ROOT/build/fetch-libpdfium.sh" wasm32-eh
+# The fetcher prints the directory it populated, which is build/libpdfium/<target>
+# or EPDF_SCAFFOLD_LIB_DIR/<target> when that override is set. Read it from there
+# rather than re-deriving it, so the override cannot be honoured on fetch and
+# ignored on link. Exits 2 (through set -e) for the pending target.
+LIB_DIR="$(bash "$ROOT/build/fetch-libpdfium.sh" wasm32-eh)"
 
 if ! command -v em++ >/dev/null 2>&1; then
   if [[ -f "$SPIKE/build/emsdk.sh" ]]; then

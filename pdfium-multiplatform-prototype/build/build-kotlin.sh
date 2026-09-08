@@ -38,8 +38,11 @@ case "$SLICE" in
     ;;
 esac
 
-# Exits 2 with its own message for the pending Android targets.
-bash "$ROOT/build/fetch-libpdfium.sh" "$FORK_TARGET"
+# Exits 2 with its own message for the pending Android targets. Prints the
+# directory it populated: build/libpdfium/<target>, or EPDF_SCAFFOLD_LIB_DIR's
+# when that override is set, which is also where cargo (crates/build-support)
+# links from, so the host copy below must come from the same place.
+LIB_DIR="$(bash "$ROOT/build/fetch-libpdfium.sh" "$FORK_TARGET")"
 
 rustup target add "$RUST_TARGET"
 mkdir -p "$DEST"
@@ -47,7 +50,7 @@ mkdir -p "$DEST"
 if [[ "$SLICE" == host ]]; then
   ( cd "$ROOT" && EPDF_SCAFFOLD_TARGET="$FORK_TARGET" cargo build --release -p epdf-uniffi --target "$RUST_TARGET" )
   cp "$ROOT/target/$RUST_TARGET/release/libepdf_uniffi.dylib" "$DEST/"
-  cp "$ROOT/build/libpdfium/$FORK_TARGET/lib/libembedpdf."* "$DEST/"
+  cp "$LIB_DIR/lib/libembedpdf."* "$DEST/"
   # JNA dlopens libepdf_uniffi from an absolute path, so @loader_path resolves
   # to this directory and libembedpdf is found beside it. Checked the actual
   # install name first: libembedpdf.dylib carries @rpath/libembedpdf.dylib
