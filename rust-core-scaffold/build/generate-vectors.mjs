@@ -175,7 +175,14 @@ writeFileSync(
         height,
         stride,
         golden: 'report-p4-scale0.25.bgra',
+        // Both bounds, and both are required reading. Five suites read
+        // maxAbsDiffTolerance with no fallback -- crates/test-support/src/lib.rs:71
+        // unwraps, VectorsTests.swift:56 force-casts, VectorsTest.kt:75 calls
+        // getInt, packages/{node,web}/vectors.test.mjs and apps/node-cli read
+        // it straight -- so a vectors file regenerated without it takes all
+        // five down at once.
         meanAbsDiffTolerance: 2.0,
+        maxAbsDiffTolerance: 16,
         // FPDFBitmap_FillRect's fill color, FPDF_RenderPageBitmap's
         // rotate/flags arguments, and the fact that FPDF_FFLDraw is never
         // called (no form rendering): a reimplementation that gets any of
