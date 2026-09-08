@@ -3,6 +3,12 @@ import Foundation
 import Observation
 import EpdfOps
 
+// One PDFium worker for the app's lifetime, initialized on the first detached
+// load. Documents own their handles; reopening a view does not spawn a worker.
+private enum PdfiumRuntime {
+    static let engine: Result<EpdfEngine, Error> = Result { try EpdfEngine() }
+}
+
 /// All six operations, driven off the main thread. `load()` hands the open
 /// and all five reads to one detached task; only the finished values cross
 /// back to the main actor, in a single call.
@@ -27,8 +33,8 @@ final class DocumentModel {
     func load() {
         // Cancel and disown whatever load is already in flight. If it's past
         // the point where cancellation is checked and still calls back, its
-        // generation won't match the one started below, so `finishLoad` and
-        // `finishFailure` close its document instead of storing it.
+        // generation won't match the one started below, so the task closes
+        // its document instead of storing it.
         loadTask?.cancel()
         closed = false
         generation += 1
@@ -42,7 +48,7 @@ final class DocumentModel {
                     throw MissingResource()
                 }
                 let bytes = try Data(contentsOf: url)
-                let doc = try EpdfEngine().open(bytes: bytes, password: nil)
+                let doc = try PdfiumRuntime.engine.get().open(bytes: bytes, password: nil)
                 openedDocument = doc
 
                 let count = try doc.pageCount()
@@ -53,7 +59,7 @@ final class DocumentModel {
                 try Task.checkCancellation()
                 let image = try doc.renderPageCGImage(index: pageIndex, scale: 2.0)
 
-                await self?.finishLoad(
+                let accepted = await self?.finishLoad(
                     document: doc,
                     generation: currentGeneration,
                     pageCount: count,
@@ -62,6 +68,9 @@ final class DocumentModel {
                     searchHitCount: hits,
                     image: image
                 )
+                if accepted != true {
+                    doc.close()
+                }
             } catch is CancellationError {
                 // The view navigated away; this isn't a failure worth
                 // reporting, just work to discard.
@@ -76,7 +85,7 @@ final class DocumentModel {
     }
 
     /// Called back on the main actor once the detached task has a document
-    /// and all five reads. Discards the document instead of storing it if
+    /// and all five reads. Returns false so the task closes the document if
     /// `close()` ran while that work was in flight, or if a later `load()`
     /// has since started a new generation, so no document ever ends up
     /// leaked or stored over a newer one.
@@ -88,17 +97,18 @@ final class DocumentModel {
         textPreview: String,
         searchHitCount: Int,
         image: CGImage
-    ) {
+    ) -> Bool {
         guard !closed, generation == self.generation else {
-            doc.close()
-            return
+            return false
         }
+        document?.close()
         document = doc
         self.pageCount = pageCount
         self.pageSize = pageSize
         self.textPreview = textPreview
         self.searchHitCount = searchHitCount
         self.image = image
+        return true
     }
 
     private func finishFailure(generation: Int, _ message: String) {

@@ -18,6 +18,22 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+// One lazily initialized worker for the app process. The first access is from
+// Dispatchers.IO; reopening a view reuses it instead of creating another engine.
+private object PdfiumRuntime {
+    val engine: EpdfEngine by lazy { EpdfEngine() }
+}
+
+// closeSync removes the PDFium document; close releases the UniFFI Arc as well.
+// Do both explicitly rather than leaving the native handle to the JVM Cleaner.
+private fun releaseDocument(document: EpdfDocument) {
+    try {
+        document.closeSync()
+    } finally {
+        document.close()
+    }
+}
+
 /**
  * Field for field the same state as apps/ios/EpdfScaffold/DocumentModel.swift,
  * and now the same lifecycle too: no document ever ends up stored and
@@ -45,11 +61,7 @@ class DocumentViewModel(app: Application) : AndroidViewModel(app) {
 
     private val pageIndex = 4u
 
-    // closeSync(), NOT close(): see the note on OpsException/EpdfDocument in
-    // packages/kotlin/epdf-ops/src/main/kotlin/com/embedpdf/scaffold/Epdf.kt.
-    // close() is uniffi's own non-blocking handle release; closeSync() is
-    // epdf-uniffi's blocking one, which is the point of calling it here.
-    private val lifecycle = DocumentLifecycle<EpdfDocument> { it.closeSync() }
+    private val lifecycle = DocumentLifecycle<EpdfDocument>(::releaseDocument)
 
     init {
         load()
@@ -61,7 +73,7 @@ class DocumentViewModel(app: Application) : AndroidViewModel(app) {
         try {
             val loaded = withContext(Dispatchers.IO) {
                 val bytes = getApplication<Application>().assets.open("report.pdf").use { it.readBytes() }
-                val doc = EpdfEngine().open(bytes, null)
+                val doc = PdfiumRuntime.engine.open(bytes, null)
                 opened = doc
 
                 LoadedPage(
@@ -74,7 +86,10 @@ class DocumentViewModel(app: Application) : AndroidViewModel(app) {
                 )
             }
 
-            if (lifecycle.commit(token, loaded.document)) {
+            val accepted = lifecycle.commit(token, loaded.document)
+            // commit either owns the document or has already released it.
+            opened = null
+            if (accepted) {
                 pageCount = loaded.pageCount
                 sizeLabel = "%.1f x %.1f pt".format(loaded.size.width, loaded.size.height)
                 textPreview = loaded.text.take(600)
@@ -92,10 +107,10 @@ class DocumentViewModel(app: Application) : AndroidViewModel(app) {
             // normally, which breaks structured concurrency for whatever
             // cancelled it. The document this load opened, if any, was never
             // committed to `lifecycle`, so it is this catch's job to close it.
-            opened?.closeSync()
+            opened?.let(::releaseDocument)
             throw cancellation
         } catch (error: Throwable) {
-            opened?.closeSync()
+            opened?.let(::releaseDocument)
             if (!lifecycle.isStale(token)) {
                 failure = mapOpsError(error)
             }
