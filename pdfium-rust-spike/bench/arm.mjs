@@ -63,6 +63,7 @@ const SHIM = [
   ['rs_FPDFText_GetRect', 'number', [
     'number', 'number', 'number', 'number', 'number', 'number',
   ]],
+  ['rs_FPDFBitmap_FillRect', 'number', ['number', 'number', 'number', 'number', 'number', 'number']],
   ['rs_FPDF_RenderPageBitmap', null, [
     'number', 'number', 'number', 'number', 'number', 'number', 'number', 'number',
   ]],
@@ -322,6 +323,7 @@ export async function loadNativeArm(name, target = 'darwin-arm64') {
     rs_FPDFText_GetRect: addon.textGetRect,
     FPDFBitmap_CreateEx: (w, h, _fmt, buf, stride) => addon.bitmapCreate(w, h, buf, stride),
     FPDFBitmap_FillRect: addon.bitmapFillRect,
+    rs_FPDFBitmap_FillRect: addon.bitmapFillRect,
     FPDFBitmap_Destroy: addon.bitmapDestroy,
     FPDF_RenderPageBitmap: (b, page, _x, _y, w, h, rot, flags) =>
       addon.renderPageBitmap(b, page, w, h, rot, flags),

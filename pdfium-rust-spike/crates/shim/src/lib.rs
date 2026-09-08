@@ -106,6 +106,22 @@ pub extern "C" fn rs_FPDFText_GetRect(
     unsafe { FPDFText_GetRect(text_page, rect_index, left, top, right, bottom) }
 }
 
+/// The render workload's second PDFium call. renderThin used to reach for the
+/// unprefixed `FPDFBitmap_FillRect` while going through `rs_` for the render
+/// itself, so `render-1x`/`render-4x` priced roughly half the extra wasm frame
+/// arm B exists to measure.
+#[no_mangle]
+pub extern "C" fn rs_FPDFBitmap_FillRect(
+    bitmap: FPDF_BITMAP,
+    left: i32,
+    top: i32,
+    width: i32,
+    height: i32,
+    color: u32,
+) -> FPDF_BOOL {
+    unsafe { FPDFBitmap_FillRect(bitmap, left, top, width, height, color) }
+}
+
 #[no_mangle]
 pub extern "C" fn rs_FPDF_RenderPageBitmap(
     bitmap: FPDF_BITMAP,

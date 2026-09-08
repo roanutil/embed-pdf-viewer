@@ -188,6 +188,7 @@ export function makeWorkloads(arm, fx) {
   const thinGetCharGeometry = fn[`${p}EPDFText_GetCharGeometry`];
   const thinGetFontSize = fn[`${p}FPDFText_GetFontSize`];
   const thinGetTextFull = fn[`${p}EPDFText_GetTextFull`];
+  const thinFillRect = fn[`${p}FPDFBitmap_FillRect`];
   const thinRenderPageBitmap = fn[`${p}FPDF_RenderPageBitmap`];
   const thinFindStart = fn[`${p}FPDFText_FindStart`];
   const thinFindNext = fn[`${p}FPDFText_FindNext`];
@@ -389,7 +390,11 @@ export function makeWorkloads(arm, fx) {
   // bitmap is only ever copied for correctness checking, in `renderBytes`
   // below, which is never on the timed path.
   const renderThin = (b) => {
-    fn.FPDFBitmap_FillRect(b.handle, 0, 0, b.w, b.h, 0xffffffff);
+    // Prefixed, like every other call in a thin body. Reaching for the
+    // unprefixed FPDFBitmap_FillRect here meant arm b paid the extra wasm
+    // frame on one of the render workload's two PDFium calls, understating
+    // render-1x/render-4x by about half a call.
+    thinFillRect(b.handle, 0, 0, b.w, b.h, 0xffffffff);
     thinRenderPageBitmap(b.handle, fx.page, 0, 0, b.w, b.h, 0, 0);
     return mem.peek32(b.buf);
   };
@@ -401,7 +406,7 @@ export function makeWorkloads(arm, fx) {
 
   /** Untimed: renders fresh and copies out the full bitmap, for canonical() only. */
   const renderBytesThin = (b) => {
-    fn.FPDFBitmap_FillRect(b.handle, 0, 0, b.w, b.h, 0xffffffff);
+    thinFillRect(b.handle, 0, 0, b.w, b.h, 0xffffffff);
     thinRenderPageBitmap(b.handle, fx.page, 0, 0, b.w, b.h, 0, 0);
     return mem.readBytes(b.buf, b.stride * b.h);
   };
