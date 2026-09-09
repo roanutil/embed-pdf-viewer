@@ -538,6 +538,13 @@ export interface AnnotationCapability {
   /** Drop the armed stamp payload (a tool change away from 'stamp' does this too). */
   disarmStamp(): void;
   /**
+   * Place a stamp WITHOUT the pointer: the same validation, fit, page clamp,
+   * `/Name`, and `/Subj` a click after {@link armStamp} produces — the one
+   * placement law, exposed for code. Resolves to the created annotation's
+   * ref; the placement is selected like a click's.
+   */
+  placeStamp(input: StampToolInput, placement: StampPlacement): Promise<AnnotationRef>;
+  /**
    * Install the ONE file-picker port every click-then-pick tool resolves
    * through (see {@link FilePickerProvider}) — the stamp `'prompt'` source and
    * the file-attachment tool today. The framework adapter installs a
@@ -594,14 +601,18 @@ export interface StampToolInput {
   source: BinarySource;
   /** Placed width in PDF points (height follows the intrinsic aspect). Default 150. */
   targetWidth?: number;
+  /** The placed annotation's `/Name` — the stamp identifier (standard or custom). */
+  name?: string;
+  /** The placed annotation's `/Subj`. */
+  subject?: string;
   /**
-   * A browser-paintable render of `source` for the hover ghost (PNG/JPEG).
-   * Required for the ghost when `source` is PDF bytes — the browser cannot
-   * paint those; the caller (e.g. a stamp library) supplies its cached page
-   * render. Raster sources default to the source itself; omit everywhere
-   * else and the tool simply shows no ghost.
+   * The hover ghost's image. Either fixed bytes (PNG/JPEG) or — for vector
+   * sources, which are only ever right at ONE on-screen size — a
+   * {@link StampPreviewProvider} the ghost asks for a render at the device
+   * pixel width it is displayed at. Raster sources default to themselves;
+   * omit and the tool simply shows no ghost.
    */
-  preview?: BinarySource;
+  preview?: BinarySource | StampPreviewProvider;
   /**
    * The source's intrinsic size in PDF points. Raster sources are measured
    * from their own header, but PDF bytes carry no sniffable dimensions —
@@ -616,6 +627,39 @@ export interface StampToolInput {
 export interface ArmedStampPreview {
   bytes: Uint8Array;
   mimeType?: string;
+}
+
+/**
+ * Resolution-aware ghost preview: "give me this stamp at `devicePixelWidth`
+ * pixels wide". The annotation plugin buckets the request (see
+ * {@link previewBucket}) and caches per bucket for the arm's lifetime, so a
+ * zoom gesture never renders per frame and one render serves a zoom range.
+ * A stamp library renders its page lazily through its asset engine; a raster
+ * returns itself (it cannot get sharper than its pixels).
+ */
+export type StampPreviewProvider = (devicePixelWidth: number) => Promise<ArmedStampPreview | null>;
+
+/**
+ * Ghost render buckets: powers of two from 128 px up to `cap`. The same policy
+ * the page renderer uses — one bitmap per size class, never per zoom step.
+ */
+export function previewBucket(devicePixelWidth: number, cap = 4096): number {
+  const px = Math.max(128, Math.ceil(devicePixelWidth));
+  return Math.min(cap, 2 ** Math.ceil(Math.log2(px)));
+}
+
+/**
+ * Where a programmatic stamp placement lands — the inputs a click supplies.
+ * The box is fitted and clamped exactly as the click path does it.
+ */
+export interface StampPlacement {
+  pageObjectNumber: PageObjectNumber;
+  /** Anchor in page points (content space): the placement is centred here. */
+  at: Vec;
+  /** Placed width in PDF points; default the payload's intrinsic size. */
+  targetWidth?: number;
+  /** Content rotation, degrees clockwise. Default 0. */
+  rotation?: number;
 }
 
 /**
@@ -935,8 +979,13 @@ export interface AnnotationHostCapability extends AnnotationCapability {
    *  Vector ghosts also ride {@link pageItems}; only `kind: 'image'` ghosts
    *  need the framework's blit. */
   toolGhost(pon: PageObjectNumber): ToolGhost | null;
-  /** The armed stamp's paintable preview bytes, or null (no ghost to show). */
-  armedStampPreview(): ArmedStampPreview | null;
+  /**
+   * The armed stamp's paintable preview at (roughly) `devicePixelWidth`
+   * pixels wide — bucketed and cached per bucket for the arm's lifetime —
+   * or null when there is no ghost to show. Omit the width for the
+   * smallest bucket.
+   */
+  armedStampPreview(devicePixelWidth?: number): Promise<ArmedStampPreview | null>;
   /** Bumps on arm/disarm — keys the render layer's preview object-URL lifetime. */
   stampArmEpoch(): number;
   /**

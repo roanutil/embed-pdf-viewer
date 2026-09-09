@@ -72,6 +72,7 @@ export const es: Locale = {
         delete: 'Eliminar',
         group: 'Agrupar',
         ungroup: 'Desagrupar',
+        stampFromSelection: 'Crear sello',
         strip: 'Acciones de anotación',
       },
       selection: {
@@ -209,6 +210,9 @@ export const es: Locale = {
       stampsImportHint:
         'Importa un PDF como biblioteca de sellos: cada página se convierte en un sello.',
       stampsRemoveLibrary: 'Quitar biblioteca',
+      stampsExportLibrary: 'Exportar biblioteca como PDF',
+      stampsCustomLibrary: 'Mis sellos',
+      stampsCustomLabel: 'Sello personalizado',
       stampsError: 'No se pudieron preparar los sellos integrados.',
       stampsArmError: 'No se pudo activar ese sello.',
       stampsImportError: 'No se pudo importar ese PDF como biblioteca de sellos.',

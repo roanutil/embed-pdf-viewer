@@ -126,6 +126,10 @@ async function drawStamp(
   return { source: await toBlob(canvas), size: { width: widthPt, height: HEIGHT_PT } };
 }
 
+/** The built-in library's id — excluded from persistence (it is drawn again
+ *  on every first open, in the locale of that moment). */
+export const DEFAULT_LIBRARY_ID = 'embedpdf-standard';
+
 /** Workspaces whose default library has already been seeded — the panel
  *  mounts and unmounts with the sidebar, so the guard cannot live in state. */
 const seeded = new WeakSet<StampCapability>();
@@ -144,9 +148,14 @@ export async function seedDefaultStamps(
   if (stamp.libraries().length > 0) return;
   if (typeof document === 'undefined') return;
 
-  const libraryId = stamp.createLibrary(libraryName, { categories: ['standard'] });
+  const libraryId = await stamp.createLibrary(libraryName, {
+    id: DEFAULT_LIBRARY_ID,
+    categories: ['standard'],
+  });
   for (const spec of DEFAULT_STAMPS) {
     const { source, size } = await drawStamp(spec);
-    await stamp.addAsset({ libraryId, name: spec.name, source, size });
+    // `name` is the standard /Name every placement writes; the label is
+    // what the stamp reads.
+    await stamp.addAsset({ libraryId, name: spec.name, label: spec.label, source, size });
   }
 }

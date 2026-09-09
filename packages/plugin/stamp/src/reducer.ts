@@ -42,6 +42,10 @@ export const stampReducer = (state: StampState, action: StampAction): StampState
         },
       };
     }
+    case 'ASSET_UPDATED':
+      return state.assets[action.asset.id]
+        ? { ...state, assets: { ...state.assets, [action.asset.id]: action.asset } }
+        : state;
     case 'ASSET_REMOVED': {
       const asset = state.assets[action.assetId];
       if (!asset) return state;

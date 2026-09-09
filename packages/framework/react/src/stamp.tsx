@@ -10,6 +10,10 @@
 
 // One-line-per-feature: registration travels with the UI.
 export * from '@embedpdf/plugin-stamp';
+// The browser store for `persistStampLibraries` / `restoreStampLibraries`
+// (structurally the plugin's `StampLibraryStore`), written once in `@embedpdf/web`.
+export { indexedDbByteStore } from '@embedpdf/web';
+export type { ByteStore } from '@embedpdf/web';
 import { useEffect, useState } from 'react';
 import { StampToken, type StampAsset, type StampLibrary } from '@embedpdf/plugin-stamp';
 import { shallowArray, useCapability, useDocumentId, useSelector } from './runtime';

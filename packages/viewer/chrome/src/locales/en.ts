@@ -69,6 +69,7 @@ export const en: Locale = {
         delete: 'Delete',
         group: 'Group',
         ungroup: 'Ungroup',
+        stampFromSelection: 'Make stamp',
         strip: 'Annotation actions',
       },
       selection: {
@@ -206,6 +207,9 @@ export const en: Locale = {
       stampsImporting: 'Importing…',
       stampsImportHint: 'Import a PDF as a stamp library — each page becomes one stamp.',
       stampsRemoveLibrary: 'Remove library',
+      stampsExportLibrary: 'Export library as PDF',
+      stampsCustomLibrary: 'My stamps',
+      stampsCustomLabel: 'Custom stamp',
       stampsError: 'The built-in stamps could not be prepared.',
       stampsArmError: 'That stamp could not be armed.',
       stampsImportError: 'That PDF could not be imported as a stamp library.',

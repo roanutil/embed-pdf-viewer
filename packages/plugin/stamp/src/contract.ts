@@ -9,5 +9,9 @@ export type {
   StampCapability,
   StampConfig,
   StampLibrary,
+  StampLibraryChange,
   StampState,
 } from './types';
+export { parseStampKey, stampKey, customStampName, assetIdFor } from './convention';
+export type { StampKey } from './convention';
+export type { StampLibraryStore } from './persistence';

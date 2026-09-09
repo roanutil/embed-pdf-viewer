@@ -22,6 +22,8 @@ export type {
   LinkNavItem,
   SelectionFlags,
   SelectionProps,
+  StampPlacement,
+  StampPreviewProvider,
   StampToolInput,
   FilePickerProvider,
   FilePromptRequest,
@@ -55,3 +57,4 @@ export type {
 /** The public lens over the host capability's one runtime token. */
 export const AnnotationToken =
   AnnotationHostToken as unknown as CapabilityToken<AnnotationCapability>;
+export { previewBucket } from './types';

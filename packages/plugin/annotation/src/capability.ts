@@ -87,6 +87,7 @@ import {
 import { createAnnotationHoverFeed } from './hover-feed';
 import { buildTextItems } from './text-item';
 import { ARMED_STAMP_TOOL_ID, buildToolRegistry, isTouchDirect } from './tools';
+import { previewBucket } from './types';
 import type { AnnotationToolInput, ResolvedTool } from './tools';
 import type {
   AnnotationAction,
@@ -105,6 +106,8 @@ import type {
   FilePickerProvider,
   FilePromptRequest,
   LinkNavItem,
+  StampPlacement,
+  StampPreviewProvider,
   StampToolInput,
   TextItem,
 } from './types';
@@ -368,8 +371,7 @@ export function createAnnotationCapability(
       // carry the target on their DTO. Rects are the CHILD's own committed
       // geometry — anchors render only in view contexts, where nothing is
       // mid-gesture, so no live parent-derivation is needed.
-      const target =
-        a.link ?? (a.data?.subtype === 'link' ? (a.data.target ?? null) : null);
+      const target = a.link ?? (a.data?.subtype === 'link' ? (a.data.target ?? null) : null);
       if (target == null || a.geom.t !== 'rect') continue;
       const activate = a.data?.actions?.activate;
       const ref = a.ref ?? a.data?.ref ?? undefined;
@@ -382,9 +384,7 @@ export function createAnnotationCapability(
         attached: a.group !== undefined,
         ...(activate ? { activate } : {}),
         ...(ref ? { ref } : {}),
-        ...(hoverEnter || hoverExit
-          ? { hoverEvents: { enter: hoverEnter, exit: hoverExit } }
-          : {}),
+        ...(hoverEnter || hoverExit ? { hoverEvents: { enter: hoverEnter, exit: hoverExit } } : {}),
       });
     }
     linkItemsCache.set(pon, { model: m, v });
@@ -446,8 +446,19 @@ export function createAnnotationCapability(
     source: BinarySource;
     width: number;
     height: number;
-    preview: ArmedStampPreview | null;
+    /** Resolution-aware ghost source; null = no ghost. */
+    preview: StampPreviewProvider | null;
+    /** One render per bucket for this arm; dropped on disarm/re-arm. */
+    previewCache: Map<number, Promise<ArmedStampPreview | null>>;
+    name?: string;
+    subject?: string;
   } | null = null;
+
+  /** Fixed bytes as a provider: the same image at every size. */
+  const fixedPreview = (bytes: Uint8Array, mimeType?: string): StampPreviewProvider => {
+    const preview: ArmedStampPreview = { bytes, ...(mimeType ? { mimeType } : {}) };
+    return async () => preview;
+  };
 
   /**
    * The desired stamp size (PDF points) from sniffed bytes: the image's
@@ -483,18 +494,24 @@ export function createAnnotationCapability(
       throw new Error('[annotation] stamp source must be PNG, JPEG, or single-page PDF bytes');
     }
     // Ghost preview: an explicit `preview` wins (the only way for PDF sources —
-    // browsers can't paint those); raster sources default to their own bytes.
-    let preview: ArmedStampPreview | null = null;
-    if (input.preview) {
+    // browsers can't paint those); a provider renders per size bucket; raster
+    // sources default to their own bytes.
+    let preview: StampPreviewProvider | null = null;
+    if (typeof input.preview === 'function') {
+      preview = input.preview;
+    } else if (input.preview) {
       const p = await resolveBinarySource(input.preview);
-      preview = { bytes: new Uint8Array(p.bytes), mimeType: p.mimeType };
+      preview = fixedPreview(new Uint8Array(p.bytes), p.mimeType);
     } else if (meta.mimeType !== 'application/pdf') {
-      preview = { bytes: new Uint8Array(resolved.bytes), mimeType: meta.mimeType };
+      preview = fixedPreview(new Uint8Array(resolved.bytes), meta.mimeType);
     }
     armedStamp = {
       source: input.source,
       ...desiredStampSize(meta, input.targetWidth, input.intrinsicSize),
       preview,
+      previewCache: new Map(),
+      ...(input.name !== undefined ? { name: input.name } : {}),
+      ...(input.subject !== undefined ? { subject: input.subject } : {}),
     };
     ctx.dispatch({ type: 'STAMP_ARM_CHANGED' });
     ctx.tryGet(InteractionToken)?.activateTool(ARMED_STAMP_TOOL_ID);
@@ -621,30 +638,75 @@ export function createAnnotationCapability(
     source: BinarySource,
     desired: { width: number; height: number },
     rotCW = 0,
-  ): boolean => {
+    identity: { name?: string; subject?: string } = {},
+  ): Promise<AnnotationRef> | null => {
     const doc = ctx.doc;
     const crop = cropOf(pon);
-    if (!doc || !crop) return false;
+    if (!doc || !crop) return null;
     const page = { width: crop.right - crop.left, height: crop.top - crop.bottom };
     const box: Rect = fitStampBox(point, desired, page, rotCW);
-    doc
+    return doc
       .page(pon)
       .annotations.create({
         subtype: 'stamp',
         ...boxGeomFields(box, rotCW, crop),
         source,
         fit: 'contain',
+        ...(identity.name !== undefined ? { name: identity.name } : {}),
+        ...(identity.subject !== undefined ? { subject: identity.subject } : {}),
       })
-      .then(
+      .then((res) => {
         // A stamp has no vector render — the engine-baked /AP IS the visual.
         // Every placement selects its result (the anchor for menus/editing).
-        (res) => {
-          syncDTO(res.created, 'baked');
-          apply({ t: 'select', ids: [refKey(res.created.ref)] });
-        },
-        (err) => console.error('[annotation] stamp placement failed:', err),
-      );
+        syncDTO(res.created, 'baked');
+        apply({ t: 'select', ids: [refKey(res.created.ref)] });
+        return res.created.ref;
+      });
+  };
+
+  /** The click path's fire-and-forget wrapper: a rejected placement is logged,
+   *  never thrown into the gesture. */
+  const createStampAtSync = (
+    pon: number,
+    point: Vec,
+    source: BinarySource,
+    desired: { width: number; height: number },
+    rotCW = 0,
+    identity: { name?: string; subject?: string } = {},
+  ): boolean => {
+    const placed = createStampAt(pon, point, source, desired, rotCW, identity);
+    if (!placed) return false;
+    placed.catch((err) => console.error('[annotation] stamp placement failed:', err));
     return true;
+  };
+
+  /** Programmatic placement — the same law as a click, awaited. */
+  const placeStamp = async (
+    input: StampToolInput,
+    placement: StampPlacement,
+  ): Promise<AnnotationRef> => {
+    const resolved = await resolveBinarySource(input.source);
+    const meta = sniffBinaryMetadata(resolved.bytes);
+    if (!meta) {
+      throw new Error('[annotation] stamp source must be PNG, JPEG, or single-page PDF bytes');
+    }
+    const placed = createStampAt(
+      placement.pageObjectNumber,
+      placement.at,
+      input.source,
+      desiredStampSize(meta, placement.targetWidth ?? input.targetWidth, input.intrinsicSize),
+      placement.rotation ?? 0,
+      {
+        ...(input.name !== undefined ? { name: input.name } : {}),
+        ...(input.subject !== undefined ? { subject: input.subject } : {}),
+      },
+    );
+    if (!placed) {
+      throw new Error(
+        `[annotation] cannot place a stamp on page ${placement.pageObjectNumber}: document or page not ready`,
+      );
+    }
+    return placed;
   };
 
   /** The active tool's upright counter-rotation for a click at `displayRotation`
@@ -659,12 +721,16 @@ export function createAnnotationCapability(
   const placeArmedStamp = (pon: number, point: Vec, displayRotation?: number): boolean => {
     const armed = armedStamp;
     if (!armed) return false;
-    return createStampAt(
+    return createStampAtSync(
       pon,
       point,
       armed.source,
       { width: armed.width, height: armed.height },
       uprightRotFor(displayRotation),
+      {
+        ...(armed.name !== undefined ? { name: armed.name } : {}),
+        ...(armed.subject !== undefined ? { subject: armed.subject } : {}),
+      },
     );
   };
 
@@ -684,7 +750,7 @@ export function createAnnotationCapability(
       console.error('[annotation] stamp source must be PNG, JPEG, or single-page PDF bytes');
       return;
     }
-    createStampAt(pon, point, source, desiredStampSize(meta, targetWidth), rotCW);
+    createStampAtSync(pon, point, source, desiredStampSize(meta, targetWidth), rotCW);
   };
 
   /**
@@ -1291,7 +1357,10 @@ export function createAnnotationCapability(
    * the substrate holds AT RUN TIME — so a remote retarget is never undone
    * by a local move). Returns the chain, so `links.set()` can await commit.
    */
-  const scheduleLinkSync = (id: Id, intent: { target: PdfLinkTarget | null } | 'keep'): Promise<void> => {
+  const scheduleLinkSync = (
+    id: Id,
+    intent: { target: PdfLinkTarget | null } | 'keep',
+  ): Promise<void> => {
     const prev = linkSyncChains.get(id) ?? Promise.resolve();
     const next = prev.then(() =>
       reconcileLinkChildren(id, intent === 'keep' ? linkOf(model(), id) : intent.target),
@@ -1520,8 +1589,7 @@ export function createAnnotationCapability(
             // Attached link children follow their parent's COMMITTED geometry
             // — scheduled after the parent's own write resolves, from ONE
             // place, so no gesture ever has to know the children exist.
-            if (linkChildrenOf(model(), fx.id).length)
-              void scheduleLinkSync(fx.id, 'keep');
+            if (linkChildrenOf(model(), fx.id).length) void scheduleLinkSync(fx.id, 'keep');
           },
           // A refused write (a race, a stale /access) must not leave the
           // optimistic patch as a lie. The effect runs AFTER the reducer
@@ -1620,6 +1688,7 @@ export function createAnnotationCapability(
       return res.created.ref;
     },
     armStamp,
+    placeStamp,
     disarmStamp,
     placeArmedStamp,
     requestStampAt,
@@ -1633,7 +1702,20 @@ export function createAnnotationCapability(
       const g = ctx.getState().toolGhost;
       return g && g.pon === pon ? g : null;
     },
-    armedStampPreview: () => armedStamp?.preview ?? null,
+    armedStampPreview: (devicePixelWidth) => {
+      const armed = armedStamp;
+      if (!armed?.preview) return Promise.resolve(null);
+      const bucket = previewBucket(devicePixelWidth ?? 0);
+      let pending = armed.previewCache.get(bucket);
+      if (!pending) {
+        pending = armed.preview(bucket).catch((error) => {
+          console.error('[annotation] stamp ghost preview failed:', error);
+          return null;
+        });
+        armed.previewCache.set(bucket, pending);
+      }
+      return pending;
+    },
     stampArmEpoch: () => ctx.getState().stampArmEpoch,
     setFilePickerProvider: (provider) => {
       filePickerProvider = provider;
@@ -1659,14 +1741,12 @@ export function createAnnotationCapability(
       const resolved = buildToolRegistry([...configTools, def]).get(def.id);
       if (!resolved) throw new Error(`[annotation] could not resolve tool '${def.id}'`);
       registry.set(resolved.id, resolved);
-      const un = ctx
-        .tryGet(InteractionToken)
-        ?.registerTool({
-          id: resolved.id,
-          cursor: resolved.cursor,
-          enables: resolved.enables,
-          touchDirect: isTouchDirect(resolved.enables),
-        });
+      const un = ctx.tryGet(InteractionToken)?.registerTool({
+        id: resolved.id,
+        cursor: resolved.cursor,
+        enables: resolved.enables,
+        touchDirect: isTouchDirect(resolved.enables),
+      });
       if (resolved.defaults)
         apply({ t: 'setDefaults', subtype: resolved.preset, patch: resolved.defaults });
       return () => {

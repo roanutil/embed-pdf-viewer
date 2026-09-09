@@ -17,6 +17,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTool } from '@embedpdf/react/interaction';
 import {
+  indexedDbByteStore,
+  persistStampLibraries,
+  restoreStampLibraries,
   useArmStampAsset,
   useStamp,
   useStampAssetPreviewUrl,
@@ -25,8 +28,16 @@ import {
   type StampAsset,
 } from '@embedpdf/react/stamp';
 import { useT } from '@embedpdf/react/i18n';
-import { seedDefaultStamps } from '../config/default-stamps';
+import { DEFAULT_LIBRARY_ID, seedDefaultStamps } from '../config/default-stamps';
 import { Icon } from './icons';
+
+/** The user's libraries live in the browser (IndexedDB): restored on first
+ *  open, written on every change. The built-in set is never stored — it is
+ *  drawn again next time, in the locale of that moment. */
+const store =
+  typeof indexedDB === 'undefined'
+    ? null
+    : indexedDbByteStore('embedpdf-stamps', { storeName: 'libraries' });
 
 export function StampsPanel() {
   const t = useT();
@@ -40,19 +51,27 @@ export function StampsPanel() {
   const [busy, setBusy] = useState<'seeding' | 'importing' | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // The built-in set is drawn on FIRST open, never at viewer boot — a viewer
-  // whose user never opens this panel pays nothing for it.
+  // First open: bring the user's stored libraries back, THEN draw the
+  // built-in set if there is still nothing — never at viewer boot, so a
+  // viewer whose user never opens this panel pays nothing for it. From then
+  // on every change to a user library is written back.
   useEffect(() => {
     let live = true;
     setBusy('seeding');
-    seedDefaultStamps(stamp, t('demo.stampsStandard'))
-      .catch((err) => {
+    const restore = store ? restoreStampLibraries(stamp, store) : Promise.resolve([]);
+    restore
+      .then(() => seedDefaultStamps(stamp, t('demo.stampsStandard')))
+      .catch((err: unknown) => {
         console.error('[embedpdf] default stamps failed:', err);
         if (live) setError(t('demo.stampsError'));
       })
       .finally(() => live && setBusy(null));
+    const stopPersisting = store
+      ? persistStampLibraries(stamp, store, { except: [DEFAULT_LIBRARY_ID] })
+      : () => {};
     return () => {
       live = false;
+      stopPersisting();
     };
     // Init-only: the library is seeded once per workspace (the locale at that
     // moment names it), not re-seeded when the locale changes.
@@ -78,6 +97,8 @@ export function StampsPanel() {
   const importPdf = (file: File) => {
     setError(null);
     setBusy('importing');
+    // The file name is only a FALLBACK: an Acrobat-authored or previously
+    // exported library names itself through its /Title.
     stamp
       .importLibraryPdf(file, { name: file.name.replace(/\.pdf$/i, '') })
       .catch((err) => {
@@ -85,6 +106,20 @@ export function StampsPanel() {
         setError(t('demo.stampsImportError'));
       })
       .finally(() => setBusy(null));
+  };
+
+  /** The library as the PDF it is — title, registry, artwork — for Acrobat
+   *  or another viewer. */
+  const exportPdf = (libraryId: string, name: string) => {
+    const bytes = stamp.exportLibrary(libraryId);
+    if (!bytes) return;
+    const blob = new Blob([bytes as BlobPart], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${name || 'stamps'}.pdf`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const shown = libraries
@@ -114,6 +149,14 @@ export function StampsPanel() {
                 <h3 className="text-fg-muted min-w-0 flex-1 truncate text-xs font-semibold uppercase tracking-wide">
                   {library.name}
                 </h3>
+                <button
+                  type="button"
+                  onClick={() => exportPdf(library.id, library.name)}
+                  title={t('demo.stampsExportLibrary')}
+                  className="text-fg-muted hover:text-fg grid h-6 w-6 shrink-0 place-items-center rounded"
+                >
+                  <Icon name="download" size={14} />
+                </button>
                 <button
                   type="button"
                   onClick={() => void stamp.removeLibrary(library.id)}
@@ -192,7 +235,9 @@ function StampAssetButton({
     <button
       type="button"
       onClick={onArm}
-      title={asset.name}
+      // The label is what the stamp reads; the identifier (its /Name) is the
+      // tooltip's second line for the curious.
+      title={asset.label === asset.name ? asset.label : `${asset.label}\n${asset.name}`}
       aria-pressed={armed}
       className={`flex w-full items-center justify-center rounded-md border px-2 py-1.5 ${
         armed
@@ -204,9 +249,9 @@ function StampAssetButton({
         // Height-capped, width-bounded: a wide rubber stamp stays a compact
         // strip while a portrait page from an imported library still gets
         // enough pixels to be recognisable.
-        <img src={url} alt={asset.name} className="max-h-12 max-w-full" />
+        <img src={url} alt={asset.label} className="max-h-12 max-w-full" />
       ) : (
-        <span className="text-fg truncate text-sm">{asset.name}</span>
+        <span className="text-fg truncate text-sm">{asset.label}</span>
       )}
     </button>
   );

@@ -30,9 +30,13 @@ import { LinkToken, openLinkTarget, type PdfLinkTarget } from '@embedpdf/react/l
 import { SearchToken } from '@embedpdf/react/search';
 import { RedactionToken } from '@embedpdf/react/redaction';
 import { StampToken } from '@embedpdf/react/stamp';
+import { I18nToken } from '@embedpdf/react/i18n';
 
 // ── helpers ────────────────────────────────────────────────────────────────
 type Ctx = Parameters<NonNullable<CommandDef['run']>>[0];
+
+/** Where selection-made stamps go: the user's own library, persisted. */
+const CUSTOM_LIBRARY_ID = 'embedpdf-custom';
 
 const stage = (c: Ctx) => c.tryGet(StageToken);
 const interaction = (c: Ctx) => c.tryGet(InteractionToken);
@@ -592,6 +596,51 @@ export const defaultCommands: CommandDef[] = [
     // The kind table decides: no declared editable props → no style button
     // (v2 hardcoded a subtype blocklist for this).
     visible: (c) => (anno(c)?.getSelectionProps().specs.length ?? 0) > 0,
+  },
+  {
+    // The selection becomes a reusable stamp: the engine flattens the
+    // selected appearances into one page (vector, positions kept) and the
+    // stamp plugin files it under the user's own library — persisted like
+    // any library, exportable as a PDF Acrobat reads.
+    id: 'annotation:stamp-from-selection',
+    labelKey: 'commands.annotate.stampFromSelection',
+    icon: 'rubberStampPlus',
+    categories: ['annotation'],
+    run: (c) => {
+      const a = anno(c);
+      const stamp = c.tryGet(StampToken);
+      const documentId = c.documentId;
+      if (!a || !stamp || documentId == null) return;
+      const dtos = a.getSelected();
+      const pon = dtos[0]?.ref.pageObjectNumber;
+      if (pon === undefined) return;
+      const i18n = c.tryGet(I18nToken);
+      const label = i18n?.t('demo.stampsCustomLabel') ?? 'Custom stamp';
+      const libraryName = i18n?.t('demo.stampsCustomLibrary') ?? 'My stamps';
+      const libraryId = CUSTOM_LIBRARY_ID;
+      const ensureLibrary = stamp.library(libraryId)
+        ? Promise.resolve(libraryId)
+        : stamp.createLibrary(libraryName, { id: libraryId, categories: ['custom'] });
+      ensureLibrary
+        .then((id) =>
+          stamp.addAssetFromAnnotations(
+            documentId,
+            pon,
+            dtos.map((d) => d.ref),
+            { libraryId: id, label: `${label} ${stamp.assets(id).length + 1}` },
+          ),
+        )
+        .catch((e) => console.warn('[embedpdf] stamp from selection failed', e));
+    },
+    // One page, no widgets (a form field is not artwork), and a library to
+    // put it in. The engine refuses hidden or appearance-less annotations
+    // itself — all-or-nothing, never a stamp missing a part.
+    visible: (c) =>
+      c.tryGet(StampToken) != null &&
+      hasAnnotationSelection(c) &&
+      !selectionSubtypes(c).has('widget') &&
+      new Set((anno(c)?.getSelected() ?? []).map((d) => d.ref.pageObjectNumber)).size === 1,
+    enabled: (c) => c.tryGet(DocumentsToken)?.allows('doc.download') ?? true,
   },
   {
     id: 'annotation:group',
