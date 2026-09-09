@@ -25,6 +25,7 @@ import type { PageGeometryRun, PageGeometrySnapshot } from '../dto/PageGeometryS
 import { charMapViolation } from '../text/charmap';
 import type { PageBoxes, PageLayout } from '../dto/PageLayout';
 import type { PageListSnapshot } from '../dto/PageListSnapshot';
+import type { NamedPageEntry } from '../dto/NamedPage';
 import type { PageImageOptions, PageNetworkRenderFormat, PageRenderQuery } from '../dto/PageRender';
 import type { PageTextSnapshot } from '../dto/PageTextSnapshot';
 import { PdfPageActionsSchema } from '../dto/PdfAction.schema';
@@ -73,6 +74,8 @@ import type { PageFlattenInput, PageFlattenResult } from '../mutation/PageFlatte
 import type { RedactionApplyResult, RedactionApplyScope } from '../mutation/RedactionApplyResult';
 import type { PageMoveInput } from '../mutation/PageMoveInput';
 import type { PageMoveResult } from '../mutation/PageMoveResult';
+import type { PageNameInput, PageRemoveNameInput } from '../mutation/PageNameInput';
+import type { PageNameResult } from '../mutation/PageNameResult';
 import type { PageRotateInput } from '../mutation/PageRotateInput';
 import type { PageRotateResult } from '../mutation/PageRotateResult';
 import type { PageStructureCache } from '../mutation/PageStructureCache';
@@ -1033,9 +1036,32 @@ export const RedactionApplyResultSchema: z.ZodType<RedactionApplyResult> = z.obj
  * `pageObjectNumber` everywhere except the per-element `index`, which is
  * display order and intentionally not an identity. Carries geometry only.
  */
+/** See `NamedPageEntry`: decoded key + what it resolves to. */
+export const NamedPageEntrySchema: z.ZodType<NamedPageEntry> = z.object({
+  name: z.string(),
+  target: z.discriminatedUnion('kind', [
+    z.object({ kind: z.literal('page'), pageObjectNumber: z.number().int().positive() }),
+    z.object({ kind: z.literal('template'), objectNumber: z.number().int().positive() }),
+    z.object({ kind: z.literal('dangling') }),
+  ]),
+});
+
 export const PageListSnapshotSchema: z.ZodType<PageListSnapshot> = z.object({
   pageCount: z.number().int().nonnegative(),
   pages: z.array(PageLayoutSchema),
+  namedPages: z.array(NamedPageEntrySchema).optional(),
+});
+
+/** `pages.setName` input — see `PageNameInput`. */
+export const PageNameInputSchema: z.ZodType<PageNameInput> = z.object({
+  name: z.string().min(1),
+  pageObjectNumber: z.number().int().positive(),
+  replace: z.string().min(1).optional(),
+});
+
+/** `pages.removeName` input — see `PageRemoveNameInput`. */
+export const PageRemoveNameInputSchema: z.ZodType<PageRemoveNameInput> = z.object({
+  name: z.string().min(1),
 });
 
 /**
@@ -1063,6 +1089,12 @@ export const PageStructureCacheSchema: z.ZodType<PageStructureCache> = z.object(
  * post-move order is returned so callers can swap their snapshot directly.
  */
 export const PageMoveResultSchema: z.ZodType<PageMoveResult> = z.object({
+  layout: PageListSnapshotSchema,
+  cache: PageStructureCacheSchema.nullable(),
+});
+
+/** Named-page mutation result — layout-shaped, see `PageNameResult`. */
+export const PageNameResultSchema: z.ZodType<PageNameResult> = z.object({
   layout: PageListSnapshotSchema,
   cache: PageStructureCacheSchema.nullable(),
 });

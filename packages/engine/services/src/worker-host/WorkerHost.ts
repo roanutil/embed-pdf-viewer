@@ -44,6 +44,8 @@ import {
   type PagesMoveWorkerRequest,
   type PagesRotateWorkerRequest,
   type PagesDeleteWorkerRequest,
+  type PagesSetNameWorkerRequest,
+  type PagesRemoveNameWorkerRequest,
   type PagesExtractWorkerRequest,
   type PagesInsertBlankWorkerRequest,
   type PagesInsertWorkerRequest,
@@ -312,6 +314,12 @@ export class WorkerHost {
           break;
         case 'pages.delete':
           resultPack = this.handlePagesDelete(msg, ctrl.signal);
+          break;
+        case 'pages.setName':
+          resultPack = this.handlePagesSetName(msg, ctrl.signal);
+          break;
+        case 'pages.removeName':
+          resultPack = this.handlePagesRemoveName(msg, ctrl.signal);
           break;
         case 'pages.flatten':
           resultPack = this.handlePagesFlatten(msg, ctrl.signal);
@@ -638,6 +646,33 @@ export class WorkerHost {
     return this.finishMutation(session, { tag: 'pages.delete', result }, req.artifactPath);
   }
 
+  private handlePagesSetName(
+    req: PagesSetNameWorkerRequest,
+    signal: AbortSignal,
+  ): WirePack<WorkerResultPayload> {
+    const session = this.requireSession(req);
+    const mutator = new PagesMutator(this.runtime, session);
+    const result = mutator.setName(
+      {
+        name: req.name,
+        pageObjectNumber: req.pageObjectNumber,
+        ...(req.replace !== undefined ? { replace: req.replace } : {}),
+      },
+      signal,
+    );
+    return this.finishMutation(session, { tag: 'pages.setName', result }, req.artifactPath);
+  }
+
+  private handlePagesRemoveName(
+    req: PagesRemoveNameWorkerRequest,
+    signal: AbortSignal,
+  ): WirePack<WorkerResultPayload> {
+    const session = this.requireSession(req);
+    const mutator = new PagesMutator(this.runtime, session);
+    const result = mutator.removeName({ name: req.name }, signal);
+    return this.finishMutation(session, { tag: 'pages.removeName', result }, req.artifactPath);
+  }
+
   private handlePagesFlatten(
     req: PagesFlattenWorkerRequest,
     signal: AbortSignal,
@@ -693,7 +728,11 @@ export class WorkerHost {
   ): WirePack<WorkerResultPayload> {
     const session = this.requireSession(req);
     const inserter = new PagesInserter(this.runtime, session);
-    const result = inserter.insertBlank({ size: req.size, count: req.count }, req.destIndex, signal);
+    const result = inserter.insertBlank(
+      { size: req.size, count: req.count },
+      req.destIndex,
+      signal,
+    );
     return this.finishMutation(session, { tag: 'pages.insertBlank', result }, req.artifactPath);
   }
 

@@ -26,6 +26,7 @@ import type { PageFlattenResult, PageFlattenUsage } from '../mutation/PageFlatte
 import type { RedactionApplyResult } from '../mutation/RedactionApplyResult';
 import type { PageInsertResult } from '../mutation/PageInsertResult';
 import type { PageMoveResult } from '../mutation/PageMoveResult';
+import type { PageNameResult } from '../mutation/PageNameResult';
 import type { PageRotateResult } from '../mutation/PageRotateResult';
 
 /**
@@ -124,6 +125,14 @@ export type DocumentEvent =
       destIndex?: number;
       origin: EventOrigin;
     } & PageInsertResult)
+  | ({
+      type: 'pages.named';
+      /** The decoded key that was registered, renamed, or removed. */
+      name: string;
+      /** The page it now points at; `null` when the registration was removed. */
+      pageObjectNumber: PageObjectNumber | null;
+      origin: EventOrigin;
+    } & PageNameResult)
   | ({ type: 'attachment.created'; origin: EventOrigin } & AttachmentCreateResult)
   | ({ type: 'attachment.deleted'; origin: EventOrigin } & AttachmentDeleteResult)
   | ({ type: 'metadata.updated'; origin: EventOrigin } & MetadataUpdateResult)

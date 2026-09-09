@@ -118,6 +118,8 @@ export type {
   PagesMoveWorkerRequest,
   PagesRotateWorkerRequest,
   PagesDeleteWorkerRequest,
+  PagesSetNameWorkerRequest,
+  PagesRemoveNameWorkerRequest,
   PagesExtractWorkerRequest,
   PagesInsertWorkerRequest,
   PagesInsertBlankWorkerRequest,

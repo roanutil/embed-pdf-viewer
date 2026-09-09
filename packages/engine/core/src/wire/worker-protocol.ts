@@ -58,6 +58,7 @@ import type { PageDeleteResult } from '../mutation/PageDeleteResult';
 import type { PageFlattenResult, PageFlattenUsage } from '../mutation/PageFlattenResult';
 import type { PageInsertResult } from '../mutation/PageInsertResult';
 import type { PageMoveResult } from '../mutation/PageMoveResult';
+import type { PageNameResult } from '../mutation/PageNameResult';
 import type { PageRotateResult } from '../mutation/PageRotateResult';
 import type { RedactionApplyResult, RedactionApplyScope } from '../mutation/RedactionApplyResult';
 import type { WireResourceMap } from '../resource/BinarySource';
@@ -547,6 +548,28 @@ export interface PagesDeleteWorkerRequest {
   artifactPath?: string;
 }
 
+/** Register/rename a `/Names /Pages` entry — see `PageNameInput`. */
+export interface PagesSetNameWorkerRequest {
+  kind: 'pages.setName';
+  jobId: WorkerJobId;
+  docId: string;
+  layerName?: string;
+  name: string;
+  pageObjectNumber: PageObjectNumber;
+  replace?: string;
+  artifactPath?: string;
+}
+
+/** Remove a `/Names /Pages` entry — see `PageRemoveNameInput`. */
+export interface PagesRemoveNameWorkerRequest {
+  kind: 'pages.removeName';
+  jobId: WorkerJobId;
+  docId: string;
+  layerName?: string;
+  name: string;
+  artifactPath?: string;
+}
+
 export interface PagesFlattenWorkerRequest {
   kind: 'pages.flatten';
   jobId: WorkerJobId;
@@ -893,6 +916,8 @@ export type WorkerRequest =
   | PagesMoveWorkerRequest
   | PagesRotateWorkerRequest
   | PagesDeleteWorkerRequest
+  | PagesSetNameWorkerRequest
+  | PagesRemoveNameWorkerRequest
   | PagesFlattenWorkerRequest
   | RedactionApplyWorkerRequest
   | PagesExtractWorkerRequest
@@ -1045,6 +1070,18 @@ export type WorkerResultPayload =
   | {
       tag: 'pages.delete';
       result: PageDeleteResult;
+      artifact?: LayerArtifactWorkerPayload;
+      artifactFile?: LayerArtifactFileWorkerPayload;
+    }
+  | {
+      tag: 'pages.setName';
+      result: PageNameResult;
+      artifact?: LayerArtifactWorkerPayload;
+      artifactFile?: LayerArtifactFileWorkerPayload;
+    }
+  | {
+      tag: 'pages.removeName';
+      result: PageNameResult;
       artifact?: LayerArtifactWorkerPayload;
       artifactFile?: LayerArtifactFileWorkerPayload;
     }

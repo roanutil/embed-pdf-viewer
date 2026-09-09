@@ -46,6 +46,7 @@ import {
   type RedactionApplyScope,
   type PageListSnapshot,
   type PageMoveResult,
+  type PageNameResult,
   type PageObjectNumber,
   type PageRotateResult,
   type PageRotation,
@@ -573,6 +574,97 @@ export class LayerService {
           );
         }
         return this.persistPageMove(ctx, input.docId, input.layerName, layer, {
+          result: payload.result,
+          artifact: requireLayerArtifact(payload as unknown),
+        });
+      });
+    });
+  }
+
+  /**
+   * Register/rename a `/Names /Pages` entry. Named pages are LAYOUT, so this
+   * persists exactly like a page move: a new layer artifact, doc_version +
+   * layout_version advance, `layer_pages` rows untouched.
+   */
+  async setPageName(
+    ctx: LayerWriteContext,
+    input: {
+      docId: string;
+      layerName: string;
+      name: string;
+      pageObjectNumber: PageObjectNumber;
+      replace?: string;
+    },
+    signal?: AbortSignal,
+  ): Promise<PageNameResult> {
+    return this.runPageNameMutation(
+      ctx,
+      input.docId,
+      input.layerName,
+      (jobId, artifactPath) =>
+        wirePack({
+          kind: 'pages.setName' as const,
+          jobId,
+          docId: input.docId,
+          layerName: input.layerName,
+          name: input.name,
+          pageObjectNumber: input.pageObjectNumber,
+          ...(input.replace !== undefined ? { replace: input.replace } : {}),
+          artifactPath,
+        }),
+      'pages.setName',
+      signal,
+    );
+  }
+
+  /** Remove a `/Names /Pages` entry (the page stays). Persists like a move. */
+  async removePageName(
+    ctx: LayerWriteContext,
+    input: { docId: string; layerName: string; name: string },
+    signal?: AbortSignal,
+  ): Promise<PageNameResult> {
+    return this.runPageNameMutation(
+      ctx,
+      input.docId,
+      input.layerName,
+      (jobId, artifactPath) =>
+        wirePack({
+          kind: 'pages.removeName' as const,
+          jobId,
+          docId: input.docId,
+          layerName: input.layerName,
+          name: input.name,
+          artifactPath,
+        }),
+      'pages.removeName',
+      signal,
+    );
+  }
+
+  private async runPageNameMutation(
+    ctx: LayerWriteContext,
+    docId: string,
+    layerName: string,
+    build: (jobId: WorkerJobId, artifactPath: string) => WirePack<WorkerRequest>,
+    tag: 'pages.setName' | 'pages.removeName',
+    signal?: AbortSignal,
+  ): Promise<PageNameResult> {
+    return this.enqueueLayerWrite(ctx, docId, layerName, async () => {
+      const { layer } = await this.prepareLayerMutation(ctx, docId, layerName);
+      return this.withTempWorkerFile('layer-artifact', 'artifact.layer', async (artifactPath) => {
+        const payload = await this.requirePool().run(
+          docId,
+          (jobId) => build(jobId, artifactPath),
+          signal,
+        );
+        if (payload.tag !== tag) {
+          throw new EngineError(
+            EngineErrorCode.WireFormat,
+            `unexpected ${tag} payload: ${payload.tag}`,
+          );
+        }
+        // Layout-shaped result — the page-move persistence path is exact.
+        return this.persistPageMove(ctx, docId, layerName, layer, {
           result: payload.result,
           artifact: requireLayerArtifact(payload as unknown),
         });

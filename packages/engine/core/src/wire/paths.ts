@@ -483,6 +483,13 @@ export const wirePaths = {
 
   layerPagesDelete: (docId: string, layerName: string) =>
     `/v1/docs/${encodeURIComponent(docId)}/layers/${encodeURIComponent(layerName)}/pages/delete`,
+  /** POST: register/rename a `/Names /Pages` entry — a page-STRUCTURE
+   *  mutation (docVersion + layoutVersion advance; reads ride `/layout`). */
+  layerPagesNames: (docId: string, layerName: string) =>
+    `/v1/docs/${encodeURIComponent(docId)}/layers/${encodeURIComponent(layerName)}/pages/names`,
+  /** POST: remove a `/Names /Pages` entry (the page stays). */
+  layerPagesNamesDelete: (docId: string, layerName: string) =>
+    `/v1/docs/${encodeURIComponent(docId)}/layers/${encodeURIComponent(layerName)}/pages/names/delete`,
 
   layerPagesFlatten: (docId: string, layerName: string) =>
     `/v1/docs/${encodeURIComponent(docId)}/layers/${encodeURIComponent(layerName)}/pages/flatten`,
@@ -568,6 +575,8 @@ export const wireTemplates = {
   layerPagesMove: '/v1/docs/:docId/layers/:layerName/pages/move',
   layerPagesRotate: '/v1/docs/:docId/layers/:layerName/pages/rotate',
   layerPagesDelete: '/v1/docs/:docId/layers/:layerName/pages/delete',
+  layerPagesNames: '/v1/docs/:docId/layers/:layerName/pages/names',
+  layerPagesNamesDelete: '/v1/docs/:docId/layers/:layerName/pages/names/delete',
   layerPagesFlatten: '/v1/docs/:docId/layers/:layerName/pages/flatten',
   layerPagesInsert: '/v1/docs/:docId/layers/:layerName/pages/insert',
   layerPagesInsertBlank: '/v1/docs/:docId/layers/:layerName/pages/insert-blank',
