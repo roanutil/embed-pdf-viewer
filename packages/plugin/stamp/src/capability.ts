@@ -11,8 +11,9 @@ import {
   type PieceInfoPatch,
 } from '@embedpdf/engine-core/runtime';
 import { type PluginContext } from '@embedpdf/core';
+import { javaScriptProgramFromActionTree } from '@embedpdf/core-acrojs';
+import { ActionsToken as ActionsHostToken } from '@embedpdf/plugin-actions/contract/host';
 import { AnnotationToken } from '@embedpdf/plugin-annotation/contract';
-import type { FormCommitResult } from '@embedpdf/plugin-form/contract';
 import { createFormScriptingController } from '@embedpdf/plugin-form/scripting';
 
 import type {
@@ -141,17 +142,11 @@ export function createStampCapability(
     return assetEngineRef;
   };
 
-  const openAssetDocument = async (
-    bytes: Uint8Array,
-    identity?: DocumentHandle['security']['identity'],
-  ): Promise<DocumentHandle> => {
+  const openAssetDocument = async (bytes: Uint8Array): Promise<DocumentHandle> => {
     try {
       return await (
         await assetEngine()
-      ).open(
-        { kind: 'bytes', id: uid('stamp-import'), bytes },
-        { scope: ['*'], ...(identity ? { identity } : {}) },
-      );
+      ).open({ kind: 'bytes', id: uid('stamp-import'), bytes }, { scope: ['*'] });
     } catch (err) {
       // A cloud kernel engine rejects 'bytes' with InvalidArg — turn the
       // generic contract error into the configuration fix.
@@ -549,33 +544,28 @@ export function createStampCapability(
   const removeLibrary = (id: string): Promise<void> =>
     mutateLibrary(id, async () => dropLibrary(id));
 
-  const surfaceScriptingResult = (result: FormCommitResult): void => {
-    try {
-      for (const effect of result.uiEffects) config.scripting?.onUiEffect?.(effect);
-      for (const diagnostic of result.diagnostics) {
-        config.scripting?.onDiagnostic?.(diagnostic);
-      }
-      if (result.error) config.scripting?.onError?.(result.error);
-    } catch (error) {
-      globalThis.console?.error('[stamp] scripting observer failed:', error);
-    }
-  };
-
   /**
    * Form-backed stamps are executable templates only until placement. Work
    * on an isolated copy so neither the canonical library nor its reusable
    * per-page extraction becomes target/user/time specific.
+   *
+   * The realm comes from the TARGET document's actions plugin — a detached
+   * realm under that document's policy and environment (WP4: its own
+   * sandbox, none of the viewer realm's globals). No actions plugin, or
+   * scripting off, or `dynamic: false` → the template is armed as-is.
    */
   const materializeForPlacement = async (
     documentId: string,
     asset: StampAsset,
     bin: { bytes: Uint8Array; preview: StampAssetPreview | null },
   ): Promise<{ bytes: Uint8Array; preview: StampAssetPreview | null }> => {
-    if (asset.format !== 'pdf' || !config.scripting?.enabled) return bin;
+    if (asset.format !== 'pdf' || config.dynamic === false) return bin;
+    const actions = ctx.tryForDocument(ActionsHostToken, documentId);
+    const mintRealm = actions?.createDetachedScriptRealm;
+    if (!actions || !mintRealm) return bin;
 
-    const targetDoc = ctx.documentHandle(documentId);
     const targetMeta = ctx.core().documents[documentId] ?? null;
-    if (!targetDoc || !targetMeta) {
+    if (!targetMeta) {
       throw new EngineError(
         EngineErrorCode.NotFound,
         `[stamp] target document '${documentId}' is not open`,
@@ -587,7 +577,10 @@ export function createStampCapability(
     // whole library PDF, then extract only their selected page after flatten.
     const canonicalBytes = libraryBinaries.get(asset.libraryId);
     const sourceBytes = canonicalBytes ?? bin.bytes;
-    const doc = await openAssetDocument(new Uint8Array(sourceBytes), targetDoc.security.identity);
+    const doc = await openAssetDocument(new Uint8Array(sourceBytes));
+    // Cleanup protection starts the moment the temporary document exists:
+    // realm/controller construction failures must not leak it.
+    let realm: ReturnType<typeof mintRealm> | null = null;
     let scripting: ReturnType<typeof createFormScriptingController> | null = null;
     try {
       const layout = await doc.pages.list();
@@ -621,15 +614,27 @@ export function createStampCapability(
         );
       }
 
-      // The DETACHED stamp-asset document gets its OWN standalone realm —
-      // never the viewer document's shared host (realm isolation; WP4).
+      // Scripts observe the TARGET document's metadata (Acrobat's dynamic
+      // stamp contract: `documentFileName` is the document being stamped)
+      // and boot from the asset document's own name tree.
+      realm = mintRealm.call(actions, {
+        doc,
+        document: () => targetMeta,
+        bootSources: async () => {
+          const tree = doc.actions ? await doc.actions.read() : null;
+          return (
+            tree?.nameTreeScripts.map(({ action }) => javaScriptProgramFromActionTree(action)) ?? []
+          );
+        },
+      });
       scripting = createFormScriptingController({
         doc,
         document: () => targetMeta,
-        config: config.scripting,
+        transaction: realm.transaction.bind(realm),
+        budget: realm.budget,
       });
       const result = await scripting.recalculate();
-      surfaceScriptingResult(result);
+      actions.surfaceScriptCommit(result, { origin: 'user', realm: 'detached' });
       if (result.status === 'failed') {
         throw new EngineError(
           EngineErrorCode.Unknown,
@@ -659,6 +664,7 @@ export function createStampCapability(
       return { bytes, preview: imageToPreview(image) };
     } finally {
       scripting?.dispose();
+      realm?.dispose();
       await doc.close();
     }
   };

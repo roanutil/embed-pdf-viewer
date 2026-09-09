@@ -1674,6 +1674,9 @@ importers:
       '@embedpdf/engine-core':
         specifier: workspace:*
         version: link:../../engine/core
+      '@embedpdf/plugin-actions':
+        specifier: workspace:*
+        version: link:../actions
       '@embedpdf/plugin-annotation':
         specifier: workspace:*
         version: link:../annotation

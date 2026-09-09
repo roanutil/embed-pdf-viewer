@@ -26,14 +26,7 @@ import type {
   PdfAnnotationEventKind,
   SubmitIntent,
 } from '@embedpdf/plugin-actions/contract';
-import type {
-  ScriptBudget,
-  ScriptDiagnostic,
-  ScriptExecutionError,
-  ScriptIdentity,
-  ScriptUiEffect,
-} from '@embedpdf/core-acrojs';
-import type { ScriptSandboxFactory } from '@embedpdf/core-js-sandbox';
+import type { ScriptDiagnostic, ScriptExecutionError, ScriptUiEffect } from '@embedpdf/core-acrojs';
 import { createCapabilityToken } from '@embedpdf/core';
 
 import type { FillItem } from './core/fill-items';
@@ -41,26 +34,6 @@ import type { Box, FieldKey, Model } from './core/model';
 
 export interface FormState {
   model: Model;
-}
-
-/**
- * Standalone-realm configuration for `createFormScriptingHost` — stamp's
- * detached documents and direct controller tests. Viewer documents configure
- * scripting on `actionsPlugin({ javascript })` instead (D8), and every UI
- * effect/diagnostic surfaces through the actions port (D9).
- */
-export interface FormScriptingOptions {
-  /** Override the lazy QuickJS factory (tests or another isolated VM). */
-  sandboxFactory?: ScriptSandboxFactory;
-  /** Optional embedder identity fields layered over engine/JWT identity. */
-  identity?: Partial<ScriptIdentity> | (() => Partial<ScriptIdentity>);
-  /** Target document filename exposed as `this.documentFileName`. */
-  fileName?: () => string;
-  /** Injected deterministic transaction environment. */
-  now?: () => number;
-  utcOffsetMinutes?: () => number;
-  randomSeed?: () => number;
-  budget?: ScriptBudget;
 }
 
 /** The scripting switch moved to `actionsPlugin({ javascript })` (D8). */
@@ -97,7 +70,6 @@ export type FormUiEffect = ScriptUiEffect & {
    */
   origin?: ActionOrigin;
 };
-
 
 /** Input for {@link FormCapability.placeField}. */
 export interface PlaceFieldInput {

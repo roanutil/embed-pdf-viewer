@@ -294,11 +294,14 @@ export function FullViewer({
     // Stamp LIBRARIES (workspace-scoped): named reusable assets — the built-in
     // set plus any PDF the user imports, each page one vector stamp. The
     // stamps sidebar is the picker; placement rides annotation's armed stamp.
-    stampPlugin({ scripting: { enabled: true, identity: { name: 'John Doe', corporation: 'Acme Inc' }}}),
+    stampPlugin(),
     // The action engine: /A and /AA trees dispatch through one policy-gated
     // executor spine, and THE JavaScript switch lives here (the per-document
-    // ScriptHost realm; form's K/V/C/F pipeline rides its transaction port).
-    actionsPlugin({ javascript: { enabled: true, identity: { name: 'John Doe', corporation: 'Acme Inc' } } }),
+    // ScriptHost realm; form's K/V/C/F pipeline rides its transaction port,
+    // stamp's dynamic templates evaluate in detached realms it mints).
+    actionsPlugin({
+      javascript: { enabled: true, identity: { name: 'John Doe', corporation: 'Acme Inc' } },
+    }),
     // Forms: fillable under the default pointer/pan (widgets render as fill
     // controls), editable under the Form tab's 'form-edit' + palette tools.
     formPlugin(),

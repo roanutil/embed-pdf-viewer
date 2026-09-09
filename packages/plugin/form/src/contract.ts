@@ -14,7 +14,6 @@ export type {
   FormCommitResult,
   FormCommitStatus,
   FormPluginOptions,
-  FormScriptingOptions,
   FormState,
   FormUiEffect,
   PlacedField,

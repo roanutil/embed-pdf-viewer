@@ -40,6 +40,7 @@
   "dependencies": {
     "@embedpdf/core": "workspace:*",
     "@embedpdf/core-js-sandbox": "workspace:*",
+    "@embedpdf/plugin-actions": "workspace:*",
     "@embedpdf/plugin-annotation": "workspace:*",
     "@embedpdf/plugin-form": "workspace:*",
     "@embedpdf/engine-core": "workspace:*",

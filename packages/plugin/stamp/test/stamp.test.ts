@@ -12,6 +12,9 @@ import type {
 } from '@embedpdf/engine-core/runtime';
 import type { DocumentMeta, PluginContext } from '@embedpdf/core';
 import { createLocalEngine } from '@embedpdf/engine';
+import type { ScriptRealmTarget } from '@embedpdf/plugin-actions/contract/host';
+
+import { createScriptRealmFactory } from '../../actions/src/script-environment';
 import { createStampCapability } from '../src/capability';
 import { initialStampState, stampReducer } from '../src/reducer';
 import type { StampAction, StampState } from '../src/types';
@@ -39,6 +42,7 @@ function makeCtx(
   engine: Engine,
   annotation?: Record<string, unknown>,
   target?: { id: string; handle: DocumentHandle; meta: DocumentMeta },
+  actions?: Record<string, unknown>,
 ) {
   let state: StampState = initialStampState();
   const ctx = {
@@ -63,6 +67,7 @@ function makeCtx(
       if (!annotation) throw new Error(`no annotation for '${documentId}'`);
       return annotation as T;
     },
+    tryForDocument: <T>(): T | null => (actions ?? null) as T | null,
   } as unknown as PluginContext<StampState, StampAction>;
   return ctx;
 }
@@ -515,17 +520,39 @@ describe('stamp plugin — placement', () => {
       revision: 0,
     };
     const armStamp = vi.fn(async () => {});
-    const cap = createStampCapability(
-      makeCtx(engine, { armStamp }, { id: target.id, handle: target, meta: targetMeta }),
+    // The target document's actions host lens, as the real plugin builds it:
+    // one realm factory under the target's identity, minting detached realms.
+    const realms = createScriptRealmFactory(
       {
-        assetEngine: previewEngine,
-        scripting: {
-          enabled: true,
-          now: () => Date.UTC(2026, 6, 15, 9, 30, 0),
-          utcOffsetMinutes: () => 180,
-          randomSeed: () => 7,
-        },
+        enabled: true,
+        now: () => Date.UTC(2026, 6, 15, 9, 30, 0),
+        utcOffsetMinutes: () => 180,
+        randomSeed: () => 7,
       },
+      target,
+    );
+    const surfaced: unknown[] = [];
+    const actionsHost = {
+      createDetachedScriptRealm: (realmTarget: ScriptRealmTarget) => {
+        const host = realms.realmFor(realmTarget);
+        return {
+          transaction: host.transaction.bind(host),
+          budget: realms.budget,
+          dispose: () => host.dispose(),
+        };
+      },
+      surfaceScriptCommit: (commit: unknown, context: unknown) => {
+        surfaced.push({ commit, context });
+      },
+    };
+    const cap = createStampCapability(
+      makeCtx(
+        engine,
+        { armStamp },
+        { id: target.id, handle: target, meta: targetMeta },
+        actionsHost,
+      ),
+      { assetEngine: previewEngine },
     );
 
     let materialized: DocumentHandle | null = null;
@@ -546,6 +573,11 @@ describe('stamp plugin — placement', () => {
       };
       expect(armed.source).not.toEqual(baseBefore);
       expect(armed.preview?.mimeType).toBe('image/png');
+      expect(surfaced).toHaveLength(1);
+      expect((surfaced[0] as { context: unknown }).context).toEqual({
+        origin: 'user',
+        realm: 'detached',
+      });
 
       materialized = await engine.open(
         { kind: 'bytes', id: 'materialized-stamp', bytes: armed.source },

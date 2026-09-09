@@ -102,13 +102,14 @@ export function createFormCapability(
   // port's PRESENCE is the "JavaScript is on" signal (D8 — the switch lives
   // on actionsPlugin({ javascript }); form owns only the K/V/C/F pipeline).
   const actionsHost = ctx.tryGet(ActionsHostToken);
-  const scriptPort = actionsHost?.scriptTransaction?.bind(actionsHost) ?? null;
+  const realm = actionsHost?.scriptRealm ?? null;
   const scripting =
-    scriptPort && ctx.doc
+    realm && ctx.doc
       ? createFormScriptingController({
           doc: ctx.doc,
           document: () => ctx.document(),
-          transaction: scriptPort,
+          transaction: realm.transaction.bind(realm),
+          budget: realm.budget,
         })
       : null;
   if (scripting) ctx.cleanup(() => scripting.dispose());
@@ -116,19 +117,7 @@ export function createFormCapability(
   /** Every script surface (UI effects, diagnostics, errors) flows through
    *  the actions plugin's ONE port — origin/phase attached (D9). */
   const surfaceViaActions = (result: FormCommitResult, origin: ActionOrigin): void => {
-    if (!actionsHost) return;
-    const phases: Array<'boot' | 'user'> = ['boot', 'user'];
-    for (const phase of phases) {
-      const uiEffects = result.uiEffects.filter((effect) => effect.phase === phase);
-      if (uiEffects.length === 0 && phase === 'boot') continue;
-      actionsHost.surfaceScriptResult({
-        uiEffects,
-        diagnostics: phase === 'user' ? result.diagnostics : [],
-        ...(phase === 'user' && result.error ? { error: result.error } : {}),
-        origin,
-        phase,
-      });
-    }
+    actionsHost?.surfaceScriptCommit(result, { origin, realm: 'document' });
   };
 
   // Authority reads for the twins, the hydration gate, the fused fill
@@ -666,9 +655,7 @@ export function createFormCapability(
         // then does the legacy form path apply (byte-for-byte no-actions
         // behavior); anything else IS the dispatch outcome, refusals included.
         const noTree =
-          result.status === 'inert' &&
-          result.steps.length === 0 &&
-          result.diagnostics.length === 0;
+          result.status === 'inert' && result.steps.length === 0 && result.diagnostics.length === 0;
         if (!noTree) return { kind: 'dispatched', result };
       }
       return {
@@ -755,9 +742,7 @@ export function createFormCapability(
       await refresh(true);
       if (annotationHost) {
         const pons = new Set(
-          result.changedWidgets
-            .map((widget) => widget.pageObjectNumber)
-            .filter((pon) => pon > 0),
+          result.changedWidgets.map((widget) => widget.pageObjectNumber).filter((pon) => pon > 0),
         );
         for (const pon of pons) await annotationHost.reloadPage(pon);
       }

@@ -1,11 +1,5 @@
 import type { BinarySource, Engine } from '@embedpdf/engine-core/runtime';
 import { createCapabilityToken } from '@embedpdf/core';
-import type {
-  ScriptDiagnostic,
-  ScriptExecutionError,
-  ScriptUiEffect,
-} from '@embedpdf/core-acrojs';
-import type { FormScriptingOptions } from '@embedpdf/plugin-form/contract';
 
 /**
  * The stamp plugin: a workspace-scoped ASSET substrate.
@@ -85,26 +79,17 @@ export interface StampConfig {
   /** Cached preview width in device px (import-time render). Default 256. */
   previewWidth?: number;
   /**
-   * Opt-in Acrobat JavaScript evaluation for form-backed PDF stamp assets.
-   * On arm, the plugin recalculates a temporary copy using the target
-   * document's identity/name/clock, flattens it, and arms the resulting
-   * static page. Canonical library and derived base bytes stay unchanged.
+   * Evaluate form-backed (dynamic) PDF stamp assets on arm. Default `true`.
+   * Scripting itself is the workspace's ONE JavaScript switch,
+   * `actionsPlugin({ javascript: { enabled } })`: stamp has no switch of its
+   * own — it asks the target document's actions plugin for a DETACHED realm
+   * (same identity, clock, sandbox, and budget; isolated globals), and arms
+   * the template unevaluated when scripting is off or actions is absent.
+   * `false` keeps templates static even with scripting on — a product
+   * choice (a stamp's appearance must equal the reviewed template), not a
+   * trust boundary: a detached realm can only alert and spend budget.
    */
-  scripting?: StampScriptingOptions;
-}
-
-/**
- * Stamp evaluates dynamic assets in its OWN standalone realm (a detached
- * stamp-asset document is never the viewer document's shared host), so the
- * opt-in switch and the script observers live HERE — deliberately not on
- * `actionsPlugin({ javascript })`, whose port serves the viewer document.
- */
-export interface StampScriptingOptions extends FormScriptingOptions {
-  /** Explicit opt-in for evaluating dynamic (form-backed) stamp assets. */
-  enabled: boolean;
-  onUiEffect?: (effect: ScriptUiEffect) => void;
-  onDiagnostic?: (diagnostic: ScriptDiagnostic) => void;
-  onError?: (error: ScriptExecutionError) => void;
+  dynamic?: boolean;
 }
 
 export interface ImportLibraryOptions {
@@ -187,8 +172,9 @@ export interface StampCapability {
   /**
    * Arm an asset on a document: the next click on that document's pages
    * places it (and the hover ghost previews the exact placement). With
-   * scripting enabled, form-backed PDFs are evaluated against that target
-   * document and flattened first. Rides `annotation.armStamp` — bytes,
+   * scripting on (the actions plugin's `javascript` switch), form-backed
+   * PDFs are evaluated against that target document in a detached realm and
+   * flattened first. Rides `annotation.armStamp` — bytes,
    * preview, and intrinsic size all travel along, so vector stamps keep
    * their true aspect.
    */
