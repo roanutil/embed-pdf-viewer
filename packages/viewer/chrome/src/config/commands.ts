@@ -11,7 +11,9 @@
  *   panels / menus / modals                → declarative shell targets
  *   annotate + shape tools                 → real interaction tools
  *   form tools                             → real form plugin palette (draw-to-place)
- *   insert/redact tools                    → inert interaction tools (demo-tools)
+ *   insert tools                           → real stamp library panel + image/
+ *                                            attachment click-then-pick (signature
+ *                                            still inert, via demo-tools)
  *   history undo/redo                      → disabled (no history plugin in v3 yet)
  */
 import type { CommandDef, IconAccent } from '@embedpdf/react/commands';
@@ -27,6 +29,7 @@ import { ActionsToken } from '@embedpdf/react/actions';
 import { LinkToken, openLinkTarget, type PdfLinkTarget } from '@embedpdf/react/link';
 import { SearchToken } from '@embedpdf/react/search';
 import { RedactionToken } from '@embedpdf/react/redaction';
+import { StampToken } from '@embedpdf/react/stamp';
 
 // ── helpers ────────────────────────────────────────────────────────────────
 type Ctx = Parameters<NonNullable<CommandDef['run']>>[0];
@@ -77,6 +80,11 @@ export interface ToolAccentDefinition {
  * drift apart.
  */
 export const TOOL_ICONS: Record<string, { icon: string; accent?: ToolAccentDefinition }> = {};
+
+// The `stamp` tool has no toolbar button of its own: it is ARMED by the stamps
+// panel (picking a library asset), never activated directly — so its cursor
+// skin is recorded here rather than as a side effect of a `tool()` definition.
+TOOL_ICONS['stamp'] = { icon: 'rubberStamp' };
 
 const toolAccent = (
   c: Ctx,
@@ -479,11 +487,29 @@ export const defaultCommands: CommandDef[] = [
     primary: 'color',
   }),
 
-  // ── insert tools (stamp/attachment real; signature/image inert) ─────────
-  tool('insert:add-stamp', 'stamp', 'commands.insert.stamp', 'rubberStamp'),
+  // ── insert tools (stamp/image/attachment real; signature inert) ─────────
+  // Stamps open a LIBRARY, they are not a file dialog: the panel lists the
+  // reusable named assets the stamp plugin holds, and picking one arms the
+  // annotation plugin's stamp tool with that asset's bytes (stamps-panel.tsx).
+  // Arbitrary image bytes are `insert:add-image` below — a different gesture,
+  // so a different button.
+  {
+    id: 'insert:add-stamp',
+    labelKey: 'commands.insert.stamp',
+    icon: 'rubberStamp',
+    // No stamp plugin → no library to show. No create authority → nothing the
+    // picker could place (the same twin every insert tool's button asks).
+    visible: (c) => c.tryGet(StampToken) != null,
+    enabled: (c) => anno(c)?.canCreate() ?? true,
+    categories: ['panel'],
+    panel: { id: 'stamps', exclusive: 'right' },
+  },
   // File attachment — click the spot, pick the file (the attachment provider).
   tool('insert:add-attachment', 'attachment', 'commands.insert.attachment', 'paperclip'),
   tool('insert:add-signature', 'signature', 'commands.insert.signature', 'signature'),
+  // Image — the click-then-pick placement: click the spot, the file dialog
+  // opens (narrowed to rasters), the picture lands where you clicked. The
+  // tool itself is a `stamp` preset registered in viewer.tsx.
   tool('insert:add-image', 'image', 'commands.insert.image', 'photo'),
 
   // ── form tools (the form plugin's draw-to-place palette) ────────────────

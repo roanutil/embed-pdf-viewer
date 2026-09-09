@@ -27,6 +27,7 @@ import { pageEditPlugin } from '@embedpdf/react/page-edit';
 import { feedbackPlugin, interactionPlugin, vibrationFeedback } from '@embedpdf/react/interaction';
 import { selectionPlugin } from '@embedpdf/react/selection';
 import { annotationPlugin } from '@embedpdf/react/annotation';
+import { stampPlugin } from '@embedpdf/react/stamp';
 import { redactionPlugin } from '@embedpdf/react/redaction';
 import { actionsPlugin } from '@embedpdf/react/actions';
 import { formPlugin } from '@embedpdf/react/form';
@@ -278,12 +279,26 @@ export function FullViewer({
           extends: 'line',
           defaults: { lineEndings: { start: 'none', end: 'open-arrow' } },
         },
+        // The Insert tab's Image button: a `stamp` preset whose payload comes
+        // from the file-picker port, narrowed to rasters. Click the spot, the
+        // dialog opens, the picture lands there. Its own tool id (not `stamp`)
+        // keeps it out of the stamp panel's armed state and gives it its own
+        // cursor icon.
+        {
+          id: 'image',
+          extends: 'stamp',
+          source: { kind: 'prompt', accept: 'image/png,image/jpeg' },
+        },
       ],
     }),
+    // Stamp LIBRARIES (workspace-scoped): named reusable assets — the built-in
+    // set plus any PDF the user imports, each page one vector stamp. The
+    // stamps sidebar is the picker; placement rides annotation's armed stamp.
+    stampPlugin({ scripting: { enabled: true, identity: { name: 'John Doe', corporation: 'Acme Inc' }}}),
     // The action engine: /A and /AA trees dispatch through one policy-gated
     // executor spine, and THE JavaScript switch lives here (the per-document
     // ScriptHost realm; form's K/V/C/F pipeline rides its transaction port).
-    actionsPlugin({ javascript: { enabled: true } }),
+    actionsPlugin({ javascript: { enabled: true, identity: { name: 'John Doe', corporation: 'Acme Inc' } } }),
     // Forms: fillable under the default pointer/pan (widgets render as fill
     // controls), editable under the Form tab's 'form-edit' + palette tools.
     formPlugin(),

@@ -86,7 +86,7 @@ import {
 } from './repository';
 import { createAnnotationHoverFeed } from './hover-feed';
 import { buildTextItems } from './text-item';
-import { buildToolRegistry, isTouchDirect } from './tools';
+import { ARMED_STAMP_TOOL_ID, buildToolRegistry, isTouchDirect } from './tools';
 import type { AnnotationToolInput, ResolvedTool } from './tools';
 import type {
   AnnotationAction,
@@ -497,7 +497,7 @@ export function createAnnotationCapability(
       preview,
     };
     ctx.dispatch({ type: 'STAMP_ARM_CHANGED' });
-    ctx.tryGet(InteractionToken)?.activateTool('stamp');
+    ctx.tryGet(InteractionToken)?.activateTool(ARMED_STAMP_TOOL_ID);
   };
 
   const disarmStamp = (): void => {

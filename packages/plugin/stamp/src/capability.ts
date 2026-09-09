@@ -191,11 +191,11 @@ export function createStampCapability(
     return id;
   };
 
-  const createLooseLibrary = (name: string): string => {
+  const createLooseLibrary = (name: string, categories?: string[]): string => {
     const id = uid('stamp-lib');
     ctx.dispatch({
       type: 'LIBRARY_ADDED',
-      library: { id, name, storage: 'loose', assetIds: [] },
+      library: { id, name, storage: 'loose', assetIds: [], ...(categories ? { categories } : {}) },
     });
     return id;
   };
@@ -721,6 +721,7 @@ export function createStampCapability(
     assetPreview: (id) => binaries.get(id)?.preview ?? null,
     assetBytes: (id) => binaries.get(id)?.bytes ?? null,
     libraryBytes: (id) => libraryBinaries.get(id) ?? null,
+    createLibrary: (name, opts) => createLooseLibrary(name, opts?.categories),
     importLibraryPdf,
     addAsset,
     removeAsset,

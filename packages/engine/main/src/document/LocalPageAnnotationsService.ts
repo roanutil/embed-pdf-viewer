@@ -265,8 +265,11 @@ export class LocalPageAnnotationsService implements PageAnnotationsService {
     const pon = this.pageObjectNumber;
     return AbortablePromise.run<AnnotationCreateResult>(async (signal) => {
       // Split inline BinarySource fields (stamp images, …) into the wire
-      // draft + resource buffers. Async because Blob bytes resolve async;
-      // the buffers ride the wirePack transfer list zero-copy.
+      // draft + resource buffers. Async because Blob bytes resolve async.
+      // Each resource is a private copy made by resolveBinarySource (one
+      // copy per call, at the argument boundary); that copy rides the
+      // wirePack transfer list and is detached by the worker transport,
+      // while the caller's Uint8Array stays intact and reusable.
       const { wire, resources } = await normalizeAnnotationDraft(draft);
       const resourceBuffers = Object.values(resources).map((r) => r.bytes);
       const submission = this.queue.enqueue<WorkerResultPayload>(
@@ -328,7 +331,8 @@ export class LocalPageAnnotationsService implements PageAnnotationsService {
       const actor = this.guard.actorForUpdate(target.groupId, patchGroupId);
 
       const docId = this.docId;
-      // Same binary split as create(): wire patch + transferable buffers.
+      // Same binary split as create(): wire patch + owned resource copies
+      // that the transport may detach without touching the caller's bytes.
       const { wire, resources } = await normalizeAnnotationPatch(patch);
       const resourceBuffers = Object.values(resources).map((r) => r.bytes);
       const submission = this.queue.enqueue<WorkerResultPayload>(

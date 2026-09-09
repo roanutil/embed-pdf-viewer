@@ -20,6 +20,7 @@ import { AnnotationStylePanel } from './annotation-style';
 import { CommentsPanel } from './comments-panel';
 import { RedactionPanel } from './redaction-panel';
 import { SearchPanel } from './search-panel';
+import { StampsPanel } from './stamps-panel';
 
 // ── left sidebar (thumbnails / outline tabs) ─────────────────────────────────
 export function LeftSidebar() {
@@ -116,7 +117,7 @@ function ThumbnailList() {
   );
 }
 
-// ── right sidebar (search / comment / style) ─────────────────────────────────
+// ── right sidebar (search / comment / style / redaction / stamps) ────────────
 export function RightSidebar() {
   const t = useT();
   // Keys the SearchPanel below: the panel seeds its query box from the active
@@ -127,6 +128,7 @@ export function RightSidebar() {
   const comment = useSurface('comment');
   const style = useSurface('annotation-style');
   const redaction = useSurface('redaction');
+  const stamps = useSurface('stamps');
   const active = search.isOpen
     ? 'search'
     : comment.isOpen
@@ -135,7 +137,9 @@ export function RightSidebar() {
         ? 'style'
         : redaction.isOpen
           ? 'redaction'
-          : null;
+          : stamps.isOpen
+            ? 'stamps'
+            : null;
   if (!active) return null;
 
   const titleKey =
@@ -145,7 +149,9 @@ export function RightSidebar() {
         ? 'demo.commentsTitle'
         : active === 'redaction'
           ? 'demo.redactionTitle'
-          : 'demo.styleTitle';
+          : active === 'stamps'
+            ? 'demo.stampsTitle'
+            : 'demo.styleTitle';
   const close =
     active === 'search'
       ? search.close
@@ -153,7 +159,9 @@ export function RightSidebar() {
         ? comment.close
         : active === 'redaction'
           ? redaction.close
-          : style.close;
+          : active === 'stamps'
+            ? stamps.close
+            : style.close;
 
   return (
     <aside className="border-border-subtle bg-surface flex w-72 shrink-0 flex-col border-l">
@@ -173,6 +181,8 @@ export function RightSidebar() {
         <SearchPanel key={documentId ?? 'none'} />
       ) : active === 'redaction' ? (
         <RedactionPanel />
+      ) : active === 'stamps' ? (
+        <StampsPanel />
       ) : (
         <CommentsPanel key={documentId ?? 'none'} />
       )}

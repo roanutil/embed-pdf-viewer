@@ -159,6 +159,14 @@ export interface StampCapability {
   libraryBytes(id: string): Uint8Array | null;
   // ── library intents ──
   /**
+   * Create an EMPTY loose library under a name of your choosing — the
+   * counterpart of {@link removeLibrary}, and the only way to name a library
+   * that is not imported from a PDF (`addAsset` without a `libraryId` names
+   * the library after its first asset). Returns the new library id; feed it
+   * to `addAsset({ libraryId })` to fill it.
+   */
+  createLibrary(name: string, opts?: { categories?: string[] }): string;
+  /**
    * Import a PDF as a stamp library: every page becomes one vector asset
    * (single-page PDF bytes + a cached preview render). Uses the asset
    * engine; in a cloud deployment without one configured this rejects with
