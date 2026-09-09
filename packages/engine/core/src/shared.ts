@@ -462,6 +462,12 @@ export type { PageMoveResult, PageMoveCache } from './mutation/PageMoveResult';
 export type { PageStructureCache } from './mutation/PageStructureCache';
 export type { PageNameInput, PageRemoveNameInput } from './mutation/PageNameInput';
 export type { PageNameResult } from './mutation/PageNameResult';
+export type {
+  AnnotationFlattenInput,
+  AnnotationFlattenItemResult,
+  AnnotationFlattenResult,
+  AnnotationAppearanceExportInput,
+} from './mutation/AnnotationFlattenResult';
 export type { PageRotateInput } from './mutation/PageRotateInput';
 export type { PageRotateResult } from './mutation/PageRotateResult';
 export type { PageDeleteInput } from './mutation/PageDeleteInput';

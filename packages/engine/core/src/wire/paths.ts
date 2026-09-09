@@ -390,6 +390,14 @@ export const wirePaths = {
 
   layerPageAnnotationsMove: (docId: string, layerName: string, pageObjectNumber: number) =>
     `/v1/docs/${encodeURIComponent(docId)}/layers/${encodeURIComponent(layerName)}/annotations/pages/${pageObjectNumber}/items/move`,
+  /** POST: flatten a chosen set of the page's annotations into its content
+   *  (a content + annotation mutation of that page). */
+  layerPageAnnotationsFlatten: (docId: string, layerName: string, pageObjectNumber: number) =>
+    `/v1/docs/${encodeURIComponent(docId)}/layers/${encodeURIComponent(layerName)}/annotations/pages/${pageObjectNumber}/items/flatten`,
+  /** POST: the chosen annotations' appearances as one single-page PDF — a
+   *  derived read (application/pdf, no-store), gated like pages/extract. */
+  layerPageAnnotationsAppearance: (docId: string, layerName: string, pageObjectNumber: number) =>
+    `/v1/docs/${encodeURIComponent(docId)}/layers/${encodeURIComponent(layerName)}/annotations/pages/${pageObjectNumber}/items/appearance`,
 
   /**
    * GET: the reconciled form snapshot (field tree + widget joins) for the
@@ -568,6 +576,10 @@ export const wireTemplates = {
   layerAnnotationItemsAll: '/v1/docs/:docId/layers/:layerName/annotations/items',
   layerAnnotationItems: '/v1/docs/:docId/layers/:layerName/annotations/pages/:pon/items',
   layerAnnotationItem: '/v1/docs/:docId/layers/:layerName/annotations/pages/:pon/items/:annotKey',
+  layerAnnotationItemsFlatten:
+    '/v1/docs/:docId/layers/:layerName/annotations/pages/:pon/items/flatten',
+  layerAnnotationItemsAppearance:
+    '/v1/docs/:docId/layers/:layerName/annotations/pages/:pon/items/appearance',
   layerForm: '/v1/docs/:docId/layers/:layerName/form',
   layerFormFieldValue: '/v1/docs/:docId/layers/:layerName/form/fields/:fieldKey/value',
   layerFormFieldReset: '/v1/docs/:docId/layers/:layerName/form/fields/:fieldKey/reset',

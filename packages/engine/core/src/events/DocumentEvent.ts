@@ -21,6 +21,7 @@ import type {
   FormWidgetLinkResult,
 } from '../mutation/FormMutationResults';
 import type { MetadataUpdateResult } from '../mutation/MetadataUpdateResult';
+import type { AnnotationFlattenResult } from '../mutation/AnnotationFlattenResult';
 import type { PageDeleteResult } from '../mutation/PageDeleteResult';
 import type { PageFlattenResult, PageFlattenUsage } from '../mutation/PageFlattenResult';
 import type { RedactionApplyResult } from '../mutation/RedactionApplyResult';
@@ -97,6 +98,10 @@ export type DocumentEvent =
       pageObjectNumber: PageObjectNumber;
       origin: EventOrigin;
     } & AnnotationMoveResult)
+  | ({
+      type: 'annotations.flattened';
+      origin: EventOrigin;
+    } & AnnotationFlattenResult)
   | ({
       type: 'pages.moved';
       /** Locally: the moved block. Remotely the audit row only records the

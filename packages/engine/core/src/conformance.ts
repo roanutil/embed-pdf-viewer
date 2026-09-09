@@ -38,6 +38,8 @@ export type {
 export { runPageRotateConformance } from './conformance/runPageRotateConformance';
 export { runPageDeleteConformance } from './conformance/runPageDeleteConformance';
 export { runNamedPagesConformance } from './conformance/runNamedPagesConformance';
+export { runAnnotationFlattenConformance } from './conformance/runAnnotationFlattenConformance';
+export { runAnnotationAppearanceExportConformance } from './conformance/runAnnotationAppearanceExportConformance';
 export { runPageFlattenConformance } from './conformance/runPageFlattenConformance';
 export { runRedactionApplyConformance } from './conformance/runRedactionApplyConformance';
 export { runPageExtractConformance } from './conformance/runPageExtractConformance';

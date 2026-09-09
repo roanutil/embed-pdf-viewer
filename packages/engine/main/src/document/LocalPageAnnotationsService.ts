@@ -19,7 +19,9 @@ import {
   type AnnotationRef,
   type AnnotationCreateResult,
   type AnnotationDeleteResult,
+  type AnnotationFlattenResult,
   type AnnotationMoveResult,
+  type PageFlattenUsage,
   type AnnotationUpdateResult,
   type AttachmentContent,
   type CollabTarget,
@@ -452,6 +454,94 @@ export class LocalPageAnnotationsService implements PageAnnotationsService {
         ...payload.result,
       });
       return payload.result;
+    });
+  }
+
+  flatten(
+    refs: AnnotationRef[],
+    usage: PageFlattenUsage = 'display',
+  ): AbortablePromise<AnnotationFlattenResult> {
+    if (this.view.isClosed()) {
+      return AbortablePromise.rejectReason(
+        new EngineError(EngineErrorCode.DocNotOpen, `document not open: ${this.docId}`),
+      );
+    }
+    // `pages.flatten` for a chosen set: rewrites page content and removes
+    // the painted annotations, so it carries the whole-page verb's gates.
+    try {
+      this.guard.assertCapability('doc.pages.modify');
+      this.guard.assertCapability('doc.annotate.modify');
+    } catch (err) {
+      return AbortablePromise.rejectReason(err);
+    }
+    const docId = this.docId;
+    const pon = this.pageObjectNumber;
+    const submission = this.queue.enqueue<WorkerResultPayload>(
+      {
+        buildPack: (jobId: JobId) =>
+          wirePack({
+            kind: 'annotations.flatten',
+            jobId,
+            docId,
+            pageObjectNumber: pon,
+            refs,
+            usage,
+          }),
+      },
+      { priority: Priority.HIGH },
+    );
+    return AbortablePromise.run<AnnotationFlattenResult>(async (signal) => {
+      const onAbort = () => submission.abort(signal.reason);
+      if (signal.aborted) onAbort();
+      else signal.addEventListener('abort', onAbort, { once: true });
+      const payload = await submission;
+      if (payload.tag !== 'annotations.flatten') {
+        throw new EngineError(EngineErrorCode.WireFormat, `unexpected payload tag: ${payload.tag}`);
+      }
+      if (payload.result.meta !== null) {
+        this.publisher.publishLocal({ type: 'annotations.flattened', ...payload.result });
+      }
+      return payload.result;
+    });
+  }
+
+  exportAppearance(refs: AnnotationRef[]): AbortablePromise<Uint8Array> {
+    if (this.view.isClosed()) {
+      return AbortablePromise.rejectReason(
+        new EngineError(EngineErrorCode.DocNotOpen, `document not open: ${this.docId}`),
+      );
+    }
+    // Egresses content bytes (a partial download) — gated by `doc.download`
+    // like `pages.extract`. A read: no event, nothing about the doc changed.
+    try {
+      this.guard.assertCapability('doc.download');
+    } catch (err) {
+      return AbortablePromise.rejectReason(err);
+    }
+    const docId = this.docId;
+    const pon = this.pageObjectNumber;
+    const submission = this.queue.enqueue<WorkerResultPayload>(
+      {
+        buildPack: (jobId: JobId) =>
+          wirePack({
+            kind: 'annotations.exportAppearance',
+            jobId,
+            docId,
+            pageObjectNumber: pon,
+            refs,
+          }),
+      },
+      { priority: Priority.MEDIUM },
+    );
+    return AbortablePromise.run<Uint8Array>(async (signal) => {
+      const onAbort = () => submission.abort(signal.reason);
+      if (signal.aborted) onAbort();
+      else signal.addEventListener('abort', onAbort, { once: true });
+      const payload = await submission;
+      if (payload.tag !== 'annotations.exportAppearance') {
+        throw new EngineError(EngineErrorCode.WireFormat, `unexpected payload tag: ${payload.tag}`);
+      }
+      return new Uint8Array(payload.bytes);
     });
   }
 

@@ -12,6 +12,7 @@ import {
   type AnnotationCreateResult,
   type AnnotationDeleteResult,
   type WireAnnotationDraft,
+  type AnnotationFlattenResult,
   type AnnotationMoveResult,
   type WireAnnotationPatch,
   type WireResourceMap,
@@ -666,6 +667,61 @@ export class LayerService {
         // Layout-shaped result — the page-move persistence path is exact.
         return this.persistPageMove(ctx, docId, layerName, layer, {
           result: payload.result,
+          artifact: requireLayerArtifact(payload as unknown),
+        });
+      });
+    });
+  }
+
+  /**
+   * `pages.flatten` for a chosen set of one page's annotations. Same weak-
+   * editor guard and the same persistence as a page flatten (content +
+   * annotation versions of that page advance, a new layer artifact).
+   */
+  async flattenAnnotations(
+    ctx: LayerWriteContext,
+    input: {
+      docId: string;
+      layerName: string;
+      pageObjectNumber: PageObjectNumber;
+      refs: AnnotationRef[];
+      usage: PageFlattenUsage;
+    },
+    signal?: AbortSignal,
+  ): Promise<AnnotationFlattenResult> {
+    return this.enqueueLayerWrite(ctx, input.docId, input.layerName, async () => {
+      const { layer } = await this.prepareLayerMutation(ctx, input.docId, input.layerName);
+      await this.assertWeakAnnotationStructuralEditAllowed(ctx, {
+        docId: input.docId,
+        layerName: input.layerName,
+        layer,
+        pageObjectNumber: input.pageObjectNumber,
+      });
+      return this.withTempWorkerFile('layer-artifact', 'artifact.layer', async (artifactPath) => {
+        const payload = await this.requirePool().run(
+          input.docId,
+          (jobId) =>
+            wirePack({
+              kind: 'annotations.flatten' as const,
+              jobId,
+              docId: input.docId,
+              layerName: input.layerName,
+              pageObjectNumber: input.pageObjectNumber,
+              refs: input.refs,
+              usage: input.usage,
+              artifactPath,
+            }),
+          signal,
+        );
+        if (payload.tag !== 'annotations.flatten') {
+          throw new EngineError(
+            EngineErrorCode.WireFormat,
+            `unexpected annotations.flatten payload: ${payload.tag}`,
+          );
+        }
+        if (payload.result.meta === null) return payload.result;
+        return this.persistPageFlatten(ctx, input.docId, input.layerName, layer, {
+          result: payload.result as AnnotationFlattenResult & { meta: MutationMeta },
           artifact: requireLayerArtifact(payload as unknown),
         });
       });
@@ -1873,16 +1929,16 @@ export class LayerService {
     return committed.result;
   }
 
-  private async persistPageFlatten(
+  private async persistPageFlatten<T extends { meta: MutationMeta }>(
     ctx: LayerWriteContext,
     docId: string,
     layerName: string,
     layer: LayerRow,
     input: {
-      result: PageFlattenResult & { meta: MutationMeta };
+      result: T;
       artifact: LayerArtifactInput;
     },
-  ): Promise<PageFlattenResult> {
+  ): Promise<T> {
     const nextVersion = layer.currentVersion + 1;
     const artifactKey = this.nextArtifactKey(ctx, docId, layerName, nextVersion);
     const uploaded = await this.uploadLayerArtifact(artifactKey, input.artifact);
@@ -2663,17 +2719,17 @@ export class LayerService {
    * annotation index generation. Unknown post-failure weak state preserves
    * the prior durable `true`/`false` conservatively.
    */
-  private async commitPageFlatten(input: {
+  private async commitPageFlatten<T extends { meta: MutationMeta }>(input: {
     ctx: LayerWriteContext;
     docId: string;
     layerName: string;
     layer: LayerRow;
-    raw: PageFlattenResult & { meta: MutationMeta };
+    raw: T;
     artifactKey: string;
     artifactSha: string;
     artifactSize: number;
     nextVersion: number;
-  }): Promise<{ result: PageFlattenResult; auditId: number }> {
+  }): Promise<{ result: T; auditId: number }> {
     return this.requireDb()
       .transaction()
       .execute(async (trx) => {
@@ -2729,7 +2785,7 @@ export class LayerService {
           previousLayerDocVersion,
           layerDocVersion: previousLayerDocVersion + 1,
         };
-        const result: PageFlattenResult = {
+        const result: T = {
           ...input.raw,
           meta: {
             ...input.raw.meta,

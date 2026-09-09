@@ -54,6 +54,7 @@ import type {
   FormWidgetLinkResult,
 } from '../mutation/FormMutationResults';
 import type { MetadataUpdateResult } from '../mutation/MetadataUpdateResult';
+import type { AnnotationFlattenResult } from '../mutation/AnnotationFlattenResult';
 import type { PageDeleteResult } from '../mutation/PageDeleteResult';
 import type { PageFlattenResult, PageFlattenUsage } from '../mutation/PageFlattenResult';
 import type { PageInsertResult } from '../mutation/PageInsertResult';
@@ -239,6 +240,30 @@ export interface AnnotationsDeleteWorkerRequest {
   layerName?: string;
   ref: AnnotationRef;
   artifactPath?: string;
+}
+
+/** Flatten a chosen set of one page's annotations into its content — see
+ *  `AnnotationFlattenInput`. A content + annotation mutation of that page. */
+export interface AnnotationsFlattenWorkerRequest {
+  kind: 'annotations.flatten';
+  jobId: WorkerJobId;
+  docId: string;
+  layerName?: string;
+  pageObjectNumber: PageObjectNumber;
+  refs: AnnotationRef[];
+  usage: PageFlattenUsage;
+  artifactPath?: string;
+}
+
+/** Flatten a chosen set of one page's annotation appearances into a NEW
+ *  single-page PDF (bytes). A read: no artifact, no revision. */
+export interface AnnotationsExportAppearanceWorkerRequest {
+  kind: 'annotations.exportAppearance';
+  jobId: WorkerJobId;
+  docId: string;
+  layerName?: string;
+  pageObjectNumber: PageObjectNumber;
+  refs: AnnotationRef[];
 }
 
 /**
@@ -916,6 +941,8 @@ export type WorkerRequest =
   | PagesMoveWorkerRequest
   | PagesRotateWorkerRequest
   | PagesDeleteWorkerRequest
+  | AnnotationsFlattenWorkerRequest
+  | AnnotationsExportAppearanceWorkerRequest
   | PagesSetNameWorkerRequest
   | PagesRemoveNameWorkerRequest
   | PagesFlattenWorkerRequest
@@ -986,6 +1013,13 @@ export type WorkerResultPayload =
       artifact?: LayerArtifactWorkerPayload;
       artifactFile?: LayerArtifactFileWorkerPayload;
     }
+  | {
+      tag: 'annotations.flatten';
+      result: AnnotationFlattenResult;
+      artifact?: LayerArtifactWorkerPayload;
+      artifactFile?: LayerArtifactFileWorkerPayload;
+    }
+  | { tag: 'annotations.exportAppearance'; bytes: ArrayBuffer; size: number }
   | {
       tag: 'annotations.move';
       result: AnnotationMoveResult;

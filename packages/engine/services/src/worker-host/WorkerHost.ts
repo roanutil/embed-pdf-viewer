@@ -45,6 +45,8 @@ import {
   type PagesRotateWorkerRequest,
   type PagesDeleteWorkerRequest,
   type PagesSetNameWorkerRequest,
+  type AnnotationsFlattenWorkerRequest,
+  type AnnotationsExportAppearanceWorkerRequest,
   type PagesRemoveNameWorkerRequest,
   type PagesExtractWorkerRequest,
   type PagesInsertBlankWorkerRequest,
@@ -93,6 +95,7 @@ import { DocumentActionsReader } from '../features/actions';
 import {
   AnnotationReader,
   AnnotationAppearanceReader,
+  AnnotationFlattener,
   AnnotationMutator,
   RawAnnotationReader,
 } from '../features/annotations';
@@ -317,6 +320,12 @@ export class WorkerHost {
           break;
         case 'pages.setName':
           resultPack = this.handlePagesSetName(msg, ctrl.signal);
+          break;
+        case 'annotations.flatten':
+          resultPack = this.handleAnnotationsFlatten(msg, ctrl.signal);
+          break;
+        case 'annotations.exportAppearance':
+          resultPack = this.handleAnnotationsExportAppearance(msg, ctrl.signal);
           break;
         case 'pages.removeName':
           resultPack = this.handlePagesRemoveName(msg, ctrl.signal);
@@ -594,6 +603,38 @@ export class WorkerHost {
     const mutator = new AnnotationMutator(this.runtime, session);
     const result = mutator.delete(req.ref, signal);
     return this.finishMutation(session, { tag: 'annotations.delete', result }, req.artifactPath);
+  }
+
+  private handleAnnotationsFlatten(
+    req: AnnotationsFlattenWorkerRequest,
+    signal: AbortSignal,
+  ): WirePack<WorkerResultPayload> {
+    const session = this.requireSession(req);
+    const result = new AnnotationFlattener(this.runtime, session).flatten(
+      req.pageObjectNumber,
+      req.refs,
+      req.usage,
+      signal,
+    );
+    if (result.meta === null) return wirePack({ tag: 'annotations.flatten', result });
+    return this.finishMutation(session, { tag: 'annotations.flatten', result }, req.artifactPath);
+  }
+
+  private handleAnnotationsExportAppearance(
+    req: AnnotationsExportAppearanceWorkerRequest,
+    signal: AbortSignal,
+  ): WirePack<WorkerResultPayload> {
+    const session = this.requireSession(req);
+    const exported = new AnnotationFlattener(this.runtime, session).exportAppearance(
+      req.pageObjectNumber,
+      req.refs,
+      signal,
+    );
+    // A read: no finishMutation, no layer artifact. Bytes transfer zero-copy.
+    return wirePack(
+      { tag: 'annotations.exportAppearance', bytes: exported.bytes, size: exported.size },
+      [exported.bytes],
+    );
   }
 
   private handleAnnotationsMove(

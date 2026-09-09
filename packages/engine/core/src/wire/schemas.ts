@@ -74,6 +74,11 @@ import type { PageFlattenInput, PageFlattenResult } from '../mutation/PageFlatte
 import type { RedactionApplyResult, RedactionApplyScope } from '../mutation/RedactionApplyResult';
 import type { PageMoveInput } from '../mutation/PageMoveInput';
 import type { PageMoveResult } from '../mutation/PageMoveResult';
+import type {
+  AnnotationAppearanceExportInput,
+  AnnotationFlattenInput,
+  AnnotationFlattenResult,
+} from '../mutation/AnnotationFlattenResult';
 import type { PageNameInput, PageRemoveNameInput } from '../mutation/PageNameInput';
 import type { PageNameResult } from '../mutation/PageNameResult';
 import type { PageRotateInput } from '../mutation/PageRotateInput';
@@ -997,6 +1002,31 @@ export const PageFlattenResultSchema: z.ZodType<PageFlattenResult> = z.object({
   ),
   meta: MutationMetaSchema.nullable(),
 });
+
+/** See `AnnotationFlattenResult`. */
+export const AnnotationFlattenResultSchema: z.ZodType<AnnotationFlattenResult> = z.object({
+  pageObjectNumber: z.number().int().positive(),
+  usage: z.enum(['display', 'print']),
+  results: z.array(
+    z.object({
+      ref: AnnotationRefSchema,
+      status: z.enum(['applied', 'skipped']),
+    }),
+  ),
+  meta: MutationMetaSchema.nullable(),
+});
+
+/** `annotations.flatten` input — see `AnnotationFlattenInput`. */
+export const AnnotationFlattenInputSchema: z.ZodType<AnnotationFlattenInput> = z.object({
+  refs: z.array(AnnotationRefSchema).min(1),
+  usage: z.enum(['display', 'print']),
+});
+
+/** `annotations.exportAppearance` input — see `AnnotationAppearanceExportInput`. */
+export const AnnotationAppearanceExportInputSchema: z.ZodType<AnnotationAppearanceExportInput> =
+  z.object({
+    refs: z.array(AnnotationRefSchema).min(1),
+  });
 
 export const PageFlattenInputSchema: z.ZodType<PageFlattenInput> = z.object({
   pageObjectNumbers: z.array(z.number().int().positive()),
