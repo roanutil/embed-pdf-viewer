@@ -346,6 +346,9 @@ importers:
       '@cloudpdf/engine':
         specifier: workspace:*
         version: link:../engine
+      '@embedpdf/default-stamps':
+        specifier: workspace:*
+        version: link:../../packages/default-stamps
       '@embedpdf/docs-kit':
         specifier: workspace:*
         version: link:../../docs/kit
@@ -1827,6 +1830,9 @@ importers:
       '@embedpdf/angular':
         specifier: workspace:*
         version: link:../packages/framework/angular
+      '@embedpdf/default-stamps':
+        specifier: workspace:*
+        version: link:../packages/default-stamps
       '@embedpdf/docs-kit':
         specifier: workspace:*
         version: link:../docs/kit

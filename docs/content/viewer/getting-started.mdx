@@ -23,6 +23,27 @@ plugins, toolbar, and document lifecycle for you.
 
 <Example name="viewer/getting-started/basic" />
 
+## Built-in stamps
+
+The Insert tab's stamps panel loads the standard rubber stamps from
+`@embedpdf/default-stamps` the first time it opens — one Acrobat-compatible
+PDF per locale, resolved through your bundler so it ships inside your build,
+in the language negotiated from the viewer's locale and the browser's. The
+`stamps` option decides where that library comes from:
+
+```ts
+stamps: {
+  defaultLibrary: false;
+} // no built-in library, no request (air-gapped)
+stamps: {
+  defaultLibrary: 'https://your.cdn/stamps/{locale}/stamps.pdf';
+} // self-host
+```
+
+A self-hosted URL never falls back to a CDN. Libraries a user creates —
+stamps made from selected annotations, PDFs imported into the panel — are
+kept in the browser across reloads.
+
 ## Where to go next
 
 - Configure the toolbar and available viewer controls.
