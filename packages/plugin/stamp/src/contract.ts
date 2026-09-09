@@ -12,6 +12,17 @@ export type {
   StampLibraryChange,
   StampState,
 } from './types';
-export { parseStampKey, stampKey, customStampName, assetIdFor } from './convention';
+export {
+  parseStampKey,
+  stampKey,
+  customStampName,
+  assetIdFor,
+  stampLibraryPieceInfo,
+  stampPieceInfo,
+  stampKindToPdfName,
+  STAMP_LIBRARY_PIECEINFO_APP,
+  STAMP_PIECEINFO_APP,
+  STAMP_PIECEINFO_VERSION,
+} from './convention';
 export type { StampKey } from './convention';
 export type { StampLibraryStore } from './persistence';

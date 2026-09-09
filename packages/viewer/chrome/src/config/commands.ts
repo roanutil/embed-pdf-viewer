@@ -630,15 +630,25 @@ export const defaultCommands: CommandDef[] = [
             { libraryId: id, label: `${label} ${stamp.assets(id).length + 1}` },
           ),
         )
+        // v2 jumped the sidebar to the custom library; the panel reads the
+        // surface's open props for its picker.
+        .then(() =>
+          c.tryGet(ShellToken)?.open('stamps', {
+            exclusive: 'right',
+            props: { libraryId },
+          }),
+        )
         .catch((e) => console.warn('[embedpdf] stamp from selection failed', e));
     },
-    // One page, no widgets (a form field is not artwork), and a library to
-    // put it in. The engine refuses hidden or appearance-less annotations
-    // itself — all-or-nothing, never a stamp missing a part.
+    // One page, no widgets (a form field is not artwork), no pending
+    // redaction marks, and a library to put it in. The engine refuses hidden
+    // or appearance-less annotations itself — all-or-nothing, never a stamp
+    // missing a part.
     visible: (c) =>
       c.tryGet(StampToken) != null &&
       hasAnnotationSelection(c) &&
       !selectionSubtypes(c).has('widget') &&
+      !selectionSubtypes(c).has('redact') &&
       new Set((anno(c)?.getSelected() ?? []).map((d) => d.ref.pageObjectNumber)).size === 1,
     enabled: (c) => c.tryGet(DocumentsToken)?.allows('doc.download') ?? true,
   },

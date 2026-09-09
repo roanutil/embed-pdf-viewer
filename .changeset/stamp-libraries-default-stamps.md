@@ -1,0 +1,5 @@
+---
+'@embedpdf/default-stamps': major
+---
+
+The default stamp libraries are now self-describing, Acrobat-compatible PDFs, and the `manifest.json` files are gone. Each `<locale>/stamps.pdf` carries its name as `/Title`, registers every page in `/Names /Pages` as `identifier=label` (`Approved=Goedgekeurd`), and records the library id (`embedpdf-standard`), the locale, and each stamp's kind in `/PieceInfo`. Import one with `importLibraryPdf` from `@embedpdf/plugin-stamp` and the title, identifiers, and labels come from the file; drop the same file into Acrobat's Stamps folder and it appears there. The artwork is unchanged from the previous release (every page renders pixel-identical). Locales: en, de, nl, fr, es, zh-CN, sv, ja. A new `@embedpdf/default-stamps/urls` entry exports `urls[locale]` as bundler-resolved `new URL(..., import.meta.url)` asset URLs (webpack, Vite, Turbopack, Rspack, Parcel copy the PDFs into your build), plus `LOCALES` and a `CDN_URL_TEMPLATE` fallback pinned to this major.

@@ -1,0 +1,44 @@
+{
+  "name": "@embedpdf/default-stamps",
+  "version": "0.0.1",
+  "private": false,
+  "description": "The standard rubber-stamp library as Acrobat-compatible PDFs, one per locale: title, /Names /Pages registry (identifier=label), vector artwork. Import with @embedpdf/plugin-stamp or drop into Acrobat's Stamps folder.",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "de",
+    "en",
+    "es",
+    "fr",
+    "ja",
+    "nl",
+    "sv",
+    "zh-CN",
+    "urls.js",
+    "urls.d.ts",
+    "README.md"
+  ],
+  "exports": {
+    "./de/stamps.pdf": "./de/stamps.pdf",
+    "./en/stamps.pdf": "./en/stamps.pdf",
+    "./es/stamps.pdf": "./es/stamps.pdf",
+    "./fr/stamps.pdf": "./fr/stamps.pdf",
+    "./ja/stamps.pdf": "./ja/stamps.pdf",
+    "./nl/stamps.pdf": "./nl/stamps.pdf",
+    "./sv/stamps.pdf": "./sv/stamps.pdf",
+    "./zh-CN/stamps.pdf": "./zh-CN/stamps.pdf",
+    "./urls": {
+      "types": "./urls.d.ts",
+      "default": "./urls.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/embedpdf/embed-pdf-viewer.git",
+    "directory": "packages/default-stamps"
+  }
+}

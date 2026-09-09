@@ -12,6 +12,9 @@
  * The engine never interprets key text; this module does. A key without
  * `=` is its own label. `#` is never stripped — it is part of the identity.
  */
+import type { PieceInfoPatch } from '@embedpdf/engine-core/runtime';
+import type { StampAssetKind } from './types';
+
 export interface StampKey {
   name: string;
   label: string;
@@ -43,4 +46,58 @@ export function customStampName(random: () => number = Math.random): string {
 /** Asset ids are derived, not allocated: library id + identifier. */
 export function assetIdFor(libraryId: string, name: string): string {
   return `${libraryId}:${name}`;
+}
+
+// ── PieceInfo: only what has no standard home ────────────────────────────────
+//
+// The title, the registry, and the artwork are standard PDF. What remains —
+// a durable library id, categories, a locale, a stamp's kind and an explicit
+// `/Subj` override — rides `/PieceInfo` under these application names, in
+// the shape below. Exported so a library authored outside the plugin (a
+// conversion script, a build step) writes the same dictionary the plugin
+// reads.
+
+/** Catalog `/PieceInfo` application name for library-level data. */
+export const STAMP_LIBRARY_PIECEINFO_APP = 'EMBD_StampLibrary';
+/** Page `/PieceInfo` application name for per-stamp data. */
+export const STAMP_PIECEINFO_APP = 'EMBD_Stamp';
+/** The `Version` both dictionaries carry. */
+export const STAMP_PIECEINFO_VERSION = 2;
+
+export function stampKindToPdfName(kind: StampAssetKind): string {
+  return kind === 'signature' ? 'Signature' : kind === 'initials' ? 'Initials' : 'Stamp';
+}
+
+/** The catalog patch: library id, categories, locale. The name is `/Title`. */
+export function stampLibraryPieceInfo(
+  id: string,
+  opts: { categories?: readonly string[]; locale?: string } = {},
+): PieceInfoPatch {
+  return {
+    Version: STAMP_PIECEINFO_VERSION,
+    Id: id,
+    Kind: { name: 'StampLibrary' },
+    // v2: the name is the PDF's /Title.
+    Name: null,
+    Categories: opts.categories ?? null,
+    Locale: opts.locale ?? null,
+  };
+}
+
+/** The page patch: kind, an explicit `/Subj` override, categories. */
+export function stampPieceInfo(
+  kind: StampAssetKind,
+  opts: { subject?: string | null; categories?: readonly string[] } = {},
+): PieceInfoPatch {
+  return {
+    Version: STAMP_PIECEINFO_VERSION,
+    Kind: { name: stampKindToPdfName(kind) },
+    // v2: the identifier and label live in the /Names /Pages key; only an
+    // explicit /Subj override has no standard home. v1 `Name`/`Subject` keys
+    // are cleared so a re-imported v1 library cannot disagree with its registry.
+    Name: null,
+    Subject: null,
+    SubjectOverride: opts.subject ?? null,
+    Categories: opts.categories ?? null,
+  };
 }

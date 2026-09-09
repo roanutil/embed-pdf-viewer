@@ -951,6 +951,8 @@ importers:
         specifier: ^2.1.9
         version: 2.1.9(@types/node@22.19.11)(happy-dom@20.11.0)(less@4.6.7)(lightningcss@1.30.2)(msw@2.11.2(@types/node@22.19.11)(typescript@5.9.3))(sass-embedded@1.97.3)(sass@1.97.3)(terser@5.46.0)
 
+  packages/default-stamps: {}
+
   packages/engine/core:
     dependencies:
       zod:
@@ -1712,6 +1714,9 @@ importers:
 
   packages/viewer/chrome:
     dependencies:
+      '@embedpdf/default-stamps':
+        specifier: workspace:*
+        version: link:../../default-stamps
       '@embedpdf/react':
         specifier: workspace:*
         version: link:../../framework/react

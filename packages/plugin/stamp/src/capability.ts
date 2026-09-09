@@ -9,7 +9,6 @@ import {
   type Engine,
   type PageImageHandle,
   type PieceInfoEntry,
-  type PieceInfoPatch,
 } from '@embedpdf/engine-core/runtime';
 import { createEventHook, type PluginContext } from '@embedpdf/core';
 import { javaScriptProgramFromActionTree } from '@embedpdf/core-acrojs';
@@ -22,7 +21,16 @@ import {
 import { createFormScriptingController } from '@embedpdf/plugin-form/scripting';
 
 import { blankLibraryPdf } from './blank-library';
-import { assetIdFor, customStampName, parseStampKey, stampKey } from './convention';
+import {
+  assetIdFor,
+  customStampName,
+  parseStampKey,
+  stampKey,
+  stampLibraryPieceInfo,
+  stampPieceInfo,
+  STAMP_LIBRARY_PIECEINFO_APP,
+  STAMP_PIECEINFO_APP,
+} from './convention';
 import type {
   AddAssetInput,
   ImportLibraryOptions,
@@ -38,9 +46,6 @@ import type {
 } from './types';
 
 const DEFAULT_PREVIEW_WIDTH = 256;
-const LIBRARY_PIECEINFO_APP = 'EMBD_StampLibrary';
-const STAMP_PIECEINFO_APP = 'EMBD_Stamp';
-const STAMP_SCHEMA_VERSION = 2;
 
 /** Session-unique ids. Assets are session-scoped for now (no persistence),
  *  so a timestamp + counter is enough — durable ids come with the store port. */
@@ -66,9 +71,6 @@ const entryStringArray = (
   return entry?.type === 'string-array' ? [...entry.value] : undefined;
 };
 
-const kindToPdfName = (kind: StampAssetKind): string =>
-  kind === 'signature' ? 'Signature' : kind === 'initials' ? 'Initials' : 'Stamp';
-
 const kindFromPdfName = (name: string | undefined): StampAssetKind | undefined => {
   switch (name?.toLowerCase()) {
     case 'stamp':
@@ -81,36 +83,6 @@ const kindFromPdfName = (name: string | undefined): StampAssetKind | undefined =
       return undefined;
   }
 };
-
-const metadataPatch = (
-  kind: StampAssetKind,
-  subject: string | null | undefined,
-  categories?: readonly string[],
-): PieceInfoPatch => ({
-  Version: STAMP_SCHEMA_VERSION,
-  Kind: { name: kindToPdfName(kind) },
-  // v2: the identifier and label live in the /Names /Pages key; only an
-  // explicit /Subj override has no standard home. v1 `Name`/`Subject` keys
-  // are cleared so a re-imported v1 library cannot disagree with its registry.
-  Name: null,
-  Subject: null,
-  SubjectOverride: subject ?? null,
-  Categories: categories ?? null,
-});
-
-const libraryMetadataPatch = (
-  id: string,
-  categories?: readonly string[],
-  locale?: string,
-): PieceInfoPatch => ({
-  Version: STAMP_SCHEMA_VERSION,
-  Id: id,
-  Kind: { name: 'StampLibrary' },
-  // v2: the name is the PDF's /Title.
-  Name: null,
-  Categories: categories ?? null,
-  Locale: locale ?? null,
-});
 
 export function createStampCapability(
   ctx: PluginContext<StampState, StampAction>,
@@ -226,8 +198,8 @@ export function createStampCapability(
       requireCanonicalServices(doc);
       await doc.metadata.update({ title: name });
       await doc.pieceInfo!.update(
-        LIBRARY_PIECEINFO_APP,
-        libraryMetadataPatch(id, opts?.categories),
+        STAMP_LIBRARY_PIECEINFO_APP,
+        stampLibraryPieceInfo(id, { categories: opts?.categories }),
       );
       bytes = await doc.download();
     } finally {
@@ -298,7 +270,8 @@ export function createStampCapability(
       const byPon = new Map(layout.pages.map((page) => [page.pageObjectNumber, page]));
 
       // ── library identity: /Title (Acrobat) → v1 PieceInfo → caller fallback ──
-      const catalogEntries = (await doc.pieceInfo!.read(LIBRARY_PIECEINFO_APP))?.entries ?? {};
+      const catalogEntries =
+        (await doc.pieceInfo!.read(STAMP_LIBRARY_PIECEINFO_APP))?.entries ?? {};
       const state = ctx.getState();
       const takenLibraryIds = new Set(Object.keys(state.libraries));
       const libraryId = allocateId(entryString(catalogEntries, 'Id'), 'stamp-lib', takenLibraryIds);
@@ -379,8 +352,8 @@ export function createStampCapability(
       }
 
       await doc.pieceInfo!.update(
-        LIBRARY_PIECEINFO_APP,
-        libraryMetadataPatch(libraryId, libraryCategories, libraryLocale),
+        STAMP_LIBRARY_PIECEINFO_APP,
+        stampLibraryPieceInfo(libraryId, { categories: libraryCategories, locale: libraryLocale }),
       );
 
       const assets: NonNullable<typeof imported>['assets'] = [];
@@ -410,7 +383,7 @@ export function createStampCapability(
         };
         await handle.pieceInfo.update(
           STAMP_PIECEINFO_APP,
-          metadataPatch(kind, subject, categories),
+          stampPieceInfo(kind, { subject, categories }),
         );
         // One canonical page → one derived placement PDF plus a thumbnail.
         const bytes = await doc.pages.extract([d.pageObjectNumber]);
@@ -421,6 +394,7 @@ export function createStampCapability(
         library: {
           id: libraryId,
           name: libraryName,
+          ...(libraryLocale ? { locale: libraryLocale } : {}),
           categories: libraryCategories,
           assetIds: [],
         },
@@ -581,7 +555,7 @@ export function createStampCapability(
         };
         await page.pieceInfo.update(
           STAMP_PIECEINFO_APP,
-          metadataPatch(asset.kind, asset.subject, asset.categories),
+          stampPieceInfo(asset.kind, { subject: asset.subject, categories: asset.categories }),
         );
         const bytes = await doc.pages.extract([pageObjectNumber]);
         const preview = suppliedPreview ?? (await renderThumbnail(page));
@@ -719,7 +693,7 @@ export function createStampCapability(
         const page = doc.page(asset.pageObjectNumber);
         await page.pieceInfo?.update(
           STAMP_PIECEINFO_APP,
-          metadataPatch(next.kind, next.subject, next.categories),
+          stampPieceInfo(next.kind, { subject: next.subject, categories: next.categories }),
         );
         rewritten = await doc.download();
       } finally {

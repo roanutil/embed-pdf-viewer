@@ -45,7 +45,11 @@ import { defaultChrome } from './config/chrome';
 import { defaultCommands } from './config/commands';
 import { demoToolsPlugin } from './config/demo-tools.plugin';
 import { en } from './locales/en';
-import { ViewerConfigProvider, type ResolvedViewerConfig } from './config-context';
+import {
+  ViewerConfigProvider,
+  type ResolvedViewerConfig,
+  type StampsCustomization,
+} from './config-context';
 import { createViewerHandle, type ViewerHandle } from './handle';
 import { ICON_PATHS, type IconDef } from './ui/icons';
 import { ThemeProvider, type ThemePreference } from './ui/theme';
@@ -107,6 +111,12 @@ export interface ViewerCustomization {
   /** The structure — a value you OWN: the default (pass nothing), a transform
    *  of it, or your own schema. Never merged. */
   chrome?: ChromeSchema | ((base: ChromeSchema, helpers: ChromeHelpers) => ChromeSchema);
+  /** The stamps sidebar's built-in library. `false`: none (air-gapped, no
+   *  request). A string: a URL template with a `{locale}` slot for a
+   *  self-hosted copy of `@embedpdf/default-stamps` (never falls back to a
+   *  CDN). Default: the bundler-resolved copy from that package, with
+   *  jsDelivr as a fetch-failure-only safety net. */
+  stamps?: StampsCustomization;
   /** Light/dark preference (string shorthand), or the full theme config with
    *  `--ep-*` token overrides. Tokens are applied by the DELIVERY (the custom
    *  element adopts them into its shadow root); direct consumers of this
@@ -179,6 +189,7 @@ export function FullViewer({
   locale = 'auto',
   disabledCategories,
   chrome,
+  stamps,
   theme,
   themeTarget,
   onViewer,
@@ -223,6 +234,7 @@ export function FullViewer({
       commands: resolvedCommands,
       chrome: resolvedChrome,
       icons: icons ?? {},
+      stamps: stamps ?? {},
       i18n: { locales, loaders, initial },
     };
   });

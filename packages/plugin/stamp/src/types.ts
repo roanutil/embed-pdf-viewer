@@ -54,6 +54,8 @@ export interface StampLibrary {
   /** PieceInfo `Id` — stable while the title is editable. */
   id: string;
   name: string;
+  /** PieceInfo `Locale` — the language of the labels, when the library says. */
+  locale?: string;
   categories?: string[];
   /** Asset ids in display order. */
   assetIds: string[];
