@@ -1,9 +1,14 @@
 [workspace]
 resolver = "2"
 # The crate split is fixed by multiplatform-plan-claude.md ("The crates follow
-# the prototype's split, keeping only what survives it"). Every member here is a
-# stub: it compiles, it declares its module tree, and it holds no ported
-# behavior yet. Keep `cargo check --workspace` green at every commit.
+# the prototype's split, keeping only what survives it").
+#
+# Building any of this needs the fork's prebuilt artifacts for the host, which
+# the runtime package fetches:
+#
+#   bash packages/engine/runtime/scripts/fetch-libpdfium.sh darwin-arm64
+#
+# See crates/build-support for the target spelling and the override.
 members = [
   "crates/build-support",
   "crates/pdfium-sys",
@@ -21,9 +26,7 @@ version = "0.0.0"
 edition = "2024"
 publish = false
 
-# Version pins to move into [workspace.dependencies] as each crate takes its
-# real dependency. Held as comments so the scaffold resolves with no network:
-#   bindgen      = "=0.72.1"   (pdfium-sys)
+# Pins still to be taken, as each host crate gets its first export:
 #   uniffi       = "=0.32.0"   (epdf-uniffi, uniffi-bindgen)
 #   napi         = "=3.12.2"   (epdf-node, default-features = false, "napi8")
 #   napi-derive  = "=3.6.3"    (epdf-node)

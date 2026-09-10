@@ -8,6 +8,16 @@
 //!
 //! Module names follow the port groups. Each module carries the group number,
 //! the TypeScript files it replaces and the `WorkerRequest` kinds it owns.
+//!
+//! # What is implemented
+//!
+//! G1's shared kernel, the Phase 0 buffer and coordinate contracts, the
+//! ownership-mode abstraction in [`access`], and G2 [`features::geometry`]
+//! (`pages.geometry`), which reads through either ownership mode.
+//!
+//! Everything else is a stub carrying its group's design notes: the session
+//! ([`session`]), owner-thread dispatch ([`dispatch`]), and the remaining
+//! operation families under [`features`]. They are documented, not written.
 
 // G1: shared kernel. Pure, no PDFium.
 pub mod cancel;

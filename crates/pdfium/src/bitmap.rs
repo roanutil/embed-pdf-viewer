@@ -1,6 +1,13 @@
-//! `FPDFBitmap_*` handles: allocation, stride, pixel format, buffer lifetime.
-//!
-//! The buffer contract (layout, version, alignment, stride, pixel format, alpha
-//! mode, color space, allocator, release operation, lifetime) is written down in
-//! Phase 0 and enforced here: lengths and multiplications validated before
-//! allocation, no freeing by guessed capacity.
+/// BGRA pixels, `stride * height` bytes, `stride == width * 4`.
+///
+/// The owning half of the buffer contract: the allocation is Rust's, its
+/// length was checked against the layout before it was made, and it outlives
+/// the `FPDF_BITMAP` that wrote into it. Host adapters hand it onward under
+/// `epdf_engine::buffer`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Bitmap {
+    pub width: u32,
+    pub height: u32,
+    pub stride: u32,
+    pub bgra: Vec<u8>,
+}

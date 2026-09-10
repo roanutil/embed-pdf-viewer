@@ -1,15 +1,29 @@
-//! Safe RAII wrappers over `pdfium-sys`.
+//! A safe, thread-confined wrapper over `pdfium-sys`.
 //!
-//! Owns library init, handle lifetimes, checked lengths and every `unsafe`
-//! boundary. Document semantics belong in `epdf-engine`, not here.
+//! Group G0 (multiplatform-port-order.md). This layer owns handle lifetimes,
+//! checked lengths and every `unsafe` boundary. It decides nothing about what
+//! a PDF means; that is `epdf-engine`.
 //!
-//! Group G0 (multiplatform-port-order.md). Its unsafe boundaries and lifecycle
-//! assumptions are audited before promotion; the prototype's versions are a
-//! reference, not an inheritance.
+//! Every handle type here is `!Send` by construction. PDFium's globals are
+//! per-thread in the fork's native builds
+//! (`build-target.sh` sets `embedpdf_thread_local_globals=true` for every
+//! target except wasm32), and the engine gives each instance one owner OS
+//! thread. `Rc` rather than `Arc` throughout is deliberate: it reinforces the
+//! confinement rather than papering over it with atomics that would let a
+//! handle cross threads and misbehave later.
 
-pub mod bitmap;
-pub mod document;
-pub mod error;
-pub mod library;
-pub mod page;
-pub mod text;
+mod bitmap;
+mod document;
+mod error;
+mod geom;
+mod library;
+mod page;
+mod text;
+
+pub use bitmap::Bitmap;
+pub use document::Document;
+pub use error::PdfiumError;
+pub use geom::{MatrixF, QuadF, RectF};
+pub use library::Library;
+pub use page::{Page, PageView};
+pub use text::{CharGeometry, CharGeometryFlags, TextObjectKey, TextPage};

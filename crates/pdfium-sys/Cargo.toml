@@ -7,4 +7,6 @@ publish.workspace = true
 [lib]
 crate-type = ["rlib"]
 
-# Takes bindgen "=0.72.1" and build-support once build.rs lands.
+[build-dependencies]
+bindgen = "=0.72.1"
+build-support = { path = "../build-support" }

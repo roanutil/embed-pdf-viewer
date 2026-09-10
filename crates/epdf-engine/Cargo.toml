@@ -9,6 +9,12 @@ crate-type = ["rlib"]
 
 [dependencies]
 pdfium = { path = "../pdfium" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+getrandom = "0.3"
+
+[build-dependencies]
+build-support = { path = "../build-support" }
 
 [dev-dependencies]
 test-support = { path = "../test-support" }

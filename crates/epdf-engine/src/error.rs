@@ -1,4 +1,240 @@
 //! G1. Engine errors.
 //!
-//! Replaces `core/src/errors/{EngineError,EngineErrorCode}.ts`. Gate: the code
-//! values are byte-identical to `EngineErrorCode.ts`.
+//! Replaces `core/src/errors/{EngineError,EngineErrorCode}.ts`. The code values
+//! are byte-identical to `EngineErrorCode.ts` and the serialized envelope is
+//! byte-identical to `serializeError`'s output, because both cross the wire to
+//! TypeScript callers that match on them.
+
+use serde::{Deserialize, Serialize};
+
+/// The one error vocabulary every platform speaks.
+///
+/// Ported from `packages/engine/core/src/errors/EngineErrorCode.ts`. The
+/// variant names and their serialized strings are the same 19 values in the
+/// same spelling; a rename here is a wire break.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum EngineErrorCode {
+    Unknown,
+    InvalidArg,
+    DocNotOpen,
+    DocOpenFailed,
+    DocPasswordRequired,
+    DocPasswordIncorrect,
+    /// A share-token exchange needs the grant's passphrase: none was supplied,
+    /// or the supplied one was rejected, indistinguishable by design because
+    /// the server does not distinguish them either. Distinct from
+    /// `DocPasswordRequired`, which is about the PDF's own encryption.
+    SharePasswordRequired,
+    Aborted,
+    Network,
+    Unauthenticated,
+    Forbidden,
+    NotFound,
+    WireFormat,
+    RuntimeUnavailable,
+    /// An annotation or page reference did not resolve: no annotation with
+    /// that object number or `/NM` on the addressed page, a `RevisionToken`
+    /// that does not match the page's current generation, or an index past the
+    /// page's annotation count.
+    InvalidReference,
+    /// A weak-annotation structural edit was attempted without sole active
+    /// edit presence for the page. A collaboration guard for index-addressed
+    /// annotations only.
+    WeakAnnotationSessionConflict,
+    /// A layer write lost its optimistic-concurrency check and the server
+    /// exhausted its rebase-and-retry budget. Retryable: the operation was NOT
+    /// applied.
+    LayerVersionConflict,
+    /// Typed but not yet wired in this engine version. The wire shape stays
+    /// valid, so clients can detect it and degrade.
+    NotImplemented,
+    /// PDFium parsed the file, but it violates a structural invariant the
+    /// engine relies on: a direct (non-indirect) page dictionary in the
+    /// `/Pages` tree, which `EPDFPage_GetObjectNumber` reports as `0`. Engine
+    /// creation paths always produce indirect objects, so this never describes
+    /// engine-produced state. Distinct from `DocOpenFailed` (PDFium refused
+    /// the bytes) and `NotFound` (a well-formed thing that does not exist).
+    MalformedPdf,
+}
+
+impl EngineErrorCode {
+    /// Every code, in `EngineErrorCode.ts` declaration order.
+    pub const ALL: [EngineErrorCode; 19] = [
+        Self::Unknown,
+        Self::InvalidArg,
+        Self::DocNotOpen,
+        Self::DocOpenFailed,
+        Self::DocPasswordRequired,
+        Self::DocPasswordIncorrect,
+        Self::SharePasswordRequired,
+        Self::Aborted,
+        Self::Network,
+        Self::Unauthenticated,
+        Self::Forbidden,
+        Self::NotFound,
+        Self::WireFormat,
+        Self::RuntimeUnavailable,
+        Self::InvalidReference,
+        Self::WeakAnnotationSessionConflict,
+        Self::LayerVersionConflict,
+        Self::NotImplemented,
+        Self::MalformedPdf,
+    ];
+
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Unknown => "Unknown",
+            Self::InvalidArg => "InvalidArg",
+            Self::DocNotOpen => "DocNotOpen",
+            Self::DocOpenFailed => "DocOpenFailed",
+            Self::DocPasswordRequired => "DocPasswordRequired",
+            Self::DocPasswordIncorrect => "DocPasswordIncorrect",
+            Self::SharePasswordRequired => "SharePasswordRequired",
+            Self::Aborted => "Aborted",
+            Self::Network => "Network",
+            Self::Unauthenticated => "Unauthenticated",
+            Self::Forbidden => "Forbidden",
+            Self::NotFound => "NotFound",
+            Self::WireFormat => "WireFormat",
+            Self::RuntimeUnavailable => "RuntimeUnavailable",
+            Self::InvalidReference => "InvalidReference",
+            Self::WeakAnnotationSessionConflict => "WeakAnnotationSessionConflict",
+            Self::LayerVersionConflict => "LayerVersionConflict",
+            Self::NotImplemented => "NotImplemented",
+            Self::MalformedPdf => "MalformedPdf",
+        }
+    }
+}
+
+impl std::fmt::Display for EngineErrorCode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+/// The single error type crossing the engine boundary.
+///
+/// `details` is `serde_json::Value` for parity with TypeScript's
+/// `details?: Record<string, unknown>`. A typed detail enum per code is the
+/// later shape; matching that now would change the wire before anything reads
+/// it.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct EngineError {
+    pub code: EngineErrorCode,
+    pub message: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub details: Option<serde_json::Value>,
+}
+
+impl EngineError {
+    /// A code with no message uses the code's own name, exactly as
+    /// `new EngineError(code)` does (`EngineError.ts:20`, `message ?? code`).
+    pub fn new(code: EngineErrorCode) -> Self {
+        Self { code, message: code.as_str().to_string(), details: None }
+    }
+
+    pub fn with_message(code: EngineErrorCode, message: impl Into<String>) -> Self {
+        Self { code, message: message.into(), details: None }
+    }
+
+    pub fn with_details(mut self, details: serde_json::Value) -> Self {
+        self.details = Some(details);
+        self
+    }
+
+    pub fn is(&self, code: EngineErrorCode) -> bool {
+        self.code == code
+    }
+
+    /// The `SerializedEngineError` envelope, which carries a literal
+    /// `name: "EngineError"` that TypeScript's `EngineError.is` sniffs for on
+    /// values that crossed a structured-clone boundary and lost their
+    /// prototype.
+    pub fn to_wire(&self) -> serde_json::Value {
+        let mut map = serde_json::Map::new();
+        map.insert("name".into(), serde_json::Value::String("EngineError".into()));
+        map.insert("code".into(), serde_json::Value::String(self.code.as_str().into()));
+        map.insert("message".into(), serde_json::Value::String(self.message.clone()));
+        if let Some(details) = &self.details {
+            map.insert("details".into(), details.clone());
+        }
+        serde_json::Value::Object(map)
+    }
+}
+
+impl std::fmt::Display for EngineError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}: {}", self.code, self.message)
+    }
+}
+
+impl std::error::Error for EngineError {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The literal list from `packages/engine/core/src/errors/EngineErrorCode.ts`.
+    /// A value that changes on either side has to change in both, and this is
+    /// where the two are compared until the generated-DTO parity harness
+    /// covers it.
+    const TYPESCRIPT_CODES: [&str; 19] = [
+        "Unknown",
+        "InvalidArg",
+        "DocNotOpen",
+        "DocOpenFailed",
+        "DocPasswordRequired",
+        "DocPasswordIncorrect",
+        "SharePasswordRequired",
+        "Aborted",
+        "Network",
+        "Unauthenticated",
+        "Forbidden",
+        "NotFound",
+        "WireFormat",
+        "RuntimeUnavailable",
+        "InvalidReference",
+        "WeakAnnotationSessionConflict",
+        "LayerVersionConflict",
+        "NotImplemented",
+        "MalformedPdf",
+    ];
+
+    #[test]
+    fn codes_are_byte_identical_to_the_typescript_enum() {
+        let ours: Vec<&str> = EngineErrorCode::ALL.iter().map(|c| c.as_str()).collect();
+        assert_eq!(ours, TYPESCRIPT_CODES);
+    }
+
+    #[test]
+    fn codes_serialize_as_their_own_names() {
+        for (code, name) in EngineErrorCode::ALL.iter().zip(TYPESCRIPT_CODES) {
+            assert_eq!(serde_json::to_value(code).unwrap(), serde_json::json!(name));
+            let back: EngineErrorCode = serde_json::from_value(serde_json::json!(name)).unwrap();
+            assert_eq!(back, *code);
+        }
+    }
+
+    #[test]
+    fn a_message_free_error_uses_the_code_as_its_message() {
+        let err = EngineError::new(EngineErrorCode::DocNotOpen);
+        assert_eq!(err.message, "DocNotOpen");
+        assert_eq!(
+            err.to_wire(),
+            serde_json::json!({
+                "name": "EngineError",
+                "code": "DocNotOpen",
+                "message": "DocNotOpen",
+            })
+        );
+    }
+
+    #[test]
+    fn details_are_omitted_rather_than_serialized_as_null() {
+        let plain = EngineError::with_message(EngineErrorCode::InvalidArg, "bad page");
+        assert_eq!(plain.to_wire().get("details"), None);
+
+        let detailed = plain.clone().with_details(serde_json::json!({ "pageIndex": 4 }));
+        assert_eq!(detailed.to_wire()["details"], serde_json::json!({ "pageIndex": 4 }));
+    }
+}

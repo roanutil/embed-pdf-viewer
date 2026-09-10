@@ -1,4 +1,247 @@
-//! G1. Durable page and object identity.
+//! G1. Durable page and annotation identity.
 //!
-//! Replaces `core/src/identity/*` (215 lines) and `FormFieldRef.ts` (82, G8).
-//! An index is not identity across reordering.
+//! Replaces `core/src/identity/*`. The rule the whole module exists for: an
+//! index is not identity. A page index shifts when pages are inserted, deleted
+//! or reordered while a session is open, so the primary key is the PDF
+//! indirect object number and the index is display metadata.
+
+use serde::{Deserialize, Serialize};
+
+use crate::error::{EngineError, EngineErrorCode};
+use crate::revision::RevisionToken;
+
+/// A page's PDF indirect object number, resolved by
+/// `EPDFPage_GetObjectNumber`.
+///
+/// A newtype rather than a bare integer because the invariant is the point:
+/// this is always `> 0`. `0` means the file put a direct (non-indirect) page
+/// dictionary in the `/Pages` tree, which is [`EngineErrorCode::MalformedPdf`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct PageObjectNumber(u32);
+
+impl PageObjectNumber {
+    /// Accepts a raw object number, rejecting the direct-object case.
+    pub fn new(value: u32) -> Result<Self, EngineError> {
+        if value == 0 {
+            return Err(EngineError::with_message(
+                EngineErrorCode::MalformedPdf,
+                "page is a direct object: EPDFPage_GetObjectNumber returned 0",
+            ));
+        }
+        Ok(Self(value))
+    }
+
+    pub fn get(self) -> u32 {
+        self.0
+    }
+}
+
+impl std::fmt::Display for PageObjectNumber {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+/// The two durable ways to address an annotation across reads.
+///
+/// `ObjectNumber` is `EPDFAnnot_GetObjectNumber`, `> 0` for indirect objects,
+/// which is the overwhelming common case. `Nm` is the annotation's `/NM`
+/// entry. Reads never write `/NM`: a client can opt into symbolic ids by
+/// passing one to create, but a read never mutates the document.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "camelCase")]
+pub enum AnnotationStableId {
+    #[serde(rename = "objectNumber")]
+    ObjectNumber { value: u32 },
+    #[serde(rename = "nm")]
+    Nm { value: String },
+}
+
+impl AnnotationStableId {
+    /// URL-safe encoding used as the `:annotKey` route parameter by the cloud
+    /// HTTP surface: `obj:42`, or `nm:` followed by the opaque `/NM` string.
+    ///
+    /// The caller percent-encodes the result before splicing it into a path.
+    /// The `nm:` prefix is what lets the decoder tell an arbitrary `/NM` from
+    /// a numeric id unambiguously.
+    pub fn encode_key(&self) -> Result<String, EngineError> {
+        match self {
+            Self::ObjectNumber { value } => {
+                if *value == 0 {
+                    return Err(EngineError::with_message(
+                        EngineErrorCode::InvalidArg,
+                        "objectNumber must be a positive integer, got 0",
+                    ));
+                }
+                Ok(format!("obj:{value}"))
+            }
+            Self::Nm { value } => Ok(format!("nm:{value}")),
+        }
+    }
+
+    /// Inverse of [`Self::encode_key`], over an already percent-decoded
+    /// segment. `None` for malformed input, so a server can answer
+    /// `InvalidArg` with a useful message rather than a panic.
+    pub fn decode_key(key: &str) -> Option<Self> {
+        if let Some(rest) = key.strip_prefix("obj:") {
+            let n: u32 = rest.parse().ok()?;
+            // Reject a value whose canonical spelling differs, so "obj:007"
+            // and "obj:+7" do not both address annotation 7.
+            if n == 0 || n.to_string() != rest {
+                return None;
+            }
+            return Some(Self::ObjectNumber { value: n });
+        }
+        if let Some(value) = key.strip_prefix("nm:") {
+            // An empty /NM is not an identity.
+            if value.is_empty() {
+                return None;
+            }
+            return Some(Self::Nm { value: value.to_string() });
+        }
+        None
+    }
+}
+
+/// Whether a client can hold a long-lived reference to an annotation.
+///
+/// `Durable` means it has a stable wire id and references survive structural
+/// mutations. `Weak` means the only handle is
+/// `(pageObjectNumber, index, revision)`, and the index can shift after any
+/// structural mutation on the same page.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum AnnotationIdentityQuality {
+    Durable,
+    Weak,
+}
+
+/// How the engine accepts an annotation address.
+///
+/// Resolution order matches `AnnotationIdentityResolver`:
+/// object number, then `/NM`, then the index escape hatch. The `Index` form is
+/// for legacy direct-object annotations only and must carry a fresh
+/// [`RevisionToken`], checked against the page's generation counter on every
+/// dereference. A stale token fails with
+/// [`EngineErrorCode::InvalidReference`] rather than silently pointing at a
+/// different annotation.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "camelCase")]
+pub enum AnnotationRef {
+    #[serde(rename = "objectNumber")]
+    ObjectNumber {
+        #[serde(rename = "pageObjectNumber")]
+        page: PageObjectNumber,
+        #[serde(rename = "annotObjectNumber")]
+        annot: u32,
+    },
+    #[serde(rename = "nm")]
+    Nm {
+        #[serde(rename = "pageObjectNumber")]
+        page: PageObjectNumber,
+        nm: String,
+    },
+    #[serde(rename = "index")]
+    Index {
+        #[serde(rename = "pageObjectNumber")]
+        page: PageObjectNumber,
+        index: u32,
+        revision: RevisionToken,
+    },
+}
+
+impl AnnotationRef {
+    pub fn page(&self) -> PageObjectNumber {
+        match self {
+            Self::ObjectNumber { page, .. } | Self::Nm { page, .. } | Self::Index { page, .. } => {
+                *page
+            }
+        }
+    }
+
+    /// A reference by index is weak by construction; the other two are
+    /// durable.
+    pub fn quality(&self) -> AnnotationIdentityQuality {
+        match self {
+            Self::Index { .. } => AnnotationIdentityQuality::Weak,
+            _ => AnnotationIdentityQuality::Durable,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_direct_page_object_is_a_malformed_pdf_not_a_page() {
+        let err = PageObjectNumber::new(0).unwrap_err();
+        assert!(err.is(EngineErrorCode::MalformedPdf));
+        assert_eq!(PageObjectNumber::new(7).unwrap().get(), 7);
+    }
+
+    #[test]
+    fn stable_id_keys_round_trip() {
+        let obj = AnnotationStableId::ObjectNumber { value: 42 };
+        assert_eq!(obj.encode_key().unwrap(), "obj:42");
+        assert_eq!(AnnotationStableId::decode_key("obj:42"), Some(obj));
+
+        let nm = AnnotationStableId::Nm { value: "foo bar".into() };
+        assert_eq!(nm.encode_key().unwrap(), "nm:foo bar");
+        assert_eq!(AnnotationStableId::decode_key("nm:foo bar"), Some(nm));
+    }
+
+    #[test]
+    fn stable_id_keys_reject_what_would_alias() {
+        // Two spellings of one id would let a client cache the same annotation
+        // under two keys.
+        assert_eq!(AnnotationStableId::decode_key("obj:007"), None);
+        assert_eq!(AnnotationStableId::decode_key("obj:+7"), None);
+        assert_eq!(AnnotationStableId::decode_key("obj:0"), None);
+        assert_eq!(AnnotationStableId::decode_key("obj:-1"), None);
+        assert_eq!(AnnotationStableId::decode_key("nm:"), None);
+        assert_eq!(AnnotationStableId::decode_key("42"), None);
+        assert!(AnnotationStableId::ObjectNumber { value: 0 }.encode_key().is_err());
+    }
+
+    #[test]
+    fn an_nm_containing_the_other_prefix_still_decodes_as_an_nm() {
+        // /NM values are opaque strings and may contain anything.
+        let id = AnnotationStableId::Nm { value: "obj:9".into() };
+        assert_eq!(AnnotationStableId::decode_key(&id.encode_key().unwrap()), Some(id));
+    }
+
+    #[test]
+    fn only_index_references_are_weak() {
+        let page = PageObjectNumber::new(3).unwrap();
+        assert_eq!(
+            AnnotationRef::ObjectNumber { page, annot: 9 }.quality(),
+            AnnotationIdentityQuality::Durable
+        );
+        assert_eq!(
+            AnnotationRef::Nm { page, nm: "a".into() }.quality(),
+            AnnotationIdentityQuality::Durable
+        );
+        let weak = AnnotationRef::Index {
+            page,
+            index: 0,
+            revision: RevisionToken::new("session-1", page, 4),
+        };
+        assert_eq!(weak.quality(), AnnotationIdentityQuality::Weak);
+        assert_eq!(weak.page(), page);
+    }
+
+    #[test]
+    fn refs_keep_the_typescript_wire_field_names() {
+        let page = PageObjectNumber::new(3).unwrap();
+        assert_eq!(
+            serde_json::to_value(AnnotationRef::ObjectNumber { page, annot: 9 }).unwrap(),
+            serde_json::json!({
+                "kind": "objectNumber",
+                "pageObjectNumber": 3,
+                "annotObjectNumber": 9,
+            })
+        );
+    }
+}
