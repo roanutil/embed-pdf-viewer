@@ -465,7 +465,7 @@ land in both paths with a shared regression fixture.
 
 ## Verification
 
-Four mechanisms. The third and fourth do not exist yet.
+Five mechanisms. The last three do not exist yet.
 
 The 21 conformance suites run against both backends, using their existing `makeEngine` seam. This is
 cheap and it is the behavioral oracle for geometry and orientation, text and search, annotation reads
@@ -522,6 +522,58 @@ two things that drive `charCount` and `text.length` apart), combining and RTL te
 documents, complex vector pages, embedded fonts and ICC profiles, encrypted documents, forms,
 attachments, malformed input, and dense annotation and ink pages.
 
+The fifth mechanism is a browser suite driving the real viewer, and it does not exist in any form
+today. Playwright appears nowhere in the repository. The five `vitest.config.ts` files under
+`packages/` all set `environment: 'node'`, and the only DOM-level tests are four files under
+`packages/framework/react/test/` carrying `// @vitest-environment happy-dom`, a simulated DOM rather
+than a browser. Nothing currently fails when the engine answers every operation correctly and the
+viewer shows a blank page.
+
+That is where the web SDK breaks. None of the 17 packages under `packages/plugin/`, nor
+`packages/framework/*` or `packages/viewer/*`, is being ported, and all of them consume engine
+results. Three of the forced breaks land on them directly. The error surface unifying on
+`EngineErrorCode` reaches plugin control flow: `packages/plugin/search/src/capability.ts:31` and
+`:178` branch on `EngineError.is(err, EngineErrorCode.Forbidden)` and `EngineErrorCode.InvalidArg`.
+The documented cancellation behavior reaches `packages/plugin/render/src/tile-manager.ts`, which
+aborts in-flight tile work. And the browser floor reaches everyone. The conformance suites call
+`Engine` and cannot see a selection plugin that stopped highlighting because `charStart` tiling
+changed shape, or a tile scheduler that now requests a page it already has.
+
+So the suite stays thin and behavioral. One flow per user-visible capability, asserting what the user
+sees rather than what the engine returned, driving `examples/viewer-react`, the Vite app already in
+the repository. `multiplatform-port-order.md` Section 7 lists the flows and maps each one to the
+group that owns it. Every flow runs twice per job, once with the backend selected as TypeScript at
+open and once as Rust, and a flow that passes on one backend and fails on the other blocks the
+release rather than earning a documented difference.
+
+Order matters more than coverage. Flows F1 through F5, open and first paint, scroll and
+virtualization, zoom, selection and copy, search navigation, are written and green against today's
+TypeScript backend in Phase 0, before any read family flips. A suite that arrives with the port
+cannot tell a regression from a bug it never covered. The remaining read flows land before their
+group flips and the write flows land with G11 through G13.
+
+The same harness is where the web end-to-end performance gates get measured, because it is the only
+thing that drives the real viewer: open-to-first-visible-page latency, sustained scroll frame timing
+with missed-frame counts, and search latency across the corpus. That is also why the 5 and 10 percent
+regression policy has somewhere to run.
+
+A flaky browser gate gets disabled, and a disabled gate protects nothing. So: fixed viewport and
+device scale factor, animations off, waits on engine events rather than timeouts, the injected clock
+and seed the corpus scenarios already require, and no arbitrary sleeps. Full-page screenshot
+snapshots are not gates. The rendered page canvas may be compared with the same mean and max
+tolerances the pixel gate uses, never a hash, and every other assertion is on DOM state, copied text,
+or a published event.
+
+The cost is worth stating plainly. A real-browser suite is the most expensive test per assertion we
+would own, it is where flake lives, and part of it duplicates what conformance already covers.
+One flow per capability is what keeps it affordable, and engine correctness stays in the conformance
+suites where assertions are cheap. Chromium and Firefox run per pull request; WebKit runs on the
+scheduled job, because a third browser on every pull request buys less than the first two did.
+
+(Playwright's WebKit is not Safari, and the browser floor claim above is about release Safari. The
+viewer suite narrows that gap. It does not close it, and Phase 1 still owes a real-device Safari
+check.)
+
 And then the discipline the benchmarks taught, which is about not believing our own numbers. That
 study found three of its own measurement bugs in development, each of which reversed or manufactured
 a conclusion: a decoder allocating roughly 26,000 objects per iteration that only some arms paid, one
@@ -562,7 +614,9 @@ controlled network.
 CI separates fast core and conformance tests from platform binding and packaging tests, from real
 browser and simulator and emulator jobs, from scheduled device, performance and soak runs. The
 browser matrix includes release Chrome, Firefox and Safari, and tests the real linked
-exception-handling module rather than a small probe.
+exception-handling module rather than a small probe. The web viewer suite is its own job, both
+backends in every run, and it also runs once against the packed tarballs `tooling/consume-fixtures`
+already builds for its `vite-app` archetype, so one flow covers what users actually download.
 
 ---
 
@@ -573,7 +627,9 @@ Stage A borrowed-handle bridge at differential parity with `PageGeometryReader`;
 mutation, `annotations.create`, finishes through the Stage B bridge spike over a Rust-owned document
 with failure-after-write, cache invalidation and close-under-lease exercised; both reproducibly from
 a clean checkout, with the lifecycle contracts implemented rather than promised, the operation matrix
-written, and today's end-to-end performance recorded.
+written, and today's end-to-end performance recorded. The viewer end-to-end harness ships here too,
+with flows F1 through F5 green against the TypeScript backend, because that run is the baseline
+every later phase compares against.
 
 `pages.geometry` first because it is where the measured WASM win lands. Its internal representation
 can be a flat numeric buffer that shared vectors pin exactly. Its public result is not one.
@@ -676,7 +732,9 @@ native headless SDK preview that is usable, shipped only with the concurrent-eng
 one active engine per process enforced in the API. That is the same gate Phase 3 carries, because
 the preview is the first native artifact a consumer can hold two of. "Conformance green" means the
 read suites, and the qualifier is load-bearing: the mutation, save and document-event suites still
-run against the TypeScript backend here, because native writes do not exist until Phase 4.
+run against the TypeScript backend here, because native writes do not exist until Phase 4. The web
+gate adds viewer flows F1 through F8 green on both backends, F9's wrong-password path staying on the
+TypeScript session until G3w lands in Phase 3.
 
 Slices, read-before-write and easiest-to-verify-first:
 
@@ -782,7 +840,10 @@ policy.
 ## Phase 4: session authority, then write services
 
 Exit: Stage B complete with no dual authority anywhere, write families ported in dependency order,
-and mutation, save-and-reopen, document-event and revision conformance green on both backends.
+and mutation, save-and-reopen, document-event and revision conformance green on both backends. On
+web, viewer flows F10 through F14 green on both backends: annotation create, edit and delete, form
+fill, page rotate, delete and reorder, redaction apply, and undo and redo, each saved and reopened
+in a fresh viewer instance through the UI.
 
 Stage B lands first and alone: bytes and lifetime, page registry and leases, revision authority,
 mutation sequence, password-locked state and retained import dependencies, moved together, with the

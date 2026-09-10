@@ -23,6 +23,9 @@ in `packages/engine/core/src/conformance/`.
 5. Native hosts get every group through a Rust-owned session from G3 onward. Web reaches G2 and G4
    through G9 through the Stage A borrowed-handle bridge, and reaches a Rust-owned session only at
    G3w and then G10.
+6. A group whose behavior reaches the web viewer also carries a viewer flow from Section 7. The
+   conformance suite is the engine oracle. The flow is the SDK oracle, and it fails on things the
+   suite cannot see.
 
 ## 2. Source inventory
 
@@ -72,7 +75,7 @@ is designed before the Stage B session exists, so expect to widen it once.
 | Operations | `pages.geometry` |
 | Depends on | G0, G1 |
 | Stage | A on web |
-| Gate | `runPageGeometryOrientationConformance` (a property suite: round-trip, `charStart` tiling, orientation, quad parallelism, bounds containment; a wrong-but-self-consistent reader passes it); a glyph-level differential harness against `PageGeometryReader`, built in Phase 0 because none exists; no per-glyph host call; corpus geometry case. Speed gate: no regression against the Phase 0 recorded baseline, plus an absolute floor in milliseconds set in Phase 0 from that baseline. The committed 2.6x is a per-item-vs-coarse ratio from a different arm and is not the threshold. |
+| Gate | `runPageGeometryOrientationConformance` (a property suite: round-trip, `charStart` tiling, orientation, quad parallelism, bounds containment; a wrong-but-self-consistent reader passes it); a glyph-level differential harness against `PageGeometryReader`, built in Phase 0 because none exists; no per-glyph host call; corpus geometry case; viewer flows F3 and F4. Speed gate: no regression against the Phase 0 recorded baseline, plus an absolute floor in milliseconds set in Phase 0 from that baseline. The committed 2.6x is a per-item-vs-coarse ratio from a different arm and is not the threshold. |
 | Phase | 0 |
 
 ### G3. Session core and security
@@ -95,7 +98,7 @@ is designed before the Stage B session exists, so expect to widen it once.
 | Operations | The G3 set on web behind an opt-in flag: `open.fatMem`, `open.layerMemBase`, `open.layerFileBase`, `document.checkPasswordPermissions`, `document.probeSecurityFile`, `close`, `layer.close`. No read operation routes to the Rust session. |
 | Depends on | G3 green on native |
 | Stage | A. The one exception to Stage A's "TypeScript owns the session" rule, scoped to documents opened with the flag set. |
-| Gate | The G3 gate re-run under the browser worker and the Node worker: open, wrong password, permission, close, cancel traces; balanced acquire/release; close-while-held rejection. Plus a document opened on the Rust session and closed without a single read, under the real transport, with no leak reported by the soak run. |
+| Gate | The G3 gate re-run under the browser worker and the Node worker: open, wrong password, permission, close, cancel traces; balanced acquire/release; close-while-held rejection. Plus a document opened on the Rust session and closed without a single read, under the real transport, with no leak reported by the soak run. Viewer flow F9. |
 | Phase | 3 |
 | Notes | This exists so that Stage B is not the first time a Rust-owned session runs on web. It routes no reads, so it adds no row to the operation matrix in Section 6: every kind it touches is already owned by G3. It stops being a separate thing once G10 lands and the flag becomes the backend selector. |
 
@@ -107,7 +110,7 @@ is designed before the Stage B session exists, so expect to widen it once.
 | Operations | `pages.render`; `fonts.register`, `fonts.addFallback`, `fonts.clearFallbacks`, `fonts.clear`. Also an internal `render_page_bitmap` entry point, not a wire kind, which G15 consumes to serve `pages.renderEncoded`. |
 | Depends on | G3 (fonts are engine-level, registered before first render) |
 | Stage | A on web for rendering; engine-level font ownership moves as one unit in G4, independently of document backend selection |
-| Gate | Exact interior BGRA on a colored fixture; loose whole-page gate; tile, rotation, alpha and buffer-lifetime tests; font-before-first-job test; coexistence test registering once, rendering through both backends and authoring FreeText through the retained TypeScript writer; clear/re-register and fallback-order tests across both paths; worker-recreation rollback test; pixel path measured in parts (WASM-to-host copy, worker transfer, channel conversion, GPU upload) |
+| Gate | Exact interior BGRA on a colored fixture; loose whole-page gate; tile, rotation, alpha and buffer-lifetime tests; font-before-first-job test; coexistence test registering once, rendering through both backends and authoring FreeText through the retained TypeScript writer; clear/re-register and fallback-order tests across both paths; worker-recreation rollback test; pixel path measured in parts (WASM-to-host copy, worker transfer, channel conversion, GPU upload); viewer flows F1 and F2 |
 | Phase | 1 (smoke), 2 |
 | Notes | Coarsening buys nothing here. Reason to move: native needs it and the pixel path needs one owner. Encode stays a host-injected concern. `FontRegistrar` is engine-level (constructor takes `runtime` and a `fontKey → FontId` map, no session) and retains file-access handles until `clear` (`FontRegistrar.ts:51`). G4 transfers the key-to-ID map, registration, fallback order and retained handles together to one Rust `FontRegistry` per combined worker before startup fonts or documents are loaded. `FontRegistrar` becomes a delegating facade, including `idFor`, with no second map. Native uses the Rust owner from its first render; the unmigrated server keeps its TypeScript owner until Phase 5. See the governing plan Section 6 for worker-level rollback. |
 
@@ -120,7 +123,7 @@ is designed before the Stage B session exists, so expect to widen it once.
 | Depends on | G2 (search uses `PageGeometryReader` for rects), G3 |
 | Stage | A on web |
 | Entry gate | Dialect vector file covering `regex.ts` accepted and rejected syntax, `\d` `\w` `\b` under JavaScript `u` mode, case folding, `^` `$` under `m`, zero-length matches and cursor advance, fold map back to UTF-16 offsets, generated from `RegExp` and `foldText`. Fixtures with non-empty `charMap` (non-BMP, non-printing), combining and RTL text. |
-| Exit gate | `runPageTextConformance`, `runTextDivergenceConformance`, `runSearchConformance`; search cursor strings decodable across backends |
+| Exit gate | `runPageTextConformance`, `runTextDivergenceConformance`, `runSearchConformance`; search cursor strings decodable across backends; viewer flows F4 and F5 |
 | Phase | 2 |
 | Notes | `text` is already coarse; gate on correctness, not speed. `layout.ts` is also consumed by web selection plugins and stays in TypeScript there (deliberate duplicate with shared vectors). |
 
@@ -132,7 +135,7 @@ is designed before the Stage B session exists, so expect to widen it once.
 | Operations | `metadata.read`, `pages.list`, `actions.read` |
 | Depends on | G3 |
 | Stage | A on web |
-| Gate | `runMetadataConformance`, `runActionsConformance`; page identity stable between lazy per-page lookup and full enumeration (`DocumentSession.ts:41-44`, `recordsByIndex` / `recordsByObjectNumber` / `fullyEnumerated`) |
+| Gate | `runMetadataConformance`, `runActionsConformance`; page identity stable between lazy per-page lookup and full enumeration (`DocumentSession.ts:41-44`, `recordsByIndex` / `recordsByObjectNumber` / `fullyEnumerated`); viewer flow F6 |
 | Phase | 2 |
 
 ### G7. Annotation reads
@@ -143,7 +146,7 @@ is designed before the Stage B session exists, so expect to widen it once.
 | Operations | `annotations.listRawAll`, `annotations.listRawPage`, `annotations.listFullPage`, `annotations.renderAppearances` |
 | Depends on | G4 (appearance render), G6 (actions and destinations for link annotations) |
 | Stage | A on web. Rust does not create or retain the form model; TypeScript lends the pointer. |
-| Gate | `runAnnotationReadConformance`, `runAnnotationAppearanceConformance`; repeated-read benchmark against today's cached form model; permission and weak-annotation-state propagation back to the session owner; bidirectional parity for handwritten annotation DTO schemas and generated types/Rust serialization |
+| Gate | `runAnnotationReadConformance`, `runAnnotationAppearanceConformance`; repeated-read benchmark against today's cached form model; permission and weak-annotation-state propagation back to the session owner; bidirectional parity for handwritten annotation DTO schemas and generated types/Rust serialization; viewer flow F7 |
 | Phase | 2 |
 
 ### G8. Files, forms reads, piece info
@@ -154,7 +157,7 @@ is designed before the Stage B session exists, so expect to widen it once.
 | Operations | `attachments.list`, `attachments.readFile`, `annotations.readFile`, `pieceInfo.read`, `pieceInfo.applications`, `forms.list`, `forms.export` |
 | Depends on | G7 |
 | Stage | A on web |
-| Gate | `runAttachmentConformance`, `runPieceInfoConformance`, read half of `runFormConformance`; `annotations.readFile` byte equality with the TypeScript path |
+| Gate | `runAttachmentConformance`, `runPieceInfoConformance`, read half of `runFormConformance`; `annotations.readFile` byte equality with the TypeScript path; viewer flow F8 |
 | Phase | 2 |
 
 ### G9. Page extract
@@ -189,7 +192,7 @@ is designed before the Stage B session exists, so expect to widen it once.
 | Operations | `annotations.create`, `annotations.update`, `annotations.delete`, `annotations.move` |
 | Depends on | G10 |
 | Stage | C |
-| Gate | `runAnnotationMutationConformance` (2,431 lines); appearance and event suites; partial failure, cancellation-after-apply, save and reopen traces; review rule that no `?` past the apply boundary introduces a throw path; extend annotation schema parity to draft and patch types, including absent/null/value and rejection behavior |
+| Gate | `runAnnotationMutationConformance` (2,431 lines); appearance and event suites; partial failure, cancellation-after-apply, save and reopen traces; review rule that no `?` past the apply boundary introduces a throw path; extend annotation schema parity to draft and patch types, including absent/null/value and rejection behavior; viewer flows F10 and F14 |
 | Phase | 4 |
 
 ### G12. Forms writes
@@ -200,7 +203,7 @@ is designed before the Stage B session exists, so expect to widen it once.
 | Operations | `forms.setValue`, `forms.reset`, `forms.applyEffects`, `forms.import`, `forms.repair`, `forms.createField`, `forms.updateField`, `forms.deleteField`, `forms.attachWidget`, `forms.detachWidget` |
 | Depends on | G11 (widget annotations) |
 | Stage | C |
-| Gate | Write half of `runFormConformance`; persisted-output readback; form-JavaScript support tracked as a capability (web keeps `packages/core/js-sandbox`; mobile reports unsupported) |
+| Gate | Write half of `runFormConformance`; persisted-output readback; viewer flow F11; form-JavaScript support tracked as a capability (web keeps `packages/core/js-sandbox`; mobile reports unsupported) |
 | Phase | 4 |
 
 ### G13. Page assembly and redaction
@@ -211,7 +214,7 @@ is designed before the Stage B session exists, so expect to widen it once.
 | Operations | `pages.rotate`, `pages.move`, `pages.delete`, `pages.insertBlank`, `pages.insert`, `pages.flatten`, `redaction.apply` |
 | Depends on | G11 (flatten and redaction re-read annotations after apply) |
 | Stage | C |
-| Gate | `runPageRotateConformance`, `runPageReorderConformance`, `runPageDeleteConformance`, `runPageInsertBlankConformance`, `runPageInsertConformance`, `runPageFlattenConformance`, `runRedactionApplyConformance`; page identity across reorder; source retention for `pages.insert` on one owner (`PagesInserter.ts:77` `session.retainUntilClose`) |
+| Gate | `runPageRotateConformance`, `runPageReorderConformance`, `runPageDeleteConformance`, `runPageInsertBlankConformance`, `runPageInsertConformance`, `runPageFlattenConformance`, `runRedactionApplyConformance`; page identity across reorder; source retention for `pages.insert` on one owner (`PagesInserter.ts:77` `session.retainUntilClose`); viewer flows F12 and F13 |
 | Phase | 4 |
 
 ### G14. Remaining mutators
@@ -295,3 +298,42 @@ Do not use 64: that is the `case` arm count in `WorkerHost.ts`, which is 65 minu
 The eight non-request kinds (`resolve`, `reject`, `artifact`, `artifact-file`, `raw-delta`,
 `fresh`, `ready`, `init-error`) are transport and stay in TypeScript. CI should fail when a kind is
 added to `worker-protocol.ts` without a row in the operation matrix this document seeds.
+
+## 7. Web viewer end-to-end gate
+
+None of this exists today. Playwright is not in the repository, the five `vitest.config.ts` files
+under `packages/` all set `environment: 'node'`, and the only DOM-level tests are four files under
+`packages/framework/react/test/` using `// @vitest-environment happy-dom`. Section 4 puts
+`packages/plugin/*`, `packages/framework/*` and `packages/viewer/*` out of scope for the port, which
+is correct and is also why they need a gate: they are the code most likely to break silently while
+nothing in them changes.
+
+The harness lives in `tooling/viewer-e2e/`, drives `examples/viewer-react`, and selects the backend
+at open so every flow runs twice, TypeScript and Rust, in one job. Flows assert DOM state, copied
+text and published events. The rendered page canvas may be compared with the pixel gate's mean and
+max tolerances; nothing is compared by hash, and full-page screenshots are not gates.
+
+| Flow | Asserts | Groups | Phase |
+|---|---|---|---|
+| F1 open and first paint | Document opens from a fixture, page 1 paints, the page count in the UI matches the file | G4 | 0 baseline, 2 on Rust |
+| F2 scroll and virtualization | Scroll to a late page, every visible tile resolves, no unresolved tile after the view settles, no re-request of a tile already held | G4 | 0 baseline, 2 on Rust |
+| F3 zoom | Zoom in and out through the gesture path, page geometry stays consistent, no missing tiles at the new scale | G2, G4 | 0 baseline, 2 on Rust |
+| F4 selection and copy | Drag-select across a line and across a page boundary, the clipboard text equals the frozen vector's string | G2, G5 | 0 baseline, 2 on Rust |
+| F5 search navigation | Query returns the expected match count, next and previous scroll to and highlight each match | G5 | 0 baseline, 2 on Rust |
+| F6 links and actions | An internal link lands the viewport on the target page; an external link resolves to the expected URL without navigating | G6 | 2 |
+| F7 annotation display | Existing annotations paint at the expected positions, selection and hover UI activates on the right one | G7 | 2 |
+| F8 form display | Field values, checkbox and listbox state match the file | G8 | 2 |
+| F9 open failure path | Wrong password surfaces the UI error path by `EngineErrorCode`, not by message text; cancel during open leaves no partial document | G3w | 2 on TypeScript, 3 on Rust |
+| F10 annotation write round trip | Create, edit and delete through the UI, save, reopen the saved bytes in a fresh viewer instance, the result matches | G11 | 4 |
+| F11 form fill round trip | Fill fields through the UI, save, reopen, values persist | G12 | 4 |
+| F12 page assembly round trip | Rotate, delete and reorder through the UI, save, reopen, page identity and order hold | G13 | 4 |
+| F13 redaction round trip | Apply a redaction through the UI, save, reopen, the text is gone from the extracted text | G13 | 4 |
+| F14 undo and redo | Undo and redo across a mutation sequence leaves the document and the UI in the pre-sequence state | G11 | 4 |
+
+F1 through F5 are written against the shipping TypeScript backend in Phase 0. That ordering is the
+point: a suite delivered alongside the port cannot tell a regression from a bug it never covered.
+
+The cost: this is the most expensive test surface in the plan per assertion, and the usual home of
+flake. Waits are on engine events, never on timeouts. Chromium and Firefox run per pull request,
+WebKit on the scheduled job. A quarantined flow needs an open issue and expires in one release, or
+the gate decays into a suite nobody trusts.
