@@ -1,5 +1,11 @@
 # @embedpdf/web
 
+## 3.0.0-next.12
+
+### Minor Changes
+
+- [#803](https://github.com/embedpdf/embed-pdf-viewer/pull/803) by [@bobsingor](https://github.com/bobsingor) – `indexedDbByteStore(dbName, { storeName? })` is the browser's bytes-by-id store: one IndexedDB object store with `list`, `put`, and `delete`. It is the adapter for any plugin's DOM-free persistence port (structurally `StampLibraryStore` from `@embedpdf/plugin-stamp`), written once here so every framework binding shares it.
+
 ## 3.0.0-next.11
 
 ### Minor Changes
