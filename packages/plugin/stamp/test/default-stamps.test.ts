@@ -18,10 +18,33 @@ import { initialStampState, stampReducer } from '../src/reducer';
 import type { StampAction, StampState } from '../src/types';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const packageDir = resolve(here, '..', '..', '..', 'default-stamps');
+// The release consume gate supplies the extracted npm tarball, so missing
+// packaged manifests/PDFs fail the same compatibility checks as source changes.
+const packageDir =
+  process.env.EMBEDPDF_DEFAULT_STAMPS_DIR ?? resolve(here, '..', '..', '..', 'default-stamps');
 const LOCALES = ['en', 'de', 'nl', 'fr', 'es', 'zh-CN', 'sv', 'ja'] as const;
 /** The library id every locale carries (PieceInfo `Id`). */
 const LIBRARY_ID = 'embedpdf-standard';
+/** Stable ids shipped by v2; consumers may select a stamp by this id. */
+const LEGACY_STAMP_IDS = [
+  'approved',
+  'not-approved',
+  'draft',
+  'final',
+  'completed',
+  'confidential',
+  'for-public-release',
+  'not-for-public-release',
+  'for-comment',
+  'void',
+  'preliminary-results',
+  'information-only',
+  'witness',
+  'initial-here',
+  'sign-here',
+  'accepted',
+  'rejected',
+];
 
 const EXPECTED: Record<string, { name: string; keys: readonly string[] }> = {
   en: {
@@ -288,6 +311,43 @@ describe('@embedpdf/default-stamps', () => {
   });
 
   for (const locale of LOCALES) {
+    it(`${locale}: preserves the v2 manifest and its PDF page-index mapping`, async () => {
+      const manifest = JSON.parse(
+        await readFile(resolve(packageDir, locale, 'manifest.json'), 'utf8'),
+      );
+      expect(manifest).toEqual({
+        id: 'standard',
+        name: EXPECTED[locale].name,
+        categories: ['sidebar'],
+        pdf: 'stamps.pdf',
+        stamps: EXPECTED[locale].keys.map((key, pageIndex) => {
+          const [name, subject] = key.split('=');
+          return { id: LEGACY_STAMP_IDS[pageIndex], pageIndex, name, subject };
+        }),
+      });
+
+      // V2 ignores the registry and renders by pageIndex. Prove each legacy
+      // entry still addresses the page that v3 identifies by name and label.
+      const doc = await engine.open(
+        { kind: 'bytes', id: `v2-stamps-${locale}`, bytes: await libraryPdf(locale) },
+        { scope: ['*'] },
+      );
+      try {
+        const layout = await doc.pages.list();
+        expect(layout.pageCount).toBe(17);
+        for (const entry of manifest.stamps) {
+          const page = layout.pages.find((page) => page.index === entry.pageIndex);
+          expect(page).toBeDefined();
+          expect(layout.namedPages).toContainEqual({
+            name: `${entry.name}=${entry.subject}`,
+            target: { kind: 'page', pageObjectNumber: page!.pageObjectNumber },
+          });
+        }
+      } finally {
+        await doc.close();
+      }
+    });
+
     it(`${locale}: re-imports with no overrides as the manifest described it`, async () => {
       const ctx = makeCtx(engine);
       const stamp = createStampCapability(ctx, { assetEngine: engine });
