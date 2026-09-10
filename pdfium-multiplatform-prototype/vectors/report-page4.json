@@ -1,0 +1,77 @@
+{
+  "fixture": "fixtures/report.pdf",
+  "fixtureSha256": "3662ff519e485810520552bf301d8c3b2b917fd2f83303f4965d7abed367e113",
+  "forkSha": "d7b4caa26289d4846e94ff54e63b586b9bbe9fd6",
+  "generatedBy": "build/generate-vectors.mjs",
+  "pageIndex": 4,
+  "pageCount": 14,
+  "size": {
+    "width": 612,
+    "height": 792
+  },
+  "charCount": 8106,
+  "text": "resentations are assigned an integer key called the object shape.\r\nThus, the guard is a simple equality check on the object shape.\r\nRepresentation specialization: numbers. JavaScript has no\r\ninteger type, only a Number type that is the set of 64-bit IEEE￾754 floating-pointer numbers (“doubles”). But many JavaScript\r\noperators, in particular array accesses and bitwise operators, really\r\noperate on integers, so they first convert the number to an integer,\r\nand then convert any integer result back to a double.1 Clearly, a\r\nJavaScript VM that wants to be fast must find a way to operate on\r\nintegers directly and avoid these conversions.\r\nIn TraceMonkey, we support two representations for numbers:\r\nintegers and doubles. The interpreter uses integer representations\r\nas much as it can, switching for results that can only be represented\r\nas doubles. When a trace is started, some values may be imported\r\nand represented as integers. Some operations on integers require\r\nguards. For example, adding two integers can produce a value too\r\nlarge for the integer representation.\r\nFunction inlining. LIR traces can cross function boundaries\r\nin either direction, achieving function inlining. Move instructions\r\nneed to be recorded for function entry and exit to copy arguments\r\nin and return values out. These move statements are then optimized\r\naway by the compiler using copy propagation. In order to be able\r\nto return to the interpreter, the trace must also generate LIR to\r\nrecord that a call frame has been entered and exited. The frame\r\nentry and exit LIR saves just enough information to allow the\r\nintepreter call stack to be restored later and is much simpler than\r\nthe interpreter’s standard call code. If the function being entered\r\nis not constant (which in JavaScript includes any call by function\r\nname), the recorder must also emit LIR to guard that the function\r\nis the same.\r\nGuards and side exits. Each optimization described above\r\nrequires one or more guards to verify the assumptions made in\r\ndoing the optimization. A guard is just a group of LIR instructions\r\nthat performs a test and conditional exit. The exit branches to a\r\nside exit, a small off-trace piece of LIR that returns a pointer to\r\na structure that describes the reason for the exit along with the\r\ninterpreter PC at the exit point and any other data needed to restore\r\nthe interpreter’s state structures.\r\nAborts. Some constructs are difficult to record in LIR traces.\r\nFor example, eval or calls to external functions can change the\r\nprogram state in unpredictable ways, making it difficult for the\r\ntracer to know the current type map in order to continue tracing.\r\nA tracing implementation can also have any number of other limi￾tations, e.g.,a small-memory device may limit the length of traces.\r\nWhen any situation occurs that prevents the implementation from\r\ncontinuing trace recording, the implementation aborts trace record￾ing and returns to the trace monitor.\r\n3.2 Trace Trees\r\nEspecially simple loops, namely those where control flow, value\r\ntypes, value representations, and inlined functions are all invariant,\r\ncan be represented by a single trace. But most loops have at least\r\nsome variation, and so the program will take side exits from the\r\nmain trace. When a side exit becomes hot, TraceMonkey starts a\r\nnew branch trace from that point and patches the side exit to jump\r\ndirectly to that trace. In this way, a single trace expands on demand\r\nto a single-entry, multiple-exit trace tree.\r\nThis section explains how trace trees are formed during execu￾tion. The goal is to form trace trees during execution that cover all\r\nthe hot paths of the program.\r\n1 Arrays are actually worse than this: if the index value is a number, it must\r\nbe converted from a double to a string for the property access operator, and\r\nthen to an integer internally to the array implementation.\r\nStarting a tree. Tree trees always start at loop headers, because\r\nthey are a natural place to look for hot paths. In TraceMonkey, loop\r\nheaders are easy to detect–the bytecode compiler ensures that a\r\nbytecode is a loop header iff it is the target of a backward branch.\r\nTraceMonkey starts a tree when a given loop header has been exe￾cuted a certain number of times (2 in the current implementation).\r\nStarting a tree just means starting recording a trace for the current\r\npoint and type map and marking the trace as the root of a tree. Each\r\ntree is associated with a loop header and type map, so there may be\r\nseveral trees for a given loop header.\r\nClosing the loop. Trace recording can end in several ways.\r\nIdeally, the trace reaches the loop header where it started with\r\nthe same type map as on entry. This is called a type-stable loop\r\niteration. In this case, the end of the trace can jump right to the\r\nbeginning, as all the value representations are exactly as needed to\r\nenter the trace. The jump can even skip the usual code that would\r\ncopy out the state at the end of the trace and copy it back in to the\r\ntrace activation record to enter a trace.\r\nIn certain cases the trace might reach the loop header with a\r\ndifferent type map. This scenario is sometime observed for the first\r\niteration of a loop. Some variables inside the loop might initially be\r\nundefined, before they are set to a concrete type during the first loop\r\niteration. When recording such an iteration, the recorder cannot\r\nlink the trace back to its own loop header since it is type-unstable.\r\nInstead, the iteration is terminated with a side exit that will always\r\nfail and return to the interpreter. At the same time a new trace is\r\nrecorded with the new type map. Every time an additional type￾unstable trace is added to a region, its exit type map is compared to\r\nthe entry map of all existing traces in case they complement each\r\nother. With this approach we are able to cover type-unstable loop\r\niterations as long they eventually form a stable equilibrium.\r\nFinally, the trace might exit the loop before reaching the loop\r\nheader, for example because execution reaches a break or return\r\nstatement. In this case, the VM simply ends the trace with an exit\r\nto the trace monitor.\r\nAs mentioned previously, we may speculatively chose to rep￾resent certain Number-typed values as integers on trace. We do so\r\nwhen we observe that Number-typed variables contain an integer\r\nvalue at trace entry. If during trace recording the variable is unex￾pectedly assigned a non-integer value, we have to widen the type\r\nof the variable to a double. As a result, the recorded trace becomes\r\ninherently type-unstable since it starts with an integer value but\r\nends with a double value. This represents a mis-speculation, since\r\nat trace entry we specialized the Number-typed value to an integer,\r\nassuming that at the loop edge we would again find an integer value\r\nin the variable, allowing us to close the loop. To avoid future spec￾ulative failures involving this variable, and to obtain a type-stable\r\ntrace we note the fact that the variable in question as been observed\r\nto sometimes hold non-integer values in an advisory data structure\r\nwhich we call the “oracle”.\r\nWhen compiling loops, we consult the oracle before specializ￾ing values to integers. Speculation towards integers is performed\r\nonly if no adverse information is known to the oracle about that\r\nparticular variable. Whenever we accidentally compile a loop that\r\nis type-unstable due to mis-speculation of a Number-typed vari￾able, we immediately trigger the recording of a new trace, which\r\nbased on the now updated oracle information will start with a dou￾ble value and thus become type stable.\r\nExtending a tree. Side exits lead to different paths through\r\nthe loop, or paths with different types or representations. Thus, to\r\ncompletely cover the loop, the VM must record traces starting at all\r\nside exits. These traces are recorded much like root traces: there is\r\na counter for each side exit, and when the counter reaches a hotness\r\nthreshold, recording starts. Recording stops exactly as for the root\r\ntrace, using the loop header of the root trace as the target to reach.",
+  "search": {
+    "query": "the",
+    "caseSensitive": false,
+    "flags": 0,
+    "hitCount": 120,
+    "firstHits": [
+      {
+        "charIndex": 48,
+        "charCount": 3,
+        "rects": [
+          [
+            230.2884,
+            718.1539,
+            240.9494,
+            711.9492
+          ]
+        ]
+      },
+      {
+        "charIndex": 73,
+        "charCount": 3,
+        "rects": [
+          [
+            76.5326,
+            708.1912,
+            87.1936,
+            701.9865
+          ]
+        ]
+      },
+      {
+        "charIndex": 113,
+        "charCount": 3,
+        "rects": [
+          [
+            218.4797,
+            708.1912,
+            229.1407,
+            701.9865
+          ]
+        ]
+      }
+    ]
+  },
+  "render": {
+    "scale": 0.25,
+    "width": 153,
+    "height": 198,
+    "stride": 612,
+    "golden": "report-p4-scale0.25.bgra",
+    "meanAbsDiffTolerance": 2,
+    "maxAbsDiffTolerance": 16,
+    "format": 4,
+    "fillColor": 4294967295,
+    "rotate": 0,
+    "flags": 0,
+    "drawForms": false
+  },
+  "runtime": {
+    "kind": "native",
+    "platform": "darwin-arm64",
+    "buildId": "3.0.0-next.11:darwin-arm64"
+  }
+}

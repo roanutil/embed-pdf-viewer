@@ -1,0 +1,18 @@
+[package]
+name = "epdf-node"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[lib]
+name = "epdf_node"
+crate-type = ["cdylib"]
+
+[dependencies]
+epdf-ops = { path = "../epdf-ops" }
+napi = { version = "=3.12.2", default-features = false, features = ["napi8"] }
+napi-derive = "=3.6.3"
+
+[build-dependencies]
+napi-build = "=2.4.1"
+build-support = { path = "../build-support" }

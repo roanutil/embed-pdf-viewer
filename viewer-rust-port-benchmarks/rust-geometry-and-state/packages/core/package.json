@@ -1,0 +1,22 @@
+{
+  "name": "@poc/core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The Rust core, wrapped. Owns the model, the reducer, the projection and hit-testing; TypeScript holds a handle, a version number and a cache.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./node": "./src/init-node.ts",
+    "./wasm-url": "./src/wasm-url.ts"
+  },
+  "scripts": {
+    "build": "node ../../scripts/build-wasm.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.9.3",
+    "vitest": "^2.1.9"
+  }
+}

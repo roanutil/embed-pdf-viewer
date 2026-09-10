@@ -1,0 +1,11 @@
+{
+  "mode": "cold-start",
+  "collectedBy": "Chrome DevTools MCP, 5 same-origin iframe loads per POC against `vite preview` production builds",
+  "caveat": "Historical localhost measurements using repeated iframe loads. Assets and compiled Wasm may be reused from cache; these are not uncached network or guaranteed fresh-compilation timings. Individual samples and build hashes were not retained. The ready interval and first-frame marker are defined in bench/README.md.",
+  "samples": 5,
+  "pocs": {
+    "typescript-baseline": { "wasmLegMs": 1.2, "firstFrameMs": 19.0, "firstFrameRange": [13.5, 34.4], "wasmBytes": 0 },
+    "rust-geometry-only": { "wasmLegMs": 6.3, "firstFrameMs": 21.2, "firstFrameRange": [12.7, 43.7], "wasmBytes": 133877 },
+    "rust-geometry-and-state": { "wasmLegMs": 7.8, "firstFrameMs": 24.8, "firstFrameRange": [21.5, 41.6], "wasmBytes": 283867 }
+  }
+}

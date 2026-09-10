@@ -1,0 +1,28 @@
+# --- Rust ---------------------------------------------------------------
+# Each POC has its own cargo workspace, so target/ appears at every level.
+target/
+**/target/
+*.rs.bk
+*.pdb
+
+# Generated wasm-bindgen output. Produced by scripts/build-wasm.mjs, so it is
+# a build artifact and not a source file, even though it sits inside a package.
+**/packages/*/wasm/
+**/crates/**/pkg/
+
+# --- Node ---------------------------------------------------------------
+node_modules/
+dist/
+.turbo/
+*.tsbuildinfo
+
+# --- Editors / OS ------------------------------------------------------
+.DS_Store
+*.swp
+
+# --- benchmarks ---------------------------------------------------------
+# Per-round JSON is machine-specific and regenerable. The aggregated
+# RESULTS.md and the hand-collected cold-start.json ARE committed.
+bench/results/*-probe-r*.json
+bench/results/*-timing-r*.json
+bench/results/*-alloc-r*.json

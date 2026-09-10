@@ -1,0 +1,22 @@
+{
+  "name": "@poc/shapes",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The pure shape brain: model, update(msg) -> [model, effects], scene(model, view) -> display list, hit-testing, and the screen-anchor projection. No DOM, no store, no framework.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@poc/geometry": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vitest": "^2.1.9",
+    "@types/node": "^22.10.2"
+  }
+}

@@ -1,0 +1,7 @@
+target/
+build/libpdfium/
+build/cache/
+build/out/
+build/build/
+build/emsdk/
+node_modules/

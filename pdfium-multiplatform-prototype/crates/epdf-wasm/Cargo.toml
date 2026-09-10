@@ -1,0 +1,20 @@
+[package]
+name = "epdf-wasm"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[lib]
+name = "epdf_wasm"
+crate-type = ["staticlib", "rlib"]
+
+[dependencies]
+epdf-ops = { path = "../epdf-ops" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[build-dependencies]
+build-support = { path = "../build-support" }
+
+[features]
+panic-probe = ["epdf-ops/panic-probe"]

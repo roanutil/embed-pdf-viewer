@@ -1,0 +1,60 @@
+name: EpdfScaffold
+options:
+  bundleIdPrefix: com.embedpdf.scaffold
+  deploymentTarget:
+    iOS: "17.0"
+    macOS: "14.0"
+packages:
+  EpdfOps:
+    path: ../../packages/swift/EpdfOps
+targets:
+  EpdfScaffold:
+    type: application
+    supportedDestinations: [iOS, macOS]
+    sources:
+      - path: EpdfScaffold
+      # XcodeGen 2.46.0 silently drops a target-level `resources:` list
+      # (verified empirically: no PBXResourcesBuildPhase, no file reference
+      # at all, no warning). Nesting it under `sources` with an explicit
+      # `buildPhase: resources` is what actually produces the copy step.
+      - path: ../../fixtures/report.pdf
+        buildPhase: resources
+    dependencies:
+      - package: EpdfOps
+        product: EpdfOps
+    info:
+      path: EpdfScaffold/Info.plist
+      properties:
+        CFBundleDisplayName: EpdfScaffold
+        CFBundleShortVersionString: 0.0.0
+        UILaunchScreen: {}
+    settings:
+      base:
+        # Where build/build-swift.sh stages libepdf_uniffi and libembedpdf, one
+        # slice per SDK. Each destination only ever links its own slice, so
+        # these are SDK-conditional rather than one shared path: a macOS build
+        # must never see the macOS dylib while linking an iOS Simulator
+        # destination (and vice versa) or the linker fails with a platform
+        # mismatch instead of a "library not found" it can actually explain.
+        # Mobile artifacts are pending in the committed release pin. Local
+        # builds can stage them using EPDF_SCAFFOLD_PIN_FILE; see README.md.
+        # iOS slices are static archives: these are link-time search paths.
+        # Only the macOS development dylibs need a runtime search path.
+        LIBRARY_SEARCH_PATHS[sdk=macosx*]:
+          - $(SRCROOT)/../../packages/swift/EpdfOps/Frameworks/macos-arm64
+        LIBRARY_SEARCH_PATHS[sdk=iphonesimulator*]:
+          - $(SRCROOT)/../../packages/swift/EpdfOps/Frameworks/ios-sim-arm64
+        LIBRARY_SEARCH_PATHS[sdk=iphoneos*]:
+          - $(SRCROOT)/../../packages/swift/EpdfOps/Frameworks/ios-arm64
+        LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]:
+          - $(SRCROOT)/../../packages/swift/EpdfOps/Frameworks/macos-arm64
+        # No Apple developer team is configured for this scaffold. Ad-hoc
+        # signing needs no team and is enough to build and run locally.
+        CODE_SIGN_IDENTITY: "-"
+        CODE_SIGN_STYLE: Manual
+        DEVELOPMENT_TEAM: ""
+    preBuildScripts:
+      - name: Require staged EpdfOps native library
+        path: require-staged-library.sh
+        shell: /bin/bash
+        basedOnDependencyAnalysis: false

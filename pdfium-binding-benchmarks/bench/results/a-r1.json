@@ -1,0 +1,121 @@
+{
+  "arm": "a",
+  "round": 1,
+  "order": [
+    "a",
+    "b",
+    "c",
+    "d"
+  ],
+  "native": false,
+  "env": {
+    "runtime": "node",
+    "node": "v24.20.0",
+    "platform": "darwin 25.6.0",
+    "arch": "arm64",
+    "cpu": "Apple M4 Max",
+    "cores": 16,
+    "loadavg": 6.11572265625,
+    "note": "macOS thermal throttling is not controllable; rounds are interleaved to spread drift."
+  },
+  "emsdk": "emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 3.1.72 (437140d149d9c977ffc8b09dbaf9b0f5a02db190)",
+  "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+  "fixture": {
+    "pageIndex": 4,
+    "glyphCount": 8106
+  },
+  "wasmBytes": 4676714,
+  "sink": 18809111488,
+  "cells": {
+    "null-call": {
+      "ns": 353.17793505411737,
+      "p95": 389.71246461281805,
+      "min": 317.72822647793635,
+      "max": 473.3347210657768,
+      "batches": 234,
+      "batch": 6005,
+      "iters": 1405170,
+      "warmed": 10000
+    },
+    "null-peek": {
+      "ns": 3.863674264620234,
+      "p95": 4.133634362643522,
+      "min": 3.236255484265131,
+      "max": 4.71158470429696,
+      "batches": 212,
+      "batch": 609243,
+      "iters": 129159516,
+      "warmed": 10000
+    },
+    "null-readbytes": {
+      "ns": 29.339209853039076,
+      "p95": 31.47297614089196,
+      "min": 27.53168322722677,
+      "max": 33.34077467721756,
+      "batches": 202,
+      "batch": 84035,
+      "iters": 16975070,
+      "warmed": 10000
+    },
+    "geometry": {
+      "ns": 2610999.9999999898,
+      "p95": 3003689.349999968,
+      "min": 2451416.999999765,
+      "max": 3908041.9999997956,
+      "batches": 188,
+      "batch": 1,
+      "iters": 188,
+      "warmed": 71
+    },
+    "text": {
+      "ns": 115754.46428571467,
+      "p95": 126027.95714285223,
+      "min": 107910.71428570831,
+      "max": 133309.53571427733,
+      "batches": 153,
+      "batch": 28,
+      "iters": 4284,
+      "warmed": 1752
+    },
+    "render-1x": {
+      "ns": 2764166.9999998156,
+      "p95": 3083933.0999999666,
+      "min": 2597625.000000335,
+      "max": 8618999.999999687,
+      "batches": 175,
+      "batch": 1,
+      "iters": 175,
+      "warmed": 71
+    },
+    "render-4x": {
+      "ns": 15205916.999999318,
+      "p95": 15738558.400000056,
+      "min": 14903249.999999844,
+      "max": 15881416.999999601,
+      "batches": 33,
+      "batch": 1,
+      "iters": 33,
+      "warmed": 13
+    },
+    "render-copyout-4x": {
+      "ns": 600597.1666666786,
+      "p95": 673089.5833333306,
+      "min": 546201.333333253,
+      "max": 713937.5000000048,
+      "batches": 139,
+      "batch": 6,
+      "iters": 834,
+      "warmed": 320
+    },
+    "search": {
+      "ns": 100438.70588234474,
+      "p95": 105480.38823528313,
+      "min": 92268.38235294695,
+      "max": 114671.55882353515,
+      "batches": 147,
+      "batch": 34,
+      "iters": 4998,
+      "warmed": 1858
+    }
+  }
+}

@@ -1,0 +1,13 @@
+[tools]
+# Matches the `packageManager` field in package.json. Keep the two in step:
+# pnpm refuses to run when they disagree.
+pnpm = "10.34.0"
+node = "24.20.0"
+
+# The Kotlin and Android builds under pdfium-multiplatform-prototype both declare
+# jvmToolchain(21), and apps/android/app/build.gradle.kts:49-50 sets source and
+# target compatibility to VERSION_21. Gradle can fetch its own toolchain through
+# the foojay resolver, so this is not strictly required to build, but without a
+# JDK on PATH `/usr/libexec/java_home` finds nothing and anything invoking java
+# directly fails.
+java = "openjdk-21.0.2"

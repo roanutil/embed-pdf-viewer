@@ -1,0 +1,20 @@
+[package]
+name = "epdf-ops"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[lib]
+crate-type = ["rlib"]
+
+[dependencies]
+pdfium = { path = "../pdfium" }
+
+[build-dependencies]
+build-support = { path = "../build-support" }
+
+[dev-dependencies]
+test-support = { path = "../test-support" }
+
+[features]
+panic-probe = []

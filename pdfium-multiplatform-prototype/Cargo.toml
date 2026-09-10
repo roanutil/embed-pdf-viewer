@@ -1,0 +1,19 @@
+[workspace]
+resolver = "2"
+# One line is added here by each crate task, so `cargo metadata` and
+# `cargo test --workspace` succeed at every commit on this branch. The final
+# shape is crates/{pdfium-sys, pdfium, test-support, epdf-ops, epdf-uniffi,
+# epdf-node, epdf-wasm, uniffi-bindgen}.
+members = ["crates/build-support", "crates/pdfium-sys", "crates/test-support", "crates/pdfium", "crates/epdf-ops", "crates/epdf-uniffi", "crates/uniffi-bindgen", "crates/epdf-node", "crates/epdf-wasm"]
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+# Deliberately NOT panic = "abort", unlike pdfium-binding-benchmarks/Cargo.toml.
+# epdf-ops's dispatch wraps every PDFium call in catch_unwind and reports a
+# panic as OpsError::EngineFailed, and panic = "abort" would remove that path.
+# Neither host layer relies on catching panics itself: uniffi does wrap calls in
+# catch_unwind, but napi-derive only does so for functions that opt in with
+# #[napi(catch_unwind)], which crates/epdf-node does not use. Its exports must
+# therefore return Result rather than panic (see epdf-node's engine()).

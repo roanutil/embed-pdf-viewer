@@ -1,0 +1,23 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>EmbedPDF Rust core scaffold</title>
+<link rel="icon" href="data:,">
+<style>
+  body { font: 14px/1.5 system-ui, sans-serif; margin: 2rem; max-width: 60rem; }
+  dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.25rem 1rem; }
+  dt { font-weight: 600; }
+  canvas { border: 1px solid #ccc; display: block; margin: 1rem 0; }
+  pre { white-space: pre-wrap; font-size: 12px; background: #f6f6f6; padding: 1rem; }
+</style>
+<main>
+  <h1>report.pdf page 4, through Rust in wasm</h1>
+  <dl>
+    <dt>Pages</dt><dd id="pages">…</dd>
+    <dt>Page 4</dt><dd id="size">…</dd>
+    <dt>Characters</dt><dd id="chars">…</dd>
+    <dt>Hits for "the"</dt><dd id="hits">…</dd>
+  </dl>
+  <canvas id="page"></canvas>
+  <pre id="text"></pre>
+</main>
+<script type="module" src="/src/main.js"></script>

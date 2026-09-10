@@ -1,0 +1,8 @@
+[versions]
+kotlin = "2.2.20"
+jna = "5.14.0"
+json = "20240303"
+
+[libraries]
+jna = { module = "net.java.dev.jna:jna", version.ref = "jna" }
+json = { module = "org.json:json", version.ref = "json" }

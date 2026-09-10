@@ -1,0 +1,14 @@
+{
+  "name": "@poc/store",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Pure reducer store: one state tree, keyed slices, and two channels (state changed, action dispatched). DOM-free and serializable.",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": { "@poc/shapes": "workspace:*" },
+  "devDependencies": { "typescript": "^5.9.3", "vitest": "^2.1.9" }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "pdfium-binding-benchmarks",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "cmake-js": "^7.3.1",
+    "node-addon-api": "^8.0.0"
+  }
+}

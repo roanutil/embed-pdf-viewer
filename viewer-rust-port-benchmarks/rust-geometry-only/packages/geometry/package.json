@@ -1,0 +1,22 @@
+{
+  "name": "@poc/geometry",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Pure 2D primitives, now implemented in Rust and compiled to WASM. Same functions as the TypeScript original, plus the async init the boundary forces on every consumer.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./node": "./src/init-node.ts",
+    "./wasm-url": "./src/wasm-url.ts"
+  },
+  "scripts": {
+    "build": "node ../../scripts/build-wasm.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.9.3",
+    "vitest": "^2.1.9"
+  }
+}
