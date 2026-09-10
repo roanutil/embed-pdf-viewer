@@ -57,3 +57,5 @@ export type {
 } from './stage-surface';
 export { wheelZoomFactor } from './wheel';
 export type { WheelSample } from './wheel';
+export { indexedDbByteStore } from './byte-store';
+export type { ByteStore, IndexedDbByteStoreOptions } from './byte-store';

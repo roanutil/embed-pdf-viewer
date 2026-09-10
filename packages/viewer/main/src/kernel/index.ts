@@ -52,6 +52,7 @@ export {
   SelectionToken,
   ShellToken,
   StageToken,
+  StampToken,
 } from '@embedpdf/viewer-chrome';
 export type {
   CapabilityToken,

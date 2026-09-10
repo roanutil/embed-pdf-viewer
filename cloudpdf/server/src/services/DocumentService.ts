@@ -1349,6 +1349,40 @@ export class DocumentService {
     return new Uint8Array(result.bytes);
   }
 
+  /**
+   * The chosen annotations' normal appearances as ONE single-page PDF —
+   * `pages.extract`'s sibling for the annotation plane: a READ over the
+   * current layer state (the worker flattens into a scratch document; the
+   * source is untouched), so no write queue, no artifact, no audit row.
+   */
+  async exportAnnotationAppearance(
+    ctx: OpenContext,
+    docId: string,
+    layerName: string,
+    pageObjectNumber: number,
+    refs: AnnotationRef[],
+    signal?: AbortSignal,
+  ): Promise<Uint8Array> {
+    await this.ensureLayerOnPool(ctx, docId, layerName);
+    const build = (jobId: WorkerJobId) =>
+      wirePack({
+        kind: 'annotations.exportAppearance' as const,
+        jobId,
+        docId,
+        layerName,
+        pageObjectNumber,
+        refs,
+      });
+    const result = await this.pool.run(docId, build, signal);
+    if (result.tag !== 'annotations.exportAppearance') {
+      throw new EngineError(
+        EngineErrorCode.WireFormat,
+        `unexpected annotations.exportAppearance payload: ${result.tag}`,
+      );
+    }
+    return new Uint8Array(result.bytes);
+  }
+
   async saveLayerDownloadToTemp(
     ctx: OpenContext,
     docId: string,

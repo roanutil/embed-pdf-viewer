@@ -44,6 +44,10 @@ import {
   type PagesMoveWorkerRequest,
   type PagesRotateWorkerRequest,
   type PagesDeleteWorkerRequest,
+  type PagesSetNameWorkerRequest,
+  type AnnotationsFlattenWorkerRequest,
+  type AnnotationsExportAppearanceWorkerRequest,
+  type PagesRemoveNameWorkerRequest,
   type PagesExtractWorkerRequest,
   type PagesInsertBlankWorkerRequest,
   type PagesInsertWorkerRequest,
@@ -91,6 +95,7 @@ import { DocumentActionsReader } from '../features/actions';
 import {
   AnnotationReader,
   AnnotationAppearanceReader,
+  AnnotationFlattener,
   AnnotationMutator,
   RawAnnotationReader,
 } from '../features/annotations';
@@ -312,6 +317,18 @@ export class WorkerHost {
           break;
         case 'pages.delete':
           resultPack = this.handlePagesDelete(msg, ctrl.signal);
+          break;
+        case 'pages.setName':
+          resultPack = this.handlePagesSetName(msg, ctrl.signal);
+          break;
+        case 'annotations.flatten':
+          resultPack = this.handleAnnotationsFlatten(msg, ctrl.signal);
+          break;
+        case 'annotations.exportAppearance':
+          resultPack = this.handleAnnotationsExportAppearance(msg, ctrl.signal);
+          break;
+        case 'pages.removeName':
+          resultPack = this.handlePagesRemoveName(msg, ctrl.signal);
           break;
         case 'pages.flatten':
           resultPack = this.handlePagesFlatten(msg, ctrl.signal);
@@ -588,6 +605,38 @@ export class WorkerHost {
     return this.finishMutation(session, { tag: 'annotations.delete', result }, req.artifactPath);
   }
 
+  private handleAnnotationsFlatten(
+    req: AnnotationsFlattenWorkerRequest,
+    signal: AbortSignal,
+  ): WirePack<WorkerResultPayload> {
+    const session = this.requireSession(req);
+    const result = new AnnotationFlattener(this.runtime, session).flatten(
+      req.pageObjectNumber,
+      req.refs,
+      req.usage,
+      signal,
+    );
+    if (result.meta === null) return wirePack({ tag: 'annotations.flatten', result });
+    return this.finishMutation(session, { tag: 'annotations.flatten', result }, req.artifactPath);
+  }
+
+  private handleAnnotationsExportAppearance(
+    req: AnnotationsExportAppearanceWorkerRequest,
+    signal: AbortSignal,
+  ): WirePack<WorkerResultPayload> {
+    const session = this.requireSession(req);
+    const exported = new AnnotationFlattener(this.runtime, session).exportAppearance(
+      req.pageObjectNumber,
+      req.refs,
+      signal,
+    );
+    // A read: no finishMutation, no layer artifact. Bytes transfer zero-copy.
+    return wirePack(
+      { tag: 'annotations.exportAppearance', bytes: exported.bytes, size: exported.size },
+      [exported.bytes],
+    );
+  }
+
   private handleAnnotationsMove(
     req: AnnotationsMoveWorkerRequest,
     signal: AbortSignal,
@@ -636,6 +685,33 @@ export class WorkerHost {
     const mutator = new PagesMutator(this.runtime, session);
     const result = mutator.delete(req.pageObjectNumbers, signal);
     return this.finishMutation(session, { tag: 'pages.delete', result }, req.artifactPath);
+  }
+
+  private handlePagesSetName(
+    req: PagesSetNameWorkerRequest,
+    signal: AbortSignal,
+  ): WirePack<WorkerResultPayload> {
+    const session = this.requireSession(req);
+    const mutator = new PagesMutator(this.runtime, session);
+    const result = mutator.setName(
+      {
+        name: req.name,
+        pageObjectNumber: req.pageObjectNumber,
+        ...(req.replace !== undefined ? { replace: req.replace } : {}),
+      },
+      signal,
+    );
+    return this.finishMutation(session, { tag: 'pages.setName', result }, req.artifactPath);
+  }
+
+  private handlePagesRemoveName(
+    req: PagesRemoveNameWorkerRequest,
+    signal: AbortSignal,
+  ): WirePack<WorkerResultPayload> {
+    const session = this.requireSession(req);
+    const mutator = new PagesMutator(this.runtime, session);
+    const result = mutator.removeName({ name: req.name }, signal);
+    return this.finishMutation(session, { tag: 'pages.removeName', result }, req.artifactPath);
   }
 
   private handlePagesFlatten(
@@ -693,7 +769,11 @@ export class WorkerHost {
   ): WirePack<WorkerResultPayload> {
     const session = this.requireSession(req);
     const inserter = new PagesInserter(this.runtime, session);
-    const result = inserter.insertBlank({ size: req.size, count: req.count }, req.destIndex, signal);
+    const result = inserter.insertBlank(
+      { size: req.size, count: req.count },
+      req.destIndex,
+      signal,
+    );
     return this.finishMutation(session, { tag: 'pages.insertBlank', result }, req.artifactPath);
   }
 

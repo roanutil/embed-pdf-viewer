@@ -192,6 +192,7 @@ const annotationStrip: BarSchema = {
       group('annotation-actions', { importance: 4 }, [
         'annotation:comment',
         'annotation:style',
+        'annotation:stamp-from-selection',
         'annotation:link',
         'annotation:goto-link',
         'annotation:remove-link',

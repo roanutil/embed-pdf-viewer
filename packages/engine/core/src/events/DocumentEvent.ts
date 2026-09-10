@@ -21,11 +21,13 @@ import type {
   FormWidgetLinkResult,
 } from '../mutation/FormMutationResults';
 import type { MetadataUpdateResult } from '../mutation/MetadataUpdateResult';
+import type { AnnotationFlattenResult } from '../mutation/AnnotationFlattenResult';
 import type { PageDeleteResult } from '../mutation/PageDeleteResult';
 import type { PageFlattenResult, PageFlattenUsage } from '../mutation/PageFlattenResult';
 import type { RedactionApplyResult } from '../mutation/RedactionApplyResult';
 import type { PageInsertResult } from '../mutation/PageInsertResult';
 import type { PageMoveResult } from '../mutation/PageMoveResult';
+import type { PageNameResult } from '../mutation/PageNameResult';
 import type { PageRotateResult } from '../mutation/PageRotateResult';
 
 /**
@@ -97,6 +99,10 @@ export type DocumentEvent =
       origin: EventOrigin;
     } & AnnotationMoveResult)
   | ({
+      type: 'annotations.flattened';
+      origin: EventOrigin;
+    } & AnnotationFlattenResult)
+  | ({
       type: 'pages.moved';
       /** Locally: the moved block. Remotely the audit row only records the
        *  outcome, so this is the full new order — consumers should read
@@ -124,6 +130,14 @@ export type DocumentEvent =
       destIndex?: number;
       origin: EventOrigin;
     } & PageInsertResult)
+  | ({
+      type: 'pages.named';
+      /** The decoded key that was registered, renamed, or removed. */
+      name: string;
+      /** The page it now points at; `null` when the registration was removed. */
+      pageObjectNumber: PageObjectNumber | null;
+      origin: EventOrigin;
+    } & PageNameResult)
   | ({ type: 'attachment.created'; origin: EventOrigin } & AttachmentCreateResult)
   | ({ type: 'attachment.deleted'; origin: EventOrigin } & AttachmentDeleteResult)
   | ({ type: 'metadata.updated'; origin: EventOrigin } & MetadataUpdateResult)

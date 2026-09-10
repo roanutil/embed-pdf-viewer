@@ -56,7 +56,7 @@
     "embedpdf"
   ],
   "scripts": {
-    "build": "rollup -c",
+    "build": "rollup -c && node build/generate-wasm-inline.mjs",
     "build:target": "bash ./scripts/build-target.sh",
     "build:local": "bash ./scripts/build-all-local.sh",
     "clean": "rimraf dist build/libpdfium build/generated npm/*/lib",

@@ -126,6 +126,9 @@ function createFakeRuntime(): PdfRuntimeModule & {
       FPDF_GetPageLabel: () => 0,
       // No page-level actions in this ownership/routing fixture.
       EPDFDoc_GetPageActionModel: () => ptr(0),
+      // No named pages either: `pages.list` reads both catalog name trees.
+      EPDFDoc_GetNamedPageCount: () => 0,
+      EPDFDoc_GetNamedPageAt: () => 0,
       EPDF_LoadMemBaseDocument64: (dataPtr: Ptr, size: number, password: string) => {
         calls.loadMemBases.push({ ptr: dataPtr, size, password });
         return ptr(201);

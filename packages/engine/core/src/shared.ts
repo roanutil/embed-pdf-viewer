@@ -21,6 +21,7 @@ export type {
 export type { DocumentMetadata, DocumentMetadataTrapped } from './dto/DocumentMetadata';
 export type { MetadataPatch } from './dto/MetadataPatch';
 export type { PageListSnapshot } from './dto/PageListSnapshot';
+export type { NamedPageEntry, NamedPageTarget } from './dto/NamedPage';
 export type { PageLayout, PageBoxes, PageRotation } from './dto/PageLayout';
 export type {
   PdfActionType,
@@ -73,11 +74,7 @@ export type {
   RotatedGeometryRun,
   UprightGeometryRun,
 } from './dto/PageGeometrySnapshot';
-export {
-  glyphLooseBounds,
-  glyphLooseQuad,
-  isRotatedGeometryRun,
-} from './dto/PageGeometrySnapshot';
+export { glyphLooseBounds, glyphLooseQuad, isRotatedGeometryRun } from './dto/PageGeometrySnapshot';
 export type {
   PageImageHandle,
   PageImageBlobSource,
@@ -463,6 +460,14 @@ export { searchContentEpoch, canonicalSearchQuery } from './search/epoch';
 export type { PageMoveInput } from './mutation/PageMoveInput';
 export type { PageMoveResult, PageMoveCache } from './mutation/PageMoveResult';
 export type { PageStructureCache } from './mutation/PageStructureCache';
+export type { PageNameInput, PageRemoveNameInput } from './mutation/PageNameInput';
+export type { PageNameResult } from './mutation/PageNameResult';
+export type {
+  AnnotationFlattenInput,
+  AnnotationFlattenItemResult,
+  AnnotationFlattenResult,
+  AnnotationAppearanceExportInput,
+} from './mutation/AnnotationFlattenResult';
 export type { PageRotateInput } from './mutation/PageRotateInput';
 export type { PageRotateResult } from './mutation/PageRotateResult';
 export type { PageDeleteInput } from './mutation/PageDeleteInput';

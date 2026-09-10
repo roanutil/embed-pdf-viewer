@@ -12,13 +12,19 @@ import type { BarSchema, ChromeSchema, MenuSchema } from '@embedpdf/react/toolba
 import { defaultChrome, getMenu, getModeBar, getStrip } from './config/chrome';
 import type { IconDef } from './ui/icons';
 
+export interface StampsCustomization {
+  /** `false`: no built-in library. A string: URL template with `{locale}`. */
+  readonly defaultLibrary?: false | string;
+}
+
 export interface ResolvedViewerConfig {
   readonly chrome: ChromeSchema;
   /** User-registered icons — additive over the built-in set. */
   readonly icons: Readonly<Record<string, IconDef>>;
+  readonly stamps: StampsCustomization;
 }
 
-const DEFAULT_CONFIG: ResolvedViewerConfig = { chrome: defaultChrome, icons: {} };
+const DEFAULT_CONFIG: ResolvedViewerConfig = { chrome: defaultChrome, icons: {}, stamps: {} };
 
 const ViewerConfigContext = createContext<ResolvedViewerConfig>(DEFAULT_CONFIG);
 
@@ -42,4 +48,8 @@ export function useStripSchema(id: string): BarSchema | undefined {
 
 export function useCustomIcons(): Readonly<Record<string, IconDef>> {
   return useContext(ViewerConfigContext).icons;
+}
+
+export function useStampsConfig(): StampsCustomization {
+  return useContext(ViewerConfigContext).stamps;
 }

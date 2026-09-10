@@ -9,6 +9,7 @@
  */
 export { FullViewer, themeConfigOf } from './viewer';
 export type { FullViewerProps, ThemeConfig, ThemeTokens, ViewerCustomization } from './viewer';
+export type { StampsCustomization } from './config-context';
 // The prop types a delivery needs to speak FullViewer's contract.
 export type { Engine, EngineFactory, InitialDocument } from '@embedpdf/react/runtime';
 
@@ -35,6 +36,9 @@ export { SearchToken } from '@embedpdf/react/search';
 export { SelectionToken } from '@embedpdf/react/selection';
 export { FormToken } from '@embedpdf/react/form';
 export { RedactionToken } from '@embedpdf/react/redaction';
+// Stamp LIBRARIES are workspace state an embedder seeds: `viewer.get(StampToken)
+// .importLibraryPdf(companyStamps)` puts their own stamps in the stamps sidebar.
+export { StampToken } from '@embedpdf/react/stamp';
 export { InteractionToken } from '@embedpdf/react/interaction';
 export { I18nToken } from '@embedpdf/react/i18n';
 export { ShellToken } from '@embedpdf/react/shell';

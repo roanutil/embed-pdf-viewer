@@ -25,6 +25,7 @@ import {
   type SelectionProps,
   type FilePickerProvider,
   type TextItem,
+  previewBucket,
 } from '@embedpdf/plugin-annotation';
 import { pickFile } from '@embedpdf/web';
 // The render layer is framework code, so it resolves the FULL host lens
@@ -69,11 +70,7 @@ import {
 } from './runtime';
 import type { PageContextValue, PageLayout } from './runtime';
 
-export {
-  sameAnchor,
-  sameCreationDraftAnchor,
-  type SelectionAnchor,
-} from './annotation-anchors';
+export { sameAnchor, sameCreationDraftAnchor, type SelectionAnchor } from './annotation-anchors';
 export { useAnnotationSelected } from './annotation-hooks';
 
 /** `#rrggbb` → `rgba(...)` — the marquee's translucent fill derives from the
@@ -308,25 +305,36 @@ function ToolGhostImage({ page }: { page: PageContextValue }) {
   const ghost = useSelector(AnnotationHostToken, (c) => c.toolGhost(page.pon));
   const epoch = useSelector(AnnotationHostToken, (c) => c.stampArmEpoch());
   const [url, setUrl] = useState<string | null>(null);
+  // The ghost is a bitmap of vector artwork, right at ONE size: ask for the
+  // bucket that covers the box's DEVICE width (points × device px per point),
+  // so it stays sharp at every zoom and density. The plugin caches per bucket.
+  const bucket =
+    ghost?.kind === 'image' ? previewBucket(ghost.box.width * page.transform.renderScale) : 0;
 
   useEffect(() => {
-    const preview = anno.armedStampPreview();
-    if (!preview) {
+    if (!bucket) {
       setUrl(null);
       return;
     }
-    // Copy into an EXACT ArrayBuffer (the engine idiom): a Uint8Array view may
-    // sit on a larger or shared buffer, which Blob won't accept.
-    const body = new ArrayBuffer(preview.bytes.byteLength);
-    new Uint8Array(body).set(preview.bytes);
-    const blob = new Blob([body], preview.mimeType ? { type: preview.mimeType } : {});
-    const obj = URL.createObjectURL(blob);
-    setUrl(obj);
+    let cancelled = false;
+    let obj: string | null = null;
+    void anno.armedStampPreview(bucket).then((preview) => {
+      if (cancelled || !preview) return;
+      // Copy into an EXACT ArrayBuffer (the engine idiom): a Uint8Array view
+      // may sit on a larger or shared buffer, which Blob won't accept.
+      const body = new ArrayBuffer(preview.bytes.byteLength);
+      new Uint8Array(body).set(preview.bytes);
+      const blob = new Blob([body], preview.mimeType ? { type: preview.mimeType } : {});
+      obj = URL.createObjectURL(blob);
+      // The previous bucket's image stays up until this one resolves — no
+      // flicker while a zoom crosses a bucket boundary.
+      setUrl(obj);
+    });
     return () => {
-      URL.revokeObjectURL(obj);
-      setUrl(null);
+      cancelled = true;
+      if (obj) URL.revokeObjectURL(obj);
     };
-  }, [anno, epoch]);
+  }, [anno, epoch, bucket]);
 
   if (!ghost || ghost.kind !== 'image' || !url) return null;
   const b = boxOf(ghost.box, page);
