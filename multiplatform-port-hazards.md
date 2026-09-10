@@ -34,7 +34,7 @@ read line by line.
 | Rust design | `crates/pdfium-sys` (`bindgen`) plus `crates/pdfium` RAII types. Out-parameters become stack locals. Strings go through `widestring` / `Vec<u16>`. |
 | Rework | Every function signature in `features/` changes shape. The logic inside survives; the plumbing around each PDFium call is rewritten. This is the single largest source of diff volume in the port. |
 | Port order | G0 (`multiplatform-port-order.md`) |
-| Retirement | The Rust layer exists from G0, but the TypeScript one is not deleted then. Stage A keeps TypeScript as session owner and every unflipped service still reaches PDFium through it, so `runtime/memory/` and the generated `PdfFunctions` retire family by family, last removal in Phase 4. |
+| Retirement | The Rust layer exists from G0, but the TypeScript one is not deleted then. Stage A keeps TypeScript as session owner and every unflipped service still reaches PDFium through it, so porting a family only ends its use on the Rust path. `runtime/memory/`, generated `PdfFunctions`, and `PdfRuntimeMemory` stay maintained through Phase 5 for the TypeScript server and rollback backends. Final removal in Phase 6 requires passing the server migration and retiring the TypeScript fallback. |
 
 ### 2.2 Document session, page pool, revisions
 
@@ -93,7 +93,7 @@ read line by line.
 | Field | Value |
 |---|---|
 | TypeScript | `PdfRuntimeModule.fileAccess.fromNodeFile(path)` and `fileWrite.toNodeFile(path)` (`packages/engine/runtime/src/core/pdf-runtime-module.ts:46,58,66,67`), implemented in `runtime/src/wasm/wasm-runtime.ts` and `runtime/src/native/native-runtime.ts`. Callers: `FontRegistrar.ts:108-111` (`EPDFFont_RegisterFont`, handles retained in `fileHandles` at line 51 until `clear`), `attachmentPrimitives.ts:193-197` (`EPDFAttachment_ExtractFile`, server mode), `PdfDocumentOpener.ts:108` (`open.layerFileBase`), `BaseDocumentRegistry.acquireFileBase`. |
-| Why it does not port | Services never touch `FPDF_FILEACCESS` / `FPDF_FILEWRITE` directly; the runtime package builds those structs and their function-table entries. That package is deleted with the memory layer (2.1), so the mechanism has to be rebuilt, not moved. Two lifetime rules ride on it: a font registered from a path keeps its handle alive until the registry is cleared (PDFium range-reads lazily), and a file-backed base document keeps its handle for the session. |
+| Why it does not port | Services never touch `FPDF_FILEACCESS` / `FPDF_FILEWRITE` directly; the runtime package builds those structs and their function-table entries. The legacy runtime plumbing is removed with the memory layer only after the server migration passes and the TypeScript fallback is retired (2.1); the loader stays. Rust needs its own mechanism before that removal. Two lifetime rules ride on it: a font registered from a path keeps its handle alive until the registry is cleared (PDFium range-reads lazily), and a file-backed base document keeps its handle for the session. |
 | Rust design | `extern "C" fn` trampolines recovering a `&mut dyn Read + Seek` / `&mut dyn Write` from the `void*` param. Owned handle types (`FileAccess`, `FileWrite`) whose `Drop` runs after the PDFium object that references them; `FontRegistry` and `Session` hold them in `Vec`s. Web has no file path inputs and keeps returning `NotImplemented` for those kinds. |
 | Rework | Low to medium. Four call sites. The retained-handle lifetimes need a test each. |
 | Port order | G3, G4, G8 |

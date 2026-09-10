@@ -797,9 +797,9 @@ cancellation-after-apply plus partial native failure semantics get their own tes
 it easy to add a throw path past the apply boundary and quietly break the non-atomic mutation
 contract; that needs a review rule and a test, not a comment.
 
-The cost to state plainly: through Phases 2 and 4 the worker ships both implementations, so the WASM
-module grows until the last family flips, and two implementations of the same behavior sit in the
-tree. That is the price of not attempting 16,620 lines in one commit.
+The cost to state plainly: through Phase 5 the worker ships both implementations for rollback, so
+two implementations of the same behavior and their runtime dependencies sit in the tree until the
+server migration passes and the TypeScript fallback is retired. That is the price of not attempting 16,620 lines in one commit.
 
 ## Phase 5: scale and isolation
 
@@ -847,8 +847,10 @@ compatibility table reads retained rather than removed.
 
 Exit: v4 published, the compatibility ledger complete and the migration guide written from actual
 changes, the default web backend switched only where parity and performance are demonstrated, retired
-bridges removed, legacy `engine-services` removed only if the Phase 5 server milestone has passed and
-otherwise retained with the ledger saying so, and a rehearsed rollback.
+bridges removed, legacy `engine-services` and runtime plumbing (`runtime/memory/`, generated
+`PdfFunctions` and `PdfRuntimeMemory`) removed only if the Phase 5 server milestone has passed and
+the TypeScript fallback is retired, otherwise retained with the ledger saying so, and a rehearsed
+rollback.
 
 A mobile reader release may precede native editing and may precede the web default switch. The
 documentation has to say so rather than implying parity, and the web default must not move because a

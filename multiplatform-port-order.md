@@ -28,10 +28,10 @@ in `packages/engine/core/src/conformance/`.
 
 | Package | Lines | Ports | Stays TypeScript | Deleted |
 |---|---|---|---|---|
-| `packages/engine/services/src` | 16,620 | `document-session/` (832), `features/` (13,790), `shared/` (151), `worker-host/WorkerHost.ts:1380-1414` (`finishMutation`, `saveLayerArtifact`) | `worker-host/WorkerHost.ts` message loop and transport (~1,420 of 1,459); `events/EventHub.ts` (99, adapter delivery used only by `engine/main`) | `runtime/memory/` (193): replaced by `bindgen` structs in Rust, but retired incrementally on web. Stage A runs on it. Last removal when the final Stage C family flips (Phase 4). |
+| `packages/engine/services/src` | 16,620 | `document-session/` (832), `features/` (13,790), `shared/` (151), `worker-host/WorkerHost.ts:1380-1414` (`finishMutation`, `saveLayerArtifact`) | `worker-host/WorkerHost.ts` message loop and transport (~1,420 of 1,459); `events/EventHub.ts` (99, adapter delivery used only by `engine/main`) | `runtime/memory/` (193): replaced by `bindgen` structs in Rust; retained for the TypeScript server and rollback backends through Phase 5. Final removal in Phase 6 only after server migration passes and the TypeScript fallback is retired. |
 | `packages/engine/core/src` | 25,683 (18,562 outside `conformance/`) | 8,811 hand-ported: `text/` (762), `search/` (655), `dto/` (1,636), `errors/` (150), `identity/` (215), `revision/` (64), `mutation/` (635), `geometry/` (300), `annotation/` engine behavior (2,514: 997 top-level plus 1,517 in `kinds/`), `forms/` (797), `auth/scope/` (904, deliberate duplicate), `events/DocumentEvent.ts` (179). Not hand-written but moved: `annotation/**/schema.ts` (1,070) becomes generated, `annotation/kinds/**/index.ts` (695) is mechanical. | `wire/` (4,586), `engine/` interfaces (1,487), `promise/` (172), `resource/` (189), `annotation/relationships.ts` (147), `annotation/comments.ts` (297), `conformance/` (7,121) | none |
 | `packages/engine/main/src` | 5,568 | none | all (`LocalEngine`, `Local*Service`, transport, worker bootstrap, web capability guard) | none |
-| `packages/engine/runtime` | n/a | none | thin WASM loader | `PdfFunctions`, `PdfRuntimeMemory` generated peek/poke layer, retired incrementally with the last Stage C family (Phase 4) |
+| `packages/engine/runtime` | n/a | none | thin WASM loader | `PdfFunctions`, `PdfRuntimeMemory` generated peek/poke layer, retained through Phase 5; final removal in Phase 6 only after server migration passes and the TypeScript fallback is retired |
 
 ## 3. Groups
 
@@ -44,7 +44,7 @@ in `packages/engine/core/src/conformance/`.
 | Depends on | Fork headers at the release pin |
 | Gate | Builds for `wasm32-eh`, `aarch64-apple-ios`, `aarch64-apple-ios-sim`, `aarch64-linux-android`, `x86_64-linux-android`, host. Unsafe audit recorded. |
 | Phase | 0 |
-| Notes | "Replaces" is not "deletes in Phase 0". Stage A keeps TypeScript as the session owner and reaches PDFium through the generated function table (`PagePtrPool.ts:36`), and 102 of 145 service files import `@embedpdf/engine-runtime` at the start of the port. The TypeScript memory layer stays live and maintained until the last Stage C family flips. |
+| Notes | "Replaces" is not "deletes in Phase 0". Stage A keeps TypeScript as the session owner and reaches PDFium through the generated function table (`PagePtrPool.ts:36`), and 102 of 145 service files import `@embedpdf/engine-runtime` at the start of the port. The TypeScript memory layer stays live and maintained through Phase 5 for the server and rollback backends. Flipping the last Stage C family ends its use on the Rust path; final deletion in Phase 6 requires passing the server migration and retiring the TypeScript fallback. |
 
 ### G1. Shared kernel (pure, no PDFium)
 
@@ -241,8 +241,8 @@ is designed before the Stage B session exists, so expect to widen it once.
 | Module | Disposition | Reason |
 |---|---|---|
 | `services/src/worker-host/WorkerHost.ts` message loop, 64 `case` arms, transport | Stays TypeScript on web; native has no transport | Transport is not engine behavior. `finishMutation` is, and ports in G10. |
-| `services/src/runtime/memory/*` | Deleted incrementally, last removal in Phase 4 | Peek/poke over WASM linear memory. `bindgen` structs replace it in Rust, but Stage A runs on it: TypeScript owns the session through G10, and every service that has not yet flipped reaches PDFium through it. |
-| `packages/engine/runtime` generated `PdfFunctions`, `PdfRuntimeMemory` | Deleted incrementally, last removal in Phase 4; loader kept | Same. |
+| `services/src/runtime/memory/*` | Retained through Phase 5; final removal in Phase 6 after server migration passes and the TypeScript fallback is retired | Peek/poke over WASM linear memory. `bindgen` structs replace it in Rust, but Stage A runs on it: TypeScript owns the session through G10, and every service that has not yet flipped reaches PDFium through it. The TypeScript fallback and `cloudpdf/server/src/runtime/worker-entry.ts`, which constructs the runtime and shared `WorkerHost`, still need it after the final Rust family flips. |
+| `packages/engine/runtime` generated `PdfFunctions`, `PdfRuntimeMemory` | Retained through Phase 5; final removal in Phase 6 after server migration passes and the TypeScript fallback is retired; loader kept | Same. |
 | `packages/engine/main/src/*` | Stays TypeScript | Orchestration, transport, `LocalEngine`. Web capability guard (`LocalPageTextService.ts:48`) stays here; native enforcement is G3. |
 | `core/src/wire/*` (schemas, paths, resources, tokens, cdn, `WirePack`, `flatten`, `renderOptionsCodec`) | Stays TypeScript | Cloud HTTP contract. `worker-protocol.ts` DTOs become generated from Rust. |
 | `core/src/engine/*` interfaces | Stays TypeScript | Web public API. Swift and Kotlin facades are handwritten equivalents, not translations. |
