@@ -20,12 +20,17 @@
     "./wasm-url": {
       "types": "./wasm-url.d.ts",
       "default": "./wasm-url.js"
+    },
+    "./wasm-inline": {
+      "types": "./wasm-inline.d.ts",
+      "default": "./lib/wasm-inline.js"
     }
   },
   "files": [
     "lib",
     "wasm-url.js",
     "wasm-url.d.ts",
+    "wasm-inline.d.ts",
     "README.md",
     "LICENSE"
   ],

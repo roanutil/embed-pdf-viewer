@@ -79,5 +79,8 @@ jobs:
           if [ -n "$status" ]; then
             echo "::error::Building rewrote tracked files — commit the build-normalized form or fix the package's epdf configuration:"
             echo "$status"
+            echo "::group::What changed"
+            git --no-pager diff
+            echo "::endgroup::"
             exit 1
           fi

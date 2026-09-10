@@ -9,9 +9,15 @@
   "types": "./dist/index.d.cts",
   "exports": {
     ".": {
+      "es2020": "./dist/portable.js",
       "development": "./src/index.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
+    },
+    "./portable": {
+      "development": "./src/portable.ts",
+      "import": "./dist/portable.js",
+      "require": "./dist/portable.cjs"
     },
     "./package.json": "./package.json",
     "./worker-entry": "./src/worker/worker-entry.ts",
@@ -70,8 +76,13 @@
     "access": "public",
     "exports": {
       ".": {
+        "es2020": "./dist/portable.js",
         "import": "./dist/index.js",
         "require": "./dist/index.cjs"
+      },
+      "./portable": {
+        "import": "./dist/portable.js",
+        "require": "./dist/portable.cjs"
       },
       "./package.json": "./package.json",
       "./worker-entry": "./src/worker/worker-entry.ts",
@@ -86,7 +97,12 @@
       "./worker-entry",
       "./worker-source"
     ],
-    "devExports": "development"
+    "devExports": "development",
+    "conditions": {
+      ".": {
+        "es2020": "./dist/portable.js"
+      }
+    }
   },
   "sideEffects": [
     "./src/worker/worker-entry.ts",
