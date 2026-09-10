@@ -270,7 +270,7 @@ async function createEngineWorker(
         'Content-Security-Policy omits `worker-src blob:`. Self-host the worker instead: copy ' +
         "@embedpdf/engine's workers/embedpdf-worker.js and embedpdf.wasm into one served directory " +
         "and pass `worker: '/that/directory/embedpdf-worker.js'` to localEngine(). " +
-        'See https://www.embedpdf.com/docs/self-hosting',
+        'See https://www.embedpdf.com/docs/viewer/self-hosting',
       { cause },
     );
   }

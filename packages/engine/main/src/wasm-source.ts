@@ -127,7 +127,7 @@ const NO_SIBLING_MESSAGE =
   '`@embedpdf/engine-runtime-wasm32/wasm-url` module is unavailable. Either import ' +
   '`localEngine` from `@embedpdf/engine/portable` (the wasm travels inside your build as ' +
   'a lazy chunk — works with every bundler), or self-host the file and pass `assetsUrl` / ' +
-  '`wasmUrl` / `wasmBinary`. See https://www.embedpdf.com/docs/self-hosting';
+  '`wasmUrl` / `wasmBinary`. See https://www.embedpdf.com/docs/viewer/self-hosting';
 
 /**
  * The bundler-resolved sibling URL, or null when this build has none. The

@@ -94,6 +94,6 @@ function describeBootError(err: unknown, init: EngineWorkerInit): string {
     `${source}. Your build did not ship the wasm at that location — either import ` +
     `\`localEngine\` from \`@embedpdf/engine/portable\` (the wasm travels inside your build), ` +
     `or self-host the file and pass \`assetsUrl\`/\`wasmUrl\` to localEngine(), or provide ` +
-    `the bytes via \`wasmBinary\`. See https://www.embedpdf.com/docs/self-hosting — ${detail}`
+    `the bytes via \`wasmBinary\`. See https://www.embedpdf.com/docs/viewer/self-hosting — ${detail}`
   );
 }
