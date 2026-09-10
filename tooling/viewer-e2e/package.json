@@ -4,7 +4,9 @@
   "type": "module",
   "scripts": {
     "test:e2e": "playwright test",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:perf": "VIEWER_E2E_PERF=1 playwright test --repeat-each=5",
+    "test:report": "node --experimental-strip-types --test performance.test.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",

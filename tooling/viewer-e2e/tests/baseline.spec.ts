@@ -1,8 +1,11 @@
 import { test, expect, type Page } from '@playwright/test';
+import { installPerformanceProbe, distribution } from '../performance';
 import { fileURLToPath } from 'node:url';
 import type {} from '../../../examples/viewer-react/src/e2e';
 
 const fixture = fileURLToPath(new URL('../fixtures/baseline.pdf', import.meta.url));
+const performanceEnabled = process.env.VIEWER_E2E_PERF === '1';
+const flowStarts = new WeakMap<Page, number>();
 const errors = new WeakMap<Page, string[]>();
 const snapshot = (page: Page) => page.evaluate(() => window.viewerBaseline.snapshot());
 // The base image is a direct child of the page content surface. Tiles live
@@ -144,6 +147,7 @@ async function copiedText(page: Page) {
 }
 
 test.beforeEach(async ({ page, context }, info) => {
+  if (performanceEnabled) await page.addInitScript(installPerformanceProbe);
   errors.set(page, []);
   page.on('pageerror', (error) => errors.get(page)!.push(error.message));
   await context.route('**/*', (route) => {
@@ -159,13 +163,24 @@ test.beforeEach(async ({ page, context }, info) => {
     window.renderProbe = { requests: [], pending: [] };
     const send = Worker.prototype.postMessage;
     const observed = new WeakSet<Worker>();
+    const timings = new WeakMap<Worker, Map<number, { start: number; kind: string }>>();
     Worker.prototype.postMessage = function (
       message,
       transfer: Transferable[] | StructuredSerializeOptions = [],
     ) {
       if (!observed.has(this)) {
         observed.add(this);
+        timings.set(this, new Map());
         this.addEventListener('message', ({ data }) => {
+          const timing = timings.get(this)!.get(data.jobId);
+          if (timing && window.viewerPerformance) {
+            window.viewerPerformance.renders.push({
+              kind: timing.kind,
+              durationMs: performance.now() - timing.start,
+              outcome: data.kind,
+            });
+            timings.get(this)!.delete(data.jobId);
+          }
           window.renderProbe.pending = window.renderProbe.pending.filter((id) => id !== data.jobId);
         });
       }
@@ -178,6 +193,11 @@ test.beforeEach(async ({ page, context }, info) => {
           }),
         );
         window.renderProbe.pending.push(message.jobId);
+        if (window.viewerPerformance)
+          timings.get(this)!.set(message.jobId, {
+            start: performance.now(),
+            kind: message.kind,
+          });
       }
       return Reflect.apply(send, this, [message, transfer]);
     };
@@ -191,9 +211,43 @@ test.beforeEach(async ({ page, context }, info) => {
     el.shadowRoot!.append(style);
   });
   await painted(page);
+  if (performanceEnabled) {
+    await page.waitForFunction(() => window.viewerPerformance?.firstPageFrameMs != null);
+    flowStarts.set(page, performance.now());
+  }
 });
 
-test.afterEach(async ({ page }) => {
+test.afterEach(async ({ page, browser }, info) => {
+  const flowEnd = performance.now();
+  if (performanceEnabled && !page.isClosed()) {
+    const probe = await page.evaluate(() => window.viewerPerformance);
+    if (probe) {
+      const metrics: Record<string, number> = {};
+      if (probe.firstPageFrameMs !== null)
+        metrics.navigationToFirstPageFrameMs = probe.firstPageFrameMs;
+      const start = flowStarts.get(page);
+      if (start !== undefined) metrics.flowWallMs = flowEnd - start;
+      const renders = probe.renders.filter((r) => r.outcome === 'resolve').map((r) => r.durationMs);
+      if (renders.length) {
+        metrics.renderRoundTripMedianMs = distribution(renders).median;
+        metrics.renderRoundTripP95Ms = distribution(renders).p95;
+      }
+      await info.attach('viewer-performance', {
+        contentType: 'application/json',
+        body: Buffer.from(
+          JSON.stringify({
+            project: info.project.name,
+            flow: info.title,
+            repeat: info.repeatEachIndex,
+            retry: info.retry,
+            browserVersion: browser.version(),
+            metrics,
+            renders: probe.renders,
+          }),
+        ),
+      });
+    }
+  }
   expect(errors.get(page), 'uncaught browser errors').toEqual([]);
 });
 

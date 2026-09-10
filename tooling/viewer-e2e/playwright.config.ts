@@ -7,6 +7,7 @@ const backends = (process.env.VIEWER_E2E_BACKENDS ?? 'typescript').split(',');
 for (const backend of backends) {
   if (backend !== 'typescript') throw new Error(`Unsupported viewer test backend: ${backend}`);
 }
+const performanceEnabled = process.env.VIEWER_E2E_PERF === '1';
 const packed = process.env.VIEWER_E2E_PACKED_DIR;
 const port = packed ? 5241 : 5240;
 export default defineConfig({
@@ -19,6 +20,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: 0,
   reporter: [
+    ...(performanceEnabled ? [['./performance-reporter.ts'] as [string]] : []),
     ['list'],
     [
       'html',
@@ -37,8 +39,8 @@ export default defineConfig({
     colorScheme: 'light',
     reducedMotion: 'reduce',
     serviceWorkers: 'block',
-    trace: 'retain-on-failure',
-    screenshot: 'only-on-failure',
+    trace: performanceEnabled ? 'off' : 'retain-on-failure',
+    screenshot: performanceEnabled ? 'off' : 'only-on-failure',
   },
   projects: backends.flatMap((backend) =>
     (['chromium', 'firefox', 'webkit'] as const).map((browserName) => ({

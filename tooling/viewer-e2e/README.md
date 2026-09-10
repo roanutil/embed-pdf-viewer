@@ -33,3 +33,29 @@ VIEWER_E2E=1 pnpm verify:consume
 ```
 
 `VIEWER_E2E_PACKED_DIR` is set by the consume runner; it points the Playwright web server at that installed fixture. Browser failures fail the consume gate and retain the fixture for inspection.
+
+## Local performance measurement
+
+Performance measurement is opt-in and local only; CI and ordinary `test:viewer:e2e` runs do not enable it. After the build/browser setup above:
+
+```sh
+# Five fresh-context repetitions of each flow in one browser, serially.
+VIEWER_E2E_PERF_OUTPUT="$PWD/tooling/viewer-e2e/performance-results/before.json" \
+  pnpm test:viewer:perf --project=chromium-typescript
+# Make the port change, rebuild the affected packages, then repeat with after.json.
+node tooling/viewer-e2e/compare-performance.mjs \
+  tooling/viewer-e2e/performance-results/before.json \
+  tooling/viewer-e2e/performance-results/after.json
+```
+
+Without `VIEWER_E2E_PERF_OUTPUT`, each run writes a timestamped JSON report and adjacent `.json.md` summary under `performance-results/` (gitignored). Explicit output paths are resolved from the tooling package's working directory; use absolute paths as above. `--repeat-each=10` overrides the five-repeat default. Browser/backend projects and `VIEWER_E2E_PACKED_DIR` work as in the correctness suite. Tracing and failure screenshots are disabled in performance mode to reduce recording overhead; all correctness assertions still run.
+
+Metrics are milliseconds, with raw samples and per-flow/browser min, median, nearest-rank p95, and max:
+
+- `navigationToFirstPageFrameMs`: browser navigation time origin to the animation frame after the first visible page image is decoded. Includes app load and engine startup. This measures a frame opportunity, not a compositor presentation timestamp or completion of all sharp tiles. The F1 pixel assertion still verifies content separately.
+- `flowWallMs`: Node's monotonic clock from the end of viewer setup to entry into teardown. Includes the entire flow's Playwright input, assertions, polling, and IPC. It is an end-to-end scenario cost, not isolated engine latency. F1's startup is measured separately by the navigation metric.
+- `renderRoundTripMedianMs` / `renderRoundTripP95Ms`: browser-clock render dispatch to worker response, including queueing, transport and worker work. Successful render requests across startup and the flow contribute; rejected requests remain in raw data. These are per-run request distributions, then summarized across repeats—not a sum of overlapping work or paint latency.
+
+The report records commit/worktree status, fixture digest, browser and Playwright versions, CPU/OS, viewport, repeat index, delivery mode, and test status. Failed/retried samples are preserved but excluded from summaries. Comparison rejects failed reports and mismatched environments, browsers, fixtures, delivery modes, or flow sets. Positive median changes mean slower; there are no thresholds or CI gates.
+
+Use the same machine, browser, power settings and background load before/after. These small-fixture results are not a large-document benchmark. Contexts are fresh, but the browser process may be reused and OS/Vite caches persist; workspace mode also includes Vite development overhead. The server restarts for each command, so inspect raw repeat indices for first-run compilation or warmup effects. Rebuild between implementations and use matching repeat counts. With five samples, p95 is simply the maximum; small deltas need more evidence.
