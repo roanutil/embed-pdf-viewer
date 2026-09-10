@@ -29,7 +29,7 @@ in `packages/engine/core/src/conformance/`.
 | Package | Lines | Ports | Stays TypeScript | Deleted |
 |---|---|---|---|---|
 | `packages/engine/services/src` | 16,620 | `document-session/` (832), `features/` (13,790), `shared/` (151), `worker-host/WorkerHost.ts:1380-1414` (`finishMutation`, `saveLayerArtifact`) | `worker-host/WorkerHost.ts` message loop and transport (~1,420 of 1,459); `events/EventHub.ts` (99, adapter delivery used only by `engine/main`) | `runtime/memory/` (193): replaced by `bindgen` structs in Rust; retained for the TypeScript server and rollback backends through Phase 5. Final removal in Phase 6 only after server migration passes and the TypeScript fallback is retired. |
-| `packages/engine/core/src` | 25,683 (18,562 outside `conformance/`) | 8,811 hand-ported: `text/` (762), `search/` (655), `dto/` (1,636), `errors/` (150), `identity/` (215), `revision/` (64), `mutation/` (635), `geometry/` (300), `annotation/` engine behavior (2,514: 997 top-level plus 1,517 in `kinds/`), `forms/` (797), `auth/scope/` (904, deliberate duplicate), `events/DocumentEvent.ts` (179). Not hand-written but moved: `annotation/**/schema.ts` (1,070) becomes generated, `annotation/kinds/**/index.ts` (695) is mechanical. | `wire/` (4,586), `engine/` interfaces (1,487), `promise/` (172), `resource/` (189), `annotation/relationships.ts` (147), `annotation/comments.ts` (297), `conformance/` (7,121) | none |
+| `packages/engine/core/src` | 25,683 (18,562 outside `conformance/`) | 8,811 hand-ported: `text/` (762), `search/` (655), `dto/` (1,636), `errors/` (150), `identity/` (215), `revision/` (64), `mutation/` (635), `geometry/` (300), `annotation/` engine behavior (2,514: 997 top-level plus 1,517 in `kinds/`), `forms/` (797), `auth/scope/` (904, deliberate duplicate), `events/DocumentEvent.ts` (179). Mechanical updates: `annotation/kinds/**/index.ts` (695). | Handwritten annotation schemas (`base.schema.ts` plus `kinds/*/schema.ts`, 1,070), with bidirectional parity tests against generated types and Rust serialization; `wire/` (4,586), `engine/` interfaces (1,487), `promise/` (172), `resource/` (189), `annotation/relationships.ts` (147), `annotation/comments.ts` (297), `conformance/` (7,121) | none |
 | `packages/engine/main/src` | 5,568 | none | all (`LocalEngine`, `Local*Service`, transport, worker bootstrap, web capability guard) | none |
 | `packages/engine/runtime` | n/a | none | thin WASM loader | `PdfFunctions`, `PdfRuntimeMemory` generated peek/poke layer, retained through Phase 5; final removal in Phase 6 only after server migration passes and the TypeScript fallback is retired |
 
@@ -53,7 +53,7 @@ in `packages/engine/core/src/conformance/`.
 | TypeScript | `core/src/errors/{EngineError,EngineErrorCode}.ts`; `core/src/dto/*` (as `ts-rs` sources); `core/src/identity/*`; `core/src/revision/*`; `core/src/geometry/{primitives,convert}.ts`; `core/src/mutation/{MutationMeta,RefetchReason,PageStructureCache}.ts`; `services/src/shared/{pdf-date,uuid,securityPermissions,abort}.ts` |
 | Rust | `epdf-engine::{error, dto, identity, revision, geom, clock, ids, cancel}` |
 | Depends on | nothing |
-| Gate | `ts-rs` output for every DTO checked in; CI fails on dirty diff; `MetadataPatch` three-state round trip through `metadata.update` on each host; `EngineErrorCode` values byte-identical to `EngineErrorCode.ts` |
+| Gate | `ts-rs` output for every DTO checked in; CI fails on dirty diff; `MetadataPatch` three-state round trip through `metadata.update` on each host; `EngineErrorCode` values byte-identical to `EngineErrorCode.ts`; schema parity harness covers handwritten wire and annotation schemas, extended with each DTO family in G7/G11 |
 | Phase | 0 |
 | Notes | `abort.ts` becomes a cancellation token, not an `AbortSignal`. `uuid.ts` and `Date.now()` become injected sources for corpus determinism. |
 
@@ -106,10 +106,10 @@ is designed before the Stage B session exists, so expect to widen it once.
 | TypeScript | `services/src/features/render/{PageRenderReader,deviceRaster}.ts` (294); `services/src/features/fonts/FontRegistrar.ts` (187); `core/src/dto/{PageRender,FontSpec}.ts` (194) |
 | Operations | `pages.render`; `fonts.register`, `fonts.addFallback`, `fonts.clearFallbacks`, `fonts.clear`. Also an internal `render_page_bitmap` entry point, not a wire kind, which G15 consumes to serve `pages.renderEncoded`. |
 | Depends on | G3 (fonts are engine-level, registered before first render) |
-| Stage | A on web |
-| Gate | Exact interior BGRA on a colored fixture; loose whole-page gate; tile, rotation, alpha and buffer-lifetime tests; font-before-first-job test; pixel path measured in parts (WASM-to-host copy, worker transfer, channel conversion, GPU upload) |
+| Stage | A on web for rendering; engine-level font ownership moves as one unit in G4, independently of document backend selection |
+| Gate | Exact interior BGRA on a colored fixture; loose whole-page gate; tile, rotation, alpha and buffer-lifetime tests; font-before-first-job test; coexistence test registering once, rendering through both backends and authoring FreeText through the retained TypeScript writer; clear/re-register and fallback-order tests across both paths; worker-recreation rollback test; pixel path measured in parts (WASM-to-host copy, worker transfer, channel conversion, GPU upload) |
 | Phase | 1 (smoke), 2 |
-| Notes | Coarsening buys nothing here. Reason to move: native needs it and the pixel path needs one owner. Encode stays a host-injected concern. `FontRegistrar` is engine-level (constructor takes `runtime` and a `fontKey → FontId` map, no session) and retains file-access handles until `clear` (`FontRegistrar.ts:51`). |
+| Notes | Coarsening buys nothing here. Reason to move: native needs it and the pixel path needs one owner. Encode stays a host-injected concern. `FontRegistrar` is engine-level (constructor takes `runtime` and a `fontKey → FontId` map, no session) and retains file-access handles until `clear` (`FontRegistrar.ts:51`). G4 transfers the key-to-ID map, registration, fallback order and retained handles together to one Rust `FontRegistry` per combined worker before startup fonts or documents are loaded. `FontRegistrar` becomes a delegating facade, including `idFor`, with no second map. Native uses the Rust owner from its first render; the unmigrated server keeps its TypeScript owner until Phase 5. See the governing plan Section 6 for worker-level rollback. |
 
 ### G5. Text and search
 
@@ -143,7 +143,7 @@ is designed before the Stage B session exists, so expect to widen it once.
 | Operations | `annotations.listRawAll`, `annotations.listRawPage`, `annotations.listFullPage`, `annotations.renderAppearances` |
 | Depends on | G4 (appearance render), G6 (actions and destinations for link annotations) |
 | Stage | A on web. Rust does not create or retain the form model; TypeScript lends the pointer. |
-| Gate | `runAnnotationReadConformance`, `runAnnotationAppearanceConformance`; repeated-read benchmark against today's cached form model; permission and weak-annotation-state propagation back to the session owner |
+| Gate | `runAnnotationReadConformance`, `runAnnotationAppearanceConformance`; repeated-read benchmark against today's cached form model; permission and weak-annotation-state propagation back to the session owner; bidirectional parity for handwritten annotation DTO schemas and generated types/Rust serialization |
 | Phase | 2 |
 
 ### G8. Files, forms reads, piece info
@@ -189,7 +189,7 @@ is designed before the Stage B session exists, so expect to widen it once.
 | Operations | `annotations.create`, `annotations.update`, `annotations.delete`, `annotations.move` |
 | Depends on | G10 |
 | Stage | C |
-| Gate | `runAnnotationMutationConformance` (2,431 lines); appearance and event suites; partial failure, cancellation-after-apply, save and reopen traces; review rule that no `?` past the apply boundary introduces a throw path |
+| Gate | `runAnnotationMutationConformance` (2,431 lines); appearance and event suites; partial failure, cancellation-after-apply, save and reopen traces; review rule that no `?` past the apply boundary introduces a throw path; extend annotation schema parity to draft and patch types, including absent/null/value and rejection behavior |
 | Phase | 4 |
 
 ### G12. Forms writes

@@ -21,8 +21,10 @@ Two deliverables, roughly equal in size:
 
 1. The engine port: 25,431 hand-ported lines. `packages/engine/services` (16,620) plus 8,811 lines
    of `packages/engine/core` (text layout, search fold and cursor, DTOs, annotation kinds and
-   helpers, error codes, scope resolution). A further 1,765 lines of core become generated schemas
-   or mechanical barrels. `multiplatform-port-order.md` section 2 itemizes both.
+   helpers, error codes, scope resolution). A further 695 lines of core barrels need mechanical
+   updates. The 1,070 lines of annotation schemas stay handwritten, with bidirectional parity tests
+   against generated types and Rust serialization. `multiplatform-port-order.md` section 2 itemizes
+   these categories.
 2. Native reader products on iOS and Android. Presentation code (tile scheduling, selection,
    gestures, search navigation, virtualization) has no JavaScript runtime to run in and is written
    twice natively.
@@ -204,6 +206,23 @@ Rules:
   `EPDFForm_LoadModel` snapshot per session keyed on mutation sequence). TypeScript lends the model
   pointer alongside the document pointer. Annotation reads use it via `joinWidgetField.ts:23`, so
   those slices carry a repeated-read benchmark against today's cached path.
+- Fonts are engine-level and move in G4 (Phase 1 smoke, Phase 2 complete), before document
+  mutators. In each combined web worker, Rust owns one `FontRegistry`: the stable-key-to-native-ID
+  map, registrations, fallback order and retained file-access handles. Select that owner at worker
+  initialization, before startup fonts or documents are loaded. TypeScript `FontRegistrar` delegates
+  registration, lookup (`idFor`), fallback changes and clear to that owner, including calls from
+  retained TypeScript annotation writers. It keeps no duplicate map or handle ownership. Both
+  document backends use the same registry in that worker; per-document `engineBackend` never
+  selects fonts. This is an engine-level exception to Stage A's read-only scope. Native uses the
+  Rust registry from its first render; the unmigrated server retains its TypeScript registry
+  until Phase 5. Registry operations run on the PDFium owner thread, with no host callback from
+  a Rust mutable borrow; numeric font IDs never cross workers.
+- Document rollback leaves the worker's font owner intact. Rolling back the Rust font registry
+  itself requires a fresh worker with the retained TypeScript owner: save and reopen affected
+  documents, replay host-held font bytes or file paths and fallback order using stable keys,
+  and regenerate IDs. Do not transfer numeric IDs or live handles. G4 gates on register-once
+  rendering through both backends, retained TypeScript FreeText authoring, clear/re-register,
+  fallback ordering, and worker-recreation rollback.
 - Backend selection happens at open. Never route reads to a Rust document while writes continue
   against a TypeScript one. Rollback means legacy for subsequent sessions, or save and reopen with
   the user aware.
@@ -340,9 +359,12 @@ Preserved, each with a test:
 - Built-in viewer entry point; engine-injected `/core` entry point free of PDFium symbols and WASM.
 - SSR-safe imports; synchronous pure-TypeScript packages usable without async Rust init.
 - `abort(reason?: unknown): void` signature and immediate rejection.
-- Handwritten zod HTTP schemas in `packages/engine/core/src/wire/schemas.ts` stay separate and are
-  tested in both directions against canonical Rust values (omitted vs null, unknown enums, numeric
-  widths, nested unions, empty collections, invalid inputs).
+- Zod schemas stay handwritten: `packages/engine/core/src/wire/schemas.ts` and the 20 annotation
+  schema files (`base.schema.ts` plus `kinds/*/schema.ts`). Rust types are canonical and TypeScript
+  types are generated; schemas are maintained against them with bidirectional parity tests covering
+  omitted/null/value, unknown enums, numeric widths, nested unions, empty collections, invalid
+  inputs and each schema's unknown-field behavior. Phase 0 builds the harness; G7 and G11 add
+  annotation DTO, draft and patch coverage as those families migrate.
 
 Legacy backend stays selectable at open during preview and through Phase 5 for rollback. Removal
 requires web conformance and performance acceptance, passing the Phase 5 server migration, and
@@ -357,10 +379,10 @@ likeliest critical path. Phases 2 and 3 overlap once the read contract stabilize
 | Phase | Scope | Exit gate |
 |---|---|---|
 | 0. Foundations and baseline | Cargo workspace; `pdfium-sys`, `pdfium`, `epdf-engine` skeleton; Rust linked into the shipping web worker; `pages.geometry` through Stage A; Stage B bridge spike over `annotations.create`; lifecycle, buffer, coordinate and cancellation contracts implemented; DTO codegen proven on `MetadataPatch` (three-state `Keep \| Clear \| Set(T)`, driven through `metadata.update` on each host); operation matrix for all 65 `WorkerRequest` request kinds; corpus schema and geometry runner in `tooling/engine-conformance/`; `.github/workflows/engine-conformance.yml` wired; end-to-end baselines recorded; native `text` and readback rows, viewer allocation, and cold-start reruns. | `pages.geometry` at differential parity with `PageGeometryReader`, measured through the service boundary; bridge spike passes failure-after-write, cache invalidation, close-under-lease; clean-checkout build with `EM_BINARYEN_ROOT` asserted; matrix and contracts written. |
-| 1. Reproducible distribution | Fork release with `ios-arm64`, `ios-sim-arm64`, `android-arm64`, `android-x64`, `wasm32-eh` (currently `"status": "pending"` at pin `d7b4caa26289d4846e94ff54e63b586b9bbe9fd6`; local fork commit `7f0fa5dbe` builds all five); `use_custom_libcxx=false` + `use_clang_modules=false`; Android `libc++_shared.so`, shrinker rules, 16 KB pages; Apple XCFramework in a Swift Package; minimal native session, open, password, close, geometry, render for smoke apps. | Clean-checkout builds from published artifacts only; real linked EH module tested in release Chrome, Firefox, Safari; fresh simulator and emulator apps; signed physical-device run. |
-| 2. Read services | All read operations via Stage A on web and Rust-owned session on native, in the order in `multiplatform-port-order.md` groups G2 and G4 through G9 (G3 is the session group; on web it is native-only until G3w in Phase 3). Search has an entry gate: dialect vector file for `regex.ts` and `fold.ts` semantics. Throwaway device prototype on the oldest supported iPhone and a low-end Android measuring the pixel delivery path. | Read conformance green on both backends; native runners agree; raw-render pixel, tile, rotation and buffer-lifetime tests pass; cancellation, memory and lifecycle stress pass; native headless SDK preview usable; concurrent-engine soak green or one engine per process enforced in the API. |
+| 1. Reproducible distribution | Fork release with `ios-arm64`, `ios-sim-arm64`, `android-arm64`, `android-x64`, `wasm32-eh` (currently `"status": "pending"` at pin `d7b4caa26289d4846e94ff54e63b586b9bbe9fd6`; local fork commit `7f0fa5dbe` builds all five); `use_custom_libcxx=false` + `use_clang_modules=false`; Android `libc++_shared.so`, shrinker rules, 16 KB pages; Apple XCFramework in a Swift Package; minimal native session, open, password, close, geometry, render and G4 font registry for smoke apps. | Clean-checkout builds from published artifacts only; real linked EH module tested in release Chrome, Firefox, Safari; fresh simulator and emulator apps; signed physical-device run. |
+| 2. Read services | All read operations via Stage A on web and Rust-owned session on native, in the order in `multiplatform-port-order.md` groups G2 and G4 through G9 (G3 is the session group; on web it is native-only until G3w in Phase 3). Complete G4 engine-level font ownership and coexistence gates. Search has an entry gate: dialect vector file for `regex.ts` and `fold.ts` semantics. Throwaway device prototype on the oldest supported iPhone and a low-end Android measuring the pixel delivery path. | Read conformance green on both backends; native runners agree; raw-render pixel, tile, rotation and buffer-lifetime tests pass; cancellation, memory and lifecycle stress pass; native headless SDK preview usable; concurrent-engine soak green or one engine per process enforced in the API. |
 | 3. Native reader products | SwiftUI/UIKit and Compose/View readers: continuous scroll, pinch zoom, virtualization, selection and copy, search navigation, links, annotation display, accessibility, file lifecycle. Behavioral references: `packages/plugin/render`, `plugin/selection`, `plugin/interaction`, `framework/web`, `plugin/search`, `core/stage`, `plugin/view-manager`. Backgrounding, memory warnings, rotation, process recreation policies. | Physical-device checks; no PDF work on the UI thread; installs from distributable artifacts alone; soak gate as Phase 2. |
-| 4. Session authority, then writes | Stage B alone, then Stage C by family: annotation writes; 10 mutating `forms.*`; page assembly; `redaction.apply`; `metadata.update`; `pieceInfo.update` / `clear`; `attachments.create` / `delete`; `fonts.*`; save and export. Cost: worker ships both implementations through Phase 5 for rollback; the final family flip does not permit deleting TypeScript runtime plumbing. | Mutation, save-and-reopen, document-event and revision conformance green on both backends; cancellation-after-apply and partial-failure tests; no dual authority. |
+| 4. Session authority, then writes | Stage B alone, then Stage C by family: annotation writes; 10 mutating `forms.*`; page assembly; `redaction.apply`; `metadata.update`; `pieceInfo.update` / `clear`; `attachments.create` / `delete`; save and export. Font ownership already moved in G4. Cost: worker ships both implementations through Phase 5 for rollback; the final family flip does not permit deleting TypeScript runtime plumbing. | Mutation, save-and-reopen, document-event and revision conformance green on both backends; cancellation-after-apply and partial-failure tests; no dual authority. |
 | 5. Scale, isolation, server | Worker-pool scaling behind TSAN soak (`testing/tools:epdf_thread_soak`, `EMBEDPDF_TSAN=1`), sticky routing, load numbers; mobile crash-containment assessment; server milestone: `cloudpdf/server/src/runtime/worker-entry.ts:18` hosting the Rust crate via `napi-rs` on Linux and macOS with supervised host, `QuarantiningEnginePool`, `EngineRecycler`. | Budgets validated under load; server conformance and rollout validation green. Until then `engine-services` stays retained in the ledger. |
 | 6. v4 rollout | Ledger complete; migration guide from actual changes; default web backend switched only where parity and performance are demonstrated; bridges removed; `engine-services` and legacy runtime plumbing removed only if Phase 5 server milestone passed and the TypeScript fallback is retired; rollback rehearsed. | v4 published. |
 

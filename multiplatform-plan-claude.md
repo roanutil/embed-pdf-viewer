@@ -617,9 +617,10 @@ normalized page points, origin and axis direction, crop and rotation transforms,
 durable page identity, because an index is not identity across reordering.
 
 DTO codegen direction gets proven on one type end to end, `ts-rs` generating into
-`packages/engine/core/src/dto/` with the zod HTTP schemas in `wire/schemas.ts` staying hand-written
-for the cloud transport plus a CI test that every generated DTO parses against its schema. Parsing is
-the weak half of that test. `MetadataPatch` (`wire/schemas.ts:105`) is three-state, absent leaves a
+`packages/engine/core/src/dto/` with the zod HTTP schemas in `wire/schemas.ts` and the 20 annotation
+schema files (`base.schema.ts` plus `kinds/*/schema.ts`) staying handwritten. CI tests bidirectional
+parity with generated types and Rust serialization, extended to annotation DTOs, drafts and patches
+in G7/G11. Parsing is the weak half of that test. `MetadataPatch` (`wire/schemas.ts:105`) is three-state, absent leaves a
 field, `null` clears it and a value sets it, and the annotation patches carry the same semantics,
 which `serde`'s `Option<T>` flattens to two states unless the Rust type says otherwise. So the one
 type is a patch, not a read DTO. Rust gets an explicit `Keep | Clear | Set(T)` field type with its
@@ -686,7 +687,12 @@ Slices, read-before-write and easiest-to-verify-first:
    `packages/engine/core/src/wire/worker-protocol.ts:446` says it is a cloud-server surface where the
    host injects the encoder, and that browser and local workers reject the kind with `NotImplemented`.
    So Rust owns the raster, the server host keeps owning encoder injection, and `pages.renderEncoded`
-   is not part of the web read exit.
+   is not part of the web read exit. G4 also moves engine-level font ownership in Phase 1–2:
+   one Rust registry per combined worker, initialized before startup fonts, with TypeScript
+   `FontRegistrar` delegating all operations and `idFor` for retained annotation writers. Document
+   backend selection does not select fonts. The unmigrated server keeps its TypeScript owner until
+   Phase 5. Full font rollback recreates the worker and replays registrations and fallback order
+   by stable key; the governing plan Section 6 defines the ownership and coexistence gates.
 2. `pages.text`, `search.query`, and the text layout and fold logic in `engine-core`, verified by
    `runSearchConformance`, `runPageTextConformance` and `runTextDivergenceConformance`. Text is
    already coarse, so expect no boundary win there and gate it on correctness. Search also has a
@@ -787,8 +793,9 @@ Then Stage C by family: annotation writes and appearances; the ten mutating `for
 (`forms.list` and `forms.export` landed in Phase 2); page assembly (`pages.rotate`, `pages.delete`,
 `pages.flatten`, `pages.insert`, `pages.insertBlank`, `pages.move`; `pages.extract` is a read and
 landed in Phase 2); `redaction.apply`; `metadata.update`; `pieceInfo.update` and `pieceInfo.clear`;
-`attachments.create` and `attachments.delete`; the four `fonts.*` operations; and save and export
+`attachments.create` and `attachments.delete`; and save and export
 (`document.saveBuffer`, `document.saveFile`, `document.saveLayerBuffer`, `document.renderPageFile`).
+The four `fonts.*` operations and their shared registry already moved in G4 (Phase 1–2).
 Multi-document operations coordinate on one owner: do not pass a source document's handle across
 owners for page import, transfer the bytes or reopen a controlled snapshot on the destination.
 

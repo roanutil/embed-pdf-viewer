@@ -46,7 +46,7 @@ read line by line.
 | Rework | High. Every feature module's entry point changes from `(runtime, session)` constructor injection to a `&Session` or `&mut Session` parameter with lease scopes. The Stage B facade on the TypeScript side is new code. |
 | Port order | G3, G10 |
 
-### 2.3 Annotation DTO layering: zod-first unions and registries
+### 2.3 Annotation DTO layering: handwritten schemas and registries
 
 | Field | Value |
 |---|---|
@@ -97,6 +97,16 @@ read line by line.
 | Rust design | `extern "C" fn` trampolines recovering a `&mut dyn Read + Seek` / `&mut dyn Write` from the `void*` param. Owned handle types (`FileAccess`, `FileWrite`) whose `Drop` runs after the PDFium object that references them; `FontRegistry` and `Session` hold them in `Vec`s. Web has no file path inputs and keeps returning `NotImplemented` for those kinds. |
 | Rework | Low to medium. Four call sites. The retained-handle lifetimes need a test each. |
 | Port order | G3, G4, G8 |
+
+G4 moves engine-level font ownership before document mutators: the combined worker has one Rust
+`FontRegistry` owning the key-to-ID map, fallback order and retained file handles, selected before
+startup registration. The TypeScript `FontRegistrar` facade delegates every operation, including
+`idFor` for retained annotation writers; it owns no second map or handles. A file handle is released
+only after PDFium stops using it. The unmigrated server keeps its TypeScript owner until Phase 5.
+Font ownership is independent of document backend selection; full font rollback recreates the worker
+and replays registrations from host-held bytes or file paths and fallback order by stable key,
+never by numeric ID. G4 verifies rendering on both paths, TypeScript FreeText authoring,
+clear/re-register, fallback order and worker-recreation rollback (governing plan Section 6).
 
 ### 3.4 Form model cache: a cached native handle keyed on mutation sequence
 
