@@ -10,11 +10,11 @@
  *   node run.mjs --script matrix:build:assets --only angular   # a variant
  */
 import { spawnSync } from 'node:child_process';
-import { createServer } from 'node:http';
 import { existsSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
-import { dirname, extname, join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright-core';
+import { serve } from './serve.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const args = process.argv.slice(2);
@@ -22,44 +22,9 @@ const only = args.includes('--only') ? args[args.indexOf('--only') + 1].split(',
 const script = args.includes('--script') ? args[args.indexOf('--script') + 1] : 'matrix:build';
 // `--only` matches app directory names and variant names.
 
-const TYPES = {
-  '.js': 'text/javascript',
-  '.mjs': 'text/javascript',
-  '.wasm': 'application/wasm',
-  '.html': 'text/html',
-  '.css': 'text/css',
-  '.json': 'application/json',
-  '.map': 'application/json',
-  '.pdf': 'application/pdf',
-};
-
 function walk(dir) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
     e.isDirectory() ? walk(join(dir, e.name)) : [join(dir, e.name)],
-  );
-}
-
-function serve(root) {
-  const server = createServer((req, res) => {
-    const pathname = decodeURIComponent((req.url ?? '/').split('?')[0]);
-    let file = join(root, pathname);
-    if (existsSync(file) && statSync(file).isDirectory()) file = join(file, 'index.html');
-    // SPA-style fallback for NAVIGATIONS only — a missing asset must 404, or a
-    // wrong wasm URL would be answered with HTML and the failure misread.
-    const navigation = (req.headers.accept ?? '').includes('text/html');
-    if (!existsSync(file) && navigation) file = join(root, 'index.html');
-    if (!existsSync(file)) return void (res.writeHead(404), res.end());
-    const body = readFileSync(file);
-    res.writeHead(200, {
-      'content-type': TYPES[extname(file)] ?? 'application/octet-stream',
-      'content-length': body.length,
-    });
-    res.end(body);
-  });
-  return new Promise((ok) =>
-    server.listen(0, '127.0.0.1', () =>
-      ok({ server, origin: `http://127.0.0.1:${server.address().port}` }),
-    ),
   );
 }
 

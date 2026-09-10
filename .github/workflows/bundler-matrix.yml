@@ -40,6 +40,8 @@ jobs:
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Test the static fixture server
+        run: pnpm --filter @embedpdf/bundler-matrix test
       - name: Download engine-runtime artifact (wasm32)
         uses: actions/download-artifact@v7
         with:
