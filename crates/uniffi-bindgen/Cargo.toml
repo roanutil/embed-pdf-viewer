@@ -1,0 +1,13 @@
+[package]
+name = "uniffi-bindgen"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "uniffi-bindgen"
+path = "src/main.rs"
+
+# Takes uniffi "=0.32.0" with the "cli" feature. The binary exists because
+# `uniffi-bindgen generate --library` has to run from a binary pinned to the
+# same uniffi version as epdf-uniffi.

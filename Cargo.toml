@@ -1,0 +1,41 @@
+[workspace]
+resolver = "2"
+# The crate split is fixed by multiplatform-plan-claude.md ("The crates follow
+# the prototype's split, keeping only what survives it"). Every member here is a
+# stub: it compiles, it declares its module tree, and it holds no ported
+# behavior yet. Keep `cargo check --workspace` green at every commit.
+members = [
+  "crates/build-support",
+  "crates/pdfium-sys",
+  "crates/pdfium",
+  "crates/epdf-engine",
+  "crates/epdf-uniffi",
+  "crates/epdf-wasm",
+  "crates/epdf-node",
+  "crates/test-support",
+  "crates/uniffi-bindgen",
+]
+
+[workspace.package]
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+# Version pins to move into [workspace.dependencies] as each crate takes its
+# real dependency. Held as comments so the scaffold resolves with no network:
+#   bindgen      = "=0.72.1"   (pdfium-sys)
+#   uniffi       = "=0.32.0"   (epdf-uniffi, uniffi-bindgen)
+#   napi         = "=3.12.2"   (epdf-node, default-features = false, "napi8")
+#   napi-derive  = "=3.6.3"    (epdf-node)
+#   napi-build   = "=2.4.1"    (epdf-node, build-dependencies)
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+# Deliberately NOT panic = "abort", unlike pdfium-binding-benchmarks/Cargo.toml.
+# epdf-engine's dispatch wraps every PDFium call in catch_unwind and reports a
+# panic as a poisoned session, and panic = "abort" would remove that path.
+# Neither host layer catches panics for us: uniffi wraps calls in catch_unwind,
+# but napi-derive only does so for functions marked #[napi(catch_unwind)], so
+# epdf-node's exports must return Result rather than panic.

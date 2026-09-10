@@ -1,0 +1,16 @@
+[package]
+name = "epdf-node"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[lib]
+name = "epdf_node"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+epdf-engine = { path = "../epdf-engine" }
+
+# Takes napi "=3.12.2" (default-features = false, "napi8"), napi-derive
+# "=3.6.3", and napi-build "=2.4.1" as a build-dependency. The build.rs that
+# napi-build needs lands with the first export.

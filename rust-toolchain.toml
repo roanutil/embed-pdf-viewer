@@ -1,0 +1,17 @@
+[toolchain]
+channel = "1.98.0"
+# Every target the multiplatform build cross-compiles for. rustup installs these
+# for THIS toolchain when a cargo command runs anywhere under the repo root.
+# Without them here, `rustup target add` adds them to the DEFAULT toolchain
+# instead, and a build then fails with E0463 "can't find crate for `std`", which
+# reads like a missing NDK rather than a missing target.
+#
+# Cost: the first cargo command in a fresh checkout downloads six std copies.
+targets = [
+  "aarch64-apple-darwin",
+  "aarch64-apple-ios",
+  "aarch64-apple-ios-sim",
+  "wasm32-unknown-emscripten",
+  "aarch64-linux-android",
+  "x86_64-linux-android",
+]

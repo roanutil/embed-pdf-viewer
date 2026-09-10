@@ -29,3 +29,6 @@ temp/
 /sdks/
 
 og-preview/
+
+# Rust
+/target

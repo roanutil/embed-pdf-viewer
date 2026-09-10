@@ -1,0 +1,14 @@
+[package]
+name = "epdf-engine"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ["rlib"]
+
+[dependencies]
+pdfium = { path = "../pdfium" }
+
+[dev-dependencies]
+test-support = { path = "../test-support" }

@@ -1,0 +1,10 @@
+[package]
+name = "pdfium-sys"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ["rlib"]
+
+# Takes bindgen "=0.72.1" and build-support once build.rs lands.

@@ -1,0 +1,16 @@
+[package]
+name = "epdf-uniffi"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[lib]
+name = "epdf_uniffi"
+# cdylib for `uniffi-bindgen generate --library` and for JNA on the JVM;
+# staticlib for the iOS device and simulator slices.
+crate-type = ["cdylib", "staticlib", "rlib"]
+
+[dependencies]
+epdf-engine = { path = "../epdf-engine" }
+
+# Takes uniffi "=0.32.0" and thiserror "2" once the first type is exported.
