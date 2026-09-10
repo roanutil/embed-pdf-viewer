@@ -1,0 +1,60 @@
+name: viewer-e2e
+
+on:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 8 * * 1'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: viewer-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      NPM_TOKEN: ''
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v5
+        with:
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Fetch pinned WASM payload
+        run: pnpm --filter @embedpdf/engine-runtime fetch:payload
+        env:
+          EPDF_PAYLOAD_WAIT_MINUTES: '30'
+      - name: Build viewer and dependencies
+        run: pnpm exec turbo run build --filter=@embedpdf/viewer-react...
+      - name: Typecheck harness
+        run: pnpm --filter @embedpdf/tooling-viewer-e2e typecheck
+      - name: Install PR browsers
+        if: github.event_name != 'schedule'
+        run: pnpm --filter @embedpdf/tooling-viewer-e2e exec playwright install --with-deps chromium firefox
+      - name: PR browser baseline
+        if: github.event_name != 'schedule'
+        run: pnpm test:viewer:e2e --project=chromium-typescript --project=firefox-typescript
+      - name: Install scheduled browser
+        if: github.event_name == 'schedule'
+        run: pnpm --filter @embedpdf/tooling-viewer-e2e exec playwright install --with-deps webkit
+      - name: Scheduled WebKit baseline
+        if: github.event_name == 'schedule'
+        run: pnpm test:viewer:e2e --project=webkit-typescript
+      - name: Upload failure traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: viewer-traces
+          path: |
+            tooling/viewer-e2e/test-results/
+            tooling/viewer-e2e/playwright-report/
+          retention-days: 7

@@ -126,8 +126,21 @@ jobs:
       # them through four consumer fixtures (node-esm, node-cjs, vite-app,
       # tsc-nodenext). A broken artifact can never reach a dist-tag.
       # (build:release above already built ./packages/**.)
+      - name: Install viewer gate browser
+        run: pnpm --filter @embedpdf/tooling-viewer-e2e exec playwright install --with-deps chromium
+
       - name: Consume gate
         run: pnpm run verify:consume
+        env:
+          VIEWER_E2E: '1'
+
+      - name: Upload viewer failure traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: packed-viewer-traces
+          path: tooling/viewer-e2e/test-results/
+          retention-days: 7
 
       - name: Verify publish worktree
         run: |

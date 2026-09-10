@@ -252,6 +252,15 @@ for (const fixture of FIXTURES) {
   const dir = path.join(tmp, fixture.name);
   fs.cpSync(path.join(here, '..', 'fixtures', fixture.name), dir, { recursive: true });
 
+  // Run the same real-viewer entry against the installed tarballs. Keep the
+  // ordinary bundler fixture too: its imports cover the other viewer doors.
+  const viewerE2E = fixture.name === 'vite-app' && process.env.VIEWER_E2E === '1';
+  if (viewerE2E) {
+    for (const file of ['e2e.html', 'src/e2e.tsx']) {
+      fs.copyFileSync(path.join(repoRoot, 'examples/viewer-react', file), path.join(dir, file));
+    }
+  }
+
   const deps: Record<string, string> = { ...fixture.deps };
   for (const name of fixture.packages) {
     const tgz = tarballs[name];
@@ -285,6 +294,18 @@ for (const fixture of FIXTURES) {
     sh('npm', ['install', '--no-audit', '--no-fund', '--loglevel=error'], dir);
     process.stdout.write('check… ');
     sh('npm', ['run', '--silent', 'check'], dir);
+    if (viewerE2E) {
+      process.stdout.write('viewer browser gate… ');
+      execFileSync(
+        'pnpm',
+        ['--filter', '@embedpdf/tooling-viewer-e2e', 'test:e2e', '--project=chromium-typescript'],
+        {
+          cwd: repoRoot,
+          env: { ...process.env, VIEWER_E2E_PACKED_DIR: dir },
+          stdio: ['ignore', 'pipe', 'pipe'],
+        },
+      );
+    }
     console.log('✔');
     results[fixture.name] = { ok: true };
   } catch (err: any) {

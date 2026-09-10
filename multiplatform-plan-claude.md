@@ -522,12 +522,11 @@ two things that drive `charCount` and `text.length` apart), combining and RTL te
 documents, complex vector pages, embedded fonts and ICC profiles, encrypted documents, forms,
 attachments, malformed input, and dense annotation and ink pages.
 
-The fifth mechanism is a browser suite driving the real viewer, and it does not exist in any form
-today. Playwright appears nowhere in the repository. The five `vitest.config.ts` files under
-`packages/` all set `environment: 'node'`, and the only DOM-level tests are four files under
-`packages/framework/react/test/` carrying `// @vitest-environment happy-dom`, a simulated DOM rather
-than a browser. Nothing currently fails when the engine answers every operation correctly and the
-viewer shows a blank page.
+The fifth mechanism is a browser suite driving the real viewer. Its Phase 0 TypeScript baseline,
+F1 through F5, now lives in [`tooling/viewer-e2e/`](tooling/viewer-e2e/README.md), with Chromium and
+Firefox on pull requests, scheduled WebKit, and a Chromium run against the consume fixture's
+production build from packed tarballs. It checks visible pixels and UI behavior even when the
+engine answers correctly. Rust selection and the remaining flows still belong to the phases below.
 
 That is where the web SDK breaks. None of the 17 packages under `packages/plugin/`, nor
 `packages/framework/*` or `packages/viewer/*`, is being ported, and all of them consume engine

@@ -1,0 +1,2 @@
+# PDF xref entries contain significant fixed-width whitespace.
+fixtures/*.pdf binary

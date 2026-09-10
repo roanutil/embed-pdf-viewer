@@ -301,12 +301,13 @@ added to `worker-protocol.ts` without a row in the operation matrix this documen
 
 ## 7. Web viewer end-to-end gate
 
-None of this exists today. Playwright is not in the repository, the five `vitest.config.ts` files
-under `packages/` all set `environment: 'node'`, and the only DOM-level tests are four files under
-`packages/framework/react/test/` using `// @vitest-environment happy-dom`. Section 4 puts
-`packages/plugin/*`, `packages/framework/*` and `packages/viewer/*` out of scope for the port, which
-is correct and is also why they need a gate: they are the code most likely to break silently while
-nothing in them changes.
+The Phase 0 TypeScript baseline (F1–F5) lives in
+[`tooling/viewer-e2e/`](tooling/viewer-e2e/README.md), with Chromium and Firefox on pull requests,
+scheduled WebKit, and a Chromium run against the consume gate's packed `vite-app` dependencies.
+Rust selection and F6–F14 remain assigned to the phases below; unsupported backends fail rather
+than silently running TypeScript. Section 4 puts `packages/plugin/*`, `packages/framework/*` and
+`packages/viewer/*` out of scope for the port, which is correct and is also why they need a gate:
+they are the code most likely to break silently while nothing in them changes.
 
 The harness lives in `tooling/viewer-e2e/`, drives `examples/viewer-react`, and selects the backend
 at open so every flow runs twice, TypeScript and Rust, in one job. Flows assert DOM state, copied
