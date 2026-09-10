@@ -70,8 +70,7 @@ bash build/test-swift.sh
 echo "== kotlin (jvm desktop) =="
 # /usr/bin/java is the macOS stub that errors with nothing configured, and
 # /usr/libexec/java_home fails outright because the JBR Android Studio ships
-# is never registered as a system JVM (docs/superpowers/specs/2026-09-03-
-# pdfium-multiplatform-prototype-design.md, "What actually gets verified"). Every gradlew
+# is never registered as a system JVM. Every gradlew
 # invocation below needs JAVA_HOME set explicitly rather than discovered.
 export JAVA_HOME="${JAVA_HOME:-/Applications/Android Studio.app/Contents/jbr/Contents/Home}"
 if [[ ! -x "$JAVA_HOME/bin/java" ]]; then

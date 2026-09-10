@@ -1,107 +1,94 @@
-# bench
+# Viewer benchmark procedure
 
-Turns the crossing counts the three POCs assert into microseconds. Design and
-rationale live in [`docs/research/rust-core-port-benchmarks.md`](../../docs/research/rust-core-port-benchmarks.md);
-the numbers live in [`RESULTS.md`](./RESULTS.md).
+The benchmark measures geometry, hit-testing, state updates, and JavaScript
+allocation estimates for the three viewer variants. See
+[the design](../../docs/research/rust-core-port-benchmarks.md) and
+[historical results](RESULTS.md).
 
-## Running it
+## Run
 
-```
+Install dependencies and build each viewer first. Then run from
+`viewer-rust-port-benchmarks`:
+
+```bash
 node bench/run.mjs --rounds 5 --budget 500 --alloc-rounds 3
 node bench/compare.mjs
 ```
 
-`run.mjs` needs the wasm built first and will tell you which POC is missing it.
-`compare.mjs` prints the tables and writes `RESULTS.md`.
+The runner replaces per-round probe, timing, and allocation JSON in
+`bench/results/`; copy any local results you need to preserve before running.
+It preserves `cold-start.json`. The comparison script prints tables and
+**overwrites `bench/RESULTS.md`**, including any manually added explanations.
+It rejects allocation samples with the old heap-only metric.
 
-Cold start is not scriptable here. It needs a real browser, so the demos carry
-`performance.mark` calls (`apps/demo/src/marks.ts`) and expose
-`window.__coldStart`. The procedure is at the bottom of this file, and the
-numbers get pasted into `results/cold-start.json`.
+The repository commits only the cold-start summary, not the timing or
+allocation JSON. A fresh checkout therefore cannot reproduce the historical
+timing tables by running `compare.mjs` alone. Run the benchmark to produce a
+new dataset, and retain its raw files with any new claims.
 
-## Layout
+## How it measures
 
-```
-seeds.mjs       the workloads as data: sizes, views, seed layouts
-harness.mjs     sampling and statistics, zero dependencies, runs in Node or a browser
-workloads.mjs   what gets measured, shared by all three POCs
-run.mjs         round-robin driver
-compare.mjs     aggregates results/*.json into RESULTS.md
-poc-N/bench/    adapter.ts (the only per-POC code) and node.ts (the entry point)
-```
+`seeds.mjs` defines model sizes and layouts. `workloads.mjs` defines the
+operations; `harness.mjs` measures them. Each variant supplies a `bench/adapter.ts`
+and a `bench/node.ts` entry point.
 
-## Why it works this way
+Each variant runs in a separate Node process with its own workspace dependencies.
+Rounds use the same order: TypeScript, Rust geometry, then Rust geometry and
+state. Interleaving limits some drift between complete runs, but the fixed
+order can still introduce position bias.
 
-All three POCs define packages called `@poc/geometry`, `@poc/shapes` and
-`@poc/core`. One Node process cannot import three different modules under the
-same specifier, and the POCs' mutual independence is the property they exist to
-demonstrate. So each benchmarks itself in its own process and writes JSON.
+Before timing, the runner compares a ten-shape display list from each variant.
+It checks metadata and coordinates, allowing small coordinate differences.
+This catches disagreement in that probe; it is not proof that every timed
+model or operation agrees.
 
-Rounds are interleaved (round 1: p1, p2, p3; round 2: p1, p2, p3) rather than run
-per-POC to completion. Clock speed drifts over a six minute run, and doing all of
-p1 then all of p2 would hand the drift to whoever went last. Only medians across
-rounds are comparable, which is why `compare.mjs` prints a "worst spread" column:
-a large value there means that row drifted and its two significant figures are
-not real.
+The harness tunes a batch size, times batches, and divides elapsed time by call
+count. Each operation returns a number that contributes to an accumulator.
+The reported p95 is the 95th percentile of batch averages, not individual-call
+latency. The comparison's “worst spread” is the largest `(max - min) / median`
+across rounds for one variant in that row. Large spread indicates instability,
+without identifying its cause.
 
-A fairness gate runs before any timing. rust-geometry-and-state could build its model through
-Rust's `seedShapes` while typescript-baseline and rust-geometry-only build theirs in TypeScript, so
-different shape sets are a live risk that no timing would reveal. Instead the
-seed layout lives in `seeds.mjs` as data, each adapter applies it through its own
-dispatch path, and the gate compares all three display lists corner by corner
-before continuing. It aborts the run on any disagreement. The probe is its own
-pass (`BENCH_MODE=probe`, one 10-shape model per POC), not a block inside the
-timing run. That ordering is the point. Reading the probe back out of a round-1
-timing file, which is how this worked at first, meant all three POCs had already
-published a full round of numbers by the time the gate could fail.
+Allocation estimates add changes in `heapUsed` and `arrayBuffers` over a short
+window with no observed garbage collection. They include copied typed-array
+storage but exclude Rust's internal allocations and other external memory.
+They are estimates, not a complete count of allocated bytes.
 
-## Measurement notes
+Run the allocation regression check with:
 
-Timing uses batch means: a batch size is auto-tuned so one batch takes at least
-2 ms, whole batches are timed, and the result is divided. Timing individual calls
-would let `performance.now()` dominate a 33 ns function. The consequence is that
-the reported p95 is the p95 of batch means, so it captures run-to-run drift and
-not per-call tail latency. Do not read it as a worst-case frame time.
-
-Every measured function returns a number that the harness accumulates. Without
-that, V8 is entitled to delete the call, and a benchmark of nothing looks
-excellent.
-
-Allocation figures sum `heapUsed` and `arrayBuffers` deltas over a window with
-no observed collection. This includes the copied `Float64Array` returned by
-wasm-bindgen as well as the decoded JavaScript objects. Results report both
-components separately and identify the metric as `heapUsed+arrayBuffers`;
-`compare.mjs` rejects old heap-only samples. These are JavaScript allocation
-estimates, excluding Rust's internal allocations and other external memory.
-The object calibration describes only the heap component.
-
-Run the backing-store regression with `node --expose-gc --test bench/alloc.test.mjs`.
-
-Two earlier attempts at the allocation metric are documented in `workloads.mjs`,
-because both failed quietly rather than loudly. Measuring heap growth over 2,000
-frames does not work, since that many frames trigger collections which free the
-garbage mid-loop; it reported 150 bytes per frame for work that allocates five
-objects per shape. The `PerformanceObserver` attempt before it read back almost
-nothing and got written up as "Node 24 emits no perf entry per scavenge", which
-is false. Node delivers `gc` entries several event-loop turns after the
-collection: drained with four `setTimeout(0)` turns, two million churned objects
-report 15 MINOR entries on Node v24.20.0. Its GC kind constants really are
-MINOR=1, MAJOR=4, INCREMENTAL=8, not the 1/2/4 you would guess.
-
-## Cold start procedure
-
-Build and preview all three, then drive a browser:
-
-```
-for d in typescript-baseline rust-geometry-only rust-geometry-and-state; do (cd $d && pnpm build); done
-cd typescript-baseline/apps/demo         && npx vite preview --port 4171 &
-cd rust-geometry-only/apps/demo && npx vite preview --port 4172 &
-cd rust-geometry-and-state/apps/demo  && npx vite preview --port 4173 &
+```bash
+node --expose-gc --test bench/alloc.test.mjs
 ```
 
-Open each port and run this in the console. Same-origin iframes are the trick:
-they give repeated fresh page loads inside one JS context, where navigating away
-would destroy it.
+## Browser startup procedure
+
+Startup requires a browser. This runner does not automate it. The demos expose
+`window.__coldStart` from their `apps/demo/src/marks.ts` files.
+
+Build the three demos, then start each preview in a separate terminal from the
+benchmark root:
+
+```bash
+(cd typescript-baseline && pnpm build)
+(cd rust-geometry-only && pnpm build)
+(cd rust-geometry-and-state && pnpm build)
+```
+
+```bash
+(cd typescript-baseline/apps/demo && pnpm exec vite preview --port 4171)
+```
+
+```bash
+(cd rust-geometry-only/apps/demo && pnpm exec vite preview --port 4172)
+```
+
+```bash
+(cd rust-geometry-and-state/apps/demo && pnpm exec vite preview --port 4173)
+```
+
+Open each preview and run this in its browser console. It loads five same-origin
+iframes and omits samples that do not produce a display list within the polling
+window:
 
 ```js
 const runs = [];
@@ -122,9 +109,21 @@ for (let i = 0; i < 5; i++) {
     document.body.appendChild(f);
   }));
 }
-console.table(runs.map((r) => ({ wasmLeg: r.wasmReady - r.boot, firstFrame: r.firstFrame })));
+console.table(runs.filter((r) => r !== null).map((r) => ({
+  wasmLeg: r.wasmReady == null ? null : r.wasmReady - r.boot,
+  firstFrame: r.firstFrame,
+})));
 ```
 
-Take the medians into `results/cold-start.json`. Note what this does NOT measure:
-the hashed assets come from the memory cache, so the wasm leg is compile plus
-instantiate with no download. Add the transfer for a real network.
+Record the successful sample count, medians, and first-frame range in
+`bench/results/cold-start.json`. `wasmLeg` is `wasmReady - boot`; the TypeScript
+baseline also records that interval even though it loads no Wasm.
+`firstFrame` is a timestamp since navigation started, recorded by the mounted viewer’s
+React effect after its initial render. It is not a measured paint time or a duration from
+`boot`; first contentful paint is recorded separately as `fcp` when available.
+
+Repeated iframe loads may reuse cached assets and compiled modules. Record the
+browser/cache conditions and do not treat these samples as uncached downloads
+or guaranteed fresh Wasm compilation. The current summary has no individual
+samples or build hashes, so its original browser timings cannot be independently
+recalculated.

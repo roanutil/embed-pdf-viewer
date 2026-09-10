@@ -1,18 +1,23 @@
-# Shared conformance vectors
+# Shared expected geometry results
 
-One frozen contract, three implementations. `anchor-vectors.json` is consumed by:
+[`anchor-vectors.json`](anchor-vectors.json) contains 36 projection cases and
+15 hit-test cases. These suites read it:
 
-- `typescript-baseline/packages/shapes/src/vectors.test.ts` (TypeScript reference)
-- `rust-geometry-only/crates/geometry/tests/vectors.rs` (Rust geometry)
-- `rust-geometry-and-state/crates/core/tests/vectors.rs` (Rust core)
+- [TypeScript reference](../typescript-baseline/packages/shapes/src/vectors.test.ts)
+- [Rust geometry](../rust-geometry-only/crates/geometry/tests/vectors.rs)
+- [Rust geometry and state](../rust-geometry-and-state/crates/core/tests/vectors.rs)
 
-The values were generated once from the TypeScript reference with
-`typescript-baseline/scripts/gen-vectors.mjs`, reviewed, then frozen. They are not
-regenerated as part of any test run, which is the point: a Rust port that
-disagrees with the frozen file has a bug, and regenerating would hide it.
+The [generator](../typescript-baseline/scripts/gen-vectors.mjs) uses the
+TypeScript reference. Tests read the frozen file without regenerating it.
+A disagreement requires checking the implementation and the expected behavior;
+regenerating the file would otherwise hide the disagreement.
 
-Regenerate deliberately, and only when the intended behavior changes:
+After an intentional behavior change, run from `viewer-rust-port-benchmarks`:
 
+```bash
+(cd typescript-baseline && pnpm gen:vectors)
 ```
-cd typescript-baseline && node scripts/gen-vectors.mjs
-```
+
+Install the baseline's dependencies first. The package script uses `tsx` to
+resolve its TypeScript imports. Review the resulting diff and run all three
+vector suites before accepting new expectations.

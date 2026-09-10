@@ -109,7 +109,7 @@ if (!native) {
   for (const a of ARMS) {
     const b = byArm[a]?.[0]?.wasmBytes;
     if (!Number.isFinite(b)) continue;
-    const delta = a === 'a' ? '—' : `+${(((b - baseBytes) / 1024).toFixed(1))} kB`;
+    const delta = a === 'a' ? '—' : `+${(((b - baseBytes) / 1024).toFixed(1))} KiB`;
     console.log(`| ${LABEL[a]} | ${b.toLocaleString()} | ${delta} |`);
   }
 }
@@ -141,4 +141,4 @@ console.log(`\nworst round-to-round spread: ${spread
   .slice(0, 3)
   .map((s) => `${s.arm}/${s.id} ${s.ratio.toFixed(2)}x`)
   .join(', ')}`);
-console.log('A spread past about 1.3x means thermal drift; say so in the write-up.');
+console.log('A spread above about 1.3x indicates unstable timings; it does not identify the cause.');

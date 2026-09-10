@@ -1,107 +1,85 @@
-# viewer-rust-port-benchmarks
+# Viewer Rust port benchmarks
 
-Three copies of the same toy viewer, at three stages of a Rust port. The point is to put real
-numbers on the interop questions in `docs/research/rust-core-port.md`, which argues for porting
-bottom-up and warns that a fine-grained WASM boundary is worse than no port at all.
+Three small viewers compare where TypeScript ends and Rust begins. They render
+rectangles, support selection and dragging, and share expected geometry results.
+They do not render PDFs or benchmark the full EmbedPDF viewer.
 
-| | `typescript-baseline` | `rust-geometry-only` | `rust-geometry-and-state` |
-|---|---|---|---|
-| Implementation | all TypeScript | geometry in Rust | geometry + brain + store in Rust |
-| Crossings per frame | 0 | 1 per unanchored shape, 7 per anchored one | 1, at any shape count |
-| WASM shipped | none | 130.7 kB | 277.2 kB |
-| Demo bundle | 152.7 kB JS | 163.2 kB JS + 133.9 kB wasm | 162.2 kB JS + 283.9 kB wasm |
-| Demo port | 5171 | 5172 | 5173 |
+| Variant | Implementation | Calls into Wasm to generate a display list | Demo port |
+| --- | --- | --- | --- |
+| `typescript-baseline` | Geometry and state in TypeScript | 0 | 5171 |
+| `rust-geometry-only` | Geometry in Rust; state in TypeScript | 1 per plain shape; up to 7 per anchored shape | 5172 |
+| `rust-geometry-and-state` | Geometry and state in Rust | 1 with the row cache current; up to 3 when it needs checking or refreshing | 5173 |
 
-The measured cost of one crossing, from the `measure` button in the rust-geometry-only demo (20,000 calls each,
-Chrome on an M-series Mac): 1.015 µs through a flat `Float64Array`, 2.735 µs through
-`serde-wasm-bindgen` objects, 0.225 µs for a Rust to TypeScript callback. So the ergonomic object
-surface costs about 2.7x the flat one, and calling back into JS is the cheapest direction.
+A **crossing** means a call between JavaScript and Wasm. These counts describe
+display-list generation, not all work in a React frame. Fewer crossings do not
+necessarily mean faster execution: object conversion and the calculation itself
+also take time. See the [historical results](bench/RESULTS.md) and
+[measurement procedure](bench/README.md).
 
-That 0.225 µs is an upper bound rather than a measurement of the crossing. The callback arm ran with
-the demo's own host logger installed, so it timed 20,000 React `setState` enqueues along with the
-callbacks while the other two arms timed crossings alone. `runBench` in
-`rust-geometry-only/apps/demo/src/App.tsx` swaps a trivial logger in for that arm now, so pressing
-`measure` again reports a smaller figure. The conclusion survives the correction: run the same three
-arms in Node and the callback costs 0.085 µs with a trivial logger, 0.153 µs with one that rebuilds
-a six-element array per call, against 0.303 µs for a flat `rectQuad` in the same process.
+## Run a viewer
 
-## The domain
+Use Node 24 for the documented setup and pnpm 10.34.0, as specified by the
+viewer package manifests. The Rust variants also need a Rust toolchain and the
+matching binding generator:
 
-Rectangles on a page, with the one interesting behavior lifted from the real annotation core: a
-shape can be `anchored`, which exempts it from the view's zoom the way ISO 32000-2 `/NoZoom` does.
-An anchored shape holds its bounds top-left fixed on the page and its size fixed on screen, and the
-projection is a similarity about that anchor. Rendering, hit-testing and dragging all read the same
-projection, so what you see and what you click cannot disagree.
-
-That behavior is what makes the POC worth anything: it is the smallest function that is pure math,
-called per shape per frame, and load-bearing for correctness. `packages/core/annotation/src/anchor.ts`
-in the real repo is the same shape.
-
-## The stack
-
-Same as the main repo, minus what a toy does not need: pnpm workspaces, turbo, TypeScript 5.9 with
-`moduleResolution: bundler`, vitest, and Vite for the demo. Packages export `./src/index.ts`
-directly, exactly as the real repo's `exports` field does, so there is no per-package build step and
-no `tsdown`. The wasm packages do have a real `build` script, and turbo sequences it ahead of the
-demo, which is the pipeline question that actually matters here.
-
-## Running them
-
-You need Node 24, pnpm 10.34, a Rust toolchain with the `wasm32-unknown-unknown` target, and
-`wasm-bindgen-cli` at the exact version the crates pin.
-
-```
+```bash
 rustup target add wasm32-unknown-unknown
 cargo install wasm-bindgen-cli --version 0.2.127
 ```
 
-Then, in any of the three directories:
+Run inside the chosen variant directory:
 
-```
+```bash
 pnpm install
-pnpm build      # builds the wasm first, then the demo
-pnpm dev        # http://localhost:5171 / 5172 / 5173
+pnpm build
 pnpm test
-cargo test      # rust-geometry-only and rust-geometry-and-state only
+pnpm dev
 ```
 
-`scripts/build-wasm.mjs` checks the CLI version against the `wasm-bindgen = "=0.2.127"` pin in
-`Cargo.toml` and fails with the exact `cargo install` command if they differ. A mismatch there
-produces glue that is wrong in ways that only show up at runtime, so it is worth failing early.
+For either Rust variant, also run `cargo test` in that directory.
+`scripts/build-wasm.mjs` checks the CLI version against the crate's exact
+`wasm-bindgen` dependency. Build before starting a Rust demo so its generated
+JavaScript and Wasm files exist.
 
-> Note: the demos run under React `StrictMode`, which double-invokes renders in development. The
-> crossing counter in the UI therefore shows roughly twice the per-frame number. The exact figures
-> are asserted in the test suites, not read off the screen.
+Each viewer has its own pnpm workspace and Turbo tasks. TypeScript packages
+export source files; Rust packages build Wasm before the demo build.
+React development rendering can repeat work, so use the tests for operation
+crossing counts instead of treating the demo counter as a precise frame cost.
 
-## The shared contract
+## Anchored shapes
 
-`vectors/anchor-vectors.json` holds 36 projection vectors and 15 hit-test vectors, generated once
-from the typescript-baseline TypeScript reference and then frozen. Three implementations read that one file:
+An anchored rectangle keeps the top-left of its unprojected bounds fixed.
+At zoom above 1, its geometry is scaled inversely to the page zoom; it also
+counter-rotates against the view. Below zoom 1, the scale correction is clamped,
+so the rectangle shrinks with the page. This is the behavior implemented by
+[`anchor.ts`](typescript-baseline/packages/shapes/src/anchor.ts), not a claim
+that the demo implements every PDF annotation rule.
 
-- `typescript-baseline/packages/shapes/src/vectors.test.ts`
-- `rust-geometry-only/crates/geometry/tests/vectors.rs`
-- `rust-geometry-and-state/crates/core/tests/vectors.rs`
+Scene generation and hit-testing use the same projected geometry. The prototype
+is related to the repository's
+[annotation anchor implementation](../packages/core/annotation/src/anchor.ts).
 
-It is never regenerated as part of a test run. That is the whole idea: a Rust port that drifts from
-the reference fails a test instead of being discovered later in a browser. This is the mechanism the
-port plan leans on for wave 2, where `packages/engine/core/src/conformance/runAnnotationMutationConformance.ts`
-already provides 2,255 lines of the same thing for free.
+## Shared expected results
 
-## What we learned that the plan did not predict
+[`vectors/anchor-vectors.json`](vectors/anchor-vectors.json) contains 36 projection
+cases and 15 hit-test cases. The TypeScript reference and both Rust implementations
+read these frozen expectations. Tests do not regenerate them. A disagreement
+requires investigation; it does not by itself establish which implementation
+or expected value is wrong.
 
-The identity short-circuit survives a leaf port, as long as the DECISION stays in TypeScript.
-`anchoredGeom` returns its input unchanged when the projection is the identity, and the plan treats
-losing that as a cost of porting. It isn't, quite: in rust-geometry-only `projectQuad` still returns the caller's
-own object, because `anchorFactors` decides in TypeScript and the identity path never calls into
-wasm at all. What you lose is the free-ness of the decision, not the short-circuit.
+See [vector maintenance](vectors/README.md) before changing those expectations.
+The broader motivation is in [the port plan](../docs/research/rust-core-port.md).
 
-Two bugs showed up that no amount of planning would have caught, both in rust-geometry-and-state and both documented
-at their fix sites. A `&mut self` export must not call back into JS: we had Rust notify a JS change
-listener from inside `dispatch`, React re-read `core.version` under the mutable borrow, and the
-damage surfaced much later as `attempted to take ownership of Rust value while it was borrowed` on
-`free()`. And `useSyncExternalStore` calls `getSnapshot` several times per render, so reading a
-wasm-bindgen getter there cost six crossings per re-render for a value we already knew had changed.
-Mirroring the version on the TypeScript side made a re-render free.
+## Implementation lessons
 
-Neither is exotic. Both are the kind of thing that decides whether a port feels good or feels
-cursed, and both are invisible until you have a React tree actually rendering.
+The geometry-only wrapper can return the caller's original quad when no
+transformation is needed. For anchored shapes, deciding that still calls the
+Rust `normalizeDeg` function. For unanchored shapes, the decision returns before
+that call.
+
+The state-in-Rust wrapper notifies React after Rust's `dispatch` returns. That
+avoids reentering the same Rust object while it is mutably borrowed. It also
+caches a numeric version in TypeScript, so repeated React snapshot reads do not
+call Wasm. See
+[`store.ts`](rust-geometry-and-state/packages/core/src/store.ts) and
+[its React tests](rust-geometry-and-state/packages/react/src/binding.test.tsx).

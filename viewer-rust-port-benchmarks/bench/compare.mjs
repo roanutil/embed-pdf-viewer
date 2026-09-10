@@ -97,7 +97,7 @@ md.push(
 );
 md.push(
   `\nMedians across rounds. "worst spread" is the widest (max-min)/median of any single implementation ` +
-    `for that cell: read a large value as "this row drifted, do not trust two significant figures".`,
+    `for that cell. A large value indicates unstable timings without identifying the cause.`,
 );
 
 md.push(
@@ -114,10 +114,9 @@ md.push(
   if (raw.size) {
     const lines = ['\n### rust-geometry-and-state: what the object decode costs\n'];
     lines.push(
-      'rust-geometry-and-state crosses the boundary once per frame either way. The only difference between these two ' +
-        'columns is whether the returned `Float64Array` is turned into `DisplayList` objects, which ' +
-        'is the same allocation typescript-baseline performs. If the decode dominates, moving the math to Rust ' +
-        'cannot pay off until the renderer reads floats directly.\n',
+      'The Rust columns compare returning a numeric buffer with converting it into JavaScript display objects. ' +
+        'Decode share is the relative difference between recorded medians, not a separately timed conversion. ' +
+        'Both paths use one Wasm call once the metadata cache is current.\n',
     );
     lines.push('| cell | typescript-baseline (objects) | rust-geometry-and-state (objects) | rust-geometry-and-state (raw buffer) | decode share | raw vs typescript-baseline |');
     lines.push('|---|---|---|---|---|---|');
@@ -137,7 +136,7 @@ md.push(
 }
 
 md.push(section('Hit-test', collect('hit', (r) => `n=${r.n} ${r.kind}`), 'cell'));
-md.push(section('Dispatch (ns per pointerMove)', collect('gesture', (r) => `n=${r.n}`), 'shapes'));
+md.push(section('State updates (time per pointerMove)', collect('gesture', (r) => `n=${r.n}`), 'shapes'));
 
 if (alloc.length) {
   const byAdapter = new Map();
@@ -147,13 +146,13 @@ if (alloc.length) {
   }
   const first = alloc[0];
   const calib = median(alloc.map((r) => r.calibration?.bytesPerObject ?? NaN));
-  md.push(`\n### Allocation (${first.shapes} anchored shapes, GC-free window)\n`);
+  md.push(`\n### Allocation (${first.shapes} anchored shapes, window with no observed GC)\n`);
   md.push(
-    `These are \`heapUsed + arrayBuffers\` deltas over a GC-free window, not an allocation counter. ` +
+    `These are \`heapUsed + arrayBuffers\` deltas over a window with no observed GC, not an allocation counter. ` +
       `They include copied typed-array backing stores but exclude Rust's internal allocations. ` +
       `Heap calibration: a \`{x, y}\` object ` +
-      `measures ${calib.toFixed(0)} bytes here against a ~24 byte theoretical minimum, so treat the ` +
-      `heap figures as estimates. Backing-store bytes are accounted separately.\n`,
+      `measures ${calib.toFixed(0)} bytes in this run. This is a calibration observation, not an accuracy bound. ` +
+      `Backing-store bytes are accounted separately.\n`,
   );
   md.push(`| | bytes/frame | heap/frame | backing stores/frame | bytes/shape | window | vs typescript-baseline |`);
   md.push(`|---|---|---|---|---|---|---|`);
@@ -186,13 +185,14 @@ if (cold) {
   md.push(`\n### Cold start\n`);
   md.push(`${cold.collectedBy}.\n`);
   md.push(`> ${cold.caveat}\n`);
-  md.push(`| | wasm shipped | instantiate leg | first frame | first frame range |`);
+  md.push('The ready interval is wasmReady minus boot. First frame is recorded by a React effect after the initial viewer render, relative to navigation start; it is not a paint measurement.\n');
+  md.push(`| | wasm shipped | ready interval | first frame | first frame range |`);
   md.push(`|---|---|---|---|---|`);
   for (const a of ORDER) {
     const c = cold.pocs[a];
     if (!c) continue;
     md.push(
-      `| ${SHORT[a]} | ${c.wasmBytes === 0 ? 'none' : `${(c.wasmBytes / 1024).toFixed(1)} kB`} | ` +
+      `| ${SHORT[a]} | ${c.wasmBytes === 0 ? 'none' : `${(c.wasmBytes / 1024).toFixed(1)} KiB`} | ` +
         `${c.wasmLegMs.toFixed(1)} ms | ${c.firstFrameMs.toFixed(1)} ms | ` +
         `${c.firstFrameRange[0].toFixed(1)} to ${c.firstFrameRange[1].toFixed(1)} ms |`,
     );
@@ -214,7 +214,7 @@ const crossover = (anchored) => {
   return null;
 };
 md.push(`\n### Crossover\n`);
-md.push(`rust-geometry-and-state first beats typescript-baseline at n=${crossover(true) ?? 'never'} anchored, n=${crossover(false) ?? 'never'} plain, at the projecting view.`);
+md.push(`At the projecting view, the first tested shape count where rust-geometry-and-state beats typescript-baseline is ${crossover(true) ?? 'none of the tested counts'} for anchored shapes and ${crossover(false) ?? 'none of the tested counts'} for plain shapes. This does not establish behavior outside those cases.`);
 
 // Did rust-geometry-only win anything? The spec says it should not.
 const p2wins = [];
@@ -225,8 +225,8 @@ for (const [key, byAdapter] of frames) {
   if (isFinite(p2) && p2 < p1 && p2 < p3) p2wins.push(key);
 }
 md.push(
-  `\npoc-2 wins ${p2wins.length} of ${frames.size} frame cells` +
-    (p2wins.length ? `: ${p2wins.join(', ')}. The spec predicted zero, so treat these as suspect.` : `, as predicted.`),
+  `\nrust-geometry-only has the lowest recorded median in ${p2wins.length} of ${frames.size} frame cells` +
+    (p2wins.length ? `: ${p2wins.join(', ')}.` : '.'),
 );
 
 const text = md.join('\n') + '\n';

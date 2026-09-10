@@ -1,54 +1,58 @@
-# @epdf/node (scaffold)
+# Node prototype bindings
 
-Thin Node bindings over the PDFium engine in `crates/epdf-node`, six methods on `Document` and
-`openDocument`, no pointers exposed to JavaScript.
+[`crates/epdf-node`](../../crates/epdf-node/src/lib.rs) exposes `openDocument`
+and six `Document` methods: `pageCount`, `pageSize`, `renderPage`, `pageText`,
+`search`, and `close`. Calls are synchronous; JavaScript receives values rather
+than raw PDFium pointers.
+
+Build and test from the prototype root:
+
+```bash
+bash build/build-node.sh
+node --test packages/node/*.test.mjs
+```
 
 ## Error codes
 
-Every thrown error carries a `.code` property distinct from its `.message`, so you can switch on
-the code instead of matching against the human-readable text. The codes come from
-`epdf_ops::OpsError::code()` in `crates/epdf-ops/src/error.rs`, and the match there has no `_` arm:
-a new `OpsError` variant fails the Rust build rather than silently landing on `INTERNAL`. The web
-glue in `packages/web/index.mjs` reads the same code through `epdf_last_error_code`, so `err.code`
-means the same thing on both hosts.
+Errors converted from `epdf_ops::OpsError` carry a `.code` alongside `.message`.
+The mapping is defined in [`error.rs`](../../crates/epdf-ops/src/error.rs).
+The web adapter exposes the same core error codes. Module-loading errors and
+binding-level argument errors are outside this mapping.
+
+| Code | Meaning |
+| --- | --- |
+| `LOAD_FAILED` | PDFium could not open the supplied bytes. |
+| `PASSWORD_REQUIRED` | The password is missing or incorrect. |
+| `PAGE_OUT_OF_RANGE` | The requested page is past the document's last page. |
+| `RENDER_FAILED` | Rendering failed, or the scale/buffer size was rejected. |
+| `CLOSED` | The document is closed or its internal entry is unavailable. |
+| `ENGINE_FAILED` | The worker's job or reply channel is unavailable. |
+| `INTERNAL` | Another core failure, including a caught Rust panic. |
 
 ```js
 try {
   doc.pageSize(index);
 } catch (err) {
-  switch (err.code) {
-    case 'PAGE_OUT_OF_RANGE':
-      // index was past the end of the document
-      break;
-    default:
-      throw err;
-  }
+  if (err.code !== 'PAGE_OUT_OF_RANGE') throw err;
+  // Choose a valid zero-based page index.
 }
 ```
 
-| Code | Meaning |
-| --- | --- |
-| `LOAD_FAILED` | The bytes passed to `openDocument` are not a document PDFium can open. |
-| `PASSWORD_REQUIRED` | The document is encrypted and the password was wrong or missing. |
-| `PAGE_OUT_OF_RANGE` | The page index named is past the end of the document. |
-| `RENDER_FAILED` | Rendering the page failed. |
-| `CLOSED` | The document is closed, either by the caller or because it never existed in this engine's slab. |
-| `ENGINE_FAILED` | The worker thread that owns every document in this engine is gone. |
-| `INTERNAL` | An unexpected failure with no more specific code. |
+A closed document cannot be reopened through the same handle. `ENGINE_FAILED`
+should be treated as requiring a replacement engine, even though a lost reply
+alone does not prove that its worker thread died. This addon caches one engine
+and exposes no replacement API, so recovery requires restarting the Node process.
+An initial engine-construction failure is not cached: a later `openDocument`
+tries initialization again.
 
-Two of the seven are load-bearing rather than merely informative:
+## Coverage
 
-- `CLOSED` means the caller used a handle it had already closed. That's a caller bug: open a new
-  document, don't retry the same handle.
-- `ENGINE_FAILED` means the worker thread behind every `Document` from this engine has died. Every
-  document from that engine is now unusable, and the fix is a new `Engine`, not a new `Document`.
-  This addon has no such recreation path: it opens one process-wide engine in
-  `crates/epdf-node/src/lib.rs`'s `engine()` and never rebuilds it. So `ENGINE_FAILED` here means
-  restarting the Node process, not catching the error and continuing.
+`vectors.test.mjs` checks fixture output and the codes `LOAD_FAILED`, `CLOSED`,
+and `PAGE_OUT_OF_RANGE`. `additional.test.mjs` runs shared password and color
+checks. The password test checks error messages, not the `PASSWORD_REQUIRED`
+code. `platform.test.mjs` checks target selection.
 
-## Testing
-
-`packages/node/vectors.test.mjs` asserts `LOAD_FAILED`, `CLOSED`, and `PAGE_OUT_OF_RANGE` against
-real fixtures. `PASSWORD_REQUIRED`, `RENDER_FAILED`, `ENGINE_FAILED`, and `INTERNAL` aren't
-asserted: reaching them needs an encrypted fixture, a way to make rendering fail, or a way to kill
-the worker thread on demand, and this scaffold has none of those yet.
+This Node suite does not directly assert `RENDER_FAILED`, `ENGINE_FAILED`, or
+`INTERNAL` codes. Rust tests separately cover invalid render scales and a
+caught worker panic. Test coverage in one adapter does not establish coverage
+in every adapter.

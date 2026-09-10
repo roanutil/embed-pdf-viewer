@@ -1,5 +1,4 @@
-# Mirrors packages/engine/runtime/build/CMakeLists.txt, trimmed to macOS and to
-# the two sources arm D needs.
+# Builds the C++ native benchmark addon for ARM64 macOS.
 cmake_minimum_required(VERSION 3.15)
 project(cc_ops CXX)
 
@@ -13,14 +12,8 @@ if(NOT DEFINED PDFIUM_INCLUDE_DIR)
   message(FATAL_ERROR "PDFIUM_INCLUDE_DIR is required")
 endif()
 
-# arm c's Rust is built `--release` (opt-level = 3, lto = true,
-# codegen-units = 1, see Cargo.toml's [profile.release]). Arm d must be
-# compiled at the same optimization level: the wasm phase of this spike once
-# linked arm d at -O0 against arm c's -O3, which manufactured a 25-33% win for
-# "Rust" that was really a win for "the only one of these that got optimized"
-# (see RESULTS.md). Default to Release here rather than trusting cmake-js's
-# default, and set -O3 explicitly rather than trusting CMAKE_CXX_FLAGS_RELEASE's
-# default, so the optimization level is visible in this file and cannot drift.
+# Match the Rust release profile's optimization level. These settings do not
+# make the Rust and C++ compiler pipelines identical.
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
@@ -32,31 +25,22 @@ add_library(${PROJECT_NAME} SHARED
 
 target_compile_options(${PROJECT_NAME} PRIVATE -O3 -DNDEBUG)
 
-# Cross-TU inlining, the closest native match to Cargo's codegen-units = 1:
-# ops.cc's loop and ops_napi.cc's thin wrapper are two translation units, same
-# as arm c's `ops` crate (one codegen unit) linked into `napi-arms`. Silently
-# skipped (not an error) if this toolchain's compiler/linker don't support it.
+# Request optimization across C++ source files when the toolchain supports it.
+# CMake selects the implementation; this need not match Cargo's full LTO.
 include(CheckIPOSupported)
 check_ipo_supported(RESULT ipo_supported OUTPUT ipo_error)
 if(ipo_supported)
   set_target_properties(${PROJECT_NAME} PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
 else()
-  # This used to fail silently. Arm c's Cargo.toml sets `lto = true`
-  # unconditionally, so a toolchain that can't do IPO here would build arm c
-  # with LTO and arm d without it and say nothing -- the same "one arm got
-  # optimized and the other did not" class of bug that already produced a
-  # fake 25-33% gap for "Rust" earlier in this spike (see RESULTS.md).
+  # Keep an unsupported optimization setting visible in benchmark logs.
   message(WARNING
-    "IPO/LTO not supported on this toolchain (${ipo_error}); arm d will "
-    "build WITHOUT cross-TU inlining while arm c keeps lto = true "
-    "unconditionally. Any arm c vs arm d gap measured under this build is "
-    "confounded with that asymmetry and must not be reported as language "
-    "difference.")
+    "Optimization across C++ source files is unavailable (${ipo_error}). "
+    "Variant d will build without it, while Rust variant c enables lto = true. "
+    "Timing differences between these builds cannot be attributed to language alone.")
 endif()
 
-# cmake-js supplies its own napi.h-less node headers via CMAKE_JS_INC;
-# node-addon-api's C++ wrapper (napi.h, napi-inl.h) ships as its own npm
-# package and is resolved the same way its own README documents.
+# cmake-js supplies Node headers. Resolve node-addon-api's C++ headers from
+# the benchmark's installed dependencies.
 execute_process(
   COMMAND node -p "require('node-addon-api').include.replace(/\"/g, '')"
   WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/.."

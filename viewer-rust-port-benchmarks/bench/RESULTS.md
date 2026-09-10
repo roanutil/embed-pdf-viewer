@@ -1,8 +1,16 @@
 # Interop benchmark results
 
-5 interleaved rounds. Node v24.20.0, darwin 25.6.0, Apple M4 Max.
+Historical report: 5 interleaved rounds on Node v24.20.0, darwin 25.6.0,
+Apple M4 Max, according to the original write-up. The raw timing and allocation
+samples are not committed, so those measurements and the reported environment
+cannot be independently verified from this checkout. The tables are retained
+as a historical record, not as verified current results.
 
-Medians across rounds. "worst spread" is the widest (max-min)/median of any single implementation for that cell: read a large value as "this row drifted, do not trust two significant figures".
+Only the [cold-start summary](results/cold-start.json) is committed. It contains
+summary values, not the individual browser samples. See [README.md](README.md)
+for a new run; `compare.mjs` overwrites this report.
+
+Medians across rounds. "worst spread" is the widest (max-min)/median of any single implementation for that cell: a large value indicates unstable timings, without identifying the cause.
 
 ### Per-frame projection
 
@@ -31,7 +39,10 @@ Medians across rounds. "worst spread" is the widest (max-min)/median of any sing
 
 ### rust-geometry-and-state: what the object decode costs
 
-rust-geometry-and-state crosses the boundary once per frame either way. The only difference between these two columns is whether the returned `Float64Array` is turned into `DisplayList` objects, which is the same allocation typescript-baseline performs. If the decode dominates, moving the math to Rust cannot pay off until the renderer reads floats directly.
+The two Rust columns compare returning a numeric buffer with converting it
+into JavaScript display objects. “Decode share” is the relative difference
+between the two recorded medians, not a separately timed conversion step.
+Both paths use one Wasm call once the metadata cache is current.
 
 | cell | typescript-baseline (objects) | rust-geometry-and-state (objects) | rust-geometry-and-state (raw buffer) | decode share | raw vs typescript-baseline |
 |---|---|---|---|---|---|
@@ -67,7 +78,7 @@ rust-geometry-and-state crosses the boundary once per frame either way. The only
 | n=1000 hit | 126 ns | 1.02 µs | 182 ns | 8.06x | 1.44x | 2% |
 | n=1000 miss | 119.60 µs | 1.01 ms | 150.76 µs | 8.46x | 1.26x | 2% |
 
-### Dispatch (ns per pointerMove)
+### State updates (time per pointerMove)
 
 | shapes | typescript-baseline | rust-geometry-only | rust-geometry-and-state | rust-geometry-only/typescript-baseline | rust-geometry-and-state/typescript-baseline | worst spread |
 |---|---|---|---|---|---|---|
@@ -75,13 +86,16 @@ rust-geometry-and-state crosses the boundary once per frame either way. The only
 | n=100 | 348 ns | 352 ns | 1.68 µs | 1.01x | 4.82x | 2% |
 | n=1000 | 3.70 µs | 3.66 µs | 1.92 µs | 0.99x | 0.52x | 15% |
 
-### Allocation (100 anchored shapes, GC-free window)
+### Allocation (100 anchored shapes, historical heap-only estimates)
 
 These historical samples use the obsolete heap-only metric and undercount the
 Rust-owned-state variant’s copied typed-array backing stores. Rerun allocation
 rounds with the current harness before using this table to compare variants.
 
-These are `heapUsed` deltas, not an allocation counter. Calibration: a `{x, y}` object measures 73 bytes here against a ~24 byte theoretical minimum, so treat the absolute figures as good to about 3x. The figures omit backing stores and are not a complete allocation comparison.
+The table uses changes in `heapUsed`, excluding typed-array backing storage
+and Rust allocations. The original report gave a calibration value of 73 bytes
+per `{x, y}` object, but its samples are unavailable. No accuracy bound can be
+established from that summary.
 
 | | bytes/frame | bytes/shape | window | vs typescript-baseline |
 |---|---|---|---|---|
@@ -91,18 +105,23 @@ These are `heapUsed` deltas, not an allocation counter. Calibration: a `{x, y}` 
 
 ### Cold start
 
-Chrome DevTools MCP, 5 same-origin iframe loads per POC against `vite preview` production builds.
+The committed summary describes five same-origin iframe loads per variant
+against Vite production previews, collected through Chrome DevTools MCP.
+The asset byte counts below are recorded build sizes, not current build outputs.
+The “ready interval” is `wasmReady - boot`, including in the TypeScript baseline.
+“First frame” is recorded by the mounted viewer’s React effect after its
+initial render, relative to navigation start. It does not time browser painting. Cache conditions and individual samples
+were not retained in a form that lets these timings be independently checked.
 
-> localhost, and the hashed JS/wasm assets come from the memory cache. The wasm leg here is fetch-from-cache plus compile plus instantiate, NOT download. Over a real network add the transfer: 45.2 kB gzipped for rust-geometry-only, 66.6 kB for rust-geometry-and-state.
-
-| | wasm shipped | instantiate leg | first frame | first frame range |
+| | wasm shipped | ready interval | first frame | first frame range |
 |---|---|---|---|---|
 | typescript-baseline | none | 1.2 ms | 19.0 ms | 13.5 to 34.4 ms |
-| rust-geometry-only | 130.7 kB | 6.3 ms | 21.2 ms | 12.7 to 43.7 ms |
-| rust-geometry-and-state | 277.2 kB | 7.8 ms | 24.8 ms | 21.5 to 41.6 ms |
+| rust-geometry-only | 130.7 KiB | 6.3 ms | 21.2 ms | 12.7 to 43.7 ms |
+| rust-geometry-and-state | 277.2 KiB | 7.8 ms | 24.8 ms | 21.5 to 41.6 ms |
 
 ### Crossover
 
-rust-geometry-and-state first beats typescript-baseline at n=never anchored, n=never plain, at the projecting view.
-
-rust-geometry-only wins 0 of 20 frame cells, as predicted.
+In these recorded frame tables, neither Rust variant beats the TypeScript
+baseline at any tested size (1, 10, 100, 1,000, or 10,000 shapes). This does
+not establish that no crossover exists outside the tested cases. The state-update
+table does report a Rust geometry-and-state advantage at 1,000 shapes.

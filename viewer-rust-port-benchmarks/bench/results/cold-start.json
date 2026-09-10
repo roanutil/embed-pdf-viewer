@@ -1,7 +1,7 @@
 {
   "mode": "cold-start",
   "collectedBy": "Chrome DevTools MCP, 5 same-origin iframe loads per POC against `vite preview` production builds",
-  "caveat": "localhost, and the hashed JS/wasm assets come from the memory cache. The wasm leg here is fetch-from-cache plus compile plus instantiate, NOT download. Over a real network add the transfer: 45.2 kB gzipped for rust-geometry-only, 66.6 kB for rust-geometry-and-state.",
+  "caveat": "Historical localhost measurements using repeated iframe loads. Assets and compiled Wasm may be reused from cache; these are not uncached network or guaranteed fresh-compilation timings. Individual samples and build hashes were not retained. The ready interval and first-frame marker are defined in bench/README.md.",
   "samples": 5,
   "pocs": {
     "typescript-baseline": { "wasmLegMs": 1.2, "firstFrameMs": 19.0, "firstFrameRange": [13.5, 34.4], "wasmBytes": 0 },

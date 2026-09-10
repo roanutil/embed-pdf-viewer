@@ -33,7 +33,7 @@ pub struct Bitmap {
     /// BGRA, `stride * height` bytes. uniffi copies this once on the way out:
     /// Data in Swift, ByteArray in Kotlin. At 4x zoom on a large page that copy
     /// is not free, and it is the first thing to revisit if render latency
-    /// matters. See docs/superpowers/specs/2026-09-03-pdfium-multiplatform-prototype-design.md.
+    /// matters.
     pub bgra: Vec<u8>,
 }
 

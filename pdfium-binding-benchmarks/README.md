@@ -1,77 +1,84 @@
-# pdfium-binding-benchmarks
+# PDFium binding benchmarks
 
-A spike, not a dependency. Nothing published depends on this directory, and a dead end costs one
-`rm -rf pdfium-binding-benchmarks`.
+This standalone experiment compares four ways to call PDFium from JavaScript.
+The WebAssembly (Wasm) builds link the same PDFium archive:
 
-It measures what it costs to put a layer between TypeScript and the PDFium fork in
-`packages/engine/runtime`, across four wasm builds of the same PDFium archive:
+| Variant | Implementation | Work done per call |
+| --- | --- | --- |
+| a: direct | Emscripten exports called through `cwrap` | One PDFium function |
+| b: Rust wrapper | Rust forwards calls to PDFium | One PDFium function |
+| c: Rust operations | Rust runs geometry, text, render, and search operations | One whole operation |
+| d: C++ operations | C++ implements the same four operations | One whole operation |
 
-- **a**, direct: `libembedpdf.a` linked by `em++`, called from TypeScript through `cwrap`. This is
-  what ships today.
-- **b**, Rust thin: one `extern "C"` Rust function per PDFium call the workloads touch, added to the
-  same link. Same call count as arm a, one extra wasm frame per call. This is the wrapper tax.
-- **c**, Rust coarse: four Rust functions that each run a whole loop (glyph geometry, text
-  extraction, render, search) inside Rust and hand back one packed buffer, so TypeScript crosses
-  once per operation instead of once per PDFium call.
-- **d**, C++ coarse: arm c's four operations, written in C++ instead of Rust, linked as a plain
-  `.cc` file on the same command line. The control: it separates "coarsening the crossing helped"
-  from "Rust helped."
+The scripts use the term **arm** for a variant and **coarse** for an API that
+performs a whole operation. Comparing c with d helps distinguish the benefit of
+fewer JavaScript calls from differences between the Rust and C++ implementations.
 
-The reasoning behind the four arms, the ten workloads, and the predictions made before measuring
-are in [`docs/research/pdfium-rust-wrapper-benchmarks.md`](../docs/research/pdfium-rust-wrapper-benchmarks.md).
-Results are in [`RESULTS.md`](./RESULTS.md).
+See [the experiment design](../docs/research/pdfium-rust-wrapper-benchmarks.md)
+and [the saved results and limitations](RESULTS.md).
 
-## Reproducing
+## Run the Wasm benchmark
 
-```bash
-bash build/fetch.sh wasm32       # pulls the prebuilt libembedpdf.a the shipping build uses
-bash build/link-wasm.sh          # builds crates/shim and crates/ops, links all four arms
-node bench/run.mjs --rounds 7    # fairness gate, then seven interleaved rounds of a, b, c, d
-node bench/compare.mjs           # medians, p95, and the wasm size table, as markdown
-```
-
-`build/link-wasm.sh` needs `em++` on `PATH`; `source build/emsdk.sh` first if it isn't. The gate in
-`bench/run.mjs` runs before any timing and aborts if any two arms disagree on an answer: a wrong arm
-can be fast, and no timing table would reveal it on its own.
-
-`-O3` makes `em++` run `wasm-opt` over the linked module. emsdk 3.1.72 bundles `wasm-opt` v119, which
-rejects two wasm feature names present in rustc 1.98's precompiled std. The numbers in `RESULTS.md`
-were produced on a machine where a newer `wasm-opt` had been symlinked over that bundled binary; a
-fresh `emsdk.sh` install needs a compatible Binaryen. Replacing SDK binaries is not
-required: set `EM_BINARYEN_ROOT` to a Binaryen installation containing `bin/wasm-opt`.
-The [September 8 audit](../docs/research/platform-gap-audit.md) rebuilt the multiplatform
-prototype with the same Emscripten 3.1.72 and Binaryen 132 using this override.
-Emscripten may take Binaryen from its config rather than `PATH`, so select it explicitly.
-
-`node --test bench/run.test.mjs` is the smoke test: two short rounds, checked for plausible shapes
-(render at 4x costs more than at 1x, the glyph loop dwarfs a single null call), not for
-publishable numbers. It passes `--out` a temp directory, because `bench/results/` holds the 56
-committed files behind every table in `RESULTS.md` and any run clears the ones it is about to
-replace. Use `--out` for any exploratory run you don't want in the published set.
-
-## Native
-
-Same four arms, same gate, same fixture, run against native addons instead of wasm modules:
+Run these commands in Bash from `pdfium-binding-benchmarks` (start `bash` first
+if your interactive shell is Zsh):
 
 ```bash
-bash build/fetch.sh darwin-arm64          # pulls the prebuilt libembedpdf for this target
-npm install                               # cmake-js and node-addon-api, both devDependencies here
-bash build/build-native.sh darwin-arm64   # builds arms b, c and d
-node bench/run.mjs --native --rounds 7    # fairness gate, then seven interleaved rounds
-node bench/compare.mjs --native           # medians and p95, as markdown
+bash build/fetch.sh wasm32
+source build/emsdk.sh
+bash build/link-wasm.sh
+node bench/run.mjs --rounds 7 --out /tmp/pdfium-binding-review
+node bench/compare.mjs --out /tmp/pdfium-binding-review
 ```
 
-`npm install` has to run inside `pdfium-binding-benchmarks` before the native build. `build/build-native.sh`
-shells out to `npx cmake-js`, and `build/CMakeLists.txt` resolves `node-addon-api` by running
-`node -p "require('node-addon-api').include"` from the spike root, so both packages need to be
-installed here. Nothing else in this directory documents that.
+The fetch script uses the pin in
+[`engine-runtime-build.json`](../packages/engine/runtime/engine-runtime-build.json).
+The link script builds the Rust crates and all four Wasm modules. It requires
+`em++` and the Rust toolchain specified in `rust-toolchain.toml`.
 
-`build/build-native.sh` builds arms b, c, and d only. Native arm a is
-`packages/engine/runtime/npm/darwin-arm64/lib/pdf-runtime.node`, the shipping addon, and
-`packages/engine/runtime/.gitignore` ignores it, so a fresh clone doesn't have it. Build it from
-`packages/engine/runtime` with `pnpm build:target darwin-arm64`. `bench/run.mjs` checks for all three
-native artifacts before running and, if arm a's is missing, tells you to run `build-native.sh`; that
-script will not produce it, so run the `pnpm build:target` command above instead.
+The [September 8 build audit](../docs/research/platform-gap-audit.md) records
+Emscripten 3.1.72 with Binaryen 132 for the related multiplatform prototype.
+If the SDK's bundled `wasm-opt` rejects Rust's Wasm features, set
+`EM_BINARYEN_ROOT` to a compatible Binaryen installation containing `bin/wasm-opt`
+before linking. The saved benchmark binaries may differ from a fresh build.
 
-The native half is macOS arm64 only: `darwin-arm64` is hardcoded at `bench/run.mjs:45` and
-`bench/arm.mjs:182`. There is no `--native` path for any other OS or architecture.
+Before timing, `bench/run.mjs` compares the variants' outputs on the three
+fixtures in `bench/fixture.mjs`: `report-p4`, `rotated-p0`, and `flipped-p0`.
+It stops if the checked outputs disagree. Timing uses page index 4 of
+`report.pdf` by default; page indices start at zero.
+
+Rounds alternate between variants, rotating the starting variant each round.
+Use a fresh `--out` directory for exploratory runs: the runner deletes existing
+JSON files for the selected mode in that directory. Without `--out`, it replaces
+that mode's committed data in `bench/results/`.
+
+After building, run `node --test bench/*.test.mjs` for the JavaScript tests.
+`bench/run.test.mjs` runs a short benchmark in a temporary directory and needs
+`em++` on `PATH` to check the recorded compiler version.
+
+## Run the native benchmark
+
+The native runner and build script are set up for ARM64 macOS. Native variant a
+uses the repository runtime addon. Build it from `packages/engine/runtime`:
+
+```bash
+pnpm build:target darwin-arm64
+```
+
+Then run from `pdfium-binding-benchmarks`:
+
+```bash
+bash build/fetch.sh darwin-arm64
+npm ci
+bash build/build-native.sh darwin-arm64
+node bench/run.mjs --native --rounds 7 --out /tmp/pdfium-binding-native-review
+node bench/compare.mjs --native --out /tmp/pdfium-binding-native-review
+```
+
+`build/build-native.sh` builds b/c/d, but does not build a. If the runner reports
+that `packages/engine/runtime/npm/darwin-arm64/lib/pdf-runtime.node` is missing,
+use the runtime build command above; the runner's generic suggestion to run
+`build-native.sh` cannot produce that file.
+
+Native a uses C++ bindings and BigInt pointers. Native b/c use `napi-rs` and
+numeric pointers; d uses C++ bindings and numeric pointers. These differences
+prevent an a-versus-b comparison from isolating the cost of a Rust wrapper.
