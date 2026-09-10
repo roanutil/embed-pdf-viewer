@@ -113,9 +113,8 @@ export interface ViewerCustomization {
   chrome?: ChromeSchema | ((base: ChromeSchema, helpers: ChromeHelpers) => ChromeSchema);
   /** The stamps sidebar's built-in library. `false`: none (air-gapped, no
    *  request). A string: a URL template with a `{locale}` slot for a
-   *  self-hosted copy of `@embedpdf/default-stamps` (never falls back to a
-   *  CDN). Default: the bundler-resolved copy from that package, with
-   *  jsDelivr as a fetch-failure-only safety net. */
+   *  self-hosted copy of `@embedpdf/default-stamps`. Default: the copy that
+   *  ships with the viewer, as a lazy chunk of your own build — no CDN. */
   stamps?: StampsCustomization;
   /** Light/dark preference (string shorthand), or the full theme config with
    *  `--ep-*` token overrides. Tokens are applied by the DELIVERY (the custom

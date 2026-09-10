@@ -27,8 +27,9 @@ plugins, toolbar, and document lifecycle for you.
 
 The Insert tab's stamps panel loads the standard rubber stamps from
 `@embedpdf/default-stamps` the first time it opens — one Acrobat-compatible
-PDF per locale, resolved through your bundler so it ships inside your build,
-in the language negotiated from the viewer's locale and the browser's. The
+PDF per locale, shipped as a lazy chunk of your own build (the CDN snippet
+carries it in its folder), in the language negotiated from the viewer's
+locale and the browser's. Nothing is fetched from a third party. The
 `stamps` option decides where that library comes from:
 
 ```ts
@@ -40,7 +41,7 @@ stamps: {
 } // self-host
 ```
 
-A self-hosted URL never falls back to a CDN. Libraries a user creates —
+A self-hosted URL is used exactly as given. Libraries a user creates —
 stamps made from selected annotations, PDFs imported into the panel — are
 kept in the browser across reloads.
 

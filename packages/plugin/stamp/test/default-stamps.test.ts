@@ -11,6 +11,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { DocumentHandle, Engine } from '@embedpdf/engine-core/runtime';
 import type { PluginContext } from '@embedpdf/core';
 import { createLocalEngine } from '@embedpdf/engine';
+import { LOCALES as SHIPPED, loadDefaultLibrary } from '@embedpdf/default-stamps/library';
 
 import { createStampCapability } from '../src/capability';
 import { initialStampState, stampReducer } from '../src/reducer';
@@ -310,6 +311,15 @@ describe('@embedpdf/default-stamps', () => {
       }
     });
   }
+
+  it('the module-graph loader hands out exactly the shipped bytes', async () => {
+    expect([...SHIPPED]).toEqual([...LOCALES]);
+    for (const locale of LOCALES) {
+      const viaModule = await loadDefaultLibrary(locale);
+      expect(viaModule, locale).toEqual(await libraryPdf(locale));
+    }
+    expect(await loadDefaultLibrary('xx-YY')).toEqual(await libraryPdf('en'));
+  });
 
   it('exports what it imported: a second import of the export is identical', async () => {
     const ctx = makeCtx(engine);

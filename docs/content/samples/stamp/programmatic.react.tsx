@@ -6,7 +6,7 @@ import { RenderLayer, renderPlugin } from '@embedpdf/react/render';
 import { interactionPlugin } from '@embedpdf/react/interaction';
 import { AnnotationLayer, annotationPlugin } from '@embedpdf/react/annotation';
 import { stampPlugin, useStamp, useStampAssets } from '@embedpdf/react/stamp';
-import { urls as defaultStampLibraries } from '@embedpdf/default-stamps/urls';
+import { loadDefaultLibrary } from '@embedpdf/default-stamps/library';
 import { localEngine } from '@embedpdf/engine';
 
 import {
@@ -49,9 +49,8 @@ function PlaceByCode() {
 
   useEffect(() => {
     if (assets.length > 0) return;
-    fetch(defaultStampLibraries.en)
-      .then((response) => response.arrayBuffer())
-      .then((bytes) => stamp.importLibraryPdf(new Uint8Array(bytes)))
+    loadDefaultLibrary('en')
+      .then((bytes) => stamp.importLibraryPdf(bytes))
       .catch((err) => setStatus(err instanceof Error ? err.message : String(err)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stamp]);

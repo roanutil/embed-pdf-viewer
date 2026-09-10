@@ -2,13 +2,14 @@
  * The viewer's BUILT-IN stamp library: `@embedpdf/default-stamps`, the
  * standard rubber stamps as one Acrobat-compatible PDF per locale.
  *
- * Delivery follows the engine's wasm rule (`wasm-source.ts`): the PDF is a
- * runtime-fetched asset, resolved on the main thread in a fixed order —
- *   1. `stamps.defaultLibrary === false`  → nothing, no request;
- *   2. a URL template (self-host)          → exactly that, never a CDN;
- *   3. the default                         → the bundler-resolved copy from
- *      the package (`@embedpdf/default-stamps/urls`), jsDelivr only when
- *      that fetch fails.
+ * Delivery: the library ships INSIDE whatever ships this viewer. The package
+ * exposes each locale as a lazy ES module (`@embedpdf/default-stamps/library`),
+ * so it travels through the module graph like any other code — every bundler
+ * splits it into a chunk served from the app's own origin, the CDN snippet
+ * carries it as a sibling chunk in its folder, and nothing is fetched from a
+ * third party. `stamps.defaultLibrary` overrides that:
+ *   - `false`          → no built-in library, no request (air-gapped);
+ *   - a URL template   → exactly that (`{locale}` slot), for self-hosted copies.
  *
  * Loading is LAZY (first open of the stamps panel, never at boot) and
  * locale-aware: the chrome locale leads, the browser languages break ties
@@ -16,12 +17,12 @@
  * while a default library is loaded swaps it for the new one. The file names
  * itself (`/Title`, `Id: embedpdf-standard`), so no overrides are passed.
  */
-import { CDN_URL_TEMPLATE, LOCALES, urls } from '@embedpdf/default-stamps/urls';
+import { LOCALES, loadDefaultLibrary } from '@embedpdf/default-stamps/library';
 import { negotiateLocale } from '@embedpdf/react/i18n';
 import type { StampCapability } from '@embedpdf/react/stamp';
 
 /** The built-in library's PieceInfo id — excluded from persistence (it is
- *  fetched again on every first open, in the locale of that moment). */
+ *  loaded again on every first open, in the locale of that moment). */
 export const DEFAULT_LIBRARY_ID = 'embedpdf-standard';
 
 export type DefaultLibrarySource = false | string | undefined;
@@ -38,17 +39,10 @@ const fetchBytes = async (url: string): Promise<Uint8Array> => {
   return new Uint8Array(await response.arrayBuffer());
 };
 
-async function fetchDefaultLibrary(locale: string, source: string | undefined) {
-  if (source) return fetchBytes(source.replace('{locale}', locale));
-  try {
-    return await fetchBytes(urls[locale]);
-  } catch (error) {
-    // The bundler-default only: a flattened bundle left `import.meta.url`
-    // pointing nowhere. An explicit source never phones a CDN.
-    console.warn('[embedpdf] default stamps: bundler URL failed, trying the CDN', error);
-    return fetchBytes(CDN_URL_TEMPLATE.replace('{locale}', locale));
-  }
-}
+/** The library bytes for `locale`: your URL when you gave one, otherwise the
+ *  copy that shipped with the viewer. Never anything else. */
+const defaultLibraryBytes = (locale: string, source: string | undefined) =>
+  source ? fetchBytes(source.replace('{locale}', locale)) : loadDefaultLibrary(locale);
 
 /** Per workspace: the locale the default library was last brought to, and
  *  the in-flight work — the panel mounts and unmounts with the sidebar, so
@@ -76,8 +70,7 @@ export function ensureDefaultLibrary(
     if (loaded?.locale === locale) return;
     if (current && !loaded) return; // removed by the user this session
     if (loaded) await stamp.removeLibrary(DEFAULT_LIBRARY_ID);
-    const bytes = await fetchDefaultLibrary(locale, source);
-    await stamp.importLibraryPdf(bytes);
+    await stamp.importLibraryPdf(await defaultLibraryBytes(locale, source));
   };
   const promise = run();
   loads.set(stamp, { locale, promise });

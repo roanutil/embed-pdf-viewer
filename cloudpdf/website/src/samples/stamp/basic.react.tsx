@@ -14,7 +14,7 @@ import {
   useStampLibraries,
 } from '@embedpdf/react/stamp';
 import type { StampAsset } from '@embedpdf/react/stamp';
-import { urls as defaultStampLibraries } from '@embedpdf/default-stamps/urls';
+import { loadDefaultLibrary } from '@embedpdf/default-stamps/library';
 import { cloudEngine } from '@cloudpdf/engine';
 import { localEngine } from '@embedpdf/engine';
 
@@ -40,17 +40,17 @@ const plugins = [
 
 const ebook: OpenInput = { kind: 'share', shareToken: 'shr_WGj1goAtlNN_fQ5OswPrbJQM' };
 
-/** One library, imported once: the standard stamps, English edition. The
- *  file names itself (its /Title) and lists its stamps (its named pages). */
+/** One library, imported once: the standard stamps, English edition, loaded
+ *  as a lazy chunk of this build. The file names itself (its /Title) and
+ *  lists its stamps (its named pages). */
 function useStandardStamps() {
   const stamp = useStamp();
   const libraries = useStampLibraries();
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
     if (libraries.length > 0) return;
-    fetch(defaultStampLibraries.en)
-      .then((response) => response.arrayBuffer())
-      .then((bytes) => stamp.importLibraryPdf(new Uint8Array(bytes)))
+    loadDefaultLibrary('en')
+      .then((bytes) => stamp.importLibraryPdf(bytes))
       .catch((err) => setError(err instanceof Error ? err.message : String(err)));
     // Import once per workspace; the library list changing is the outcome.
     // eslint-disable-next-line react-hooks/exhaustive-deps

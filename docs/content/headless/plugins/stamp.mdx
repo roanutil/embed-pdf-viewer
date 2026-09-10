@@ -168,20 +168,22 @@ policy is the one that decides whether scripts run at all.
 
 `@embedpdf/default-stamps` ships the standard set as one library per locale
 (`en`, `de`, `nl`, `fr`, `es`, `zh-CN`, `sv`, `ja`), each registering the same
-identifiers with translated labels. Its `urls` entry resolves the files
-through your bundler, so they ship inside your build:
+identifiers with translated labels. Its `library` entry delivers each locale
+as a lazy module of your own build — no asset to copy, no CDN, nothing
+fetched from anywhere but your origin:
 
 ```ts
-import { LOCALES, urls } from '@embedpdf/default-stamps/urls';
+import { LOCALES, loadDefaultLibrary } from '@embedpdf/default-stamps/library';
 import { negotiateLocale } from '@embedpdf/react/i18n';
 
 const locale = negotiateLocale(LOCALES, navigator.languages) ?? 'en';
-const bytes = new Uint8Array(await (await fetch(urls[locale])).arrayBuffer());
-await stamp.importLibraryPdf(bytes); // "Standaard stempels", id embedpdf-standard
+await stamp.importLibraryPdf(await loadDefaultLibrary(locale)); // "Standaard stempels", id embedpdf-standard
 ```
 
 Import two locales and you get two libraries with one identity: the
-placed `/Name` is `Approved` either way, only the `/Subj` differs.
+placed `/Name` is `Approved` either way, only the `/Subj` differs. The PDFs
+themselves stay in the package (`<locale>/stamps.pdf`) for self-hosting and
+for Acrobat.
 
 ## Permissions
 

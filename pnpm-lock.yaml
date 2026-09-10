@@ -954,7 +954,11 @@ importers:
         specifier: ^2.1.9
         version: 2.1.9(@types/node@22.19.11)(happy-dom@20.11.0)(less@4.6.7)(lightningcss@1.30.2)(msw@2.11.2(@types/node@22.19.11)(typescript@5.9.3))(sass-embedded@1.97.3)(sass@1.97.3)(terser@5.46.0)
 
-  packages/default-stamps: {}
+  packages/default-stamps:
+    devDependencies:
+      rimraf:
+        specifier: ^5.0.0
+        version: 5.0.10
 
   packages/engine/core:
     dependencies:
@@ -1689,6 +1693,9 @@ importers:
         specifier: workspace:*
         version: link:../form
     devDependencies:
+      '@embedpdf/default-stamps':
+        specifier: workspace:*
+        version: link:../../default-stamps
       '@embedpdf/engine':
         specifier: workspace:*
         version: link:../../engine/main
@@ -1748,6 +1755,9 @@ importers:
 
   packages/viewer/main:
     dependencies:
+      '@embedpdf/default-stamps':
+        specifier: workspace:*
+        version: link:../../default-stamps
       '@embedpdf/engine':
         specifier: workspace:*
         version: link:../../engine/main
@@ -1776,6 +1786,9 @@ importers:
       '@types/react-dom':
         specifier: ^18.3.0
         version: 18.3.7(@types/react@18.3.28)
+      playwright-core:
+        specifier: ^1.63.0
+        version: 1.63.0
       tailwindcss:
         specifier: ^4.1.18
         version: 4.1.18
@@ -1785,6 +1798,9 @@ importers:
       vite:
         specifier: ^6.0.0
         version: 6.4.1(@types/node@22.19.11)(jiti@2.6.1)(less@4.6.7)(lightningcss@1.30.2)(sass-embedded@1.97.3)(sass@1.97.3)(terser@5.46.0)(tsx@4.21.0)(yaml@2.9.0)
+      vitest:
+        specifier: ^2.1.9
+        version: 2.1.9(@types/node@22.19.11)(happy-dom@20.11.0)(less@4.6.7)(lightningcss@1.30.2)(msw@2.11.2(@types/node@22.19.11)(typescript@5.9.3))(sass-embedded@1.97.3)(sass@1.97.3)(terser@5.46.0)
 
   packages/viewer/react:
     dependencies:
@@ -10248,6 +10264,11 @@ packages:
 
   pkg-types@1.3.1:
     resolution: {integrity: sha512-/Jm5M4RvtBFVkKWRu2BLUTNP8/M2a+UwuAX+ae4770q1qVGtfjG+WTCupoZixokjmHiry8uI+dlY8KXYV5HVVQ==}
+
+  playwright-core@1.63.0:
+    resolution: {integrity: sha512-rYCsBF/M5HjUch52bbtVONEFjv6Xu8sm8h72dNlR5bzIE1fvC/bxgspzkjSfU+MweEMmPM8KJebG6nnyxo5mCg==}
+    engines: {node: '>=20'}
+    hasBin: true
 
   points-on-curve@0.2.0:
     resolution: {integrity: sha512-0mYKnYYe9ZcqMCWhUjItv/oHjvgEsfKvnUTg8sAtnHr3GVy7rGkXCb6d5cSyqrWqL4k81b9CPg3urd+T7aop3A==}
@@ -22110,6 +22131,8 @@ snapshots:
       confbox: 0.1.8
       mlly: 1.8.0
       pathe: 2.0.3
+
+  playwright-core@1.63.0: {}
 
   points-on-curve@0.2.0: {}
 

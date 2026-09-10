@@ -32,24 +32,28 @@ as two libraries with one identity.
 
 ```ts
 import { StampToken } from '@embedpdf/plugin-stamp';
+import { loadDefaultLibrary } from '@embedpdf/default-stamps/library';
 
 const stamp = registry.capability(StampToken);
-const url = new URL('@embedpdf/default-stamps/nl/stamps.pdf', import.meta.url); // or your CDN
-const bytes = new Uint8Array(await (await fetch(url)).arrayBuffer());
-await stamp.importLibraryPdf(bytes); // title, identifiers, labels come from the file
+await stamp.importLibraryPdf(await loadDefaultLibrary('nl')); // title, identifiers, labels come from the file
 ```
 
-Fall back to `en` for a locale that is not shipped.
+### As part of your build
 
-### Bundler-resolved URLs
+`@embedpdf/default-stamps/library` delivers each locale through the module
+graph — a generated ES module per locale, loaded with a literal dynamic
+import — so the library ships as a lazy chunk of your own build. Nothing to
+copy, no asset pipeline to configure, no CDN:
 
-`@embedpdf/default-stamps/urls` exports `urls[locale]` as static
-`new URL(..., import.meta.url)` expressions, so webpack, Vite, Turbopack,
-Rspack, and Parcel copy the PDFs into your build output and hand you their
-URLs — no CDN, no manual asset copying — plus `LOCALES` and `CDN_URL_TEMPLATE`
-(a jsDelivr fallback pinned to this major) for toolchains that flatten
-`import.meta.url`. `@embedpdf/viewer-chrome` loads its built-in library this
-way.
+```ts
+import { LOCALES, loadDefaultLibrary } from '@embedpdf/default-stamps/library';
+
+const bytes = await loadDefaultLibrary('nl'); // the PDF; unknown codes fall back to `en`
+await stamp.importLibraryPdf(bytes);
+```
+
+The PDFs themselves stay in the package (`<locale>/stamps.pdf`) for
+self-hosting and for Acrobat.
 
 ## Provenance
 

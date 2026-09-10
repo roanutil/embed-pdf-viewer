@@ -14,8 +14,9 @@
     "nl",
     "sv",
     "zh-CN",
-    "urls.js",
-    "urls.d.ts",
+    "library.js",
+    "library.d.ts",
+    "locales",
     "README.md"
   ],
   "exports": {
@@ -27,9 +28,9 @@
     "./nl/stamps.pdf": "./nl/stamps.pdf",
     "./sv/stamps.pdf": "./sv/stamps.pdf",
     "./zh-CN/stamps.pdf": "./zh-CN/stamps.pdf",
-    "./urls": {
-      "types": "./urls.d.ts",
-      "default": "./urls.js"
+    "./library": {
+      "types": "./library.d.ts",
+      "default": "./library.js"
     },
     "./package.json": "./package.json"
   },
@@ -40,5 +41,12 @@
     "type": "git",
     "url": "git+https://github.com/embedpdf/embed-pdf-viewer.git",
     "directory": "packages/default-stamps"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "clean": "rimraf locales"
+  },
+  "devDependencies": {
+    "rimraf": "^5.0.0"
   }
 }
