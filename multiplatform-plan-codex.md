@@ -1,5 +1,11 @@
 # EmbedPDF multiplatform plan
 
+> Superseded by `multiplatform-plan-claude-remix.md` (2026-09-09). Kept for the detail it carries.
+> Where the two disagree, the remix is correct. Known conflicts: this document puts `pages.extract`
+> in slice 9 / Phase 4 and fonts in slice 10 / Phase 4, which `multiplatform-port-order.md` places
+> at G9 / Phase 2 and G4 / Phase 1-2; its Phase 5 is "Shared interaction cores", the remix's is
+> "Scale, isolation, server".
+
 Date: 2026-09-08. Scope: web, iOS, and Android, with a shared Rust core and native platform SDKs. This is a proposed implementation and release plan, not a claim that the prototype is production-ready.
 
 ## Recommendation

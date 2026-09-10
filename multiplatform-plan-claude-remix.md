@@ -1,8 +1,10 @@
 # Multiplatform EmbedPDF: Rust core, native wrappers
 
-Status: proposal. Date: 2026-09-09. Companion documents: `multiplatform-port-order.md` (module
-groups and sequence) and `multiplatform-port-hazards.md` (TypeScript designs that need redesign in
-Rust).
+Status: proposal. Date: 2026-09-09. This document governs. Companions: `multiplatform-port-order.md`
+(module groups and sequence) and `multiplatform-port-hazards.md` (TypeScript designs that need
+redesign in Rust). It supersedes `multiplatform-plan-claude.md` and `multiplatform-plan-codex.md`,
+which are kept for the detail they carry but are not authoritative. Where any of them disagree with
+this document on phasing, counts or sequence, this one is correct.
 
 ## 1. Goal
 
@@ -17,24 +19,26 @@ One Rust implementation of the PDF engine, consumed by:
 
 Two deliverables, roughly equal in size:
 
-1. The engine port: `packages/engine/services` (16,620 lines) plus the engine-behavior parts of
-   `packages/engine/core` (text layout, search fold and cursor, DTOs, error codes).
+1. The engine port: 25,431 hand-ported lines. `packages/engine/services` (16,620) plus 8,811 lines
+   of `packages/engine/core` (text layout, search fold and cursor, DTOs, annotation kinds and
+   helpers, error codes, scope resolution). A further 1,765 lines of core become generated schemas
+   or mechanical barrels. `multiplatform-port-order.md` section 2 itemizes both.
 2. Native reader products on iOS and Android. Presentation code (tile scheduling, selection,
    gestures, search navigation, virtualization) has no JavaScript runtime to run in and is written
    twice natively.
 
 The reason to do this is code sharing, not web speed. Web gains in geometry and search loops and is
 expected to be neutral elsewhere. Without the port, iOS and Android need a second implementation of
-16,620 lines of PDF-spec correctness that will drift.
+25,431 lines of PDF-spec correctness that will drift.
 
 ## 2. Decision summary
 
 | Decision | Choice |
 |---|---|
-| Boundary | Rust owns PDFium's C ABI up through the 60 document operations in `packages/engine/core/src/wire/worker-protocol.ts` (`WorkerRequest`, 64 kinds, 4 control frames). TypeScript keeps everything above. |
+| Boundary | Rust owns PDFium's C ABI up through the 61 document operations in `packages/engine/core/src/wire/worker-protocol.ts` (`WorkerRequest` is a 63-member union; `OpenWorkerRequest` expands to three `open.*` kinds, giving 65 request kinds, of which 4 are control frames). TypeScript keeps everything above. |
 | Web kernel, plugins, viewer | Stay TypeScript. `packages/core/main`, `packages/core/stage`, `packages/core/annotation` carry the strongest presumption against porting. |
 | Native API | `uniffi` is the ABI, not the API. Each platform gets a handwritten facade. |
-| Migration unit | Resource ownership, not operations. Three stages (Section 6). Backend selected per document at open, never switched mid-session. |
+| Migration unit | Resource ownership, not operations. Three stages (Section 6). Backend selected per document at open through `PdfOpenOptions.engineBackend: 'typescript' \| 'rust'`, defaulting to `'typescript'` for the whole preview, never switched mid-session. |
 | DTOs | Rust definition is canonical for internal wire DTOs; generated TypeScript is checked in; dirty diff fails CI. Public web DTOs that differ keep an adapter. |
 | Errors | One vocabulary, `EngineErrorCode`, on every platform. |
 | Target version | v4. Latest stable is 2.15.0; current line is `3.0.0-next.11`. Rust backend ships opt-in during preview. |
@@ -45,10 +49,23 @@ Toolchain pins: `rustc` 1.98.0 (`edition = "2024"`), `bindgen = "=0.72.1"`, `uni
 `EM_BINARYEN_ROOT`, Swift 6.3.3 / Xcode 26.6, Kotlin 2.2.20 / AGP 9.4.0 / NDK 29.0.14206865,
 Node 24.20.0, pnpm 10.34.0.
 
+Two of those pins do not match what the repo builds and tests on today, and Phase 0 has to close
+both. The shipping web runtime builds under emsdk 3.1.70 (`packages/engine/runtime/Dockerfile:2`),
+not 3.1.72, and Phase 0's exit gate is a clean-checkout build of the shipping worker. Six CI
+workflows run Node 22, including `.github/workflows/engine-conformance.yml:53`, the exact file
+Phase 0 wires the corpus job into; `mise.toml` and the benchmark environment are on 24.20.0.
+Unresolved: whether `-fwasm-exceptions` works against the rustup-shipped `wasm32-unknown-emscripten`
+std on stable `rustc` 1.98.0, or whether it needs `-Zbuild-std` on nightly. The answer changes the
+toolchain pin and it is a Phase 0 question, not a Phase 1 one.
+
 ## 3. Evidence
 
 Numbers come from the committed tables only: `pdfium-binding-benchmarks/RESULTS.md` and
-`viewer-rust-port-benchmarks/bench/RESULTS.md`. The summaries in `docs/research/` are superseded.
+`viewer-rust-port-benchmarks/bench/RESULTS.md`, except for four figures that exist only in
+`docs/research/` and are cited as such: the three measurement bugs and the 184x `rows.find`
+(`pdfium-rust-wrapper-benchmarks.md:321`, `rust-core-port-benchmarks.md:247-248`) and the exception
+handling counts and browser passes (`platform-gap-audit.md:65-70`). The narrative summaries in
+`docs/research/` are superseded; those tables are not.
 
 | Measurement | Result | Rule it produces |
 |---|---|---|
@@ -118,7 +135,7 @@ objects, dispatch and host adapters are scaffolding to redesign.
 |---|---|---|
 | Web worker | Single-threaded message loop; Rust + PDFium in one Emscripten module | Never split into two WASM heaps joined by per-call JavaScript. An abort message is not observed while a synchronous handler runs (`WorkerHost.ts:199`, `:225`). |
 | Native | One owner OS thread per engine, inside Rust; handle types are `!Send + !Sync`; exported engine object is thread-safe and submits jobs | A Swift actor, coroutine dispatcher or mutex does not guarantee affinity. Implementation reference: prototype `crates/epdf-ops/src/dispatch/{threaded,inline}.rs`. |
-| Node | `napi-rs` addon in the existing `worker_thread` | Nine native targets in `packages/engine/runtime/npm/`. Windows and musl deferred past the first mobile release. |
+| Node | `napi-rs` addon in the existing `worker_thread` | Eight native targets in `packages/engine/runtime/npm/` (nine directories, one of which is `wasm32`). Windows and musl deferred past the first mobile release. |
 
 Multi-document operations (page import) coordinate on one owner: transfer bytes or reopen a
 controlled snapshot on the destination. Never pass a source document handle across owners.
@@ -158,10 +175,28 @@ state. Two languages cannot both own those.
 | B: session authority moves as one change | Rust | Bytes and lifetime, page registry and leases, revision authority, mutation sequence, password state, retained import sources, together. TypeScript `DocumentSession` becomes a facade. `finishMutation` (`WorkerHost.ts:1380`) and `BaseDocumentRegistry` move with it. | Reverse of A: TypeScript leases a handle from Rust for one scoped operation. Lease token + pointer copy, never a borrow of Rust state. Checkout, return and finalize are three separate synchronous entry points. Second checkout while one is outstanding is a rejection. `close` with a lease out completes on return. Written removal criterion. | Chunking becomes expressible, with a named continuation owner, a page lease, a revision check on resume, and a close ordering. |
 | C: retire families | Rust | Reader and Mutator families in whole clusters behind unchanged public services. Rust owns validation, native work, mutation impact, cache invalidation, revision publication. TypeScript keeps orchestration and presentation. | Deleted per family when parity and performance gates pass. | Per operation, documented. |
 
+Rollback, per stage:
+
+| Stage | What reverts | What is stranded | User-visible recovery |
+|---|---|---|---|
+| A | One routing entry. The bridge is internal and hidden from consumer packages, so no consumer sees the change. | Nothing. Reads are pure. | None needed. |
+| B | Only while the worker still ships both implementations, which it does until the last family flips. Reverting means the TypeScript `DocumentSession` stops being a facade and resumes authority. | In-flight leases and any mutation sequence advanced on the Rust session. | New sessions open on the TypeScript backend; an open document must be saved and reopened. |
+| C | Per family, until that family's TypeScript bridge is deleted. | Nothing beyond the family. | Same as B. |
+| After Phase 6 | Nothing. Bridges are removed and `engine-services` is deleted. | Everything. | Revert the release. |
+
+Carrying both implementations through Phase 5 is the price of B and C rollback. It is a cost, and
+it is also the mechanism: delete the TypeScript backend early and the rollback column above becomes
+"revert the release" three phases sooner.
+
 Rules:
 
 - Native hosts never use Stage A. They get a Rust-owned session over the same service code from the
   start.
+- Two Stage A groups are named exceptions to "retains nothing, closes nothing". G9 `pages.extract`
+  creates and closes its own scratch document (`FPDF_CreateNewDocument`, `PagesExtractor.ts:56-89`),
+  which is a second document Rust owns end to end and never a borrow of the session's. G4 render
+  hands the host a bitmap that outlives the call, under the buffer contract in Section 5. Neither
+  touches the session's document or page pointers, which is what the rule protects.
 - Stage A page borrowing goes through `document-session/pages/PagePtrPool.acquire` and releases in
   `finally`. Rust must not call `FPDF_LoadPage` itself: it would bypass normalized rotation, shared
   refcounts, and structural-mutation leak checks.
@@ -175,6 +210,10 @@ Rules:
 - The Stage B bridge is proven in Phase 0 as a throwaway spike over `annotations.create` through
   the existing `AnnotationMutator` against a Rust-owned document, with failure-after-write, form
   model invalidation, and close-under-lease exercised.
+- Stage B is also rehearsed on web before it lands. G3w (`multiplatform-port-order.md`) opens,
+  closes and password-checks documents against a Rust-owned session on web in Phase 3, behind an
+  opt-in flag, routing no reads. The Phase 0 spike is a throwaway. G3w is not: it is the same
+  session code Stage B promotes to authority.
 - Deliberate duplicates (web TypeScript geometry vs Rust geometry) get shared vectors, a named
   owner and a written exit criterion. Nothing is made slower on web to reach a percentage.
 
@@ -198,7 +237,7 @@ failure. An `AbortError` is never evidence of rollback.
 
 - `uniffi` output is not the public surface. The prototype already renamed `close` to `closeSync`
   and `OpsError::EngineFailed.message` to `detail` to dodge generator collisions
-  (`packages/kotlin/uniffi.toml`).
+  (`pdfium-multiplatform-prototype/packages/kotlin/uniffi.toml`).
 - Facades may contain platform coordinate conversion, image adaptation, accessibility, scheduling,
   platform defaults. They may not decide what a PDF means.
 - `PDFDocument` is `Sendable`; `async` methods bridge to the engine thread. Swift `Task`
@@ -235,7 +274,7 @@ PdfEngine().open(bytes).use { document ->
 
 | Mechanism | Exists | Covers | Notes |
 |---|---|---|---|
-| 22 conformance suites, `packages/engine/core/src/conformance/`, via `makeEngine` | Yes | Geometry, text, search, annotations, forms, pages, redaction, attachments, piece info, events | Run against both web backends. Does not cover raw rendering. |
+| 21 conformance suites, `packages/engine/core/src/conformance/`, via `makeEngine` (22 files; `diffAnnotationListSnapshot.ts` is a helper) | Yes | Geometry, text, search, annotations, forms, pages, redaction, attachments, piece info, events | Does not cover raw rendering. "Run against both backends" is not yet true for three of them: `runPageGeometryOrientationConformance`, `runAnnotationReadConformance` and `runPieceInfoConformance` are invoked from `packages/engine/main` but not from `cloudpdf/engine`. Those three gate G2, G7 and G8, the first, largest and fiddliest read groups, so Phase 0 brings them onto the cloud runner. |
 | Differential replay | No | Same operation sequence on two documents from identical bytes on independent sessions; compare results, events, revision sequences, and structure read back after save and reopen | Never two backends on one live document. Byte equality only where deterministic serialization is established (currently nowhere). |
 | Frozen vectors | Prototype only (`pdfium-multiplatform-prototype/vectors/`) | Page counts, sizes, text, search hits exact; bitmaps by pixel diff, not hash | Exact interior BGRA on a colored fixture plus loose whole-page gate. |
 | Cross-language corpus, `tooling/engine-conformance/vectors/` | No | Scenario format: ordered steps, symbolic bindings for run-time IDs, expected result and events per step, injected clock and seed | Runners in Rust, Node, browser, Swift, Kotlin, calling the handwritten facades. Unsupported cases report a capability reason; required cases may not skip. |
@@ -258,7 +297,7 @@ toolchain hashes, medians and p95, optimized TypeScript arm included.
 
 | Gate | Threshold |
 |---|---|
-| Geometry and search boundary | No per-glyph host call. WASM geometry beats current `PageGeometryReader` by a margin set below the 2.6x committed ratio; Node below 7.16x. No gate on `text` or readback rows until rerun. |
+| Geometry and search boundary | No per-glyph host call. WASM geometry does not regress against the Phase 0 recorded baseline and clears an absolute floor in milliseconds, both set in Phase 0 from that baseline; same for Node. The committed 2.6x and 7.16x are per-item-vs-coarse ratios from a different arm: they say a win exists, not how large this one must be. Section 8 records that decoding a packed buffer back into `PageGeometrySnapshot`'s glyph-object union eats part of it. No gate on `text` or readback rows until rerun. |
 | Web regression | Investigate >5% repeatable on end-to-end workloads. Block default-backend switch >10% on p95 open, first page, search latency, or peak memory. Absolute floors alongside percentages. |
 | Frame responsiveness (native) | 60 Hz on baseline devices, 120 Hz on designated. ≤2 ms p95 SDK UI-thread interop per 60 Hz frame. |
 | Native reader | Device-specific open-to-first-page, search, sustained scroll, memory, battery and thermal targets set before beta, cold and warm, old and current devices. Desktop Node timings are not a mobile budget. |
@@ -315,9 +354,9 @@ likeliest critical path. Phases 2 and 3 overlap once the read contract stabilize
 
 | Phase | Scope | Exit gate |
 |---|---|---|
-| 0. Foundations and baseline | Cargo workspace; `pdfium-sys`, `pdfium`, `epdf-engine` skeleton; Rust linked into the shipping web worker; `pages.geometry` through Stage A; Stage B bridge spike over `annotations.create`; lifecycle, buffer, coordinate and cancellation contracts implemented; DTO codegen proven on `MetadataPatch` (three-state `Keep \| Clear \| Set(T)`, driven through `metadata.update` on each host); operation matrix for all 64 `WorkerRequest` kinds; corpus schema and geometry runner in `tooling/engine-conformance/`; `.github/workflows/engine-conformance.yml` wired; end-to-end baselines recorded; native `text` and readback rows, viewer allocation, and cold-start reruns. | `pages.geometry` at differential parity with `PageGeometryReader`, measured through the service boundary; bridge spike passes failure-after-write, cache invalidation, close-under-lease; clean-checkout build with `EM_BINARYEN_ROOT` asserted; matrix and contracts written. |
+| 0. Foundations and baseline | Cargo workspace; `pdfium-sys`, `pdfium`, `epdf-engine` skeleton; Rust linked into the shipping web worker; `pages.geometry` through Stage A; Stage B bridge spike over `annotations.create`; lifecycle, buffer, coordinate and cancellation contracts implemented; DTO codegen proven on `MetadataPatch` (three-state `Keep \| Clear \| Set(T)`, driven through `metadata.update` on each host); operation matrix for all 65 `WorkerRequest` request kinds; corpus schema and geometry runner in `tooling/engine-conformance/`; `.github/workflows/engine-conformance.yml` wired; end-to-end baselines recorded; native `text` and readback rows, viewer allocation, and cold-start reruns. | `pages.geometry` at differential parity with `PageGeometryReader`, measured through the service boundary; bridge spike passes failure-after-write, cache invalidation, close-under-lease; clean-checkout build with `EM_BINARYEN_ROOT` asserted; matrix and contracts written. |
 | 1. Reproducible distribution | Fork release with `ios-arm64`, `ios-sim-arm64`, `android-arm64`, `android-x64`, `wasm32-eh` (currently `"status": "pending"` at pin `d7b4caa26289d4846e94ff54e63b586b9bbe9fd6`; local fork commit `7f0fa5dbe` builds all five); `use_custom_libcxx=false` + `use_clang_modules=false`; Android `libc++_shared.so`, shrinker rules, 16 KB pages; Apple XCFramework in a Swift Package; minimal native session, open, password, close, geometry, render for smoke apps. | Clean-checkout builds from published artifacts only; real linked EH module tested in release Chrome, Firefox, Safari; fresh simulator and emulator apps; signed physical-device run. |
-| 2. Read services | All read operations via Stage A on web and Rust-owned session on native, in the order in `multiplatform-port-order.md` groups G2 through G9. Search has an entry gate: dialect vector file for `regex.ts` and `fold.ts` semantics. Throwaway device prototype on the oldest supported iPhone and a low-end Android measuring the pixel delivery path. | Read conformance green on both backends; native runners agree; raw-render pixel, tile, rotation and buffer-lifetime tests pass; cancellation, memory and lifecycle stress pass; native headless SDK preview usable; concurrent-engine soak green or one engine per process enforced in the API. |
+| 2. Read services | All read operations via Stage A on web and Rust-owned session on native, in the order in `multiplatform-port-order.md` groups G2 and G4 through G9 (G3 is the session group; on web it is native-only until G3w in Phase 3). Search has an entry gate: dialect vector file for `regex.ts` and `fold.ts` semantics. Throwaway device prototype on the oldest supported iPhone and a low-end Android measuring the pixel delivery path. | Read conformance green on both backends; native runners agree; raw-render pixel, tile, rotation and buffer-lifetime tests pass; cancellation, memory and lifecycle stress pass; native headless SDK preview usable; concurrent-engine soak green or one engine per process enforced in the API. |
 | 3. Native reader products | SwiftUI/UIKit and Compose/View readers: continuous scroll, pinch zoom, virtualization, selection and copy, search navigation, links, annotation display, accessibility, file lifecycle. Behavioral references: `packages/plugin/render`, `plugin/selection`, `plugin/interaction`, `framework/web`, `plugin/search`, `core/stage`, `plugin/view-manager`. Backgrounding, memory warnings, rotation, process recreation policies. | Physical-device checks; no PDF work on the UI thread; installs from distributable artifacts alone; soak gate as Phase 2. |
 | 4. Session authority, then writes | Stage B alone, then Stage C by family: annotation writes; 10 mutating `forms.*`; page assembly; `redaction.apply`; `metadata.update`; `pieceInfo.update` / `clear`; `attachments.create` / `delete`; `fonts.*`; save and export. Cost: worker ships both implementations until the last family flips. | Mutation, save-and-reopen, document-event and revision conformance green on both backends; cancellation-after-apply and partial-failure tests; no dual authority. |
 | 5. Scale, isolation, server | Worker-pool scaling behind TSAN soak (`testing/tools:epdf_thread_soak`, `EMBEDPDF_TSAN=1`), sticky routing, load numbers; mobile crash-containment assessment; server milestone: `cloudpdf/server/src/runtime/worker-entry.ts:18` hosting the Rust crate via `napi-rs` on Linux and macOS with supervised host, `QuarantiningEnginePool`, `EngineRecycler`. | Budgets validated under load; server conformance and rollout validation green. Until then `engine-services` stays retained in the ledger. |
@@ -341,8 +380,9 @@ so. The web default does not move because a mobile milestone passed.
 
 | Risk | Why it is open | Mitigation |
 |---|---|---|
-| 16,620 lines of `engine-services` may not port cleanly | Nothing measured touches it | Stage A buys the read win without betting the schedule on it. `multiplatform-port-hazards.md` lists the designs that need rework. |
+| 25,431 hand-ported lines, 16,620 of them `engine-services`, may not port cleanly | Nothing measured touches it | Stage A buys the read win without betting the schedule on it. `multiplatform-port-hazards.md` lists the designs that need rework. |
 | Cross-language corpus cost | Never built one here; the last five-host test story produced two smoke tests and a grayscale golden | Phase 0 delivers format plus one case; Phase 2 delivers runners. Skipping it means mobile shipped on smoke tests. |
 | Mobile performance | No spike touches iOS or Android runtime | Phase 2 device prototype before Phase 3 is budgeted. |
 | Facades thicken | "No document semantics" is looser than "no decisions" | Corpus runners call the facades, so facade drift is a test failure. |
 | `EMBEDPDF_TLS_GLOBALS` safety under two engines | Assumed from the server arrangement, not tested for mobile | Soak gate before any native artifact ships. |
+| The whole web deliverable rides on one Emscripten module built with legacy WASM exception handling | 441 `try`, 367 `catch_all`, 285 `rethrow`, 0 `try_table`. Recorded passes are Chrome 152.0.7977.83 and Playwright Firefox 132.0 Nightly. A Nightly pass says nothing about release Firefox, and Safari is untested. There is no fallback if a release browser we support refuses the module. | Phase 1 decision gate: test release Firefox and Safari on real devices before the browser floor is announced. If either fails, price an alternate-EH build for both maintenance and payload before committing to it, and record the payload delta the way Section 3 records the +3,802 bytes. Do not announce a floor from Nightly results. |

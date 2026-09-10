@@ -1,11 +1,15 @@
 # Multiplatform EmbedPDF: a Rust core with native wrappers
 
+> Superseded by `multiplatform-plan-claude-remix.md` (2026-09-09). Kept for the detail it carries.
+> Where the two disagree on phasing, counts or sequence, the remix is correct. Known stale here:
+> the operation counts below, and the phase assignments that `multiplatform-port-order.md` revises.
+
 **Goal:** One Rust implementation of the PDF engine, consumed by web through the existing WASM
 worker, by iOS through a Swift package, and by Android through a Kotlin library, without
 reimplementing engine behavior per platform. Plus a usable native reader on both mobile platforms,
 which is a separate deliverable from the engine and roughly as large.
 
-**Architecture:** Rust owns everything from PDFium's C ABI up through the 60 document operations in
+**Architecture:** Rust owns everything from PDFium's C ABI up through the 61 document operations in
 `packages/engine/core/src/wire/worker-protocol.ts`. TypeScript keeps everything above that line on
 web: the kernel, the annotation brain, the plugins, the framework adapters, the viewer. The native
 SDKs are handwritten Swift and Kotlin facades over a `uniffi` ABI. Migration moves in three
@@ -221,8 +225,9 @@ Almost everything that makes this affordable was built for other reasons.
 says the only observable difference is transport. A Rust-backed engine is the third implementation of
 an interface that already proved it can have more than one.
 
-`WorkerRequest` at `packages/engine/core/src/wire/worker-protocol.ts:866` is a 64-member union, four
-of which (`close`, `layer.close`, `abort`, `shutdown`) are control frames. One message per operation.
+`WorkerRequest` at `packages/engine/core/src/wire/worker-protocol.ts:866` is a 63-member union
+expanding to 65 request kinds (`OpenWorkerRequest` covers three `open.*` kinds), four of which
+(`close`, `layer.close`, `abort`, `shutdown`) are control frames. One message per operation.
 That is already the coarse shape the benchmarks say to build.
 
 And `packages/engine/core/src/conformance/` holds 21 transport-agnostic suites taking
@@ -368,7 +373,7 @@ here is how a cancellation contract ends up true only in Node.
 `AutoCloseable` and emits its own `override fun close()`, so the exported `close` had to become
 `closeSync`, and it gives every exception variant an `override val message`, so
 `OpsError::EngineFailed`'s Rust field named `message` had to become `detail`. Both renames live in
-`packages/kotlin/uniffi.toml`. At six operations the Swift and Kotlin surfaces already diverge; at
+`pdfium-multiplatform-prototype/packages/kotlin/uniffi.toml`. At six operations the Swift and Kotlin surfaces already diverge; at
 sixty they will not read as the same SDK, and neither will read as something a platform engineer
 would have written.
 

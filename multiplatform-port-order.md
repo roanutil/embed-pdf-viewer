@@ -11,23 +11,27 @@ in `packages/engine/core/src/conformance/`.
 
 1. A group is a set of modules that share one resource owner and one conformance gate. It lands as
    one PR series and flips as one routing entry.
-2. Reads before writes. Stage A (TypeScript owns the session) covers groups G2 through G9. Stage B
-   (G10) moves session authority. Stage C covers G11 onward.
-3. Dependencies point downward in the table. A group never starts before every group it depends on
-   has its gate green.
+2. Reads before writes. Stage A (TypeScript owns the session) covers G2 and G4 through G9. G3 is a
+   native-only owner in Stage A; on web it appears only as the G3w rehearsal. Stage B (G10) moves
+   session authority. Stage C covers G11 onward.
+3. Dependencies point downward in the table, and the edges are host-conditional. The graph in
+   Section 5 is the web ordering. On native every read group also depends on G3, because a
+   Rust-owned session is the only way to open a document there: G2 is Phase 0 on web and cannot
+   start before G3 on native.
 4. Filed by behavior, not by name prefix. `forms.list` and `forms.export` are reads (G8).
    `pages.extract` is a read (G9). `pages.renderEncoded` is a server surface (G15).
-5. Native hosts get every group through a Rust-owned session from G3 onward. Web reaches G2 through
-   G9 through the Stage A borrowed-handle bridge.
+5. Native hosts get every group through a Rust-owned session from G3 onward. Web reaches G2 and G4
+   through G9 through the Stage A borrowed-handle bridge, and reaches a Rust-owned session only at
+   G3w and then G10.
 
 ## 2. Source inventory
 
 | Package | Lines | Ports | Stays TypeScript | Deleted |
 |---|---|---|---|---|
-| `packages/engine/services/src` | 16,620 | `document-session/` (832), `features/` (~13,900), `shared/` (151), `worker-host/WorkerHost.ts:1380-1414` (`finishMutation`, `saveLayerArtifact`) | `worker-host/WorkerHost.ts` message loop and transport (~1,420 of 1,459); `events/EventHub.ts` (99, adapter delivery used only by `engine/main`) | `runtime/memory/` (193): replaced by `bindgen` structs |
-| `packages/engine/core/src` | 18,562 | `text/` (762), `search/` (655), `dto/` (1,565), `errors/` (150), `identity/` (215), `revision/` (64), `mutation/` (679), `geometry/` (300), `annotation/` kinds DTOs and pure helpers (~1,900), `forms/` (797), `auth/scope/` (904, deliberate duplicate), `events/DocumentEvent.ts` (179) | `wire/` (4,586), `engine/` interfaces (1,358), `promise/` (172), `resource/` (189), `annotation/relationships.ts`, `annotation/comments.ts`, `conformance/` | none |
+| `packages/engine/services/src` | 16,620 | `document-session/` (832), `features/` (13,790), `shared/` (151), `worker-host/WorkerHost.ts:1380-1414` (`finishMutation`, `saveLayerArtifact`) | `worker-host/WorkerHost.ts` message loop and transport (~1,420 of 1,459); `events/EventHub.ts` (99, adapter delivery used only by `engine/main`) | `runtime/memory/` (193): replaced by `bindgen` structs in Rust, but retired incrementally on web. Stage A runs on it. Last removal when the final Stage C family flips (Phase 4). |
+| `packages/engine/core/src` | 25,683 (18,562 outside `conformance/`) | 8,811 hand-ported: `text/` (762), `search/` (655), `dto/` (1,636), `errors/` (150), `identity/` (215), `revision/` (64), `mutation/` (635), `geometry/` (300), `annotation/` engine behavior (2,514: 997 top-level plus 1,517 in `kinds/`), `forms/` (797), `auth/scope/` (904, deliberate duplicate), `events/DocumentEvent.ts` (179). Not hand-written but moved: `annotation/**/schema.ts` (1,070) becomes generated, `annotation/kinds/**/index.ts` (695) is mechanical. | `wire/` (4,586), `engine/` interfaces (1,487), `promise/` (172), `resource/` (189), `annotation/relationships.ts` (147), `annotation/comments.ts` (297), `conformance/` (7,121) | none |
 | `packages/engine/main/src` | 5,568 | none | all (`LocalEngine`, `Local*Service`, transport, worker bootstrap, web capability guard) | none |
-| `packages/engine/runtime` | n/a | none | thin WASM loader | `PdfFunctions`, `PdfRuntimeMemory` generated peek/poke layer |
+| `packages/engine/runtime` | n/a | none | thin WASM loader | `PdfFunctions`, `PdfRuntimeMemory` generated peek/poke layer, retired incrementally with the last Stage C family (Phase 4) |
 
 ## 3. Groups
 
@@ -40,6 +44,7 @@ in `packages/engine/core/src/conformance/`.
 | Depends on | Fork headers at the release pin |
 | Gate | Builds for `wasm32-eh`, `aarch64-apple-ios`, `aarch64-apple-ios-sim`, `aarch64-linux-android`, `x86_64-linux-android`, host. Unsafe audit recorded. |
 | Phase | 0 |
+| Notes | "Replaces" is not "deletes in Phase 0". Stage A keeps TypeScript as the session owner and reaches PDFium through the generated function table (`PagePtrPool.ts:36`), and 102 of 145 service files import `@embedpdf/engine-runtime` at the start of the port. The TypeScript memory layer stays live and maintained until the last Stage C family flips. |
 
 ### G1. Shared kernel (pure, no PDFium)
 
@@ -52,6 +57,13 @@ in `packages/engine/core/src/conformance/`.
 | Phase | 0 |
 | Notes | `abort.ts` becomes a cancellation token, not an `AbortSignal`. `uuid.ts` and `Date.now()` become injected sources for corpus determinism. |
 
+Every Stage A reader is written against `DocumentAccess` / `PageAccess`, the generalization of the
+`FormModelSource { Borrowed | Owned }` pattern in `multiplatform-port-hazards.md` 3.4. Stage A
+supplies the borrowed implementation over a validated pointer; Stage B supplies the owned one over
+`&Session`. Without this the read groups are written once against a borrowed raw pointer and again
+at G10 against a session, and that second pass is in nobody's estimate. The cost is that the trait
+is designed before the Stage B session exists, so expect to widen it once.
+
 ### G2. Page geometry
 
 | Field | Value |
@@ -60,7 +72,7 @@ in `packages/engine/core/src/conformance/`.
 | Operations | `pages.geometry` |
 | Depends on | G0, G1 |
 | Stage | A on web |
-| Gate | `runPageGeometryOrientationConformance`; differential parity with `PageGeometryReader`; WASM time through the service boundary below the 2.6x ratio; no per-glyph host call; corpus geometry case |
+| Gate | `runPageGeometryOrientationConformance` (a property suite: round-trip, `charStart` tiling, orientation, quad parallelism, bounds containment; a wrong-but-self-consistent reader passes it); a glyph-level differential harness against `PageGeometryReader`, built in Phase 0 because none exists; no per-glyph host call; corpus geometry case. Speed gate: no regression against the Phase 0 recorded baseline, plus an absolute floor in milliseconds set in Phase 0 from that baseline. The committed 2.6x is a per-item-vs-coarse ratio from a different arm and is not the threshold. |
 | Phase | 0 |
 
 ### G3. Session core and security
@@ -70,17 +82,29 @@ in `packages/engine/core/src/conformance/`.
 | TypeScript | `services/src/document-session/DocumentSession.ts` (354); `pages/{PagePtrPool,PageRecord}.ts` (90); `revisions/RevisionAuthority.ts` (103); `lifecycle/{PdfDocumentOpener,BaseDocumentRegistry}.ts` (285); `services/src/features/security/{SecurityReader,internal/buildSecurityInfo}.ts` (217); `core/src/engine/document-security-state.ts` (115); `core/src/auth/scope/*` (904); `core/src/dto/OpenInput.ts` (171); `core/src/dto/LayerScopes.ts` (42) |
 | Operations | `open.fatMem`, `open.layerMemBase`, `open.layerFileBase`, `document.checkPasswordPermissions`, `document.probeSecurityFile`; control frames `close`, `layer.close`, `abort`, `shutdown` |
 | Depends on | G0, G1 |
-| Stage | Native-only owner until Stage B. On web the TypeScript session stays authoritative. |
+| Stage | Native-only owner until G3w. On web the TypeScript session stays authoritative for every read group; the Rust session reaches web first through G3w, then takes authority at G10. |
 | Gate | Open, wrong password, permission, close, cancel traces; owner-thread confinement test; balanced acquire/release; close-while-held rejection; `auth/scope` shared vectors agree with the TypeScript resolver |
 | Phase | 1 (minimal subset for smoke apps), 2 (hardened) |
 | Notes | `auth/scope` is a deliberate duplicate: web keeps the TypeScript copy in `engine/main` until Stage C. Native permission enforcement has no other owner. |
+
+### G3w. Web session rehearsal (opt-in)
+
+| Field | Value |
+|---|---|
+| TypeScript | No new feature code. A backend-selection entry at open in `services/src/lifecycle/PdfDocumentOpener.ts` and the `WorkerHost` open path. |
+| Operations | The G3 set on web behind an opt-in flag: `open.fatMem`, `open.layerMemBase`, `open.layerFileBase`, `document.checkPasswordPermissions`, `document.probeSecurityFile`, `close`, `layer.close`. No read operation routes to the Rust session. |
+| Depends on | G3 green on native |
+| Stage | A. The one exception to Stage A's "TypeScript owns the session" rule, scoped to documents opened with the flag set. |
+| Gate | The G3 gate re-run under the browser worker and the Node worker: open, wrong password, permission, close, cancel traces; balanced acquire/release; close-while-held rejection. Plus a document opened on the Rust session and closed without a single read, under the real transport, with no leak reported by the soak run. |
+| Phase | 3 |
+| Notes | This exists so that Stage B is not the first time a Rust-owned session runs on web. It routes no reads, so it adds no row to the operation matrix in Section 6: every kind it touches is already owned by G3. It stops being a separate thing once G10 lands and the flag becomes the backend selector. |
 
 ### G4. Render and fonts
 
 | Field | Value |
 |---|---|
 | TypeScript | `services/src/features/render/{PageRenderReader,deviceRaster}.ts` (294); `services/src/features/fonts/FontRegistrar.ts` (187); `core/src/dto/{PageRender,FontSpec}.ts` (194) |
-| Operations | `pages.render`; raster half of `pages.renderEncoded`; `fonts.register`, `fonts.addFallback`, `fonts.clearFallbacks`, `fonts.clear` |
+| Operations | `pages.render`; `fonts.register`, `fonts.addFallback`, `fonts.clearFallbacks`, `fonts.clear`. Also an internal `render_page_bitmap` entry point, not a wire kind, which G15 consumes to serve `pages.renderEncoded`. |
 | Depends on | G3 (fonts are engine-level, registered before first render) |
 | Stage | A on web |
 | Gate | Exact interior BGRA on a colored fixture; loose whole-page gate; tile, rotation, alpha and buffer-lifetime tests; font-before-first-job test; pixel path measured in parts (WASM-to-host copy, worker transfer, channel conversion, GPU upload) |
@@ -104,7 +128,7 @@ in `packages/engine/core/src/conformance/`.
 
 | Field | Value |
 |---|---|
-| TypeScript | `services/src/features/metadata/{MetadataReader,internal/readCustomMetadata,readMetadataText,readTrappedStatus}.ts` (151); `services/src/features/pages/PagesReader.ts` (214); `services/src/features/actions/{ActionModelReader,DocumentActionsReader}.ts` (522); `services/src/features/destinations/*` (130); `core/src/dto/{DocumentMetadata,PageLayout,PageListSnapshot,PdfAction,PdfDestination,PdfLinkTarget,DocumentManifest}.ts` (505) |
+| TypeScript | `services/src/features/metadata/{MetadataReader,internal/readCustomMetadata,readMetadataText,readTrappedStatus}.ts` (151); `services/src/features/pages/PagesReader.ts` (214); `services/src/features/actions/{ActionModelReader,DocumentActionsReader}.ts` (522); `services/src/features/destinations/*` (130); `core/src/dto/{DocumentMetadata,PageLayout,PageListSnapshot,PdfAction,PdfDestination,PdfLinkTarget,DocumentManifest}.ts` (507) |
 | Operations | `metadata.read`, `pages.list`, `actions.read` |
 | Depends on | G3 |
 | Stage | A on web |
@@ -115,7 +139,7 @@ in `packages/engine/core/src/conformance/`.
 
 | Field | Value |
 |---|---|
-| TypeScript | `services/src/features/annotations/{AnnotationReader,RawAnnotationReader,AnnotationAppearanceReader}.ts` (368); `internal/read/*` (24 files, ~1,700); `internal/identity/*` (96); `internal/{annotationFlagBits,annotationIcon,annotationState,blendMode,colorType,freeTextIntent,inkIntent,lineEnding,replyType,shapeBorderStyle,stampName,standardFont,textAlignment,textEditIntent}.ts` (~560); `core/src/annotation/{subtype,primitives,base,registry,AnnotationListSnapshot}.ts` (557); `core/src/annotation/kinds/*/dto.ts` and `kinds/*.shared.ts` (~800); `core/src/dto/AnnotationRender.ts` (152); `services/src/features/forms/internal/{formModelCache,readFormSnapshot}.ts` (383, dependency via `joinWidgetField.ts`) |
+| TypeScript | `services/src/features/annotations/{AnnotationReader,RawAnnotationReader,AnnotationAppearanceReader}.ts` (368); `internal/read/*` (26 files, 1,922); `internal/identity/*` (96); `internal/{annotationFlagBits,annotationIcon,annotationState,blendMode,colorType,freeTextIntent,inkIntent,lineEnding,replyType,shapeBorderStyle,stampName,standardFont,textAlignment,textEditIntent}.ts` (~560); `core/src/annotation/{subtype,primitives,base,registry,AnnotationListSnapshot}.ts` (557); `core/src/annotation/kinds/*/dto.ts` (337, 19 files) and `kinds/*.shared.ts` (437, 5 files); `core/src/dto/AnnotationRender.ts` (152); `services/src/features/forms/internal/{formModelCache,readFormSnapshot}.ts` (383), reached from `services/src/features/annotations/internal/read/joinWidgetField.ts:23` |
 | Operations | `annotations.listRawAll`, `annotations.listRawPage`, `annotations.listFullPage`, `annotations.renderAppearances` |
 | Depends on | G4 (appearance render), G6 (actions and destinations for link annotations) |
 | Stage | A on web. Rust does not create or retain the form model; TypeScript lends the pointer. |
@@ -126,7 +150,7 @@ in `packages/engine/core/src/conformance/`.
 
 | Field | Value |
 |---|---|
-| TypeScript | `services/src/features/attachments/{AttachmentReader,internal/attachmentPrimitives}.ts` read half (~300); `services/src/features/forms/{FormReader,internal/fieldFlagBits,resolveFieldRef,wideStringArray}.ts` (188); `services/src/features/pieceinfo/PieceInfoAccessor.ts` `read` (lines 47-90) and `applications` (125-145) plus the shared object decoders (~150); `core/src/forms/{field,snapshot,value,value-entry}.ts` (270); `core/src/dto/{Attachment,PieceInfo}.ts` (121); `core/src/identity/FormFieldRef.ts` (82) |
+| TypeScript | `services/src/features/attachments/AttachmentReader.ts` (128) plus the read paths in `internal/attachmentPrimitives.ts` (274 total, the rest shared with G14 writes); `services/src/features/forms/{FormReader,internal/fieldFlagBits,resolveFieldRef,wideStringArray}.ts` (188); `services/src/features/pieceinfo/PieceInfoAccessor.ts` `read` (lines 47-89) and `applications` (125-144) plus the shared object decoders (~150); `core/src/forms/{field,snapshot,value,value-entry}.ts` (270); `core/src/dto/{Attachment,PieceInfo}.ts` (121); `core/src/identity/FormFieldRef.ts` (82) |
 | Operations | `attachments.list`, `attachments.readFile`, `annotations.readFile`, `pieceInfo.read`, `pieceInfo.applications`, `forms.list`, `forms.export` |
 | Depends on | G7 |
 | Stage | A on web |
@@ -149,9 +173,9 @@ in `packages/engine/core/src/conformance/`.
 
 | Field | Value |
 |---|---|
-| TypeScript | No new feature code. `DocumentSession.ts` becomes a facade; `WorkerHost.finishMutation` and `saveLayerArtifact` (`WorkerHost.ts:1380-1414`, ~35 lines) and `BaseDocumentRegistry` move to Rust; `services/src/events/EventHub.ts` stays TypeScript (used only by `engine/main/src/document/LocalDocumentHandle.ts`) while Rust returns the events each mutation publishes; `DocumentSaver.ts` (137) and `internal/pdfSaveMode.ts` (18); `core/src/events/DocumentEvent.ts` (179); `core/src/dto/PdfSaveMode.ts` |
+| TypeScript | No new feature code. `DocumentSession.ts` becomes a facade; `WorkerHost.finishMutation` and `saveLayerArtifact` (`WorkerHost.ts:1380-1414`, ~35 lines) and `BaseDocumentRegistry` move to Rust; `services/src/events/EventHub.ts` stays TypeScript (the `EventHub` class is constructed only in `engine/main/src/document/LocalDocumentHandle.ts:84`, but the `SessionEventPublisher` it exports is threaded through 8 files under `engine/main/src/document/`) while Rust returns the events each mutation publishes; `DocumentSaver.ts` (137) and `internal/pdfSaveMode.ts` (18); `core/src/events/DocumentEvent.ts` (179); `core/src/dto/PdfSaveMode.ts` |
 | Operations | `document.saveBuffer`, `document.saveFile`, `document.saveLayerBuffer` |
-| Depends on | G3 through G9 green on web |
+| Depends on | G4 through G9 green on web; G3 green on native; G3w green on web |
 | Stage | B |
 | Gate | Revision, page lease, retained-source, password-state and close tests; `runDocumentEventsConformance`; save, `document.download()`, reopen, semantic readback scenarios seeded from piece-info and page-insert round trips; the Phase 0 bridge spike promoted to a permanent test; exactly-once publication with the queue discarding a late response |
 | Phase | 4, first |
@@ -161,7 +185,7 @@ in `packages/engine/core/src/conformance/`.
 
 | Field | Value |
 |---|---|
-| TypeScript | `services/src/features/annotations/AnnotationMutator.ts` (784); `internal/write/*` (23 files, ~3,300); `internal/mutations/computeMutationImpact.ts` (141); `core/src/annotation/{appearance,normalize,patch-base,draft-base}.ts` (440); `core/src/annotation/kinds/*/{patch,draft,normalize}.ts` (~500); `core/src/mutation/{AnnotationListMutationMeta,AnnotationMutationImpactPolicy,AnnotationMutationResults}.ts` (152) |
+| TypeScript | `services/src/features/annotations/AnnotationMutator.ts` (784); `internal/write/*` (22 files, 3,496); `internal/mutations/computeMutationImpact.ts` (141); `core/src/annotation/{appearance,normalize,patch-base,draft-base}.ts` (440); `core/src/annotation/kinds/*/{patch,draft,normalize}.ts` (743: patch 257 over 19 files, draft 380 over 19, normalize 106 over 2); `core/src/mutation/{AnnotationListMutationMeta,AnnotationMutationImpactPolicy,AnnotationMutationResults}.ts` (152) |
 | Operations | `annotations.create`, `annotations.update`, `annotations.delete`, `annotations.move` |
 | Depends on | G10 |
 | Stage | C |
@@ -183,7 +207,7 @@ in `packages/engine/core/src/conformance/`.
 
 | Field | Value |
 |---|---|
-| TypeScript | `services/src/features/pages/{PagesMutator,PagesInserter,PagesFlattener}.ts` (552); `services/src/features/redaction/RedactionApplier.ts` (274); `core/src/mutation/{PageDeleteInput,PageDeleteResult,PageFlattenResult,PageInsertBlankInput,PageInsertResult,PageMoveInput,PageMoveResult,PageRotateInput,PageRotateResult,RedactionApplyResult}.ts` (236) |
+| TypeScript | `services/src/features/pages/{PagesMutator,PagesInserter,PagesFlattener}.ts` (552); `services/src/features/redaction/RedactionApplier.ts` (274); `core/src/mutation/{PageDeleteInput,PageDeleteResult,PageFlattenResult,PageInsertBlankInput,PageInsertResult,PageMoveInput,PageMoveResult,PageRotateInput,PageRotateResult,RedactionApplyResult}.ts` (244) |
 | Operations | `pages.rotate`, `pages.move`, `pages.delete`, `pages.insertBlank`, `pages.insert`, `pages.flatten`, `redaction.apply` |
 | Depends on | G11 (flatten and redaction re-read annotations after apply) |
 | Stage | C |
@@ -206,7 +230,7 @@ in `packages/engine/core/src/conformance/`.
 | Field | Value |
 |---|---|
 | TypeScript | Host adapters in `WorkerHost.ts` for encoder injection and file sinks; no new Rust behavior beyond G4 raster and G10 save |
-| Operations | `pages.renderEncoded`, `annotations.renderAppearancesEncoded`, `document.renderPageFile`, `document.renderPageFileEncoded` |
+| Operations | `pages.renderEncoded` (sole owner of the wire kind; the raster step comes from G4's internal entry point), `annotations.renderAppearancesEncoded`, `document.renderPageFile`, `document.renderPageFileEncoded` |
 | Depends on | G4, G10 |
 | Stage | C |
 | Gate | Browser and local workers still return `NotImplemented` for encoded kinds (`worker-protocol.ts:446`); server output equivalence |
@@ -217,8 +241,8 @@ in `packages/engine/core/src/conformance/`.
 | Module | Disposition | Reason |
 |---|---|---|
 | `services/src/worker-host/WorkerHost.ts` message loop, 64 `case` arms, transport | Stays TypeScript on web; native has no transport | Transport is not engine behavior. `finishMutation` is, and ports in G10. |
-| `services/src/runtime/memory/*` | Deleted | Peek/poke over WASM linear memory. `bindgen` structs replace it. |
-| `packages/engine/runtime` generated `PdfFunctions`, `PdfRuntimeMemory` | Deleted; loader kept | Same. |
+| `services/src/runtime/memory/*` | Deleted incrementally, last removal in Phase 4 | Peek/poke over WASM linear memory. `bindgen` structs replace it in Rust, but Stage A runs on it: TypeScript owns the session through G10, and every service that has not yet flipped reaches PDFium through it. |
+| `packages/engine/runtime` generated `PdfFunctions`, `PdfRuntimeMemory` | Deleted incrementally, last removal in Phase 4; loader kept | Same. |
 | `packages/engine/main/src/*` | Stays TypeScript | Orchestration, transport, `LocalEngine`. Web capability guard (`LocalPageTextService.ts:48`) stays here; native enforcement is G3. |
 | `core/src/wire/*` (schemas, paths, resources, tokens, cdn, `WirePack`, `flatten`, `renderOptionsCodec`) | Stays TypeScript | Cloud HTTP contract. `worker-protocol.ts` DTOs become generated from Rust. |
 | `core/src/engine/*` interfaces | Stays TypeScript | Web public API. Swift and Kotlin facades are handwritten equivalents, not translations. |
@@ -244,7 +268,9 @@ flowchart TB
   G6 --> G7
   G7 --> G8[G8 attachments, forms reads, piece info]
   G3 --> G9[G9 pages.extract]
-  G9 --> G10[G10 Stage B: session authority, save]
+  G3 --> G3w[G3w web session rehearsal]
+  G3w --> G10[G10 Stage B: session authority, save]
+  G9 --> G10
   G8 --> G10
   G5 --> G10
   G10 --> G11[G11 annotation writes]
@@ -257,9 +283,15 @@ flowchart TB
 
 ## 6. Operation coverage check
 
-Every request kind in the `WorkerRequest` union (`worker-protocol.ts:866`, 64 members, with
-`OpenWorkerRequest` expanding to three `open.*` kinds) appears in exactly one group above. The four
-control frames (`abort`, `close`, `layer.close`, `shutdown`) are in G3. Response and lifecycle
-messages (`resolve`, `reject`, `artifact`, `fresh`, `ready`, `init-error`) are transport and stay
-in TypeScript. CI should fail when a kind is added to `worker-protocol.ts` without a row in the
-operation matrix this document seeds.
+The `WorkerRequest` union (`worker-protocol.ts:866`) has 63 members. `OpenWorkerRequest` is a
+union alias expanding to three `open.*` kinds, so there are 65 distinct request kinds. Four are
+control frames (`abort`, `close`, `layer.close`, `shutdown`), all in G3, leaving 61 document
+operations. Every one appears in exactly one group above. G3w routes a subset of G3's kinds to a
+second backend and adds no row.
+
+Do not use 64: that is the `case` arm count in `WorkerHost.ts`, which is 65 minus `abort` because
+`abort` is handled before the switch (`WorkerHost.ts:199`).
+
+The eight non-request kinds (`resolve`, `reject`, `artifact`, `artifact-file`, `raw-delta`,
+`fresh`, `ready`, `init-error`) are transport and stay in TypeScript. CI should fail when a kind is
+added to `worker-protocol.ts` without a row in the operation matrix this document seeds.

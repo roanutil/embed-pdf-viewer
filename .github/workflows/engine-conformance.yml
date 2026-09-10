@@ -1,14 +1,13 @@
 name: Engine v3 Conformance
 
-# Boots @cloudpdf/server in-process and runs the metadata conformance suite
-# against both engine-local (WASM) and the cloud engine (HTTP -> native PDFium).
+# Boots @cloudpdf/server in-process and runs the engine test suites, conformance
+# included, against both engine-local (WASM) and the cloud engine
+# (HTTP -> native PDFium).
 # Any divergence between the two implementations fails the job.
 
 on:
   pull_request:
     paths:
-      - 'packages/engine-core/**'
-      - 'packages/engine-services/**'
       - 'packages/engine/**'
       - 'cloudpdf/engine/**'
       - 'cloudpdf/server/**'
@@ -16,8 +15,6 @@ on:
   push:
     branches: [main]
     paths:
-      - 'packages/engine-core/**'
-      - 'packages/engine-services/**'
       - 'packages/engine/**'
       - 'cloudpdf/engine/**'
       - 'cloudpdf/server/**'
