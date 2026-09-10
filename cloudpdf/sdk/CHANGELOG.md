@@ -1,5 +1,11 @@
 # @cloudpdf/sdk
 
+## 3.0.0-next.12
+
+### Minor Changes
+
+- [#803](https://github.com/embedpdf/embed-pdf-viewer/pull/803) by [@bobsingor](https://github.com/bobsingor) – Add typed SDK methods for selective annotation flattening and appearance export through `client.doc.annotations.flatten` and `client.doc.annotations.exportAppearance`. Add `client.doc.pages.setName` and `client.doc.pages.removeName` for registering, renaming, and removing named pages.
+
 ## 3.0.0-next.11
 
 ### Minor Changes

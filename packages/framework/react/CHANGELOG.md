@@ -1,5 +1,11 @@
 # @embedpdf/react
 
+## 3.0.0-next.12
+
+### Minor Changes
+
+- [#803](https://github.com/embedpdf/embed-pdf-viewer/pull/803) by [@bobsingor](https://github.com/bobsingor) – The stamp hover ghost is rendered at the on-screen device pixel size and re-requested when the zoom crosses a size bucket, so large vector stamps stay sharp. `@embedpdf/react/stamp` additionally re-exports `indexedDbByteStore` and `ByteStore` from `@embedpdf/web`, the browser store for `persistStampLibraries` / `restoreStampLibraries`.
+
 ## 3.0.0-next.11
 
 ### Minor Changes
