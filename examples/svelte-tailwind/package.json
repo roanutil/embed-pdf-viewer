@@ -83,6 +83,6 @@
     "vite-plugin-dts": "^4.5.4"
   },
   "dependencies": {
-    "lucide-svelte": "^0.555.0"
+    "lucide-svelte": "^1.0.1"
   }
 }
