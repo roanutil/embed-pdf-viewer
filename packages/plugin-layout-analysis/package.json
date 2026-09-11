@@ -55,7 +55,7 @@
     "@embedpdf/plugin-ai-manager": "workspace:*",
     "@embedpdf/plugin-render": "workspace:*",
     "@types/react": "^18.2.0",
-    "@types/react-dom": "^18.2.0",
+    "@types/react-dom": "^19.2.7",
     "typescript": "^5.0.0"
   },
   "peerDependencies": {
