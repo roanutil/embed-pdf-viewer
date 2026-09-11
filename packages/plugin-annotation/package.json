@@ -56,7 +56,7 @@
     "@embedpdf/plugin-history": "workspace:*",
     "@embedpdf/plugin-scroll": "workspace:*",
     "@types/react": "^18.2.0",
-    "@types/react-dom": "^18.2.0",
+    "@types/react-dom": "^19.2.7",
     "typescript": "^5.0.0"
   },
   "peerDependencies": {
