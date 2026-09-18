@@ -1,0 +1,27 @@
+{
+  "name": "EmbedPDF TypeScript + Rust",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/embed-pdf-viewer,type=bind,consistency=cached",
+  "workspaceFolder": "/workspaces/embed-pdf-viewer",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "remoteUser": "node",
+  "runArgs": ["--name", "embed-pdf"],
+  "init": true,
+  "containerEnv": {
+    "NPM_TOKEN": ""
+  },
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+  "forwardPorts": [3000, 5173],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "rust-lang.rust-analyzer",
+        "tamasfe.even-better-toml",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode"
+      ]
+    }
+  }
+}

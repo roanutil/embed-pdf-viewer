@@ -1,0 +1,5 @@
+**
+!.devcontainer
+!.devcontainer/**
+!package.json
+!rust-toolchain.toml

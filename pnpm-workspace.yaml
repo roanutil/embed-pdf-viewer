@@ -1,3 +1,13 @@
+# Keep native optional packages (esbuild, Rollup, etc.) for the host and the
+# Linux devcontainer in the shared bind-mounted node_modules tree.
+supportedArchitectures:
+  os:
+    - current
+    - darwin
+    - linux
+  cpu:
+    - current
+
 packages:
   - 'packages/**'
   - 'examples/**'

@@ -1,0 +1,75 @@
+# syntax=docker/dockerfile:1
+# Docker selects the host architecture; supported hosts are amd64 and arm64.
+FROM node:24.20.0-trixie
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+ARG TARGETARCH
+ARG EMSDK_VERSION=3.1.72
+ARG BINARYEN_VERSION=132
+ARG CARGO_NDK_VERSION=4.1.2
+ARG CODEX_VERSION=latest
+ARG CLAUDE_CODE_VERSION=latest
+
+RUN case "$TARGETARCH" in amd64|arm64) ;; *) echo "Unsupported architecture: $TARGETARCH" >&2; exit 1 ;; esac \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends \
+       build-essential clang libclang-dev lld cmake ninja-build pkg-config \
+       libssl-dev python3 python3-venv git git-lfs gh curl ca-certificates \
+       unzip zip xz-utils jq ripgrep fd-find less sudo shellcheck \
+    && rm -rf /var/lib/apt/lists/* \
+    && echo 'node ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/node \
+    && chmod 0440 /etc/sudoers.d/node
+
+# Read the package-manager and Rust pins from the checkout at image build time.
+COPY package.json rust-toolchain.toml /opt/embedpdf-pins/
+RUN npm install -g "$(node -p "require('/opt/embedpdf-pins/package.json').packageManager")"
+
+RUN git clone --depth 1 --branch "$EMSDK_VERSION" https://github.com/emscripten-core/emsdk.git /opt/emsdk \
+    && /opt/emsdk/emsdk install "$EMSDK_VERSION" \
+    && /opt/emsdk/emsdk activate "$EMSDK_VERSION" \
+    && chown -R node:node /opt/emsdk
+RUN case "$TARGETARCH" in amd64) binaryen_arch=x86_64 ;; arm64) binaryen_arch=aarch64 ;; esac \
+    && curl -fsSL --retry 3 \
+      "https://github.com/WebAssembly/binaryen/releases/download/version_${BINARYEN_VERSION}/binaryen-version_${BINARYEN_VERSION}-${binaryen_arch}-linux.tar.gz" \
+      -o /tmp/binaryen.tar.gz \
+    && mkdir /opt/binaryen \
+    && tar -xzf /tmp/binaryen.tar.gz -C /opt/binaryen --strip-components=1 \
+    && rm /tmp/binaryen.tar.gz
+
+# NDK r29 = 29.0.14206865; checksum from developer.android.com/ndk/downloads.
+# Google provides Linux host binaries only for x86-64.
+RUN if [ "$TARGETARCH" = amd64 ]; then \
+      curl -fsSL --retry 3 https://dl.google.com/android/repository/android-ndk-r29-linux.zip -o /tmp/ndk.zip \
+    && echo '87e2bb7e9be5d6a1c6cdf5ec40dd4e0c6d07c30b  /tmp/ndk.zip' | sha1sum -c - \
+    && unzip -q /tmp/ndk.zip -d /opt \
+    && rm /tmp/ndk.zip; \
+    else \
+      echo 'Android NDK omitted: Google does not provide a Linux ARM64 host toolchain.'; \
+    fi
+
+ENV EMSDK=/opt/emsdk \
+    EM_CONFIG=/opt/emsdk/.emscripten \
+    EM_BINARYEN_ROOT=/opt/binaryen \
+    ANDROID_NDK_HOME=/opt/android-ndk-r29 \
+    NPM_CONFIG_PREFIX=/home/node/.npm-global
+ENV PATH="/home/node/.cargo/bin:/home/node/.npm-global/bin:/opt/emsdk/upstream/emscripten:/opt/emsdk/upstream/bin:/opt/binaryen/bin:${PATH}"
+
+USER node
+WORKDIR /home/node
+RUN curl -fsSL --retry 3 https://sh.rustup.rs -o /tmp/install-rust.sh \
+    && bash /tmp/install-rust.sh -y --profile minimal --default-toolchain none \
+    && rm /tmp/install-rust.sh \
+    && rust_version="$(python3 -c 'import tomllib; print(tomllib.load(open("/opt/embedpdf-pins/rust-toolchain.toml", "rb"))["toolchain"]["channel"])')" \
+    && rustup toolchain install "$rust_version" --profile minimal --component rustfmt,clippy,rust-src \
+    && rustup default "$rust_version" \
+    && python3 -c 'import subprocess,tomllib; t=tomllib.load(open("/opt/embedpdf-pins/rust-toolchain.toml", "rb"))["toolchain"]; subprocess.run(["rustup", "target", "add", "--toolchain", t["channel"], *t["targets"]], check=True)' \
+    && cargo install --locked cargo-ndk --version "$CARGO_NDK_VERSION"
+
+# Installed as the development user so both CLIs can be upgraded without sudo.
+ENV PATH="/opt/binaryen/bin:${PATH}"
+RUN npm install -g "@openai/codex@${CODEX_VERSION}" "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" \
+    && codex --version && claude --version \
+    && rustc --version && pnpm --version && emcc --version \
+    && wasm-opt --version | grep -F "version ${BINARYEN_VERSION}"
+
+CMD ["sleep", "infinity"]
