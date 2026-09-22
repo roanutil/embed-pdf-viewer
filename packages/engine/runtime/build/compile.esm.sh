@@ -21,8 +21,26 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TARGET="${PDF_RUNTIME_TARGET:-wasm32}"
 LIB_DIR="$ROOT/build/libpdfium/$TARGET"
-OUT_DIR="$ROOT/npm/wasm32/lib"
+# Overridable so a variant can be linked and inspected without replacing the
+# payload every test on the machine loads. The default is the shipping one.
+OUT_DIR="${PDF_RUNTIME_WASM_OUT_DIR:-$ROOT/npm/wasm32/lib}"
 GEN_DIR="$ROOT/build/generated"
+
+# wasm32-eh links the archive the fork compiled with native WebAssembly
+# exception handling, so the link has to agree with it. em++ refuses
+# -fwasm-exceptions together with SUPPORT_LONGJMP=emscripten, which is what
+# PDFium's libpng and libjpeg error handling would otherwise select, and emsdk
+# 4.0.0 still defaults -fwasm-exceptions to the legacy encoding that Firefox
+# never shipped. All three flags are the fork's, in
+# patches/embedpdf-runtime/wasm/config-eh.gn; they are repeated here because a
+# static archive carries no link settings with it.
+#
+# The Rust core needs this variant: rustc's precompiled std for
+# wasm32-unknown-emscripten imports __cpp_exception as a wasm tag.
+EH_FLAGS=()
+if [[ "$TARGET" == "wasm32-eh" ]]; then
+  EH_FLAGS=(-fwasm-exceptions -sSUPPORT_LONGJMP=wasm -sWASM_LEGACY_EXCEPTIONS=0)
+fi
 
 mkdir -p "$OUT_DIR"
 TMP_DIR="$(mktemp -d)"
@@ -46,6 +64,7 @@ link() {
     -std=c++17 \
     -Wall \
     --no-entry \
+    "${EH_FLAGS[@]+"${EH_FLAGS[@]}"}" \
     "$@" \
     -o "$out"
 }

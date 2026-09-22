@@ -13,7 +13,9 @@ fi
 node "$ROOT/build/generate-functions.mjs" "$TARGET"
 node "$ROOT/build/generate-runtime-methods.mjs" "$ROOT/build/generated"
 
-if [[ "$TARGET" == "wasm32" ]]; then
+# Prefix match, not equality: wasm32-eh is the same link with WebAssembly
+# exception handling, and every later wasm variant should land here too.
+if [[ "$TARGET" == wasm32* ]]; then
   PDF_RUNTIME_TARGET="$TARGET" bash "$ROOT/build/compile.esm.sh"
   exit 0
 fi
