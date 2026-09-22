@@ -2,7 +2,7 @@
 /**
  * The round-robin driver.
  *
- * Each POC benchmarks itself in its own process, because all three define
+ * Each POC benchmarks itself in its own process, because the original three define
  * packages called `@poc/geometry`, `@poc/shapes` and `@poc/core` and one Node
  * process cannot import three different modules under the same specifier.
  *
@@ -25,6 +25,7 @@ const POCS = [
   { dir: 'typescript-baseline', wasm: null },
   { dir: 'rust-geometry-only', wasm: 'packages/geometry/wasm/poc_geometry_bg.wasm' },
   { dir: 'rust-geometry-and-state', wasm: 'packages/core/wasm/poc_core_bg.wasm' },
+  { dir: 'swift-geometry-only', wasm: 'wasm/swift_geometry.wasm' },
 ];
 
 let options;
@@ -63,7 +64,10 @@ for (const f of readdirSync(RESULTS)) {
 }
 
 function runOne(dir, mode, round) {
-  execFileSync('node', ['--expose-gc', '--import', 'tsx', 'bench/node.ts'], {
+  const tsx = dir === 'swift-geometry-only'
+    ? resolve(root, 'rust-geometry-only/node_modules/tsx/dist/loader.mjs')
+    : 'tsx';
+  execFileSync('node', ['--expose-gc', '--import', tsx, 'bench/node.ts'], {
     cwd: resolve(root, dir),
     stdio: ['ignore', 'inherit', 'inherit'],
     env: { ...process.env, BENCH_ROUND: String(round), BENCH_BUDGET_MS: String(budgetMs), BENCH_MODE: mode },
@@ -103,10 +107,10 @@ function fairnessGate() {
     }
   }
   if (!ok) {
-    console.error('\nThe three implementations do not produce the same scene. Timings would be meaningless.');
+    console.error('\nThe implementations do not produce the same scene. Timings would be meaningless.');
     process.exit(1);
   }
-  console.log(`\nfairness gate: all three agree on ${probes[0].probe.length} display items\n`);
+  console.log(`\nfairness gate: all ${probes.length} agree on ${probes[0].probe.length} display items\n`);
 }
 
 console.log(`rounds=${rounds} budget=${budgetMs}ms alloc-rounds=${allocRounds}\n`);

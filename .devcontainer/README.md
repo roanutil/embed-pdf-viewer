@@ -25,6 +25,7 @@ of the TypeScript engine, Rust engine, geometry parity adapter, and web viewer.
 | Clang/libclang, LLD, CMake, Ninja, C/C++ compiler, Python | Debian Trixie packages                               |
 | Emscripten / Binaryen                                     | 3.1.72 / 132; `EM_BINARYEN_ROOT` selects Binaryen    |
 | Android NDK / cargo-ndk                                   | 29.0.14206865 (amd64 only) / 4.1.2                   |
+| swiftly / Swift toolchain                                 | 1.1.4 / 6.3.1; `swiftly` manages further toolchains  |
 | Git, Git LFS, GitHub CLI, ripgrep, jq, ShellCheck         | Debian packages                                      |
 | Codex / Claude Code                                       | Latest at image build; overridable build arguments   |
 | Chromium, Firefox, WebKit                                 | Workspace Playwright version; installed during setup |
@@ -32,6 +33,25 @@ of the TypeScript engine, Rust engine, geometry parity adapter, and web viewer.
 Docker selects the host architecture: **linux/arm64** on Apple Silicon and ARM64
 Linux, or **linux/amd64** on x86-64 hosts. Emscripten detects that architecture;
 Binaryen and the native PDFium artifact are selected to match it.
+
+## Swift
+
+`swift` and `swiftly` are on `PATH` for the `node` user. The image pins Swift 6.3.1;
+`swiftly install 6.2.1 --use`, `swiftly list-available`, and `swiftly use` switch
+toolchains without a rebuild, and `swiftly` reads a `.swift-version` file if the
+working directory has one. Toolchains land in `/home/node/.local/share/swiftly`,
+which lives in the image rather than the bind mount, so a container rebuild discards
+anything installed after the build. To change the pin permanently, edit
+`SWIFT_VERSION` in `.devcontainer/Dockerfile`.
+
+swiftly detects the host as `debian13` and refuses it, because swift.org publishes no
+Trixie toolchain. The build passes `--platform debian12` to `swiftly init`, so the
+Bookworm build runs against Trixie's newer glibc, and the apt list installs swiftly's
+`debian12` dependency set including `libstdc++-12-dev` (12.4.0-5 in Trixie) so
+`swiftly install` doesn't stop on a missing package. `swift build` and `swift test`
+were verified against a scratch package on arm64 under this arrangement. `swift repl`
+and `lldb` are broken: they link `libpython3.11.so.1.0`, which Trixie doesn't ship,
+and fail with `error while loading shared libraries`.
 
 The Android NDK is installed only on amd64: Google does not publish Linux ARM64
 host binaries. ARM64 containers still support the TypeScript engine, native Rust

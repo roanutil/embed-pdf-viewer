@@ -1,6 +1,6 @@
 # PDFium binding benchmarks
 
-This standalone experiment compares four ways to call PDFium from JavaScript.
+This standalone experiment compares five ways to call PDFium from JavaScript.
 The WebAssembly (Wasm) builds link the same PDFium archive:
 
 | Variant | Implementation | Work done per call |
@@ -9,10 +9,12 @@ The WebAssembly (Wasm) builds link the same PDFium archive:
 | b: Rust wrapper | Rust forwards calls to PDFium | One PDFium function |
 | c: Rust operations | Rust runs geometry, text, render, and search operations | One whole operation |
 | d: C++ operations | C++ implements the same four operations | One whole operation |
+| e: Swift operations | Swift 6.4 implements the same four operations | One whole operation |
 
 The scripts use the term **arm** for a variant and **coarse** for an API that
-performs a whole operation. Comparing c with d helps distinguish the benefit of
-fewer JavaScript calls from differences between the Rust and C++ implementations.
+performs a whole operation. Comparing c with d and e helps distinguish the
+benefit of fewer JavaScript calls from differences among the Rust, C++, and
+Swift implementations.
 
 See [the experiment design](../docs/research/pdfium-rust-wrapper-benchmarks.md)
 and [the saved results and limitations](RESULTS.md).
@@ -32,8 +34,23 @@ node bench/compare.mjs --out /tmp/pdfium-binding-review
 
 The fetch script uses the pin in
 [`engine-runtime-build.json`](../packages/engine/runtime/engine-runtime-build.json).
-The link script builds the Rust crates and all four Wasm modules. It requires
-`em++` and the Rust toolchain specified in `rust-toolchain.toml`.
+The link script builds the Rust crates and all five Wasm modules. It requires
+`em++`, the Rust toolchain specified in `rust-toolchain.toml`, Swift 6.4, and
+the matching Embedded Wasm SDK. Install the Swift pieces once:
+
+```bash
+swiftly install 6.4.0
+swiftly use 6.4.0
+swift sdk install \
+  https://download.swift.org/swift-6.4.0-release/wasm-sdk/swift-6.4.0-RELEASE/swift-6.4.0-RELEASE_wasm.artifactbundle.tar.gz \
+  --checksum f07b7be3c586d92d7a07051fc6d303b87ebea67eadc40640ba59d5a8b79aa86d
+```
+
+`SWIFT_EXEC=/path/to/swiftc` selects a compiler without changing the active
+Swiftly toolchain. `SWIFT_SDKS_PATH` can point at a non-default SDK directory.
+Arm e compiles in Embedded Swift mode, then links the resulting Wasm object in
+the same `em++` function and PDFium module as the other arms. PDFium has a C
+API, so Swift's C importer is sufficient; no C++ bridge is needed.
 
 The [September 8 build audit](../docs/research/platform-gap-audit.md) records
 Emscripten 3.1.72 with Binaryen 132 for the related multiplatform prototype.
@@ -74,11 +91,12 @@ node bench/run.mjs --native --rounds 7 --out /tmp/pdfium-binding-native-review
 node bench/compare.mjs --native --out /tmp/pdfium-binding-native-review
 ```
 
-`build/build-native.sh` builds b/c/d, but does not build a. If the runner reports
+`build/build-native.sh` builds b/c/d/e, but does not build a. If the runner reports
 that `packages/engine/runtime/npm/darwin-arm64/lib/pdf-runtime.node` is missing,
 use the runtime build command above; the runner's generic suggestion to run
 `build-native.sh` cannot produce that file.
 
 Native a uses C++ bindings and BigInt pointers. Native b/c use `napi-rs` and
-numeric pointers; d uses C++ bindings and numeric pointers. These differences
+numeric pointers; d/e use C++ Node shims and numeric pointers (e's operations
+live in a Swift dylib). These differences
 prevent an a-versus-b comparison from isolating the cost of a Rust wrapper.

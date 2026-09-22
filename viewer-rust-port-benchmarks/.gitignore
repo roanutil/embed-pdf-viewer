@@ -9,6 +9,7 @@ target/
 # a build artifact and not a source file, even though it sits inside a package.
 **/packages/*/wasm/
 **/crates/**/pkg/
+swift-geometry-only/wasm/
 
 # --- Node ---------------------------------------------------------------
 node_modules/

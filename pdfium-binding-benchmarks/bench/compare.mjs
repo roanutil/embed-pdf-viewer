@@ -24,12 +24,13 @@ const arg = (name, fallback) => {
   return i === -1 ? fallback : process.argv[i + 1];
 };
 const RESULTS = resolve(arg('out', resolve(here, 'results')));
-const ARMS = ['a', 'b', 'c', 'd'];
+const ARMS = ['a', 'b', 'c', 'd', 'e'];
 const LABEL = {
   a: 'a direct',
   b: 'b rust thin',
   c: 'c rust coarse',
   d: 'd c++ coarse',
+  e: 'e swift coarse',
 };
 
 const native = process.argv.includes('--native');
@@ -83,8 +84,8 @@ console.log(
     `${Object.values(byArm)[0].length} rounds\n`,
 );
 
-console.log(`| workload | ${ARMS.map((a) => LABEL[a]).join(' | ')} | b/a | c/a | d/a |`);
-console.log(`|---|${ARMS.map(() => '---').join('|')}|---|---|---|`);
+console.log(`| workload | ${ARMS.map((a) => LABEL[a]).join(' | ')} | b/a | c/a | d/a | e/a |`);
+console.log(`|---|${ARMS.map(() => '---').join('|')}|---|---|---|---|`);
 
 for (const id of ids) {
   const med = {};
@@ -98,7 +99,7 @@ for (const id of ids) {
       : '—';
   console.log(
     `| \`${id}\` | ${ARMS.map((a) => fmt(med[a])).join(' | ')} | ` +
-      `${ratio('b')} | ${ratio('c')} | ${ratio('d')} |`,
+      `${ratio('b')} | ${ratio('c')} | ${ratio('d')} | ${ratio('e')} |`,
   );
 }
 
@@ -112,6 +113,15 @@ if (!native) {
     const delta = a === 'a' ? '—' : `+${(((b - baseBytes) / 1024).toFixed(1))} KiB`;
     console.log(`| ${LABEL[a]} | ${b.toLocaleString()} | ${delta} |`);
   }
+}
+if (native) {
+  console.log(`\n| arm | language-side artifact bytes |`);
+  console.log(`|---|---|`);
+  for (const a of ARMS) {
+    const bytes = byArm[a]?.[0]?.nativeArtifactBytes;
+    if (Number.isFinite(bytes)) console.log(`| ${LABEL[a]} | ${bytes.toLocaleString()} |`);
+  }
+  console.log('\nThe table excludes the common PDFium dylib; Swift includes its addon shim plus Swift dylib.');
 }
 
 // p95 table: the harness's p95 is the p95 of BATCH MEANS, not of individual

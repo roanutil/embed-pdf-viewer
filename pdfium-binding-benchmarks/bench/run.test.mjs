@@ -15,7 +15,7 @@ const here = import.meta.dirname;
  * --out this test traded seven rounds at a 500 ms budget for two rounds at
  * 100 ms, which is the same data loss commit a31c1123 was written to undo.
  */
-test('a two-round run writes eight result files with plausible cells', (t) => {
+test('a two-round run writes ten result files with plausible cells', (t) => {
   const out = mkdtempSync(resolve(tmpdir(), 'pdfium-spike-bench-'));
   t.after(() => rmSync(out, { recursive: true, force: true }));
 
@@ -25,7 +25,7 @@ test('a two-round run writes eight result files with plausible cells', (t) => {
     { stdio: ['ignore', 'inherit', 'inherit'] },
   );
 
-  for (const arm of ['a', 'b', 'c', 'd']) {
+  for (const arm of ['a', 'b', 'c', 'd', 'e']) {
     for (const r of [1, 2]) {
       const f = resolve(out, `${arm}-r${r}.json`);
       assert.ok(existsSync(f), `missing ${f}`);

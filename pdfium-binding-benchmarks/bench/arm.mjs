@@ -77,7 +77,7 @@ const COARSE = (prefix) => [
   [`${prefix}_search_page`, 'number', ['number', 'number', 'number', 'number']],
 ];
 
-const EXTRA = { a: [], b: SHIM, c: COARSE('rs'), d: COARSE('cc') };
+const EXTRA = { a: [], b: SHIM, c: COARSE('rs'), d: COARSE('cc'), e: COARSE('sw') };
 
 export async function loadArm(name) {
   if (!EXTRA[name]) throw new Error(`unknown arm: ${name}`);
@@ -128,6 +128,19 @@ export async function loadArm(name) {
 export async function wasmBytes(name) {
   const { statSync } = await import('node:fs');
   return statSync(resolve(here, `../build/out/${name}/arm.wasm`)).size;
+}
+
+/** Language-side artifact bytes; the common PDFium library is deliberately excluded. */
+export async function nativeArtifactBytes(name, target = 'darwin-arm64') {
+  const { statSync } = await import('node:fs');
+  const size = (path) => statSync(resolve(here, path)).size;
+  if (name === 'a') return size(`../../packages/engine/runtime/npm/${target}/lib/pdf-runtime.node`);
+  if (name === 'b' || name === 'c') return size('../build/out/native/napi-arms.node');
+  if (name === 'd') return size('../build/out/native/cc-ops.node');
+  if (name === 'e') {
+    return size('../build/out/native/swift-ops.node') + size('../build/out/native/libswift-ops.dylib');
+  }
+  throw new Error(`unknown native arm: ${name}`);
 }
 
 /**
@@ -278,6 +291,15 @@ export async function loadNativeArm(name, target = 'darwin-arm64') {
       cc_read_page_text: cc.ccReadPageText,
       cc_render_page: cc.ccRenderPage,
       cc_search_page: cc.ccSearchPage,
+    });
+  }
+  if (name === 'e') {
+    const swift = require(resolve(here, '../build/out/native/swift-ops.node'));
+    Object.assign(fnExtra, {
+      sw_read_page_geometry: swift.swReadPageGeometry,
+      sw_read_page_text: swift.swReadPageText,
+      sw_render_page: swift.swRenderPage,
+      sw_search_page: swift.swSearchPage,
     });
   }
 

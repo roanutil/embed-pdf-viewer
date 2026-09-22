@@ -1,7 +1,7 @@
 # Viewer benchmark procedure
 
 The benchmark measures geometry, hit-testing, state updates, and JavaScript
-allocation estimates for the three viewer variants. See
+allocation estimates for the four benchmark variants. See
 [the design](../../docs/research/rust-core-port-benchmarks.md) and
 [historical results](RESULTS.md).
 
@@ -25,6 +25,8 @@ The repository commits only the cold-start summary, not the timing or
 allocation JSON. A fresh checkout therefore cannot reproduce the historical
 timing tables by running `compare.mjs` alone. Run the benchmark to produce a
 new dataset, and retain its raw files with any new claims.
+Use `node bench/compare.mjs --stdout-only` to inspect tables without replacing
+the committed `RESULTS.md`.
 
 ## How it measures
 
@@ -33,9 +35,9 @@ operations; `harness.mjs` measures them. Each variant supplies a `bench/adapter.
 and a `bench/node.ts` entry point.
 
 Each variant runs in a separate Node process with its own workspace dependencies.
-Rounds use the same order: TypeScript, Rust geometry, then Rust geometry and
-state. Interleaving limits some drift between complete runs, but the fixed
-order can still introduce position bias.
+Rounds use the same order: TypeScript, Rust geometry, Rust geometry and state,
+then Swift geometry. Interleaving limits some drift between complete runs, but
+the fixed order can still introduce position bias.
 
 Before timing, the runner compares a ten-shape display list from each variant.
 It checks metadata and coordinates, allowing small coordinate differences.
@@ -65,8 +67,8 @@ node --expose-gc --test bench/alloc.test.mjs
 Startup requires a browser. This runner does not automate it. The demos expose
 `window.__coldStart` from their `apps/demo/src/marks.ts` files.
 
-Build the three demos, then start each preview in a separate terminal from the
-benchmark root:
+The Swift variant is benchmark-only. Build the three demos, then start each
+preview in a separate terminal from the benchmark root:
 
 ```bash
 (cd typescript-baseline && pnpm build)

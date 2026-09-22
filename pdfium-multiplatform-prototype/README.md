@@ -76,6 +76,7 @@ Commands below run from the prototype root unless a subshell changes directory.
 | Node | `bash build/build-node.sh` | `node --test packages/node/*.test.mjs` |
 | Web | `bash build/link-wasm.sh` | `node --test packages/web/*.test.mjs` |
 | Swift on ARM64 macOS | `bash build/build-swift.sh` | `bash build/test-swift.sh` |
+| Direct Swift 6.4 vs Rust | `bash build/bench-swift-vs-rust.sh 20` | checksum gate in runner |
 | Kotlin on ARM64 macOS | `bash build/build-kotlin.sh` | `(cd packages/kotlin && ./gradlew :epdf-ops:test)` |
 
 The web build requires the local `wasm32-eh` entry above and `em++` on `PATH`.
@@ -133,6 +134,12 @@ PDFium pointers. Rendering returns dimensions, row stride, and BGRA bytes
 object returned by `await createEpdf()`. Both use camel-case document methods. Swift/Kotlin use generated `EpdfEngine` and
 `EpdfDocument` types. Kotlin renames the explicit document close to `closeSync`;
 see [cleanup and error handling](packages/kotlin/README.md).
+
+The generated `EpdfOps` Swift package measures a Swift host over the Rust core.
+The separate [`PdfiumSwift`](packages/swift/PdfiumSwift/README.md) package is a
+direct Swift 6.4 implementation for language-to-language size and performance
+comparison. PDFium exposes C headers, so it uses Swift C interop rather than
+C++ interop.
 
 | Crate | Responsibility |
 | --- | --- |

@@ -9,7 +9,7 @@
  * this measures the SHAPE of the real reader, not the reader.
  *
  * Each workload declares which arms can run it. The null probes have nothing
- * for a coarse arm to collapse, so arms c and d skip them.
+ * for a coarse arm to collapse, so arms c, d, and e skip them.
  *
  * Known bias in the transcription, one-directional and conservative: the
  * real reader also does three things per glyph that this file omits —
@@ -25,7 +25,7 @@
  */
 import { SEARCH_TERM } from './fixture.mjs';
 
-const ALL = ['a', 'b', 'c', 'd'];
+const ALL = ['a', 'b', 'c', 'd', 'e'];
 const THIN = ['a', 'b'];
 
 /**
@@ -62,7 +62,7 @@ const F = {
   ASCENT_FLIP: 1 << 7,
 };
 
-/** The packed record arms c and d write, one per glyph. See cpp/record.h. */
+/** The packed record arms c, d, and e write, one per glyph. */
 export const RECORD_BYTES = 112;
 
 /**
@@ -82,7 +82,7 @@ export const WORKLOAD_TABLE = [
   { id: 'null-peek', arms: THIN, hasCanonical: false },
   { id: 'null-readbytes', arms: THIN, hasCanonical: false },
   { id: 'geometry', arms: ALL, hasCanonical: true },
-  { id: 'geometry-copyout', arms: ['c', 'd'], hasCanonical: false },
+  { id: 'geometry-copyout', arms: ['c', 'd', 'e'], hasCanonical: false },
   { id: 'text', arms: ALL, hasCanonical: true },
   { id: 'render-1x', arms: ALL, hasCanonical: true },
   { id: 'render-4x', arms: ALL, hasCanonical: true },
@@ -161,7 +161,7 @@ const emptyGlyph = () => ({
 
 export function makeWorkloads(arm, fx) {
   const { fn, mem } = arm;
-  const coarse = arm.name === 'c' ? 'rs' : arm.name === 'd' ? 'cc' : null;
+  const coarse = arm.name === 'c' ? 'rs' : arm.name === 'd' ? 'cc' : arm.name === 'e' ? 'sw' : null;
   const p = arm.name === 'b' ? 'rs_' : '';
 
   // Hoisted once per arm, not looked up per call inside geometryThin,
@@ -303,7 +303,7 @@ export function makeWorkloads(arm, fx) {
     return n;
   };
 
-  /** Arms c and d. One crossing, then one typed-array walk. */
+  /** Coarse arms c, d, and e. One crossing, then one typed-array walk. */
   const geometryCoarse = () => {
     const n = fits(
       fn[`${coarse}_read_page_geometry`](fx.textPage, recordPtr, recordCap),

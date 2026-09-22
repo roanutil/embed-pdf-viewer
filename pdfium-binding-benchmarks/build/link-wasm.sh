@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds all four wasm arms from ONE em++ invocation each, with identical
+# Builds all five wasm arms from ONE em++ invocation each, with identical
 # flags. That identity is the whole point: differing flags would mean
 # comparing builds rather than comparing wrappers.
 #
@@ -7,12 +7,13 @@
 #   b  + libshim.a, one rs_* per PDFium call    (the tax)
 #   c  + libops.a, four coarse operations       (the benefit)
 #   d  + ops.cc, the same four in C++           (the control)
+#   e  + ops.swift, the same four in Swift 6.4  (the comparison)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LIB_DIR="$ROOT/build/libpdfium/wasm32"
 OUT_DIR="$ROOT/build/out"
-ARMS="${*:-a b c d}"
+ARMS="${*:-a b c d e}"
 
 # shellcheck disable=SC1091
 source "$ROOT/build/emsdk.sh"
@@ -36,6 +37,31 @@ SHIM_EXPORTS="_rs_probe_page_size\
 
 OPS_EXPORTS="_rs_read_page_geometry,_rs_read_page_text,_rs_render_page,_rs_search_page"
 CPP_EXPORTS="_cc_read_page_geometry,_cc_read_page_text,_cc_render_page,_cc_search_page"
+SWIFT_EXPORTS="_sw_read_page_geometry,_sw_read_page_text,_sw_render_page,_sw_search_page"
+
+build_swift() {
+  local version sdk_root swiftc
+  swiftc="${SWIFT_EXEC:-swiftc}"
+  version="$($swiftc --version | head -n 1)"
+  if [[ ! "$version" =~ "Swift version 6.4" ]]; then
+    echo "Swift 6.4 is required (found: $version). Run: swiftly use 6.4.0" >&2
+    exit 1
+  fi
+  sdk_root="$(find "${SWIFT_SDKS_PATH:-$HOME/Library/org.swift.swiftpm/swift-sdks}" \
+    -path '*/swift-6.4.0-RELEASE_wasm/wasm32-unknown-wasip1' -type d -print -quit)"
+  if [[ -z "$sdk_root" ]]; then
+    echo "Swift 6.4 Wasm SDK is missing; install swift-6.4.0-RELEASE_wasm-embedded (see README.md)." >&2
+    exit 1
+  fi
+  mkdir -p "$OUT_DIR/swift"
+  CLANG_MODULE_CACHE_PATH="$OUT_DIR/swift/clang-cache" "$swiftc" \
+    -resource-dir "$sdk_root/swift.xctoolchain/usr/lib/swift" \
+    -sdk "$sdk_root/WASI.sdk" -target wasm32-unknown-wasip1 \
+    -static-stdlib -enable-experimental-feature Embedded \
+    -swift-version 6 -whole-module-optimization -Osize -parse-as-library -emit-object \
+    "$ROOT/swift/ops.swift" -I "$ROOT/swift/CPDFium" -Xcc -I"$LIB_DIR/include" \
+    -o "$OUT_DIR/swift/ops.o"
+}
 
 link() {
   local arm="$1"; shift
@@ -49,7 +75,7 @@ link() {
   # `cargo build --release` (opt-level = 3, lto = true, codegen-units = 1). Linking
   # arm d at -O0 against that would hand arm c an unearned win on any workload that
   # exercises ops.cc, so -O3 goes in this one shared link() body, applied identically
-  # to all four arms, rather than as a per-arm flag.
+  # to all five arms, rather than as a per-arm flag.
   em++ "$LIB_DIR/lib/libembedpdf.a" "$@" \
     -sENVIRONMENT=node \
     -sMODULARIZE=1 \
@@ -83,6 +109,8 @@ for arm in $ARMS; do
        link c "$PDFIUM_EXPORTS,$OPS_EXPORTS" \
          "$ROOT/target/wasm32-unknown-emscripten/release/libops.a" ;;
     d) link d "$PDFIUM_EXPORTS,$CPP_EXPORTS" "$ROOT/cpp/ops.cc" ;;
+    e) build_swift
+       link e "$PDFIUM_EXPORTS,$SWIFT_EXPORTS" "$OUT_DIR/swift/ops.o" ;;
     *) echo "unknown arm: $arm" >&2; exit 1 ;;
   esac
 done

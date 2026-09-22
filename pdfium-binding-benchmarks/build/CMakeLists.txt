@@ -23,7 +23,12 @@ add_library(${PROJECT_NAME} SHARED
   "${CMAKE_CURRENT_LIST_DIR}/../cpp/ops_napi.cc"
 )
 
+add_library(swift_ops SHARED
+  "${CMAKE_CURRENT_LIST_DIR}/../cpp/swift_ops_napi.cc"
+)
+
 target_compile_options(${PROJECT_NAME} PRIVATE -O3 -DNDEBUG)
+target_compile_options(swift_ops PRIVATE -O3 -DNDEBUG)
 
 # Request optimization across C++ source files when the toolchain supports it.
 # CMake selects the implementation; this need not match Cargo's full LTO.
@@ -54,6 +59,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
   "${PDFIUM_INCLUDE_DIR}"
   "${CMAKE_CURRENT_LIST_DIR}/../cpp"
 )
+target_include_directories(swift_ops PRIVATE ${CMAKE_JS_INC} "${NODE_ADDON_API_DIR}")
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
   ${CMAKE_JS_LIB}
@@ -63,11 +69,22 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
   "-framework CoreGraphics"
   "-framework Foundation"
 )
+target_link_libraries(swift_ops PRIVATE
+  ${CMAKE_JS_LIB}
+  "${CMAKE_CURRENT_LIST_DIR}/out/native/libswift-ops.dylib"
+)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
   PREFIX ""
   SUFFIX ".node"
   OUTPUT_NAME "cc-ops"
+  BUILD_RPATH "@loader_path"
+  INSTALL_RPATH "@loader_path"
+)
+set_target_properties(swift_ops PROPERTIES
+  PREFIX ""
+  SUFFIX ".node"
+  OUTPUT_NAME "swift-ops"
   BUILD_RPATH "@loader_path"
   INSTALL_RPATH "@loader_path"
 )

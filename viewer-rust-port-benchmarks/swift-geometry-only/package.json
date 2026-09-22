@@ -1,0 +1,9 @@
+{
+  "name": "swift-geometry-only",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "bash scripts/build-wasm.sh",
+    "bench": "node --expose-gc --import tsx bench/node.ts"
+  }
+}

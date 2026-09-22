@@ -1,0 +1,4 @@
+module CPDFium [system] {
+  header "include/shim.h"
+  export *
+}

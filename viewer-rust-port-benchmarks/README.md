@@ -1,7 +1,7 @@
 # Viewer Rust port benchmarks
 
-Three small viewers compare where TypeScript ends and Rust begins. They render
-rectangles, support selection and dragging, and share expected geometry results.
+Four small implementations compare where TypeScript ends and a native language
+begins. They render rectangles, support selection and dragging, and share expected geometry results.
 They do not render PDFs or benchmark the full EmbedPDF viewer.
 
 | Variant | Implementation | Calls into Wasm to generate a display list | Demo port |
@@ -9,6 +9,7 @@ They do not render PDFs or benchmark the full EmbedPDF viewer.
 | `typescript-baseline` | Geometry and state in TypeScript | 0 | 5171 |
 | `rust-geometry-only` | Geometry in Rust; state in TypeScript | 1 per plain shape; up to 7 per anchored shape | 5172 |
 | `rust-geometry-and-state` | Geometry and state in Rust | 1 with the row cache current; up to 3 when it needs checking or refreshing | 5173 |
+| `swift-geometry-only` | Geometry in Embedded Swift 6.4; state in TypeScript | Same primitive boundary as `rust-geometry-only` | benchmark only |
 
 A **crossing** means a call between JavaScript and Wasm. These counts describe
 display-list generation, not all work in a React frame. Fewer crossings do not
@@ -45,6 +46,21 @@ Each viewer has its own pnpm workspace and Turbo tasks. TypeScript packages
 export source files; Rust packages build Wasm before the demo build.
 React development rendering can repeat work, so use the tests for operation
 crossing counts instead of treating the demo counter as a precise frame cost.
+
+Build the Swift comparison with the official Swift 6.4 toolchain and Embedded
+Wasm SDK:
+
+```bash
+swiftly install 6.4.0
+swiftly use 6.4.0
+swift sdk install \
+  https://download.swift.org/swift-6.4.0-release/wasm-sdk/swift-6.4.0-RELEASE/swift-6.4.0-RELEASE_wasm.artifactbundle.tar.gz \
+  --checksum f07b7be3c586d92d7a07051fc6d303b87ebea67eadc40640ba59d5a8b79aa86d
+bash swift-geometry-only/scripts/build-wasm.sh
+```
+
+Then `node bench/run.mjs` includes Swift in the same fairness gate, interleaved
+timing rounds, allocation rounds, and generated comparison table.
 
 ## Anchored shapes
 

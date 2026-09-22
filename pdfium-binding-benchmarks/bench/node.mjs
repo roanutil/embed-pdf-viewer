@@ -9,7 +9,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { environment, measure, sinkValue } from '../../viewer-rust-port-benchmarks/bench/harness.mjs';
-import { loadArm, loadNativeArm, wasmBytes } from './arm.mjs';
+import { loadArm, loadNativeArm, nativeArtifactBytes, wasmBytes } from './arm.mjs';
 import { openFixture } from './fixture.mjs';
 import { makeWorkloads } from './workloads.mjs';
 
@@ -50,6 +50,7 @@ const out = {
   // than measuring the wrong artifact (or worse, silently reusing the wasm
   // module's byte count) under a native run.
   wasmBytes: native ? null : await wasmBytes(armName),
+  nativeArtifactBytes: native ? await nativeArtifactBytes(armName) : null,
   sink: sinkValue(),
   cells,
 };

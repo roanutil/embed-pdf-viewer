@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 /**
- * Rounds are INTERLEAVED (round 1: a, b, c, d; round 2: a, b, c, d; ...) AND,
- * within each round, the arm ORDER is rotated by the round index (round 1:
- * a,b,c,d; round 2: b,c,d,a; round 3: c,d,a,b; ...). A laptop's clock speed
+ * Rounds are INTERLEAVED across all arms AND,
+ * within each round, the arm ORDER is rotated by the round index. A laptop's clock speed
  * drifts over a multi-minute run, and running all of a then all of b would
  * hand the drift to whoever went last; interleaving fixes that ACROSS rounds.
  * But the drift also decays WITHIN a round (background load is highest right
@@ -27,7 +26,7 @@ import { GATE_FIXTURES } from './fixture.mjs';
 import { parseRunOptions } from './run-options.mjs';
 
 const here = import.meta.dirname;
-const ARMS = ['a', 'b', 'c', 'd'];
+const ARMS = ['a', 'b', 'c', 'd', 'e'];
 
 let options;
 try {
@@ -54,6 +53,8 @@ if (native) {
     resolve(here, '../../packages/engine/runtime/npm/darwin-arm64/lib/pdf-runtime.node'),
     resolve(here, '../build/out/native/napi-arms.node'),
     resolve(here, '../build/out/native/cc-ops.node'),
+    resolve(here, '../build/out/native/swift-ops.node'),
+    resolve(here, '../build/out/native/libswift-ops.dylib'),
   ];
   for (const f of required) {
     if (!existsSync(f)) {
@@ -81,7 +82,7 @@ const version = (cmd, args) => {
 const emsdk = native ? 'n/a (native)' : version('em++', ['--version']);
 const rustc = version('rustc', ['--version']);
 
-// The gate runs FIRST, over all four arms. A wrong arm can be fast, and no
+// The gate runs FIRST, over all five arms. A wrong arm can be fast, and no
 // timing table shows it. `compare()` returns `{ok, compared}`, not a bool.
 const getCanonical = native ? canonicalForNative : canonicalFor;
 const canonical = {};
@@ -118,8 +119,8 @@ for (const f of readdirSync(RESULTS)) {
 }
 
 for (let r = 1; r <= rounds; r++) {
-  // Rotate by round index (Finding 1): round 1 is a,b,c,d; round 2 shifts
-  // by one to b,c,d,a; and so on, cycling back to a,b,c,d every four rounds.
+  // Rotate by round index (Finding 1), cycling after every arm has occupied
+  // every position once.
   // Applies identically under --native: rotation is not optional, and the
   // wasm run is the proof that position within a round biases results.
   const shift = (r - 1) % ARMS.length;

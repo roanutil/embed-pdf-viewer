@@ -6,13 +6,14 @@
  * Medians across rounds, not means, and never a single round: a single round is
  * one sample of a drifting machine.
  */
-import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const here = import.meta.dirname;
 const RESULTS = resolve(here, 'results');
-const ORDER = ['typescript-baseline', 'rust-geometry-only', 'rust-geometry-and-state'];
-const SHORT = { 'typescript-baseline': 'typescript-baseline', 'rust-geometry-only': 'rust-geometry-only', 'rust-geometry-and-state': 'rust-geometry-and-state' };
+const stdoutOnly = process.argv.includes('--stdout-only');
+const ORDER = ['typescript-baseline', 'rust-geometry-only', 'rust-geometry-and-state', 'swift-geometry-only'];
+const SHORT = Object.fromEntries(ORDER.map((name) => [name, name]));
 
 const files = readdirSync(RESULTS).filter((f) => f.endsWith('.json'));
 if (files.length === 0) {
@@ -78,14 +79,15 @@ const rounds = new Set(timing.map((t) => t.round)).size;
 function section(title, table, cols) {
   const lines = [];
   lines.push(`\n### ${title}\n`);
-  lines.push(`| ${cols} | typescript-baseline | rust-geometry-only | rust-geometry-and-state | rust-geometry-only/typescript-baseline | rust-geometry-and-state/typescript-baseline | worst spread |`);
-  lines.push(`|---|---|---|---|---|---|---|`);
+  const ratios = ORDER.slice(1).map((name) => `${name}/typescript-baseline`);
+  lines.push(`| ${cols} | ${ORDER.join(' | ')} | ${ratios.join(' | ')} | worst spread |`);
+  lines.push(`|---|${ORDER.map(() => '---').join('|')}|${ratios.map(() => '---').join('|')}|---|`);
   for (const [key, byAdapter] of table) {
     const meds = ORDER.map((a) => median(byAdapter.get(a) ?? []));
     const spreads = ORDER.map((a) => spread(byAdapter.get(a) ?? []));
     lines.push(
-      `| ${key} | ${fmt(meds[0])} | ${fmt(meds[1])} | ${fmt(meds[2])} | ` +
-        `${ratio(meds[1], meds[0])} | ${ratio(meds[2], meds[0])} | ${(Math.max(...spreads) * 100).toFixed(0)}% |`,
+      `| ${key} | ${meds.map(fmt).join(' | ')} | ` +
+        `${meds.slice(1).map((value) => ratio(value, meds[0])).join(' | ')} | ${(Math.max(...spreads) * 100).toFixed(0)}% |`,
     );
   }
   return lines.join('\n');
@@ -95,6 +97,21 @@ md.push(`# Interop benchmark results\n`);
 md.push(
   `${rounds} interleaved rounds. ${env.runtime === 'node' ? `Node ${env.node}, ${env.platform}, ${env.cpu}` : env.userAgent ?? ''}.`,
 );
+
+const wasmArtifacts = {
+  'typescript-baseline': null,
+  'rust-geometry-only': resolve(here, '../rust-geometry-only/packages/geometry/wasm/poc_geometry_bg.wasm'),
+  'rust-geometry-and-state': resolve(here, '../rust-geometry-and-state/packages/core/wasm/poc_core_bg.wasm'),
+  'swift-geometry-only': resolve(here, '../swift-geometry-only/wasm/swift_geometry.wasm'),
+};
+md.push('\n### Wasm size\n');
+md.push('| implementation | bytes |');
+md.push('|---|---:|');
+for (const name of ORDER) {
+  const artifact = wasmArtifacts[name];
+  const bytes = artifact === null ? 0 : existsSync(artifact) ? statSync(artifact).size : NaN;
+  md.push(`| ${name} | ${Number.isFinite(bytes) ? bytes.toLocaleString() : 'missing'} |`);
+}
 md.push(
   `\nMedians across rounds. "worst spread" is the widest (max-min)/median of any single implementation ` +
     `for that cell. A large value indicates unstable timings without identifying the cause.`,
@@ -231,6 +248,8 @@ md.push(
 
 const text = md.join('\n') + '\n';
 process.stdout.write(text);
-const out = resolve(here, 'RESULTS.md');
-writeFileSync(out, text);
-process.stdout.write(`\nwritten to ${out}\n`);
+if (!stdoutOnly) {
+  const out = resolve(here, 'RESULTS.md');
+  writeFileSync(out, text);
+  process.stdout.write(`\nwritten to ${out}\n`);
+}

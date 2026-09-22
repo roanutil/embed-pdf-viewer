@@ -11,7 +11,10 @@ CI=true pnpm install --frozen-lockfile
 # Rust links the pinned fork directly; the TS reference uses the finished WASM payload.
 runtime_target="$(node -p "'linux-' + process.arch")"
 bash packages/engine/runtime/scripts/fetch-libpdfium.sh "$runtime_target"
-bash packages/engine/runtime/scripts/fetch-libpdfium.sh wasm32-eh
+# wasm32-eh is still "status": "pending" in the fork, so the published pin has no
+# such artifact and the fetch exits 2. Same skip as build/test-all.sh.
+bash packages/engine/runtime/scripts/fetch-libpdfium.sh wasm32-eh \
+  || echo "skipped: wasm32-eh is pending in engine-runtime-build.json" >&2
 bash packages/engine/runtime/scripts/fetch-payload.sh wasm32
 
 pnpm --filter @embedpdf/engine-runtime build
