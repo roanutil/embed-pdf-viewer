@@ -138,6 +138,11 @@ jobs:
       - name: Schema parity vectors are current
         run: pnpm --filter @embedpdf/tooling-engine-conformance run schema:check
 
+      # G5's entry gate: what validateSearchRegex, matchRegex and foldText
+      # produce, replayed by crates/epdf-engine/tests/search_dialect.rs.
+      - name: Search dialect vectors are current
+        run: pnpm --filter @embedpdf/tooling-engine-conformance run search:check
+
       # multiplatform-port-order.md Section 6: a kind added to
       # worker-protocol.ts without a row in the matrix fails here, and so does
       # a row for a kind that no longer exists.

@@ -120,3 +120,39 @@ all three. Hence `IsoDateTime` and `clock::is_iso_8601_utc`.
 
 Explicit `undefined` is in the plan's list of cases and is not here, because it
 is not JSON-expressible. It belongs in a TypeScript-only test.
+
+## Search dialect
+
+`vectors/search/` is G5's entry gate. The port order gives search an entry gate
+rather than an exit gate, because the shipping matcher is JavaScript `RegExp`
+and the server is RE2, and a Rust engine that reproduces neither would be found
+out halfway through 655 lines rather than before them.
+
+```bash
+pnpm --filter @embedpdf/tooling-engine-conformance run search
+pnpm --filter @embedpdf/tooling-engine-conformance run search:check
+```
+
+`regex-dialect.json` records, per case, whether `validateSearchRegex` accepted
+the pattern, which `SearchRegexIssue` it reported when it did not, and where
+`matchRegex` put every match. `fold.json` records `foldText`'s output and its
+map. `crates/epdf-engine/tests/search_dialect.rs` replays both.
+
+The gate settled two things Phase 0 owed. `regress` executes ECMAScript syntax
+but is exponential on `(?:a+)+b` in both of its backends (295 ms at 24
+characters backtracking, 1.13 s on the PikeVM, roughly 8x per four more), which
+disqualifies it for patterns a search box takes from anyone. The `regex` crate
+is linear but speaks a different dialect, so
+`crates/epdf-engine/src/features/search/dialect.rs` translates, and every case
+in the corpus agrees except two.
+
+Those two are `^` and `$` under `m` across a `\r`, U+2028 or U+2029. JavaScript
+breaks a line on all four terminators and the `regex` crate breaks on `\n`
+only. They are listed in that test's `KNOWN_DIVERGENCES` with the reason; G5
+owns the fix, and until then a `^`-anchored query can find different matches on
+web and native for a document whose extracted text uses `\r`.
+
+The Rust fold is G5 too, so `fold.json` currently has an invariant runner
+rather than a parity runner: one map entry per folded code unit, monotonic, and
+every entry landing on a character start. Those are the properties
+`toOriginalRange` rests on.

@@ -8,6 +8,8 @@
     "vectors:check": "tsx --conditions=development src/generate-vectors.ts --check",
     "schema": "tsx --conditions=development src/generate-schema-vectors.ts",
     "schema:check": "tsx --conditions=development src/generate-schema-vectors.ts --check",
+    "search": "tsx --conditions=development src/generate-search-vectors.ts",
+    "search:check": "tsx --conditions=development src/generate-search-vectors.ts --check",
     "operations": "tsx src/check-operations.ts",
     "operations:check": "tsx src/check-operations.ts --check",
     "typecheck": "tsc --noEmit"

@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "kind": "search.fold",
+  "cases": [
+  {"name":"default-fold","covers":"Case and marks both folded, which is the persistable corpus fold.","text":"café CAFÉ café Café","folded":"cafe cafe cafe cafe","map":[0,1,2,3,4,5,6,7,8,9,10,11,12,13,15,16,17,18,19]},
+  {"name":"keep-case","covers":"matchCase: marks folded, case kept.","text":"café CAFÉ café Café","keepCase":true,"folded":"cafe CAFE cafe Cafe","map":[0,1,2,3,4,5,6,7,8,9,10,11,12,13,15,16,17,18,19]},
+  {"name":"keep-marks","covers":"matchDiacritics: case folded, marks kept and left decomposed.","text":"café CAFÉ café Café","keepMarks":true,"folded":"café café café café","map":[0,1,2,3,3,4,5,6,7,8,8,9,10,11,12,13,14,15,16,17,18,19,19]},
+  {"name":"keep-both","covers":"Both flags on: only whitespace collapse and NFKD remain.","text":"café CAFÉ café Café","keepCase":true,"keepMarks":true,"folded":"café CAFÉ café Café","map":[0,1,2,3,3,4,5,6,7,8,8,9,10,11,12,13,14,15,16,17,18,19,19]},
+  {"name":"whitespace-collapse","covers":"A line-wrapped run collapses to one space, and the map still points at the first one.","text":"hello \n\t  world","folded":"hello world","map":[0,1,2,3,4,5,10,11,12,13,14]},
+  {"name":"decomposition-emits-whitespace","covers":"U+00A8 decomposes to space plus combining diaeresis, so the collapse runs at unit level.","text":"a¨¨b","folded":"a b","map":[0,1,3]},
+  {"name":"ligature-expands","covers":"NFKD splits a ligature into two units that both map back to one code point.","text":"oﬃce","folded":"office","map":[0,1,1,1,2,3]},
+  {"name":"superscript-expands","covers":"A compatibility decomposition that changes the character class.","text":"x² y⁵","folded":"x2 y5","map":[0,1,2,3,4]},
+  {"name":"sharp-s-expands","covers":"The upper-lower round trip catches ss, which toLowerCase alone misses.","text":"Straße","folded":"strasse","map":[0,1,2,3,4,4,5]},
+  {"name":"final-sigma-normalizes","covers":"And the Greek case it also catches.","text":"ος οσ","folded":"οσ οσ","map":[0,1,2,3,4]},
+  {"name":"astral-maps-back-to-two-units","covers":"The map is in UTF-16 code units, so a supplementary code point occupies one entry per folded unit and points at its first unit.","text":"a😀b𝐀c","folded":"a😀bac","map":[0,1,1,3,4,6]},
+  {"name":"leading-and-trailing-whitespace","covers":"Collapse at the edges, which the needle trim depends on.","text":"  padded  ","folded":" padded ","map":[0,2,3,4,5,6,7,8]},
+  {"name":"kelvin-and-long-s","covers":"The characters the regex case-folding cases use, through the other path.","text":"KK k sſ S ß ss ς σ","folded":"kk k ss s ss ss σ σ","map":[0,1,2,3,4,5,6,7,8,9,10,10,11,12,13,14,15,16,17]}
+  ]
+}

@@ -1,0 +1,460 @@
+/**
+ * The search dialect corpus: what `regex.ts` accepts, what it refuses, and
+ * what it matches, plus what `fold.ts` produces.
+ *
+ * `multiplatform-port-order.md` G5 gives this an entry gate rather than an
+ * exit gate, and lists its contents: "`regex.ts` accepted and rejected syntax,
+ * `\d` `\w` `\b` under JavaScript `u` and `iu` modes (including K and ſ),
+ * `\s`, Unicode properties, dot/line terminators, case folding, `^` `$` under
+ * `m`, zero-length matches and cursor advance, fold map back to UTF-16
+ * offsets". Nothing in G5 starts until a Rust engine can reproduce these.
+ *
+ * Offsets everywhere are UTF-16 code units, because that is what JavaScript
+ * produces and what `PageTextSnapshot` addresses. A Rust engine works in
+ * UTF-8, so converting is part of what the candidate has to get right; that is
+ * why the vectors carry deliberately non-BMP text.
+ */
+
+export interface RegexCase {
+  /** Stable slug, and what a failure names. */
+  readonly name: string;
+  /** Why the case exists, in one line. */
+  readonly covers: string;
+  readonly pattern: string;
+  /** `matchCase: false` is the default, and means the `i` flag. */
+  readonly matchCase?: boolean;
+  /** Post-filter with the shared Unicode word test, never `\b`. */
+  readonly wholeWord?: boolean;
+  /** Texts the pattern runs over. Empty for a case that only tests syntax. */
+  readonly texts: readonly string[];
+}
+
+/**
+ * Shared haystacks, so a case that is about a pattern does not also have to
+ * be about a string literal.
+ */
+const ASCII = 'The cat sat on the CAT mat. Concatenate.';
+const LINES = 'first line\nsecond line\nthird line';
+const ACCENTED = 'café CAFÉ café Café';
+const ASTRAL = 'a\u{1F600}b\u{1D400}c'; // emoji and MATHEMATICAL BOLD CAPITAL A
+const FOLDING = 'KK k sſ S ß ss ς σ'; // K, Kelvin, k, s, long s, S, sharp s, ss, final sigma, sigma
+const MIXED_SCRIPT = 'abc أهلا 123 中文 ́combining';
+
+export const REGEX_CASES: readonly RegexCase[] = [
+  // --- Dialect membership: what the validator refuses before anything runs.
+  {
+    name: 'empty-pattern',
+    covers: 'An empty pattern is refused, not matched.',
+    pattern: '',
+    texts: [],
+  },
+  {
+    name: 'too-long',
+    covers: 'SEARCH_REGEX_MAX_LENGTH is 512 and the 513th character is one too many.',
+    pattern: 'a'.repeat(513),
+    texts: [],
+  },
+  {
+    name: 'at-the-length-limit',
+    covers: 'Exactly 512 is accepted, so the boundary is a boundary and not an off-by-one.',
+    pattern: 'a'.repeat(512),
+    texts: [],
+  },
+  {
+    name: 'numbered-backreference',
+    covers: 'RE2 has no backreferences, so the dialect has none either.',
+    pattern: '(a)\\1',
+    texts: [],
+  },
+  {
+    name: 'named-backreference',
+    covers: 'The \\k<name> spelling of the same thing.',
+    pattern: '(?<x>a)\\k<x>',
+    texts: [],
+  },
+  {
+    name: 'backreference-inside-a-class',
+    covers: '\\1 inside [] is an escape, not a backreference, and stays legal.',
+    pattern: '[\\1]',
+    texts: ['\u0001x'],
+  },
+  {
+    name: 'lookahead',
+    covers: 'Positive lookahead is out of the dialect.',
+    pattern: 'a(?=b)',
+    texts: [],
+  },
+  {
+    name: 'negative-lookahead',
+    covers: 'And the negative form.',
+    pattern: 'a(?!b)',
+    texts: [],
+  },
+  { name: 'lookbehind', covers: 'Positive lookbehind is out.', pattern: '(?<=a)b', texts: [] },
+  {
+    name: 'negative-lookbehind',
+    covers: 'And the negative form.',
+    pattern: '(?<!a)b',
+    texts: [],
+  },
+  {
+    name: 'named-group-is-not-lookbehind',
+    covers: '(?<name> opens a group; only (?<= and (?<! are lookbehind.',
+    pattern: '(?<word>\\w+)',
+    texts: [ASCII],
+  },
+  {
+    name: 'non-capturing-group',
+    covers: '(?: stays legal.',
+    pattern: '(?:ca)+t',
+    texts: [ASCII],
+  },
+  {
+    name: 'unbalanced-paren',
+    covers: 'Syntax the RegExp constructor itself refuses.',
+    pattern: '(a',
+    texts: [],
+  },
+  {
+    name: 'lone-brace-under-u',
+    covers: 'u mode refuses a bare { that v-less JavaScript would have tolerated.',
+    pattern: 'a{',
+    texts: [],
+  },
+  {
+    name: 'invalid-unicode-property',
+    covers: 'A property name that does not exist.',
+    pattern: '\\p{Nope}',
+    texts: [],
+  },
+
+  // --- Character classes, under u and iu.
+  {
+    name: 'digit-class',
+    covers: '\\d is ASCII 0-9 in JavaScript, not every Unicode digit.',
+    pattern: '\\d+',
+    matchCase: true,
+    texts: [MIXED_SCRIPT, '٠١٢ 012'],
+  },
+  {
+    name: 'word-class',
+    covers: '\\w is [A-Za-z0-9_] in JavaScript even under u, unlike the shared word test.',
+    pattern: '\\w+',
+    matchCase: true,
+    texts: [MIXED_SCRIPT, ACCENTED],
+  },
+  {
+    name: 'word-boundary',
+    covers: '\\b uses the same ASCII word set, which is why wholeWord never uses it.',
+    pattern: '\\bcafe\\b',
+    matchCase: true,
+    texts: [ACCENTED, 'cafe cafes'],
+  },
+  {
+    name: 'word-boundary-under-i',
+    covers: 'The case-insensitive form of the same boundary.',
+    pattern: '\\bcat\\b',
+    texts: [ASCII],
+  },
+  {
+    name: 'whitespace-class',
+    covers: '\\s includes the Unicode spaces, unlike \\w and \\d.',
+    pattern: '\\s+',
+    matchCase: true,
+    texts: ['a b\tc\nd e f'],
+  },
+  {
+    name: 'not-whitespace',
+    covers: 'The negated form over the same text.',
+    pattern: '\\S+',
+    matchCase: true,
+    texts: ['a b\tc\nd e f'],
+  },
+  {
+    name: 'unicode-letter-property',
+    covers: '\\p{L} is the property the shared word test actually uses.',
+    pattern: '\\p{L}+',
+    matchCase: true,
+    texts: [MIXED_SCRIPT, ACCENTED],
+  },
+  {
+    name: 'unicode-script-property',
+    covers: 'Script properties, which RE2 also has.',
+    pattern: '\\p{Script=Arabic}+',
+    matchCase: true,
+    texts: [MIXED_SCRIPT],
+  },
+  {
+    name: 'unicode-mark-property',
+    covers: '\\p{M}, the property fold.ts strips.',
+    pattern: '\\p{M}+',
+    matchCase: true,
+    texts: [ACCENTED, MIXED_SCRIPT],
+  },
+  {
+    name: 'negated-unicode-property',
+    covers: '\\P{L}, the negated form.',
+    pattern: '\\P{L}+',
+    matchCase: true,
+    texts: ['ab12cd'],
+  },
+
+  // --- Case folding, which is where an ASCII-only fold diverges loudly.
+  {
+    name: 'kelvin-sign-folds-to-k',
+    covers: 'U+212A KELVIN SIGN case-folds to k under iu. An ASCII fold misses it.',
+    pattern: 'k',
+    texts: [FOLDING],
+  },
+  {
+    name: 'long-s-folds-to-s',
+    covers: 'U+017F LATIN SMALL LETTER LONG S folds to s under iu.',
+    pattern: 's',
+    texts: [FOLDING],
+  },
+  {
+    name: 'kelvin-sign-under-match-case',
+    covers: 'With matchCase the same pattern must not reach either of them.',
+    pattern: 'k',
+    matchCase: true,
+    texts: [FOLDING],
+  },
+  {
+    name: 'final-sigma-folds-to-sigma',
+    covers: 'Greek final sigma folds to sigma under iu, which plain toLowerCase also does.',
+    pattern: 'σ',
+    texts: [FOLDING],
+  },
+  {
+    name: 'sharp-s-does-not-expand-in-regex-mode',
+    covers: 'Unlike fold.ts, regex simple folding does not turn ss into sharp s.',
+    pattern: 'ss',
+    texts: [FOLDING],
+  },
+  {
+    name: 'accented-under-i',
+    covers: 'Case folding is not diacritic folding: regex runs on the raw plane.',
+    pattern: 'café',
+    texts: [ACCENTED],
+  },
+
+  // --- Anchors and line terminators. The matcher always sets m.
+  {
+    name: 'caret-under-m',
+    covers: '^ is a line start because the matcher always passes m.',
+    pattern: '^\\w+',
+    matchCase: true,
+    texts: [LINES],
+  },
+  {
+    name: 'dollar-under-m',
+    covers: 'And $ is a line end.',
+    pattern: '\\w+$',
+    matchCase: true,
+    texts: [LINES],
+  },
+  {
+    name: 'dot-does-not-cross-a-newline',
+    covers: 'No s flag, so . stops at \\n.',
+    pattern: 'line.second',
+    matchCase: true,
+    texts: [LINES],
+  },
+  {
+    name: 'caret-after-a-carriage-return',
+    covers:
+      'JavaScript m-mode anchors break on \\r, U+2028 and U+2029 as well as \\n. Most engines only know \\n.',
+    pattern: '^\\w+',
+    matchCase: true,
+    texts: ['one\rtwo\u2028three\u2029four'],
+  },
+  {
+    name: 'dollar-before-a-carriage-return',
+    covers: 'The same question at the other anchor.',
+    pattern: '\\w+$',
+    matchCase: true,
+    texts: ['one\rtwo\u2028three\u2029four'],
+  },
+  {
+    name: 'dot-and-the-other-line-terminators',
+    covers: 'JavaScript . also stops at \\r, U+2028 and U+2029.',
+    pattern: 'a.b',
+    matchCase: true,
+    texts: ['a\rb a b a b a\u000bb'],
+  },
+
+  // --- Zero-length matches and cursor advance.
+  {
+    name: 'star-matches-nothing-and-does-not-loop',
+    covers: 'Zero-length matches are skipped; the cursor advances a full code point.',
+    pattern: 'x*',
+    matchCase: true,
+    texts: [ASTRAL, 'xx yy'],
+  },
+  {
+    name: 'empty-alternative',
+    covers: 'Another way to spell a zero-length match.',
+    pattern: '(?:a|)',
+    matchCase: true,
+    texts: ['bab'],
+  },
+  {
+    name: 'anchored-empty-match',
+    covers: 'A pattern that matches only emptiness finds nothing at all.',
+    pattern: '^',
+    matchCase: true,
+    texts: [LINES],
+  },
+
+  // --- Astral text, where UTF-16 and UTF-8 offsets disagree.
+  {
+    name: 'astral-literal',
+    covers: 'A supplementary-plane character is one code point and two UTF-16 units.',
+    pattern: '\u{1F600}',
+    matchCase: true,
+    texts: [ASTRAL],
+  },
+  {
+    name: 'dot-spans-a-surrogate-pair',
+    covers: 'Under u, . is one code point, so the match length is 2 in UTF-16 units.',
+    pattern: 'a.b',
+    matchCase: true,
+    texts: [ASTRAL],
+  },
+  {
+    name: 'astral-range-in-a-class',
+    covers: 'A class range over supplementary code points, which needs u.',
+    pattern: '[\u{1D400}-\u{1D419}]+',
+    matchCase: true,
+    texts: [ASTRAL],
+  },
+
+  // --- wholeWord, which is a post-filter and not \b.
+  {
+    name: 'whole-word-post-filter',
+    covers: 'cat inside Concatenate is dropped by the shared word test.',
+    pattern: 'cat',
+    wholeWord: true,
+    texts: [ASCII],
+  },
+  {
+    name: 'whole-word-is-unicode-aware',
+    covers: 'caf never whole-word matches inside café, which \\b would allow.',
+    pattern: 'caf',
+    wholeWord: true,
+    texts: [ACCENTED],
+  },
+  {
+    name: 'whole-word-with-a-trailing-underscore',
+    covers: 'Underscore is a word character in the shared test as well.',
+    pattern: 'cat',
+    wholeWord: true,
+    texts: ['cat cat_ _cat'],
+  },
+
+  // --- Adversarial patterns. The dialect has no backtracking escape hatch,
+  // and the server side is RE2, so a candidate engine has to stay linear.
+  {
+    name: 'nested-quantifier',
+    covers: 'The classic catastrophic-backtracking shape, on a non-matching subject.',
+    pattern: '(?:a+)+b',
+    matchCase: true,
+    texts: ['aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'],
+  },
+  {
+    name: 'alternation-blowup',
+    covers: 'The other classic, same subject.',
+    pattern: '(?:a|aa)+b',
+    matchCase: true,
+    texts: ['aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'],
+  },
+  {
+    name: 'wide-bounded-repeat',
+    covers: 'A bounded repeat wide enough to matter for compiled-program size.',
+    pattern: '(?:ab){1,200}',
+    matchCase: true,
+    texts: ['ab'.repeat(250)],
+  },
+];
+
+export interface FoldCase {
+  readonly name: string;
+  readonly covers: string;
+  readonly text: string;
+  readonly keepCase?: boolean;
+  readonly keepMarks?: boolean;
+}
+
+export const FOLD_CASES: readonly FoldCase[] = [
+  {
+    name: 'default-fold',
+    covers: 'Case and marks both folded, which is the persistable corpus fold.',
+    text: ACCENTED,
+  },
+  {
+    name: 'keep-case',
+    covers: 'matchCase: marks folded, case kept.',
+    text: ACCENTED,
+    keepCase: true,
+  },
+  {
+    name: 'keep-marks',
+    covers: 'matchDiacritics: case folded, marks kept and left decomposed.',
+    text: ACCENTED,
+    keepMarks: true,
+  },
+  {
+    name: 'keep-both',
+    covers: 'Both flags on: only whitespace collapse and NFKD remain.',
+    text: ACCENTED,
+    keepCase: true,
+    keepMarks: true,
+  },
+  {
+    name: 'whitespace-collapse',
+    covers: 'A line-wrapped run collapses to one space, and the map still points at the first one.',
+    text: 'hello \n\t  world',
+  },
+  {
+    name: 'decomposition-emits-whitespace',
+    covers:
+      'U+00A8 decomposes to space plus combining diaeresis, so the collapse runs at unit level.',
+    text: 'a¨¨b',
+  },
+  {
+    name: 'ligature-expands',
+    covers: 'NFKD splits a ligature into two units that both map back to one code point.',
+    text: 'oﬃce',
+  },
+  {
+    name: 'superscript-expands',
+    covers: 'A compatibility decomposition that changes the character class.',
+    text: 'x² y⁵',
+  },
+  {
+    name: 'sharp-s-expands',
+    covers: 'The upper-lower round trip catches ss, which toLowerCase alone misses.',
+    text: 'Straße',
+  },
+  {
+    name: 'final-sigma-normalizes',
+    covers: 'And the Greek case it also catches.',
+    text: 'ος οσ',
+  },
+  {
+    name: 'astral-maps-back-to-two-units',
+    covers:
+      'The map is in UTF-16 code units, so a supplementary code point occupies one entry per folded unit and points at its first unit.',
+    text: ASTRAL,
+  },
+  {
+    name: 'leading-and-trailing-whitespace',
+    covers: 'Collapse at the edges, which the needle trim depends on.',
+    text: '  padded  ',
+  },
+  {
+    name: 'kelvin-and-long-s',
+    covers: 'The characters the regex case-folding cases use, through the other path.',
+    text: FOLDING,
+  },
+];
