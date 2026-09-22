@@ -61,27 +61,34 @@ impl From<SearchMatchRange> for Range {
 }
 
 /// Cases where the Rust engine and JavaScript `RegExp` genuinely differ, with
-/// the reason each one is recorded rather than fixed. Empty is the goal; a
-/// non-empty list is a statement about what G5 still has to resolve.
+/// the reason each one is recorded rather than fixed. The gate fails both when
+/// a listed case starts agreeing and when an unlisted one stops, so this is a
+/// decision somebody made rather than a silence.
 ///
-/// Both entries below are the same defect, seen from each anchor. JavaScript
-/// `m` mode treats `\n`, `\r`, U+2028 and U+2029 as line boundaries; the
-/// `regex` crate treats only `\n`. `RegexBuilder::line_terminator` takes one
-/// byte, and the lookbehind that would express the rest is not in the crate
-/// and not in the dialect. Normalizing the haystack would move every offset
-/// after a U+2028, which is three UTF-8 bytes where `\n` is one, and would
-/// change what a pattern containing `\r` matches.
+/// Both entries are the price of the normalized haystack in
+/// `features/search/mod.rs`. An anchored pattern is matched against a copy of
+/// the text with `\r`, U+2028 and U+2029 rewritten to `\n`, because the
+/// `regex` crate's `(?m)` breaks a line on `\n` alone. The copy cannot tell
+/// the terminators apart, so an anchored pattern that ALSO distinguishes them
+/// sees the normalized character.
 ///
-/// It is not cosmetic. PDFium emits `\r` in extracted text for some
-/// documents, so a `^`-anchored regex query would find different matches on
-/// web and on native for those files. G5 owns the fix; this list is here so
-/// the gate does not go quiet about it in the meantime.
+/// This is a deliberate trade, not an oversight. Before it, `^` and `$` did
+/// not anchor on a carriage return at all, and PDFium emits `\r` in extracted
+/// text for real documents: every anchored query over such a file was quietly
+/// wrong. Now the wrongness is confined to patterns that anchor and also
+/// mention a terminator, which is a combination nobody types into a document
+/// search box by accident. `unanchored-literal-carriage-return` and
+/// `unanchored-negated-newline-class` are in the corpus to hold that
+/// confinement: without an anchor there is no copy and no approximation.
 const KNOWN_DIVERGENCES: &[(&str, &str)] = &[
     (
-        "caret-after-a-carriage-return",
-        "the regex crate breaks m-mode ^ on \\n only, JavaScript on all four line terminators",
+        "anchored-pattern-matching-a-literal-carriage-return",
+        "the normalized haystack has \\n where the original had \\r, so the literal finds nothing",
     ),
-    ("dollar-before-a-carriage-return", "the same gap at $; see the note above KNOWN_DIVERGENCES"),
+    (
+        "anchored-pattern-with-a-negated-newline-class",
+        "[^\\n] excludes the normalized \\r, so the run stops where JavaScript continues",
+    ),
 ];
 
 fn load(name: &str) -> DialectFile {

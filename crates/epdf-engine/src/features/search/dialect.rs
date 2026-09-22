@@ -226,3 +226,105 @@ mod tests {
         assert_eq!(to_regex_syntax(r"(?:ca)+t|^x$").as_deref(), Some(r"(?:ca)+t|^x$"));
     }
 }
+
+/// The three line terminators JavaScript recognizes that the `regex` crate
+/// does not: carriage return, LINE SEPARATOR and PARAGRAPH SEPARATOR.
+///
+/// `\n` is deliberately absent: it is the one both dialects agree on, and the
+/// one the others are normalized to.
+pub const EXTRA_LINE_TERMINATORS: [char; 3] = ['\r', '\u{2028}', '\u{2029}'];
+
+/// Whether the pattern contains `^` or `$` as an anchor.
+///
+/// Escaped (`\^`) and in-class (`[$]`) occurrences are literals and do not
+/// count, which is the whole reason this is a scan rather than a `contains`.
+///
+/// [`match_regex`](super::match_regex) uses this to decide whether a query
+/// needs the normalized haystack at all. Most do not, and a query that does
+/// not is matched against the real text with no substitution and therefore no
+/// approximation.
+pub fn has_line_anchor(pattern: &str) -> bool {
+    let mut in_class = false;
+    let mut chars = pattern.chars();
+    while let Some(ch) = chars.next() {
+        match ch {
+            '\\' => {
+                chars.next();
+            }
+            '[' if !in_class => in_class = true,
+            ']' if in_class => in_class = false,
+            '^' | '$' if !in_class => return true,
+            _ => {}
+        }
+    }
+    false
+}
+
+/// A copy of `text` with every JavaScript line terminator rewritten to `\n`,
+/// plus a map from each byte offset in the copy back to the original.
+///
+/// `None` when the text contains none of them, which is the common case and
+/// the one worth not copying for.
+///
+/// The map is per byte rather than per character because match offsets arrive
+/// as byte offsets. A substituted character is one character in each string,
+/// so a match boundary always lands on a character start in both.
+pub fn normalize_line_terminators(text: &str) -> Option<(String, Vec<usize>)> {
+    if !text.contains(EXTRA_LINE_TERMINATORS) {
+        return None;
+    }
+    let mut shadow = String::with_capacity(text.len());
+    let mut back = Vec::with_capacity(text.len() + 1);
+    for (offset, ch) in text.char_indices() {
+        let replacement = if EXTRA_LINE_TERMINATORS.contains(&ch) { '\n' } else { ch };
+        for _ in 0..replacement.len_utf8() {
+            back.push(offset);
+        }
+        shadow.push(replacement);
+    }
+    back.push(text.len());
+    Some((shadow, back))
+}
+
+#[cfg(test)]
+mod terminator_tests {
+    use super::*;
+
+    #[test]
+    fn an_anchor_is_only_an_anchor_outside_a_class_and_unescaped() {
+        assert!(has_line_anchor("^abc"));
+        assert!(has_line_anchor("abc$"));
+        assert!(has_line_anchor(r"a|^b"));
+        assert!(!has_line_anchor(r"\^abc"));
+        assert!(!has_line_anchor(r"abc\$"));
+        assert!(!has_line_anchor("[a^b]"));
+        assert!(!has_line_anchor("[$]"));
+        assert!(!has_line_anchor(r"[\]^]"));
+    }
+
+    #[test]
+    fn text_without_a_stray_terminator_is_not_copied() {
+        assert!(normalize_line_terminators("plain\ntext").is_none());
+        assert!(normalize_line_terminators("").is_none());
+    }
+
+    #[test]
+    fn every_javascript_terminator_becomes_a_newline() {
+        let (shadow, _) = normalize_line_terminators("a\rb\u{2028}c\u{2029}d\ne").unwrap();
+        assert_eq!(shadow, "a\nb\nc\nd\ne");
+    }
+
+    #[test]
+    fn the_map_carries_multi_byte_offsets_back() {
+        // U+2028 is three bytes in the original and one in the shadow, so
+        // everything after it shifts by two.
+        let original = "a\u{2028}b";
+        let (shadow, back) = normalize_line_terminators(original).unwrap();
+        assert_eq!(shadow, "a\nb");
+        assert_eq!(back.len(), shadow.len() + 1);
+        assert_eq!(back[0], 0);
+        assert_eq!(back[1], 1);
+        assert_eq!(back[2], 4);
+        assert_eq!(back[3], original.len());
+    }
+}

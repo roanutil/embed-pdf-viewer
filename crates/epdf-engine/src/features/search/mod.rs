@@ -201,7 +201,30 @@ fn is_word_char(ch: char) -> bool {
 ///   `\b`, and filtering after the match is also what survives the move to
 ///   RE2 server-side;
 /// - zero-length matches are skipped, because search UI cannot highlight
-///   nothing and skipping them is the infinite-loop guard for `a*`.
+///   nothing and skipping them is the infinite-loop guard for `a*`;
+/// - a pattern carrying `^` or `$` is matched against a haystack whose line
+///   terminators have been normalized, because the `regex` crate's `(?m)`
+///   breaks a line on `\n` alone.
+///
+/// # The normalized haystack, and what it costs
+///
+/// JavaScript `m` mode breaks a line on `\n`, `\r`, U+2028 and U+2029. The
+/// `regex` crate breaks on `\n`; `RegexBuilder::line_terminator` takes a
+/// single byte, and the lookbehind that would express the rest is in neither
+/// the crate nor the dialect. PDFium emits `\r` in extracted text for real
+/// documents, so leaving this alone means a `^`-anchored query quietly finds
+/// different matches on web and native.
+///
+/// So an anchored pattern runs against a copy of the text with those three
+/// rewritten to `\n`, and offsets map back through
+/// [`dialect::normalize_line_terminators`]. Two things follow, and both are
+/// covered by cases in the dialect corpus rather than left to be discovered:
+///
+/// - the copy cannot tell the terminators apart, so an anchored pattern that
+///   also matches a literal `\r` or a negated class like `[^\n]` sees the
+///   normalized character rather than the original one;
+/// - a pattern with no anchor is matched against the real text, untouched, so
+///   the approximation reaches only the queries that asked for line semantics.
 ///
 /// Offsets are converted to UTF-16 on the way out. The `regex` crate works in
 /// UTF-8 byte offsets, and the difference is invisible until a document
@@ -216,8 +239,21 @@ pub fn match_regex(
     validate_search_regex(pattern)?;
     let regex = compile(pattern, match_case)?;
 
-    // UTF-16 index of each UTF-8 byte offset that starts a character, built
-    // once rather than recounted per match.
+    // The `regex` crate breaks a line on `\n` and JavaScript breaks it on
+    // `\r` and the two separators as well, so an anchored pattern is run
+    // against a haystack whose terminators are normalized. See
+    // `normalized_haystack` for what that costs and why it is scoped to
+    // patterns that actually anchor.
+    let normalized =
+        if dialect::has_line_anchor(pattern) { dialect::normalize_line_terminators(text) } else { None };
+    let haystack: &str = normalized.as_ref().map_or(text, |(shadow, _)| shadow.as_str());
+    let to_original = |offset: usize| match &normalized {
+        Some((_, back)) => back[offset],
+        None => offset,
+    };
+
+    // UTF-16 index of each UTF-8 byte offset that starts a character in the
+    // ORIGINAL, built once rather than recounted per match.
     let mut utf16_at = vec![0usize; text.len() + 1];
     let mut utf16 = 0;
     for (offset, ch) in text.char_indices() {
@@ -228,17 +264,18 @@ pub fn match_regex(
 
     let mut out = Vec::new();
     let mut cursor = 0usize;
-    while cursor <= text.len() {
-        let Some(found) = regex.find_at(text, cursor) else { break };
+    while cursor <= haystack.len() {
+        let Some(found) = regex.find_at(haystack, cursor) else { break };
         let (start, end) = (found.start(), found.end());
         if start == end {
             // Advance one full code point past the empty match, matching the
             // `lastIndex` nudge in matchRegex.
-            cursor = start + text[start..].chars().next().map_or(1, char::len_utf8);
+            cursor = start + haystack[start..].chars().next().map_or(1, char::len_utf8);
             continue;
         }
         cursor = end;
 
+        let (start, end) = (to_original(start), to_original(end));
         if whole_word {
             let before = text[..start].chars().next_back().is_some_and(is_word_char);
             let after = text[end..].chars().next().is_some_and(is_word_char);
@@ -246,10 +283,7 @@ pub fn match_regex(
                 continue;
             }
         }
-        out.push(SearchMatchRange {
-            start: utf16_at[start],
-            length: utf16_at[end] - utf16_at[start],
-        });
+        out.push(SearchMatchRange { start: utf16_at[start], length: utf16_at[end] - utf16_at[start] });
     }
     Ok(out)
 }

@@ -276,6 +276,36 @@ export const REGEX_CASES: readonly RegexCase[] = [
     texts: ['one\rtwo\u2028three\u2029four'],
   },
   {
+    name: 'anchored-pattern-matching-a-literal-carriage-return',
+    covers:
+      'An anchored pattern runs against a haystack whose terminators are normalized, so a literal \\r in the same pattern sees the normalized character.',
+    pattern: '^a\\r',
+    matchCase: true,
+    texts: ['a\rb'],
+  },
+  {
+    name: 'anchored-pattern-with-a-negated-newline-class',
+    covers: 'The other face of the same normalization: [^\\n] over a carriage return.',
+    pattern: '^[^\\n]+',
+    matchCase: true,
+    texts: ['a\rb\nc'],
+  },
+  {
+    name: 'unanchored-negated-newline-class',
+    covers:
+      'Without an anchor there is no normalization and no approximation, which is what keeps the cost off ordinary queries.',
+    pattern: '[^\\n]+',
+    matchCase: true,
+    texts: ['a\rb\nc'],
+  },
+  {
+    name: 'unanchored-literal-carriage-return',
+    covers: 'Same again for a literal terminator.',
+    pattern: 'a\\rb',
+    matchCase: true,
+    texts: ['a\rb'],
+  },
+  {
     name: 'dot-and-the-other-line-terminators',
     covers: 'JavaScript . also stops at \\r, U+2028 and U+2029.',
     pattern: 'a.b',
