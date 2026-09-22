@@ -1,4 +1,10 @@
-export type DocumentMetadataTrapped = 'true' | 'false' | 'unknown';
+/**
+ * `/Trapped`, generated from the Rust definition in
+ * `crates/epdf-engine/src/dto.rs`. See `./MetadataPatch` for why.
+ */
+import type { DocumentMetadataTrapped } from './generated/DocumentMetadataTrapped';
+
+export type { DocumentMetadataTrapped };
 
 export interface DocumentMetadata {
   title: string | null;

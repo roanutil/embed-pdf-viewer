@@ -78,8 +78,14 @@ jobs:
       - name: cargo clippy
         run: cargo clippy --workspace --all-targets -- -D warnings
 
+      # Also regenerates the ts-rs bindings, which is why the dirty-diff check
+      # comes straight after it. Rust is canonical for the wire DTOs; a
+      # generated .ts that nobody regenerated is a second definition.
       - name: cargo test
         run: cargo test --workspace
+
+      - name: Generated TypeScript DTOs are current
+        run: git diff --exit-code -- packages/engine/core/src/dto/generated
 
   vectors:
     name: corpus and matrix are current

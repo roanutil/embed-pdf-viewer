@@ -19,6 +19,7 @@
 use std::collections::BTreeMap;
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use ts_rs::TS;
 
 /// A three-state patch field: leave it, clear it, or set it.
 ///
@@ -103,6 +104,12 @@ impl<'de, T: Deserialize<'de>> Deserialize<'de> for Patch<T> {
 /// Decodes a field that is optional but NOT nullable: absent is the only way
 /// to leave it alone, and an explicit `null` is an error.
 ///
+/// `ts-rs` prints "failed to parse serde attribute: deserialize_with =" for
+/// every field that names this, and then ignores it. That is the right
+/// outcome: `deserialize_with` changes how Rust reads the field, not what the
+/// TypeScript type is, and the type is what `ts-rs` emits. The warning is
+/// noise, not a signal.
+///
 /// `Option<T>` alone would accept `null` and quietly read it as absent, which
 /// is the same flattening [`Patch`] exists to prevent, one field over. The zod
 /// schema spells these `.optional()` without `.nullable()`
@@ -161,20 +168,29 @@ impl<'de> Deserialize<'de> for IsoDateTime {
 
 /// `/Trapped`, a tri-valued enum that is always present, so it has no
 /// clear-form: omit it to leave it alone.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "lowercase")]
+#[ts(export, export_to = "../../../packages/engine/core/src/dto/generated/")]
 pub enum DocumentMetadataTrapped {
     True,
     False,
     Unknown,
 }
 
-/// Three-state patch over the document Info dictionary.
+/// Three-state patch over the document Info dictionary, consistent with the
+/// annotation patches:
+///
+/// - field absent: leave the stored value alone
+/// - `null`: clear the field
+/// - a value: set the field to it
 ///
 /// Standard fields map to PDF keys (`title` to `/Title`, `created` to
 /// `/CreationDate`). `created` and `modified` are ISO 8601 on the wire and the
 /// engine formats them into PDF date syntax on write
 /// (`crate::clock::format_pdf_date`).
+///
+/// `trapped` has no clear form, because it is a tri-valued enum that is always
+/// present. Omit it to leave it untouched.
 ///
 /// `custom` is a per-key three-state map over non-standard Info entries: a
 /// string sets the key, `null` removes it, and an absent key leaves it. The
@@ -182,26 +198,35 @@ pub enum DocumentMetadataTrapped {
 /// "clear the concept of custom entries" distinct from clearing each key.
 /// `BTreeMap` rather than `HashMap` so the serialized order is the same on
 /// every run, which the corpus needs.
-#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[ts(export, export_to = "../../../packages/engine/core/src/dto/generated/")]
 pub struct MetadataPatch {
     #[serde(default, skip_serializing_if = "Patch::is_keep")]
+    #[ts(type = "string | null", optional)]
     pub title: Patch<String>,
     #[serde(default, skip_serializing_if = "Patch::is_keep")]
+    #[ts(type = "string | null", optional)]
     pub author: Patch<String>,
     #[serde(default, skip_serializing_if = "Patch::is_keep")]
+    #[ts(type = "string | null", optional)]
     pub subject: Patch<String>,
     #[serde(default, skip_serializing_if = "Patch::is_keep")]
+    #[ts(type = "string | null", optional)]
     pub keywords: Patch<String>,
     #[serde(default, skip_serializing_if = "Patch::is_keep")]
+    #[ts(type = "string | null", optional)]
     pub producer: Patch<String>,
     #[serde(default, skip_serializing_if = "Patch::is_keep")]
+    #[ts(type = "string | null", optional)]
     pub creator: Patch<String>,
     /// ISO 8601 for `/CreationDate`.
     #[serde(default, skip_serializing_if = "Patch::is_keep")]
+    #[ts(type = "string | null", optional)]
     pub created: Patch<IsoDateTime>,
     /// ISO 8601 for `/ModDate`.
     #[serde(default, skip_serializing_if = "Patch::is_keep")]
+    #[ts(type = "string | null", optional)]
     pub modified: Patch<IsoDateTime>,
     /// Two-state: `/Trapped` has no clear form.
     #[serde(
@@ -209,6 +234,7 @@ pub struct MetadataPatch {
         deserialize_with = "optional_not_nullable",
         skip_serializing_if = "Option::is_none"
     )]
+    #[ts(optional)]
     pub trapped: Option<DocumentMetadataTrapped>,
     /// Per-key three-state: `None` removes the key. The map itself is
     /// two-state, so `"custom": null` is rejected rather than read as absent.
@@ -217,6 +243,7 @@ pub struct MetadataPatch {
         deserialize_with = "optional_not_nullable",
         skip_serializing_if = "Option::is_none"
     )]
+    #[ts(type = "Record<string, string | null>", optional)]
     pub custom: Option<BTreeMap<String, Option<String>>>,
 }
 
