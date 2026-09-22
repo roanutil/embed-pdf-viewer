@@ -1,0 +1,146 @@
+/**
+ * Hand-written inputs for the schema parity vectors.
+ *
+ * These are the only vectors in this package that are not read out of a
+ * running engine. They are JSON documents someone might send, and the question
+ * they ask is narrow: does the handwritten zod schema and the Rust type agree
+ * on which ones are well formed, and on what the accepted ones mean.
+ *
+ * `multiplatform-plan.md` Section 11 asks for exactly this, and names the
+ * cases: "omitted/null/value, explicit undefined, fields that disallow null
+ * (such as `MetadataPatch.trapped`), unknown enums, numeric widths, nested
+ * unions, empty collections, invalid inputs and each schema's unknown-field
+ * behavior." Explicit `undefined` is not JSON-expressible and lives in a
+ * TypeScript-only test; everything else is here.
+ *
+ * The generator records zod's verdict; it does not encode one. If the schema
+ * changes, the vector changes, and the Rust runner is what fails.
+ */
+
+/** Types the parity harness covers. One vector file each. */
+export type SchemaName = 'MetadataPatch';
+
+export interface SchemaCase {
+  /** Stable slug, and what a failure names. */
+  readonly name: string;
+  /** Why the case exists, in one line. */
+  readonly covers: string;
+  /** The JSON document as it arrives on the wire. */
+  readonly input: unknown;
+}
+
+export const SCHEMA_CASES: Readonly<Record<SchemaName, readonly SchemaCase[]>> = {
+  MetadataPatch: [
+    { name: 'empty', covers: 'Every field omitted: keep everything.', input: {} },
+    {
+      name: 'null-clears',
+      covers: 'An explicit null is a clear, not an omission.',
+      input: { title: null },
+    },
+    {
+      name: 'value-sets',
+      covers: 'A value is a set.',
+      input: { title: 'Quarterly Report' },
+    },
+    {
+      name: 'empty-string-is-a-set',
+      covers: 'An empty string sets the field to empty; it is not a clear.',
+      input: { title: '' },
+    },
+    {
+      name: 'several-fields-at-once',
+      covers: 'All three states in one document.',
+      input: { title: null, author: 'Ada', subject: 'S' },
+    },
+    {
+      name: 'unknown-field',
+      covers: 'The schema is .strict(), so a typo is an error rather than a dropped key.',
+      input: { titel: 'typo' },
+    },
+    {
+      name: 'wrong-type',
+      covers: 'A number where a string belongs.',
+      input: { title: 42 },
+    },
+    {
+      name: 'trapped-value',
+      covers: 'The tri-valued enum, set.',
+      input: { trapped: 'unknown' },
+    },
+    {
+      name: 'trapped-null',
+      covers: 'trapped is .optional() without .nullable(): null is an error, not an omission.',
+      input: { trapped: null },
+    },
+    {
+      name: 'trapped-unknown-member',
+      covers: 'A value outside the enum.',
+      input: { trapped: 'maybe' },
+    },
+    {
+      name: 'custom-empty',
+      covers: 'An empty map is a present map, not an absent one.',
+      input: { custom: {} },
+    },
+    {
+      name: 'custom-per-key-three-state',
+      covers: 'A key set, a key removed, and every other key left alone.',
+      input: { custom: { Department: 'Legal', Obsolete: null } },
+    },
+    {
+      name: 'custom-null',
+      covers: 'The map itself is two-state: there is no "clear the concept of custom entries".',
+      input: { custom: null },
+    },
+    {
+      name: 'custom-empty-key',
+      covers: 'An empty key is a key. Whether the engine then rejects it is a different gate.',
+      input: { custom: { '': 'empty key' } },
+    },
+    {
+      name: 'created-millisecond-precision',
+      covers: 'The form iso_8601 emits.',
+      input: { created: '2026-09-22T08:00:00.000Z' },
+    },
+    {
+      name: 'created-second-precision',
+      covers: 'No fractional part.',
+      input: { created: '2026-09-22T08:00:00Z' },
+    },
+    {
+      name: 'created-microsecond-precision',
+      covers: 'zod allows any number of fractional digits.',
+      input: { created: '2026-09-22T08:00:00.123456Z' },
+    },
+    {
+      name: 'created-leap-day',
+      covers: 'February 29th in a leap year is a real date.',
+      input: { created: '2024-02-29T00:00:00Z' },
+    },
+    {
+      name: 'created-impossible-date',
+      covers: 'February 30th is not, in any year.',
+      input: { created: '2025-02-30T00:00:00Z' },
+    },
+    {
+      name: 'created-offset',
+      covers: 'zod datetime() defaults to offset: false, so only Z is accepted.',
+      input: { created: '2026-09-22T08:00:00+02:00' },
+    },
+    {
+      name: 'created-not-a-date',
+      covers: 'An arbitrary string. A Patch<String> would take it; the schema does not.',
+      input: { created: 'not-a-date' },
+    },
+    {
+      name: 'created-null',
+      covers: 'A date field is nullable, so null clears it.',
+      input: { created: null },
+    },
+    {
+      name: 'modified-not-a-date',
+      covers: 'The same rule on the second date field, in case only one was wired.',
+      input: { modified: 'yesterday' },
+    },
+  ],
+};

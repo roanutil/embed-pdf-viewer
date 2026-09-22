@@ -117,6 +117,48 @@ where
     T::deserialize(deserializer).map(Some)
 }
 
+/// An ISO 8601 instant in the exact form the wire carries: UTC, with a
+/// literal `Z`.
+///
+/// A newtype rather than `String` because `wire/schemas.ts` spells these
+/// fields `z.string().datetime()`, which refuses offsets, impossible calendar
+/// dates and anything that is not a timestamp. A `Patch<String>` here would
+/// accept all three, so the same request would be well formed on mobile and
+/// rejected on web. See [`crate::clock::is_iso_8601_utc`] for what exactly is
+/// accepted.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(transparent)]
+pub struct IsoDateTime(String);
+
+impl IsoDateTime {
+    /// Validates and wraps, returning the offending string on rejection.
+    pub fn new(value: impl Into<String>) -> Result<Self, String> {
+        let value = value.into();
+        if crate::clock::is_iso_8601_utc(&value) { Ok(Self(value)) } else { Err(value) }
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl std::fmt::Display for IsoDateTime {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+impl<'de> Deserialize<'de> for IsoDateTime {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let raw = String::deserialize(deserializer)?;
+        Self::new(raw).map_err(|value| {
+            serde::de::Error::custom(format!(
+                "expected an ISO 8601 UTC instant (YYYY-MM-DDTHH:MM:SS[.fff]Z), got `{value}`"
+            ))
+        })
+    }
+}
+
 /// `/Trapped`, a tri-valued enum that is always present, so it has no
 /// clear-form: omit it to leave it alone.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -157,10 +199,10 @@ pub struct MetadataPatch {
     pub creator: Patch<String>,
     /// ISO 8601 for `/CreationDate`.
     #[serde(default, skip_serializing_if = "Patch::is_keep")]
-    pub created: Patch<String>,
+    pub created: Patch<IsoDateTime>,
     /// ISO 8601 for `/ModDate`.
     #[serde(default, skip_serializing_if = "Patch::is_keep")]
-    pub modified: Patch<String>,
+    pub modified: Patch<IsoDateTime>,
     /// Two-state: `/Trapped` has no clear form.
     #[serde(
         default,
@@ -260,7 +302,8 @@ mod tests {
         // plain Option<T> reading it as absent would accept what the schema
         // rejects.
         assert!(
-            serde_json::from_value::<MetadataPatch>(serde_json::json!({ "trapped": null })).is_err()
+            serde_json::from_value::<MetadataPatch>(serde_json::json!({ "trapped": null }))
+                .is_err()
         );
         assert!(
             serde_json::from_value::<MetadataPatch>(serde_json::json!({ "custom": null })).is_err()
@@ -288,10 +331,8 @@ mod tests {
     fn an_unknown_field_is_rejected_rather_than_dropped() {
         // The zod schema is `.strict()`, so anything it would refuse must not
         // be silently ignored here either.
-        let err = serde_json::from_value::<MetadataPatch>(
-            serde_json::json!({ "titel": "typo" }),
-        )
-        .unwrap_err();
+        let err = serde_json::from_value::<MetadataPatch>(serde_json::json!({ "titel": "typo" }))
+            .unwrap_err();
         assert!(err.to_string().contains("titel"), "{err}");
     }
 }

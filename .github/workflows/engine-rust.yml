@@ -1,0 +1,143 @@
+name: Engine Rust core
+
+# The Rust half of the multiplatform port (multiplatform-plan.md). Two things
+# have to hold together for the port to mean anything:
+#
+#   1. The Rust crates build, and every reader reproduces the frozen
+#      conformance vectors under tooling/engine-conformance/vectors/.
+#   2. Those vectors still describe what the shipping TypeScript engine
+#      produces.
+#
+# They are separate jobs because they need different things. The first needs a
+# native libembedpdf and no JavaScript; the second needs the WASM runtime
+# payload and no Rust. A green first job with a stale corpus proves only that
+# Rust still agrees with a snapshot of the past, which is why the second job
+# is not optional.
+
+on:
+  pull_request:
+    paths:
+      - 'crates/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'rust-toolchain.toml'
+      - 'tooling/engine-conformance/**'
+      - 'packages/engine/**'
+      - '.github/workflows/engine-rust.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'crates/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'rust-toolchain.toml'
+      - 'tooling/engine-conformance/**'
+      - 'packages/engine/**'
+      - '.github/workflows/engine-rust.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: engine-rust-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CI: true
+
+jobs:
+  cargo:
+    name: cargo test + corpus replay
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      # The fork target whose prebuilt libembedpdf the host build links.
+      FORK_TARGET: linux-x64
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      # rust-toolchain.toml pins the channel and every cross-compilation
+      # target. This job only builds for the host; the mobile and WASM targets
+      # belong to the distribution workflow.
+      - name: Install Rust
+        run: rustup show active-toolchain || rustup toolchain install
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Fetch the fork's prebuilt libembedpdf
+        run: bash packages/engine/runtime/scripts/fetch-libpdfium.sh "$FORK_TARGET"
+
+      # No `cargo fmt --check` yet: the crates predate rustfmt.toml and twelve
+      # of them still differ from it. Normalizing them is a separate change
+      # from the port, and doing it inside a port commit buries the port.
+      - name: cargo clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: cargo test
+        run: cargo test --workspace
+
+  vectors:
+    name: corpus and matrix are current
+    needs: build-runtime
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v5
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download engine-runtime artifacts
+        uses: actions/download-artifact@v7
+        with:
+          pattern: engine-runtime-*
+          path: packages/engine/runtime/_artifacts
+
+      - name: Stage runtime payloads
+        shell: bash
+        run: |
+          shopt -s nullglob
+          for dir in packages/engine/runtime/_artifacts/engine-runtime-*; do
+            target="${dir##*/engine-runtime-}"
+            mkdir -p "packages/engine/runtime/npm/$target"
+            cp -R "$dir/." "packages/engine/runtime/npm/$target/"
+          done
+          rm -rf packages/engine/runtime/_artifacts
+
+      # Regenerates every vector from the shipping engine and fails on any
+      # difference, including a fixture the generator can no longer reproduce.
+      - name: Fixtures are reproducible
+        run: |
+          node tooling/engine-conformance/fixtures/generate.mjs
+          git diff --exit-code -- tooling/engine-conformance/fixtures
+
+      - name: Vectors are current
+        run: pnpm --filter @embedpdf/tooling-engine-conformance run vectors:check
+
+      # The zod schemas stay handwritten while the Rust types are canonical.
+      # This is what holds the two together: zod's verdict on each case is
+      # recorded here, and crates/epdf-engine/tests/schema_parity.rs replays it.
+      - name: Schema parity vectors are current
+        run: pnpm --filter @embedpdf/tooling-engine-conformance run schema:check
+
+      # multiplatform-port-order.md Section 6: a kind added to
+      # worker-protocol.ts without a row in the matrix fails here, and so does
+      # a row for a kind that no longer exists.
+      - name: Operation matrix covers every worker kind
+        run: pnpm --filter @embedpdf/tooling-engine-conformance run operations:check
+
+  build-runtime:
+    uses: ./.github/workflows/build-engine-runtime.yml
+    secrets: inherit

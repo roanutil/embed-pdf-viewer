@@ -118,7 +118,7 @@ fn renders_a_colored_page_with_bgra_channels_in_order() {
     // A grayscale page cannot tell a B-to-R swap from a correct render, so
     // assert the page actually has a channel imbalance to test against.
     let (mut blue, mut red) = (0u64, 0u64);
-    for pixel in bitmap.bgra.chunks_exact(4) {
+    for pixel in bitmap.bgra.as_chunks::<4>().0 {
         blue += u64::from(pixel[0]);
         red += u64::from(pixel[2]);
     }

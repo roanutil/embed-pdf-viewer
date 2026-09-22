@@ -5,6 +5,8 @@
 //! examples rather than carrying a second copy, so a fixture fix reaches both
 //! implementations at once.
 
+pub mod corpus;
+
 use std::path::{Path, PathBuf};
 
 /// The workspace root, derived from the calling crate's manifest directory.

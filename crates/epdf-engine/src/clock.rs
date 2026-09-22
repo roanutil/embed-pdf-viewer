@@ -81,7 +81,7 @@ struct Civil {
 fn days_from_civil(year: i64, month: u32, day: u32) -> i64 {
     let y = if month <= 2 { year - 1 } else { year };
     let era = if y >= 0 { y } else { y - 399 } / 400;
-    let yoe = (y - era * 400) as i64; // [0, 399]
+    let yoe = y - era * 400; // [0, 399]
     let m = month as i64;
     let doy = (153 * (if m > 2 { m - 3 } else { m + 9 }) + 2) / 5 + day as i64 - 1; // [0, 365]
     let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy; // [0, 146096]
@@ -233,6 +233,64 @@ pub fn format_pdf_date(at: Timestamp) -> Option<String> {
     ))
 }
 
+/// Accepts exactly the strings `z.string().datetime()` accepts in
+/// `wire/schemas.ts`: `YYYY-MM-DDTHH:MM:SS[.fraction]Z`, four-digit year, a
+/// real calendar date, and a literal `Z`.
+///
+/// The wire carries ISO 8601 for `/CreationDate` and `/ModDate`, and the zod
+/// schema is the shipping validator for it. A Rust type that took any string
+/// there would accept `+02:00` offsets, `2025-02-30`, and `not-a-date`, which
+/// the schema refuses: the two would disagree about whether a request is well
+/// formed, and only one of them runs on mobile.
+///
+/// Deliberately narrow, matching zod rather than ISO 8601 at large: no offsets
+/// (zod's default has `offset: false`), no `local` form, no leap second, no
+/// expanded year. `iso_8601` never emits any of those either.
+pub fn is_iso_8601_utc(value: &str) -> bool {
+    let bytes = value.as_bytes();
+    // YYYY-MM-DDTHH:MM:SS plus the mandatory Z is the shortest accepted form.
+    if bytes.len() < 20 || bytes[bytes.len() - 1] != b'Z' {
+        return false;
+    }
+    let digits = |from: usize, to: usize| bytes[from..to].iter().all(u8::is_ascii_digit);
+    if !(digits(0, 4)
+        && bytes[4] == b'-'
+        && digits(5, 7)
+        && bytes[7] == b'-'
+        && digits(8, 10)
+        && bytes[10] == b'T'
+        && digits(11, 13)
+        && bytes[13] == b':'
+        && digits(14, 16)
+        && bytes[16] == b':'
+        && digits(17, 19))
+    {
+        return false;
+    }
+
+    // Anything between the seconds and the Z must be a dot and at least one
+    // digit. zod's `(\.\d+)?` allows any precision, so this does too.
+    let fraction = &bytes[19..bytes.len() - 1];
+    if !fraction.is_empty()
+        && (fraction[0] != b'.'
+            || fraction.len() < 2
+            || !fraction[1..].iter().all(u8::is_ascii_digit))
+    {
+        return false;
+    }
+
+    let num = |from: usize, to: usize| value[from..to].parse::<i64>().unwrap_or(-1);
+    let (year, month, day) = (num(0, 4), num(5, 7), num(8, 10));
+    let (hour, minute, second) = (num(11, 13), num(14, 16), num(17, 19));
+    if !(1..=12).contains(&month) || day < 1 || hour > 23 || minute > 59 || second > 59 {
+        return false;
+    }
+    // Rejects a day past the end of its month, February 29th in a non-leap
+    // year included, without a month-length table.
+    civil_from_days(days_from_civil(year, month as u32, day as u32))
+        == (year, month as u32, day as u32)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -340,5 +398,61 @@ mod tests {
         let clock = FixedClock(Timestamp::utc(42));
         assert_eq!(clock.now(), clock.now());
         assert_eq!(clock.now().epoch_millis, 42);
+    }
+
+    #[test]
+    fn iso_8601_validation_accepts_what_the_zod_schema_accepts() {
+        for accepted in [
+            "2026-09-22T08:00:00Z",
+            "2026-09-22T08:00:00.000Z",
+            "2026-09-22T08:00:00.123456Z",
+            "2024-02-29T00:00:00Z",
+            "0000-01-01T00:00:00Z",
+            "9999-12-31T23:59:59Z",
+        ] {
+            assert!(is_iso_8601_utc(accepted), "{accepted}");
+        }
+        // What iso_8601 itself emits must always be accepted, or a value this
+        // engine produced would fail validation on the way back in.
+        assert!(is_iso_8601_utc(&iso_8601(0)));
+        assert!(is_iso_8601_utc(&iso_8601(1_789_000_000_000)));
+    }
+
+    #[test]
+    fn iso_8601_validation_rejects_what_the_zod_schema_rejects() {
+        for rejected in [
+            "",
+            "not-a-date",
+            // Offsets: zod's datetime() defaults to offset: false.
+            "2026-09-22T08:00:00+02:00",
+            "2026-09-22T08:00:00-0200",
+            // No zone at all.
+            "2026-09-22T08:00:00",
+            // Impossible calendar dates.
+            "2025-02-30T00:00:00Z",
+            "2025-02-29T00:00:00Z",
+            "2025-04-31T00:00:00Z",
+            "2025-13-01T00:00:00Z",
+            "2025-00-10T00:00:00Z",
+            "2025-01-00T00:00:00Z",
+            // Out-of-range clock fields, leap second included.
+            "2025-01-01T24:00:00Z",
+            "2025-01-01T00:60:00Z",
+            "2025-01-01T00:00:60Z",
+            // A dot with no digits after it.
+            "2025-01-01T00:00:00.Z",
+            // Separators in the wrong place.
+            "2025/01/01T00:00:00Z",
+            "2025-01-01 00:00:00Z",
+            // Lower-case zone, and a trailing space.
+            "2025-01-01T00:00:00z",
+            "2025-01-01T00:00:00Z ",
+            // Expanded years: iso_8601 emits these outside 0000..=9999, and
+            // the schema refuses them. Documented rather than fixed here.
+            "+010000-01-01T00:00:00Z",
+            "-000001-01-01T00:00:00Z",
+        ] {
+            assert!(!is_iso_8601_utc(rejected), "{rejected}");
+        }
     }
 }

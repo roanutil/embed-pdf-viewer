@@ -11,3 +11,8 @@ public
 /static/
 # Generated: one long base64 line per font face (docs/kit/scripts/build-og-fonts.mjs).
 docs/kit/src/og/fonts.data.ts
+# Generated: rendered from src/operations.ts, and CI fails when the two differ
+# (tooling/engine-conformance/src/check-operations.ts).
+tooling/engine-conformance/OPERATIONS.md
+# Generated: frozen conformance vectors, one line per page by design.
+tooling/engine-conformance/vectors/

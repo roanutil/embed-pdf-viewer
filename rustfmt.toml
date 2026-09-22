@@ -1,0 +1,7 @@
+# The style the crates were written in. Without this file, rustfmt's defaults
+# reflow most of them: the sources assume `Max` small-heuristics, which keeps
+# a short struct literal, call or match arm on one line rather than exploding
+# it across four.
+edition = "2024"
+max_width = 100
+use_small_heuristics = "Max"

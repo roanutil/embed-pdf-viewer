@@ -343,6 +343,10 @@ dependencies = [
 [[package]]
 name = "test-support"
 version = "0.0.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
 
 [[package]]
 name = "unicode-ident"

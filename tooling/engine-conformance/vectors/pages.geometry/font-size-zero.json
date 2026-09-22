@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "operation": "pages.geometry",
+  "case": "font-size-zero",
+  "fixture": "packages/engine/main/test/fixtures/font_size_zero.pdf",
+  "covers": "The degenerate-glyph convention in isolation. Names Helvetica and embeds nothing, which is safe here and only here: every glyph comes back zeroed and flagged empty, so no substituted metric reaches the snapshot.",
+  "pages": [
+  {"index":0,"pageObjectNumber":3,"snapshot":{"runs":[{"rect":{"left":0,"bottom":0,"right":0,"top":0},"charStart":0,"glyphs":[{"looseBox":{"left":0,"bottom":0,"right":0,"top":0},"flags":2}],"fontSize":0}]}}
+  ]
+}
