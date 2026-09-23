@@ -269,3 +269,140 @@ fn two_layers_over_one_base_share_its_parse() {
         14,
     );
 }
+
+// --- The two security frames.
+
+#[test]
+fn probing_a_file_needs_no_session() {
+    use epdf_engine::clock::SystemClock;
+    use epdf_engine::features::security::state::{EncryptionState, OpenedAs};
+
+    // document.probeSecurityFile is the one frame with no session: it answers
+    // what a file's security is before anybody opens it.
+    let registry = SessionRegistry::new();
+    let path = test_support::workspace_root().join(ENCRYPTED);
+
+    let blocked = registry.probe_security_file(&path, None, &SystemClock).expect("probe");
+    assert_eq!(blocked.encryption_state, EncryptionState::Encrypted);
+    assert_eq!(blocked.encryption_requires_password, Some(true));
+
+    let opened = registry.probe_security_file(&path, Some("user"), &SystemClock).expect("probe");
+    assert_eq!(opened.pdf_opened_as, Some(OpenedAs::User));
+    assert_eq!(opened.security_handler_revision, Some(4));
+    assert!(registry.is_empty(), "probing opened no session");
+}
+
+#[test]
+fn probing_a_file_and_probing_its_bytes_agree() {
+    use epdf_engine::clock::{FixedClock, Timestamp};
+
+    // The two differ in where the bytes come from and in nothing else, which
+    // is worth pinning because they are separate code paths into PDFium.
+    let clock = FixedClock(Timestamp::utc(1_700_000_000_000));
+    let registry = SessionRegistry::new();
+    let path = test_support::workspace_root().join(ENCRYPTED);
+
+    let from_file = registry.probe_security_file(&path, Some("user"), &clock).expect("file");
+    let from_bytes =
+        registry.probe_security_bytes(&encrypted(), Some("user"), &clock).expect("bytes");
+    assert_eq!(from_file, from_bytes);
+}
+
+#[test]
+fn probing_a_missing_file_reports_unknown_rather_than_failing() {
+    use epdf_engine::clock::SystemClock;
+    use epdf_engine::features::security::state::EncryptionState;
+
+    // The probe answers "what do we know about this file's security", and
+    // nothing is an answer. An error here would make a caller handle the
+    // absent-file case twice.
+    let registry = SessionRegistry::new();
+    let missing = test_support::workspace_root().join("no-such-document.pdf");
+    let info = registry.probe_security_file(&missing, None, &SystemClock).expect("probe");
+    assert_eq!(info.encryption_state, EncryptionState::Unknown);
+    assert_eq!(info.pdf_permissions_bits, None);
+}
+
+#[test]
+fn checking_a_password_against_an_open_session_does_not_change_it() {
+    use epdf_engine::clock::SystemClock;
+    use epdf_engine::features::security::reader::PasswordMode;
+    use epdf_engine::features::security::state::OpenedAs;
+
+    let mut registry = SessionRegistry::new();
+    let key = SessionKey::document("doc");
+    registry
+        .open_memory(key.clone(), encrypted(), Some("user"), SessionAuthority::unrestricted())
+        .expect("open");
+
+    let as_owner = registry
+        .check_password_permissions(&key, "owner", PasswordMode::Any, &SystemClock)
+        .expect("owner password");
+    assert_eq!(as_owner.pdf_opened_as, Some(OpenedAs::Owner));
+
+    // And it still tells the two apart. Opening elevates PDFium with
+    // EPDF_SetRuntimeOwnerPermissions, which makes EPDF_IsOwnerUnlocked report
+    // true for this session; a check that read that flag instead of the
+    // password would answer Owner here too.
+    let as_user = registry
+        .check_password_permissions(&key, "user", PasswordMode::Any, &SystemClock)
+        .expect("user password");
+    assert_eq!(as_user.pdf_opened_as, Some(OpenedAs::User));
+
+    // Owner mode refuses the user password, which is the whole point of the
+    // mode existing.
+    assert_eq!(
+        registry
+            .check_password_permissions(&key, "user", PasswordMode::Owner, &SystemClock)
+            .expect_err("user password in owner mode")
+            .code,
+        EngineErrorCode::DocPasswordIncorrect,
+    );
+
+    // The session is still the one that was opened with the user password.
+    assert_eq!(registry.session(&key).expect("open").page_count().expect("pages"), 1);
+}
+
+#[test]
+fn checking_a_password_on_a_closed_session_reports_not_open() {
+    use epdf_engine::clock::SystemClock;
+    use epdf_engine::features::security::reader::PasswordMode;
+
+    let registry = SessionRegistry::new();
+    let error = registry
+        .check_password_permissions(
+            &SessionKey::document("nope"),
+            "user",
+            PasswordMode::Any,
+            &SystemClock,
+        )
+        .expect_err("no session");
+    assert_eq!(error.code, EngineErrorCode::DocNotOpen);
+}
+
+#[test]
+fn a_shut_down_registry_refuses_both_security_frames() {
+    use epdf_engine::clock::SystemClock;
+    use epdf_engine::features::security::reader::PasswordMode;
+
+    let mut registry = SessionRegistry::new();
+    registry.shutdown();
+
+    let path = test_support::workspace_root().join(ENCRYPTED);
+    assert_eq!(
+        registry.probe_security_file(&path, None, &SystemClock).expect_err("shut down").code,
+        EngineErrorCode::RuntimeUnavailable,
+    );
+    assert_eq!(
+        registry
+            .check_password_permissions(
+                &SessionKey::document("doc"),
+                "user",
+                PasswordMode::Any,
+                &SystemClock,
+            )
+            .expect_err("shut down")
+            .code,
+        EngineErrorCode::RuntimeUnavailable,
+    );
+}

@@ -99,11 +99,21 @@ pub fn probe_bytes(
         Err(_) => return unknown_security(now),
     };
 
+    describe(&document, now)
+    // `document` drops here, closing the handle.
+}
+
+/// The cold-probe shape for a document that opened.
+///
+/// Shared by [`probe_bytes`] and [`probe_file`] so the two cannot drift: they
+/// differ in where the bytes come from and in nothing else.
+///
+/// Reads the effective permission word. For a document opened with no password
+/// or a user password that is also the declared word; opened with an owner
+/// password it is the elevated one, which is the answer a caller asking "what
+/// may I do with this file" wants.
+fn describe(document: &Document, now: i64) -> SecurityProbeInfo {
     let encrypted = document.is_encrypted();
-    // The cold probe reads the effective word. For a document opened with no
-    // password or a user password that is also the declared word; opened with
-    // an owner password it is the elevated one, which is the answer a caller
-    // asking "what may I do with this file" wants.
     let bits = normalize_u32(document.permissions() as i64);
     let opened_as = if !encrypted {
         OpenedAs::None
@@ -118,7 +128,34 @@ pub fn probe_bytes(
         encrypted.then(|| document.security_handler_revision()),
         now,
     )
-    // `document` drops here, closing the handle.
+}
+
+/// Inspect a file's security without reading it into memory.
+///
+/// What `SecurityReader.probeFile` does, and now by the same means: PDFium
+/// reads the ranges it needs through a [`pdfium::FileAccess`] rather than
+/// being handed a copy. For a large document the difference is the whole file
+/// against the few pages a security probe touches.
+///
+/// A file that cannot be opened at all reports the unknown shape rather than
+/// an error, because that is what the shape is for: the probe answers "what do
+/// we know about this file's security", and "nothing" is an answer.
+pub fn probe_file(
+    library: Rc<Library>,
+    path: &std::path::Path,
+    password: Option<&str>,
+    clock: &dyn Clock,
+) -> SecurityProbeInfo {
+    let now = clock.now().epoch_millis;
+    let Ok(access) = pdfium::FileAccess::from_file(path) else {
+        return unknown_security(now);
+    };
+    match Document::from_file_access(library, &access, password) {
+        Ok(document) => describe(&document, now),
+        Err(PdfiumError::Password) => password_blocked(now),
+        Err(PdfiumError::Security) => unsupported_security(now),
+        Err(_) => unknown_security(now),
+    }
 }
 
 /// Snapshot an already-open document's security.

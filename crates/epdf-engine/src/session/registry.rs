@@ -25,8 +25,13 @@ use pdfium::BaseDocument;
 use super::authority::SessionAuthority;
 use super::base_registry::BaseDocumentRegistry;
 use super::document::DocumentSession;
+use pdfium::Library;
+
 use crate::cancel::CancelToken;
+use crate::clock::Clock;
 use crate::error::{EngineError, EngineErrorCode};
+use crate::features::security::reader::{PasswordMode, check_password, probe_bytes, probe_file};
+use crate::features::security::state::SecurityProbeInfo;
 
 /// Which session a request is addressed to.
 ///
@@ -276,6 +281,50 @@ impl SessionRegistry {
             }
         }
         closed
+    }
+
+    /// `document.probeSecurityFile`: what a file's security is, before any
+    /// session exists.
+    ///
+    /// The one frame that needs no session, which is why it takes a path
+    /// rather than a key. It opens and closes its own document.
+    pub fn probe_security_file(
+        &self,
+        path: &std::path::Path,
+        password: Option<&str>,
+        clock: &dyn Clock,
+    ) -> Result<SecurityProbeInfo, EngineError> {
+        self.refuse_if_destroyed()?;
+        Ok(probe_file(Library::acquire(), path, password, clock))
+    }
+
+    /// `document.probeSecurityFile`, from bytes already in hand.
+    pub fn probe_security_bytes(
+        &self,
+        bytes: &[u8],
+        password: Option<&str>,
+        clock: &dyn Clock,
+    ) -> Result<SecurityProbeInfo, EngineError> {
+        self.refuse_if_destroyed()?;
+        Ok(probe_bytes(Library::acquire(), bytes, password, clock))
+    }
+
+    /// `document.checkPasswordPermissions`: would this password help?
+    ///
+    /// Answered against an open session without changing it, so a prompt can
+    /// ask before committing to a reopen. A locked session is the one case
+    /// this cannot serve: there is no open document to check against, and the
+    /// caller wants [`SessionRegistry::unlock`] instead.
+    pub fn check_password_permissions(
+        &self,
+        key: &SessionKey,
+        password: &str,
+        mode: PasswordMode,
+        clock: &dyn Clock,
+    ) -> Result<SecurityProbeInfo, EngineError> {
+        self.refuse_if_destroyed()?;
+        let session = self.session(key)?;
+        check_password(session.document()?.document(), password, mode, clock)
     }
 
     /// Register a job's cancel token so [`SessionRegistry::abort`] can reach it.
