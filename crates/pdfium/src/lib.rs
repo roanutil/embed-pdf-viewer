@@ -21,7 +21,7 @@ mod page;
 mod text;
 
 pub use bitmap::Bitmap;
-pub use document::Document;
+pub use document::{Document, PasswordPermissions};
 pub use error::PdfiumError;
 pub use geom::{MatrixF, QuadF, RectF};
 pub use library::Library;

@@ -13,6 +13,7 @@ regenerates the corpus on purpose and says why in the commit.
 
 ```
 fixtures/generate.mjs                 documents generated for the corpus
+fixtures/encrypt.mjs                  the Standard security handler, for the encrypted ones
 fixtures/*.pdf                        their output, committed
 src/corpus.ts                         which document, which pages, which operation
 src/generate-vectors.ts               reads every case through the TypeScript engine
@@ -195,6 +196,31 @@ Worth knowing if you extend it: the runner compares TypeScript's
 `{kind, name}` objects against Rust's enum by hand rather than deriving
 `Deserialize` on the enum. Deriving it would make the two shapes agree by
 construction, which is the one thing this gate is for.
+
+## Encrypted fixtures
+
+`fixtures/encrypt.mjs` implements enough of the PDF Standard security handler
+to generate documents at revisions 2, 3, 4 and 6. G3's gate asks for permission
+traces, and the repository had exactly one encrypted document,
+`encrypted-hello.pdf` with user password `hello`. One document cannot
+distinguish a user unlock from an owner unlock, cannot cover the revisions in
+use, and cannot produce the unsupported-handler path at all.
+
+Every generated document uses user password `user` and owner password `owner`,
+except `encrypted-r4-empty-user-password.pdf`, which opens with no password and
+is still encrypted. That one is in the corpus because it is the case most
+easily mistaken for an unencrypted document.
+
+The file ID, the salts and the AES initialization vectors are fixed constants
+rather than random, so the output is byte-identical on every run and CI can
+diff it. Nothing in that file is a cryptography implementation anyone should
+reuse: RC4 is broken, revision 2's 40-bit key is a rounding error, and fixed
+IVs are exactly what you must not ship. It exists to produce documents PDFium
+will open one way.
+
+RC4 is written out by hand because OpenSSL 3 dropped it and
+`createCipheriv('rc4', ...)` throws `ERR_OSSL_EVP_UNSUPPORTED`. Revisions 2
+through 4 have no other option.
 
 ## Security state
 

@@ -4,6 +4,12 @@
 pub enum PdfiumError {
     Load,
     Password,
+    /// The document declares a security handler PDFium does not implement.
+    ///
+    /// Separate from [`PdfiumError::Password`] because the two send a caller
+    /// somewhere different: a password prompt can resolve one and can never
+    /// resolve the other.
+    Security,
     PageOutOfRange(u32),
     PageLoad(u32),
     TextLoad,
@@ -22,6 +28,9 @@ impl std::fmt::Display for PdfiumError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Load => write!(f, "the bytes are not a document PDFium can open"),
+            Self::Security => {
+                write!(f, "the document uses a security handler PDFium does not support")
+            }
             Self::Password => write!(
                 f,
                 "the document is encrypted and the password was wrong or missing"

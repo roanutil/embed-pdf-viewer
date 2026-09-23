@@ -73,6 +73,10 @@ impl Document {
             let err = unsafe { pdfium_sys::FPDF_GetLastError() };
             return Err(if err == pdfium_sys::FPDF_ERR_PASSWORD as _ {
                 PdfiumError::Password
+            } else if err == pdfium_sys::FPDF_ERR_SECURITY as _ {
+                // Collapsing this into Load would tell a caller the bytes are
+                // not a PDF, when they are a PDF nobody here can decrypt.
+                PdfiumError::Security
             } else {
                 PdfiumError::Load
             });
@@ -87,13 +91,17 @@ impl Document {
         unsafe { pdfium_sys::FPDF_GetPageCount(self.handle) }.max(0) as u32
     }
 
-    /// The document's standard security permission bits, as PDFium reports
-    /// them.
+    /// The permission word in force for this session.
+    ///
+    /// `FPDF_GetDocPermissions`, whose header says: "If the document is not
+    /// protected **or was unlocked by the owner**, 0xffffffff will be
+    /// returned." So this is the effective word, and an owner unlock elevates
+    /// it. Pair with [`Document::user_permissions`], which never does.
     ///
     /// Raw. Bits 1-2 are reserved as zero by the standard security handler and
     /// PDFium masks even owner permissions through that convention, which is
     /// why "all permissions" is `0xFFFFFFFC` rather than `0xFFFFFFFF`.
-    /// Interpreting that is `epdf_engine::session::security`.
+    /// Interpreting that is `epdf_engine::features::security`.
     pub fn permissions(&self) -> u32 {
         unsafe { pdfium_sys::FPDF_GetDocPermissions(self.handle) as u32 }
     }
@@ -107,6 +115,81 @@ impl Document {
         Page::load(self.handle, index)
     }
 
+    /// The permission word the document declares for a user.
+    ///
+    /// `FPDF_GetDocUserPermissions`, whose header says: "**Always returns user
+    /// permissions, even if the document was unlocked by the owner.**"
+    ///
+    /// The two calls are easy to get the wrong way round, and the shipping
+    /// TypeScript does: `SecurityReader.readLiveSecurityInfo` calls this one
+    /// and describes it as "the permission word in force right now (e.g. after
+    /// an owner unlock)", which is the opposite of what it returns. The
+    /// consequence is that an owner-unlocked session reports itself as
+    /// restricted. The generated fixtures show it directly:
+    /// `encrypted-r2-rc4-40.pdf` opened with the owner password reports
+    /// `permissions() == 0xFFFFFFFC` and `user_permissions() == 0xFFFFF7E8`.
+    pub fn user_permissions(&self) -> u32 {
+        unsafe { pdfium_sys::FPDF_GetDocUserPermissions(self.handle) as u32 }
+    }
+
+    /// Whether the document carries an encryption dictionary at all.
+    pub fn is_encrypted(&self) -> bool {
+        unsafe { pdfium_sys::EPDF_IsEncrypted(self.handle) != 0 }
+    }
+
+    /// Whether this session unlocked with the owner password.
+    pub fn is_owner_unlocked(&self) -> bool {
+        unsafe { pdfium_sys::EPDF_IsOwnerUnlocked(self.handle) != 0 }
+    }
+
+    /// The standard security handler revision, 2 through 6.
+    ///
+    /// PDFium returns -1 for a document with no encryption dictionary, which
+    /// callers drop rather than report; see
+    /// `epdf_engine::features::security::state::build_security_info`.
+    pub fn security_handler_revision(&self) -> i32 {
+        unsafe { pdfium_sys::FPDF_GetSecurityHandlerRevision(self.handle) }
+    }
+
+    /// Check a password against an already-open document and report what it
+    /// would unlock.
+    ///
+    /// Does not change the session. This is the "would this password help?"
+    /// question a prompt asks, answered without reopening the document, which
+    /// is why it exists alongside the password argument to
+    /// [`Document::from_bytes`].
+    ///
+    /// `None` when the password is rejected.
+    pub fn check_password_permissions(&self, password: &str) -> Option<PasswordPermissions> {
+        let Ok(c_password) = CString::new(password) else {
+            // A NUL would truncate silently, which would report a wrong
+            // password as correct for its prefix.
+            return None;
+        };
+        let mut kind: i32 = 0;
+        let mut user: u32 = 0;
+        let mut effective: u32 = 0;
+        let mut revision: i32 = 0;
+        // SAFETY: the handle is live, the password outlives the call, and the
+        // four out-parameters are distinct initialized locals.
+        let ok = unsafe {
+            pdfium_sys::EPDF_CheckPasswordPermissions(
+                self.handle,
+                c_password.as_ptr(),
+                &mut kind,
+                &mut user,
+                &mut effective,
+                &mut revision,
+            )
+        };
+        (ok != 0).then_some(PasswordPermissions {
+            kind,
+            user_permissions: user,
+            effective_permissions: effective,
+            security_handler_revision: revision,
+        })
+    }
+
     /// The raw handle, for the operations this layer has not wrapped yet.
     ///
     /// # Safety
@@ -114,6 +197,20 @@ impl Document {
     pub unsafe fn as_raw(&self) -> pdfium_sys::FPDF_DOCUMENT {
         self.handle
     }
+}
+
+/// What a password would unlock, without unlocking it.
+///
+/// `kind` is `EPDF_PASSWORD_PERMISSION_*` from `public/fpdfview.h`: invalid =
+/// 0, none = 1, user = 2, owner = 3. Left as the raw code here because naming
+/// it is the engine's job, in
+/// `epdf_engine::features::security::state::OpenedAs`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PasswordPermissions {
+    pub kind: i32,
+    pub user_permissions: u32,
+    pub effective_permissions: u32,
+    pub security_handler_revision: i32,
 }
 
 impl Drop for Document {
