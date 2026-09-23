@@ -140,14 +140,29 @@ pub fn classify_artifact(lib: &Path) -> ArtifactShape {
 /// The prototype worked around this with 21 hand-written declarations. That is
 /// not carried over: a sysroot flag is the fix, and hand-maintained
 /// declarations drift from the headers they duplicate.
+///
+/// A sysroot alone is not enough. `libclang` defaults to the HOST triple, and
+/// a host-triple clang looks for a host layout inside whatever sysroot it is
+/// given: pointed at the emsdk sysroot it reports
+/// `fatal error: 'time.h' file not found` even though
+/// `cache/sysroot/include/time.h` is right there. It then returns what it
+/// parsed before the fatal error, which for the fork headers is 147 constants
+/// and not one function, and `bindgen` reports success. So the triple is
+/// passed too, and [`assert_bindings_are_complete`] refuses the quiet version
+/// of this failure.
 pub fn sysroot_clang_args(target_os: &str) -> Vec<String> {
+    let target = |args: Vec<String>| -> Vec<String> {
+        let mut out = vec![format!("--target={}", env::var("TARGET").unwrap_or_default())];
+        out.extend(args);
+        out
+    };
     match target_os {
         "android" => {
             println!("cargo:rerun-if-env-changed=ANDROID_NDK_HOME");
             println!("cargo:rerun-if-env-changed=ANDROID_NDK_ROOT");
             println!("cargo:rerun-if-env-changed=NDK_HOME");
             match android_sysroot() {
-                Some(sysroot) => vec![format!("--sysroot={}", sysroot.display())],
+                Some(sysroot) => target(vec![format!("--sysroot={}", sysroot.display())]),
                 None => panic!(
                     "building for Android needs the NDK sysroot: set ANDROID_NDK_HOME (or \
                      ANDROID_NDK_ROOT / NDK_HOME) to an NDK root, the one \
@@ -159,9 +174,8 @@ pub fn sysroot_clang_args(target_os: &str) -> Vec<String> {
             println!("cargo:rerun-if-env-changed=EMSDK");
             match std::env::var("EMSDK") {
                 Ok(emsdk) => {
-                    let sysroot =
-                        PathBuf::from(emsdk).join("upstream/emscripten/cache/sysroot");
-                    vec![format!("--sysroot={}", sysroot.display())]
+                    let sysroot = PathBuf::from(emsdk).join("upstream/emscripten/cache/sysroot");
+                    target(vec![format!("--sysroot={}", sysroot.display())])
                 }
                 Err(_) => panic!(
                     "building for wasm32-unknown-emscripten needs the emsdk sysroot: set \
@@ -282,6 +296,30 @@ pub fn emit_rpath_only() {
     if classify_artifact(&lib) == ArtifactShape::UnixDylib {
         println!("cargo:rustc-link-arg=-Wl,-rpath,{}", lib.display());
     }
+}
+
+/// Refuses a `bindgen` run that produced types but no functions.
+///
+/// `bindgen` returns `Ok` after a fatal clang error, handing back whatever it
+/// parsed first. For the fork headers that is 147 constants, 147 types and
+/// zero functions, and the failure only surfaces hundreds of lines later as
+/// `cannot find function ... in crate pdfium_sys`, pointing at the caller
+/// rather than at the build script that produced an empty binding.
+///
+/// The fork exports 764 functions on the host at the pin this was written
+/// against, so any plausible floor separates "parsed the headers" from "gave
+/// up on the first `#include`".
+pub fn assert_bindings_are_complete(bindings: &str, target: &str) {
+    const FLOOR: usize = 600;
+    let functions = bindings.matches("pub fn ").count();
+    assert!(
+        functions >= FLOOR,
+        "bindgen produced {functions} functions for {target}, expected at least {FLOOR}.\n\
+         That means clang stopped at a fatal error and bindgen returned what it had.\n\
+         Reproduce the real diagnostic with:\n  \
+         clang -fsyntax-only --target={target} <the same -I and --sysroot flags> \
+         crates/pdfium-sys/wrapper.h"
+    );
 }
 
 #[cfg(test)]

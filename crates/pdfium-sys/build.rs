@@ -41,6 +41,11 @@ fn main() {
         .generate()
         .expect("bindgen failed over the fork headers");
 
+    build_support::assert_bindings_are_complete(
+        &bindings.to_string(),
+        &env::var("TARGET").unwrap_or_default(),
+    );
+
     bindings
         .write_to_file(PathBuf::from(env::var("OUT_DIR").unwrap()).join("bindings.rs"))
         .expect("write bindings.rs");
