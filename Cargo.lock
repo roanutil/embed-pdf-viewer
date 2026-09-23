@@ -106,7 +106,12 @@ dependencies = [
 name = "epdf-wasm"
 version = "0.0.0"
 dependencies = [
+ "build-support",
  "epdf-engine",
+ "pdfium",
+ "serde",
+ "serde_json",
+ "test-support",
 ]
 
 [[package]]
