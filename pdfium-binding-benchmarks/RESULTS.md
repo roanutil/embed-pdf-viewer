@@ -1,21 +1,27 @@
 # PDFium binding benchmark results
 
-These tables summarize 56 committed measurements: seven rounds for four variants
-in Wasm and native modes. The numbers can be recalculated from
+These tables summarize 63 committed measurements: seven rounds for four Wasm
+variants and five native ones. The numbers can be recalculated from
 [`bench/results`](bench/results/README.md). They describe the saved builds, not
 current performance.
 
-**The native measurements predate the readback-copy fix in `bench/arm.mjs`.**
-Variants b/c/d made an extra JavaScript copy in `readBytes` and `readU16`.
-Rerun before comparing current text extraction or byte-copy performance.
+**The native measurements were rerun on 2026-09-23 after the readback-copy fix
+in `bench/arm.mjs`**, which is what the previous version of this file asked for.
+Variants b/c/d had been making an extra JavaScript copy in `readBytes` and
+`readU16`, and that copy was most of what the byte-copy rows were measuring: see
+[What the native results show](#what-the-native-results-show). The Wasm tables
+below are unchanged and still come from the original run.
 The original write-up reported agreement on two correctness fixtures; the current
 check adds `flipped-p0` to cover text whose transformation reverses orientation.
 The saved timing JSON does not contain the original correctness-check log.
 
 ## Method and environment
 
-The saved files identify Node v24.20.0, Apple M4 Max, ARM64 macOS (`darwin 25.6.0`),
-and Rust 1.98.0. The Wasm files identify Emscripten 3.1.72.
+The saved Wasm files identify Node v24.20.0, Apple M4 Max, ARM64 macOS
+(`darwin 25.6.0`), Rust 1.98.0 and Emscripten 3.1.72. The native rerun
+identifies the same machine on `darwin 27.0.0`, so the native and Wasm tables
+are not from one sitting and small cross-mode differences may be the OS rather
+than the binding.
 They use page index 4 (the fifth page) of
 [`report.pdf`](../examples/snippet-react/public/report.pdf), with 8,106 glyphs.
 
@@ -96,49 +102,68 @@ mechanism without a controlled experiment.
 
 ### Median nanoseconds per call, by workload and arm
 
-| workload | a direct | b rust thin | c rust coarse | d c++ coarse | b/a | c/a | d/a |
-|---|---|---|---|---|---|---|---|
-| `null-call` | 200.3 ns | 192.6 ns | n/a | n/a | 0.96x | n/a | n/a |
-| `null-peek` | 39.2 ns | 15.0 ns | n/a | n/a | 0.38x | n/a | n/a |
-| `null-readbytes` | 276.1 ns | 288.9 ns | n/a | n/a | 1.05x | n/a | n/a |
-| `geometry` | 8.642 ms | 4.134 ms | 577.37 µs | 581.16 µs | 0.48x | 0.07x | 0.07x |
-| `geometry-copyout` | n/a | n/a | 71.31 µs | 72.90 µs | n/a | n/a | n/a |
-| `text` | 126.94 µs | 127.80 µs | 127.59 µs | 128.30 µs | 1.01x | 1.01x | 1.01x |
-| `render-1x` | 1.556 ms | 1.555 ms | 1.556 ms | 1.575 ms | 1.00x | 1.00x | 1.01x |
-| `render-4x` | 8.555 ms | 8.556 ms | 8.564 ms | 8.721 ms | 1.00x | 1.00x | 1.02x |
-| `render-copyout-4x` | 1.706 ms | 2.398 ms | 2.498 ms | 2.647 ms | 1.41x | 1.46x | 1.55x |
-| `search` | 82.19 µs | 64.48 µs | 39.84 µs | 39.99 µs | 0.78x | 0.48x | 0.49x |
+| workload | a direct | b rust thin | c rust coarse | d c++ coarse | e swift coarse | b/a | c/a | d/a | e/a |
+|---|---|---|---|---|---|---|---|---|---|
+| `null-call` | 174.3 ns | 170.4 ns | n/a | n/a | n/a | 0.98x | n/a | n/a | n/a |
+| `null-peek` | 37.9 ns | 14.5 ns | n/a | n/a | n/a | 0.38x | n/a | n/a | n/a |
+| `null-readbytes` | 265.0 ns | 249.9 ns | n/a | n/a | n/a | 0.94x | n/a | n/a | n/a |
+| `geometry` | 8.516 ms | 4.002 ms | 562.98 µs | 558.97 µs | 566.19 µs | 0.47x | 0.07x | 0.07x | 0.07x |
+| `geometry-copyout` | n/a | n/a | 49.75 µs | 49.80 µs | 49.43 µs | n/a | n/a | n/a | n/a |
+| `text` | 124.03 µs | 124.27 µs | 125.30 µs | 124.95 µs | 124.06 µs | 1.00x | 1.01x | 1.01x | 1.00x |
+| `render-1x` | 1.478 ms | 1.479 ms | 1.485 ms | 1.485 ms | 1.477 ms | 1.00x | 1.00x | 1.00x | 1.00x |
+| `render-4x` | 8.251 ms | 8.180 ms | 8.275 ms | 8.190 ms | 8.212 ms | 0.99x | 1.00x | 0.99x | 1.00x |
+| `render-copyout-4x` | 1.622 ms | 1.600 ms | 1.611 ms | 1.609 ms | 1.599 ms | 0.99x | 0.99x | 0.99x | 0.99x |
+| `search` | 78.47 µs | 61.15 µs | 36.74 µs | 36.64 µs | 36.83 µs | 0.78x | 0.47x | 0.47x | 0.47x |
 
 ### p95 of batch means, same cells
 
-| workload | a direct | b rust thin | c rust coarse | d c++ coarse |
-|---|---|---|---|---|
-| `null-call` | 213.4 ns | 205.1 ns | n/a | n/a |
-| `null-peek` | 41.3 ns | 15.4 ns | n/a | n/a |
-| `null-readbytes` | 289.9 ns | 301.9 ns | n/a | n/a |
-| `geometry` | 10.006 ms | 4.532 ms | 627.10 µs | 634.90 µs |
-| `geometry-copyout` | n/a | n/a | 89.84 µs | 92.81 µs |
-| `text` | 134.02 µs | 135.18 µs | 135.58 µs | 137.11 µs |
-| `render-1x` | 1.617 ms | 1.609 ms | 1.617 ms | 1.652 ms |
-| `render-4x` | 8.818 ms | 8.931 ms | 8.864 ms | 9.109 ms |
-| `render-copyout-4x` | 1.919 ms | 3.421 ms | 3.743 ms | 3.559 ms |
-| `search` | 84.92 µs | 67.17 µs | 43.12 µs | 43.09 µs |
+| workload | a direct | b rust thin | c rust coarse | d c++ coarse | e swift coarse |
+|---|---|---|---|---|---|
+| `null-call` | 186.4 ns | 180.9 ns | n/a | n/a | n/a |
+| `null-peek` | 39.9 ns | 14.9 ns | n/a | n/a | n/a |
+| `null-readbytes` | 273.6 ns | 259.4 ns | n/a | n/a | n/a |
+| `geometry` | 9.724 ms | 4.377 ms | 603.58 µs | 594.57 µs | 606.31 µs |
+| `geometry-copyout` | n/a | n/a | 52.05 µs | 52.67 µs | 52.02 µs |
+| `text` | 127.71 µs | 128.92 µs | 129.23 µs | 128.77 µs | 128.06 µs |
+| `render-1x` | 1.505 ms | 1.511 ms | 1.511 ms | 1.519 ms | 1.515 ms |
+| `render-4x` | 8.397 ms | 8.336 ms | 8.412 ms | 8.349 ms | 8.366 ms |
+| `render-copyout-4x` | 1.749 ms | 1.726 ms | 1.723 ms | 1.720 ms | 1.682 ms |
+| `search` | 80.28 µs | 62.76 µs | 37.65 µs | 37.67 µs | 37.84 µs |
 
 ## What the native results show
 
-Within the Rust addon, geometry took 4.134 ms with individual calls and
-577.37 µs with a whole-operation call, about a 7.16× speedup. The C++ comparison
-was about 14.87×, but also changes pointer representation and memory-reading
+Within the Rust addon, geometry took 4.002 ms with individual calls and
+562.98 µs with a whole-operation call, about a 7.11× speedup. The C++ comparison
+was about 15.2×, but also changes pointer representation and memory-reading
 helpers. It cannot isolate the effect of grouping calls by itself.
 
-Search improved by about 1.62× within the Rust addon and 2.06× between the C++
+Search improved by about 1.66× within the Rust addon and 2.14× between the C++
 variants. Those gains were smaller than the Wasm search gains on this fixture.
-Rendering times were within about 2% across native variants.
+Rendering times were within about 1% across native variants.
 
-The byte-copy results require particular care: they include the extra copy
-removed from b/c/d since this run. The largest native round-to-round variation
-was c's `render-copyout-4x`, at 1.75× between its fastest and slowest rounds.
-Variation alone cannot identify thermal throttling or cache effects.
+The byte-copy rows are the ones this rerun changed, and the change is large
+enough to be worth stating plainly. Before the fix, `render-copyout-4x` read
+1.706 ms for a and 2.398, 2.498 and 2.647 ms for b, c and d: ratios of 1.41×,
+1.46× and 1.55×, which said the coarse variants were meaningfully worse at
+handing bytes back. They are not. After removing the extra JavaScript copy the
+same row reads 1.622 ms against 1.600, 1.611 and 1.609, all within 1%, and
+`geometry-copyout` fell from 71.31 µs to 49.75 µs. What the old numbers measured
+was the benchmark harness, not the bindings.
+
+`text` barely moved, 126.94 µs to 124.03 µs for a, and the ratios stayed at
+1.00–1.01×. That is the expected result rather than a surprise: text extraction
+was already one coarse call per page, so there was no per-item copy for the fix
+to remove. It is worth recording because the caveat this rerun clears named
+text and byte-copy together, and only one of them was affected.
+
+The largest native round-to-round variation was b's `null-call`, at 1.14×
+between its fastest and slowest rounds, down from 1.75× on c's
+`render-copyout-4x` in the previous run. Variation alone cannot identify
+thermal throttling or cache effects.
+
+This run also adds arm e, the Swift coarse variant, which the previous native
+tables did not include. It lands within about 1% of the Rust and C++ coarse
+arms on every workload.
 
 ## Limits of the comparison
 

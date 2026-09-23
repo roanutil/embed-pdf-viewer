@@ -173,16 +173,35 @@ if (alloc.length) {
   );
   md.push(`| | bytes/frame | heap/frame | backing stores/frame | bytes/shape | window | vs typescript-baseline |`);
   md.push(`|---|---|---|---|---|---|---|`);
-  const base = median((byAdapter.get('typescript-baseline') ?? []).map((r) => r.bytesPerFrame));
+  // `harness.mjs` writes null for every allocation field of a round where a GC
+  // landed inside the measurement window, because the delta across a
+  // collection is not an allocation figure. Dropping those before the median
+  // is the only correct reading; a round that measured nothing must not be
+  // averaged in as a zero, and `null.toFixed` used to end the whole report.
+  const measured = (runs, field) => runs.map((r) => r[field]).filter((v) => v != null);
+  const cell = (values, digits = 0) =>
+    values.length ? median(values).toFixed(digits) : 'n/a';
+
+  const base = median(measured(byAdapter.get('typescript-baseline') ?? [], 'bytesPerFrame'));
   for (const a of ORDER) {
     const runs = byAdapter.get(a) ?? [];
     if (!runs.length) continue;
-    const bpf = median(runs.map((r) => r.bytesPerFrame));
+    const bytes = measured(runs, 'bytesPerFrame');
+    const bpf = bytes.length ? median(bytes) : null;
     md.push(
-      `| ${SHORT[a]} | ${bpf.toFixed(0)} | ` +
-        `${median(runs.map((r) => r.heapBytesPerFrame)).toFixed(0)} | ` +
-        `${median(runs.map((r) => r.arrayBufferBytesPerFrame)).toFixed(0)} | ${(bpf / first.shapes).toFixed(1)} | ` +
-        `${median(runs.map((r) => r.frames)).toFixed(0)} frames | ${ratio(bpf, base)} |`,
+      `| ${SHORT[a]} | ${cell(bytes)} | ` +
+        `${cell(measured(runs, 'heapBytesPerFrame'))} | ` +
+        `${cell(measured(runs, 'arrayBufferBytesPerFrame'))} | ` +
+        `${bpf === null ? 'n/a' : (bpf / first.shapes).toFixed(1)} | ` +
+        `${cell(measured(runs, 'frames'))} frames | ` +
+        `${bpf === null ? 'n/a' : ratio(bpf, base)} |`,
+    );
+  }
+  if (ORDER.some((a) => (byAdapter.get(a) ?? []).some((r) => r.bytesPerFrame == null))) {
+    md.push(
+      `\nAn \`n/a\` means every allocation round for that implementation saw a GC ` +
+        `inside its measurement window, so there is no delta to report. It is a ` +
+        `missing measurement, not a zero.\n`,
     );
   }
 }
@@ -201,6 +220,16 @@ if (!cold) {
 if (cold) {
   md.push(`\n### Cold start\n`);
   md.push(`${cold.collectedBy}.\n`);
+  // Every other table in this file comes from the run that just wrote it.
+  // This one is read from a committed summary somebody recorded by hand in a
+  // browser, and there is no way to tell them apart once they are side by
+  // side, which is the kind of thing that gets quoted as one measurement.
+  md.push(
+    `> These figures come from \`results/cold-start.json\`, a committed summary ` +
+      `recorded separately in a browser. Unlike every other table here they were ` +
+      `NOT produced by this run, and the procedure that produces them is manual ` +
+      `(see bench/README.md).\n`,
+  );
   md.push(`> ${cold.caveat}\n`);
   md.push('The ready interval is wasmReady minus boot. First frame is recorded by a React effect after the initial viewer render, relative to navigation start; it is not a paint measurement.\n');
   md.push(`| | wasm shipped | ready interval | first frame | first frame range |`);
