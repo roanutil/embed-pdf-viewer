@@ -166,6 +166,24 @@ impl Document {
         unsafe { pdfium_sys::FPDF_GetSecurityHandlerRevision(self.handle) }
     }
 
+    /// Make PDFium's internals behave as though the owner password was given.
+    ///
+    /// Proves nothing and authorizes nobody. It exists because high-level
+    /// PDFium subsystems, forms especially, consult the permission bits
+    /// themselves and would otherwise refuse work the application has already
+    /// authorized. The header is explicit: "Callers must enforce JWT/PDF
+    /// permission policy outside PDFium."
+    ///
+    /// So this is only safe to call in an engine that enforces permissions
+    /// itself. `epdf_engine::session::DocumentSession` does, through
+    /// `epdf_engine::auth::scope`, and turning this on without that would
+    /// hand every caller an owner-unlocked document.
+    pub fn set_runtime_owner_permissions(&self, enabled: bool) -> bool {
+        unsafe {
+            pdfium_sys::EPDF_SetRuntimeOwnerPermissions(self.handle, i32::from(enabled)) != 0
+        }
+    }
+
     /// Check a password against an already-open document and report what it
     /// would unlock.
     ///

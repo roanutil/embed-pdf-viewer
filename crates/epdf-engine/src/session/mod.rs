@@ -18,6 +18,7 @@
 //! Native hosts own the session from G3. Web reaches it at G3w (opt-in) and
 //! takes authority at G10.
 
+pub mod authority;
 pub mod document;
 pub mod pages;
 pub mod revisions;

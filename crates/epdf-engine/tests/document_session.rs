@@ -315,3 +315,138 @@ fn dropping_a_page_state_forgets_its_revision_and_weak_flag() {
     );
     assert_eq!(session.weak_annotation_state(page).expect("state"), WeakAnnotationState::Unknown,);
 }
+
+// --- Permission enforcement, which on native has no other owner.
+
+#[test]
+fn a_session_opened_with_a_scope_enforces_it() {
+    use epdf_engine::auth::scope::{DocCapability, IdentityClaims, PdfBits};
+    use epdf_engine::session::authority::SessionAuthority;
+
+    let mut session = DocumentSession::new();
+    let authority = SessionAuthority::new(
+        &["doc.open".to_string(), "doc.render".to_string()],
+        IdentityClaims::default(),
+        PdfBits::default(),
+    )
+    .expect("parse scope");
+    session.open_with(report(), None, authority).expect("open");
+
+    session.require(DocCapability::DocOpen).expect("granted");
+    session.require(DocCapability::DocRender).expect("granted");
+    assert_eq!(
+        session.require(DocCapability::DocTextCopy).expect_err("denied").code,
+        EngineErrorCode::Forbidden,
+    );
+}
+
+#[test]
+fn opening_reads_the_declared_permission_word_for_pdf_permissions() {
+    use epdf_engine::auth::scope::{DocCapability, IdentityClaims, PdfBits};
+    use epdf_engine::session::authority::SessionAuthority;
+
+    // encrypted-r4-aes-128.pdf denies copying and allows the rest. The word
+    // has to be read before the runtime owner elevation, which would otherwise
+    // report every encrypted document as fully permitted.
+    let mut session = DocumentSession::new();
+    let authority = SessionAuthority::new(
+        &["pdf.permissions".to_string()],
+        IdentityClaims::default(),
+        PdfBits::default(),
+    )
+    .expect("parse scope");
+    session.open_with(bytes(ENCRYPTED), Some("user"), authority).expect("open");
+
+    assert!(session.authority().allows(DocCapability::DocPrint), "printing is allowed");
+    assert_eq!(
+        session.require(DocCapability::DocTextCopy).expect_err("copying is denied").code,
+        EngineErrorCode::Forbidden,
+        "the elevation leaked into the permission word",
+    );
+}
+
+#[test]
+fn a_closed_session_grants_nothing() {
+    use epdf_engine::auth::scope::DocCapability;
+
+    // Even holding a reference to it. Close resets the authority rather than
+    // leaving the last caller's grants in place.
+    let mut session = opened();
+    session.require(DocCapability::DocRender).expect("open sessions are unrestricted");
+
+    session.close();
+    for capability in DocCapability::ALL {
+        assert_eq!(
+            session.require(capability).expect_err("closed").code,
+            EngineErrorCode::Forbidden,
+            "{capability} survived close",
+        );
+    }
+}
+
+#[test]
+fn opening_an_encrypted_document_elevates_pdfium_itself() {
+    // PDFium's own subsystems consult the permission bits and would refuse
+    // work this engine has already authorized; forms is the one that bites.
+    // The fork's EPDF_SetRuntimeOwnerPermissions exists for that, and its
+    // header says it "does not prove an owner password and does not authorize
+    // the caller".
+    //
+    // Observable through the two permission getters: after the elevation
+    // FPDF_GetDocPermissions reports the owner word, while
+    // FPDF_GetDocUserPermissions still reports what the document declares.
+    // Without this test the elevation could be deleted and every suite would
+    // stay green until the first native forms write.
+    let mut session = DocumentSession::new();
+    session.open(bytes(ENCRYPTED), Some("user")).expect("open");
+    let document = session.document().expect("open").document();
+
+    assert!(document.is_encrypted());
+    assert_eq!(
+        document.permissions(),
+        0xffff_fffc,
+        "PDFium was not elevated, so its internals will refuse authorized work",
+    );
+    // The declared word is untouched, which is what the engine expands
+    // pdf.permissions from. encrypted-r4-aes-128.pdf denies copying.
+    assert_eq!(document.user_permissions(), 0xffff_ffec);
+}
+
+#[test]
+fn the_elevation_makes_a_session_document_report_itself_owner_unlocked() {
+    // A consequence worth knowing rather than a bug to fix, and it matches the
+    // TypeScript, which elevates the same way and reads the same calls.
+    //
+    // EPDF_IsOwnerUnlocked reports true afterwards even though the user
+    // password was the one supplied, so the security state read off a SESSION
+    // document says "owner" for every encrypted document. Anything that needs
+    // to know which password actually opened it has to probe the bytes
+    // separately, before a session touches them; that is what
+    // features::security::reader::probe_bytes is for, and why it opens its own
+    // document instead of taking a session.
+    let mut session = DocumentSession::new();
+    session.open(bytes(ENCRYPTED), Some("user")).expect("open");
+    let document = session.document().expect("open").document();
+    assert!(document.is_owner_unlocked(), "the elevation did not reach EPDF_IsOwnerUnlocked");
+
+    let probed = epdf_engine::features::security::reader::probe_bytes(
+        pdfium::Library::acquire(),
+        &bytes(ENCRYPTED),
+        Some("user"),
+        &epdf_engine::clock::SystemClock,
+    );
+    assert_eq!(
+        probed.pdf_opened_as,
+        Some(epdf_engine::features::security::state::OpenedAs::User),
+        "a cold probe still tells the truth about which password was used",
+    );
+}
+
+#[test]
+fn an_unencrypted_document_is_not_elevated() {
+    // Nothing to elevate, and calling it anyway would be a change to a handle
+    // that had no restriction to lift.
+    let session = opened();
+    let document = session.document().expect("open").document();
+    assert!(!document.is_encrypted());
+}

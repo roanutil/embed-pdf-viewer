@@ -28,9 +28,11 @@ use std::rc::Rc;
 
 use pdfium::{Document, Library, PdfiumError, SharedPage};
 
+use super::authority::SessionAuthority;
 use super::pages::{PagePtrPool, PageRecord};
 use super::revisions::RevisionAuthority;
 use crate::access::OwnedDocument;
+use crate::auth::scope::{DocCapability, decode_pdf_bits};
 use crate::error::{EngineError, EngineErrorCode};
 use crate::identity::PageObjectNumber;
 use crate::revision::{PageState, RevisionToken, WeakAnnotationState};
@@ -80,6 +82,9 @@ pub struct DocumentSession {
     /// Bytes retained for a later unlock attempt. Locked sessions only.
     parked_bytes: Option<Vec<u8>>,
     mutation_sequence: Cell<u64>,
+    /// What this session's caller may do. Grants nothing until open sets it,
+    /// so a session that failed to open cannot be read through.
+    authority: SessionAuthority,
     /// Disposers that run when this session closes, in reverse order.
     ///
     /// `pages.insert` needs this: `FPDF_ImportPagesByIndex` does not fully
@@ -99,6 +104,7 @@ impl DocumentSession {
             open: None,
             parked_bytes: None,
             mutation_sequence: Cell::new(0),
+            authority: SessionAuthority::default(),
             retained: Vec::new(),
         }
     }
@@ -126,7 +132,37 @@ impl DocumentSession {
     /// `DocPasswordIncorrect`, rather than both collapsing into a generic open
     /// failure. A prompt can act on the first; only the second means the
     /// user got it wrong.
+    /// What this session's caller may do.
+    pub fn authority(&self) -> &SessionAuthority {
+        &self.authority
+    }
+
+    /// Refuse unless the capability is granted. The native enforcement point.
+    pub fn require(&self, capability: DocCapability) -> Result<(), EngineError> {
+        self.authority.require(capability)
+    }
+
+    /// Refuse unless at least one of the capabilities is granted.
+    pub fn require_any(&self, capabilities: &[DocCapability]) -> Result<(), EngineError> {
+        self.authority.require_any(capabilities)
+    }
+
+    /// Open with full authority.
+    ///
+    /// For a host with no notion of scopes: the smoke apps and the conformance
+    /// harness. Named rather than spelled as a wildcard at each call site, so
+    /// grepping finds every place that opted out of enforcement.
     pub fn open(&mut self, bytes: Vec<u8>, password: Option<&str>) -> Result<(), EngineError> {
+        self.open_with(bytes, password, SessionAuthority::unrestricted())
+    }
+
+    /// Open under a caller's authority.
+    pub fn open_with(
+        &mut self,
+        bytes: Vec<u8>,
+        password: Option<&str>,
+        authority: SessionAuthority,
+    ) -> Result<(), EngineError> {
         if self.open.is_some() {
             return Err(EngineError::with_message(
                 EngineErrorCode::InvalidArg,
@@ -148,6 +184,23 @@ impl DocumentSession {
                 }
             })?;
 
+        // PDFium's own subsystems, forms especially, consult the permission
+        // bits and would otherwise refuse work this engine has already
+        // authorized. The fork's header is explicit that this proves nothing
+        // and authorizes nobody: "Callers must enforce JWT/PDF permission
+        // policy outside PDFium." `self.authority` below is that enforcement,
+        // and elevating without it would hand every caller an owner-unlocked
+        // document.
+        if document.is_encrypted() {
+            document.set_runtime_owner_permissions(true);
+        }
+
+        // The declared permission word, for `pdf.permissions` expansion. Read
+        // before the elevation above would make it meaningless: after it,
+        // `permissions()` reports the owner word for every encrypted document.
+        let mut authority = authority;
+        authority.set_pdf_bits(decode_pdf_bits(Some(i64::from(document.user_permissions()))));
+
         self.open = Some(OpenState {
             document: OwnedDocument::new(document)?,
             kind: OpenKind::FatMemory,
@@ -156,6 +209,7 @@ impl DocumentSession {
             records: Vec::new(),
             fully_enumerated: false,
         });
+        self.authority = authority;
         self.parked_bytes = None;
         Ok(())
     }
@@ -184,10 +238,19 @@ impl DocumentSession {
 
     /// Unlock a parked session with a password, consuming the parked bytes.
     pub fn unlock(&mut self, password: &str) -> Result<(), EngineError> {
+        self.unlock_with(password, SessionAuthority::unrestricted())
+    }
+
+    /// Unlock under a caller's authority.
+    pub fn unlock_with(
+        &mut self,
+        password: &str,
+        authority: SessionAuthority,
+    ) -> Result<(), EngineError> {
         let bytes = self.parked_bytes.take().ok_or_else(|| {
             EngineError::with_message(EngineErrorCode::DocNotOpen, "document session is not locked")
         })?;
-        match self.open(bytes.clone(), Some(password)) {
+        match self.open_with(bytes.clone(), Some(password), authority) {
             Ok(()) => Ok(()),
             Err(error) => {
                 // A wrong password leaves the session locked rather than
@@ -421,6 +484,9 @@ impl DocumentSession {
             // the PDFium handle, on this thread.
         }
         self.parked_bytes = None;
+        // Back to granting nothing, so a closed session cannot be read through
+        // even if a caller holds a reference to it.
+        self.authority = SessionAuthority::default();
         for dispose in std::mem::take(&mut self.retained).into_iter().rev() {
             dispose();
         }
