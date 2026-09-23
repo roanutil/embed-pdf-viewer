@@ -26,7 +26,7 @@
 use std::cell::Cell;
 use std::rc::Rc;
 
-use pdfium::{Document, Library, PdfiumError, SharedPage};
+use pdfium::{BaseDocument, Document, Library, PdfiumError, SharedPage};
 
 use super::authority::SessionAuthority;
 use super::pages::{PagePtrPool, PageRecord};
@@ -211,6 +211,60 @@ impl DocumentSession {
         });
         self.authority = authority;
         self.parked_bytes = None;
+        Ok(())
+    }
+
+    /// Open a fresh layer over a shared base document.
+    ///
+    /// `open.layerMemBase`, for a base already registered with
+    /// [`super::base_registry::BaseDocumentRegistry`]. The layer is an
+    /// ordinary document; what makes it a layer is that its storage belongs to
+    /// the base, which several sessions share.
+    ///
+    /// The base is parked with the session's retained resources, so it is
+    /// released after the layer document is closed. Getting that order wrong
+    /// leaves the layer reading freed memory, which is why the base is not
+    /// simply held in a field beside it.
+    pub fn open_layer(
+        &mut self,
+        base: Rc<BaseDocument>,
+        authority: SessionAuthority,
+    ) -> Result<(), EngineError> {
+        if self.open.is_some() {
+            return Err(EngineError::with_message(
+                EngineErrorCode::InvalidArg,
+                "document already open",
+            ));
+        }
+        let layer = base.open_layer().map_err(|e| {
+            let code = match e {
+                pdfium::LayerOpenError::PasswordRequired => EngineErrorCode::DocPasswordRequired,
+                pdfium::LayerOpenError::MalformedDelta | pdfium::LayerOpenError::BaseMismatch => {
+                    EngineErrorCode::MalformedPdf
+                }
+                pdfium::LayerOpenError::OpenFailed => EngineErrorCode::DocOpenFailed,
+            };
+            EngineError::with_message(code, e.to_string())
+        })?;
+        drop(base);
+        let (document, base) = layer.into_parts();
+
+        let mut authority = authority;
+        authority.set_pdf_bits(decode_pdf_bits(Some(i64::from(document.user_permissions()))));
+
+        self.open = Some(OpenState {
+            document: OwnedDocument::new(document)?,
+            kind: OpenKind::Layer,
+            pages: PagePtrPool::new(),
+            revisions: RevisionAuthority::new(self.session_id.clone()),
+            records: Vec::new(),
+            fully_enumerated: false,
+        });
+        self.authority = authority;
+        self.parked_bytes = None;
+        // Runs after `close` has dropped the layer document, which is the
+        // order the base's lifetime requires.
+        self.retain_until_close(move || drop(base));
         Ok(())
     }
 

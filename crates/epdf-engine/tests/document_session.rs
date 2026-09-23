@@ -450,3 +450,106 @@ fn an_unencrypted_document_is_not_elevated() {
     let document = session.document().expect("open").document();
     assert!(!document.is_encrypted());
 }
+
+// --- Layer sessions over a shared base.
+
+#[test]
+fn a_layer_session_reads_the_base_document() {
+    use epdf_engine::session::authority::SessionAuthority;
+    use epdf_engine::session::base_registry::BaseDocumentRegistry;
+
+    let registry = BaseDocumentRegistry::new();
+    let base = registry.acquire_memory("report", &report(), None).expect("base");
+
+    let mut session = DocumentSession::new();
+    session.open_layer(base, SessionAuthority::unrestricted()).expect("open layer");
+
+    assert_eq!(session.kind(), Some(OpenKind::Layer));
+    assert_eq!(session.page_count().expect("open"), 14);
+    assert_eq!(session.all_records().expect("records").len(), 14);
+}
+
+#[test]
+fn two_sessions_share_one_parsed_base() {
+    use epdf_engine::session::authority::SessionAuthority;
+    use epdf_engine::session::base_registry::BaseDocumentRegistry;
+
+    // The reason the registry exists: the second viewer of a large document
+    // costs a layer, not another copy of the bytes.
+    let registry = BaseDocumentRegistry::new();
+    let mut first = DocumentSession::new();
+    let mut second = DocumentSession::new();
+
+    first
+        .open_layer(
+            registry.acquire_memory("report", &report(), None).expect("base"),
+            SessionAuthority::unrestricted(),
+        )
+        .expect("first");
+    second
+        .open_layer(
+            registry.acquire_memory("report", &report(), None).expect("base"),
+            SessionAuthority::unrestricted(),
+        )
+        .expect("second");
+
+    assert_eq!(registry.ref_count("report"), 2);
+    assert_eq!(registry.len(), 1, "one parse, two sessions");
+    assert_eq!(first.page_count().expect("first"), 14);
+    assert_eq!(second.page_count().expect("second"), 14);
+
+    // And closing one leaves the other working.
+    first.close();
+    registry.release("report");
+    assert_eq!(second.page_count().expect("second still open"), 14);
+}
+
+#[test]
+fn closing_a_layer_session_releases_the_base_last() {
+    use epdf_engine::session::authority::SessionAuthority;
+    use epdf_engine::session::base_registry::BaseDocumentRegistry;
+
+    // The layer points into the base, so the base has to outlive it. If the
+    // order were wrong this would be a use-after-free rather than a failed
+    // assertion, so the check that matters is that it runs clean.
+    let registry = BaseDocumentRegistry::new();
+    let mut session = DocumentSession::new();
+    session
+        .open_layer(
+            registry.acquire_memory("report", &report(), None).expect("base"),
+            SessionAuthority::unrestricted(),
+        )
+        .expect("open");
+
+    registry.release("report");
+    registry.release_all();
+    assert!(!registry.is_registered("report"), "the registry let go of the base");
+
+    // The session still holds it, so the document is readable.
+    assert_eq!(session.page_count().expect("still open"), 14);
+    session.close();
+    assert!(!session.is_open());
+}
+
+#[test]
+fn a_layer_session_cannot_be_opened_twice() {
+    use epdf_engine::session::authority::SessionAuthority;
+    use epdf_engine::session::base_registry::BaseDocumentRegistry;
+
+    let registry = BaseDocumentRegistry::new();
+    let mut session = DocumentSession::new();
+    session
+        .open_layer(
+            registry.acquire_memory("report", &report(), None).expect("base"),
+            SessionAuthority::unrestricted(),
+        )
+        .expect("open");
+    let second = registry.acquire_memory("report", &report(), None).expect("base");
+    assert_eq!(
+        session
+            .open_layer(second, SessionAuthority::unrestricted())
+            .expect_err("already open")
+            .code,
+        EngineErrorCode::InvalidArg,
+    );
+}

@@ -85,6 +85,22 @@ impl Document {
         Ok(Self { handle, bytes: owned, library: lib, _not_send: PhantomData })
     }
 
+    /// Wraps a document handle produced by something other than a load.
+    ///
+    /// # Safety
+    /// `handle` must be a non-null `FPDF_DOCUMENT` that this `Document` may
+    /// close exactly once with `FPDF_CloseDocument`, and whatever it points
+    /// into must outlive it. `EPDFLayer_OpenLayer` returns such a handle; the
+    /// base document it points into is kept alive by
+    /// [`crate::LayerDocument`], which is the only caller.
+    pub(crate) unsafe fn from_raw_layer(
+        handle: pdfium_sys::FPDF_DOCUMENT,
+        library: Rc<Library>,
+    ) -> Self {
+        // No bytes of its own: a layer's storage belongs to its base.
+        Self { handle, bytes: Vec::new(), library, _not_send: PhantomData }
+    }
+
     pub fn page_count(&self) -> u32 {
         // Negative means PDFium could not read the page tree; report zero
         // pages rather than a huge unsigned count.

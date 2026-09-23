@@ -12,6 +12,7 @@
 //! confinement rather than papering over it with atomics that would let a
 //! handle cross threads and misbehave later.
 
+mod base;
 mod bitmap;
 mod document;
 mod error;
@@ -20,6 +21,7 @@ mod library;
 mod page;
 mod text;
 
+pub use base::{BaseDocument, LayerDocument, LayerOpenError};
 pub use bitmap::Bitmap;
 pub use document::{Document, PasswordPermissions};
 pub use error::PdfiumError;

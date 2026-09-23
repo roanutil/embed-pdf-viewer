@@ -19,6 +19,7 @@
 //! takes authority at G10.
 
 pub mod authority;
+pub mod base_registry;
 pub mod document;
 pub mod pages;
 pub mod revisions;
