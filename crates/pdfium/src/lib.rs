@@ -16,6 +16,7 @@ mod base;
 mod bitmap;
 mod document;
 mod error;
+mod file_access;
 mod geom;
 mod library;
 mod page;
@@ -23,8 +24,9 @@ mod text;
 
 pub use base::{BaseDocument, LayerDocument, LayerOpenError};
 pub use bitmap::Bitmap;
-pub use document::{Document, PasswordPermissions};
+pub use document::{Document, FileBackedDocument, PasswordPermissions};
 pub use error::PdfiumError;
+pub use file_access::FileAccess;
 pub use geom::{MatrixF, QuadF, RectF};
 pub use library::Library;
 pub use page::{Page, PageView, SharedPage};

@@ -2,7 +2,7 @@ use std::ffi::{CString, c_void};
 use std::marker::PhantomData;
 use std::rc::Rc;
 
-use crate::{Library, Page, PdfiumError};
+use crate::{FileAccess, Library, Page, PdfiumError};
 
 /// An open `FPDF_DOCUMENT` and the bytes PDFium is reading from.
 #[derive(Debug)]
@@ -83,6 +83,45 @@ impl Document {
         }
 
         Ok(Self { handle, bytes: owned, library: lib, _not_send: PhantomData })
+    }
+
+    /// Open a document read through a [`FileAccess`] rather than from a copy.
+    ///
+    /// The access has to outlive the document: PDFium keeps the pointer and
+    /// reads through it for the life of the handle, so this borrows rather
+    /// than taking ownership and the caller keeps the `FileAccess` alive.
+    pub fn from_file_access<'a>(
+        lib: Rc<Library>,
+        access: &'a FileAccess,
+        password: Option<&str>,
+    ) -> Result<FileBackedDocument<'a>, PdfiumError> {
+        let c_password = password
+            .map(|p| {
+                CString::new(p).map_err(|_| PdfiumError::InvalidArgument("password contains NUL"))
+            })
+            .transpose()?;
+        let password_ptr = c_password.as_ref().map_or(std::ptr::null(), |c| c.as_ptr());
+
+        // SAFETY: `access` is borrowed for `'a`, which bounds the returned
+        // document, so the pointer stays valid for every read PDFium makes.
+        let handle =
+            unsafe { pdfium_sys::FPDF_LoadCustomDocument(access.as_ptr(), password_ptr) };
+        if handle.is_null() {
+            let err = unsafe { pdfium_sys::FPDF_GetLastError() };
+            return Err(if err == pdfium_sys::FPDF_ERR_PASSWORD as _ {
+                PdfiumError::Password
+            } else if err == pdfium_sys::FPDF_ERR_SECURITY as _ {
+                PdfiumError::Security
+            } else {
+                PdfiumError::Load
+            });
+        }
+        Ok(FileBackedDocument {
+            // SAFETY: non-null, closed exactly once when the wrapper drops,
+            // and the access it reads through outlives it by construction.
+            document: unsafe { Self::from_raw_layer(handle, lib) },
+            _access: PhantomData,
+        })
     }
 
     /// Wraps a document handle produced by something other than a load.
@@ -245,6 +284,24 @@ impl Document {
     /// The caller must not close the handle or outlive this `Document`.
     pub unsafe fn as_raw(&self) -> pdfium_sys::FPDF_DOCUMENT {
         self.handle
+    }
+}
+
+/// A document PDFium reads through a borrowed [`FileAccess`].
+///
+/// Separate from [`Document`] because the lifetime is load-bearing: the access
+/// must outlive the handle, and a plain `Document` has nowhere to record that.
+#[derive(Debug)]
+pub struct FileBackedDocument<'a> {
+    document: Document,
+    _access: PhantomData<&'a FileAccess>,
+}
+
+impl std::ops::Deref for FileBackedDocument<'_> {
+    type Target = Document;
+
+    fn deref(&self) -> &Self::Target {
+        &self.document
     }
 }
 

@@ -16,7 +16,7 @@
 use std::ffi::CString;
 use std::rc::Rc;
 
-use crate::{Document, Library, PdfiumError};
+use crate::{Document, FileAccess, Library, PdfiumError};
 
 /// Why a layer would not open.
 ///
@@ -61,16 +61,27 @@ impl std::fmt::Display for LayerOpenError {
 
 impl std::error::Error for LayerOpenError {}
 
+/// Which call opens the layer, and therefore which checks run.
+#[derive(Debug, Clone, Copy)]
+enum LayerSource {
+    Fresh,
+    Delta,
+    Artifact,
+}
+
 /// A parsed, frozen document that layers are opened on top of.
 ///
 /// Not an `FPDF_DOCUMENT` and not usable with document calls.
 #[derive(Debug)]
 pub struct BaseDocument {
     handle: pdfium_sys::EPDF_BASE_DOCUMENT,
-    /// The buffer PDFium keeps a pointer into. Must outlive `handle`, so it is
-    /// declared after it and dropped after it.
+    /// The buffer PDFium keeps a pointer into, for a memory base. Must outlive
+    /// `handle`, so it is declared after it and dropped after it.
     #[allow(dead_code)]
     bytes: Vec<u8>,
+    /// The reader PDFium calls back into, for a file base. Same requirement.
+    #[allow(dead_code)]
+    access: Option<FileAccess>,
     #[allow(dead_code)]
     library: Rc<Library>,
     _not_send: std::marker::PhantomData<*const ()>,
@@ -115,7 +126,51 @@ impl BaseDocument {
                 PdfiumError::Load
             });
         }
-        Ok(Self { handle, bytes: owned, library, _not_send: std::marker::PhantomData })
+        Ok(Self {
+            handle,
+            bytes: owned,
+            access: None,
+            library,
+            _not_send: std::marker::PhantomData,
+        })
+    }
+
+    /// Load and freeze a base document read through a [`FileAccess`].
+    ///
+    /// `open.layerFileBase`. The access is owned here rather than borrowed:
+    /// PDFium reads through it for the life of the base, and borrowing would
+    /// put a lifetime on `BaseDocument` that every layer and every session
+    /// holding one would then have to carry.
+    pub fn from_file_access(
+        library: Rc<Library>,
+        access: FileAccess,
+        password: Option<&str>,
+    ) -> Result<Self, PdfiumError> {
+        let c_password = password
+            .map(|p| {
+                CString::new(p).map_err(|_| PdfiumError::InvalidArgument("password contains NUL"))
+            })
+            .transpose()?;
+        let password_ptr = c_password.as_ref().map_or(std::ptr::null(), |c| c.as_ptr());
+
+        // SAFETY: `access` is moved into the returned value, so the pointer
+        // PDFium keeps stays valid until the base is released in `Drop`.
+        let handle = unsafe { pdfium_sys::EPDF_LoadBaseDocument(access.as_ptr(), password_ptr) };
+        if handle.is_null() {
+            let err = unsafe { pdfium_sys::FPDF_GetLastError() };
+            return Err(if err == pdfium_sys::FPDF_ERR_PASSWORD as _ {
+                PdfiumError::Password
+            } else {
+                PdfiumError::Load
+            });
+        }
+        Ok(Self {
+            handle,
+            bytes: Vec::new(),
+            access: Some(access),
+            library,
+            _not_send: std::marker::PhantomData,
+        })
     }
 
     /// Open a fresh, empty layer on this base.
@@ -124,20 +179,61 @@ impl BaseDocument {
     /// layer whose base was released would read freed memory, and taking the
     /// `Rc` here makes that unrepresentable.
     pub fn open_layer(self: &Rc<Self>) -> Result<LayerDocument, LayerOpenError> {
+        self.open_layer_inner(None, LayerSource::Fresh)
+    }
+
+    /// Open a layer from raw delta bytes, as `EPDFLayer_SaveDelta` produced.
+    pub fn open_layer_delta(
+        self: &Rc<Self>,
+        delta: &FileAccess,
+    ) -> Result<LayerDocument, LayerOpenError> {
+        self.open_layer_inner(Some(delta), LayerSource::Delta)
+    }
+
+    /// Open a layer from an artifact, which carries its base's identity.
+    ///
+    /// The difference from [`BaseDocument::open_layer_delta`] is the check: an
+    /// artifact records which base it was saved against and PDFium refuses it
+    /// against any other, reporting [`LayerOpenError::BaseMismatch`]. A raw
+    /// delta carries no such marker, so applying one to the wrong base
+    /// succeeds and produces nonsense.
+    pub fn open_layer_artifact(
+        self: &Rc<Self>,
+        artifact: &FileAccess,
+    ) -> Result<LayerDocument, LayerOpenError> {
+        self.open_layer_inner(Some(artifact), LayerSource::Artifact)
+    }
+
+    fn open_layer_inner(
+        self: &Rc<Self>,
+        access: Option<&FileAccess>,
+        source: LayerSource,
+    ) -> Result<LayerDocument, LayerOpenError> {
         // Initialized to a value the enum does not define, so a PDFium build
         // that forgets to write the out-parameter is reported as a failure
         // rather than read as kSuccess.
         let mut status: pdfium_sys::EPDFLayerOpenStatus = u32::MAX;
+        let access_ptr = access.map_or(std::ptr::null_mut(), FileAccess::as_ptr);
         // SAFETY: the base handle is live for the duration of the call and,
-        // through the `Rc` below, for the life of the returned layer. A null
-        // file access opens a fresh layer, per the header.
+        // through the `Rc` below, for the life of the returned layer. The
+        // access, when present, is borrowed for the call; PDFium reads the
+        // delta during the open and does not retain it. A null access opens a
+        // fresh layer, per the header.
         let handle = unsafe {
-            pdfium_sys::EPDFLayer_OpenLayer(
-                self.handle,
-                std::ptr::null_mut(),
-                std::ptr::null(),
-                &mut status,
-            )
+            match source {
+                LayerSource::Artifact => pdfium_sys::EPDFLayer_OpenLayerArtifact(
+                    self.handle,
+                    access_ptr,
+                    std::ptr::null(),
+                    &mut status,
+                ),
+                LayerSource::Fresh | LayerSource::Delta => pdfium_sys::EPDFLayer_OpenLayer(
+                    self.handle,
+                    access_ptr,
+                    std::ptr::null(),
+                    &mut status,
+                ),
+            }
         };
         if handle.is_null() || status != 0 {
             if !handle.is_null() {

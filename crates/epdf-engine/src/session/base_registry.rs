@@ -17,7 +17,7 @@ use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::rc::Rc;
 
-use pdfium::{BaseDocument, Library, PdfiumError};
+use pdfium::{BaseDocument, FileAccess, Library, PdfiumError};
 
 use crate::error::{EngineError, EngineErrorCode};
 
@@ -63,23 +63,44 @@ impl BaseDocumentRegistry {
 
         // Loaded outside the borrow: a panic inside PDFium with the map
         // borrowed would poison every later acquire.
-        let base = Rc::new(BaseDocument::from_bytes(Library::acquire(), bytes, password).map_err(
-            |e| match e {
-                PdfiumError::Password if password.is_some() => EngineError::with_message(
-                    EngineErrorCode::DocPasswordIncorrect,
-                    "incorrect base document password",
-                ),
-                PdfiumError::Password => EngineError::with_message(
-                    EngineErrorCode::DocPasswordRequired,
-                    "base document requires a password",
-                ),
-                other => EngineError::with_message(
-                    EngineErrorCode::DocOpenFailed,
-                    format!("failed to open base document: {other}"),
-                ),
-            },
-        )?);
+        let base = Rc::new(
+            BaseDocument::from_bytes(Library::acquire(), bytes, password)
+                .map_err(|e| open_error(e, password.is_some()))?,
+        );
 
+        self.entries
+            .borrow_mut()
+            .insert(key.to_string(), Entry { base: Rc::clone(&base), refs: 1 });
+        Ok(base)
+    }
+
+    /// The base for `key`, read from a file on demand rather than copied.
+    ///
+    /// `open.layerFileBase`. The difference from
+    /// [`BaseDocumentRegistry::acquire_memory`] is where the bytes live: PDFium
+    /// calls back into the file for the ranges it needs, so a 200 MB document
+    /// costs the pages it touches rather than 200 MB.
+    pub fn acquire_file(
+        &self,
+        key: &str,
+        path: &std::path::Path,
+        password: Option<&str>,
+    ) -> Result<Rc<BaseDocument>, EngineError> {
+        if let Some(entry) = self.entries.borrow_mut().get_mut(key) {
+            entry.refs += 1;
+            return Ok(Rc::clone(&entry.base));
+        }
+
+        let access = FileAccess::from_file(path).map_err(|e| {
+            EngineError::with_message(
+                EngineErrorCode::DocOpenFailed,
+                format!("failed to read {}: {e}", path.display()),
+            )
+        })?;
+        let base = Rc::new(
+            BaseDocument::from_file_access(Library::acquire(), access, password)
+                .map_err(|e| open_error(e, password.is_some()))?,
+        );
         self.entries
             .borrow_mut()
             .insert(key.to_string(), Entry { base: Rc::clone(&base), refs: 1 });
@@ -125,6 +146,28 @@ impl BaseDocumentRegistry {
     /// so this drops the cache rather than freeing memory somebody is using.
     pub fn release_all(&self) {
         self.entries.borrow_mut().clear();
+    }
+}
+
+/// PDFium's open failure in the engine's vocabulary.
+///
+/// Three answers, not one. A missing password means prompt, a wrong one means
+/// the user got it wrong, and anything else means the bytes are not a document
+/// this can open. Collapsing them makes a prompt impossible to write.
+fn open_error(error: PdfiumError, password_supplied: bool) -> EngineError {
+    match error {
+        PdfiumError::Password if password_supplied => EngineError::with_message(
+            EngineErrorCode::DocPasswordIncorrect,
+            "incorrect base document password",
+        ),
+        PdfiumError::Password => EngineError::with_message(
+            EngineErrorCode::DocPasswordRequired,
+            "base document requires a password",
+        ),
+        other => EngineError::with_message(
+            EngineErrorCode::DocOpenFailed,
+            format!("failed to open base document: {other}"),
+        ),
     }
 }
 
@@ -215,6 +258,39 @@ mod tests {
 
         assert_eq!(first.page_count(), second.page_count());
         assert!(Rc::ptr_eq(first.base(), second.base()), "one base, two layers");
+    }
+
+    #[test]
+    fn a_file_backed_base_reads_the_same_document() {
+        // open.layerFileBase. PDFium calls back into the file for the ranges
+        // it needs, so the bytes are never copied into the process.
+        let registry = BaseDocumentRegistry::new();
+        let path = test_support::fixture_path(test_support::REPORT);
+        let base = registry.acquire_file("report", &path, None).expect("acquire");
+
+        assert_eq!(base.open_layer().expect("layer").page_count(), 14);
+        assert_eq!(registry.ref_count("report"), 1);
+    }
+
+    #[test]
+    fn a_file_key_shares_like_a_memory_one() {
+        let registry = BaseDocumentRegistry::new();
+        let path = test_support::fixture_path(test_support::REPORT);
+        let first = registry.acquire_file("report", &path, None).expect("first");
+        let second = registry.acquire_file("report", &path, None).expect("second");
+
+        assert!(Rc::ptr_eq(&first, &second));
+        assert_eq!(registry.ref_count("report"), 2);
+    }
+
+    #[test]
+    fn a_missing_file_reports_which_path_it_could_not_read() {
+        let registry = BaseDocumentRegistry::new();
+        let missing = test_support::workspace_root().join("no-such-document.pdf");
+        let error = registry.acquire_file("missing", &missing, None).expect_err("no file");
+        assert_eq!(error.code, EngineErrorCode::DocOpenFailed);
+        assert!(error.message.contains("no-such-document.pdf"), "{}", error.message);
+        assert!(!registry.is_registered("missing"), "a failed acquire registered nothing");
     }
 
     #[test]
