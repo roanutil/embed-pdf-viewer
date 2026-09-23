@@ -8,6 +8,7 @@ publish.workspace = true
 name = "uniffi-bindgen"
 path = "src/main.rs"
 
-# Takes uniffi "=0.32.0" with the "cli" feature. The binary exists because
-# `uniffi-bindgen generate --library` has to run from a binary pinned to the
-# same uniffi version as epdf-uniffi.
+# The binary exists because `uniffi-bindgen generate --library` has to run
+# from a binary pinned to the same uniffi version as epdf-uniffi.
+[dependencies]
+uniffi = { version = "=0.32.0", features = ["cli"] }

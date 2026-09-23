@@ -12,5 +12,14 @@ crate-type = ["cdylib", "staticlib", "rlib"]
 
 [dependencies]
 epdf-engine = { path = "../epdf-engine" }
+pdfium = { path = "../pdfium" }
+serde_json = "1"
+uniffi = "=0.32.0"
+thiserror = "2"
 
-# Takes uniffi "=0.32.0" and thiserror "2" once the first type is exported.
+[build-dependencies]
+build-support = { path = "../build-support" }
+
+[dev-dependencies]
+serde_json = "1"
+test-support = { path = "../test-support" }

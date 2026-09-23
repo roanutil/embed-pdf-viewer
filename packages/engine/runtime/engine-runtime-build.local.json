@@ -9,6 +9,22 @@
     "darwin-arm64": {
       "url": "file:///Users/bobsingor/GitHub/cloudpdf-platform/oss/embedpdf/packages/engine/runtime/runtime-src/out/embedpdf-runtime-artifacts/libembedpdf-runtime-darwin-arm64-e4174c4f9.tar.gz",
       "sha256": "3d01246bc722843e08fc77d62d748b9ebe6031d451ef13c69c746ec8ed6309b4"
+    },
+    "ios-arm64": {
+      "url": "file:///Users/andrew/repos/embed-pdf-viewer/packages/engine/runtime/runtime-src/out/embedpdf-runtime-artifacts/libembedpdf-runtime-ios-arm64-7f0fa5dbe.tar.gz",
+      "sha256": "f11e23cfdcbddfaabf669d7408d4f7e2c589d4a1965b36baa01b09cd0f769389"
+    },
+    "ios-sim-arm64": {
+      "url": "file:///Users/andrew/repos/embed-pdf-viewer/packages/engine/runtime/runtime-src/out/embedpdf-runtime-artifacts/libembedpdf-runtime-ios-sim-arm64-7f0fa5dbe.tar.gz",
+      "sha256": "85ec7e18d703d6b418e360f541a24a0ea1e3715c84032282c9c986376f9b3add"
+    },
+    "android-arm64": {
+      "url": "file:///Users/andrew/repos/embed-pdf-viewer/pdfium-multiplatform-prototype/build/cache/libembedpdf-runtime-android-arm64.tar.gz",
+      "sha256": "648c3053ac500696ab94711768c7877a413c75efb24136abdf2cbf5e5b89b5ea"
+    },
+    "android-x64": {
+      "url": "file:///Users/andrew/repos/embed-pdf-viewer/pdfium-multiplatform-prototype/build/cache/libembedpdf-runtime-android-x64.tar.gz",
+      "sha256": "ce4358ce8447eec68c250683ea4fe8c6112527a96c87e7a218b8017761d18705"
     }
   }
 }
