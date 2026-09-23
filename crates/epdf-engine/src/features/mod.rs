@@ -15,6 +15,7 @@ pub mod metadata;
 pub mod redaction;
 pub mod render;
 pub mod search;
+pub mod security;
 pub mod server;
 pub mod structure;
 pub mod text;

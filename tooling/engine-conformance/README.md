@@ -196,6 +196,45 @@ Worth knowing if you extend it: the runner compares TypeScript's
 `Deserialize` on the enum. Deriving it would make the two shapes agree by
 construction, which is the one thing this gate is for.
 
+## Security state
+
+`vectors/security/` is the derivation half of G3's gate: given what PDFium
+reported, what shape does the engine produce? Pure, so it needs no document and
+no fixture per combination of bits. The half that reads a real encrypted file
+is a separate runner.
+
+```bash
+pnpm --filter @embedpdf/tooling-engine-conformance run security
+pnpm --filter @embedpdf/tooling-engine-conformance run security:check
+```
+
+`state.json` records `buildSecurityInfo`, `hasAllStandardSecurityPermissions`,
+`openedAsFromCode`, `advisoryFromPdfBits` and `securityStateFromProbe`.
+`crates/epdf-engine/tests/security_state.rs` replays it.
+
+Three things in here are easy to get wrong and invisible when you do. "All
+permissions" for an encrypted document is `0xFFFFFFFC` and not `0xFFFFFFFF`,
+because the Standard security handler reserves bits 1 and 2 as zero and PDFium
+masks owner permissions through that convention; compare against `0xFFFFFFFF`
+and every owner-unlocked document reads as restricted. The order of
+`access.reasons` is wire shape rather than an implementation detail, since
+`/access` carries the array as written. And an unencrypted document's security
+handler revision is nulled rather than passed through.
+
+The runner also pins something no comment can. `document-security-state.ts`
+says the advisory "MUST mirror the bit combinations the scope resolver uses for
+`pdf.permissions` expansion", and the two live in different packages in both
+languages. `the_advisory_and_the_scope_resolver_tell_the_same_story` checks
+each advisory field against the capability it claims to describe, so a badge
+that offers high-quality printing where the resolver denies `doc.print.high`
+fails rather than shipping.
+
+One genuine type difference is recorded rather than smoothed over. JavaScript's
+bitwise operators return a signed 32-bit int, so `0xFFFFFFFC & ~(1 << 3)` is
+`-12` there, and the TypeScript launders every permission word through `u32()`
+at each boundary. Rust takes `u32` and converts once at the FFI edge with
+`normalize_u32`. Both spellings of each word are in the corpus.
+
 ## The linked WASM bridge
 
 `src/verify-wasm-bridge.mts` drives the Stage A geometry export inside a module
