@@ -12,6 +12,8 @@ pub enum PdfiumError {
     Security,
     PageOutOfRange(u32),
     PageLoad(u32),
+    /// A page addressed by PDF object number could not be loaded.
+    PageLoadByObjectNumber(u32),
     TextLoad,
     TextRead,
     TextRect,
@@ -42,6 +44,9 @@ impl std::fmt::Display for PdfiumError {
                 f,
                 "FPDF_LoadPage failed for page index {i}, which is within range"
             ),
+            Self::PageLoadByObjectNumber(number) => {
+                write!(f, "no page with object number {number}")
+            }
             Self::TextLoad => write!(f, "FPDFText_LoadPage failed"),
             Self::TextRead => write!(f, "EPDFText_GetTextFull failed"),
             Self::TextRect => write!(f, "FPDFText_GetRect failed"),

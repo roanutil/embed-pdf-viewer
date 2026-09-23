@@ -154,9 +154,7 @@ impl PdfEngine {
         // on the owner thread, which is why the first job rather than this
         // constructor is where the library appears.
         Arc::new(Self {
-            shared: Arc::new(Shared {
-                owner: Mutex::new(OwnerThread::start(OwnedState::default)),
-            }),
+            shared: Arc::new(Shared { owner: Mutex::new(OwnerThread::start(OwnedState::default)) }),
         })
     }
 
@@ -222,23 +220,40 @@ impl PdfDocument {
     /// Every page, with its durable object number and size in PDF points.
     pub fn pages(&self) -> Result<Vec<PdfPageInfo>> {
         let id = self.id;
-        self.shared.run(move |state| {
-            let document = state.documents.get(&id).ok_or_else(closed_document)?;
-            let mut pages = Vec::new();
-            for index in 0..document.page_count() {
-                let page = document.document().page(index).map_err(|e| {
-                    EngineError::with_message(EngineErrorCode::RuntimeUnavailable, e.to_string())
-                })?;
-                pages.push(PdfPageInfo {
-                    index,
-                    object_number: page.object_number(),
-                    width_points: page.width(),
-                    height_points: page.height(),
-                });
-            }
-            Ok::<Vec<PdfPageInfo>, EngineError>(pages)
-        })?
-        .map_err(PdfError::from)
+        self.shared
+            .run(move |state| {
+                let document = state.documents.get(&id).ok_or_else(closed_document)?;
+                let mut pages = Vec::new();
+                for index in 0..document.page_count() {
+                    // Walk by index to discover what is there, then reload by
+                    // object number for the size. The index walk uses
+                    // `FPDF_LoadPage`, which reports a `/Rotate 90` page as
+                    // landscape; every size that leaves this crate has to come
+                    // from the normalized loader instead, or native disagrees with
+                    // web on any rotated page. See
+                    // `epdf-engine/tests/rotation_normalization.rs`.
+                    let number = document
+                        .document()
+                        .page(index)
+                        .map_err(|e| {
+                            EngineError::with_message(
+                                EngineErrorCode::RuntimeUnavailable,
+                                e.to_string(),
+                            )
+                        })?
+                        .object_number();
+                    let page = document.page(PageObjectNumber::new(number)?)?;
+                    let view = page.view();
+                    pages.push(PdfPageInfo {
+                        index,
+                        object_number: number,
+                        width_points: view.width(),
+                        height_points: view.height(),
+                    });
+                }
+                Ok::<Vec<PdfPageInfo>, EngineError>(pages)
+            })?
+            .map_err(PdfError::from)
     }
 
     /// Page geometry, through the same reader the web engine uses.
@@ -250,15 +265,16 @@ impl PdfDocument {
     /// decodes it into a platform type; that is the facade's job.
     pub fn page_geometry_json(&self, page_object_number: u32) -> Result<String> {
         let id = self.id;
-        self.shared.run(move |state| {
-            let document = state.documents.get(&id).ok_or_else(closed_document)?;
-            let page = document.page(PageObjectNumber::new(page_object_number)?)?;
-            let snapshot = read_page_geometry(&page, &CancelToken::never())?;
-            serde_json::to_string(&snapshot).map_err(|e| {
-                EngineError::with_message(EngineErrorCode::WireFormat, e.to_string())
-            })
-        })?
-        .map_err(PdfError::from)
+        self.shared
+            .run(move |state| {
+                let document = state.documents.get(&id).ok_or_else(closed_document)?;
+                let page = document.page(PageObjectNumber::new(page_object_number)?)?;
+                let snapshot = read_page_geometry(&page, &CancelToken::never())?;
+                serde_json::to_string(&snapshot).map_err(|e| {
+                    EngineError::with_message(EngineErrorCode::WireFormat, e.to_string())
+                })
+            })?
+            .map_err(PdfError::from)
     }
 
     /// Renders a page to RGBA8 at `scale`.
@@ -275,29 +291,32 @@ impl PdfDocument {
             )));
         }
         let id = self.id;
-        self.shared.run(move |state| {
-            let document = state.documents.get(&id).ok_or_else(closed_document)?;
-            let page = document.page(PageObjectNumber::new(page_object_number)?)?;
-            let view = page.view();
-            // Rounded, and refused rather than clamped when it overflows: the
-            // admission check belongs before the allocation, not after.
-            let width = ((view.width() * scale).round() as i64).clamp(1, u32::MAX as i64) as u32;
-            let height = ((view.height() * scale).round() as i64).clamp(1, u32::MAX as i64) as u32;
-            let bitmap = view.render_bgra(width, height).map_err(|e| {
-                EngineError::with_message(EngineErrorCode::RuntimeUnavailable, e.to_string())
-            })?;
-            let mut rgba = bitmap.bgra;
-            for pixel in rgba.as_chunks_mut::<4>().0 {
-                pixel.swap(0, 2);
-            }
-            Ok::<PdfBitmap, EngineError>(PdfBitmap {
-                width: bitmap.width,
-                height: bitmap.height,
-                stride: bitmap.stride,
-                rgba,
-            })
-        })?
-        .map_err(PdfError::from)
+        self.shared
+            .run(move |state| {
+                let document = state.documents.get(&id).ok_or_else(closed_document)?;
+                let page = document.page(PageObjectNumber::new(page_object_number)?)?;
+                let view = page.view();
+                // Rounded, and refused rather than clamped when it overflows: the
+                // admission check belongs before the allocation, not after.
+                let width =
+                    ((view.width() * scale).round() as i64).clamp(1, u32::MAX as i64) as u32;
+                let height =
+                    ((view.height() * scale).round() as i64).clamp(1, u32::MAX as i64) as u32;
+                let bitmap = view.render_bgra(width, height).map_err(|e| {
+                    EngineError::with_message(EngineErrorCode::RuntimeUnavailable, e.to_string())
+                })?;
+                let mut rgba = bitmap.bgra;
+                for pixel in rgba.as_chunks_mut::<4>().0 {
+                    pixel.swap(0, 2);
+                }
+                Ok::<PdfBitmap, EngineError>(PdfBitmap {
+                    width: bitmap.width,
+                    height: bitmap.height,
+                    stride: bitmap.stride,
+                    rgba,
+                })
+            })?
+            .map_err(PdfError::from)
     }
 
     /// Closes this document without shutting the engine down.

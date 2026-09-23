@@ -324,6 +324,65 @@ function unsupportedSecurityDocument() {
 }
 
 /**
+ * Four identical pages at `/Rotate` 0, 90, 180 and 270.
+ *
+ * Nothing else in this repository sets `/Rotate` at all, which left rotation
+ * normalization entirely untested. `multiplatform-plan.md` is explicit that
+ * loading a page with `FPDF_LoadPage` "would bypass normalized rotation", and
+ * `PagePtrPool.acquire` uses `EPDFDoc_LoadPageByObjectNumberNormalized` so that
+ * render, text, geometry and annotation coordinates all share one space. A
+ * corpus with no rotated page cannot tell the two loaders apart.
+ *
+ * The pages carry identical content, so under the normalized loader all four
+ * must report the same size and the same glyph positions. Under the raw
+ * loader, 90 and 270 swap width for height and move the text. That difference
+ * is the whole point of the fixture.
+ */
+function rotatedPages(font) {
+  const content = Buffer.from(
+    textObject({ matrix: [1, 0, 0, 1, 72, 700], size: 24, text: 'Rotate ABC' }),
+    'latin1',
+  );
+
+  const widths = [];
+  for (let code = FIRST_CHAR; code <= LAST_CHAR; code++) widths.push(font.widthOf(code));
+
+  // Objects 1-2 are the catalog and page tree, 3-6 the pages, 7 the shared
+  // content stream, 8-10 the font.
+  const pages = [0, 90, 180, 270].map((rotate) =>
+    Buffer.from(
+      `<< /Type /Page /Parent 2 0 R /Contents 7 0 R /Rotate ${rotate} ` +
+        `/Resources << /Font << /F1 8 0 R >> >> >>`,
+      'latin1',
+    ),
+  );
+
+  return buildPdf([
+    Buffer.from('<< /Type /Catalog /Pages 2 0 R >>', 'latin1'),
+    Buffer.from(
+      '<< /Type /Pages /Kids [3 0 R 4 0 R 5 0 R 6 0 R] /Count 4 /MediaBox [0 0 612 792] >>',
+      'latin1',
+    ),
+    ...pages,
+    stream('', content),
+    Buffer.from(
+      `<< /Type /Font /Subtype /TrueType /BaseFont /Roboto-Regular ` +
+        `/FirstChar ${FIRST_CHAR} /LastChar ${LAST_CHAR} /Widths [${widths.join(' ')}] ` +
+        `/Encoding /WinAnsiEncoding /FontDescriptor 9 0 R >>`,
+      'latin1',
+    ),
+    Buffer.from(
+      `<< /Type /FontDescriptor /FontName /Roboto-Regular /Flags 32 ` +
+        `/FontBBox [${font.bbox.join(' ')}] /ItalicAngle 0 /Ascent ${font.ascent} ` +
+        `/Descent ${font.descent} /CapHeight ${font.capHeight} /StemV 80 ` +
+        `/FontFile2 10 0 R >>`,
+      'latin1',
+    ),
+    stream(`/Length1 ${font.program.length}`, font.program),
+  ]);
+}
+
+/**
  * The permission words the encrypted fixtures declare.
  *
  * Bits 1 and 2 are reserved as zero, so a word is built by clearing the bits
@@ -336,6 +395,7 @@ const clear = (...bits) => (bits.reduce((word, b) => word & ~(1 << (b - 1)), ALL
 const font = readFont();
 const outputs = [
   ['embedded_orientations.pdf', embeddedOrientations(font)],
+  ['rotated_pages.pdf', rotatedPages(font)],
 
   // Revision 2, RC4-40. The oldest handler still in the wild.
   [

@@ -162,13 +162,22 @@ impl DocumentAccess for OwnedDocument {
         Self: 'a;
 
     fn page(&self, page: PageObjectNumber) -> Result<Self::Page<'_>, EngineError> {
-        let index = *self.index_by_object_number.get(&page).ok_or_else(|| {
-            EngineError::with_message(
+        // The index lookup is the NotFound check, so a page this document does
+        // not have is reported before PDFium is asked.
+        if !self.index_by_object_number.contains_key(&page) {
+            return Err(EngineError::with_message(
                 EngineErrorCode::NotFound,
                 format!("no page with object number {page}"),
-            )
-        })?;
-        let loaded = self.document.page(index).map_err(|e| {
+            ));
+        }
+        // By object number and normalized, never by index. `FPDF_LoadPage`
+        // reports a `/Rotate 90` page as landscape and places its text to
+        // match, which puts every coordinate this engine produces in a
+        // different space from the one `PagePtrPool.acquire` produces on web.
+        // `tooling/engine-conformance/fixtures/rotated_pages.pdf` is four
+        // identical pages at 0, 90, 180 and 270 degrees, and
+        // `tests/rotation_normalization.rs` fails if this reverts.
+        let loaded = self.document.page_by_object_number(page.get()).map_err(|e| {
             EngineError::with_message(EngineErrorCode::RuntimeUnavailable, e.to_string())
         })?;
         Ok(OwnedPage::new(loaded))

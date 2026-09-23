@@ -106,8 +106,23 @@ impl Document {
         unsafe { pdfium_sys::FPDF_GetDocPermissions(self.handle) as u32 }
     }
 
+    /// Loads a page by PDF object number, with rotation normalized to zero.
+    ///
+    /// The loader read paths should use. See [`Page::load_normalized`]: a
+    /// `/Rotate 90` page loaded by index reports landscape dimensions and
+    /// places its text accordingly, which puts every coordinate the engine
+    /// produces in a different space from the one the web engine uses.
+    pub fn page_by_object_number(&self, object_number: u32) -> Result<Page<'_>, PdfiumError> {
+        Page::load_normalized(self.handle, object_number)
+    }
+
     /// Loads a page by zero-based index, owning it until the returned `Page`
     /// drops.
+    ///
+    /// Does NOT normalize rotation. Prefer
+    /// [`Document::page_by_object_number`] for anything whose coordinates
+    /// leave this crate; this one is for walking the page tree to discover
+    /// what is there.
     pub fn page(&self, index: u32) -> Result<Page<'_>, PdfiumError> {
         if index >= self.page_count() {
             return Err(PdfiumError::PageOutOfRange(index));

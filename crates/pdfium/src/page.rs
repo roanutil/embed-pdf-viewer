@@ -134,6 +134,27 @@ impl<'a> Page<'a> {
         let view = unsafe { PageView::from_raw(handle) }.ok_or(PdfiumError::PageLoad(index))?;
         Ok(Self { view })
     }
+
+    /// Loads a page by PDF object number with its rotation normalized to zero.
+    ///
+    /// The loader every read path should use. `FPDF_LoadPage` reports a
+    /// `/Rotate 90` page as landscape and places its text accordingly;
+    /// `EPDFDoc_LoadPageByObjectNumberNormalized` forces rotation to zero so
+    /// render, text, geometry and annotation coordinates share one space. The
+    /// TypeScript `PagePtrPool.acquire` uses it for exactly that reason, and
+    /// `multiplatform-plan.md` says in as many words that calling
+    /// `FPDF_LoadPage` here "would bypass normalized rotation".
+    pub(crate) fn load_normalized(
+        doc: pdfium_sys::FPDF_DOCUMENT,
+        object_number: u32,
+    ) -> Result<Self, PdfiumError> {
+        // SAFETY: `doc` is a live document handle owned by the caller.
+        let handle =
+            unsafe { pdfium_sys::EPDFDoc_LoadPageByObjectNumberNormalized(doc, object_number) };
+        let view = unsafe { PageView::from_raw(handle) }
+            .ok_or(PdfiumError::PageLoadByObjectNumber(object_number))?;
+        Ok(Self { view })
+    }
 }
 
 impl<'a> Deref for Page<'a> {
