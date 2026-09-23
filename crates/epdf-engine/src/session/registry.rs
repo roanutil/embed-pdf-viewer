@@ -119,12 +119,7 @@ impl SessionRegistry {
         authority: SessionAuthority,
     ) -> Result<(), EngineError> {
         self.refuse_if_destroyed()?;
-        if self.sessions.contains_key(&key) {
-            return Err(EngineError::with_message(
-                EngineErrorCode::InvalidArg,
-                format!("a session is already open for {}", describe(&key)),
-            ));
-        }
+        self.refuse_if_taken(&key)?;
         let mut session = DocumentSession::new();
         match session.open_with(bytes.clone(), password, authority) {
             Ok(()) => {
@@ -179,19 +174,31 @@ impl SessionRegistry {
         authority: SessionAuthority,
     ) -> Result<(), EngineError> {
         self.refuse_if_destroyed()?;
-        if self.sessions.contains_key(&key) {
+        self.refuse_if_taken(&key)?;
+        let base = self.bases.acquire_memory(base_key, bytes, password)?;
+        self.attach_layer(key, base_key, base, authority)
+    }
+
+    fn refuse_if_taken(&self, key: &SessionKey) -> Result<(), EngineError> {
+        if self.sessions.contains_key(key) {
             return Err(EngineError::with_message(
                 EngineErrorCode::InvalidArg,
-                format!("a session is already open for {}", describe(&key)),
+                format!("a session is already open for {}", describe(key)),
             ));
         }
-        let base = self.bases.acquire_memory(base_key, bytes, password)?;
+        Ok(())
+    }
+
+    fn attach_layer(
+        &mut self,
+        key: SessionKey,
+        base_key: &str,
+        base: Rc<BaseDocument>,
+        authority: SessionAuthority,
+    ) -> Result<(), EngineError> {
         let mut session = DocumentSession::new();
         match session.open_layer(base, authority) {
             Ok(()) => {
-                // The base is held by the session now; the registry's own
-                // acquisition is handed back so the count reflects sessions
-                // rather than calls.
                 self.sessions.insert(key, session);
                 Ok(())
             }
@@ -207,6 +214,27 @@ impl SessionRegistry {
         }
     }
 
+    /// Open a fresh layer over a base read from a file.
+    ///
+    /// `open.layerFileBase`. Identical to
+    /// [`SessionRegistry::open_layer_memory`] except that the base reads
+    /// through the file rather than a copy, which is the whole reason the
+    /// frame is separate: a base shared by several sessions is exactly the
+    /// case where not holding the bytes twice matters.
+    pub fn open_layer_file(
+        &mut self,
+        key: SessionKey,
+        base_key: &str,
+        path: &std::path::Path,
+        password: Option<&str>,
+        authority: SessionAuthority,
+    ) -> Result<(), EngineError> {
+        self.refuse_if_destroyed()?;
+        self.refuse_if_taken(&key)?;
+        let base = self.bases.acquire_file(base_key, path, password)?;
+        self.attach_layer(key, base_key, base, authority)
+    }
+
     /// Open a fresh layer over a base already registered.
     pub fn open_layer_on(
         &mut self,
@@ -215,12 +243,7 @@ impl SessionRegistry {
         authority: SessionAuthority,
     ) -> Result<(), EngineError> {
         self.refuse_if_destroyed()?;
-        if self.sessions.contains_key(&key) {
-            return Err(EngineError::with_message(
-                EngineErrorCode::InvalidArg,
-                format!("a session is already open for {}", describe(&key)),
-            ));
-        }
+        self.refuse_if_taken(&key)?;
         let mut session = DocumentSession::new();
         session.open_layer(base, authority)?;
         self.sessions.insert(key, session);

@@ -406,3 +406,85 @@ fn a_shut_down_registry_refuses_both_security_frames() {
         EngineErrorCode::RuntimeUnavailable,
     );
 }
+
+#[test]
+fn a_file_backed_layer_reads_the_same_document_as_a_memory_one() {
+    // open.layerFileBase. The difference is where the bytes live, and a
+    // session should not be able to tell.
+    let mut registry = SessionRegistry::new();
+    let path = test_support::fixture_path(test_support::REPORT);
+
+    registry
+        .open_layer_file(
+            SessionKey::layer("doc", "from-file"),
+            "file-base",
+            &path,
+            None,
+            SessionAuthority::unrestricted(),
+        )
+        .expect("file base");
+    registry
+        .open_layer_memory(
+            SessionKey::layer("doc", "from-memory"),
+            "memory-base",
+            &report(),
+            None,
+            SessionAuthority::unrestricted(),
+        )
+        .expect("memory base");
+
+    let from_file = registry
+        .session(&SessionKey::layer("doc", "from-file"))
+        .expect("open")
+        .page_count()
+        .expect("pages");
+    let from_memory = registry
+        .session(&SessionKey::layer("doc", "from-memory"))
+        .expect("open")
+        .page_count()
+        .expect("pages");
+    assert_eq!(from_file, from_memory);
+    assert_eq!(from_file, 14);
+    assert_eq!(registry.bases().len(), 2, "different keys, different bases");
+}
+
+#[test]
+fn a_file_backed_base_is_shared_like_a_memory_one() {
+    let mut registry = SessionRegistry::new();
+    let path = test_support::fixture_path(test_support::REPORT);
+    for layer in ["draft", "review"] {
+        registry
+            .open_layer_file(
+                SessionKey::layer("doc", layer),
+                "file-base",
+                &path,
+                None,
+                SessionAuthority::unrestricted(),
+            )
+            .expect("layer");
+    }
+    assert_eq!(registry.bases().ref_count("file-base"), 2);
+    assert_eq!(registry.bases().len(), 1, "one parse, two layers");
+
+    registry.shutdown();
+    assert!(registry.bases().is_empty());
+}
+
+#[test]
+fn a_layer_over_a_missing_file_opens_no_session() {
+    let mut registry = SessionRegistry::new();
+    let missing = test_support::workspace_root().join("no-such-document.pdf");
+    let error = registry
+        .open_layer_file(
+            SessionKey::layer("doc", "draft"),
+            "file-base",
+            &missing,
+            None,
+            SessionAuthority::unrestricted(),
+        )
+        .expect_err("no file");
+
+    assert_eq!(error.code, EngineErrorCode::DocOpenFailed);
+    assert!(registry.is_empty());
+    assert_eq!(registry.bases().ref_count("file-base"), 0);
+}
