@@ -175,7 +175,26 @@ pub fn sysroot_clang_args(target_os: &str) -> Vec<String> {
             match std::env::var("EMSDK") {
                 Ok(emsdk) => {
                     let sysroot = PathBuf::from(emsdk).join("upstream/emscripten/cache/sysroot");
-                    target(vec![format!("--sysroot={}", sysroot.display())])
+                    target(vec![
+                        format!("--sysroot={}", sysroot.display()),
+                        // Without this, `bindgen` emits every type and not one
+                        // function. `Function::parse` drops any cursor whose
+                        // visibility is not `CXVisibility_Default`
+                        // (`bindgen-0.72.1/ir/function.rs:735`), clang's implicit
+                        // default on `wasm32-*` is hidden, and PDFium's
+                        // `FPDF_EXPORT` expands to nothing unless
+                        // `FPDF_IMPLEMENTATION` is defined
+                        // (`fpdfview.h:216-220`), so the declarations carry no
+                        // attribute to override it. Every other target this
+                        // workspace builds for defaults to default visibility,
+                        // which is why only wasm needs saying.
+                        //
+                        // This changes what bindgen reads, not what anything
+                        // links: the flag reaches libclang, never the archive.
+                        // `-DFPDF_IMPLEMENTATION` would also work and is worse,
+                        // because that macro means "you are building PDFium".
+                        "-fvisibility=default".to_string(),
+                    ])
                 }
                 Err(_) => panic!(
                     "building for wasm32-unknown-emscripten needs the emsdk sysroot: set \
@@ -368,5 +387,27 @@ mod tests {
         assert!(!apple_frameworks("ios").contains(&"AppKit"));
         assert!(apple_frameworks("ios").contains(&"CoreGraphics"));
         assert!(apple_frameworks("linux").is_empty());
+    }
+
+    #[test]
+    fn the_wasm_parse_asks_for_default_visibility() {
+        // The regression this guards is silent: without the flag `bindgen`
+        // emits every type, no functions, and no diagnostic, and the failure
+        // surfaces hundreds of lines later as "cannot find function" in a
+        // crate that did nothing wrong. See the comment at the flag.
+        unsafe {
+            env::set_var("TARGET", "wasm32-unknown-emscripten");
+            env::set_var("EMSDK", "/nonexistent-emsdk-root");
+        }
+        let args = sysroot_clang_args("emscripten");
+        unsafe {
+            env::remove_var("TARGET");
+            env::remove_var("EMSDK");
+        }
+        assert!(args.iter().any(|a| a == "-fvisibility=default"), "{args:?}");
+        assert!(
+            args.iter().any(|a| a == "--target=wasm32-unknown-emscripten"),
+            "a sysroot without a triple makes clang look for a host layout inside it: {args:?}"
+        );
     }
 }
