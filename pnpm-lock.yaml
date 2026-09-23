@@ -1865,6 +1865,18 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
+  tooling/wasm-eh-check:
+    devDependencies:
+      '@playwright/test':
+        specifier: ^1.55.0
+        version: 1.63.0
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.11
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
   website:
     dependencies:
       '@embedpdf/angular':

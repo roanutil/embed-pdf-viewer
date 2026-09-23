@@ -1,0 +1,15 @@
+{
+  "name": "@embedpdf/tooling-wasm-eh-check",
+  "private": true,
+  "type": "module",
+  "description": "Runs the wasm32-eh module in real browsers. Phase 1's exit gate asks for exactly this, and Section 14 calls it the deliverable's largest open risk.",
+  "scripts": {
+    "check": "playwright test",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.9.3"
+  }
+}
