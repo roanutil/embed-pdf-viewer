@@ -589,9 +589,13 @@ layer-open semantics and adapters in G3. CI should fail when a kind is added to
 
 ## 7. Web viewer end-to-end gate
 
-No automated viewer end-to-end harness exists in the reviewed repository. No
-project declares a Playwright dependency or suite (the lockfile only mentions
-optional peers), the five `vitest.config.ts` files under `packages/` all set
+`tooling/viewer-e2e/` holds the harness: a Playwright project driving
+`examples/viewer-react`, with F1 through F5 in `tests/baseline.spec.ts`.
+`.github/workflows/viewer-e2e.yml` runs Chromium and Firefox on every pull
+request and WebKit on the Monday schedule. F6 through F14 are unwritten, and
+`playwright.config.ts` rejects any backend but `typescript`, so nothing runs
+against Rust yet. Outside that harness the packages have no browser coverage:
+the five `vitest.config.ts` files under `packages/` all set
 `environment: 'node'`, and the explicit DOM-environment overrides are four files
 under `packages/framework/react/test/` using `// @vitest-environment happy-dom`.
 Section 4 puts `packages/plugin/*`, `packages/framework/*` and
