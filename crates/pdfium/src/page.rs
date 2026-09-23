@@ -84,14 +84,7 @@ impl<'a> PageView<'a> {
         unsafe {
             // White ground, fully opaque, so a page with no background matches
             // what a viewer shows.
-            pdfium_sys::FPDFBitmap_FillRect(
-                bitmap,
-                0,
-                0,
-                native_width,
-                native_height,
-                0xFFFF_FFFF,
-            );
+            pdfium_sys::FPDFBitmap_FillRect(bitmap, 0, 0, native_width, native_height, 0xFFFF_FFFF);
             pdfium_sys::FPDF_RenderPageBitmap(
                 bitmap,
                 self.handle,
@@ -108,6 +101,17 @@ impl<'a> PageView<'a> {
         Ok(Bitmap { width, height, stride: native_stride as u32, bgra })
     }
 
+    /// How many annotations the page carries.
+    ///
+    /// `FPDFPage_GetAnnotCount` returns a negative value on failure, which is
+    /// reported as zero rather than propagated: the count's only caller so far
+    /// is a test asserting that a write landed, and "the page has no
+    /// annotations" is the right reading of a page PDFium will not enumerate.
+    /// A real G7 reader will want the distinction and should not reuse this.
+    pub fn annotation_count(&self) -> u32 {
+        unsafe { pdfium_sys::FPDFPage_GetAnnotCount(self.handle) }.max(0) as u32
+    }
+
     /// # Safety
     /// The caller must not close the handle or outlive this view.
     pub unsafe fn as_raw(&self) -> pdfium_sys::FPDF_PAGE {
@@ -122,10 +126,7 @@ pub struct Page<'a> {
 }
 
 impl<'a> Page<'a> {
-    pub(crate) fn load(
-        doc: pdfium_sys::FPDF_DOCUMENT,
-        index: u32,
-    ) -> Result<Self, PdfiumError> {
+    pub(crate) fn load(doc: pdfium_sys::FPDF_DOCUMENT, index: u32) -> Result<Self, PdfiumError> {
         let handle = unsafe { pdfium_sys::FPDF_LoadPage(doc, index as i32) };
         // Document::page already checked index < page_count(), so a null
         // handle here is not an out-of-range index; it is PDFium refusing to
@@ -178,15 +179,9 @@ mod tests {
 
     #[test]
     fn rejects_unrepresentable_bitmap_layouts_before_allocation() {
-        for (width, height) in [
-            (0, 1),
-            (1, 0),
-            (u32::MAX, 1),
-            (1 << 30, 1),
-            (1 << 29, 1),
-            (1, 1 << 31),
-            (1 << 28, 4),
-        ] {
+        for (width, height) in
+            [(0, 1), (1, 0), (u32::MAX, 1), (1 << 30, 1), (1 << 29, 1), (1, 1 << 31), (1 << 28, 4)]
+        {
             assert!(bitmap_layout(width, height).is_err(), "{width}x{height} was accepted");
         }
         assert_eq!(bitmap_layout(612, 792), Ok((612, 792, 2448, 1_938_816)));

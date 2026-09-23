@@ -10,6 +10,9 @@ crate-type = ["staticlib", "rlib"]
 
 [dependencies]
 epdf-engine = { path = "../epdf-engine" }
+# Only the spike needs this: it opens a document Rust owns, which Stage A
+# never does. Goes with the spike.
+pdfium = { path = "../pdfium" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 

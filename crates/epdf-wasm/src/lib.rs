@@ -193,3 +193,175 @@ mod tests {
         unsafe { epdf_buffer_free(std::ptr::null_mut(), 0) };
     }
 }
+
+/// The Stage B bridge spike's exports. Throwaway, deleted with the spike.
+///
+/// Stage A borrows a page pointer from a TypeScript-owned session. These go
+/// the other way: Rust owns the document and the host leases a pointer into
+/// it. That is the direction where a protocol mistake is a use-after-free
+/// rather than a wrong answer, which is why it gets proven before `G10` moves
+/// `DocumentSession` behind it.
+///
+/// One session, in a thread-local, because the spike needs exactly one and a
+/// handle table would be the part that outlives the spike. PDFium handles
+/// never cross threads, so thread-local is also the only correct place for it.
+pub mod spike {
+    use std::cell::RefCell;
+
+    use epdf_engine::error::{EngineError, EngineErrorCode};
+    use epdf_engine::spike::lease::{LeaseOutcome, LeaseToken, SpikeSession};
+    use pdfium::{Document, Library};
+
+    thread_local! {
+        static SESSION: RefCell<Option<SpikeSession>> = const { RefCell::new(None) };
+    }
+
+    #[derive(serde::Serialize, Default)]
+    #[serde(rename_all = "camelCase")]
+    struct SpikeResult {
+        /// Non-zero only for checkout, where it is the leased document pointer.
+        document: u32,
+        token: u64,
+        mutation_sequence: u64,
+        form_model_invalidated: bool,
+        failed: bool,
+        /// Whether `close` actually released the document, or is waiting for a
+        /// lease to come home.
+        released: bool,
+        annotations: u32,
+        page_count: u32,
+    }
+
+
+    fn respond(
+        out_len: *mut u32,
+        run: impl FnOnce(&mut Option<SpikeSession>) -> Result<SpikeResult, EngineError>,
+    ) -> *mut u8 {
+        let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            SESSION.with(|cell| run(&mut cell.borrow_mut()))
+        }));
+        match outcome {
+            Ok(Ok(value)) => super::hand_off(&super::Envelope::ok(value), out_len),
+            Ok(Err(error)) => super::hand_off(&super::Envelope::<SpikeResult>::err(error), out_len),
+            Err(_) => super::hand_off(
+                &super::Envelope::<SpikeResult>::err(EngineError::with_message(
+                    EngineErrorCode::Unknown,
+                    "the Rust spike panicked",
+                )),
+                out_len,
+            ),
+        }
+    }
+
+    fn open_session(slot: &mut Option<SpikeSession>) -> Result<&mut SpikeSession, EngineError> {
+        slot.as_mut().ok_or_else(|| {
+            EngineError::with_message(EngineErrorCode::DocNotOpen, "no spike session")
+        })
+    }
+
+    /// Opens a document Rust owns, replacing any previous spike session.
+    ///
+    /// # Safety
+    /// `bytes` must point to `len` readable bytes.
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn epdf_spike_open(
+        bytes: *const u8,
+        len: u32,
+        out_len: *mut u32,
+    ) -> *mut u8 {
+        respond(out_len, |slot| {
+            if bytes.is_null() {
+                return Err(EngineError::with_message(EngineErrorCode::InvalidArg, "null bytes"));
+            }
+            let input = unsafe { std::slice::from_raw_parts(bytes, len as usize) };
+            let document = Document::from_bytes(Library::acquire(), input, None).map_err(|e| {
+                EngineError::with_message(EngineErrorCode::DocOpenFailed, e.to_string())
+            })?;
+            let session = SpikeSession::new(document);
+            let page_count = session.page_count()?;
+            *slot = Some(session);
+            Ok(SpikeResult { page_count, ..Default::default() })
+        })
+    }
+
+    /// Leases the document pointer to the host.
+    ///
+    /// # Safety
+    /// `out_len` must point to a writable `u32`.
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn epdf_spike_checkout(out_len: *mut u32) -> *mut u8 {
+        respond(out_len, |slot| {
+            let (token, document) = open_session(slot)?.checkout()?;
+            Ok(SpikeResult {
+                document: document as usize as u32,
+                token: token.get(),
+                ..Default::default()
+            })
+        })
+    }
+
+    /// Takes the lease back, with what the host did.
+    ///
+    /// # Safety
+    /// `out_len` must point to a writable `u32`.
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn epdf_spike_return(
+        token: u64,
+        wrote: u32,
+        failed: u32,
+        out_len: *mut u32,
+    ) -> *mut u8 {
+        respond(out_len, |slot| {
+            open_session(slot)?.return_lease(
+                LeaseToken::from_raw(token),
+                LeaseOutcome { wrote: wrote != 0, failed: failed != 0 },
+            )?;
+            Ok(SpikeResult { token, ..Default::default() })
+        })
+    }
+
+    /// Settles the outcome and completes any pending close.
+    ///
+    /// # Safety
+    /// `out_len` must point to a writable `u32`.
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn epdf_spike_finalize(token: u64, out_len: *mut u32) -> *mut u8 {
+        respond(out_len, |slot| {
+            let settled = open_session(slot)?.finalize(LeaseToken::from_raw(token))?;
+            Ok(SpikeResult {
+                token,
+                mutation_sequence: settled.mutation_sequence,
+                form_model_invalidated: settled.form_model_invalidated,
+                failed: settled.failed,
+                ..Default::default()
+            })
+        })
+    }
+
+    /// Counts a page's annotations through the document Rust owns.
+    ///
+    /// # Safety
+    /// `out_len` must point to a writable `u32`.
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn epdf_spike_annotations(page_index: u32, out_len: *mut u32) -> *mut u8 {
+        respond(out_len, |slot| {
+            let annotations = open_session(slot)?.annotation_count(page_index)?;
+            Ok(SpikeResult { annotations, ..Default::default() })
+        })
+    }
+
+    /// Rejects new work; releases the document once the protocol settles.
+    ///
+    /// # Safety
+    /// `out_len` must point to a writable `u32`.
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn epdf_spike_close(out_len: *mut u32) -> *mut u8 {
+        respond(out_len, |slot| {
+            let released = open_session(slot)?.close();
+            if released {
+                *slot = None;
+            }
+            Ok(SpikeResult { released, ..Default::default() })
+        })
+    }
+}
