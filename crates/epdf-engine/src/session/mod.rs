@@ -22,6 +22,7 @@ pub mod authority;
 pub mod base_registry;
 pub mod document;
 pub mod pages;
+pub mod registry;
 pub mod revisions;
 pub mod save;
 pub mod scope;
