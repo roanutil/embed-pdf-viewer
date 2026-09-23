@@ -97,7 +97,7 @@ import {
 import { AttachmentMutator, AttachmentReader } from '../features/attachments';
 import { FontRegistrar, type StartupFontSpec } from '../features/fonts';
 import { FormMutator, FormReader, FormsEffectsApplier, disposeFormModel } from '../features/forms';
-import { PageGeometryReader } from '../features/geometry';
+import { PageGeometryReader, RustPageGeometryReader } from '../features/geometry';
 import { MetadataMutator, MetadataReader } from '../features/metadata';
 import {
   PagesExtractor,
@@ -139,6 +139,22 @@ export interface WorkerImageEncoder {
 
 export interface WorkerHostOptions {
   imageEncoder?: WorkerImageEncoder;
+  /**
+   * Route the read operations that have a Rust implementation to it.
+   *
+   * Internal and off by default. Stage A of the multiplatform port
+   * (`multiplatform-plan.md` Section 6) keeps the session in TypeScript and
+   * lets Rust borrow a page pointer for one call, so both readers work against
+   * the same live session and the choice is per host rather than per document.
+   * It is a host option rather than an open option on purpose: the bridge is
+   * hidden from consumer packages until the routing has a performance baseline
+   * to justify it.
+   *
+   * Ignored when the runtime was built without the core, which is every
+   * shipping payload today. `PageGeometryReader` stays the fallback, so a
+   * `true` here on a stock runtime reads exactly as it does now.
+   */
+  rustReads?: boolean;
 }
 
 /**
@@ -814,12 +830,25 @@ export class WorkerHost {
     return wirePack({ tag: 'pages.text', snapshot });
   }
 
+  /**
+   * Whether this host routes reads to the Rust core.
+   *
+   * Both conditions, every time: asked for, and available. A payload without
+   * the core is the normal case, and silently reading through TypeScript is
+   * the right answer there rather than an error about a build flag.
+   */
+  private useRustReads(): boolean {
+    return this.options.rustReads === true && RustPageGeometryReader.supportedBy(this.runtime);
+  }
+
   private handlePagesGeometry(
     req: PagesGeometryWorkerRequest,
     signal: AbortSignal,
   ): WirePack<WorkerResultPayload> {
     const session = this.requireSession(req);
-    const reader = new PageGeometryReader(this.runtime, session);
+    const reader = this.useRustReads()
+      ? new RustPageGeometryReader(this.runtime, session)
+      : new PageGeometryReader(this.runtime, session);
     const snapshot = reader.read(req.pageObjectNumber, signal);
     return wirePack({ tag: 'pages.geometry', snapshot });
   }

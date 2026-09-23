@@ -58,6 +58,31 @@ export interface PdfRuntimeFileWrite {
   toNodeFile(path: string): PdfFileWriteHandle;
 }
 
+/**
+ * The Rust engine core's exports, present only when the module was linked with
+ * `libepdf_wasm.a` (`EMBEDPDF_RUST_STATICLIB` in `build/compile.esm.sh`).
+ *
+ * Absent means the payload is PDFium alone, which is what ships today. Callers
+ * branch on presence rather than on a build flag, so a runtime that lacks the
+ * core degrades to the TypeScript reader instead of throwing.
+ *
+ * Stage A: every entry point here borrows a pointer the session owner acquired
+ * and holds for the duration of the call. Nothing is retained, nothing is
+ * closed. See `crates/epdf-wasm/src/lib.rs`.
+ */
+export interface PdfRuntimeRustCore {
+  /**
+   * Reads one page's geometry through the Rust reader.
+   *
+   * `pagePtr` must come from `PagePtrPool.acquire` and stay open across the
+   * call. Returns the JSON envelope verbatim: `{ result }` or `{ error }`,
+   * with `error` carrying an `EngineErrorCode`. Decoding is the caller's,
+   * because the shape belongs to `engine-core` and this package does not
+   * depend on it.
+   */
+  pageGeometry(pagePtr: Ptr): string;
+}
+
 export interface PdfRuntimeModule {
   readonly kind: 'wasm' | 'native';
   readonly platform: string;
@@ -66,6 +91,8 @@ export interface PdfRuntimeModule {
   readonly fileAccess: PdfRuntimeFileAccess;
   readonly fileWrite: PdfRuntimeFileWrite;
   readonly fn: PdfFunctions;
+  /** Present only when the Rust core was linked into this module. */
+  readonly rust?: PdfRuntimeRustCore;
   destroy(): Promise<void>;
 }
 

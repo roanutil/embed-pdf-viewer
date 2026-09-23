@@ -15,6 +15,7 @@ import type {
   PdfRuntimeFileWrite,
   PdfRuntimeMemory,
   PdfRuntimeModule,
+  PdfRuntimeRustCore,
   Ptr,
 } from '../core/pdf-runtime-module';
 
@@ -62,6 +63,54 @@ function wasmValueKind(kind: MemoryValueKind): string {
     case 'ptr':
       return '*';
   }
+}
+
+/**
+ * Binds the Rust core's exports, or returns undefined when the module was
+ * linked without them.
+ *
+ * Presence is probed rather than configured: a payload built without
+ * `EMBEDPDF_RUST_STATICLIB` simply has no `_epdf_page_geometry`, and callers
+ * fall back to the TypeScript reader. That keeps the two builds one code path
+ * instead of two.
+ */
+function createWasmRustCore(
+  module: EmscriptenModule,
+  mem: PdfRuntimeMemory,
+): PdfRuntimeRustCore | undefined {
+  const pageGeometry = module._epdf_page_geometry as
+    | ((page: number, outLen: number) => number)
+    | undefined;
+  const bufferFree = module._epdf_buffer_free as
+    | ((ptr: number, len: number) => void)
+    | undefined;
+  if (!pageGeometry || !bufferFree) return undefined;
+
+  return {
+    pageGeometry(pagePtr) {
+      // The length comes back through an out-parameter because the payload is
+      // UTF-8 JSON, which may contain any byte a string can, so a NUL
+      // terminator would truncate it.
+      const lenPtr = mem.alloc(4);
+      try {
+        const out = pageGeometry(toNumber(pagePtr), toNumber(lenPtr));
+        if (out === 0) {
+          throw new Error('the Rust core refused a page read without reporting why');
+        }
+        const len = Number(mem.peek(lenPtr, 'i32'));
+        try {
+          // A copy, deliberately: the buffer goes back to Rust on the next
+          // line, and a view into freed linear memory reads as whatever lands
+          // there next.
+          return new TextDecoder().decode(module.HEAPU8.slice(out, out + len));
+        } finally {
+          bufferFree(out, len);
+        }
+      } finally {
+        mem.free(lenPtr);
+      }
+    },
+  };
 }
 
 function createWasmMemory(module: EmscriptenModule): PdfRuntimeMemory {
@@ -305,6 +354,7 @@ export async function createWasmRuntime(
     fileAccess: createWasmFileAccess(mem, cb),
     fileWrite: createWasmFileWrite(),
     fn: createWasmFunctions(module),
+    rust: createWasmRustCore(module, mem),
     async destroy() {
       module._free = module._free;
     },

@@ -1,5 +1,5 @@
 import type { WirePack, WorkerRequest, WorkerResponse } from '@embedpdf/engine-core/runtime';
-import { WorkerHost } from '@embedpdf/engine-services';
+import { WorkerHost, type WorkerHostOptions } from '@embedpdf/engine-services';
 import type { PdfRuntimeModule } from '@embedpdf/engine-runtime';
 
 import type { Transport } from './Transport';
@@ -19,11 +19,11 @@ export class InlineTransport implements Transport {
   private readonly listeners = new Set<(msg: WorkerResponse) => void>();
   private destroyed = false;
 
-  constructor(runtime: PdfRuntimeModule) {
+  constructor(runtime: PdfRuntimeModule, options: WorkerHostOptions = {}) {
     // Inline transport has no thread boundary, so the response pack's
     // `transfer` array is meaningless — we just forward the payload. The
     // host still produces a WirePack for API parity with the worker entries.
-    this.host = new WorkerHost(runtime, (pack) => this.deliver(pack.payload));
+    this.host = new WorkerHost(runtime, (pack) => this.deliver(pack.payload), options);
   }
 
   send(pack: WirePack<WorkerRequest>): void {

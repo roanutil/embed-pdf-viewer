@@ -15,6 +15,7 @@ export type {
   PdfRuntimeCallbacks,
   PdfRuntimeMemory,
   PdfRuntimeModule,
+  PdfRuntimeRustCore,
   Ptr,
 } from './core/pdf-runtime-module';
 export { NULL_PTR } from './core/pdf-runtime-module';
