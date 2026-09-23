@@ -1814,6 +1814,27 @@ importers:
 
   tooling/consume-fixtures: {}
 
+  tooling/engine-baseline:
+    devDependencies:
+      '@embedpdf/engine':
+        specifier: workspace:*
+        version: link:../../packages/engine/main
+      '@embedpdf/engine-core':
+        specifier: workspace:*
+        version: link:../../packages/engine/core
+      '@embedpdf/engine-runtime':
+        specifier: workspace:*
+        version: link:../../packages/engine/runtime
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.11
+      tsx:
+        specifier: ^4.19.0
+        version: 4.21.0
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
   tooling/engine-conformance:
     devDependencies:
       '@embedpdf/engine':

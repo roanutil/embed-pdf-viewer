@@ -1,0 +1,18 @@
+{
+  "name": "@embedpdf/tooling-engine-baseline",
+  "private": true,
+  "type": "module",
+  "description": "The Phase 0 pages.geometry baseline: both readers through the unchanged service boundary, under the benchmark discipline multiplatform-plan.md Section 9 requires.",
+  "scripts": {
+    "baseline": "node --expose-gc --import tsx --conditions=development src/run.mts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@embedpdf/engine": "workspace:*",
+    "@embedpdf/engine-core": "workspace:*",
+    "@embedpdf/engine-runtime": "workspace:*",
+    "@types/node": "^22.19.0",
+    "typescript": "^5.9.3",
+    "tsx": "^4.19.0"
+  }
+}
