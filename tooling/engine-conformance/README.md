@@ -17,7 +17,9 @@ fixtures/*.pdf                        their output, committed
 src/corpus.ts                         which document, which pages, which operation
 src/generate-vectors.ts               reads every case through the TypeScript engine
 src/quantize.ts                       the fixed-point contract, with its Rust twin
+src/scope-cases.ts                    the auth/scope corpus, G3's gate
 vectors/<operation>/<case>.json       the committed vectors
+vectors/scope/{parse,resolve}.json    what the TypeScript scope resolver answers
 ```
 
 The Rust side reads them through `test_support::corpus`; the geometry runner is
@@ -156,6 +158,43 @@ The Rust fold is G5 too, so `fold.json` currently has an invariant runner
 rather than a parity runner: one map entry per folded code unit, monotonic, and
 every entry landing on a character start. Those are the properties
 `toOriginalRange` rests on.
+
+## Scope
+
+`vectors/scope/` is G3's gate, and it is the only one here guarding a security
+boundary rather than an answer. `auth/scope` is a deliberate duplicate and not
+a port: web keeps the TypeScript resolver in `engine/core` and its enforcement
+callers in `engine/main`, native permission enforcement has no other owner, and
+the port order says no deletion at Stage C is implied. Two copies of an
+authorization rule drift, and drift here means a token grants more on one
+platform than the other while both sides' unit tests stay green.
+
+```bash
+pnpm --filter @embedpdf/tooling-engine-conformance run scope
+pnpm --filter @embedpdf/tooling-engine-conformance run scope:check
+```
+
+`parse.json` records, per scope string, whether the grammar accepted it and the
+shape it parsed to. `resolve.json` records the decoded bit table and then, per
+scope array and permission word, the expanded capability set, every
+`checkCapability` answer, and the `checkCollab` and `checkSetGroup` probes.
+`crates/epdf-engine/tests/scope_conformance.rs` replays both, with no
+known-divergence list: a search result that differs subtly is a worse search, a
+permission result that differs subtly is a security bug, and there is nothing
+about one worth writing down instead of fixing.
+
+The cases lean on the four places a reimplementation plausibly differs rather
+than on breadth. Narrowing, where `[doc.annotate.modify,
+annotations:update:self]` has to mean "edit your own" and an implementation
+that checked `modify` first turns it into "edit anyone". Bit 12 without bit 3,
+which grants nothing. `group=X`, which checks the caller's membership as well
+as the row's group. And the filter values carrying colons, because the parser
+splits on the first two and only the first two.
+
+Worth knowing if you extend it: the runner compares TypeScript's
+`{kind, name}` objects against Rust's enum by hand rather than deriving
+`Deserialize` on the enum. Deriving it would make the two shapes agree by
+construction, which is the one thing this gate is for.
 
 ## The linked WASM bridge
 

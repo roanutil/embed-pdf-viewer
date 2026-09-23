@@ -143,6 +143,13 @@ jobs:
       - name: Search dialect vectors are current
         run: pnpm --filter @embedpdf/tooling-engine-conformance run search:check
 
+      # G3's gate. auth/scope is a deliberate duplicate rather than a port,
+      # so this is the only thing keeping the two copies the same rule.
+      # Changing either side without the other is a permission difference
+      # between web and native, which neither side's unit tests would notice.
+      - name: Scope vectors are current
+        run: pnpm --filter @embedpdf/tooling-engine-conformance run scope:check
+
       # multiplatform-port-order.md Section 6: a kind added to
       # worker-protocol.ts without a row in the matrix fails here, and so does
       # a row for a kind that no longer exists.

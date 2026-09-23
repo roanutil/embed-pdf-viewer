@@ -12,8 +12,11 @@
 //! # What is implemented
 //!
 //! G1's shared kernel, the Phase 0 buffer and coordinate contracts, the
-//! ownership-mode abstraction in [`access`], and G2 [`features::geometry`]
-//! (`pages.geometry`), which reads through either ownership mode.
+//! ownership-mode abstraction in [`access`], G2 [`features::geometry`]
+//! (`pages.geometry`), which reads through either ownership mode, and G3's
+//! scope vocabulary in [`auth::scope`], which is a deliberate duplicate of the
+//! TypeScript resolver rather than a port and is pinned to it by
+//! `tests/scope_conformance.rs`.
 //!
 //! Everything else is a stub carrying its group's design notes: the session
 //! ([`session`]), owner-thread dispatch ([`dispatch`]), and the remaining
@@ -29,6 +32,9 @@ pub mod identity;
 pub mod ids;
 pub mod mutation;
 pub mod revision;
+
+// G3: authorization vocabulary. Pure, no PDFium.
+pub mod auth;
 
 // Phase 0 contracts and the plumbing every operation family sits on.
 pub mod access;
