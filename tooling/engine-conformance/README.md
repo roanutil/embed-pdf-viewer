@@ -255,6 +255,22 @@ each advisory field against the capability it claims to describe, so a badge
 that offers high-quality printing where the resolver denies `doc.print.high`
 fails rather than shipping.
 
+The encrypted fixtures also pin a defect rather than a behaviour.
+`crates/epdf-engine/src/features/security/reader.rs` reproduces
+`SecurityReader.readLiveSecurityInfo`, which calls
+`FPDF_GetDocUserPermissions` while describing it as the word in force after an
+owner unlock. PDFium's header says that call "always returns user permissions,
+even if the document was unlocked by the owner", so an owner-unlocked session
+reports itself restricted; the call that matches the description is
+`FPDF_GetDocPermissions`. `encrypted-r2-rc4-40.pdf` opened with the owner
+password reports `0xFFFFFFFC` from one and `0xFFFFF7E8` from the other.
+
+Parity won over correctness there, deliberately: native is the first caller
+either implementation will ever have, and the function has none today.
+`read_live_reports_declared_permissions_which_is_the_reproduced_defect` pins
+the wrong answer so that fixing it is something somebody does on purpose, on
+both sides at once.
+
 One genuine type difference is recorded rather than smoothed over. JavaScript's
 bitwise operators return a signed 32-bit int, so `0xFFFFFFFC & ~(1 << 3)` is
 `-12` there, and the TypeScript launders every permission word through `u32()`

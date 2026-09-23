@@ -9,4 +9,5 @@
 //! PDFium to fill a probe is separate, so the rules can be checked without a
 //! document and without a fixture for every combination of bits.
 
+pub mod reader;
 pub mod state;
