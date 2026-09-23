@@ -156,3 +156,43 @@ The Rust fold is G5 too, so `fold.json` currently has an invariant runner
 rather than a parity runner: one map entry per folded code unit, monotonic, and
 every entry landing on a character start. Those are the properties
 `toOriginalRange` rests on.
+
+## The linked WASM bridge
+
+`src/verify-wasm-bridge.mts` drives the Stage A geometry export inside a module
+where Rust and PDFium are linked together, and checks the result against the
+frozen vectors. It is the only gate that can prove the thing Stage A rests on:
+the page pointer PDFium hands out is the same pointer Rust can read, because
+they share one linear memory. `crates/epdf-wasm/tests/borrowed_page.rs` covers
+the C ABI and the ownership contract on the host, where the target makes no
+difference.
+
+Building the module is deliberately not automatic, since the shipping payload
+is PDFium alone until the routing lands:
+
+```bash
+export EMSDK=packages/engine/runtime/runtime-src/third_party/emsdk
+export PATH="$EMSDK/upstream/emscripten:$PATH"
+cargo build -p epdf-wasm --target wasm32-unknown-emscripten --release
+cd packages/engine/runtime
+node build/generate-functions.mjs wasm32-eh
+node build/generate-runtime-methods.mjs build/generated
+EMBEDPDF_RUST_STATICLIB=../../../target/wasm32-unknown-emscripten/release/libepdf_wasm.a \
+  PDF_RUNTIME_TARGET=wasm32-eh PDF_RUNTIME_WASM_OUT_DIR=/tmp/eh-rust \
+  bash build/compile.esm.sh
+cd ../../..
+pnpm --filter @embedpdf/tooling-engine-conformance run verify:wasm-bridge /tmp/eh-rust
+```
+
+Measured on `report.pdf` at the time of writing, and the reason the encoding is
+still an open question rather than a settled one:
+
+```
+page 0: 238 runs, 5087 glyphs, 1132667 bytes, 9.6ms
+page 4: 293 runs, 8106 glyphs, 1753365 bytes, 9.6ms
+```
+
+A megabyte and a half of JSON for one page is not a wire anybody should ship.
+The plan says the packed alternative carries a decode cost the benchmark ratio
+does not isolate, so which encoding wins is a question for the Phase 0
+baseline, with this number as one of its inputs.

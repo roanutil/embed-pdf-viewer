@@ -42,6 +42,33 @@ if [[ "$TARGET" == "wasm32-eh" ]]; then
   EH_FLAGS=(-fwasm-exceptions -sSUPPORT_LONGJMP=wasm -sWASM_LEGACY_EXCEPTIONS=0)
 fi
 
+# The Rust core, when it has been built. Opt-in rather than automatic: the
+# shipping payload is PDFium alone until the Stage A routing is proven, and a
+# link that silently changed depending on whether someone had run cargo would
+# be the worst of both.
+#
+#   cargo build -p epdf-wasm --target wasm32-unknown-emscripten --release
+#   EMBEDPDF_RUST_STATICLIB=target/wasm32-unknown-emscripten/release/libepdf_wasm.a \
+#     PDF_RUNTIME_TARGET=wasm32-eh bash build/compile.esm.sh
+#
+# Rust and PDFium end up in ONE module, which is the whole point: a page
+# pointer is an offset into one linear memory, so the Stage A borrow costs
+# nothing to cross. Two modules joined by JavaScript would be two heaps and a
+# copy per call.
+RUST_INPUTS=()
+RUST_EXPORTS=""
+if [[ -n "${EMBEDPDF_RUST_STATICLIB:-}" ]]; then
+  if [[ ! -f "$EMBEDPDF_RUST_STATICLIB" ]]; then
+    echo "EMBEDPDF_RUST_STATICLIB is set but not a file: $EMBEDPDF_RUST_STATICLIB" >&2
+    exit 1
+  fi
+  RUST_INPUTS=("$EMBEDPDF_RUST_STATICLIB")
+  # Every #[no_mangle] export of crates/epdf-wasm. Listed rather than derived:
+  # a typo here links fine and fails at the first call, so it should be a
+  # diff somebody reads.
+  RUST_EXPORTS=",_epdf_page_geometry,_epdf_buffer_free"
+fi
+
 mkdir -p "$OUT_DIR"
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
@@ -51,6 +78,7 @@ link() {
   local out="$1" environment="$2"
   shift 2
   em++ "$LIB_DIR/lib/libembedpdf.a" \
+    "${RUST_INPUTS[@]+"${RUST_INPUTS[@]}"}" \
     -sENVIRONMENT="$environment" \
     -sMODULARIZE=1 \
     -sWASM=1 \
@@ -59,7 +87,7 @@ link() {
     -sEXPORT_NAME=createPdfRuntimeWasm \
     -sASSERTIONS=1 \
     -sEXPORTED_RUNTIME_METHODS="$(cat "$GEN_DIR/exported-runtime-methods.txt")" \
-    -sEXPORTED_FUNCTIONS="$(cat "$GEN_DIR/exported-functions.txt")" \
+    -sEXPORTED_FUNCTIONS="$(cat "$GEN_DIR/exported-functions.txt")$RUST_EXPORTS" \
     -I"$LIB_DIR/include" \
     -std=c++17 \
     -Wall \
