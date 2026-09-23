@@ -51,6 +51,15 @@ pub struct LeaseOutcome {
     /// host that wrote and then failed reports both, and finalization still
     /// runs.
     pub failed: bool,
+    /// Whether the host panicked, crashed, or otherwise stopped without
+    /// knowing where it got to.
+    ///
+    /// Distinct from `failed`, and the distinction is the whole point.
+    /// `failed` is a reported error: the host knows what happened and the
+    /// document is in a state it can describe. `panicked` means nobody knows.
+    /// Section 5.3: "Panic after a potentially mutating operation poisons the
+    /// session unless an operation-specific invariant says otherwise."
+    pub panicked: bool,
 }
 
 /// What finalization settled.
@@ -63,6 +72,8 @@ pub struct Finalized {
     /// Carried through from the outcome, so a caller that sees only the
     /// finalization still learns the write failed.
     pub failed: bool,
+    /// Whether this finalization poisoned the session.
+    pub poisoned: bool,
 }
 
 /// Where the session is in the lease protocol.
@@ -100,6 +111,12 @@ pub struct SpikeSession {
     /// per session, keyed on mutation sequence. The spike only needs to know
     /// whether a write dropped it.
     form_model_loaded: bool,
+    /// Set when a host panicked partway through a write.
+    ///
+    /// A poisoned session serves nothing but `close`. Not even reads: the
+    /// document may be halfway through a structural edit, and a read of that
+    /// is a plausible-looking wrong answer, which is worse than an error.
+    poisoned: bool,
 }
 
 impl SpikeSession {
@@ -111,6 +128,7 @@ impl SpikeSession {
             next_token: 1,
             mutation_sequence: 0,
             form_model_loaded: false,
+            poisoned: false,
         }
     }
 
@@ -124,6 +142,10 @@ impl SpikeSession {
 
     pub fn is_closed(&self) -> bool {
         self.state == State::Closed
+    }
+
+    pub fn is_poisoned(&self) -> bool {
+        self.poisoned
     }
 
     /// Loads the cached form model, so a test can watch a write drop it.
@@ -227,6 +249,14 @@ impl SpikeSession {
         };
         Self::require_token(token, outstanding, "the returned lease")?;
 
+        // A panic partway through a write leaves the document in a state
+        // nobody can describe. Poison before anything else, so the rest of
+        // finalization cannot hand back a number that implies the session is
+        // still usable.
+        if outcome.panicked && outcome.wrote {
+            self.poisoned = true;
+        }
+
         let mut form_model_invalidated = false;
         if outcome.wrote {
             self.mutation_sequence += 1;
@@ -250,6 +280,7 @@ impl SpikeSession {
             mutation_sequence: self.mutation_sequence,
             form_model_invalidated,
             failed: outcome.failed,
+            poisoned: self.poisoned,
         })
     }
 
@@ -272,6 +303,12 @@ impl SpikeSession {
     }
 
     fn require_open_and_idle(&self, what: &str) -> Result<(), EngineError> {
+        if self.poisoned {
+            return Err(EngineError::with_message(
+                EngineErrorCode::RuntimeUnavailable,
+                "the session is poisoned: a host panicked partway through a write",
+            ));
+        }
         if self.close_requested {
             return Err(Self::closed());
         }

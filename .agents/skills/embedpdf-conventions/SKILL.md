@@ -24,6 +24,8 @@ completely before editing; do not load unrelated references.
   [server-migrations.md](references/server-migrations.md)
 - PDFium thread ownership, TLS globals, pool sizing, and concurrency gates:
   [runtime-confinement.md](references/runtime-confinement.md)
+- Rust engine close, poisoning, admission, buffer layout, coordinate space and
+  per-operation cancellation: [engine-lifecycle.md](references/engine-lifecycle.md)
 - Supervised engine processes, credential exposure, crash recovery, and threat
   boundaries: [engine-host-isolation.md](references/engine-host-isolation.md)
 - Shared documentation structure and per-framework rendering:

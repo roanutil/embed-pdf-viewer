@@ -15,9 +15,12 @@ use epdf_engine::error::EngineErrorCode;
 use epdf_engine::spike::lease::{LeaseOutcome, SpikeSession};
 use pdfium::{Document, Library};
 
-const WROTE: LeaseOutcome = LeaseOutcome { wrote: true, failed: false };
-const READ_ONLY: LeaseOutcome = LeaseOutcome { wrote: false, failed: false };
-const WROTE_THEN_FAILED: LeaseOutcome = LeaseOutcome { wrote: true, failed: true };
+const WROTE: LeaseOutcome = LeaseOutcome { wrote: true, failed: false, panicked: false };
+const READ_ONLY: LeaseOutcome = LeaseOutcome { wrote: false, failed: false, panicked: false };
+const WROTE_THEN_FAILED: LeaseOutcome = LeaseOutcome { wrote: true, failed: true, panicked: false };
+const PANICKED_MID_WRITE: LeaseOutcome = LeaseOutcome { wrote: true, failed: true, panicked: true };
+const PANICKED_BEFORE_WRITING: LeaseOutcome =
+    LeaseOutcome { wrote: false, failed: true, panicked: true };
 
 fn session() -> SpikeSession {
     let library = Library::acquire();
@@ -259,4 +262,55 @@ fn a_write_through_the_leased_pointer_lands_and_rust_sees_it() {
 
     let after = session.annotation_count(0).expect("count after");
     assert_eq!(after, before + 1, "the owner sees the annotation the borrower added");
+}
+
+#[test]
+fn a_panic_partway_through_a_write_poisons_the_session() {
+    // Section 5.3. A reported failure and a panic are different things: after
+    // a failure the host knows what happened, after a panic nobody does. A
+    // session whose document may be halfway through a structural edit must
+    // stop answering, because a read of that state is a plausible-looking
+    // wrong answer, which is worse than an error.
+    let mut session = session();
+    let (token, _) = session.checkout().expect("checkout");
+    session.return_lease(token, PANICKED_MID_WRITE).expect("return");
+
+    let settled = session.finalize(token).expect("finalization still runs");
+    assert_eq!(settled.mutation_sequence, 1, "the write still happened");
+    assert!(settled.poisoned, "and the caller is told the session is now poisoned");
+    assert!(session.is_poisoned());
+
+    for refused in [
+        session.page_count().err(),
+        session.annotation_count(0).err(),
+        session.checkout().err(),
+    ] {
+        assert_eq!(
+            refused.expect("a poisoned session serves nothing").code,
+            EngineErrorCode::RuntimeUnavailable,
+        );
+    }
+
+    // Close is the exception, and has to be: a poisoned session still owns a
+    // document, and refusing to release it would leak for the life of the
+    // process.
+    assert!(session.close(), "a poisoned idle session still closes");
+    assert!(session.is_closed());
+}
+
+#[test]
+fn a_panic_before_any_write_does_not_poison() {
+    // The narrower rule, and the reason poisoning keys on `wrote` rather than
+    // on `panicked` alone. A host that fell over before touching the document
+    // leaves it exactly as it was, and poisoning there would throw away a
+    // perfectly good session on every transient host bug.
+    let mut session = session();
+    let (token, _) = session.checkout().expect("checkout");
+    session.return_lease(token, PANICKED_BEFORE_WRITING).expect("return");
+
+    let settled = session.finalize(token).expect("finalize");
+    assert_eq!(settled.mutation_sequence, 0);
+    assert!(!settled.poisoned);
+    assert!(!session.is_poisoned());
+    session.page_count().expect("the session is still usable");
 }

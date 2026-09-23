@@ -309,12 +309,17 @@ pub mod spike {
         token: u64,
         wrote: u32,
         failed: u32,
+        panicked: u32,
         out_len: *mut u32,
     ) -> *mut u8 {
         respond(out_len, |slot| {
             open_session(slot)?.return_lease(
                 LeaseToken::from_raw(token),
-                LeaseOutcome { wrote: wrote != 0, failed: failed != 0 },
+                LeaseOutcome {
+                    wrote: wrote != 0,
+                    failed: failed != 0,
+                    panicked: panicked != 0,
+                },
             )?;
             Ok(SpikeResult { token, ..Default::default() })
         })

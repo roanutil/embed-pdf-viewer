@@ -12,3 +12,9 @@
 //! invariant says otherwise.
 //!
 //! Implementation reference: prototype `crates/epdf-ops/src/dispatch/`.
+//!
+//! The written contract, clause by clause with what implements each one and
+//! what is still owed, is
+//! `.agents/skills/embedpdf-conventions/references/engine-lifecycle.md`.
+//! Nothing in this module is implemented yet; the queues, the budgets and the
+//! reserved control route are all G3.
