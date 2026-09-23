@@ -24,8 +24,9 @@
 //! the Stage B session exists, so expect to widen it once.
 
 use std::collections::BTreeMap;
+use std::rc::Rc;
 
-use pdfium::{Document, PageView};
+use pdfium::{Document, PageView, SharedPage};
 
 use crate::error::{EngineError, EngineErrorCode};
 use crate::identity::PageObjectNumber;
@@ -103,6 +104,13 @@ impl PageAccess for OwnedPage<'_> {
     }
 }
 
+/// A pooled page reads exactly like a borrowed one.
+impl PageAccess for SharedPage {
+    fn view(&self) -> &PageView<'_> {
+        SharedPage::view(self)
+    }
+}
+
 /// One document, however it is owned, addressed by durable page identity.
 pub trait DocumentAccess {
     type Page<'a>: PageAccess
@@ -122,7 +130,10 @@ pub trait DocumentAccess {
 /// so.
 #[derive(Debug)]
 pub struct OwnedDocument {
-    document: Document,
+    /// Shared so a [`pdfium::SharedPage`] can hold the document open on its
+    /// own. The session pools pages across calls, and a page that borrowed the
+    /// document could not be stored beside it.
+    document: Rc<Document>,
     index_by_object_number: BTreeMap<PageObjectNumber, u32>,
 }
 
@@ -143,7 +154,7 @@ impl OwnedDocument {
                 index_by_object_number.insert(number, index);
             }
         }
-        Ok(Self { document, index_by_object_number })
+        Ok(Self { document: Rc::new(document), index_by_object_number })
     }
 
     pub fn page_count(&self) -> u32 {
@@ -152,6 +163,22 @@ impl OwnedDocument {
 
     pub fn document(&self) -> &Document {
         &self.document
+    }
+
+    /// The page, normalized, holding the document open for as long as it lives.
+    ///
+    /// The pooling counterpart of [`DocumentAccess::page`]: same page, same
+    /// loader, but the handle can outlive the borrow this was called on.
+    pub fn shared_page(&self, page: PageObjectNumber) -> Result<SharedPage, EngineError> {
+        if !self.index_by_object_number.contains_key(&page) {
+            return Err(EngineError::with_message(
+                EngineErrorCode::NotFound,
+                format!("no page with object number {page}"),
+            ));
+        }
+        SharedPage::load(Rc::clone(&self.document), page.get()).map_err(|e| {
+            EngineError::with_message(EngineErrorCode::RuntimeUnavailable, e.to_string())
+        })
     }
 }
 

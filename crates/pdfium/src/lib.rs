@@ -25,5 +25,5 @@ pub use document::{Document, PasswordPermissions};
 pub use error::PdfiumError;
 pub use geom::{MatrixF, QuadF, RectF};
 pub use library::Library;
-pub use page::{Page, PageView};
+pub use page::{Page, PageView, SharedPage};
 pub use text::{CharGeometry, CharGeometryFlags, TextObjectKey, TextPage};

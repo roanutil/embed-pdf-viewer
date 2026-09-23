@@ -1,8 +1,9 @@
 use std::ffi::c_void;
 use std::marker::PhantomData;
 use std::ops::Deref;
+use std::rc::Rc;
 
-use crate::{Bitmap, PdfiumError, TextPage};
+use crate::{Bitmap, Document, PdfiumError, TextPage};
 
 /// A page this layer may read but does not own.
 ///
@@ -206,5 +207,71 @@ mod tests {
             assert!(bitmap_layout(width, height).is_err(), "{width}x{height} was accepted");
         }
         assert_eq!(bitmap_layout(612, 792), Ok((612, 792, 2448, 1_938_816)));
+    }
+}
+
+/// A page that keeps its document alive.
+///
+/// [`Page`] borrows its `Document`, which is right for a page used and dropped
+/// inside one call and wrong for a page a session pools across calls: a
+/// borrowing page cannot be stored beside the document it borrows from.
+/// `SharedPage` holds an `Rc<Document>` instead, so the invariant "the document
+/// outlives the page" is upheld by the refcount rather than by a lifetime.
+///
+/// Not `Send`, like everything else here: PDFium handles never cross threads.
+#[derive(Debug)]
+pub struct SharedPage {
+    handle: pdfium_sys::FPDF_PAGE,
+    /// `'static` is a placeholder, not a claim. The real bound is `document`
+    /// below, and [`SharedPage::view`] hands out a borrow no longer than
+    /// `&self`; `PageView` is covariant in its lifetime, so that shortening is
+    /// the compiler's own coercion rather than a transmute.
+    view: PageView<'static>,
+    /// Declared last so it drops last: the page is closed in `Drop` before the
+    /// document it was loaded from can be released.
+    document: Rc<Document>,
+}
+
+impl SharedPage {
+    /// Loads a page by object number, rotation normalized, keeping `document`
+    /// alive for as long as the page.
+    pub fn load(document: Rc<Document>, object_number: u32) -> Result<Self, PdfiumError> {
+        // SAFETY: `document` is live for the duration of the call and, through
+        // the `Rc` this struct keeps, for the life of the returned page.
+        let handle = unsafe {
+            pdfium_sys::EPDFDoc_LoadPageByObjectNumberNormalized(document.as_raw(), object_number)
+        };
+        // SAFETY: the handle is non-null when `from_raw` returns `Some`, it is
+        // closed exactly once in this type's `Drop`, and the `Rc` field keeps
+        // its document open for all of the chosen lifetime.
+        let view = unsafe { PageView::from_raw(handle) }
+            .ok_or(PdfiumError::PageLoadByObjectNumber(object_number))?;
+        Ok(Self { handle, view, document })
+    }
+
+    /// The page, for no longer than this borrow.
+    pub fn view(&self) -> &PageView<'_> {
+        &self.view
+    }
+
+    /// The document this page was loaded from.
+    pub fn document(&self) -> &Rc<Document> {
+        &self.document
+    }
+}
+
+impl Deref for SharedPage {
+    type Target = PageView<'static>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.view
+    }
+}
+
+impl Drop for SharedPage {
+    fn drop(&mut self) {
+        // SAFETY: loaded above and closed exactly once, here, before the
+        // document field drops.
+        unsafe { pdfium_sys::FPDF_ClosePage(self.handle) };
     }
 }

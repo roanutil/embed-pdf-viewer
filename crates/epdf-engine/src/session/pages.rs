@@ -32,7 +32,9 @@ use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::rc::{Rc, Weak};
 
-use crate::access::{DocumentAccess, OwnedDocument, OwnedPage};
+use pdfium::SharedPage;
+
+use crate::access::OwnedDocument;
 use crate::error::EngineError;
 use crate::identity::PageObjectNumber;
 
@@ -48,18 +50,22 @@ pub struct PageRecord {
 }
 
 /// Shared page handles for one open document.
-#[derive(Debug)]
-pub struct PagePtrPool<'doc> {
-    document: &'doc OwnedDocument,
+///
+/// Carries no lifetime: the pages it hands out hold the document open
+/// themselves through [`pdfium::SharedPage`], so a session can own the pool and
+/// the document side by side. A pool that borrowed its document could not be
+/// stored next to it.
+#[derive(Debug, Default)]
+pub struct PagePtrPool {
     /// `Weak` so the pool never keeps a page alive on its own. An entry whose
     /// page has been dropped is a tombstone that [`PagePtrPool::acquire`]
     /// replaces and [`PagePtrPool::is_held`] reports as not held.
-    entries: RefCell<BTreeMap<PageObjectNumber, Weak<OwnedPage<'doc>>>>,
+    entries: RefCell<BTreeMap<PageObjectNumber, Weak<SharedPage>>>,
 }
 
-impl<'doc> PagePtrPool<'doc> {
-    pub fn new(document: &'doc OwnedDocument) -> Self {
-        Self { document, entries: RefCell::new(BTreeMap::new()) }
+impl PagePtrPool {
+    pub fn new() -> Self {
+        Self::default()
     }
 
     /// The page, loaded once and shared until the last holder drops it.
@@ -69,14 +75,15 @@ impl<'doc> PagePtrPool<'doc> {
     /// `tests/rotation_normalization.rs` for why that matters.
     pub fn acquire(
         &self,
+        document: &OwnedDocument,
         page_object_number: PageObjectNumber,
-    ) -> Result<Rc<OwnedPage<'doc>>, EngineError> {
+    ) -> Result<Rc<SharedPage>, EngineError> {
         if let Some(live) = self.entries.borrow().get(&page_object_number).and_then(Weak::upgrade) {
             return Ok(live);
         }
-        // Loaded outside the borrow: `page` calls into PDFium and a panic
-        // there with the map borrowed would poison every later acquire.
-        let page = Rc::new(self.document.page(page_object_number)?);
+        // Loaded outside the borrow: `shared_page` calls into PDFium and a
+        // panic there with the map borrowed would poison every later acquire.
+        let page = Rc::new(document.shared_page(page_object_number)?);
         self.entries.borrow_mut().insert(page_object_number, Rc::downgrade(&page));
         Ok(page)
     }
@@ -109,7 +116,6 @@ impl<'doc> PagePtrPool<'doc> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::access::PageAccess;
     use pdfium::{Document, Library};
 
     fn document() -> OwnedDocument {
@@ -132,11 +138,11 @@ mod tests {
     #[test]
     fn overlapping_acquires_share_one_load() {
         let document = document();
-        let pool = PagePtrPool::new(&document);
+        let pool = PagePtrPool::new();
         let number = first_page(&document);
 
-        let first = pool.acquire(number).expect("first");
-        let second = pool.acquire(number).expect("second");
+        let first = pool.acquire(&document, number).expect("first");
+        let second = pool.acquire(&document, number).expect("second");
         assert!(Rc::ptr_eq(&first, &second), "the second acquire reloaded the page");
         assert_eq!(Rc::strong_count(&first), 2);
     }
@@ -144,11 +150,11 @@ mod tests {
     #[test]
     fn a_page_closes_when_its_last_holder_drops() {
         let document = document();
-        let pool = PagePtrPool::new(&document);
+        let pool = PagePtrPool::new();
         let number = first_page(&document);
 
-        let first = pool.acquire(number).expect("first");
-        let second = pool.acquire(number).expect("second");
+        let first = pool.acquire(&document, number).expect("first");
+        let second = pool.acquire(&document, number).expect("second");
         assert!(pool.is_held(number));
 
         drop(first);
@@ -163,14 +169,14 @@ mod tests {
         // No retention across the zero-holder boundary, which is what the
         // TypeScript documents and what leaves room for an LRU later.
         let document = document();
-        let pool = PagePtrPool::new(&document);
+        let pool = PagePtrPool::new();
         let number = first_page(&document);
 
-        let first = pool.acquire(number).expect("first");
+        let first = pool.acquire(&document, number).expect("first");
         let address = Rc::as_ptr(&first);
         drop(first);
 
-        let again = pool.acquire(number).expect("again");
+        let again = pool.acquire(&document, number).expect("again");
         assert_ne!(Rc::as_ptr(&again), address, "the tombstone was reused");
         assert!(pool.is_held(number));
     }
@@ -178,15 +184,15 @@ mod tests {
     #[test]
     fn different_pages_are_counted_separately() {
         let document = document();
-        let pool = PagePtrPool::new(&document);
+        let pool = PagePtrPool::new();
         let first = first_page(&document);
         let second =
             PageObjectNumber::new(document.document().page(1).expect("page").object_number())
                 .expect("number");
         assert_ne!(first, second);
 
-        let a = pool.acquire(first).expect("a");
-        let b = pool.acquire(second).expect("b");
+        let a = pool.acquire(&document, first).expect("a");
+        let b = pool.acquire(&document, second).expect("b");
         assert_eq!(pool.held_count(), 2);
         drop(a);
         assert_eq!(pool.held_count(), 1);
@@ -198,10 +204,10 @@ mod tests {
     #[test]
     fn a_page_the_document_does_not_have_is_not_found() {
         let document = document();
-        let pool = PagePtrPool::new(&document);
+        let pool = PagePtrPool::new();
         let missing = PageObjectNumber::new(99_999).expect("number");
         assert_eq!(
-            pool.acquire(missing).expect_err("no such page").code,
+            pool.acquire(&document, missing).expect_err("no such page").code,
             crate::error::EngineErrorCode::NotFound,
         );
         assert!(!pool.is_held(missing), "a failed acquire leaves no entry");
@@ -213,10 +219,10 @@ mod tests {
         // `closeAll` there frees the pointer a holder is still using; here the
         // page outlives the pool's knowledge of it.
         let document = document();
-        let pool = PagePtrPool::new(&document);
+        let pool = PagePtrPool::new();
         let number = first_page(&document);
 
-        let held = pool.acquire(number).expect("held");
+        let held = pool.acquire(&document, number).expect("held");
         pool.close_all();
 
         assert!(!pool.is_held(number), "the pool forgot the page");
