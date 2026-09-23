@@ -65,6 +65,26 @@ try {
       );
       process.exit(2);
     }
+    // Enabling remote automation does not take effect in a Safari that is
+    // already running. safaridriver reports that as a connection timeout and
+    // never mentions the setting, so the obvious reading is that automation is
+    // off, which sends you to a checkbox that is already ticked. What it
+    // actually wants is a restart: the setting lands in
+    // ~/Library/WebDriver/com.apple.Safari.plist immediately, and Safari picks
+    // it up on its next launch, recording DidMigrateWebDriverAllowRemoteAutomation.
+    //
+    // Once it has restarted once, a running Safari is no obstacle; this check
+    // is about the first run after enabling the setting and nothing else.
+    if (String(error).includes('timed out while connecting')) {
+      console.error(
+        'Safari refused the session.\n\n' +
+          'If you enabled "Allow remote automation" without restarting Safari,\n' +
+          'that is why: the setting only applies from its next launch.\n\n' +
+          "  osascript -e 'quit app \"Safari\"'\n\n" +
+          'Then run this again. Safari restores its tabs when you reopen it.',
+      );
+      process.exit(2);
+    }
     throw error;
   }
 

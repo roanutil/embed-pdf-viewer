@@ -35,6 +35,11 @@ Safari > Settings > Advanced > Show features for web developers
 Safari > Settings > Developer > Allow remote automation
 ```
 
+Then quit and reopen Safari. The setting is written immediately but only takes
+effect from Safari's next launch, and until then `safaridriver` reports a
+connection timeout that says nothing about the setting. `safari.mjs` now names
+that case rather than letting you go looking at a checkbox that is already on.
+
 ```bash
 EH_MODULE_DIR=/tmp/eh-rust node serve.mjs &
 node safari.mjs
@@ -46,29 +51,32 @@ Module: the `wasm32-eh` build at fork commit `7f0fa5dbe` with the Rust core
 linked in, sha256 `35eb2b3e2ba3…`, 272 `try_table` / 200 `throw_ref` / 202
 `catch_all_ref` and no legacy `try` or `rethrow`.
 
-| browser                 | version                 | module  | Rust core |
-| ----------------------- | ----------------------- | ------- | --------- |
-| Chrome, release channel | 153.0.8010.53           | pass    | pass      |
-| Playwright Chromium     | 153.0.8010.12           | pass    | pass      |
-| Playwright Firefox      | 155.0                   | pass    | pass      |
-| Playwright WebKit       | 26.6                    | pass    | pass      |
-| Safari                  | 27.0 (22625.1.29.11.27) | not run | not run   |
+| browser                  | version                 | module | Rust core |
+| ------------------------ | ----------------------- | ------ | --------- |
+| Chrome, release channel  | 154.0.8037.58           | pass   | pass      |
+| Firefox, release channel | 156.0.1                 | pass   | pass      |
+| Safari                   | 27.0 (22625.1.29.11.27) | pass   | pass      |
+| Playwright Chromium      | 153.0.8010.12           | pass   | pass      |
+| Playwright Firefox       | 155.0                   | pass   | pass      |
+| Playwright WebKit        | 26.6                    | pass   | pass      |
+
+Every version in that table is printed by the run itself. The `records the
+browser it ran in` test logs the build each project drove, because "Firefox
+passes" is worth nothing without the string next to it, and a README is the
+easiest place for that string to go stale.
 
 ## What this does and does not settle
 
-Chrome is a release-channel pass and counts toward the floor.
+All three release browsers pass, so Phase 1's browser floor is met and the
+Section 14 risk it was raised against is closed. The `firefox-release` project
+drives the Firefox in `/Applications` over WebDriver BiDi through Playwright's
+`moz-firefox` channel, not Playwright's patched build.
 
-The three Playwright projects are Playwright's own engine builds, and a pass
-there is not a pass in the browser a user has. That is the exact mistake the
-plan warns against: its Firefox evidence was a Nightly, and recording it as
-"Firefox passes" is how a floor gets announced that nobody verified. Playwright
-Firefox 155.0 and WebKit 26.6 passing says the module is not rejected by those
-engines, which is genuinely useful and is not the same claim.
+The three Playwright projects are engine builds, and a pass there is not a pass
+in the browser a user has. They are kept because they are cheap and they catch a
+module no engine will load, not because they are evidence for the floor. The
+plan's original Firefox evidence was a Nightly recorded as "Firefox passes",
+which is the mistake this split exists to prevent.
 
-Safari is still unverified. `safaridriver` is installed and `safari.mjs` is
-ready, but Safari refuses WebDriver sessions until somebody enables remote
-automation, and a script should not do that to a person's browser. Until it is
-run, Section 14's risk stands as written: Safari is untested.
-
-Firefox release is not installed on the machine these results came from, so the
-release-Firefox half of the gate is also open.
+What none of this covers is Windows, Linux, or any mobile browser. The floor
+these results support is macOS desktop.

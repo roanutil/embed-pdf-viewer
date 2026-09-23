@@ -11,6 +11,16 @@ interface Report {
  * build exists to carry: C++ exceptions, and the setjmp/longjmp that libpng
  * and libjpeg use for error handling.
  */
+/**
+ * Which build actually ran. The distinction this whole harness exists for is
+ * release browser versus engine build, and "firefox-release passed" is only
+ * worth anything next to the version string it passed in. Printed rather than
+ * attached, because the `list` reporter shows stdout and swallows annotations.
+ */
+test('records the browser it ran in', async ({ browser, browserName }, info) => {
+  console.log(`${info.project.name}: ${browserName} ${browser.version()}`);
+});
+
 test('the wasm32-eh module runs', async ({ page }, info) => {
   const consoleErrors: string[] = [];
   page.on('pageerror', (error) => consoleErrors.push(error.message));

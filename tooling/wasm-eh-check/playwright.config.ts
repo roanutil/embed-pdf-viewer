@@ -28,6 +28,10 @@ export default defineConfig({
   projects: [
     // Release browsers. These are the ones a floor can be announced from.
     { name: 'chrome-release', use: { ...devices['Desktop Chrome'], channel: 'chrome' } },
+    // `moz-firefox` drives the Firefox in /Applications over WebDriver BiDi,
+    // rather than Playwright's patched build. That is the whole point: the
+    // plan's existing Firefox evidence was a Playwright Nightly.
+    { name: 'firefox-release', use: { ...devices['Desktop Firefox'], channel: 'moz-firefox' } },
     // Engine builds. Useful, and not the same claim.
     { name: 'playwright-chromium', use: { ...devices['Desktop Chrome'] } },
     { name: 'playwright-firefox', use: { ...devices['Desktop Firefox'] } },
