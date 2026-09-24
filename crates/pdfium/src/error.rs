@@ -21,6 +21,8 @@ pub enum PdfiumError {
     /// PDFium refused a font: unloadable, or it carries no glyphs.
     FontRegistration,
     Search,
+    /// A serialization PDFium declined, or one that produced no bytes.
+    Save,
     /// An argument this layer rejected before calling PDFium at all.
     InvalidArgument(&'static str),
     /// An allocation this layer refused to attempt or that the allocator
@@ -55,6 +57,7 @@ impl std::fmt::Display for PdfiumError {
             Self::TextRect => write!(f, "FPDFText_GetRect failed"),
             Self::Bitmap => write!(f, "FPDFBitmap_CreateEx failed"),
             Self::Search => write!(f, "FPDFText_FindStart failed"),
+            Self::Save => write!(f, "the document could not be serialized"),
             Self::InvalidArgument(what) => write!(f, "invalid argument: {what}"),
             Self::OutOfMemory => write!(f, "allocation refused"),
         }

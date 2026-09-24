@@ -28,6 +28,7 @@ mod metadata;
 mod page;
 mod page_list;
 mod piece_info;
+mod save;
 mod text;
 
 pub use action::{
@@ -54,4 +55,5 @@ pub use metadata::Trapped;
 pub use page::{Page, PageView, SharedPage};
 pub use page_list::PageBoxType;
 pub use piece_info::{PieceInfoHolder, object_type};
+pub use save::{LayerOutput, LayerSaveError, PdfSaveMode};
 pub use text::{CharGeometry, CharGeometryFlags, TextObjectKey, TextPage};

@@ -227,6 +227,12 @@ jobs:
       - name: Extract vectors are current
         run: pnpm --filter @embedpdf/tooling-engine-conformance run extract:check
 
+      # G10's save, semantic like the extract and for the same reason. Both
+      # modes, because an incremental save appends a revision and a full save
+      # rewrites the file, and the two have to mean the same thing.
+      - name: Save vectors are current
+        run: pnpm --filter @embedpdf/tooling-engine-conformance run save:check
+
       # multiplatform-port-order.md Section 6: a kind added to
       # worker-protocol.ts without a row in the matrix fails here, and so does
       # a row for a kind that no longer exists.
