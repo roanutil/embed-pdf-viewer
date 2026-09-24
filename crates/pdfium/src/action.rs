@@ -86,6 +86,29 @@ impl Document {
     }
 }
 
+impl Document {
+    /// The destination a link annotation's direct `/Dest` names.
+    ///
+    /// `/Dest` is DATA, not an action, and it is consulted only when the
+    /// annotation has no `/A` at all. A link carrying both is following its
+    /// action; §12.5.6.5 gives `/A` precedence and a viewer that fell back to
+    /// `/Dest` when the action was broken would navigate somewhere the
+    /// document did not ask for.
+    pub fn link_destination(
+        &self,
+        annotation: &crate::Annotation<'_>,
+    ) -> Option<RawDestination<'_>> {
+        // SAFETY: the annotation handle is live for the call.
+        let link = unsafe { pdfium_sys::FPDFAnnot_GetLink(annotation.as_raw()) };
+        if link.is_null() {
+            return None;
+        }
+        // SAFETY: both handles are live for the borrow this returns.
+        let dest = unsafe { pdfium_sys::FPDFLink_GetDest(self.handle, link) };
+        (!dest.is_null()).then_some(RawDestination { dest, document: self })
+    }
+}
+
 /// Which catalog-level event to read.
 ///
 /// `EPDF_DOC_ACTION_*`. `/OpenAction` is not in this list because it is a

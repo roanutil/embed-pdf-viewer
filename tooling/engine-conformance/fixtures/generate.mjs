@@ -859,15 +859,61 @@ function annotationKinds() {
     // A free text with no /DA at all, so the whole default triple is read.
     '<< /Type /Annot /Subtype /FreeText /Rect [300 80 460 130] /F 4 /NM (a-bare-text-box) >>',
 
-    // Two subtypes this port has not reached. They are here so the shell-only
-    // half of the comparison has something to compare: without one, the
-    // branch that checks an unported subtype reads as `unsupported` would
-    // never run and would be checking nothing.
-    '<< /Type /Annot /Subtype /Link /Rect [480 80 560 110] /F 4 /NM (a-link) ' +
+    // Links, one per route to a target. /A wins over /Dest when both are
+    // present, so the pair that carries both is the one that pins the
+    // precedence; the dead link carries neither and is legal PDF.
+    '<< /Type /Annot /Subtype /Link /Rect [480 80 560 110] /F 4 /NM (a-uri-link) ' +
       '/A << /S /URI /URI (https://example.test/linked) >> >>',
+    '<< /Type /Annot /Subtype /Link /Rect [480 40 560 70] /F 4 /NM (a-goto-link) ' +
+      '/A << /S /GoTo /D [3 0 R /XYZ 100 200 null] >> >>',
+    '<< /Type /Annot /Subtype /Link /Rect [480 0 560 30] /F 4 /NM (a-dest-link) ' +
+      '/Dest [3 0 R /Fit] >>',
+    '<< /Type /Annot /Subtype /Link /Rect [440 0 470 30] /F 4 /NM (a-link-preferring-its-action) ' +
+      '/A << /S /Named /N /NextPage >> /Dest [3 0 R /Fit] >>',
+    '<< /Type /Annot /Subtype /Link /Rect [400 0 430 30] /F 4 /NM (a-dead-link) >>',
+    // A script link. The target says `javascript` and carries NO script: the
+    // text rides the base actions.activate tree, which is the scripting
+    // plane's one home, and a copy on the target would be a second thing to
+    // keep in step.
+    '<< /Type /Annot /Subtype /Link /Rect [360 0 390 30] /F 4 /NM (a-script-link) ' +
+      "/A << /S /JavaScript /JS (app.alert\\('hi'\\);) >> >>",
+    // An /A whose /Next chains back to itself. PDFium reports the model as
+    // incomplete, and an incomplete tree is never navigated, not even at its
+    // root, so the target is `unsupported` rather than the URI it names.
+    '<< /Type /Annot /Subtype /Link /Rect [320 0 350 30] /F 4 /NM (a-looping-link) ' +
+      '/A 7 0 R >>',
+
+    // A file attachment with a real /FS, beside one with none. The second is
+    // malformed and still reads: it has a rect, a colour and an icon, and
+    // losing all of that because a filespec is broken says less than it costs.
     '<< /Type /Annot /Subtype /FileAttachment /Rect [480 140 500 160] /F 4 ' +
-      '/NM (an-attachment) /Name /Paperclip >>',
+      '/NM (an-attachment) /Name /Paperclip /FS 6 0 R >>',
+    '<< /Type /Annot /Subtype /FileAttachment /Rect [510 140 530 160] /F 4 ' +
+      '/NM (an-attachment-with-no-filespec) /Name /Graph >>',
+
+    // Widgets, INERT: no /Parent and the document has no /AcroForm, so both
+    // report the unattached join values on either side. The attached case
+    // needs the reconciled form model, which is G8's.
+    '<< /Type /Annot /Subtype /Widget /Rect [72 160 240 190] /F 4 /NM (a-text-widget) ' +
+      '/MK << /BC [0 0 0] /BG [0.9 0.9 0.9] >> /DA (0 0 0 rg /Helv 10 Tf) /Q 1 ' +
+      '/BS << /W 1 /S /I >> >>',
+    // No /DA at all: a widget that draws no text has no font, which is not
+    // the same as having the default one.
+    '<< /Type /Annot /Subtype /Widget /Rect [72 120 100 148] /F 4 /NM (a-button-widget) ' +
+      '/MK << /BG [1 0 0] >> >>',
+
+    // A popup, which neither engine models: it is the PRESENTATION of
+    // another annotation's comment, so both read it as unsupported. It is
+    // here so the shell-only half of the comparison has a case, and it will
+    // keep having one, because popup is not a subtype either side is waiting
+    // to implement.
+    '<< /Type /Annot /Subtype /Popup /Rect [200 100 380 200] /F 0 /NM (a-popup) /Open false >>',
   ];
+
+  // The embedded file the attachment annotation points at. /Params carries
+  // the three derived facts the metadata projection reports: a decoded size,
+  // an MD5 checksum as a PDF hex string, and a creation date.
+  const payload = Buffer.from('attached bytes\n', 'latin1');
 
   return buildPdf([
     Buffer.from('<< /Type /Catalog /Pages 2 0 R >>', 'latin1'),
@@ -882,6 +928,23 @@ function annotationKinds() {
       'latin1',
     ),
     stream('', content),
+    stream(
+      '/Type /EmbeddedFile /Subtype /text#2Fplain /Params << ' +
+        `/Size ${payload.length} /CheckSum <0123456789ABCDEF0123456789ABCDEF> ` +
+        '/CreationDate (D:20240301120000Z) >>',
+      payload,
+    ),
+    Buffer.from(
+      '<< /Type /Filespec /F (notes.txt) /UF (notes.txt) /Desc (a note about the page) ' +
+        '/EF << /F 5 0 R >> >>',
+      'latin1',
+    ),
+    // The self-referential action. It has to be an indirect object, because
+    // a direct dictionary cannot name itself.
+    Buffer.from(
+      '<< /Type /Action /S /URI /URI (https://example.test/loops) /Next 7 0 R >>',
+      'latin1',
+    ),
   ]);
 }
 

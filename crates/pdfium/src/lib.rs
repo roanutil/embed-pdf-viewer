@@ -32,7 +32,9 @@ pub use action::{
     ActionModel, ActionNodeId, AnnotationActionEvent, DestinationLocation, DestinationView,
     DocumentActionEvent, PageActionEvent, RawDestination,
 };
-pub use annot::{Annotation, AppearanceMode, BorderStyle, DefaultAppearance, RectangleDifferences};
+pub use annot::{
+    Annotation, AppearanceMode, Attachment, BorderStyle, DefaultAppearance, RectangleDifferences,
+};
 pub use base::{BaseDocument, LayerDocument, LayerOpenError};
 pub use bitmap::Bitmap;
 pub use document::{Document, FileBackedDocument, PasswordPermissions};

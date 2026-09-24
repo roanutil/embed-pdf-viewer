@@ -3,20 +3,23 @@
 //! Regenerate the vectors, deliberately, with:
 //!   pnpm --filter @embedpdf/tooling-engine-conformance run annotation-read
 //!
-//! # What this compares, and what it cannot yet
+//! # What this compares
 //!
-//! The vector holds the WHOLE DTO the TypeScript produces, including the
-//! subtype-specific fields no Rust reader exists for. That is deliberate: a
-//! vector trimmed to what Rust can currently produce would be regenerated
-//! every time a subtype reader lands, and the diff under review would be the
-//! vector rather than the behaviour.
+//! Every annotation, whole. Every field of every DTO, against what the
+//! shipping TypeScript answered for the same document.
 //!
-//! So the comparison is drawn along one line, `FALLS_BACK_TO_UNSUPPORTED`. A
-//! subtype not on that list is compared WHOLE, every field. One on it is
-//! compared as a base shell and additionally asserted to read as
-//! `unsupported`. When a reader lands its subtype leaves the list, and the
-//! only way to make this pass again is for that subtype's whole DTO to
-//! agree.
+//! It was not always that: while the subtype readers were landing, a
+//! subtype without one was compared as a base shell and the line was drawn
+//! along `FALLS_BACK_TO_UNSUPPORTED`. That list is down to `popup`, which
+//! neither engine models, so both answer `unsupported` for it and there is
+//! nothing left to compare partially.
+//!
+//! One field pair is not covered and cannot be here: a widget's
+//! `fieldObjectNumber` and `fieldFamily`. Resolving them needs the
+//! reconciled form model, which is G8, so every widget in the corpus is
+//! inert and both sides report the unattached values.
+//! `the_widget_field_join_is_not_covered_by_this_corpus` states that as an
+//! assertion, and it fails the day a fixture gains an `/AcroForm`.
 
 use std::collections::BTreeSet;
 
@@ -34,34 +37,6 @@ const SCHEMA_VERSION: u32 = 1;
 /// The generator replaces every document session id with this, because one is
 /// minted per open and a verbatim recording would never compare equal twice.
 const SESSION_PLACEHOLDER: &str = "<session>";
-
-/// The fields `AnnotationBase` owns, as they are spelled on the wire.
-///
-/// Written out rather than derived from the struct, so that a field added to
-/// the shell without being added here is a comparison that silently stops
-/// covering it.
-const BASE_FIELDS: [&str; 20] = [
-    "ref",
-    "pageObjectNumber",
-    "index",
-    "identityQuality",
-    "nm",
-    "flags",
-    "rect",
-    "contents",
-    "subject",
-    "author",
-    "created",
-    "modified",
-    "blendMode",
-    "inReplyTo",
-    "replyType",
-    "userId",
-    "groupId",
-    "createdBy",
-    "updatedBy",
-    "actions",
-];
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -143,28 +118,11 @@ fn canonical_numbers(value: &serde_json::Value) -> serde_json::Value {
     }
 }
 
-fn object(value: &serde_json::Value, what: &str) -> serde_json::Map<String, serde_json::Value> {
-    value.as_object().unwrap_or_else(|| panic!("{what} is not an object")).clone()
-}
-
-/// The base half of a DTO, with everything else dropped.
-fn base_of(dto: &serde_json::Value, what: &str) -> serde_json::Map<String, serde_json::Value> {
-    let all = object(&canonical_numbers(dto), what);
-    all.into_iter().filter(|(key, _)| BASE_FIELDS.contains(&key.as_str())).collect()
-}
-
-/// Whether this build produces a subtype's own fields, or only the shell.
-fn is_ported(subtype: &str) -> bool {
-    subtype == "unsupported"
-        || !FALLS_BACK_TO_UNSUPPORTED.iter().any(|listed| listed.as_str() == subtype)
-}
-
 #[test]
 fn the_reads_agree_with_the_typescript_engine() {
     let file = load();
     assert!(file.cases.len() >= 4, "the corpus shrank");
-    let mut compared_whole = 0usize;
-    let mut compared_shell = 0usize;
+    let mut compared = 0usize;
 
     for case in &file.cases {
         let actual = read(case);
@@ -189,39 +147,122 @@ fn the_reads_agree_with_the_typescript_engine() {
             for (index, (mine, theirs)) in
                 mine_annotations.iter().zip(&theirs.annotations).enumerate()
             {
-                let what = format!("{}: page {page_index} annotation {index}", case.name);
                 let subtype = theirs["subtype"].as_str().expect("a subtype");
-
-                if is_ported(subtype) {
-                    compared_whole += 1;
-                    assert_eq!(
-                        canonical_numbers(mine),
-                        canonical_numbers(theirs),
-                        "{what} is {subtype}, which is ported: {}",
-                        case.covers,
-                    );
-                } else {
-                    compared_shell += 1;
-                    assert_eq!(
-                        base_of(mine, &what),
-                        base_of(theirs, &what),
-                        "{what} is {subtype}, compared as a shell: {}",
-                        case.covers,
-                    );
-                    assert_eq!(
-                        mine["subtype"].as_str(),
-                        Some("unsupported"),
-                        "{what} is {subtype} and has no reader, so it should read as \
-                         unsupported",
-                    );
-                }
+                compared += 1;
+                assert_eq!(
+                    canonical_numbers(mine),
+                    canonical_numbers(theirs),
+                    "{}: page {page_index} annotation {index} is {subtype}: {}",
+                    case.name,
+                    case.covers,
+                );
             }
         }
     }
 
-    // Both arms have to be exercised, or one of them is checking nothing.
-    assert!(compared_whole > 0, "no annotation in the corpus has a ported subtype");
-    assert!(compared_shell > 0, "no annotation in the corpus has an unported subtype");
+    assert!(compared > 0, "the corpus has no annotations at all");
+}
+
+#[test]
+fn the_corpus_covers_every_subtype_that_has_a_reader() {
+    // A comparison over a corpus that never produces a subtype says nothing
+    // about that subtype's reader. This is what stops one being written,
+    // registered, and never run.
+    let file = load();
+    let mut seen: BTreeSet<String> = BTreeSet::new();
+    for case in &file.cases {
+        for page in &case.pages {
+            for annotation in &page.annotations {
+                seen.insert(annotation["subtype"].as_str().expect("a subtype").to_string());
+            }
+        }
+    }
+
+    for subtype in epdf_engine::features::annotation::subtype::ANNOTATION_SUBTYPES {
+        if FALLS_BACK_TO_UNSUPPORTED.contains(&subtype) {
+            // These have no reader to exercise, by design.
+            continue;
+        }
+        assert!(
+            seen.contains(subtype.as_str()),
+            "no annotation in the corpus is a {}, so its reader is never run",
+            subtype.as_str(),
+        );
+    }
+}
+
+#[test]
+fn the_subtypes_with_no_reader_read_as_unsupported_on_both_sides() {
+    // `popup` is the whole list, and it is not a gap: a popup is the
+    // presentation of another annotation's comment and the wire deliberately
+    // does not model it. What matters is that both engines say so, because a
+    // subtype one of them modelled and the other did not would be a wire
+    // difference nothing else here would catch.
+    let file = load();
+    let mut saw = 0usize;
+
+    for case in &file.cases {
+        let actual = read(case);
+        for (mine, theirs) in actual["pages"].as_array().expect("pages").iter().zip(&case.pages) {
+            for (mine, theirs) in
+                mine["annotations"].as_array().expect("annotations").iter().zip(&theirs.annotations)
+            {
+                let raw = theirs["rawSubtypeName"].as_str();
+                if !FALLS_BACK_TO_UNSUPPORTED
+                    .iter()
+                    .any(|s| Some(s.as_str()) == raw.map(str::to_lowercase).as_deref())
+                {
+                    continue;
+                }
+                saw += 1;
+                assert_eq!(theirs["subtype"].as_str(), Some("unsupported"), "{}", case.name);
+                assert_eq!(mine["subtype"].as_str(), Some("unsupported"), "{}", case.name);
+            }
+        }
+    }
+
+    assert_eq!(saw, FALLS_BACK_TO_UNSUPPORTED.len(), "the corpus does not carry each of them once");
+}
+
+#[test]
+fn the_widget_field_join_is_not_covered_by_this_corpus() {
+    // The one field pair this port does not produce. Resolving a widget's
+    // owning field means following `/Parent` to a FIELD dictionary, which no
+    // annotation-plane accessor can do; the reconciled form model is the
+    // authority and it is G8's.
+    //
+    // So every widget here is inert and both sides answer the unattached
+    // values. That makes the whole-DTO comparison pass for a reason it should
+    // not be allowed to pass for silently: this test is what says so, and it
+    // fails the day a fixture gains an `/AcroForm`, pointing at the join that
+    // then has to exist.
+    let file = load();
+    let mut widgets = 0usize;
+
+    for case in &file.cases {
+        for page in &case.pages {
+            for annotation in &page.annotations {
+                if annotation["subtype"].as_str() != Some("widget") {
+                    continue;
+                }
+                widgets += 1;
+                assert_eq!(
+                    annotation["fieldObjectNumber"].as_u64(),
+                    Some(0),
+                    "{}: a widget attached to a field, which needs the G8 form model",
+                    case.name,
+                );
+                assert_eq!(
+                    annotation["fieldFamily"].as_str(),
+                    Some("unknown"),
+                    "{}: a widget with a known family, which needs the G8 form model",
+                    case.name,
+                );
+            }
+        }
+    }
+
+    assert!(widgets > 0, "no widget in the corpus, so this says nothing");
 }
 
 #[test]
@@ -279,6 +320,14 @@ fn the_unported_list_names_real_subtypes_and_does_not_repeat() {
     assert!(
         !listed.contains(AnnotationSubtype::Highlight.as_str()),
         "highlight has a reader and should have left the list",
+    );
+    // Down to one, and it is popup. If this ever shrinks to zero the
+    // registry has claimed a subtype the TypeScript does not read, which is a
+    // wire difference rather than progress.
+    assert_eq!(
+        FALLS_BACK_TO_UNSUPPORTED,
+        [AnnotationSubtype::Popup],
+        "the unported list changed; check the TypeScript reader table agrees",
     );
 }
 

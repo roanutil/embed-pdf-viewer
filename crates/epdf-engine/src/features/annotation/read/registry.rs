@@ -11,12 +11,15 @@
 //! the catalog. So a reader that lands without being registered fails, and so
 //! does one registered without the comparison being widened to its fields.
 
-use pdfium::Annotation;
+use pdfium::{Annotation, Document};
 
+use super::base::AnnotationBase;
 use super::caret::read_caret;
 use super::dto::AnnotationKind;
+use super::file_attachment::read_file_attachment;
 use super::free_text::read_free_text;
 use super::ink_line::{read_ink, read_line, read_line_endings};
+use super::link::read_link;
 use super::redact::read_redact;
 use super::shape::read_shape;
 use super::stamp::read_stamp;
@@ -24,6 +27,7 @@ use super::text::read_text;
 use super::text_markup::{DEFAULT_HIGHLIGHT_COLOR, DEFAULT_TEXT_MARKUP_COLOR, read_text_markup};
 use super::unsupported::read_unsupported;
 use super::vertex::read_vertex;
+use super::widget::read_widget;
 use super::{dictionary_read, read_cloudy_intensity};
 use crate::error::EngineError;
 use crate::features::annotation::intent::StrikeoutIntent;
@@ -34,20 +38,20 @@ use crate::features::annotation::subtype::AnnotationSubtype;
 /// Every one of them is still readable as a base shell; what is missing is the
 /// subtype's own fields. `unsupported` is not listed, because for it the
 /// fallback IS the reader.
-pub const FALLS_BACK_TO_UNSUPPORTED: [AnnotationSubtype; 4] = [
-    AnnotationSubtype::Link,
-    // Popup is on this list in the TypeScript too, and not because nobody got
-    // to it: a popup is the presentation of another annotation's comment, and
-    // the wire deliberately does not model it. `/Popup` and `/Open` are a
-    // viewer's business.
+pub const FALLS_BACK_TO_UNSUPPORTED: [AnnotationSubtype; 1] = [
+    // The only one left, and not because nobody got to it. A popup is the
+    // PRESENTATION of another annotation's comment, and the wire deliberately
+    // does not model it: `/Popup` and `/Open` are a viewer's business. The
+    // TypeScript's reader table has no popup entry either, for the same
+    // reason, so this is parity and not a gap.
     AnnotationSubtype::Popup,
-    AnnotationSubtype::FileAttachment,
-    AnnotationSubtype::Widget,
 ];
 
 /// Read the subtype-specific half of an annotation.
 pub fn read_annotation_kind(
+    document: &Document,
     annotation: &Annotation<'_>,
+    base: &AnnotationBase,
     raw_subtype_code: i32,
 ) -> Result<AnnotationKind, EngineError> {
     Ok(match AnnotationSubtype::from_code(raw_subtype_code) {
@@ -85,6 +89,13 @@ pub fn read_annotation_kind(
         AnnotationSubtype::Stamp => AnnotationKind::Stamp { fields: read_stamp(annotation)? },
         AnnotationSubtype::Caret => AnnotationKind::Caret { fields: read_caret(annotation)? },
         AnnotationSubtype::Redact => AnnotationKind::Redact { fields: read_redact(annotation)? },
+        AnnotationSubtype::Link => {
+            AnnotationKind::Link { fields: read_link(document, annotation, base) }
+        }
+        AnnotationSubtype::FileAttachment => {
+            AnnotationKind::FileAttachment { fields: read_file_attachment(annotation)? }
+        }
+        AnnotationSubtype::Widget => AnnotationKind::Widget { fields: read_widget(annotation)? },
         _ => read_unsupported(annotation, raw_subtype_code)?,
     })
 }

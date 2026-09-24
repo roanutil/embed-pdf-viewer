@@ -92,7 +92,7 @@ pub fn read_page_annotations(
         if base.identity_quality == AnnotationIdentityQuality::Weak {
             has_any_weak = true;
         }
-        let kind = read_annotation_kind(&annotation, annotation.subtype_code())?;
+        let kind = read_annotation_kind(document, &annotation, &base, annotation.subtype_code())?;
         annotations.push(AnnotationDto { base, kind });
     }
 

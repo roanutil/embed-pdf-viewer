@@ -534,6 +534,37 @@ impl Annotation<'_> {
         unsafe { pdfium_sys::EPDFAnnot_HasAppearanceStream(self.handle, mode as i32) != 0 }
     }
 
+    /// One `/MK` appearance-characteristics colour, by `EPDF_MK_COLORTYPE`.
+    ///
+    /// A widget's border and background live in `/MK`, not in `/C`, which is
+    /// why this is separate from [`Annotation::color`] rather than another
+    /// selector on it: they read different dictionary entries.
+    pub fn mk_color(&self, which: i32) -> Option<(u8, u8, u8)> {
+        let (mut r, mut g, mut b) = (0u32, 0u32, 0u32);
+        // SAFETY: the handle is live and the three out-parameters are valid.
+        let ok = unsafe {
+            pdfium_sys::EPDFAnnot_GetMKColor(
+                self.handle,
+                which as u32,
+                &raw mut r,
+                &raw mut g,
+                &raw mut b,
+            )
+        };
+        (ok != 0).then_some((r as u8, g as u8, b as u8))
+    }
+
+    /// The embedded file a file-attachment annotation's `/FS` points at.
+    ///
+    /// The handle is unretained: PDFium hands back a pointer into the
+    /// document's own filespec and there is no close call, which is why
+    /// [`Attachment`] borrows this annotation rather than owning anything.
+    pub fn file_attachment(&self) -> Option<Attachment<'_>> {
+        // SAFETY: the handle is live for the borrow this returns.
+        let handle = unsafe { pdfium_sys::FPDFAnnot_GetFileAttachment(self.handle) };
+        (!handle.is_null()).then_some(Attachment { handle, _annotation: PhantomData })
+    }
+
     /// The raw handle, for the accessors that hang off `Document` instead.
     pub(crate) fn as_raw(&self) -> pdfium_sys::FPDF_ANNOTATION {
         self.handle
@@ -683,4 +714,69 @@ where
     }
     let produced = ((written as usize) / 2).saturating_sub(1).min(buffer.len());
     Ok(Some(String::from_utf16_lossy(&buffer[..produced])))
+}
+
+/// An embedded file, read through the filespec that names it.
+///
+/// Unretained, like everything `FPDF_ATTACHMENT` addresses: there is no close
+/// call, and the lifetime ties it to whatever produced it so it cannot outlive
+/// the document its bytes live in.
+#[derive(Debug)]
+pub struct Attachment<'owner> {
+    handle: pdfium_sys::FPDF_ATTACHMENT,
+    _annotation: PhantomData<&'owner ()>,
+}
+
+impl Attachment<'_> {
+    /// `/UF`, the display name.
+    pub fn name(&self) -> Result<Option<String>, PdfiumError> {
+        read_utf16_bytes(|buffer, len| {
+            // SAFETY: the handle is live and `len` describes `buffer`.
+            unsafe { pdfium_sys::FPDFAttachment_GetName(self.handle, buffer, len) }
+        })
+    }
+
+    /// `/Subtype` of the embedded file stream, which is its MIME type.
+    pub fn mime_type(&self) -> Result<Option<String>, PdfiumError> {
+        read_utf16_bytes(|buffer, len| {
+            // SAFETY: as above.
+            unsafe { pdfium_sys::FPDFAttachment_GetSubtype(self.handle, buffer, len) }
+        })
+    }
+
+    /// `/Desc`.
+    pub fn description(&self) -> Result<Option<String>, PdfiumError> {
+        read_utf16_bytes(|buffer, len| {
+            // SAFETY: as above.
+            unsafe { pdfium_sys::EPDFAttachment_GetDescription(self.handle, buffer, len) }
+        })
+    }
+
+    /// One `/Params` string entry, `None` when the key is absent.
+    pub fn string_value(&self, key: &str) -> Result<Option<String>, PdfiumError> {
+        let key = c_key(key)?;
+        // SAFETY: the handle and key are live.
+        let present = unsafe { pdfium_sys::FPDFAttachment_HasKey(self.handle, key.as_ptr()) };
+        if present == 0 {
+            return Ok(None);
+        }
+        read_utf16_bytes(|buffer, len| {
+            // SAFETY: as above, and `len` describes `buffer`.
+            unsafe {
+                pdfium_sys::FPDFAttachment_GetStringValue(self.handle, key.as_ptr(), buffer, len)
+            }
+        })
+    }
+
+    /// One `/Params` integer entry.
+    pub fn integer_value(&self, key: &str) -> Result<Option<i32>, PdfiumError> {
+        let key = c_key(key)?;
+        let mut value = 0i32;
+        // SAFETY: the handle and key are live and `value` is a valid
+        // out-parameter.
+        let ok = unsafe {
+            pdfium_sys::EPDFAttachment_GetIntegerValue(self.handle, key.as_ptr(), &raw mut value)
+        };
+        Ok((ok != 0).then_some(value))
+    }
 }

@@ -17,14 +17,17 @@ use serde::{Deserialize, Serialize};
 
 use super::base::AnnotationBase;
 use super::caret::CaretFields;
+use super::file_attachment::FileAttachmentFields;
 use super::free_text::FreeTextFields;
 use super::ink_line::{InkFields, LineFields};
+use super::link::LinkFields;
 use super::redact::RedactFields;
 use super::shape::ShapeFields;
 use super::stamp::StampFields;
 use super::text::TextFields;
 use super::text_markup::TextMarkupFields;
 use super::vertex::VertexFields;
+use super::widget::WidgetFields;
 use crate::features::annotation::intent::StrikeoutIntent;
 use crate::features::annotation::vocabulary::LineEndings;
 
@@ -114,6 +117,18 @@ pub enum AnnotationKind {
     Redact {
         #[serde(flatten)]
         fields: RedactFields,
+    },
+    Link {
+        #[serde(flatten)]
+        fields: LinkFields,
+    },
+    FileAttachment {
+        #[serde(flatten)]
+        fields: FileAttachmentFields,
+    },
+    Widget {
+        #[serde(flatten)]
+        fields: WidgetFields,
     },
     Unsupported {
         /// `FPDFAnnot_GetSubtype`'s code, kept for diagnosis.

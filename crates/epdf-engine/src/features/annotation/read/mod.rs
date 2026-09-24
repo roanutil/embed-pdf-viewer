@@ -13,9 +13,11 @@ pub mod base;
 pub mod caret;
 pub mod dto;
 pub mod embed_metadata;
+pub mod file_attachment;
 pub mod free_text;
 pub mod identity;
 pub mod ink_line;
+pub mod link;
 pub mod page;
 pub mod redact;
 pub mod registry;
@@ -28,6 +30,7 @@ pub mod text_markup;
 pub mod transform;
 pub mod unsupported;
 pub mod vertex;
+pub mod widget;
 
 use pdfium::{Annotation, PdfiumError, PointF, QuadF};
 
