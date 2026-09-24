@@ -1333,6 +1333,66 @@ function formFields() {
 }
 
 /**
+ * `/PieceInfo` on both of its holders, with one value of every shape the
+ * read vocabulary knows and several it does not.
+ *
+ * The vocabulary is five shapes over an unconstrained dictionary, so what
+ * matters is the boundary: which values come back tagged and which come back
+ * as present-and-unreadable. A reader that dropped the second kind, or that
+ * guessed at it, would look right on every document written by this engine
+ * and wrong on every document written by anything else.
+ *
+ * The tag also carries a distinction the characters do not. `/Draft` and
+ * `(Draft)` are a name and a string, they read as the same text, and only the
+ * tag says which the file held.
+ *
+ * Two applications on the catalog and THREE on the page, because the listing
+ * is per holder and a reader that read the catalog's while claiming the
+ * page's would agree with itself. More on the page than on the catalog
+ * specifically: with fewer, a listing that used the wrong count would run
+ * past the end, find nothing, and produce the right answer by accident.
+ */
+function pieceInfo() {
+  // The unreadable shapes, each for its own reason: a dictionary and a
+  // stream are not in the vocabulary at all, and a mixed array is an array
+  // that is not a list of text strings.
+  const unreadable =
+    '/aDictionary << /nested (value) >> /aMixedArray [(text) 42] /aNull null';
+
+  const privateEntries =
+    '/aString (hello) /aName /Draft /aNumber 42.5 /aTrue true /aFalse false ' +
+    `/aStringArray [(one) (two) (three)] /anEmptyArray [] ${unreadable}`;
+
+  return buildPdf([
+    Buffer.from(
+      '<< /Type /Catalog /Pages 2 0 R /PieceInfo << ' +
+        `/com.embedpdf << /Private << ${privateEntries} >> ` +
+        '/LastModified (D:20240501120000Z) >> ' +
+        '/OtherApp << /Private << /only (one key) >> >> >> >>',
+      'latin1',
+    ),
+    Buffer.from(
+      '<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 612 792] >>',
+      'latin1',
+    ),
+    // The page's own data is DIFFERENT from the catalog's, so a reader that
+    // mixed the two up produces the wrong answer rather than the same one.
+    Buffer.from(
+      '<< /Type /Page /Parent 2 0 R /Resources << >> /PieceInfo << ' +
+        '/com.embedpdf << /Private << /pageOnly (page value) /aNumber 7 >> ' +
+        '/LastModified (D:20240502130000Z) >> ' +
+        // Two more, so the page carries MORE applications than the catalog.
+        // With fewer, a listing that used the catalog's count for the page
+        // would run past the end, find nothing, and produce the right answer
+        // by accident.
+        '/PageOnlyApp << /Private << /k (v) >> >> ' +
+        '/ZebraApp << /Private << /k (v) >> >> >> >>',
+      'latin1',
+    ),
+  ]);
+}
+
+/**
  * A document whose Info dictionary exercises every metadata distinction.
  *
  * `metadata.read` has to tell three states apart: a key that is absent, a key
@@ -1412,6 +1472,7 @@ const outputs = [
   ['annotation_appearances.pdf', annotationAppearances()],
   ['attachments.pdf', attachments()],
   ['form_fields.pdf', formFields()],
+  ['piece_info.pdf', pieceInfo()],
   ['document_actions.pdf', documentActions()],
   ['reverse_and_gapped_text.pdf', reverseAndGappedText(font)],
 

@@ -215,6 +215,12 @@ jobs:
       - name: Form vectors are current
         run: pnpm --filter @embedpdf/tooling-engine-conformance run forms:check
 
+      # G8's /PieceInfo, on both holders. The catalog and page accessor
+      # families differ only by a page object number, so a branch written the
+      # wrong way round reads one while claiming the other.
+      - name: Piece-info vectors are current
+        run: pnpm --filter @embedpdf/tooling-engine-conformance run piece-info:check
+
       # multiplatform-port-order.md Section 6: a kind added to
       # worker-protocol.ts without a row in the matrix fails here, and so does
       # a row for a kind that no longer exists.

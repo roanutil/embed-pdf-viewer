@@ -30,6 +30,8 @@
     "attachments:check": "tsx --conditions=development src/generate-attachment-vectors.ts --check",
     "forms": "tsx --conditions=development src/generate-form-vectors.ts",
     "forms:check": "tsx --conditions=development src/generate-form-vectors.ts --check",
+    "piece-info": "tsx --conditions=development src/generate-piece-info-vectors.ts",
+    "piece-info:check": "tsx --conditions=development src/generate-piece-info-vectors.ts --check",
     "actions": "tsx --conditions=development src/generate-action-vectors.ts",
     "actions:check": "tsx --conditions=development src/generate-action-vectors.ts --check",
     "layout": "tsx --conditions=development src/generate-layout-vectors.ts",

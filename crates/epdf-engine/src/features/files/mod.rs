@@ -15,6 +15,8 @@
 //!
 //! [`attachments`], the read half: the catalog's `/EmbeddedFiles` name tree
 //! and the bytes-out call, over the same metadata projection G7's
-//! file-attachment annotation already uses. Piece info is not ported.
+//! file-attachment annotation already uses, and [`piece_info`], the read
+//! half of /PieceInfo on both of the holders that can carry it.
 
 pub mod attachments;
+pub mod piece_info;

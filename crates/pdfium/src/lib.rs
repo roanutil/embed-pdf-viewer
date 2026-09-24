@@ -27,6 +27,7 @@ mod library;
 mod metadata;
 mod page;
 mod page_list;
+mod piece_info;
 mod text;
 
 pub use action::{
@@ -52,4 +53,5 @@ pub use library::Library;
 pub use metadata::Trapped;
 pub use page::{Page, PageView, SharedPage};
 pub use page_list::PageBoxType;
+pub use piece_info::{PieceInfoHolder, object_type};
 pub use text::{CharGeometry, CharGeometryFlags, TextObjectKey, TextPage};
