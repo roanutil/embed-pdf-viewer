@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 1,
+  "kind": "annotation.vocabulary",
+  "codeRange": {
+    "from": -2,
+    "to": 40
+  },
+  "colorType": {
+    "Color": 0,
+    "InteriorColor": 1,
+    "OverlayColor": 2,
+    "TextColor": 3
+  },
+  "intentProbes": [
+    null,
+    "",
+    "FreeText",
+    "FreeTextCallout",
+    "FreeTextTypeWriter",
+    "freetextcallout",
+    "InkHighlight",
+    "inkhighlight",
+    "Replace",
+    "replace",
+    "StrikeOutTextEdit",
+    "StrikeoutTextEdit",
+    "Highlight"
+  ],
+  "flagBits": {
+    "invisible": 1,
+    "hidden": 2,
+    "print": 4,
+    "noZoom": 8,
+    "noRotate": 16,
+    "noView": 32,
+    "readOnly": 64,
+    "locked": 128,
+    "toggleNoView": 256,
+    "lockedContents": 512
+  },
+  "codecs": [
+    {"name":"subtype","of":"FPDFAnnot_GetSubtype","decoded":["unsupported","unsupported","unsupported","text","link","free-text","line","square","circle","polygon","polyline","highlight","underline","squiggly","strikeout","stamp","caret","ink","popup","file-attachment","unsupported","unsupported","widget","unsupported","unsupported","unsupported","unsupported","unsupported","unsupported","unsupported","redact","unsupported","unsupported","unsupported","unsupported","unsupported","unsupported","unsupported","unsupported","unsupported","unsupported","unsupported","unsupported"],"encoded":[["text",1],["link",2],["free-text",3],["line",4],["square",5],["circle",6],["polygon",7],["polyline",8],["highlight",9],["underline",10],["squiggly",11],["strikeout",12],["stamp",13],["caret",14],["ink",15],["popup",16],["file-attachment",17],["redact",28],["widget",20],["unsupported",0]]},
+    {"name":"blendMode","of":"FPDF_BLENDMODE","decoded":["normal","normal","normal","multiply","screen","overlay","darken","lighten","color-dodge","color-burn","hard-light","soft-light","difference","exclusion","hue","saturation","color","luminosity","normal","normal","normal","normal","normal","normal","normal","normal","normal","normal","normal","normal","normal","normal","normal","normal","normal","normal","normal","normal","normal","normal","normal","normal","normal"],"encoded":[["normal",0],["multiply",1],["screen",2],["overlay",3],["darken",4],["lighten",5],["color-dodge",6],["color-burn",7],["hard-light",8],["soft-light",9],["difference",10],["exclusion",11],["hue",12],["saturation",13],["color",14],["luminosity",15]]},
+    {"name":"lineEnding","of":"FPDF_ANNOT_LINE_END","decoded":["none","none","none","square","circle","diamond","open-arrow","closed-arrow","butt","r-open-arrow","r-closed-arrow","slash","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none"],"encoded":[["none",0],["square",1],["circle",2],["diamond",3],["open-arrow",4],["closed-arrow",5],["butt",6],["r-open-arrow",7],["r-closed-arrow",8],["slash",9]]},
+    {"name":"borderStyle","of":"FPDF_ANNOT_BORDER_STYLE","decoded":["solid","solid","solid","solid","dashed","beveled","inset","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid"],"encoded":[["solid",1],["dashed",2],["beveled",3],["inset",4]]},
+    {"name":"standardFont","of":"FPDF_STANDARD_FONT","decoded":["helvetica","helvetica","courier","courier-bold","courier-bold-oblique","courier-oblique","helvetica","helvetica-bold","helvetica-bold-oblique","helvetica-oblique","times-roman","times-bold","times-bold-italic","times-italic","symbol","zapf-dingbats","helvetica","helvetica","helvetica","helvetica","helvetica","helvetica","helvetica","helvetica","helvetica","helvetica","helvetica","helvetica","helvetica","helvetica","helvetica","helvetica","helvetica","helvetica","helvetica","helvetica","helvetica","helvetica","helvetica","helvetica","helvetica","helvetica","helvetica"],"encoded":[["courier",0],["courier-bold",1],["courier-bold-oblique",2],["courier-oblique",3],["helvetica",4],["helvetica-bold",5],["helvetica-bold-oblique",6],["helvetica-oblique",7],["times-roman",8],["times-bold",9],["times-bold-italic",10],["times-italic",11],["symbol",12],["zapf-dingbats",13]]},
+    {"name":"textAlignment","of":"/Q quadding","decoded":["left","left","left","center","right","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left"],"encoded":[["left",0],["center",1],["right",2]]},
+    {"name":"replyType","of":"FPDF_ANNOT_REPLY_TYPE, gated on /IRT","decoded":["reply","reply","reply","reply","group","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply"],"encoded":[["reply",1],["group",2]]},
+    {"name":"noteIcon","of":"FPDF_ANNOT_NAME, the text block","decoded":[null,null,"comment","key","note","help","new-paragraph","paragraph","insert",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],"encoded":[["comment",0],["key",1],["note",2],["help",3],["new-paragraph",4],["paragraph",5],["insert",6]]},
+    {"name":"fileAttachmentIcon","of":"FPDF_ANNOT_NAME, the file-attachment block","decoded":[null,null,null,null,null,null,null,null,null,"graph","push-pin","paperclip","tag",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],"encoded":[["graph",7],["push-pin",8],["paperclip",9],["tag",10]]},
+    {"name":"stampName","of":"FPDF_ANNOT_NAME, the stamp block","decoded":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,"Approved","Experimental","NotApproved","AsIs","Expired","NotForPublicRelease","Confidential","Final","Sold","Departmental","ForComment","TopSecret","Draft","ForPublicRelease","Completed","Void","PreliminaryResults","InformationOnly","Rejected","Witness","InitialHere","SignHere","Accepted",null,null,null,null,null],"encoded":[["Approved",13],["Experimental",14],["NotApproved",15],["AsIs",16],["Expired",17],["NotForPublicRelease",18],["Confidential",19],["Final",20],["Sold",21],["Departmental",22],["ForComment",23],["TopSecret",24],["Draft",25],["ForPublicRelease",26],["Completed",27],["Void",28],["PreliminaryResults",29],["InformationOnly",30],["Rejected",31],["Witness",32],["InitialHere",33],["SignHere",34],["Accepted",35]]}
+  ],
+  "intents": [
+    {"name":"freeTextIntent","decoded":["free-text","free-text","free-text","free-text-callout","free-text","free-text","free-text","free-text","free-text","free-text","free-text","free-text","free-text"],"encoded":[["free-text","FreeText"],["free-text-callout","FreeTextCallout"]]},
+    {"name":"inkIntent","decoded":[null,null,null,null,null,null,"ink-highlight",null,null,null,null,null,null],"encoded":[["ink-highlight","InkHighlight"]]},
+    {"name":"caretIntent","decoded":[null,null,null,null,null,null,null,null,"replace",null,null,null,null],"encoded":[["replace","Replace"]]},
+    {"name":"strikeoutIntent","decoded":[null,null,null,null,null,null,null,null,null,null,"strikeout-text-edit",null,null],"encoded":[["strikeout-text-edit","StrikeOutTextEdit"]]}
+  ],
+  "states": [
+    {"probe":"review","stateToPdf":"review","stateFromPdf":"review","stateModelToPdf":"Review","stateModelFromPdf":"review"},
+    {"probe":"Review","stateToPdf":"Review","stateFromPdf":"Review","stateModelToPdf":"Review","stateModelFromPdf":"review"},
+    {"probe":"marked","stateToPdf":"Marked","stateFromPdf":"marked","stateModelToPdf":"Marked","stateModelFromPdf":"marked"},
+    {"probe":"Marked","stateToPdf":"Marked","stateFromPdf":"marked","stateModelToPdf":"Marked","stateModelFromPdf":"marked"},
+    {"probe":"unmarked","stateToPdf":"Unmarked","stateFromPdf":"unmarked","stateModelToPdf":"unmarked","stateModelFromPdf":"unmarked"},
+    {"probe":"Unmarked","stateToPdf":"Unmarked","stateFromPdf":"unmarked","stateModelToPdf":"Unmarked","stateModelFromPdf":"Unmarked"},
+    {"probe":"accepted","stateToPdf":"Accepted","stateFromPdf":"accepted","stateModelToPdf":"accepted","stateModelFromPdf":"accepted"},
+    {"probe":"Accepted","stateToPdf":"Accepted","stateFromPdf":"accepted","stateModelToPdf":"Accepted","stateModelFromPdf":"Accepted"},
+    {"probe":"rejected","stateToPdf":"Rejected","stateFromPdf":"rejected","stateModelToPdf":"rejected","stateModelFromPdf":"rejected"},
+    {"probe":"Rejected","stateToPdf":"Rejected","stateFromPdf":"rejected","stateModelToPdf":"Rejected","stateModelFromPdf":"Rejected"},
+    {"probe":"cancelled","stateToPdf":"Cancelled","stateFromPdf":"cancelled","stateModelToPdf":"cancelled","stateModelFromPdf":"cancelled"},
+    {"probe":"Cancelled","stateToPdf":"Cancelled","stateFromPdf":"cancelled","stateModelToPdf":"Cancelled","stateModelFromPdf":"Cancelled"},
+    {"probe":"completed","stateToPdf":"Completed","stateFromPdf":"completed","stateModelToPdf":"completed","stateModelFromPdf":"completed"},
+    {"probe":"Completed","stateToPdf":"Completed","stateFromPdf":"completed","stateModelToPdf":"Completed","stateModelFromPdf":"Completed"},
+    {"probe":"none","stateToPdf":"None","stateFromPdf":"none","stateModelToPdf":"none","stateModelFromPdf":"none"},
+    {"probe":"None","stateToPdf":"None","stateFromPdf":"none","stateModelToPdf":"None","stateModelFromPdf":"None"},
+    {"probe":"","stateToPdf":"","stateFromPdf":"","stateModelToPdf":"","stateModelFromPdf":""},
+    {"probe":"Escalated","stateToPdf":"Escalated","stateFromPdf":"Escalated","stateModelToPdf":"Escalated","stateModelFromPdf":"Escalated"},
+    {"probe":"legal-hold","stateToPdf":"legal-hold","stateFromPdf":"legal-hold","stateModelToPdf":"legal-hold","stateModelFromPdf":"legal-hold"},
+    {"probe":"Review ","stateToPdf":"Review ","stateFromPdf":"Review ","stateModelToPdf":"Review ","stateModelFromPdf":"Review "},
+    {"probe":"REVIEW","stateToPdf":"REVIEW","stateFromPdf":"REVIEW","stateModelToPdf":"REVIEW","stateModelFromPdf":"REVIEW"}
+  ],
+  "flags": [
+    {"bits":0,"flags":{"invisible":false,"hidden":false,"print":false,"noZoom":false,"noRotate":false,"noView":false,"readOnly":false,"locked":false,"toggleNoView":false,"lockedContents":false}},
+    {"bits":1,"flags":{"invisible":true,"hidden":false,"print":false,"noZoom":false,"noRotate":false,"noView":false,"readOnly":false,"locked":false,"toggleNoView":false,"lockedContents":false}},
+    {"bits":2,"flags":{"invisible":false,"hidden":true,"print":false,"noZoom":false,"noRotate":false,"noView":false,"readOnly":false,"locked":false,"toggleNoView":false,"lockedContents":false}},
+    {"bits":4,"flags":{"invisible":false,"hidden":false,"print":true,"noZoom":false,"noRotate":false,"noView":false,"readOnly":false,"locked":false,"toggleNoView":false,"lockedContents":false}},
+    {"bits":8,"flags":{"invisible":false,"hidden":false,"print":false,"noZoom":true,"noRotate":false,"noView":false,"readOnly":false,"locked":false,"toggleNoView":false,"lockedContents":false}},
+    {"bits":16,"flags":{"invisible":false,"hidden":false,"print":false,"noZoom":false,"noRotate":true,"noView":false,"readOnly":false,"locked":false,"toggleNoView":false,"lockedContents":false}},
+    {"bits":32,"flags":{"invisible":false,"hidden":false,"print":false,"noZoom":false,"noRotate":false,"noView":true,"readOnly":false,"locked":false,"toggleNoView":false,"lockedContents":false}},
+    {"bits":64,"flags":{"invisible":false,"hidden":false,"print":false,"noZoom":false,"noRotate":false,"noView":false,"readOnly":true,"locked":false,"toggleNoView":false,"lockedContents":false}},
+    {"bits":128,"flags":{"invisible":false,"hidden":false,"print":false,"noZoom":false,"noRotate":false,"noView":false,"readOnly":false,"locked":true,"toggleNoView":false,"lockedContents":false}},
+    {"bits":256,"flags":{"invisible":false,"hidden":false,"print":false,"noZoom":false,"noRotate":false,"noView":false,"readOnly":false,"locked":false,"toggleNoView":true,"lockedContents":false}},
+    {"bits":512,"flags":{"invisible":false,"hidden":false,"print":false,"noZoom":false,"noRotate":false,"noView":false,"readOnly":false,"locked":false,"toggleNoView":false,"lockedContents":true}},
+    {"bits":1023,"flags":{"invisible":true,"hidden":true,"print":true,"noZoom":true,"noRotate":true,"noView":true,"readOnly":true,"locked":true,"toggleNoView":true,"lockedContents":true}},
+    {"bits":1024,"flags":{"invisible":false,"hidden":false,"print":false,"noZoom":false,"noRotate":false,"noView":false,"readOnly":false,"locked":false,"toggleNoView":false,"lockedContents":false}},
+    {"bits":4294967295,"flags":{"invisible":true,"hidden":true,"print":true,"noZoom":true,"noRotate":true,"noView":true,"readOnly":true,"locked":true,"toggleNoView":true,"lockedContents":true}},
+    {"bits":2147483647,"flags":{"invisible":true,"hidden":true,"print":true,"noZoom":true,"noRotate":true,"noView":true,"readOnly":true,"locked":true,"toggleNoView":true,"lockedContents":true}},
+    {"bits":682,"flags":{"invisible":false,"hidden":true,"print":false,"noZoom":true,"noRotate":false,"noView":true,"readOnly":false,"locked":true,"toggleNoView":false,"lockedContents":true}},
+    {"bits":341,"flags":{"invisible":true,"hidden":false,"print":true,"noZoom":false,"noRotate":true,"noView":false,"readOnly":true,"locked":false,"toggleNoView":true,"lockedContents":false}}
+  ]
+}

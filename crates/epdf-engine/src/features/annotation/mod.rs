@@ -17,3 +17,20 @@
 //! `internal/read/joinWidgetField.ts:23` needs: TypeScript lends the pointer.
 //! The write gate (`runAnnotationMutationConformance`, 2,431 lines) carries a
 //! review rule that no `?` past the apply boundary introduces a throw path.
+//!
+//! # What is here
+//!
+//! The vocabulary, which is the pure half: [`subtype`], [`flags`],
+//! [`vocabulary`]'s integer codecs, the `/IT` names in [`intent`] and the
+//! `/State` spellings in [`state`]. Every one of them is a table that is read
+//! by one reader and written by one writer, so a wrong entry is wrong twice
+//! and silently. They are pinned to the TypeScript by
+//! `vectors/annotation/vocabulary.json` rather than trusted to transcription.
+//!
+//! The readers that walk PDFium are not ported yet.
+
+pub mod flags;
+pub mod intent;
+pub mod state;
+pub mod subtype;
+pub mod vocabulary;

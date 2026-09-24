@@ -185,6 +185,12 @@ jobs:
       - name: Layout vectors are current
         run: pnpm --filter @embedpdf/tooling-engine-conformance run layout:check
 
+      # G7's pure half: every annotation enum, swept past both ends. A line
+      # ending one code off still draws an arrow and a blend mode one code off
+      # still composites, so nothing downstream notices either.
+      - name: Annotation vocabulary vectors are current
+        run: pnpm --filter @embedpdf/tooling-engine-conformance run annotation:check
+
       # multiplatform-port-order.md Section 6: a kind added to
       # worker-protocol.ts without a row in the matrix fails here, and so does
       # a row for a kind that no longer exists.
