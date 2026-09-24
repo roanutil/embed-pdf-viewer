@@ -4,7 +4,7 @@ What is ported, what pins it, and what is left. `multiplatform-port-order.md`
 is the plan; this is where the plan actually got to. Regenerate nothing from
 this file: every claim below points at a test you can run.
 
-Run everything with `cargo test --workspace`, which is 52 suites at the time of
+Run everything with `cargo test --workspace`, which is 58 suites at the time of
 writing, plus `cargo clippy --workspace --all-targets -- -D warnings`.
 
 ## Done, and pinned to the TypeScript by vectors
@@ -36,6 +36,12 @@ live under `tooling/engine-conformance/vectors/`, and every generator has a
 | G8 | `forms.list`, and G7's widget-to-field join | `vectors/forms/snapshot.json`, `tests/form_reader.rs` |
 | G8 | `pieceInfo.read`, `pieceInfo.applications` | `vectors/files/piece-info.json`, `tests/piece_info_reader.rs` |
 | G9 | `pages.extract`, read back semantically | `vectors/pages/extract.json`, `tests/page_extract_corpus.rs` |
+| G10 | `document.saveBuffer`, both modes, read back semantically | `vectors/save/roundtrip.json`, `tests/document_save.rs` |
+| G11 | the appearance and mutation-impact classifiers | `vectors/annotation/write.json`, `tests/annotation_write.rs` |
+| G11 | `annotations.create`, text markup and shapes | `vectors/annotation/create.json`, `tests/annotation_create.rs` |
+| G11 | `annotations.delete`, all three reference kinds | `vectors/annotation/delete.json`, `tests/annotation_delete.rs` |
+| G11 | `annotations.update`, with the appearance verdict | `vectors/annotation/update.json`, `tests/annotation_update.rs` |
+| G11 | `annotations.move` | `vectors/annotation/move.json`, `tests/annotation_move.rs` |
 
 ## Done, tested against fixtures rather than vectors
 
@@ -54,6 +60,8 @@ them as verified, not as pinned.
 | G7 | appearance pixels, the clamp, the y-up flip | `tests/annotation_appearance.rs` |
 | G8 | `forms.export`, FDF and XFDF envelopes | `tests/form_reader.rs` |
 | G9 | `pages.extract` refusals and lifetime | `tests/page_extract.rs` |
+| G10 | layer artifact round trip, encrypted save | `tests/document_save.rs` |
+| G11 | a created annotation's appearance, and its survival of a save | `tests/annotation_create.rs` |
 | cross-cutting | rotation normalization | `tests/rotation_normalization.rs` |
 | cross-cutting | cancel traces | `tests/cancel_traces.rs` |
 
@@ -61,9 +69,16 @@ them as verified, not as pinned.
 
 Phase 2 is done: every read group from G2 through G9 is ported and gated.
 
-G10 onward: Stage B session authority and save, then every mutator. Phase 4.
-That is `document.save*` plus the eleven write groups, and none of it is
-blocked by anything outside the repository.
+G10's save is done; its session authority, event stream and
+`WorkerHost.finishMutation` are not.
+
+G11 covers four operations across six subtypes: the four text-markup kinds
+and the two shapes. The other twelve subtypes have readers and no writers, so
+a draft or patch naming one is refused rather than half-written.
+
+G12 through G15: forms writes, page assembly and redaction, the remaining
+mutators, and the server surfaces. None of it is blocked by anything outside
+the repository.
 
 ## Known gaps inside what is done
 
@@ -94,6 +109,13 @@ the TypeScript, which has the same structure.
 byte for byte, because the port order says the conformance suites do not
 establish byte-stable PDF serialization. An export or an extract is reopened
 and asked what it is; its object numbering is not compared to anything.
+
+`document.saveLayerBuffer` can write an artifact and cannot write a bare
+delta. `EPDFLayer_SaveDeltaToOwnedBuffer` refuses a layer with no promoted
+objects, and nothing in this repository can promote one until a mutator runs
+against a layer session.
+`tests/document_save.rs::a_layer_session_writes_an_artifact_that_opens_again`
+asserts both halves.
 
 A word can extend past its own line in the text layout. The word walk follows
 glyph flags and the line walk follows runs, so two text objects that abut with
@@ -161,6 +183,12 @@ number, a field the `/AcroForm` tree forgot, and a `/CO` slot naming nothing.
 `piece_info.pdf` puts different data on the catalog and on a page under one
 application name, and gives the page more applications than the catalog so a
 listing that used the wrong count loses one rather than running past the end.
+
+The write vectors have no new fixtures. Every create and update case builds
+its own subject from a draft, so each says what it starts from rather than
+depending on how some fixture annotation happened to be written; delete and
+move run against `annotation_base.pdf`, because both are about identity and
+order and that is the file whose annotations differ in both.
 
 ## How the tests were checked
 
