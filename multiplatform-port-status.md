@@ -4,7 +4,7 @@ What is ported, what pins it, and what is left. `multiplatform-port-order.md`
 is the plan; this is where the plan actually got to. Regenerate nothing from
 this file: every claim below points at a test you can run.
 
-Run everything with `cargo test --workspace`, which is 44 suites at the time of
+Run everything with `cargo test --workspace`, which is 48 suites at the time of
 writing, plus `cargo clippy --workspace --all-targets -- -D warnings`.
 
 ## Done, and pinned to the TypeScript by vectors
@@ -28,6 +28,10 @@ live under `tooling/engine-conformance/vectors/`, and every generator has a
 | G6 | `metadata.read` | `vectors/metadata/read.json`, `tests/metadata_corpus.rs` |
 | G6 | `pages.list` | `vectors/metadata/pages.json`, `tests/pages_corpus.rs` |
 | G6 | SubmitForm flags, action vocabulary | `vectors/actions/`, `tests/submit_flags.rs` |
+| G6 | `actions.read`, page and annotation action trees | `vectors/metadata/actions.json`, `tests/action_reader.rs` |
+| G7 | annotation vocabulary: subtypes, flags, enums, `/IT`, `/State` | `vectors/annotation/vocabulary.json`, `tests/annotation_vocabulary.rs` |
+| G7 | `annotations.listRawAll`, `annotations.listRawPage` | `vectors/annotation/read.json`, `tests/annotation_reader.rs` |
+| G7 | `annotations.renderAppearances`, placement | `vectors/annotation/appearances.json`, `tests/annotation_appearance.rs` |
 
 ## Done, tested against fixtures rather than vectors
 
@@ -43,28 +47,22 @@ them as verified, not as pinned.
 | G4 | render pixels, tiles, alpha, budget | `tests/render_pixels.rs` |
 | G4 | font registry, fallback order | `tests/font_registry.rs` |
 | G5 | `search.query` slices and cursors | `tests/search_reader.rs` |
+| G7 | appearance pixels, the clamp, the y-up flip | `tests/annotation_appearance.rs` |
 | G9 | `pages.extract` | `tests/page_extract.rs` |
 | cross-cutting | rotation normalization | `tests/rotation_normalization.rs` |
 | cross-cutting | cancel traces | `tests/cancel_traces.rs` |
 
 ## Not started
 
-`actions.read`'s PDFium walk (`ActionModelReader.ts`, 414 lines) and
-`DocumentActionsReader.ts`. The vocabulary those consume is ported; the graph
-walk is not. G7's link annotations wait on this.
-
-G7 in full: annotation reads, roughly 4,900 lines across 60 files.
-
-G8: attachments, forms reads, piece info.
+G8: attachments, forms reads, piece info. The read half of the attachment
+projection landed early, with G7's file-attachment annotation
+(`features/annotation/read/file_attachment.rs::read_attachment_info`); what is
+left there is the document-level `/EmbeddedFiles` name tree and the bytes-out
+call.
 
 G10 onward: Stage B session authority and every mutator. Phase 4.
 
 ## Known gaps inside what is done
-
-`PageLayout.actions` is never populated, because page open and close actions
-come from the unported action reader. `tests/pages_corpus.rs` asserts that no
-corpus fixture carries one, so the day that changes it fails rather than
-silently differing.
 
 `open_layer_delta` and `open_layer_artifact` are tested only on their refusal
 paths. Nothing produces a delta yet: `EPDFLayer_SaveDelta` is G10.
@@ -74,6 +72,28 @@ reads `FPDF_GetDocUserPermissions` while describing it as the effective word,
 so an owner-unlocked session reports itself restricted. That matches the
 TypeScript, which is why it stays; `reader::LIVE_PERMISSIONS_DEFECT` and
 `tests/security_reader.rs` both say so.
+
+`openDestination` is absent from `actions.read`. It needs
+`EPDFDoc_GetOpenActionDest`, which the pinned fork artifact `e4174c4f9` does
+not export. The comparison drops the field rather than faking it, and
+`tests/action_reader.rs::the_open_destination_form_is_not_read_by_this_build`
+fails if a corpus document ever gains a destination-form `/OpenAction`.
+
+A widget annotation's `fieldObjectNumber` and `fieldFamily` are always the
+unattached values. Resolving them means following `/Parent` to a field
+dictionary, which no annotation-plane accessor can do; the reconciled form
+model is G8's.
+`tests/annotation_reader.rs::the_widget_field_join_is_not_covered_by_this_corpus`
+asserts that no corpus fixture has an attached widget, so adding one fails
+rather than passing for the wrong reason.
+
+The widget appearance-generation fallback in
+`features/annotation/appearance.rs` never runs. The reader samples the
+available-modes word once, before any generation could happen, and then skips
+every mode whose bit is clear in that sample. Not a PDFium limitation:
+`tests/annotation_appearance.rs::generating_a_form_fields_appearance_never_reaches_the_reader`
+calls `EPDFAnnot_GenerateFormFieldAP` directly and it works. Reproduced from
+the TypeScript, which has the same structure.
 
 A word can extend past its own line in the text layout. The word walk follows
 glyph flags and the line walk follows runs, so two text objects that abut with
@@ -107,6 +127,25 @@ gap wide enough to split it. Mutation testing found both untested.
 
 `rich_metadata.pdf` has an absent key, a present-but-empty key, a UTF-16 title
 outside Latin-1, and dates in both the offset and Z forms.
+
+`page_actions.pdf` and `document_actions.pdf` carry the page and catalog
+action slots. Nothing in the repository had a `/AA` on either.
+
+`annotation_base.pdf` varies the annotation shell and holds the subtype
+roughly constant: an indirect annotation, a direct one with `/NM`, a direct
+one without, a direct one whose `/NM` is empty, all three `/RT` cases,
+`/EMBD_Metadata`, a `/Rect` in reversed corner order, and a `/Sound` no reader
+claims.
+
+`annotation_kinds.pdf` does the opposite: one annotation per subtype, paired so
+each resolved default sits beside an explicit entry. A decorated square against
+a bare circle, a strikeout with `/IT` against one without, a free text with a
+full `/DA` against one with none.
+
+`annotation_appearances.pdf` is the only fixture with baked `/AP` streams, and
+most of it is near misses for the rotation-stripping rule: a callout and a
+polygon that carry rotation metadata and must still be placed by `/Rect`, and a
+square carrying the logical box with no angle.
 
 ## How the tests were checked
 
