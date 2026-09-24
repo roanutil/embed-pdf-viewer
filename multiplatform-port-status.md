@@ -4,7 +4,7 @@ What is ported, what pins it, and what is left. `multiplatform-port-order.md`
 is the plan; this is where the plan actually got to. Regenerate nothing from
 this file: every claim below points at a test you can run.
 
-Run everything with `cargo test --workspace`, which is 48 suites at the time of
+Run everything with `cargo test --workspace`, which is 52 suites at the time of
 writing, plus `cargo clippy --workspace --all-targets -- -D warnings`.
 
 ## Done, and pinned to the TypeScript by vectors
@@ -32,6 +32,10 @@ live under `tooling/engine-conformance/vectors/`, and every generator has a
 | G7 | annotation vocabulary: subtypes, flags, enums, `/IT`, `/State` | `vectors/annotation/vocabulary.json`, `tests/annotation_vocabulary.rs` |
 | G7 | `annotations.listRawAll`, `annotations.listRawPage` | `vectors/annotation/read.json`, `tests/annotation_reader.rs` |
 | G7 | `annotations.renderAppearances`, placement | `vectors/annotation/appearances.json`, `tests/annotation_appearance.rs` |
+| G8 | `attachments.list`, `attachments.readFile` | `vectors/files/attachments.json`, `tests/attachment_reader.rs` |
+| G8 | `forms.list`, and G7's widget-to-field join | `vectors/forms/snapshot.json`, `tests/form_reader.rs` |
+| G8 | `pieceInfo.read`, `pieceInfo.applications` | `vectors/files/piece-info.json`, `tests/piece_info_reader.rs` |
+| G9 | `pages.extract`, read back semantically | `vectors/pages/extract.json`, `tests/page_extract_corpus.rs` |
 
 ## Done, tested against fixtures rather than vectors
 
@@ -48,19 +52,18 @@ them as verified, not as pinned.
 | G4 | font registry, fallback order | `tests/font_registry.rs` |
 | G5 | `search.query` slices and cursors | `tests/search_reader.rs` |
 | G7 | appearance pixels, the clamp, the y-up flip | `tests/annotation_appearance.rs` |
-| G9 | `pages.extract` | `tests/page_extract.rs` |
+| G8 | `forms.export`, FDF and XFDF envelopes | `tests/form_reader.rs` |
+| G9 | `pages.extract` refusals and lifetime | `tests/page_extract.rs` |
 | cross-cutting | rotation normalization | `tests/rotation_normalization.rs` |
 | cross-cutting | cancel traces | `tests/cancel_traces.rs` |
 
 ## Not started
 
-G8: attachments, forms reads, piece info. The read half of the attachment
-projection landed early, with G7's file-attachment annotation
-(`features/annotation/read/file_attachment.rs::read_attachment_info`); what is
-left there is the document-level `/EmbeddedFiles` name tree and the bytes-out
-call.
+Phase 2 is done: every read group from G2 through G9 is ported and gated.
 
-G10 onward: Stage B session authority and every mutator. Phase 4.
+G10 onward: Stage B session authority and save, then every mutator. Phase 4.
+That is `document.save*` plus the eleven write groups, and none of it is
+blocked by anything outside the repository.
 
 ## Known gaps inside what is done
 
@@ -79,14 +82,6 @@ not export. The comparison drops the field rather than faking it, and
 `tests/action_reader.rs::the_open_destination_form_is_not_read_by_this_build`
 fails if a corpus document ever gains a destination-form `/OpenAction`.
 
-A widget annotation's `fieldObjectNumber` and `fieldFamily` are always the
-unattached values. Resolving them means following `/Parent` to a field
-dictionary, which no annotation-plane accessor can do; the reconciled form
-model is G8's.
-`tests/annotation_reader.rs::the_widget_field_join_is_not_covered_by_this_corpus`
-asserts that no corpus fixture has an attached widget, so adding one fails
-rather than passing for the wrong reason.
-
 The widget appearance-generation fallback in
 `features/annotation/appearance.rs` never runs. The reader samples the
 available-modes word once, before any generation could happen, and then skips
@@ -94,6 +89,11 @@ every mode whose bit is clear in that sample. Not a PDFium limitation:
 `tests/annotation_appearance.rs::generating_a_form_fields_appearance_never_reaches_the_reader`
 calls `EPDFAnnot_GenerateFormFieldAP` directly and it works. Reproduced from
 the TypeScript, which has the same structure.
+
+`forms.export` and `pages.extract` are compared semantically rather than
+byte for byte, because the port order says the conformance suites do not
+establish byte-stable PDF serialization. An export or an extract is reopened
+and asked what it is; its object numbering is not compared to anything.
 
 A word can extend past its own line in the text layout. The word walk follows
 glyph flags and the line walk follows runs, so two text objects that abut with
@@ -145,7 +145,22 @@ full `/DA` against one with none.
 `annotation_appearances.pdf` is the only fixture with baked `/AP` streams, and
 most of it is near misses for the rotation-stripping rule: a callout and a
 polygon that carry rotation metadata and must still be placed by `/Rect`, and a
-square carrying the logical box with no angle.
+square carrying the logical box with no angle. It also carries the only
+`/AcroForm` widget outside `form_fields.pdf`, plus an indirect widget attached
+to nothing, which is what makes the widget-to-field join a test.
+
+`attachments.pdf` is the first `/EmbeddedFiles` tree: a key that is not the
+display name, an entry with nothing optional, a zero-byte file, two entries
+sharing one stream, a filespec with no `/EF`, and a tree entry whose value is
+the number 42.
+
+`form_fields.pdf` is the first form: one field of every family, a radio group
+that is one field with two widgets, a `/V` that is an array, a `/V` that is a
+number, a field the `/AcroForm` tree forgot, and a `/CO` slot naming nothing.
+
+`piece_info.pdf` puts different data on the catalog and on a page under one
+application name, and gives the page more applications than the catalog so a
+listing that used the wrong count loses one rather than running past the end.
 
 ## How the tests were checked
 
@@ -154,3 +169,12 @@ was deliberately broken in several ways and the suite had to fail each time.
 Where a mutation survived, the corpus gained a case or a fixture rather than
 the mutation being written off. The commit messages name which mutations were
 tried and which ones needed new coverage.
+
+Pass the patterns to the harness as data, not through the shell. The first
+version interpolated them into a `python3 -c` string, where a multi-line
+pattern could silently fail to match while the mutant was still reported as
+surviving. That produced one false negative, on sorting a `pages.extract`
+selection, and the four mutants recorded as equivalent were re-verified
+afterwards. Four still survive and are documented where they live: the
+redundant appearance guard, the unexercised attachment-tree skip, the negative
+blend-mode cast, and the stamp label's second route.
