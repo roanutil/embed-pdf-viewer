@@ -54,6 +54,13 @@ const SECOND_QUAD = {
 const SQUARE_RECT = { left: 300, bottom: 600, right: 400, top: 660 };
 
 const TRIANGLE_RECT = { left: 300, bottom: 300, right: 420, top: 380 };
+const NOTE_RECT = { left: 72, bottom: 600, right: 92, top: 620 };
+const CARET_RECT = { left: 150, bottom: 530, right: 180, top: 570 };
+const FREE_TEXT_RECT = { left: 72, bottom: 400, right: 260, top: 470 };
+const REDACT_RECT = { left: 72, bottom: 200, right: 260, top: 240 };
+const LINK_RECT = { left: 72, bottom: 640, right: 200, top: 660 };
+const STAMP_RECT = { left: 72, bottom: 400, right: 152, top: 480 };
+const WIDGET_RECT = { left: 72, bottom: 250, right: 240, top: 274 };
 const TRIANGLE = [
   { x: 300, y: 300 },
   { x: 420, y: 300 },
@@ -65,7 +72,29 @@ interface UpdateCase {
   readonly covers: string;
   readonly draft: Record<string, unknown>;
   readonly patch: Record<string, unknown>;
+  /** Payloads the draft or the patch names by key. See the create generator. */
+  readonly resources?: Readonly<Record<string, readonly number[]>>;
 }
+
+/** See `generate-annotation-create-vectors.ts`. */
+function materialize(value: unknown, resources: Record<string, readonly number[]>): unknown {
+  if (Array.isArray(value)) return value.map((entry) => materialize(entry, resources));
+  if (value === null || typeof value !== 'object') return value;
+  const entries = Object.entries(value as Record<string, unknown>);
+  const ref = entries.find(([key]) => key === 'resource');
+  if (ref && typeof ref[1] === 'string') {
+    const bytes = resources[ref[1]];
+    if (!bytes) throw new Error(`no payload for resource '${ref[1]}'`);
+    return Object.fromEntries([
+      ['data', Uint8Array.from(bytes)],
+      ...entries.filter(([key]) => key !== 'resource'),
+    ]);
+  }
+  return Object.fromEntries(entries.map(([key, entry]) => [key, materialize(entry, resources)]));
+}
+
+/** A tiny 4x2 PNG, for the stamp cases. */
+const STAMP_PNG = [137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 4, 0, 0, 0, 2, 8, 2, 0, 0, 0, 240, 202, 234, 52, 0, 0, 0, 16, 73, 68, 65, 84, 120, 156, 99, 184, 163, 161, 1, 71, 12, 200, 28, 0, 127, 154, 9, 97, 122, 180, 22, 59, 0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130];
 
 const CASES: readonly UpdateCase[] = [
   {
@@ -313,6 +342,263 @@ const CASES: readonly UpdateCase[] = [
     },
   },
   {
+    name: 'text-state-alone',
+    covers:
+      'A /State with no /StateModel, which a DRAFT refuses. A patch touches what it states and the model is already on the annotation, so the rule is draft-only.',
+    draft: {
+      subtype: 'text',
+      rect: NOTE_RECT,
+      stateModel: 'review',
+    },
+    patch: { subtype: 'text', state: 'accepted' },
+  },
+  {
+    name: 'text-clear-state',
+    covers:
+      'A tri-state clear of the review state. Removing the entry is not the same as setting it to none, which is a state a workflow can mean.',
+    draft: {
+      subtype: 'text',
+      rect: NOTE_RECT,
+      stateModel: 'review',
+      state: 'accepted',
+    },
+    patch: { subtype: 'text', state: null },
+  },
+  {
+    name: 'text-icon',
+    covers: 'The /Name icon, changed after creation. The picture is the generator\'s, baked from /C and /Name.',
+    draft: { subtype: 'text', rect: NOTE_RECT },
+    patch: { subtype: 'text', icon: 'help', color: { r: 0, g: 160, b: 255 } },
+  },
+  {
+    name: 'caret-clear-rect-differences',
+    covers: 'A tri-state clear of the inset of the drawn caret from its box.',
+    draft: {
+      subtype: 'caret',
+      rect: CARET_RECT,
+      rectDifferences: { left: 2, bottom: 3, right: 4, top: 5 },
+    },
+    patch: { subtype: 'caret', rectDifferences: null },
+  },
+  {
+    name: 'caret-rotate-existing-box',
+    covers:
+      'A rotation with no unrotatedRect in the patch, which a DRAFT refuses. The box is already on the annotation, so the pair is satisfied and this is what rotating a box a second time looks like.',
+    draft: {
+      subtype: 'caret',
+      rect: CARET_RECT,
+      rotation: 30,
+      unrotatedRect: { left: 155, bottom: 535, right: 175, top: 565 },
+    },
+    patch: { subtype: 'caret', rotation: 60 },
+  },
+  {
+    name: 'free-text-size-only',
+    covers:
+      'A /DA size with no font and no colour. /DA is one string, so the writer READS the other two rather than defaulting them: defaulting would reset a font nobody mentioned.',
+    draft: {
+      subtype: 'free-text',
+      intent: 'free-text',
+      rect: FREE_TEXT_RECT,
+      fontFamily: 'times-bold',
+      fontSize: 18,
+      textAlign: 'center',
+      color: { r: 0, g: 0, b: 200 },
+    },
+    patch: { subtype: 'free-text', fontSize: 9 },
+  },
+  {
+    name: 'free-text-colour-only',
+    covers:
+      'A /DA colour with no font and no size, over a text box that has both. The other two are read; defaulting them would shrink the text to twelve points and reset the family.',
+    draft: {
+      subtype: 'free-text',
+      intent: 'free-text',
+      rect: FREE_TEXT_RECT,
+      fontFamily: 'courier',
+      fontSize: 20,
+      textAlign: 'left',
+    },
+    patch: { subtype: 'free-text', color: { r: 200, g: 0, b: 0 } },
+  },
+  {
+    name: 'free-text-clear-background',
+    covers:
+      'A tri-state clear of /C, which on a free text is the BOX BACKGROUND rather than the mark.',
+    draft: {
+      subtype: 'free-text',
+      intent: 'free-text',
+      rect: FREE_TEXT_RECT,
+      fontFamily: 'helvetica',
+      fontSize: 12,
+      textAlign: 'left',
+      interiorColor: { r: 240, g: 240, b: 200 },
+    },
+    patch: { subtype: 'free-text', interiorColor: null },
+  },
+  {
+    name: 'redact-clear-label',
+    covers:
+      'A tri-state clear of /OverlayText. There is no call that removes the entry, so an empty string is how a label goes away.',
+    draft: {
+      subtype: 'redact',
+      rect: REDACT_RECT,
+      overlayText: 'REDACTED',
+      fontSize: 9,
+    },
+    patch: { subtype: 'redact', overlayText: null },
+  },
+  {
+    name: 'redact-label-colour-only',
+    covers:
+      'A label colour with no size, over a marking whose label is nine points. Unlike free text, a redaction writes /DA whole: the entry belongs to the label rather than to the annotation, so the nine points go back to twelve.',
+    draft: {
+      subtype: 'redact',
+      rect: REDACT_RECT,
+      overlayText: 'DRAFT',
+      fontFamily: 'helvetica-bold',
+      fontSize: 9,
+    },
+    patch: { subtype: 'redact', fontColor: { r: 255, g: 255, b: 255 } },
+  },
+  {
+    name: 'redact-relabel',
+    covers: 'A new label and a new alignment on an existing marking.',
+    draft: { subtype: 'redact', rect: REDACT_RECT, overlayText: 'DRAFT' },
+    patch: {
+      subtype: 'redact',
+      overlayText: 'FINAL',
+      repeat: true,
+      textAlign: 'center',
+      fontColor: { r: 255, g: 255, b: 255 },
+    },
+  },
+  {
+    name: 'redact-more-quads',
+    covers:
+      'A text redaction gaining a region, with no rect in the patch. The box follows the quads here, unlike on a draft: a patch that moves the regions and says nothing about the box is asking for the box to follow.',
+    draft: {
+      subtype: 'redact',
+      rect: { left: 276, bottom: 196, right: 474, top: 244 },
+      quadPoints: [
+        { p1: { x: 280, y: 240 }, p2: { x: 470, y: 240 }, p3: { x: 280, y: 220 }, p4: { x: 470, y: 220 } },
+      ],
+    },
+    patch: {
+      subtype: 'redact',
+      quadPoints: [
+        { p1: { x: 280, y: 240 }, p2: { x: 470, y: 240 }, p3: { x: 280, y: 220 }, p4: { x: 470, y: 220 } },
+        { p1: { x: 280, y: 218 }, p2: { x: 400, y: 218 }, p3: { x: 280, y: 200 }, p4: { x: 400, y: 200 } },
+      ],
+    },
+  },
+  {
+    name: 'redact-quads-and-rect',
+    covers:
+      'The other branch: a patch that supplies both. It has already decided what the box is, so the quads do not get to decide again, and the margin survives.',
+    draft: {
+      subtype: 'redact',
+      rect: { left: 276, bottom: 196, right: 474, top: 244 },
+      quadPoints: [
+        { p1: { x: 280, y: 240 }, p2: { x: 470, y: 240 }, p3: { x: 280, y: 220 }, p4: { x: 470, y: 220 } },
+      ],
+    },
+    patch: {
+      subtype: 'redact',
+      rect: { left: 276, bottom: 196, right: 474, top: 244 },
+      quadPoints: [
+        { p1: { x: 280, y: 240 }, p2: { x: 470, y: 240 }, p3: { x: 280, y: 220 }, p4: { x: 470, y: 220 } },
+        { p1: { x: 280, y: 218 }, p2: { x: 400, y: 218 }, p3: { x: 280, y: 200 }, p4: { x: 400, y: 200 } },
+      ],
+    },
+  },
+  {
+    name: 'link-retarget',
+    covers: 'A link pointed somewhere else. The action is replaced rather than merged.',
+    draft: {
+      subtype: 'link',
+      rect: LINK_RECT,
+      target: { kind: 'uri', uri: 'https://example.invalid/old' },
+    },
+    patch: {
+      subtype: 'link',
+      target: { kind: 'goto', destination: { kind: 'fit', pageObjectNumber: 3 } },
+    },
+  },
+  {
+    name: 'link-kill-target',
+    covers:
+      'A dead link. Both /A and /Dest go, because removing only the action would resurrect a stale direct destination as the live target.',
+    draft: {
+      subtype: 'link',
+      rect: LINK_RECT,
+      target: { kind: 'uri', uri: 'https://example.invalid/old' },
+    },
+    patch: { subtype: 'link', target: null },
+  },
+  {
+    name: 'file-attachment-icon',
+    covers:
+      'A marker restyled. The FILE is not patchable: bytes enter once, and replacing them is a different attachment.',
+    resources: { r0: [104, 105] },
+    draft: {
+      subtype: 'file-attachment',
+      rect: NOTE_RECT,
+      file: { resource: 'r0', name: 'notes.txt' },
+    },
+    patch: { subtype: 'file-attachment', icon: 'graph', color: { r: 0, g: 200, b: 120 } },
+  },
+  {
+    name: 'stamp-move-only',
+    covers:
+      'A stamp moved with no new bytes. The existing appearance is re-fitted into the new box, which is what makes moving one cheap.',
+    resources: { r0: STAMP_PNG },
+    draft: {
+      subtype: 'stamp',
+      rect: STAMP_RECT,
+      source: { resource: 'r0' },
+    },
+    patch: { subtype: 'stamp', rect: { left: 200, bottom: 400, right: 360, top: 480 } },
+  },
+  {
+    name: 'stamp-replace-source',
+    covers:
+      'New bytes. The existing appearance objects are dropped and the picture is authored again; painting over them would leave the old one underneath.',
+    resources: { r0: STAMP_PNG, r1: STAMP_PNG },
+    draft: {
+      subtype: 'stamp',
+      rect: STAMP_RECT,
+      source: { resource: 'r0' },
+    },
+    patch: { subtype: 'stamp', source: { resource: 'r1' }, fit: 'fill' },
+  },
+  {
+    name: 'widget-restyle',
+    covers:
+      'The widget plane, patched. The colours are /MK, and a clear is an explicit no-colour rather than the absence a create leaves.',
+    draft: {
+      subtype: 'widget',
+      rect: WIDGET_RECT,
+      color: { r: 30, g: 30, b: 120 },
+      interiorColor: { r: 245, g: 245, b: 230 },
+      strokeWidth: 2,
+    },
+    patch: { subtype: 'widget', interiorColor: null, strokeWidth: 4 },
+  },
+  {
+    name: 'widget-font-size-only',
+    covers:
+      'A /DA size with no family, over a widget that HAS one. Unlike free text, the other two members are defaulted rather than read: one writer serves this and the forms placement path, so a widget style is a whole description and the times-roman goes away.',
+    draft: {
+      subtype: 'widget',
+      rect: WIDGET_RECT,
+      fontFamily: 'times-roman',
+      fontSize: 11,
+      fontColor: { r: 20, g: 20, b: 20 },
+    },
+    patch: { subtype: 'widget', fontSize: 16 },
+  },
+  {
     name: 'ink-intent',
     covers: 'The only /IT ink carries, set after creation.',
     draft: {
@@ -346,10 +632,13 @@ async function readCase(entry: UpdateCase): Promise<unknown> {
       if (!first) throw new Error(`${entry.name}: the fixture has no pages`);
       const page = doc.page(first.pageObjectNumber);
 
-      const created = await page.annotations.create(entry.draft as never);
+      const payloads = { ...(entry.resources ?? {}) };
+      const created = await page.annotations.create(
+        materialize(entry.draft, payloads) as never,
+      );
       const result = await page.annotations.update(
         created.created.ref,
-        entry.patch as never,
+        materialize(entry.patch, payloads) as never,
       );
 
       const { modified, ...updated } = result.updated as Record<string, unknown>;
@@ -379,7 +668,15 @@ function normalizeSessionIds(value: unknown): unknown {
   if (value === null || typeof value !== 'object') return value;
   return Object.fromEntries(
     Object.entries(value as Record<string, unknown>).map(([key, entry]) =>
-      key === 'docSessionId' ? [key, '<session>'] : [key, normalizeSessionIds(entry)],
+      key === 'docSessionId'
+        ? [key, '<session>']
+        : // PDFium stamps an attachment's creation date from the clock when
+          // the bytes are written, so the two engines record different
+          // instants for the same file. Its PRESENCE is asserted by the
+          // Rust runner instead.
+          key === 'creationDate' && typeof entry === 'string'
+          ? [key, '<stamped>']
+          : [key, normalizeSessionIds(entry)],
     ),
   );
 }

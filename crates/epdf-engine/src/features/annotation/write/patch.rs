@@ -34,14 +34,17 @@ use serde::{Deserialize, Serialize};
 
 use crate::dto::Patch;
 
-use super::draft::AnnotationFlagsPatch;
-use crate::features::annotation::intent::{InkIntent, StrikeoutIntent};
+use super::draft::{AnnotationFlagsPatch, LinkTargetDraft, ResourceRef, StampFitDraft};
+use crate::features::annotation::intent::{
+    CaretIntent, FreeTextIntent, InkIntent, StrikeoutIntent,
+};
 use crate::features::annotation::read::shape::PdfRectDifferences;
 use crate::features::annotation::read::style::Color;
 use crate::features::annotation::vocabulary::{
-    AnnotationBorderStyle, AnnotationReplyType, BlendMode, LineEndings,
+    AnnotationBorderStyle, AnnotationReplyType, BlendMode, FileAttachmentIcon, LineEnding,
+    LineEndings, NoteIcon, StandardFont, TextAlignment,
 };
-use crate::geom::{InkList, LinePoints, PdfPoint, PdfQuad, PdfRect};
+use crate::geom::{CalloutLine, InkList, LinePoints, PdfPoint, PdfQuad, PdfRect};
 use crate::identity::AnnotationRef;
 
 /// The fields every patch carries.
@@ -130,6 +133,256 @@ pub enum AnnotationPatchKind {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         intent: Option<InkIntent>,
     },
+    Text {
+        #[serde(flatten)]
+        fields: TextPatchFields,
+    },
+    Caret {
+        #[serde(flatten)]
+        fields: CaretPatchFields,
+    },
+    FreeText {
+        #[serde(flatten)]
+        fields: FreeTextPatchFields,
+    },
+    Redact {
+        #[serde(flatten)]
+        fields: RedactPatchFields,
+    },
+    Link {
+        #[serde(flatten)]
+        fields: LinkPatchFields,
+    },
+    FileAttachment {
+        #[serde(flatten)]
+        fields: FileAttachmentPatchFields,
+    },
+    Stamp {
+        #[serde(flatten)]
+        fields: StampPatchFields,
+    },
+    Widget {
+        #[serde(flatten)]
+        fields: WidgetPatchFields,
+    },
+}
+
+/// What a sticky-note patch may change.
+///
+/// `state` and `state_model` are tri-state INDEPENDENTLY, and unlike a draft
+/// there is no rule tying them. A draft is a whole annotation, so a state
+/// without a model is a state nothing can interpret; a patch touches what it
+/// states, and the other half may already be on the annotation.
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct TextPatchFields {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rect: Option<PdfRect>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub color: Option<Color>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub opacity: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub icon: Option<NoteIcon>,
+    #[serde(skip_serializing_if = "Patch::is_keep")]
+    pub state: Patch<String>,
+    #[serde(skip_serializing_if = "Patch::is_keep")]
+    pub state_model: Patch<String>,
+}
+
+/// What a caret patch may change.
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct CaretPatchFields {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rect: Option<PdfRect>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub color: Option<Color>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub opacity: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub intent: Option<CaretIntent>,
+    #[serde(skip_serializing_if = "Patch::is_keep")]
+    pub rect_differences: Patch<PdfRectDifferences>,
+    #[serde(skip_serializing_if = "Patch::is_keep")]
+    pub rotation: Patch<f64>,
+    #[serde(skip_serializing_if = "Patch::is_keep")]
+    pub unrotated_rect: Patch<PdfRect>,
+}
+
+/// What a free-text patch may change.
+///
+/// `/DA` packs the font, the size and the colour into ONE string, so a patch
+/// naming any of the three has to read the other two rather than defaulting
+/// them. There is one caveat the read cannot fix: a registered font reads
+/// back as a font CODE, so preserving one across a size change means
+/// restating `font_family`.
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct FreeTextPatchFields {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rect: Option<PdfRect>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub intent: Option<FreeTextIntent>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub font_family: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub font_size: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub text_align: Option<TextAlignment>,
+    /// The `/DA` colour: the border and the default text.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub color: Option<Color>,
+    /// The `TextColor` override. Setting one is supported; clearing it back
+    /// to "follow the `/DA` colour" is not, so there is no tri-state here.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub font_color: Option<Color>,
+    /// `/C`, the box background.
+    #[serde(skip_serializing_if = "Patch::is_keep")]
+    pub interior_color: Patch<Color>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub opacity: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub stroke_width: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub border_style: Option<AnnotationBorderStyle>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub dash_array: Option<Vec<f64>>,
+    #[serde(skip_serializing_if = "Patch::is_keep")]
+    pub rect_differences: Patch<PdfRectDifferences>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub callout_line: Option<CalloutLine>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub line_ending: Option<LineEnding>,
+    #[serde(skip_serializing_if = "Patch::is_keep")]
+    pub rotation: Patch<f64>,
+    #[serde(skip_serializing_if = "Patch::is_keep")]
+    pub unrotated_rect: Patch<PdfRect>,
+}
+
+/// What a redaction patch may change.
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct RedactPatchFields {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rect: Option<PdfRect>,
+    /// New quads. On the same terms as text markup: PDFium can grow the list
+    /// and not shrink it, so a shorter one is refused.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub quad_points: Option<Vec<PdfQuad>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub color: Option<Color>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub opacity: Option<f64>,
+    #[serde(skip_serializing_if = "Patch::is_keep")]
+    pub interior_color: Patch<Color>,
+    /// `/OverlayText`. `Clear` removes the label, which also removes the
+    /// reason the `/DA` beside it existed.
+    #[serde(skip_serializing_if = "Patch::is_keep")]
+    pub overlay_text: Patch<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub repeat: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub font_family: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub font_size: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub font_color: Option<Color>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub text_align: Option<TextAlignment>,
+}
+
+/// What a link patch may change.
+///
+/// `target` is tri-state and the three states are three different links.
+/// Absent leaves it alone, a value REPLACES the `/A`, and `Clear` removes
+/// both `/A` and `/Dest`, which is a dead link. The clear touches both
+/// because the model treats the target as one concept with two spellings:
+/// removing only `/A` would resurrect a stale direct `/Dest` as the live
+/// target.
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct LinkPatchFields {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rect: Option<PdfRect>,
+    #[serde(skip_serializing_if = "Patch::is_keep")]
+    pub target: Patch<LinkTargetDraft>,
+}
+
+/// What a file-attachment patch may change.
+///
+/// The FILE is not on this list, and that is deliberate. Bytes enter once at
+/// creation; replacing them is a different attachment, which is a delete and
+/// a create rather than an edit.
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct FileAttachmentPatchFields {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rect: Option<PdfRect>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub color: Option<Color>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub opacity: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub icon: Option<FileAttachmentIcon>,
+}
+
+/// What a stamp patch may change.
+///
+/// Supplying a `source` replaces the picture, which means dropping the
+/// existing appearance objects and authoring new ones. Without one, a patch
+/// is geometry and the existing appearance is re-fitted into it.
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct StampPatchFields {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rect: Option<PdfRect>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source: Option<ResourceRef>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fit: Option<StampFitDraft>,
+    #[serde(skip_serializing_if = "Patch::is_keep")]
+    pub rotation: Patch<f64>,
+    #[serde(skip_serializing_if = "Patch::is_keep")]
+    pub unrotated_rect: Patch<PdfRect>,
+}
+
+/// What a widget patch may change.
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct WidgetPatchFields {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rect: Option<PdfRect>,
+    #[serde(skip_serializing_if = "Patch::is_keep")]
+    pub color: Patch<Color>,
+    #[serde(skip_serializing_if = "Patch::is_keep")]
+    pub interior_color: Patch<Color>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub stroke_width: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub border_style: Option<AnnotationBorderStyle>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub font_family: Option<StandardFont>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub font_size: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub font_color: Option<Color>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub text_align: Option<TextAlignment>,
+}
+
+impl WidgetPatchFields {
+    /// Whether this patch says anything about the border.
+    pub fn touches_border(&self) -> bool {
+        self.stroke_width.is_some() || self.border_style.is_some()
+    }
+
+    /// Whether it says anything about the text.
+    pub fn touches_text_style(&self) -> bool {
+        self.font_family.is_some() || self.font_size.is_some() || self.font_color.is_some()
+    }
 }
 
 /// The styling every geometric patch may change, with a fill.
@@ -206,6 +459,14 @@ impl AnnotationPatchKind {
             Self::Polyline { .. } => S::Polyline,
             Self::Line { .. } => S::Line,
             Self::Ink { .. } => S::Ink,
+            Self::Text { .. } => S::Text,
+            Self::Caret { .. } => S::Caret,
+            Self::FreeText { .. } => S::FreeText,
+            Self::Redact { .. } => S::Redact,
+            Self::Link { .. } => S::Link,
+            Self::FileAttachment { .. } => S::FileAttachment,
+            Self::Stamp { .. } => S::Stamp,
+            Self::Widget { .. } => S::Widget,
         }
     }
 }

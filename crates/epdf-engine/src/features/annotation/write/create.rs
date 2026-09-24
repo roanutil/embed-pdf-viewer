@@ -381,7 +381,10 @@ fn box_rotation_satisfiable(
 /// Same reason as above: resolving a registered font can fail, and finding
 /// that out after the annotation exists leaves a free text in the file with
 /// no `/DA`.
-fn font_resolvable(family: &str, context: &AnnotationWriteContext<'_>) -> Result<(), EngineError> {
+pub(super) fn font_resolvable(
+    family: &str,
+    context: &AnnotationWriteContext<'_>,
+) -> Result<(), EngineError> {
     if crate::features::annotation::vocabulary::StandardFont::from_family(family).is_none() {
         context.resolve_font(family)?;
     }
@@ -1017,8 +1020,8 @@ fn apply_widget(
     fields: &super::draft::WidgetDraftFields,
 ) -> Result<(), EngineError> {
     set_rect(annotation, fields.rect)?;
-    set_mk_color(annotation, MK_BORDER_COLOR, &fields.color)?;
-    set_mk_color(annotation, MK_BACKGROUND_COLOR, &fields.interior_color)?;
+    set_mk_color_patch(annotation, MK_BORDER_COLOR, &fields.color)?;
+    set_mk_color_patch(annotation, MK_BACKGROUND_COLOR, &fields.interior_color)?;
 
     // `/BS` takes both members in one call, so naming either supplies both.
     //
@@ -1079,7 +1082,7 @@ const MK_BACKGROUND_COLOR: i32 = 1;
 /// They separate on the update path, where a widget can already have a
 /// background and the difference between keeping it and removing it is the
 /// whole of what a patch means.
-fn set_mk_color(
+pub(super) fn set_mk_color_patch(
     annotation: &pdfium::Annotation<'_>,
     which: i32,
     color: &Patch<Color>,
@@ -1127,23 +1130,52 @@ fn apply_stamp(
     if let Some(name) = fields.name.as_deref() {
         set_stamp_name(annotation, name)?;
     }
-    let fit = fields.fit.unwrap_or_default();
     let resource = context.resource(&fields.source.resource)?;
-
     // A rotation with no logical box was refused in preflight, so the pair
     // is either both present or the stamp is upright.
-    let Some(logical) =
-        fields.unrotated_rect.filter(|_| fields.rotation.is_some_and(|degrees| degrees != 0.0))
-    else {
-        set_rect(annotation, fields.rect)?;
-        set_stamp_content(document, page, annotation, resource.bytes, fit, fields.rect)?;
-        // Still written: a draft that names a zero rotation is saying the
-        // stamp is upright, and the clear is what makes that true.
+    let logical =
+        fields.unrotated_rect.filter(|_| fields.rotation.is_some_and(|degrees| degrees != 0.0));
+    author_stamp_appearance(
+        document,
+        page,
+        annotation,
+        resource.bytes,
+        fields.fit.unwrap_or_default(),
+        fields.rect,
+        logical,
+        &option_patch(fields.rotation),
+        &option_patch(fields.unrotated_rect),
+    )
+}
+
+/// Author a stamp's appearance from bytes, correct under rotation.
+///
+/// Shared with the patch path, where replacing a stamp's picture is the same
+/// problem. `logical` is the pre-rotation box when the stamp is rotated and
+/// `None` when it is upright; the two transform patches are what to leave on
+/// the annotation afterwards.
+#[allow(clippy::too_many_arguments)]
+pub(super) fn author_stamp_appearance(
+    document: &pdfium::Document,
+    page: &PageView<'_>,
+    annotation: &pdfium::Annotation<'_>,
+    bytes: &[u8],
+    fit: super::draft::StampFitDraft,
+    rect: crate::geom::PdfRect,
+    logical: Option<crate::geom::PdfRect>,
+    rotation: &Patch<f64>,
+    unrotated_rect: &Patch<crate::geom::PdfRect>,
+) -> Result<(), EngineError> {
+    let Some(logical) = logical else {
+        set_rect(annotation, rect)?;
+        set_stamp_content(document, page, annotation, bytes, fit, rect)?;
+        // Still written: naming a zero rotation is saying the stamp is
+        // upright, and the clear is what makes that true.
         return super::transform::write_box_transform(
             annotation,
             &super::transform::AnnotationTransform {
-                rotation: option_patch(fields.rotation),
-                unrotated_rect: option_patch(fields.unrotated_rect),
+                rotation: rotation.clone(),
+                unrotated_rect: unrotated_rect.clone(),
             },
             || Ok(false),
         );
@@ -1161,19 +1193,19 @@ fn apply_stamp(
         || Ok(false),
     )?;
     set_rect(annotation, logical)?;
-    set_stamp_content(document, page, annotation, resource.bytes, fit, logical)?;
+    set_stamp_content(document, page, annotation, bytes, fit, logical)?;
 
     // Then apply the transform: the keys bake the `/Matrix`, `/Rect` becomes
     // the enclosing box, and one re-fit reconciles the two.
     super::transform::write_box_transform(
         annotation,
         &super::transform::AnnotationTransform {
-            rotation: option_patch(fields.rotation),
+            rotation: rotation.clone(),
             unrotated_rect: Patch::Set(logical),
         },
         || Ok(true),
     )?;
-    set_rect(annotation, fields.rect)?;
+    set_rect(annotation, rect)?;
     refit(annotation, fit)
 }
 
@@ -1367,7 +1399,10 @@ fn refit(
 /// Only an enumerated label reaches here: preflight refused anything else,
 /// so a missing code at this point is the preflight and the writer
 /// disagreeing rather than a file being unusual.
-fn set_stamp_name(annotation: &pdfium::Annotation<'_>, name: &str) -> Result<(), EngineError> {
+pub(super) fn set_stamp_name(
+    annotation: &pdfium::Annotation<'_>,
+    name: &str,
+) -> Result<(), EngineError> {
     let code =
         crate::features::annotation::vocabulary::stamp_name_to_code(name).ok_or_else(|| {
             EngineError::with_message(
@@ -1401,6 +1436,21 @@ fn apply_link(
         // so the dead link is what it already is.
         return Ok(());
     };
+    write_link_target(document, annotation, target)
+}
+
+/// Build the target's action and attach it as `/A`, replacing any there.
+///
+/// Shared with the patch path, where a retarget is the same two calls. It
+/// does NOT strip a direct `/Dest`: §12.5.6.5 gives `/A` precedence and the
+/// reader follows it, so a stale `/Dest` beside a live `/A` is inert. A
+/// patch that CLEARS the target removes both, because with no `/A` the
+/// `/Dest` would become live again.
+pub(super) fn write_link_target(
+    document: &pdfium::Document,
+    annotation: &pdfium::Annotation<'_>,
+    target: &super::draft::LinkTargetDraft,
+) -> Result<(), EngineError> {
     let action = match target {
         super::draft::LinkTargetDraft::Uri { uri } => document.create_uri_action(uri),
         super::draft::LinkTargetDraft::Goto { destination } => {
@@ -1507,7 +1557,7 @@ const DEFAULT_ATTACHMENT_MIME_TYPE: &str = "application/octet-stream";
 /// thread's font registry. A key with no registry behind it is refused rather
 /// than quietly downgraded to Helvetica, which would embed the wrong glyphs
 /// into a document that asked for a specific face.
-fn set_default_appearance(
+pub(super) fn set_default_appearance(
     annotation: &pdfium::Annotation<'_>,
     family: &str,
     size: f64,

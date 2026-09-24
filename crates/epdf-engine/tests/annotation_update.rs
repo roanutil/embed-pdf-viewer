@@ -48,6 +48,9 @@ struct Case {
     covers: String,
     draft: serde_json::Value,
     patch: serde_json::Value,
+    /// The binaries the draft or the patch names by key.
+    #[serde(default)]
+    resources: std::collections::BTreeMap<String, Vec<u8>>,
     page_object_number: u32,
     updated: serde_json::Value,
     has_modified: bool,
@@ -122,6 +125,7 @@ fn run(file: &VectorFile, case: &Case) -> Result<Updated, epdf_engine::error::En
 
     let owned = session.document().expect("open");
     let view = owned.document().page(0).expect("page");
+    let resources = write_resources(&case.resources);
     let created = create_annotation(
         owned.document(),
         &view,
@@ -130,7 +134,7 @@ fn run(file: &VectorFile, case: &Case) -> Result<Updated, epdf_engine::error::En
         &after,
         &draft,
         &AnnotationActor::default(),
-        &AnnotationWriteContext::empty(),
+        &AnnotationWriteContext::empty().with_resources(&resources),
         &created_at,
         &CancelToken::never(),
     )
@@ -147,6 +151,7 @@ fn run(file: &VectorFile, case: &Case) -> Result<Updated, epdf_engine::error::En
         page,
         &created.created.base.annotation_ref,
         &patch,
+        &AnnotationWriteContext::empty().with_resources(&resources),
         &before,
         &after,
         &updated_at,
@@ -189,7 +194,7 @@ fn an_updated_annotation_reads_back_as_the_typescript_engines_did() {
         );
 
         assert_eq!(
-            test_support::canonical_numbers(&serde_json::Value::Object(mine)),
+            test_support::canonical_numbers(&normalize_stamps(&serde_json::Value::Object(mine))),
             test_support::canonical_numbers(&case.updated),
             "{}: {}",
             case.name,
@@ -303,6 +308,7 @@ fn a_weak_annotation_is_strengthened_by_its_own_update() {
         page,
         &weak_ref,
         &patch,
+        &AnnotationWriteContext::empty(),
         &before,
         &after,
         &FixedClock(Timestamp::utc(1_700_000_000_000)),
@@ -336,6 +342,7 @@ fn a_patch_for_the_wrong_subtype_is_refused() {
     let file = load();
     let case = file.cases.iter().find(|c| c.name == "colour-change").expect("a highlight case");
     let mut wrong = Case {
+        resources: Default::default(),
         name: "a square patch on a highlight".into(),
         covers: String::new(),
         draft: case.draft.clone(),
@@ -380,4 +387,164 @@ fn a_patch_for_the_wrong_subtype_is_refused() {
     wrong.patch = serde_json::json!({ "subtype": "highlight", "quadPoints": [] });
     let refused = run(&file, &wrong).expect_err("an empty quad list");
     assert!(refused.is(EngineErrorCode::InvalidArg), "{refused}");
+}
+
+/// Run one case and hand the caller the patched annotation to inspect.
+///
+/// The DTO comparison cannot see everything a patch decides. Where the reader
+/// normalizes on the way back out, or reports nothing at all, two different
+/// documents read as the same DTO and the one that is wrong is wrong for
+/// every OTHER reader.
+fn with_patched<R>(
+    file: &VectorFile,
+    name: &str,
+    inspect: impl FnOnce(&pdfium::Annotation<'_>) -> R,
+) -> R {
+    let case =
+        file.cases.iter().find(|c| c.name == name).unwrap_or_else(|| panic!("no case {name}"));
+    let bytes = std::fs::read(test_support::workspace_root().join(&file.fixture))
+        .unwrap_or_else(|e| panic!("read {}: {e}", file.fixture));
+    let mut session = DocumentSession::new();
+    session.open_with(bytes, None, SessionAuthority::unrestricted()).expect("open");
+
+    let page = PageObjectNumber::new(case.page_object_number).expect("page number");
+    let (before, after) = states(page, true);
+    let resources = write_resources(&case.resources);
+    let draft: AnnotationDraft =
+        serde_json::from_value(case.draft.clone()).expect("the draft decodes");
+    let patch: AnnotationPatch =
+        serde_json::from_value(case.patch.clone()).expect("the patch decodes");
+
+    let owned = session.document().expect("open");
+    let view = owned.document().page(0).expect("page");
+    let created = create_annotation(
+        owned.document(),
+        &view,
+        page,
+        &before,
+        &after,
+        &draft,
+        &AnnotationActor::default(),
+        &AnnotationWriteContext::empty().with_resources(&resources),
+        &FixedClock(Timestamp::utc(1_700_000_000_000)),
+        &CancelToken::never(),
+    )
+    .unwrap_or_else(|e| panic!("{name}: create: {e}"));
+    update_annotation(
+        owned.document(),
+        &view,
+        0,
+        page,
+        &created.created.base.annotation_ref,
+        &patch,
+        &AnnotationWriteContext::empty().with_resources(&resources),
+        &before,
+        &after,
+        &FixedClock(Timestamp::utc(1_800_000_000_000)),
+        &SeededIdSource::new(7),
+        &CancelToken::never(),
+    )
+    .unwrap_or_else(|e| panic!("{name}: update: {e}"));
+
+    // The fixture page starts empty, so the patched annotation is the only
+    // one on it.
+    inspect(&view.annotation(0).expect("the patched annotation"))
+}
+
+#[test]
+fn a_patched_review_state_is_written_in_the_spelling_the_pdf_uses() {
+    // §12.5.6.3 spells these with a capital, and the reader passes an
+    // unrecognized spelling through verbatim, so a lowercase `/State`
+    // round-trips through this engine looking correct and means nothing to
+    // Acrobat. The same assertion the create suite makes, for the same
+    // reason: only the dictionary can tell the two apart.
+    let file = load();
+    with_patched(&file, "text-state-alone", |written| {
+        assert_eq!(
+            written.string_value("State").expect("a dictionary read").as_deref(),
+            Some("Accepted"),
+            "/State",
+        );
+        assert_eq!(
+            written.string_value("StateModel").expect("a dictionary read").as_deref(),
+            Some("Review"),
+            "/StateModel",
+        );
+    });
+    with_patched(&file, "text-clear-state", |written| {
+        assert_eq!(
+            written.string_value("State").expect("a dictionary read"),
+            None,
+            "a cleared /State is absent rather than empty",
+        );
+    });
+}
+
+#[test]
+fn a_moved_stamp_refits_the_picture_it_already_had() {
+    // The DTO carries the annotation's `/Rect` and never the placement
+    // inside it, so a stamp that moved and did not re-fit reads back
+    // identically and renders in the wrong place.
+    //
+    // The patch widens the box from 80 to 160. The re-fit does NOT rescale:
+    // the fork recorded the content's own rect on the first write, so what
+    // it does is re-place that 80x40 band in the new box, centred. Without
+    // the re-fit the band stays where it was, at the left edge.
+    let file = load();
+    with_patched(&file, "stamp-move-only", |written| {
+        let bounds = written.object_bounds(0).expect("the image object's bounds");
+        let placement = [bounds.left, bounds.bottom, bounds.right, bounds.top];
+        for (got, want) in placement.iter().zip([40.0_f32, 20.0, 120.0, 60.0].iter()) {
+            assert!(
+                (got - want).abs() < 0.5,
+                "the moved stamp sits at {placement:?}, expected about [40, 20, 120, 60]",
+            );
+        }
+    });
+}
+
+/// PDFium stamps an attachment's `/Params /CreationDate` from the clock, so
+/// the two engines record different instants for the same file. The
+/// generator writes a token; this puts the Rust side on the same footing.
+fn normalize_stamps(value: &serde_json::Value) -> serde_json::Value {
+    match value {
+        serde_json::Value::Array(items) => {
+            serde_json::Value::Array(items.iter().map(normalize_stamps).collect())
+        }
+        serde_json::Value::Object(fields) => serde_json::Value::Object(
+            fields
+                .iter()
+                .map(|(key, entry)| {
+                    if key == "creationDate" && entry.is_string() {
+                        (key.clone(), serde_json::Value::from("<stamped>"))
+                    } else {
+                        (key.clone(), normalize_stamps(entry))
+                    }
+                })
+                .collect(),
+        ),
+        _ => value.clone(),
+    }
+}
+
+/// Borrow the case's payloads as the write context takes them.
+///
+/// A stamp patch is the only one that names a binary, and it names it the
+/// same way a draft does: the JSON carries a key and the bytes travel beside
+/// it, exactly as in a real mutation.
+fn write_resources(
+    bytes: &std::collections::BTreeMap<String, Vec<u8>>,
+) -> epdf_engine::features::annotation::write::context::WriteResourceMap<'_> {
+    bytes
+        .iter()
+        .map(|(key, value)| {
+            (
+                key.clone(),
+                epdf_engine::features::annotation::write::context::WriteResource {
+                    bytes: value.as_slice(),
+                    mime_type: None,
+                },
+            )
+        })
+        .collect()
 }

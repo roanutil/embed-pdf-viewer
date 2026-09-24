@@ -40,7 +40,7 @@ live under `tooling/engine-conformance/vectors/`, and every generator has a
 | G11 | the appearance and mutation-impact classifiers | `vectors/annotation/write.json`, `tests/annotation_write.rs` |
 | G11 | `annotations.create`, every writable subtype | `vectors/annotation/create.json`, `tests/annotation_create.rs` |
 | G11 | `annotations.delete`, all three reference kinds | `vectors/annotation/delete.json`, `tests/annotation_delete.rs` |
-| G11 | `annotations.update`, with the appearance verdict | `vectors/annotation/update.json`, `tests/annotation_update.rs` |
+| G11 | `annotations.update`, every writable subtype, with the appearance verdict | `vectors/annotation/update.json`, `tests/annotation_update.rs` |
 | G11 | `annotations.move` | `vectors/annotation/move.json`, `tests/annotation_move.rs` |
 
 ## Done, tested against fixtures rather than vectors
@@ -72,12 +72,11 @@ Phase 2 is done: every read group from G2 through G9 is ported and gated.
 G10's save is done; its session authority, event stream and
 `WorkerHost.finishMutation` are not.
 
-`annotations.create` covers all eighteen writable subtypes. The two it does
-not are the two that cannot be drafted: a popup is a child of the annotation
-it belongs to rather than a thing a caller places, and `unsupported` is the
-reader's name for a subtype this build does not model. `update` still covers
-the six it started with, so a patch naming any of the other twelve is refused
-rather than half-written.
+`annotations.create` and `annotations.update` both cover all eighteen
+writable subtypes. The two they do not are the two that cannot be drafted: a
+popup is a child of the annotation it belongs to rather than a thing a caller
+places, and `unsupported` is the reader's name for a subtype this build does
+not model.
 
 G12 through G15: forms writes, page assembly and redaction, the remaining
 mutators, and the server surfaces. None of it is blocked by anything outside
@@ -193,6 +192,29 @@ depending on how some fixture annotation happened to be written; delete and
 move run against `annotation_base.pdf`, because both are about identity and
 order and that is the file whose annotations differ in both.
 
+## Three places where the families disagree on purpose
+
+`/DA` packs a font, a size and a colour into one string, so a patch naming one
+member has to decide what the other two are. Free text READS them off the
+annotation, because a text box's styling is an edit. A redaction DEFAULTS
+them, because §12.5.6.14 ties the entry to `/OverlayText` rather than to the
+annotation, so the entry is written whole whenever the label's styling is
+touched. A widget also defaults them, because one writer serves it and
+`forms.createField`'s inline placements, which makes a widget's styling a
+whole description rather than an edit. `redact-label-colour-only` and
+`widget-font-size-only` record the defaults that result.
+
+`/Rect` is derived from the quads on a text-markup patch, derived on a
+redaction patch only when the patch did not supply one, and never derived on
+either draft. §12.5.6.10 requires a markup's box to be the smallest enclosing
+one; a redaction's can carry a margin the quads do not describe, so a patch
+that moves the regions and says nothing about the box is asking for the box to
+follow, and one that supplies both has already decided.
+
+`/Q` on a widget is the one write in these writers whose refusal is ignored.
+PDFium declines it on a widget with no `/FT`, and an inert widget has none:
+the alignment belongs to the field's text, and there is no field yet.
+
 ## How the tests were checked
 
 Every conformance runner in this port was mutation-tested: the implementation
@@ -220,10 +242,15 @@ intensity zero is one, because `read_cloudy_intensity` filters a zero back to
 absent; so is a `/Fit` destination carrying a parameter, because PDFium pads
 the array back up to the fit type's arity on the way out either way.
 
-The largest group is writes that are inert on the create path and load-bearing
-on the update path that does not exist yet. Every clear is one of these: there
-is nothing on a new annotation to remove, so clearing an interior colour, an
-unrotated box or a widget's `/MK` entry passes every create vector whether it
-runs or not. They stay because the same functions serve both paths, and the
-day `update` reaches those subtypes the difference between keeping a value and
-removing it is the whole of what a patch means.
+The largest group was writes that are inert on the create path and
+load-bearing on the update path. Every clear is one of these: there is nothing
+on a new annotation to remove, so clearing an interior colour, an unrotated
+box or a widget's `/MK` entry passes every create vector whether it runs or
+not. Extending `update` to those subtypes closed all of them, which is what
+the group was there to predict.
+
+One survivor is left that no case can reach. Clearing a link's target removes
+both `/A` and `/Dest`, and nothing in this engine writes a direct `/Dest`, so
+every link the vectors build carries an `/A` alone and a build that removed
+only that one passes. Seeing it would take a fixture link written by something
+else, which is exactly the foreign file the guard is for.
