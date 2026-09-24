@@ -16,8 +16,13 @@
 use serde::{Deserialize, Serialize};
 
 use super::base::AnnotationBase;
+use super::caret::CaretFields;
+use super::free_text::FreeTextFields;
 use super::ink_line::{InkFields, LineFields};
+use super::redact::RedactFields;
 use super::shape::ShapeFields;
+use super::stamp::StampFields;
+use super::text::TextFields;
 use super::text_markup::TextMarkupFields;
 use super::vertex::VertexFields;
 use crate::features::annotation::intent::StrikeoutIntent;
@@ -89,6 +94,26 @@ pub enum AnnotationKind {
     Ink {
         #[serde(flatten)]
         fields: InkFields,
+    },
+    Text {
+        #[serde(flatten)]
+        fields: TextFields,
+    },
+    FreeText {
+        #[serde(flatten)]
+        fields: FreeTextFields,
+    },
+    Stamp {
+        #[serde(flatten)]
+        fields: StampFields,
+    },
+    Caret {
+        #[serde(flatten)]
+        fields: CaretFields,
+    },
+    Redact {
+        #[serde(flatten)]
+        fields: RedactFields,
     },
     Unsupported {
         /// `FPDFAnnot_GetSubtype`'s code, kept for diagnosis.

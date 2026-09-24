@@ -10,15 +10,20 @@
 //! and a test asserts that list rather than leaving it to a comment.
 
 pub mod base;
+pub mod caret;
 pub mod dto;
 pub mod embed_metadata;
+pub mod free_text;
 pub mod identity;
 pub mod ink_line;
 pub mod page;
+pub mod redact;
 pub mod registry;
 pub mod relationship;
 pub mod shape;
+pub mod stamp;
 pub mod style;
+pub mod text;
 pub mod text_markup;
 pub mod transform;
 pub mod unsupported;

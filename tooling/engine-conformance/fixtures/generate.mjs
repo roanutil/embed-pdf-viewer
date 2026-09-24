@@ -754,7 +754,10 @@ function annotationBase() {
  * text-markup family's default differs between highlight and the other three
  * and a reader that used one default for all four would agree with three. And
  * a third square whose `/BE` is present with intensity zero, which draws no
- * clouds and has to normalize to null.
+ * clouds and has to normalize to null. A stamp whose label the fork's enum
+ * knows beside one whose label falls outside it. A text redaction with quads
+ * and a label beside an area redaction with neither. A free text with a full
+ * `/DA` beside one with none.
  */
 function annotationKinds() {
   const content = Buffer.from('72 72 200 100 re\nf\n', 'latin1');
@@ -803,6 +806,67 @@ function annotationKinds() {
       '/InkList [[450 300 480 340 510 300] [520 320 560 380]] /IT /InkHighlight /CA 0.3 >>',
     '<< /Type /Annot /Subtype /Ink /Rect [450 200 560 280] /F 4 /NM (plain-ink) ' +
       '/InkList [[450 200 560 280]] >>',
+
+    // A sticky note with a named icon and a review state, beside one with
+    // neither. /State and /StateModel are read faithfully: absent is null,
+    // and the standard Table 174 spellings normalize to lowercase while a
+    // custom model passes through.
+    '<< /Type /Annot /Subtype /Text /Rect [72 520 92 540] /F 4 /NM (a-help-note) ' +
+      '/Name /Help /C [0 1 1] /State /Accepted /StateModel /Review >>',
+    '<< /Type /Annot /Subtype /Text /Rect [72 490 92 510] /F 4 /NM (a-custom-state-note) ' +
+      '/State (Escalated) /StateModel (legal-hold) >>',
+    // A caret that is half of a replace-text edit, with an /RD inset.
+    '<< /Type /Annot /Subtype /Caret /Rect [72 450 92 470] /F 4 /NM (an-edit-caret) ' +
+      '/IT /Replace /RD [1 1 1 1] /C [0 1 0] >>',
+    // A stamp with a label the fork's enum knows, and one with a custom label
+    // that falls outside it and has to come from the raw /Name entry.
+    '<< /Type /Annot /Subtype /Stamp /Rect [140 440 260 490] /F 4 /NM (an-approved-stamp) ' +
+      '/Name /Approved >>',
+    '<< /Type /Annot /Subtype /Stamp /Rect [140 380 260 430] /F 4 /NM (a-custom-stamp) ' +
+      '/Name /LegalReviewPending >>',
+    // A text redaction: quads, an overlay label, a /DA and a /Q.
+    '<< /Type /Annot /Subtype /Redact /Rect [72 340 240 370] /F 4 /NM (a-text-redaction) ' +
+      '/QuadPoints [72 370 240 370 72 340 240 340] /IC [0 0 0] ' +
+      '/OverlayText (REDACTED) /Repeat true /DA (1 0 0 rg /Helv 9 Tf) /Q 1 >>',
+    // And an area redaction, which has no quads and no label at all.
+    '<< /Type /Annot /Subtype /Redact /Rect [72 290 240 320] /F 4 /NM (an-area-redaction) >>',
+    // Free text: /C is the BOX BACKGROUND here and the border and text come
+    // from /DA, which is the one place in the format where /C means something
+    // other than a stroke.
+    '<< /Type /Annot /Subtype /FreeText /Rect [300 240 460 300] /F 4 /NM (a-text-box) ' +
+      '/DA (0 0 1 rg /Helv 14 Tf) /C [1 1 0.8] /Q 2 /BS << /W 2 /S /S >> ' +
+      '/RD [2 2 2 2] >>',
+    // A callout, which is the same kind with a /CL leader and an ending on it.
+    '<< /Type /Annot /Subtype /FreeText /Rect [300 150 460 210] /F 4 /NM (a-callout) ' +
+      '/IT /FreeTextCallout /DA (0 0 0 rg /TiRo 11 Tf) /CL [200 120 260 170 300 180] ' +
+      '/LE /OpenArrow /Q 0 >>',
+    // A /DA size of zero. Free text has no auto-fit, so it normalizes to the
+    // default; a redaction keeps the same zero, because there it means
+    // auto-fit the label to the region. The two annotations are adjacent
+    // because a reader that used one rule for both agrees with one of them.
+    '<< /Type /Annot /Subtype /FreeText /Rect [300 20 460 70] /F 4 /NM (an-autosize-text-box) ' +
+      '/DA (0 0 0 rg /Helv 0 Tf) >>',
+    '<< /Type /Annot /Subtype /Redact /Rect [72 240 240 270] /F 4 /NM (an-autosize-redaction) ' +
+      '/OverlayText (FIT) /DA (0 0 0 rg /Helv 0 Tf) >>',
+    // /TextColor overrides the text alone, so a value EQUAL to the /DA colour
+    // overrides nothing and must not reach the wire; a different one must.
+    '<< /Type /Annot /Subtype /FreeText /Rect [480 240 560 290] /F 4 ' +
+      '/NM (a-text-box-with-its-own-text-colour) /DA (0 0 1 rg /Helv 10 Tf) ' +
+      '/TextColor [1 0 0] >>',
+    '<< /Type /Annot /Subtype /FreeText /Rect [480 180 560 230] /F 4 ' +
+      '/NM (a-text-box-whose-text-colour-changes-nothing) /DA (0 0 1 rg /Helv 10 Tf) ' +
+      '/TextColor [0 0 1] >>',
+    // A free text with no /DA at all, so the whole default triple is read.
+    '<< /Type /Annot /Subtype /FreeText /Rect [300 80 460 130] /F 4 /NM (a-bare-text-box) >>',
+
+    // Two subtypes this port has not reached. They are here so the shell-only
+    // half of the comparison has something to compare: without one, the
+    // branch that checks an unported subtype reads as `unsupported` would
+    // never run and would be checking nothing.
+    '<< /Type /Annot /Subtype /Link /Rect [480 80 560 110] /F 4 /NM (a-link) ' +
+      '/A << /S /URI /URI (https://example.test/linked) >> >>',
+    '<< /Type /Annot /Subtype /FileAttachment /Rect [480 140 500 160] /F 4 ' +
+      '/NM (an-attachment) /Name /Paperclip >>',
   ];
 
   return buildPdf([

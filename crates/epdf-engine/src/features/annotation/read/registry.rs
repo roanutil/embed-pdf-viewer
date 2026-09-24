@@ -13,9 +13,14 @@
 
 use pdfium::Annotation;
 
+use super::caret::read_caret;
 use super::dto::AnnotationKind;
+use super::free_text::read_free_text;
 use super::ink_line::{read_ink, read_line, read_line_endings};
+use super::redact::read_redact;
 use super::shape::read_shape;
+use super::stamp::read_stamp;
+use super::text::read_text;
 use super::text_markup::{DEFAULT_HIGHLIGHT_COLOR, DEFAULT_TEXT_MARKUP_COLOR, read_text_markup};
 use super::unsupported::read_unsupported;
 use super::vertex::read_vertex;
@@ -29,15 +34,14 @@ use crate::features::annotation::subtype::AnnotationSubtype;
 /// Every one of them is still readable as a base shell; what is missing is the
 /// subtype's own fields. `unsupported` is not listed, because for it the
 /// fallback IS the reader.
-pub const FALLS_BACK_TO_UNSUPPORTED: [AnnotationSubtype; 9] = [
-    AnnotationSubtype::Text,
+pub const FALLS_BACK_TO_UNSUPPORTED: [AnnotationSubtype; 4] = [
     AnnotationSubtype::Link,
-    AnnotationSubtype::FreeText,
-    AnnotationSubtype::Stamp,
-    AnnotationSubtype::Caret,
+    // Popup is on this list in the TypeScript too, and not because nobody got
+    // to it: a popup is the presentation of another annotation's comment, and
+    // the wire deliberately does not model it. `/Popup` and `/Open` are a
+    // viewer's business.
     AnnotationSubtype::Popup,
     AnnotationSubtype::FileAttachment,
-    AnnotationSubtype::Redact,
     AnnotationSubtype::Widget,
 ];
 
@@ -74,6 +78,13 @@ pub fn read_annotation_kind(
         },
         AnnotationSubtype::Line => AnnotationKind::Line { fields: read_line(annotation)? },
         AnnotationSubtype::Ink => AnnotationKind::Ink { fields: read_ink(annotation)? },
+        AnnotationSubtype::Text => AnnotationKind::Text { fields: read_text(annotation)? },
+        AnnotationSubtype::FreeText => {
+            AnnotationKind::FreeText { fields: read_free_text(annotation)? }
+        }
+        AnnotationSubtype::Stamp => AnnotationKind::Stamp { fields: read_stamp(annotation)? },
+        AnnotationSubtype::Caret => AnnotationKind::Caret { fields: read_caret(annotation)? },
+        AnnotationSubtype::Redact => AnnotationKind::Redact { fields: read_redact(annotation)? },
         _ => read_unsupported(annotation, raw_subtype_code)?,
     })
 }

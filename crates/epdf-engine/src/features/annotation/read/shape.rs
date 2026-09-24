@@ -50,13 +50,22 @@ pub fn read_shape(annotation: &Annotation<'_>) -> Result<ShapeFields, EngineErro
     Ok(ShapeFields {
         style: read_filled_style(annotation)?,
         cloudy_intensity: read_cloudy_intensity(annotation),
-        rect_differences: annotation.rectangle_differences().map(|rd| PdfRectDifferences {
-            left: f64::from(rd.left),
-            top: f64::from(rd.top),
-            right: f64::from(rd.right),
-            bottom: f64::from(rd.bottom),
-        }),
+        rect_differences: read_rect_differences(annotation),
         rotation: read_rotation(annotation)?,
         unrotated_rect: read_unrotated_rect(annotation)?,
+    })
+}
+
+/// `/RD`, widened to the wire's precision.
+///
+/// Shared with the caret and free-text readers, which carry the same entry
+/// for the same reason: the drawn geometry is inset from `/Rect` so a thick
+/// border has room.
+pub fn read_rect_differences(annotation: &Annotation<'_>) -> Option<PdfRectDifferences> {
+    annotation.rectangle_differences().map(|rd| PdfRectDifferences {
+        left: f64::from(rd.left),
+        top: f64::from(rd.top),
+        right: f64::from(rd.right),
+        bottom: f64::from(rd.bottom),
     })
 }
