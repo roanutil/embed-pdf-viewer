@@ -191,6 +191,12 @@ jobs:
       - name: Annotation vocabulary vectors are current
         run: pnpm --filter @embedpdf/tooling-engine-conformance run annotation:check
 
+      # G7's reads. The base shell every annotation carries, recorded as the
+      # whole DTO so the vector does not move every time a subtype reader
+      # lands.
+      - name: Annotation read vectors are current
+        run: pnpm --filter @embedpdf/tooling-engine-conformance run annotation-read:check
+
       # multiplatform-port-order.md Section 6: a kind added to
       # worker-protocol.ts without a row in the matrix fails here, and so does
       # a row for a kind that no longer exists.

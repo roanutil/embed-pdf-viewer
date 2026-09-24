@@ -1,0 +1,55 @@
+%PDF-1.7
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 612 792] >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /Contents 4 0 R /Resources << >> /Annots [5 0 R 6 0 R << /Type /Annot /Subtype /Square /Rect [300 600 380 660] /F 4 /NM (direct-but-named) /Contents (a direct object that named itself) >> << /Type /Annot /Subtype /Square /Rect [300 500 380 560] /F 4 /Contents (a direct object with no name) >> << /Type /Annot /Subtype /Square /Rect [300 400 380 460] /F 4 /NM () /Contents (a direct object whose name is empty) >> 7 0 R 8 0 R 9 0 R 10 0 R] >>
+endobj
+4 0 obj
+<<  /Length 19 >>
+stream
+72 72 200 100 re
+f
+
+endstream
+endobj
+5 0 obj
+<< /Type /Annot /Subtype /Text /Rect [72 700 92 720] /F 4 /NM (the-anchor) /Contents (an ordinary sticky note) /T (Ada Lovelace) /Subj () /CreationDate (D:20240115093000+01'00') /M (D:20240220120000Z) /C [1 1 0] /CA 0.5 >>
+endobj
+6 0 obj
+<< /Type /Annot /Subtype /Text /Rect [200 740 180 720] /F 0 >>
+endobj
+7 0 obj
+<< /Type /Annot /Subtype /Text /Rect [92 700 112 720] /F 4 /NM (a-reply) /IRT 5 0 R /RT /R /Contents (replying to the anchor) >>
+endobj
+8 0 obj
+<< /Type /Annot /Subtype /Text /Rect [112 700 132 720] /F 4 /NM (a-group-member) /IRT 5 0 R /RT /Group /Contents (part of the anchor) >>
+endobj
+9 0 obj
+<< /Type /Annot /Subtype /Text /Rect [132 700 152 720] /F 4 /NM (stamped-by-embedpdf) /IRT 5 0 R /Contents (no explicit reply type) /EMBD_Metadata << /SchemaVersion 1 /UserID (user-42) /CreatedBy (Ada Lovelace) >> >>
+endobj
+10 0 obj
+<< /Type /Annot /Subtype /Sound /Rect [400 700 440 740] /F 4 /NM (a-sound) >>
+endobj
+xref
+0 11
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000145 00000 n 
+0000000632 00000 n 
+0000000702 00000 n 
+0000000940 00000 n 
+0000001018 00000 n 
+0000001162 00000 n 
+0000001314 00000 n 
+0000001546 00000 n 
+trailer
+<< /Size 11 /Root 1 0 R >>
+startxref
+1640
+%%EOF

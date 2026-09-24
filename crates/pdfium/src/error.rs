@@ -35,17 +35,15 @@ impl std::fmt::Display for PdfiumError {
             Self::Security => {
                 write!(f, "the document uses a security handler PDFium does not support")
             }
-            Self::Password => write!(
-                f,
-                "the document is encrypted and the password was wrong or missing"
-            ),
+            Self::Password => {
+                write!(f, "the document is encrypted and the password was wrong or missing")
+            }
             Self::PageOutOfRange(i) => {
                 write!(f, "page index {i} is past the end of the document")
             }
-            Self::PageLoad(i) => write!(
-                f,
-                "FPDF_LoadPage failed for page index {i}, which is within range"
-            ),
+            Self::PageLoad(i) => {
+                write!(f, "FPDF_LoadPage failed for page index {i}, which is within range")
+            }
             Self::PageLoadByObjectNumber(number) => {
                 write!(f, "no page with object number {number}")
             }

@@ -13,24 +13,26 @@
 //! handle cross threads and misbehave later.
 
 mod action;
+mod annot;
 mod base;
 mod bitmap;
 mod document;
-mod extract;
 mod error;
+mod extract;
 mod file_access;
 mod fonts;
 mod geom;
-mod metadata;
 mod library;
+mod metadata;
 mod page;
 mod page_list;
 mod text;
 
 pub use action::{
-    ActionModel, ActionNodeId, DestinationLocation, DestinationView, DocumentActionEvent,
-    PageActionEvent, RawDestination,
+    ActionModel, ActionNodeId, AnnotationActionEvent, DestinationLocation, DestinationView,
+    DocumentActionEvent, PageActionEvent, RawDestination,
 };
+pub use annot::{Annotation, AppearanceMode, BorderStyle, DefaultAppearance, RectangleDifferences};
 pub use base::{BaseDocument, LayerDocument, LayerOpenError};
 pub use bitmap::Bitmap;
 pub use document::{Document, FileBackedDocument, PasswordPermissions};
@@ -40,7 +42,7 @@ pub use fonts::{
     FontDescription, FontId, add_fallback_font, clear_fallback_fonts, clear_registered_fonts,
     register_font_file, register_memory_font,
 };
-pub use geom::{MatrixF, QuadF, RectF};
+pub use geom::{MatrixF, PointF, QuadF, RectF};
 pub use library::Library;
 pub use metadata::Trapped;
 pub use page::{Page, PageView, SharedPage};

@@ -50,7 +50,9 @@ impl Document {
         // than opening the document with a shorter password than was asked
         // for and reporting the failure as a wrong password.
         let c_password = password
-            .map(|p| CString::new(p).map_err(|_| PdfiumError::InvalidArgument("password contains NUL")))
+            .map(|p| {
+                CString::new(p).map_err(|_| PdfiumError::InvalidArgument("password contains NUL"))
+            })
             .transpose()?;
         let password_ptr = c_password.as_ref().map_or(std::ptr::null(), |c| c.as_ptr());
 
@@ -104,8 +106,7 @@ impl Document {
 
         // SAFETY: `access` is borrowed for `'a`, which bounds the returned
         // document, so the pointer stays valid for every read PDFium makes.
-        let handle =
-            unsafe { pdfium_sys::FPDF_LoadCustomDocument(access.as_ptr(), password_ptr) };
+        let handle = unsafe { pdfium_sys::FPDF_LoadCustomDocument(access.as_ptr(), password_ptr) };
         if handle.is_null() {
             let err = unsafe { pdfium_sys::FPDF_GetLastError() };
             return Err(if err == pdfium_sys::FPDF_ERR_PASSWORD as _ {
@@ -234,9 +235,7 @@ impl Document {
     /// `epdf_engine::auth::scope`, and turning this on without that would
     /// hand every caller an owner-unlocked document.
     pub fn set_runtime_owner_permissions(&self, enabled: bool) -> bool {
-        unsafe {
-            pdfium_sys::EPDF_SetRuntimeOwnerPermissions(self.handle, i32::from(enabled)) != 0
-        }
+        unsafe { pdfium_sys::EPDF_SetRuntimeOwnerPermissions(self.handle, i32::from(enabled)) != 0 }
     }
 
     /// Check a password against an already-open document and report what it

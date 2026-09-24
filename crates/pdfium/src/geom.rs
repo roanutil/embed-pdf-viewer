@@ -16,6 +16,19 @@ pub struct RectF {
     pub bottom: f32,
 }
 
+/// `FS_POINTF`, PDF user space.
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+pub struct PointF {
+    pub x: f32,
+    pub y: f32,
+}
+
+impl From<pdfium_sys::FS_POINTF> for PointF {
+    fn from(p: pdfium_sys::FS_POINTF) -> Self {
+        Self { x: p.x, y: p.y }
+    }
+}
+
 /// `FS_QUADPOINTSF`. The four points are POSITIONAL (PDF 32000 §12.5.6.10);
 /// this type asserts no corner semantics.
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
@@ -49,16 +62,7 @@ impl From<pdfium_sys::FS_RECTF> for RectF {
 
 impl From<pdfium_sys::FS_QUADPOINTSF> for QuadF {
     fn from(q: pdfium_sys::FS_QUADPOINTSF) -> Self {
-        Self {
-            x1: q.x1,
-            y1: q.y1,
-            x2: q.x2,
-            y2: q.y2,
-            x3: q.x3,
-            y3: q.y3,
-            x4: q.x4,
-            y4: q.y4,
-        }
+        Self { x1: q.x1, y1: q.y1, x2: q.x2, y2: q.y2, x3: q.x3, y3: q.y3, x4: q.x4, y4: q.y4 }
     }
 }
 

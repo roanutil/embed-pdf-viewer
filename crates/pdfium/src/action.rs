@@ -47,6 +47,45 @@ impl Document {
     }
 }
 
+/// Which of an annotation's eleven action slots to read.
+///
+/// `EPDF_ANNOT_ACTION_*`. `Activate` is `/A`; the other ten are the entries
+/// of `/AA`. The numbering is the fork's, not a PDF one, so it is written out
+/// rather than derived.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AnnotationActionEvent {
+    Activate = 0,
+    CursorEnter = 1,
+    CursorExit = 2,
+    MouseDown = 3,
+    MouseUp = 4,
+    Focus = 5,
+    Blur = 6,
+    PageOpen = 7,
+    PageClose = 8,
+    PageVisible = 9,
+    PageInvisible = 10,
+}
+
+impl Document {
+    /// The action model for one of an annotation's events.
+    ///
+    /// Takes the annotation rather than hanging off it, because the model
+    /// borrows the DOCUMENT: every payload accessor that resolves a
+    /// destination or a URI needs it, and the annotation's own borrow is of
+    /// the page.
+    pub fn annotation_action_model(
+        &self,
+        annotation: &crate::Annotation<'_>,
+        event: AnnotationActionEvent,
+    ) -> Option<ActionModel<'_>> {
+        // SAFETY: both handles are live for the borrow this returns.
+        let handle =
+            unsafe { pdfium_sys::EPDFAnnot_GetActionModel(annotation.as_raw(), event as i32) };
+        (!handle.is_null()).then_some(ActionModel { handle, document: self })
+    }
+}
+
 /// Which catalog-level event to read.
 ///
 /// `EPDF_DOC_ACTION_*`. `/OpenAction` is not in this list because it is a

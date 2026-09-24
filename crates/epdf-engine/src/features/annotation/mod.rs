@@ -27,10 +27,11 @@
 //! and silently. They are pinned to the TypeScript by
 //! `vectors/annotation/vocabulary.json` rather than trusted to transcription.
 //!
-//! The readers that walk PDFium are not ported yet.
+//! [`read`] holds the readers that walk PDFium: the base shell so far.
 
 pub mod flags;
 pub mod intent;
+pub mod read;
 pub mod state;
 pub mod subtype;
 pub mod vocabulary;

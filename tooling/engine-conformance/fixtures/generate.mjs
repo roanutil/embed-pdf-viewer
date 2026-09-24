@@ -623,6 +623,121 @@ function pageActions() {
 }
 
 /**
+ * A page whose annotations cover every distinction the BASE shell makes,
+ * independently of any subtype.
+ *
+ * Nothing in the repository had these. The fixtures that carry annotations at
+ * all carry one shape of them, which means a reader could get identity,
+ * relationships or the absent-versus-empty rule wrong and still agree with the
+ * TypeScript on every document here.
+ *
+ * Laid out so each distinction has a case that differs in ONE way from
+ * another:
+ *
+ *   - An indirect annotation, so `EPDFAnnot_GetObjectNumber` answers and the
+ *     ref is by object number. This is the ordinary case.
+ *   - A DIRECT dictionary inside `/Annots`, which is legal PDF and has no
+ *     object number at all. With `/NM` it is still durable; without one the
+ *     ref falls back to index plus revision and the whole page is marked weak.
+ *     Both are here, adjacent, because the fallback order between them is the
+ *     thing that is easy to write backwards. A third carries `/NM ()`, which
+ *     is not an address either: an empty name is one two annotations could
+ *     share.
+ *   - `/Contents ()` against no `/Contents` at all, and the same for `/T`.
+ *     Present-and-empty is what a patch operates on and a reader that
+ *     collapsed it into absent would look right on every other fixture.
+ *   - `/IRT` with `/RT /R`, `/IRT` with `/RT /Group`, and `/IRT` with no
+ *     `/RT`. PDFium answers the `/R` default for the third and for an
+ *     annotation with no `/IRT` at all, so the last one is the case that
+ *     catches a reader consulting `/RT` without gating on `/IRT`.
+ *   - `/EMBD_Metadata`, which only EmbedPDF writes, with some fields set and
+ *     others absent.
+ *   - A `/Rect` in reversed corner order, which the file is allowed to do.
+ *   - A `/Sound` annotation, a subtype PDFium knows and this engine does not
+ *     read, so `unsupported` is exercised by a real subtype rather than by a
+ *     code nobody has issued.
+ */
+function annotationBase() {
+  const content = Buffer.from('72 72 200 100 re\nf\n', 'latin1');
+  // Two dates in the two forms PDF permits, so the ISO conversion is pinned
+  // for both rather than for whichever one a fixture happened to use.
+  const created = "/CreationDate (D:20240115093000+01'00')";
+  const modified = '/M (D:20240220120000Z)';
+
+  // The two direct dictionaries. They live inside /Annots rather than as
+  // numbered objects, which is what makes them identity cases.
+  const directWithNm =
+    '<< /Type /Annot /Subtype /Square /Rect [300 600 380 660] /F 4 /NM (direct-but-named) ' +
+    '/Contents (a direct object that named itself) >>';
+  const directAnonymous =
+    '<< /Type /Annot /Subtype /Square /Rect [300 500 380 560] /F 4 ' +
+    '/Contents (a direct object with no name) >>';
+  // A direct object with an /NM that is present and EMPTY. An empty name is
+  // not an address: two annotations could both carry it, so this one has to
+  // fall through to the index form exactly as the anonymous one does. Without
+  // this case a reader that took any /NM at all would agree with every other
+  // annotation here.
+  const directEmptyName =
+    '<< /Type /Annot /Subtype /Square /Rect [300 400 380 460] /F 4 /NM () ' +
+    '/Contents (a direct object whose name is empty) >>';
+
+  return buildPdf([
+    Buffer.from('<< /Type /Catalog /Pages 2 0 R >>', 'latin1'),
+    Buffer.from(
+      '<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 612 792] >>',
+      'latin1',
+    ),
+    Buffer.from(
+      '<< /Type /Page /Parent 2 0 R /Contents 4 0 R /Resources << >> /Annots [' +
+        `5 0 R 6 0 R ${directWithNm} ${directAnonymous} ${directEmptyName} ` +
+        '7 0 R 8 0 R 9 0 R 10 0 R' +
+        '] >>',
+      'latin1',
+    ),
+    stream('', content),
+
+    // 5: the ordinary case. Every optional string present, one of them empty.
+    Buffer.from(
+      '<< /Type /Annot /Subtype /Text /Rect [72 700 92 720] /F 4 /NM (the-anchor) ' +
+        `/Contents (an ordinary sticky note) /T (Ada Lovelace) /Subj () ${created} ${modified} ` +
+        '/C [1 1 0] /CA 0.5 >>',
+      'latin1',
+    ),
+    // 6: the same subtype with every optional string ABSENT, and a /Rect whose
+    // corners are the other way round.
+    Buffer.from(
+      '<< /Type /Annot /Subtype /Text /Rect [200 740 180 720] /F 0 >>',
+      'latin1',
+    ),
+    // 7: a reply. /RT /R is the explicit spelling of the default.
+    Buffer.from(
+      '<< /Type /Annot /Subtype /Text /Rect [92 700 112 720] /F 4 /NM (a-reply) ' +
+        '/IRT 5 0 R /RT /R /Contents (replying to the anchor) >>',
+      'latin1',
+    ),
+    // 8: a group member, which is the other /RT value.
+    Buffer.from(
+      '<< /Type /Annot /Subtype /Text /Rect [112 700 132 720] /F 4 /NM (a-group-member) ' +
+        '/IRT 5 0 R /RT /Group /Contents (part of the anchor) >>',
+      'latin1',
+    ),
+    // 9: /IRT with no /RT, which ISO says is a reply, plus the EmbedPDF
+    // metadata dictionary with two of its four fields set.
+    Buffer.from(
+      '<< /Type /Annot /Subtype /Text /Rect [132 700 152 720] /F 4 /NM (stamped-by-embedpdf) ' +
+        '/IRT 5 0 R /Contents (no explicit reply type) ' +
+        '/EMBD_Metadata << /SchemaVersion 1 /UserID (user-42) /CreatedBy (Ada Lovelace) >> >>',
+      'latin1',
+    ),
+    // 10: a subtype this engine has no reader for.
+    Buffer.from(
+      '<< /Type /Annot /Subtype /Sound /Rect [400 700 440 740] /F 4 /NM (a-sound) >>',
+      'latin1',
+    ),
+  ]);
+}
+
+/**
  * A document whose Info dictionary exercises every metadata distinction.
  *
  * `metadata.read` has to tell three states apart: a key that is absent, a key
@@ -697,6 +812,7 @@ const outputs = [
   ['non_identity_text.pdf', nonIdentityText(font)],
   ['rich_metadata.pdf', richMetadata()],
   ['page_actions.pdf', pageActions()],
+  ['annotation_base.pdf', annotationBase()],
   ['document_actions.pdf', documentActions()],
   ['reverse_and_gapped_text.pdf', reverseAndGappedText(font)],
 
