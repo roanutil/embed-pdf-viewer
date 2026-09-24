@@ -31,6 +31,7 @@ pub mod transform;
 pub mod unsupported;
 pub mod vertex;
 pub mod widget;
+pub mod widget_join;
 
 use pdfium::{Annotation, PdfiumError, PointF, QuadF};
 

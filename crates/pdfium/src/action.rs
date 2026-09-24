@@ -47,6 +47,17 @@ impl Document {
     }
 }
 
+/// Wrap a raw action-model handle, for the accessors that live elsewhere.
+///
+/// `pub(crate)` because the handle type is PDFium's and nothing outside this
+/// crate should be holding one.
+pub(crate) fn action_model_from_raw(
+    handle: pdfium_sys::EPDF_ACTION_MODEL,
+    document: &Document,
+) -> Option<ActionModel<'_>> {
+    (!handle.is_null()).then_some(ActionModel { handle, document })
+}
+
 /// Which of an annotation's eleven action slots to read.
 ///
 /// `EPDF_ANNOT_ACTION_*`. `Activate` is `/A`; the other ten are the entries

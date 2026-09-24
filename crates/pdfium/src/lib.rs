@@ -12,7 +12,7 @@
 //! confinement rather than papering over it with atomics that would let a
 //! handle cross threads and misbehave later.
 
-mod action;
+pub(crate) mod action;
 mod annot;
 mod base;
 mod bitmap;
@@ -21,6 +21,7 @@ mod error;
 mod extract;
 mod file_access;
 mod fonts;
+mod form;
 mod geom;
 mod library;
 mod metadata;
@@ -45,6 +46,7 @@ pub use fonts::{
     FontDescription, FontId, add_fallback_font, clear_fallback_fonts, clear_registered_fonts,
     register_font_file, register_memory_font,
 };
+pub use form::{FieldActionEvent, FormDataFormat, FormField, FormModel};
 pub use geom::{MatrixF, PointF, QuadF, RectF};
 pub use library::Library;
 pub use metadata::Trapped;

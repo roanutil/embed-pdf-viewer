@@ -12,15 +12,16 @@
 //! entry, so a reader that used the ordinary colour path would report nothing
 //! for a widget that plainly has a border and a background.
 //!
-//! # The join is not ported and says so
+//! # The join happens after this reader, not inside it
 //!
 //! `field_object_number` and `field_family` are the key onto the forms side,
-//! and both are reported as the unattached values here, always. Resolving
+//! and this reader always writes the unattached values into them. Resolving
 //! them means following `/Parent` to a FIELD dictionary, which no
 //! annotation-plane accessor can do: the reconciled form model is the
-//! authority, and that model is G8. The TypeScript has the same split, with
-//! the same two placeholder values written by its own reader and filled in
-//! afterwards by `joinWidgetFieldNumbers`.
+//! authority. [`super::widget_join`] builds that model ONCE per listing and
+//! stamps every widget afterwards, which is the same split the TypeScript
+//! makes between `readWidget` and `joinWidgetFieldNumbers`, and for the same
+//! reason: a model per widget would walk the whole field tree per widget.
 
 use pdfium::Annotation;
 use serde::{Deserialize, Serialize};
@@ -28,6 +29,7 @@ use serde::{Deserialize, Serialize};
 use super::style::{BorderFields, Color, read_border_fields};
 use crate::error::EngineError;
 use crate::features::annotation::vocabulary::{AnnotationBorderStyle, StandardFont, TextAlignment};
+use crate::features::forms::snapshot::FormFieldFamily;
 
 /// `EPDF_MK_COLORTYPE`.
 const MK_BORDER_COLOR: i32 = 0;
@@ -56,28 +58,11 @@ pub struct WidgetFields {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub font_color: Option<Color>,
     pub text_align: TextAlignment,
-    /// The owning field's object number, or zero when unattached. Always
-    /// zero in this build: see the module docs.
+    /// The owning field's object number, or zero when unattached. Written
+    /// as zero here and stamped by [`super::widget_join`].
     pub field_object_number: u32,
-    /// The owning field's family. Always `unknown` in this build.
+    /// The owning field's family, on the same terms.
     pub field_family: FormFieldFamily,
-}
-
-/// What kind of control a widget renders, once its field is known.
-///
-/// Only [`FormFieldFamily::Unknown`] is produced here. The rest are the
-/// vocabulary G8's form reader will fill in, and they are declared now so the
-/// wire shape does not change when it does.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-pub enum FormFieldFamily {
-    Unknown,
-    PushButton,
-    Checkbox,
-    RadioButton,
-    Text,
-    Choice,
-    Signature,
 }
 
 /// Read them.
@@ -103,10 +88,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn the_unported_join_reports_the_unattached_values() {
-        // Stated as a test rather than only as a comment, so that when G8
-        // lands the join, whoever changes these two lines finds the place
-        // that says what they used to mean.
+    fn this_reader_leaves_the_join_to_the_pass_that_owns_the_form_model() {
+        // Zero and unknown are what an UNATTACHED widget reports, and they
+        // are also what every widget reports out of this function. The
+        // difference is made afterwards, which is why both constants are
+        // named rather than written inline.
         assert_eq!(UNATTACHED_FIELD_OBJECT_NUMBER, 0);
         assert_eq!(
             serde_json::to_value(FormFieldFamily::Unknown).unwrap(),

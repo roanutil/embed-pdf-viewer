@@ -1,0 +1,94 @@
+%PDF-1.7
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [4 0 R 5 0 R 6 0 R 9 0 R 10 0 R 11 0 R 12 0 R 13 0 R 17 0 R 18 0 R] /NeedAppearances true /CO [4 0 R 99 0 R] >> >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 612 792] >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /Resources << >> /Annots [4 0 R 5 0 R 6 0 R 7 0 R 8 0 R 9 0 R 10 0 R 11 0 R 12 0 R 13 0 R 14 0 R 17 0 R 18 0 R] >>
+endobj
+4 0 obj
+<< /Type /Annot /Subtype /Widget /Rect [72 700 300 730] /F 4 /FT /Tx /T (billing.name) /V (Ada Lovelace) /DV (unset) /TU (Your full name) /TM (name_export) /MaxLen 40 /Ff 16777218 /DA (0 0 0 rg /Helv 10 Tf) >>
+endobj
+5 0 obj
+<< /Type /Annot /Subtype /Widget /Rect [72 620 300 690] /F 4 /FT /Tx /T (notes) /Ff 4096 >>
+endobj
+6 0 obj
+<< /Type /Annot /Subtype /Widget /Rect [72 580 92 600] /F 4 /FT /Btn /T (subscribe) /V /Agree /AP << /N << /Agree 15 0 R /Off 16 0 R >> >> /AS /Agree >>
+endobj
+7 0 obj
+<< /Type /Annot /Subtype /Widget /Rect [72 540 92 560] /F 4 /Parent 9 0 R /AP << /N << /Red 15 0 R /Off 16 0 R >> >> /AS /Off >>
+endobj
+8 0 obj
+<< /Type /Annot /Subtype /Widget /Rect [102 540 122 560] /F 4 /Parent 9 0 R /AP << /N << /Blue 15 0 R /Off 16 0 R >> >> /AS /Blue >>
+endobj
+9 0 obj
+<< /FT /Btn /T (colour) /V /Blue /Ff 49152 /Kids [7 0 R 8 0 R] >>
+endobj
+10 0 obj
+<< /Type /Annot /Subtype /Widget /Rect [320 700 500 730] /F 4 /FT /Ch /T (country) /V (FR) /Opt [[(FR) (France)] [(DE) (Germany)] [(JP) (Japan)]] /Ff 393216 >>
+endobj
+11 0 obj
+<< /Type /Annot /Subtype /Widget /Rect [320 600 500 680] /F 4 /FT /Ch /T (languages) /V [(en) (fr)] /Opt [[(en) (English)] [(fr) (French)] [(ja) (Japanese)]] /Ff 2097152 >>
+endobj
+12 0 obj
+<< /Type /Annot /Subtype /Widget /Rect [320 540 400 570] /F 4 /FT /Btn /T (submit) /Ff 65536 /A << /S /JavaScript /JS (this.submitForm\('u'\);) >> >>
+endobj
+13 0 obj
+<< /Type /Annot /Subtype /Widget /Rect [320 480 500 510] /F 4 /FT /Tx /T (quantity) /V 42 >>
+endobj
+14 0 obj
+<< /Type /Annot /Subtype /Widget /Rect [72 460 300 490] /F 4 /FT /Tx /T (orphan) /V (recovered) >>
+endobj
+15 0 obj
+<< /Type /XObject /Subtype /Form /BBox [0 0 20 20] /Resources << >> /Length 24 >>
+stream
+0 0 0 rg
+2 2 16 16 re
+f
+
+endstream
+endobj
+16 0 obj
+<< /Type /XObject /Subtype /Form /BBox [0 0 20 20] /Resources << >> /Length 24 >>
+stream
+1 1 1 rg
+2 2 16 16 re
+f
+
+endstream
+endobj
+17 0 obj
+<< /Type /Annot /Subtype /Widget /Rect [320 420 500 450] /F 4 /FT /Sig /T (signature) >>
+endobj
+18 0 obj
+<< /Type /Annot /Subtype /Widget /Rect [320 360 500 390] /F 4 /FT /Bogus /T (from.the.future) /V (something) >>
+endobj
+xref
+0 19
+0000000000 65535 f 
+0000000015 00000 n 
+0000000197 00000 n 
+0000000278 00000 n 
+0000000437 00000 n 
+0000000662 00000 n 
+0000000769 00000 n 
+0000000937 00000 n 
+0000001081 00000 n 
+0000001229 00000 n 
+0000001310 00000 n 
+0000001486 00000 n 
+0000001675 00000 n 
+0000001841 00000 n 
+0000001950 00000 n 
+0000002065 00000 n 
+0000002205 00000 n 
+0000002345 00000 n 
+0000002450 00000 n 
+trailer
+<< /Size 19 /Root 1 0 R >>
+startxref
+2578
+%%EOF

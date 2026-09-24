@@ -55,6 +55,12 @@ const CASES: readonly ReadCase[] = [
       'One annotation per geometry subtype, paired so each resolved default sits beside an explicit entry: a decorated square against a bare circle, a strikeout with /IT against one without, highlighter ink against pen ink, and a highlight with no /C against an underline with one.',
   },
   {
+    name: 'form',
+    fixture: 'tooling/engine-conformance/fixtures/annotation_appearances.pdf',
+    covers:
+      'A widget reachable from /AcroForm beside an inert one, which is what the widget-to-field join has to tell apart. Nothing else in the corpus has a form at all.',
+  },
+  {
     name: 'no-annotations',
     fixture: 'tooling/engine-conformance/fixtures/rich_metadata.pdf',
     covers:

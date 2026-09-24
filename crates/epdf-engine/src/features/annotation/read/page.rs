@@ -24,6 +24,7 @@ use pdfium::Document;
 use super::base::read_annotation_base;
 use super::dto::AnnotationDto;
 use super::registry::read_annotation_kind;
+use super::widget_join::join_widget_fields;
 use crate::cancel::CancelToken;
 use crate::error::{EngineError, EngineErrorCode};
 use crate::features::actions::vocabulary::ActionReadBudgetTracker;
@@ -95,6 +96,9 @@ pub fn read_page_annotations(
         let kind = read_annotation_kind(document, &annotation, &base, annotation.subtype_code())?;
         annotations.push(AnnotationDto { base, kind });
     }
+
+    // After the loop, once, for the reason `widget_join` gives.
+    join_widget_fields(document, &mut annotations);
 
     Ok(AnnotationListPageSnapshot {
         page_state: PageState {

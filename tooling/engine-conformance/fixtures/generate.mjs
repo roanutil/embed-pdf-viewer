@@ -1042,7 +1042,7 @@ function annotationAppearances() {
     Buffer.from(
       '<< /Type /Page /Parent 2 0 R /Contents 4 0 R /Resources << >> /Annots [' +
         annots.join(' ') +
-        ' 12 0 R] >>',
+        ' 12 0 R 14 0 R] >>',
       'latin1',
     ),
     stream('', content),
@@ -1081,6 +1081,16 @@ function annotationAppearances() {
     ),
     // 13: the page-sized square's.
     appearance(600, 750, '0.5 0.5 0.5 rg\n0 0 600 750 re\nf\n'),
+    // 14: an INDIRECT widget belonging to no field. It has an object number,
+    // so unlike the direct one above it reaches the join's lookup, and the
+    // lookup has to answer that it belongs to nothing. With only one field in
+    // the document, a join that ignored the lookup and took the first field
+    // would agree with the attached widget and be caught only here.
+    Buffer.from(
+      '<< /Type /Annot /Subtype /Widget /Rect [520 300 560 330] /F 4 ' +
+        '/NM (an-orphan-widget) /MK << /BG [0 1 0] >> >>',
+      'latin1',
+    ),
   ]);
 }
 
@@ -1167,6 +1177,162 @@ function attachments() {
 }
 
 /**
+ * An AcroForm with one field of every family, plus the shapes the snapshot
+ * reader has to tell apart.
+ *
+ * Nothing in the repository had a form. `annotation_appearances.pdf` has a
+ * single merged text field, which is enough to pin the widget join and
+ * nothing else.
+ *
+ *   - A radio group: ONE field, two widgets, one checked. The value lives on
+ *     the field and the toggle state lives per widget, and a reader that put
+ *     them in one place would still look right on a checkbox.
+ *   - A checkbox with a non-standard export value, so the `Yes` default is
+ *     not what makes the test pass.
+ *   - A list box with two of three options selected, whose `/V` is therefore
+ *     an ARRAY. Every other field here has a scalar one, and the lossless
+ *     value entry is what keeps the difference.
+ *   - A field with `/V` that is neither a string nor an array of them, which
+ *     reads as present-and-unsupported rather than absent.
+ *   - A field NOT listed in `/AcroForm /Fields`, reachable only through the
+ *     page's `/Annots`. PDFium recovers it, and its origin says so.
+ *   - A `/CO` calculation order naming one real field and one index that does
+ *     not exist, because a malformed slot has to be preserved rather than
+ *     dropped, or every slot after it shifts.
+ *   - `/TU` and `/TM` on one field and absent on the others.
+ *   - A text field with `/MaxLen` and the comb flag, beside one with neither.
+ *   - A signature field, which this engine reads and never writes.
+ */
+function formFields() {
+  // /Ff bits, 1-based per ISO 32000. Written as shifts so the numbers here
+  // and the ones in the reader are the same numbers.
+  const REQUIRED = 1 << 1;
+  const MULTILINE = 1 << 12;
+  const COMB = 1 << 24;
+  const MULTI_SELECT = 1 << 21;
+  // Bit 18 is Combo and bit 19 is Edit, which is one of the places a
+  // 1-based table and a 0-based shift diverge. A choice field without Combo
+  // is a LIST box however the other bits read.
+  const COMBO = 1 << 17;
+  const EDIT = 1 << 18;
+  const NO_TOGGLE_TO_OFF = 1 << 14;
+
+  // A minimal appearance so PDFium has something to attach; the widgets are
+  // merged field/widget dictionaries, which is the ordinary AcroForm shape.
+  const widget = (rect, extra) =>
+    `/Type /Annot /Subtype /Widget /Rect [${rect}] /F 4 ${extra}`;
+
+  return buildPdf([
+    Buffer.from(
+      '<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [4 0 R 5 0 R 6 0 R 9 0 R ' +
+        '10 0 R 11 0 R 12 0 R 13 0 R 17 0 R 18 0 R] ' +
+        '/NeedAppearances true /CO [4 0 R 99 0 R] >> >>',
+      'latin1',
+    ),
+    Buffer.from(
+      '<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 612 792] >>',
+      'latin1',
+    ),
+    Buffer.from(
+      '<< /Type /Page /Parent 2 0 R /Resources << >> /Annots [' +
+        '4 0 R 5 0 R 6 0 R 7 0 R 8 0 R 9 0 R 10 0 R 11 0 R 12 0 R 13 0 R 14 0 R 17 0 R 18 0 R] >>',
+      'latin1',
+    ),
+
+    // 4: a plain text field, with /TU, /TM, a /MaxLen and the comb flag, and
+    // a /DV that differs from its /V.
+    Buffer.from(
+      `<< ${widget('72 700 300 730', '/FT /Tx /T (billing.name) /V (Ada Lovelace) ' +
+        `/DV (unset) /TU (Your full name) /TM (name_export) /MaxLen 40 /Ff ${COMB | REQUIRED} ` +
+        '/DA (0 0 0 rg /Helv 10 Tf)')} >>`,
+      'latin1',
+    ),
+    // 5: a multiline text field with nothing optional at all.
+    Buffer.from(
+      `<< ${widget('72 620 300 690', `/FT /Tx /T (notes) /Ff ${MULTILINE}`)} >>`,
+      'latin1',
+    ),
+    // 6: a checkbox whose export value is not the conventional /Yes.
+    Buffer.from(
+      `<< ${widget('72 580 92 600', '/FT /Btn /T (subscribe) /V /Agree ' +
+        '/AP << /N << /Agree 15 0 R /Off 16 0 R >> >> /AS /Agree')} >>`,
+      'latin1',
+    ),
+    // 7 and 8: the two widgets of ONE radio field (9), which owns them.
+    Buffer.from(
+      `<< ${widget('72 540 92 560', '/Parent 9 0 R ' +
+        '/AP << /N << /Red 15 0 R /Off 16 0 R >> >> /AS /Off')} >>`,
+      'latin1',
+    ),
+    Buffer.from(
+      `<< ${widget('102 540 122 560', '/Parent 9 0 R ' +
+        '/AP << /N << /Blue 15 0 R /Off 16 0 R >> >> /AS /Blue')} >>`,
+      'latin1',
+    ),
+    // 9: the radio field itself, which has no rect of its own.
+    Buffer.from(
+      `<< /FT /Btn /T (colour) /V /Blue /Ff ${(1 << 15) | NO_TOGGLE_TO_OFF} /Kids [7 0 R 8 0 R] >>`,
+      'latin1',
+    ),
+    // 10: a combo box with the edit flag, so free text is allowed.
+    Buffer.from(
+      `<< ${widget('320 700 500 730', '/FT /Ch /T (country) /V (FR) ' +
+        `/Opt [[(FR) (France)] [(DE) (Germany)] [(JP) (Japan)]] /Ff ${COMBO | EDIT}`)} >>`,
+      'latin1',
+    ),
+    // 11: a multi-select list box whose /V is an ARRAY.
+    Buffer.from(
+      `<< ${widget('320 600 500 680', '/FT /Ch /T (languages) /V [(en) (fr)] ' +
+        `/Opt [[(en) (English)] [(fr) (French)] [(ja) (Japanese)]] /Ff ${MULTI_SELECT}`)} >>`,
+      'latin1',
+    ),
+    // 12: a push button, which holds no value and is never exported.
+    Buffer.from(
+      `<< ${widget('320 540 400 570', '/FT /Btn /T (submit) ' +
+        `/Ff ${1 << 16} /A << /S /JavaScript /JS (this.submitForm\\('u'\\);) >>`)} >>`,
+      'latin1',
+    ),
+    // 13: a field whose /V is a number, which is neither a string nor an
+    // array of them.
+    Buffer.from(
+      `<< ${widget('320 480 500 510', '/FT /Tx /T (quantity) /V 42')} >>`,
+      'latin1',
+    ),
+    // 14: NOT in /AcroForm /Fields. Only the page's /Annots reaches it, which
+    // is a common producer bug and which PDFium recovers.
+    Buffer.from(
+      `<< ${widget('72 460 300 490', '/FT /Tx /T (orphan) /V (recovered)')} >>`,
+      'latin1',
+    ),
+
+    // 15/16: the on and off appearances the toggles share.
+    stream(
+      '/Type /XObject /Subtype /Form /BBox [0 0 20 20] /Resources << >>',
+      Buffer.from('0 0 0 rg\n2 2 16 16 re\nf\n', 'latin1'),
+    ),
+    stream(
+      '/Type /XObject /Subtype /Form /BBox [0 0 20 20] /Resources << >>',
+      Buffer.from('1 1 1 rg\n2 2 16 16 re\nf\n', 'latin1'),
+    ),
+
+    // 17: a signature field, which this engine reads and never writes. Last
+    // in the array on purpose: the appearance streams above are referenced by
+    // number, so inserting anything before them renumbers them.
+    Buffer.from(
+      `<< ${widget('320 420 500 450', '/FT /Sig /T (signature)')} >>`,
+      'latin1',
+    ),
+    // 18: an /FT no version of the spec defines, which is the forward
+    // compatibility case. It reads as the unknown family with its /V kept as
+    // text, the way an unrecognized annotation subtype does.
+    Buffer.from(
+      `<< ${widget('320 360 500 390', '/FT /Bogus /T (from.the.future) /V (something)')} >>`,
+      'latin1',
+    ),
+  ]);
+}
+
+/**
  * A document whose Info dictionary exercises every metadata distinction.
  *
  * `metadata.read` has to tell three states apart: a key that is absent, a key
@@ -1245,6 +1411,7 @@ const outputs = [
   ['annotation_kinds.pdf', annotationKinds()],
   ['annotation_appearances.pdf', annotationAppearances()],
   ['attachments.pdf', attachments()],
+  ['form_fields.pdf', formFields()],
   ['document_actions.pdf', documentActions()],
   ['reverse_and_gapped_text.pdf', reverseAndGappedText(font)],
 

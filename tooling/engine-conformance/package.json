@@ -28,6 +28,8 @@
     "annotation-appearance:check": "tsx --conditions=development src/generate-annotation-appearance-vectors.ts --check",
     "attachments": "tsx --conditions=development src/generate-attachment-vectors.ts",
     "attachments:check": "tsx --conditions=development src/generate-attachment-vectors.ts --check",
+    "forms": "tsx --conditions=development src/generate-form-vectors.ts",
+    "forms:check": "tsx --conditions=development src/generate-form-vectors.ts --check",
     "actions": "tsx --conditions=development src/generate-action-vectors.ts",
     "actions:check": "tsx --conditions=development src/generate-action-vectors.ts --check",
     "layout": "tsx --conditions=development src/generate-layout-vectors.ts",

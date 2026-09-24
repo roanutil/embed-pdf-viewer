@@ -13,3 +13,10 @@
 //!
 //! Form JavaScript is a capability, not a port target: web keeps
 //! `packages/core/js-sandbox` and mobile reports unsupported.
+//!
+//! # What is here
+//!
+//! [`snapshot`], the read: the detached field tree, its values and its
+//! widgets. The export and the writes are not ported.
+
+pub mod snapshot;

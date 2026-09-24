@@ -209,6 +209,12 @@ jobs:
       - name: Attachment vectors are current
         run: pnpm --filter @embedpdf/tooling-engine-conformance run attachments:check
 
+      # G8's forms. The reconciled field tree, which is also what closes G7's
+      # widget-to-field join: a widget's /Parent names a field dictionary and
+      # only this model can follow it.
+      - name: Form vectors are current
+        run: pnpm --filter @embedpdf/tooling-engine-conformance run forms:check
+
       # multiplatform-port-order.md Section 6: a kind added to
       # worker-protocol.ts without a row in the matrix fails here, and so does
       # a row for a kind that no longer exists.

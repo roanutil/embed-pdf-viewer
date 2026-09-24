@@ -14,12 +14,9 @@
 //! neither engine models, so both answer `unsupported` for it and there is
 //! nothing left to compare partially.
 //!
-//! One field pair is not covered and cannot be here: a widget's
-//! `fieldObjectNumber` and `fieldFamily`. Resolving them needs the
-//! reconciled form model, which is G8, so every widget in the corpus is
-//! inert and both sides report the unattached values.
-//! `the_widget_field_join_is_not_covered_by_this_corpus` states that as an
-//! assertion, and it fails the day a fixture gains an `/AcroForm`.
+//! The widget-to-field join is included, which it was not while G8's form
+//! model was unported: `a_widget_is_joined_to_the_field_that_owns_it` reads
+//! a fixture carrying one attached widget and one inert one.
 
 use std::collections::BTreeSet;
 
@@ -164,6 +161,41 @@ fn the_reads_agree_with_the_typescript_engine() {
 }
 
 #[test]
+fn the_page_state_agrees_including_the_weak_flag() {
+    // Separate from the annotation comparison because it is a per-page
+    // conclusion drawn ACROSS the annotations: one weak identity makes the
+    // whole page weak, since every index on it shifts together. A reader that
+    // reported the flag per annotation would agree with the vector on every
+    // annotation and disagree here.
+    let file = load();
+    let mut saw_weak = false;
+    let mut saw_durable = false;
+
+    for case in &file.cases {
+        let actual = read(case);
+        let pages = actual["pages"].as_array().expect("pages");
+        for (page_index, (mine, theirs)) in pages.iter().zip(&case.pages).enumerate() {
+            assert_eq!(
+                canonical_numbers(&mine["pageState"]),
+                canonical_numbers(&theirs.page_state),
+                "{}: page {page_index} state differs",
+                case.name,
+            );
+            let weak = theirs.page_state["weakAnnotationState"]["hasAnyWeakAnnotations"]
+                .as_bool()
+                .expect("a known weak state");
+            saw_weak |= weak;
+            saw_durable |= !weak;
+        }
+    }
+
+    // The comparison would pass on a corpus where every page answered the
+    // same thing, and would then be checking nothing.
+    assert!(saw_weak, "no page in the corpus has a weak annotation");
+    assert!(saw_durable, "no page in the corpus is free of weak annotations");
+}
+
+#[test]
 fn the_corpus_covers_every_subtype_that_has_a_reader() {
     // A comparison over a corpus that never produces a subtype says nothing
     // about that subtype's reader. This is what stops one being written,
@@ -225,78 +257,51 @@ fn the_subtypes_with_no_reader_read_as_unsupported_on_both_sides() {
 }
 
 #[test]
-fn the_widget_field_join_is_not_covered_by_this_corpus() {
-    // The one field pair this port does not produce. Resolving a widget's
-    // owning field means following `/Parent` to a FIELD dictionary, which no
-    // annotation-plane accessor can do; the reconciled form model is the
-    // authority and it is G8's.
+fn a_widget_is_joined_to_the_field_that_owns_it() {
+    // The join was G7's one open field pair and it is G8's model that closes
+    // it. A widget's `/Parent` points at a FIELD dictionary, which no
+    // annotation-plane accessor can follow, so the values are stamped after
+    // the listing from a form model built once.
     //
-    // So every widget here is inert and both sides answer the unattached
-    // values. That makes the whole-DTO comparison pass for a reason it should
-    // not be allowed to pass for silently: this test is what says so, and it
-    // fails the day a fixture gains an `/AcroForm`, pointing at the join that
-    // then has to exist.
+    // The pair in the fixture is what makes this a test rather than a
+    // coincidence: one widget reachable from `/AcroForm` and one inert, both
+    // on the same page, and a reader that stamped everything or nothing would
+    // agree with one of them.
     let file = load();
-    let mut widgets = 0usize;
+    let case = file.cases.iter().find(|c| c.name == "form").expect("the form fixture");
+    let actual = read(case);
+    let annotations = actual["pages"][0]["annotations"].as_array().expect("annotations");
 
-    for case in &file.cases {
-        for page in &case.pages {
-            for annotation in &page.annotations {
-                if annotation["subtype"].as_str() != Some("widget") {
-                    continue;
-                }
-                widgets += 1;
-                assert_eq!(
-                    annotation["fieldObjectNumber"].as_u64(),
-                    Some(0),
-                    "{}: a widget attached to a field, which needs the G8 form model",
-                    case.name,
-                );
-                assert_eq!(
-                    annotation["fieldFamily"].as_str(),
-                    Some("unknown"),
-                    "{}: a widget with a known family, which needs the G8 form model",
-                    case.name,
-                );
-            }
-        }
-    }
+    let by_name = |nm: &str| {
+        annotations
+            .iter()
+            .find(|a| a["nm"].as_str() == Some(nm))
+            .unwrap_or_else(|| panic!("no annotation named {nm}"))
+    };
 
-    assert!(widgets > 0, "no widget in the corpus, so this says nothing");
-}
+    let attached = by_name("a-real-field-widget");
+    assert_eq!(attached["subtype"].as_str(), Some("widget"));
+    assert!(
+        attached["fieldObjectNumber"].as_u64().is_some_and(|n| n > 0),
+        "an attached widget reports no field",
+    );
+    assert_eq!(attached["fieldFamily"].as_str(), Some("text"));
 
-#[test]
-fn the_page_state_agrees_including_the_weak_flag() {
-    // Separate from the annotation comparison because it is a per-page
-    // conclusion drawn ACROSS the annotations: one weak identity makes the
-    // page weak, and a reader that reported the flag per annotation would
-    // agree with the vector on every annotation and disagree here.
-    let file = load();
-    let mut saw_weak = false;
-    let mut saw_durable = false;
+    let inert = by_name("a-bare-widget");
+    assert_eq!(inert["subtype"].as_str(), Some("widget"));
+    assert_eq!(inert["fieldObjectNumber"].as_u64(), Some(0));
+    assert_eq!(inert["fieldFamily"].as_str(), Some("unknown"));
 
-    for case in &file.cases {
-        let actual = read(case);
-        let pages = actual["pages"].as_array().expect("pages");
-        for (page_index, (mine, theirs)) in pages.iter().zip(&case.pages).enumerate() {
-            assert_eq!(
-                canonical_numbers(&mine["pageState"]),
-                canonical_numbers(&theirs.page_state),
-                "{}: page {page_index} state differs",
-                case.name,
-            );
-            let weak = theirs.page_state["weakAnnotationState"]["hasAnyWeakAnnotations"]
-                .as_bool()
-                .expect("a known weak state");
-            saw_weak |= weak;
-            saw_durable |= !weak;
-        }
-    }
-
-    // The comparison above would pass on a corpus where every page answered
-    // the same thing, and would then be checking nothing.
-    assert!(saw_weak, "no page in the corpus has a weak annotation");
-    assert!(saw_durable, "no page in the corpus is free of weak annotations");
+    // The one that matters most. This widget has an object number, so unlike
+    // the one above it reaches the lookup rather than being skipped for want
+    // of a key, and the lookup has to answer that it belongs to nothing. The
+    // document has exactly one field, so a join that ignored its lookup and
+    // took the first field would agree with the attached widget and differ
+    // only here.
+    let orphan = by_name("an-orphan-widget");
+    assert_eq!(orphan["ref"]["kind"].as_str(), Some("objectNumber"));
+    assert_eq!(orphan["fieldObjectNumber"].as_u64(), Some(0));
+    assert_eq!(orphan["fieldFamily"].as_str(), Some("unknown"));
 }
 
 #[test]
