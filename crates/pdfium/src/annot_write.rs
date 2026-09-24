@@ -54,6 +54,57 @@ impl PageView<'_> {
         unsafe { pdfium_sys::FPDFPage_GetAnnotIndex(self.as_raw(), annotation.as_raw()) }
     }
 
+    /// The annotation with this PDF object number, or `None`.
+    ///
+    /// A probe, and the reason deletes have one: removing by a reference
+    /// that names nothing should say so rather than return a bare false
+    /// that the caller has to guess the meaning of.
+    pub fn annotation_by_object_number(&self, object_number: u32) -> Option<Annotation<'_>> {
+        // SAFETY: the page handle is live for the borrow this returns.
+        let handle =
+            unsafe { pdfium_sys::EPDFPage_GetAnnotByObjectNumber(self.as_raw(), object_number) };
+        // SAFETY: a non-null result is a handle this caller now owns.
+        unsafe { Annotation::from_raw_owned(handle) }
+    }
+
+    /// The annotation with this `/NM`, or `None`.
+    pub fn annotation_by_name(&self, nm: &str) -> Option<Annotation<'_>> {
+        let nm = wide(nm);
+        // SAFETY: the page handle is live and the name outlives the call.
+        let handle = unsafe { pdfium_sys::EPDFPage_GetAnnotByName(self.as_raw(), nm.as_ptr()) };
+        // SAFETY: as above.
+        unsafe { Annotation::from_raw_owned(handle) }
+    }
+
+    /// Remove the annotation with this object number.
+    pub fn remove_annotation_by_object_number(&self, object_number: u32) -> bool {
+        // SAFETY: the handle is live.
+        unsafe {
+            pdfium_sys::EPDFPage_RemoveAnnotByObjectNumber(self.as_raw(), object_number) != 0
+        }
+    }
+
+    /// Remove the annotation with this `/NM`.
+    pub fn remove_annotation_by_name(&self, nm: &str) -> bool {
+        let nm = wide(nm);
+        // SAFETY: the handle is live and the name outlives the call.
+        unsafe { pdfium_sys::EPDFPage_RemoveAnnotByName(self.as_raw(), nm.as_ptr()) != 0 }
+    }
+
+    /// Remove the annotation at this index in `/Annots`.
+    ///
+    /// The FORK's helper, which also frees the indirect object when the
+    /// annotation has one. PDFium's own `FPDFPage_RemoveAnnot` unlinks the
+    /// entry and leaves the object behind, which grows the file by the size
+    /// of everything anyone ever deleted.
+    pub fn remove_annotation_at(&self, index: u32) -> bool {
+        let Ok(index) = i32::try_from(index) else {
+            return false;
+        };
+        // SAFETY: the handle is live.
+        unsafe { pdfium_sys::EPDFPage_RemoveAnnot(self.as_raw(), index) != 0 }
+    }
+
     /// Rebuild the page's content stream.
     ///
     /// Called after an appearance is generated. Without it the new stream is

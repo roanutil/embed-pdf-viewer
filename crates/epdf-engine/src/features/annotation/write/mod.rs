@@ -19,5 +19,6 @@
 
 pub mod appearance;
 pub mod create;
+pub mod delete;
 pub mod draft;
 pub mod impact;

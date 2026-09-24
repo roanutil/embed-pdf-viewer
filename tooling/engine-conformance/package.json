@@ -40,6 +40,8 @@
     "annotation-write:check": "tsx --conditions=development src/generate-annotation-write-vectors.ts --check",
     "annotation-create": "tsx --conditions=development src/generate-annotation-create-vectors.ts",
     "annotation-create:check": "tsx --conditions=development src/generate-annotation-create-vectors.ts --check",
+    "annotation-delete": "tsx --conditions=development src/generate-annotation-delete-vectors.ts",
+    "annotation-delete:check": "tsx --conditions=development src/generate-annotation-delete-vectors.ts --check",
     "actions": "tsx --conditions=development src/generate-action-vectors.ts",
     "actions:check": "tsx --conditions=development src/generate-action-vectors.ts --check",
     "layout": "tsx --conditions=development src/generate-layout-vectors.ts",

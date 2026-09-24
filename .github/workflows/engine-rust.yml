@@ -246,6 +246,12 @@ jobs:
       - name: Annotation create vectors are current
         run: pnpm --filter @embedpdf/tooling-engine-conformance run annotation-create:check
 
+      # The delete half. The comparison includes every surviving
+      # annotation's /NM in order, which is what catches a delete that
+      # removed the wrong entry: the reported id would still look right.
+      - name: Annotation delete vectors are current
+        run: pnpm --filter @embedpdf/tooling-engine-conformance run annotation-delete:check
+
       # multiplatform-port-order.md Section 6: a kind added to
       # worker-protocol.ts without a row in the matrix fails here, and so does
       # a row for a kind that no longer exists.
