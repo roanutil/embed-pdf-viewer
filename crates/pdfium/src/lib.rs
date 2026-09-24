@@ -28,8 +28,8 @@ mod page_list;
 mod text;
 
 pub use action::{
-    ActionModel, ActionNodeId, DestinationLocation, DestinationView, PageActionEvent,
-    RawDestination,
+    ActionModel, ActionNodeId, DestinationLocation, DestinationView, DocumentActionEvent,
+    PageActionEvent, RawDestination,
 };
 pub use base::{BaseDocument, LayerDocument, LayerOpenError};
 pub use bitmap::Bitmap;

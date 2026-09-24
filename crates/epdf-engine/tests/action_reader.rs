@@ -174,3 +174,152 @@ fn the_payloads_this_build_cannot_read_come_back_inert_not_degraded() {
     // And the payload-dropped warning is reserved for a genuine degrade.
     assert_ne!(ActionWarning::PayloadDropped, ActionWarning::Incomplete);
 }
+
+// --- G6: catalog-owned actions, against the TypeScript.
+
+use serde::Deserialize;
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ActionsFile {
+    schema_version: u32,
+    kind: String,
+    cases: Vec<ActionsCase>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ActionsCase {
+    name: String,
+    fixture: String,
+    covers: String,
+    #[serde(default)]
+    password: Option<String>,
+    actions: serde_json::Value,
+}
+
+fn load_actions() -> ActionsFile {
+    let path = test_support::corpus::vectors_dir("metadata").join("actions.json");
+    let text =
+        std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
+    let file: ActionsFile = serde_json::from_str(&text).expect("actions.json");
+    assert_eq!(file.schema_version, 1, "vector envelope moved");
+    assert_eq!(file.kind, "actions.read");
+    file
+}
+
+fn open_case(case: &ActionsCase) -> Document {
+    let bytes = std::fs::read(test_support::workspace_root().join(&case.fixture))
+        .unwrap_or_else(|e| panic!("{}: read {}: {e}", case.name, case.fixture));
+    Document::from_bytes(Library::acquire(), &bytes, case.password.as_deref())
+        .unwrap_or_else(|e| panic!("{}: open: {e}", case.name))
+}
+
+#[test]
+fn catalog_actions_agree_with_the_typescript_engine() {
+    use epdf_engine::cancel::CancelToken;
+    use epdf_engine::features::actions::document::read_document_actions;
+
+    let file = load_actions();
+    assert!(file.cases.len() >= 6, "the corpus shrank");
+
+    for case in &file.cases {
+        let document = open_case(case);
+        let actual = serde_json::to_value(
+            read_document_actions(&document, &CancelToken::never())
+                .unwrap_or_else(|e| panic!("{}: read: {e}", case.name)),
+        )
+        .expect("serialize");
+
+        // `openDestination` is the one field this build cannot produce:
+        // EPDFDoc_GetOpenActionDest is absent from the pinned artifact. It is
+        // dropped from the comparison rather than faked, and the test below
+        // says what that costs.
+        let mut expected = case.actions.clone();
+        expected.as_object_mut().expect("object").remove("openDestination");
+
+        let expected = test_support::corpus::quantized(&expected);
+        let actual = test_support::corpus::quantized(&actual);
+        if let Some(difference) = test_support::corpus::first_difference(&expected, &actual) {
+            panic!("{}: {difference} ({})", case.name, case.covers);
+        }
+    }
+}
+
+#[test]
+fn the_name_tree_keeps_its_boot_order() {
+    use epdf_engine::cancel::CancelToken;
+    use epdf_engine::features::actions::document::read_document_actions;
+
+    // Array order is the order the scripts run, which decides which one wins
+    // when two define the same function. Sorting or reordering would change
+    // what the document does.
+    let file = load_actions();
+    let case = file
+        .cases
+        .iter()
+        .find(|c| c.name == "document-actions")
+        .expect("the document-actions fixture");
+
+    let document = open_case(case);
+    let actions = read_document_actions(&document, &CancelToken::never()).expect("read");
+
+    let names: Vec<&str> = actions.name_tree_scripts.iter().map(|s| s.name.as_str()).collect();
+    assert_eq!(names, ["aaa-first", "zzz-second"]);
+    assert!(actions.open_action.is_some());
+    assert!(actions.will_close.is_some());
+    assert!(actions.did_print.is_some());
+}
+
+#[test]
+fn a_document_with_no_catalog_actions_reports_none() {
+    use epdf_engine::cancel::CancelToken;
+    use epdf_engine::features::actions::document::read_document_actions;
+
+    let file = load_actions();
+    let case = file.cases.iter().find(|c| c.name == "colors").expect("the colors fixture");
+    let document = open_case(case);
+    let actions = read_document_actions(&document, &CancelToken::never()).expect("read");
+
+    assert!(actions.name_tree_scripts.is_empty());
+    assert!(actions.open_action.is_none());
+    assert!(actions.will_close.is_none());
+}
+
+#[test]
+fn the_open_destination_form_is_not_read_by_this_build() {
+    // EPDFDoc_GetOpenActionDest is absent from the pinned fork artifact's
+    // epdf_action.h, which is from commit e4174c4f9. A document whose
+    // /OpenAction is a destination rather than an action therefore reports no
+    // open action at all.
+    //
+    // That is the honest answer this build can give, and it is a gap rather
+    // than a defect: reporting a wrong destination would be worse. This test
+    // exists so the day the artifact gains the accessor, somebody finds the
+    // one place that has to change.
+    let file = load_actions();
+    for case in &file.cases {
+        let reported = case.actions.get("openDestination");
+        assert!(
+            reported.is_none() || reported == Some(&serde_json::Value::Null),
+            "{}: the corpus gained a destination-form /OpenAction, which the Rust \
+             reader cannot produce; it needs EPDFDoc_GetOpenActionDest",
+            case.name,
+        );
+    }
+}
+
+#[test]
+fn a_cancelled_catalog_read_reports_aborted() {
+    use epdf_engine::cancel::CancelToken;
+    use epdf_engine::error::EngineErrorCode;
+    use epdf_engine::features::actions::document::read_document_actions;
+
+    let file = load_actions();
+    let document = open_case(&file.cases[0]);
+    let cancel = CancelToken::never();
+    cancel.cancel();
+    assert_eq!(
+        read_document_actions(&document, &cancel).expect_err("cancelled").code,
+        EngineErrorCode::Aborted,
+    );
+}

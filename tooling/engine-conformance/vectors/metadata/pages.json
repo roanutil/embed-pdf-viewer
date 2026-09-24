@@ -433,6 +433,41 @@
       }
     },
     {
+      "name": "document-actions",
+      "fixture": "tooling/engine-conformance/fixtures/document_actions.pdf",
+      "covers": "Every catalog action slot: a two-entry JavaScript name tree in boot order, an /OpenAction in its action form, and all five additional events. Nothing else in the repository has any of them.",
+      "pages": {
+        "pageCount": 1,
+        "pages": [
+          {
+            "index": 0,
+            "pageObjectNumber": 3,
+            "label": null,
+            "size": {
+              "width": 612,
+              "height": 792
+            },
+            "rotation": 0,
+            "userUnit": 1,
+            "boxes": {
+              "media": {
+                "left": 0,
+                "right": 612,
+                "bottom": 0,
+                "top": 792
+              },
+              "crop": {
+                "left": 0,
+                "right": 612,
+                "bottom": 0,
+                "top": 792
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "rotated",
       "fixture": "tooling/engine-conformance/fixtures/rotated_pages.pdf",
       "covers": "Four pages at /Rotate 0, 90, 180 and 270. The listing reports the rotation and the NORMALIZED size, so a reader using the rotated size would disagree with the page a caller then opens.",

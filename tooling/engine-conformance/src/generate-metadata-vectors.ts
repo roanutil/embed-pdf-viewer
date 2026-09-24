@@ -51,6 +51,12 @@ const CASES: readonly MetadataCase[] = [
     covers: 'A minimal document with almost no metadata: the mostly-absent case.',
   },
   {
+    name: 'document-actions',
+    fixture: 'tooling/engine-conformance/fixtures/document_actions.pdf',
+    covers:
+      'Every catalog action slot: a two-entry JavaScript name tree in boot order, an /OpenAction in its action form, and all five additional events. Nothing else in the repository has any of them.',
+  },
+  {
     name: 'rotated',
     fixture: 'tooling/engine-conformance/fixtures/rotated_pages.pdf',
     covers:
@@ -91,6 +97,7 @@ async function readCase(entry: MetadataCase): Promise<unknown> {
         ...entry,
         metadata: await doc.metadata.read(),
         pages: await doc.pages.list(),
+        actions: await doc.actions.read(),
       };
     } finally {
       await doc.close();
@@ -135,16 +142,23 @@ async function main(): Promise<void> {
   const metadata = {
     schemaVersion: SCHEMA_VERSION,
     kind: 'metadata.read',
-    cases: cases.map(({ pages: _pages, ...rest }) => rest),
+    cases: cases.map(({ pages: _pages, actions: _actions, ...rest }) => rest),
   };
   const pages = {
     schemaVersion: SCHEMA_VERSION,
     kind: 'pages.list',
-    cases: cases.map(({ metadata: _metadata, ...rest }) => rest),
+    cases: cases.map(({ metadata: _metadata, actions: _actions, ...rest }) => rest),
+  };
+  const actions = {
+    schemaVersion: SCHEMA_VERSION,
+    kind: 'actions.read',
+    cases: cases.map(({ metadata: _metadata, pages: _pages, ...rest }) => rest),
   };
   let differed = await emit('read.json', `${JSON.stringify(metadata, null, 2)}\n`, check);
   differed =
     (await emit('pages.json', `${JSON.stringify(pages, null, 2)}\n`, check)) || differed;
+  differed =
+    (await emit('actions.json', `${JSON.stringify(actions, null, 2)}\n`, check)) || differed;
   if (check && differed) {
     process.stderr.write(
       '\nMetadata vectors differ. Regenerate with:\n' +

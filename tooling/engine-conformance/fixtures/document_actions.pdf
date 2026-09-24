@@ -1,0 +1,67 @@
+%PDF-1.7
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R /Names << /JavaScript 4 0 R >> /OpenAction 7 0 R /AA << /WC 8 0 R /WS 9 0 R /DS 10 0 R /WP 11 0 R /DP 12 0 R >> >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 612 792] >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /Contents 13 0 R /Resources << >> >>
+endobj
+4 0 obj
+<< /Names [(aaa-first) 5 0 R (zzz-second) 6 0 R] >>
+endobj
+5 0 obj
+<< /Type /Action /S /JavaScript /JS (var first = 1;) >>
+endobj
+6 0 obj
+<< /Type /Action /S /JavaScript /JS (var second = 2;) >>
+endobj
+7 0 obj
+<< /Type /Action /S /JavaScript /JS (var opened = true;) >>
+endobj
+8 0 obj
+<< /Type /Action /S /JavaScript /JS (var willClose = true;) >>
+endobj
+9 0 obj
+<< /Type /Action /S /JavaScript /JS (var willSave = true;) >>
+endobj
+10 0 obj
+<< /Type /Action /S /JavaScript /JS (var didSave = true;) >>
+endobj
+11 0 obj
+<< /Type /Action /S /JavaScript /JS (var willPrint = true;) >>
+endobj
+12 0 obj
+<< /Type /Action /S /JavaScript /JS (var didPrint = true;) >>
+endobj
+13 0 obj
+<<  /Length 19 >>
+stream
+72 72 100 100 re
+f
+
+endstream
+endobj
+xref
+0 14
+0000000000 65535 f 
+0000000015 00000 n 
+0000000176 00000 n 
+0000000257 00000 n 
+0000000338 00000 n 
+0000000405 00000 n 
+0000000476 00000 n 
+0000000548 00000 n 
+0000000623 00000 n 
+0000000701 00000 n 
+0000000778 00000 n 
+0000000855 00000 n 
+0000000934 00000 n 
+0000001012 00000 n 
+trailer
+<< /Size 14 /Root 1 0 R >>
+startxref
+1083
+%%EOF

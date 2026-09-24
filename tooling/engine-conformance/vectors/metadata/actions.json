@@ -1,0 +1,171 @@
+{
+  "schemaVersion": 1,
+  "kind": "actions.read",
+  "cases": [
+    {
+      "name": "rich",
+      "fixture": "tooling/engine-conformance/fixtures/rich_metadata.pdf",
+      "covers": "Every distinction the read has to make: an absent key, a present-but-empty one, a UTF-16 title outside Latin-1, custom keys including an empty one, and dates in both the offset and the Z forms.",
+      "actions": {
+        "nameTreeScripts": [],
+        "openAction": null,
+        "openDestination": null
+      }
+    },
+    {
+      "name": "report",
+      "fixture": "pdfium-multiplatform-prototype/fixtures/report.pdf",
+      "covers": "A real document, whose Info dictionary is whatever its producer wrote.",
+      "actions": {
+        "nameTreeScripts": [],
+        "openAction": null,
+        "openDestination": null
+      }
+    },
+    {
+      "name": "colors",
+      "fixture": "pdfium-multiplatform-prototype/fixtures/colors.pdf",
+      "covers": "A minimal document with almost no metadata: the mostly-absent case.",
+      "actions": {
+        "nameTreeScripts": [],
+        "openAction": null,
+        "openDestination": null
+      }
+    },
+    {
+      "name": "document-actions",
+      "fixture": "tooling/engine-conformance/fixtures/document_actions.pdf",
+      "covers": "Every catalog action slot: a two-entry JavaScript name tree in boot order, an /OpenAction in its action form, and all five additional events. Nothing else in the repository has any of them.",
+      "actions": {
+        "nameTreeScripts": [
+          {
+            "name": "aaa-first",
+            "action": {
+              "root": {
+                "type": "javascript",
+                "subtype": "JavaScript",
+                "script": "var first = 1;",
+                "next": []
+              },
+              "incomplete": false,
+              "warningFlags": 0,
+              "warnings": []
+            }
+          },
+          {
+            "name": "zzz-second",
+            "action": {
+              "root": {
+                "type": "javascript",
+                "subtype": "JavaScript",
+                "script": "var second = 2;",
+                "next": []
+              },
+              "incomplete": false,
+              "warningFlags": 0,
+              "warnings": []
+            }
+          }
+        ],
+        "openAction": {
+          "root": {
+            "type": "javascript",
+            "subtype": "JavaScript",
+            "script": "var opened = true;",
+            "next": []
+          },
+          "incomplete": false,
+          "warningFlags": 0,
+          "warnings": []
+        },
+        "openDestination": null,
+        "willClose": {
+          "root": {
+            "type": "javascript",
+            "subtype": "JavaScript",
+            "script": "var willClose = true;",
+            "next": []
+          },
+          "incomplete": false,
+          "warningFlags": 0,
+          "warnings": []
+        },
+        "willSave": {
+          "root": {
+            "type": "javascript",
+            "subtype": "JavaScript",
+            "script": "var willSave = true;",
+            "next": []
+          },
+          "incomplete": false,
+          "warningFlags": 0,
+          "warnings": []
+        },
+        "didSave": {
+          "root": {
+            "type": "javascript",
+            "subtype": "JavaScript",
+            "script": "var didSave = true;",
+            "next": []
+          },
+          "incomplete": false,
+          "warningFlags": 0,
+          "warnings": []
+        },
+        "willPrint": {
+          "root": {
+            "type": "javascript",
+            "subtype": "JavaScript",
+            "script": "var willPrint = true;",
+            "next": []
+          },
+          "incomplete": false,
+          "warningFlags": 0,
+          "warnings": []
+        },
+        "didPrint": {
+          "root": {
+            "type": "javascript",
+            "subtype": "JavaScript",
+            "script": "var didPrint = true;",
+            "next": []
+          },
+          "incomplete": false,
+          "warningFlags": 0,
+          "warnings": []
+        }
+      }
+    },
+    {
+      "name": "rotated",
+      "fixture": "tooling/engine-conformance/fixtures/rotated_pages.pdf",
+      "covers": "Four pages at /Rotate 0, 90, 180 and 270. The listing reports the rotation and the NORMALIZED size, so a reader using the rotated size would disagree with the page a caller then opens.",
+      "actions": {
+        "nameTreeScripts": [],
+        "openAction": null,
+        "openDestination": null
+      }
+    },
+    {
+      "name": "page-actions",
+      "fixture": "tooling/engine-conformance/fixtures/page_actions.pdf",
+      "covers": "A page carrying open and close actions: a JavaScript node chaining to a URI through /Next, and a GoTo with an explicit /XYZ destination. PageLayout.actions was absent on both sides until this existed, so a comparison could not tell an unread action from a missing one.",
+      "actions": {
+        "nameTreeScripts": [],
+        "openAction": null,
+        "openDestination": null
+      }
+    },
+    {
+      "name": "encrypted",
+      "fixture": "tooling/engine-conformance/fixtures/encrypted-r4-aes-128.pdf",
+      "covers": "Metadata behind encryption, which is read through the same path once unlocked.",
+      "password": "user",
+      "actions": {
+        "nameTreeScripts": [],
+        "openAction": null,
+        "openDestination": null
+      }
+    }
+  ]
+}

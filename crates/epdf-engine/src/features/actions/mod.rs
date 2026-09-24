@@ -17,6 +17,7 @@
 //! model is not ported yet.
 
 pub mod destination;
+pub mod document;
 pub mod reader;
 pub mod submit_flags;
 pub mod vocabulary;

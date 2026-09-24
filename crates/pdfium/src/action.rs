@@ -47,6 +47,73 @@ impl Document {
     }
 }
 
+/// Which catalog-level event to read.
+///
+/// `EPDF_DOC_ACTION_*`. `/OpenAction` is not in this list because it is a
+/// separate entry with a separate accessor, and because it may be a
+/// destination rather than an action.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DocumentActionEvent {
+    WillClose = 0,
+    WillSave = 1,
+    DidSave = 2,
+    WillPrint = 3,
+    DidPrint = 4,
+}
+
+impl Document {
+    /// The catalog's `/OpenAction`, in its action form.
+    ///
+    /// `None` also covers the destination form, which is a different entry
+    /// this build cannot read: `EPDFDoc_GetOpenActionDest` is absent from the
+    /// pinned artifact's headers.
+    pub fn open_action_model(&self) -> Option<ActionModel<'_>> {
+        // SAFETY: the handle is live for the borrow this returns.
+        let handle = unsafe { pdfium_sys::EPDFDoc_GetOpenActionModel(self.handle) };
+        (!handle.is_null()).then_some(ActionModel { handle, document: self })
+    }
+
+    /// One of the catalog's additional actions.
+    pub fn document_action_model(&self, event: DocumentActionEvent) -> Option<ActionModel<'_>> {
+        // SAFETY: as above.
+        let handle =
+            unsafe { pdfium_sys::EPDFDoc_GetAdditionalActionModel(self.handle, event as i32) };
+        (!handle.is_null()).then_some(ActionModel { handle, document: self })
+    }
+
+    /// How many scripts the document's JavaScript name tree holds.
+    pub fn name_tree_script_count(&self) -> i32 {
+        unsafe { pdfium_sys::FPDFDoc_GetJavaScriptActionCount(self.handle) }
+    }
+
+    /// One name-tree script's key.
+    ///
+    /// The handle is opened and closed here, because the name is the only
+    /// thing it is good for: the script itself comes through
+    /// [`Document::name_tree_script_model`].
+    pub fn name_tree_script_name(&self, index: i32) -> Result<Option<String>, PdfiumError> {
+        // SAFETY: the handle is live; a null result is the documented failure.
+        let handle = unsafe { pdfium_sys::FPDFDoc_GetJavaScriptAction(self.handle, index) };
+        if handle.is_null() {
+            return Ok(None);
+        }
+        let name = read_utf16(|buf, len| unsafe {
+            pdfium_sys::FPDFJavaScriptAction_GetName(handle, buf, len)
+        });
+        // SAFETY: opened above and closed exactly once, whatever the read did.
+        unsafe { pdfium_sys::FPDFDoc_CloseJavaScriptAction(handle) };
+        name
+    }
+
+    /// One name-tree script's action model.
+    pub fn name_tree_script_model(&self, index: i32) -> Option<ActionModel<'_>> {
+        // SAFETY: as above.
+        let handle =
+            unsafe { pdfium_sys::EPDFDoc_GetNamedJavaScriptActionModel(self.handle, index) };
+        (!handle.is_null()).then_some(ActionModel { handle, document: self })
+    }
+}
+
 impl ActionModel<'_> {
     /// How many nodes the model holds. The bound on any walk of it.
     pub fn node_count(&self) -> i32 {

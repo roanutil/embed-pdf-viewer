@@ -547,6 +547,47 @@ function reverseAndGappedText(font) {
  * with an explicit `/XYZ` destination, which is the destination shape a
  * viewer actually has to honour.
  */
+/**
+ * A catalog carrying every action slot `actions.read` reports.
+ *
+ * A JavaScript name tree with two entries in a deliberate order, an
+ * `/OpenAction` in its action form, and all five additional events. Nothing
+ * else in the repository has any of them, so the reader had no document to be
+ * right or wrong about.
+ */
+function documentActions() {
+  const script = (body) => `<< /Type /Action /S /JavaScript /JS (${body}) >>`;
+
+  return buildPdf([
+    // The catalog: /Names for the script tree, /OpenAction, and /AA.
+    Buffer.from(
+      '<< /Type /Catalog /Pages 2 0 R /Names << /JavaScript 4 0 R >> ' +
+        '/OpenAction 7 0 R /AA << /WC 8 0 R /WS 9 0 R /DS 10 0 R /WP 11 0 R /DP 12 0 R >> >>',
+      'latin1',
+    ),
+    Buffer.from(
+      '<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 612 792] >>',
+      'latin1',
+    ),
+    Buffer.from(
+      '<< /Type /Page /Parent 2 0 R /Contents 13 0 R /Resources << >> >>',
+      'latin1',
+    ),
+    // The name tree. Keys are sorted, and the order is the boot order, which
+    // decides which script wins when two define the same function.
+    Buffer.from('<< /Names [(aaa-first) 5 0 R (zzz-second) 6 0 R] >>', 'latin1'),
+    Buffer.from(script('var first = 1;'), 'latin1'),
+    Buffer.from(script('var second = 2;'), 'latin1'),
+    Buffer.from(script('var opened = true;'), 'latin1'),
+    Buffer.from(script('var willClose = true;'), 'latin1'),
+    Buffer.from(script('var willSave = true;'), 'latin1'),
+    Buffer.from(script('var didSave = true;'), 'latin1'),
+    Buffer.from(script('var willPrint = true;'), 'latin1'),
+    Buffer.from(script('var didPrint = true;'), 'latin1'),
+    stream('', Buffer.from('72 72 100 100 re\nf\n', 'latin1')),
+  ]);
+}
+
 function pageActions() {
   const content = Buffer.from('72 72 200 100 re\nf\n', 'latin1');
 
@@ -656,6 +697,7 @@ const outputs = [
   ['non_identity_text.pdf', nonIdentityText(font)],
   ['rich_metadata.pdf', richMetadata()],
   ['page_actions.pdf', pageActions()],
+  ['document_actions.pdf', documentActions()],
   ['reverse_and_gapped_text.pdf', reverseAndGappedText(font)],
 
   // Revision 2, RC4-40. The oldest handler still in the wild.
