@@ -179,6 +179,12 @@ jobs:
       - name: Action vectors are current
         run: pnpm --filter @embedpdf/tooling-engine-conformance run actions:check
 
+      # G5's shared layout contract. layout.ts stays in TypeScript for the
+      # web selection plugins, so this file is what a native port will be
+      # written against rather than written from prose.
+      - name: Layout vectors are current
+        run: pnpm --filter @embedpdf/tooling-engine-conformance run layout:check
+
       # multiplatform-port-order.md Section 6: a kind added to
       # worker-protocol.ts without a row in the matrix fails here, and so does
       # a row for a kind that no longer exists.
