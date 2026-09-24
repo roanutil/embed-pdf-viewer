@@ -258,6 +258,11 @@ jobs:
       - name: Annotation update vectors are current
         run: pnpm --filter @embedpdf/tooling-engine-conformance run annotation-update:check
 
+      # The move half. A move is about order, so the comparison is the
+      # resulting order by /NM rather than the annotations themselves.
+      - name: Annotation move vectors are current
+        run: pnpm --filter @embedpdf/tooling-engine-conformance run annotation-move:check
+
       # multiplatform-port-order.md Section 6: a kind added to
       # worker-protocol.ts without a row in the matrix fails here, and so does
       # a row for a kind that no longer exists.

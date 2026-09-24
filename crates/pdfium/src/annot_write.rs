@@ -79,9 +79,7 @@ impl PageView<'_> {
     /// Remove the annotation with this object number.
     pub fn remove_annotation_by_object_number(&self, object_number: u32) -> bool {
         // SAFETY: the handle is live.
-        unsafe {
-            pdfium_sys::EPDFPage_RemoveAnnotByObjectNumber(self.as_raw(), object_number) != 0
-        }
+        unsafe { pdfium_sys::EPDFPage_RemoveAnnotByObjectNumber(self.as_raw(), object_number) != 0 }
     }
 
     /// Remove the annotation with this `/NM`.
@@ -103,6 +101,31 @@ impl PageView<'_> {
         };
         // SAFETY: the handle is live.
         unsafe { pdfium_sys::EPDFPage_RemoveAnnot(self.as_raw(), index) != 0 }
+    }
+
+    /// Move a set of annotations, as one contiguous block, to `to_index`.
+    ///
+    /// `from_indices` are positions in the CURRENT `/Annots`, and
+    /// `to_index` is a position in the POST-REMOVAL one: the block is
+    /// detached first and inserted afterwards, so the two index spaces are
+    /// not the same and a caller that range-checked against the current
+    /// count would be off by the size of its own block.
+    ///
+    /// Atomic. A false return means the helper rejected the request and
+    /// changed nothing, which is what lets a caller undo its bookkeeping
+    /// rather than having to work out how far it got.
+    pub fn move_annotations(&self, from_indices: &[i32], to_index: u32) -> bool {
+        let Ok(to_index) = i32::try_from(to_index) else {
+            return false;
+        };
+        let Ok(len) = i32::try_from(from_indices.len()) else {
+            return false;
+        };
+        // SAFETY: the handle is live and the slice outlives the call.
+        unsafe {
+            pdfium_sys::EPDFPage_MoveAnnots(self.as_raw(), from_indices.as_ptr(), len, to_index)
+                != 0
+        }
     }
 
     /// Rebuild the page's content stream.

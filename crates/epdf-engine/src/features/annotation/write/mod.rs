@@ -22,6 +22,7 @@ pub mod create;
 pub mod delete;
 pub mod draft;
 pub mod impact;
+pub mod move_;
 pub mod patch;
 pub mod resolve;
 pub mod update;
