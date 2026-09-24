@@ -252,6 +252,12 @@ jobs:
       - name: Annotation delete vectors are current
         run: pnpm --filter @embedpdf/tooling-engine-conformance run annotation-delete:check
 
+      # The update half, which also carries the appearance verdict: a
+      # preserved stream and a re-baked one leave the same dictionary and
+      # different documents.
+      - name: Annotation update vectors are current
+        run: pnpm --filter @embedpdf/tooling-engine-conformance run annotation-update:check
+
       # multiplatform-port-order.md Section 6: a kind added to
       # worker-protocol.ts without a row in the matrix fails here, and so does
       # a row for a kind that no longer exists.

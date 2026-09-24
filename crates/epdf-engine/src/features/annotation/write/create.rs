@@ -232,12 +232,8 @@ fn apply_base_draft(
     annotation: &pdfium::Annotation<'_>,
     base: &AnnotationDraftBase,
 ) -> Result<(), EngineError> {
-    if let Some(contents) = &base.contents {
-        write_string_or_clear(annotation, "Contents", contents.as_deref())?;
-    }
-    if let Some(subject) = &base.subject {
-        write_string_or_clear(annotation, "Subj", subject.as_deref())?;
-    }
+    write_patch_string(annotation, "Contents", &base.contents)?;
+    write_patch_string(annotation, "Subj", &base.subject)?;
     // An empty `/NM` is not an identity, so it is not written: two
     // annotations could both carry it and neither would be addressable.
     if let Some(nm) = base.nm.as_deref().filter(|nm| !nm.is_empty()) {
@@ -351,8 +347,8 @@ fn apply_shape(
     // TypeScript is, and because a draft that says nothing about a fill
     // means a shape with no fill rather than a shape whose fill is whatever
     // was there.
-    match fields.interior_color.flatten() {
-        Some(color) => set_color(annotation, AnnotationColorType::InteriorColor, color)?,
+    match fields.interior_color.as_set() {
+        Some(color) => set_color(annotation, AnnotationColorType::InteriorColor, *color)?,
         None => {
             annotation.clear_color(AnnotationColorType::InteriorColor as i32);
         }
@@ -363,7 +359,7 @@ fn apply_shape(
     // the reader would normalize away. Skipping and writing the zero produce
     // the same DTO, because the reader normalizes it either way; what they
     // differ in is whether the file carries a `/BE` that means nothing.
-    if let Some(intensity) = fields.cloudy_intensity.flatten().filter(|i| *i > 0.0)
+    if let Some(intensity) = fields.cloudy_intensity.as_set().copied().filter(|i| *i > 0.0)
         && !annotation.set_border_effect(intensity as f32)
     {
         return Err(EngineError::with_message(
@@ -371,7 +367,7 @@ fn apply_shape(
             "EPDFAnnot_SetBorderEffect refused the intensity",
         ));
     }
-    if let Some(rd) = fields.rect_differences.flatten()
+    if let Some(rd) = fields.rect_differences.as_set().copied()
         && !annotation.set_rectangle_differences(
             rd.left as f32,
             rd.bottom as f32,
@@ -397,7 +393,11 @@ impl AnnotationBorderStyleDefault {
 }
 
 /// The smallest box enclosing every quad.
-fn enclosing_rect(quads: &[PdfQuad]) -> crate::geom::PdfRect {
+///
+/// Shared with the update path, which recomputes it whenever a patch
+/// changes the quads: the two must agree or a patched markup would keep a
+/// box that no longer encloses it.
+pub(super) fn enclosing_rect(quads: &[PdfQuad]) -> crate::geom::PdfRect {
     let mut left = f64::INFINITY;
     let mut bottom = f64::INFINITY;
     let mut right = f64::NEG_INFINITY;
@@ -469,19 +469,20 @@ fn set_opacity(annotation: &pdfium::Annotation<'_>, opacity: f64) -> Result<(), 
     Ok(())
 }
 
-/// Set an entry, or REMOVE it when the value is a clear.
+/// Set an entry, or REMOVE it when the patch is a clear.
 ///
 /// Setting a null value is not removal: it writes an empty string, and a
 /// cleared field would then read back as present-and-empty rather than as
 /// absent. The read side distinguishes the two, so the write side has to.
-fn write_string_or_clear(
+pub(super) fn write_patch_string(
     annotation: &pdfium::Annotation<'_>,
     key: &str,
-    value: Option<&str>,
+    value: &crate::dto::Patch<String>,
 ) -> Result<(), EngineError> {
     match value {
-        Some(value) => write(annotation.set_string_value(key, value), key),
-        None => {
+        crate::dto::Patch::Keep => Ok(()),
+        crate::dto::Patch::Set(value) => write(annotation.set_string_value(key, value), key),
+        crate::dto::Patch::Clear => {
             // A key that was not there is not an error to remove.
             //
             // Indistinguishable from writing an empty string on a FRESH
@@ -501,7 +502,10 @@ fn write_string_or_clear(
     }
 }
 
-fn write(result: Result<bool, pdfium::PdfiumError>, what: &str) -> Result<(), EngineError> {
+pub(super) fn write(
+    result: Result<bool, pdfium::PdfiumError>,
+    what: &str,
+) -> Result<(), EngineError> {
     match result {
         Ok(true) => Ok(()),
         Ok(false) => Err(EngineError::with_message(

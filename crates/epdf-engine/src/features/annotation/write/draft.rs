@@ -16,6 +16,8 @@
 
 use serde::{Deserialize, Serialize};
 
+use crate::dto::Patch;
+
 use crate::features::annotation::flags::AnnotationFlags;
 use crate::features::annotation::intent::StrikeoutIntent;
 use crate::features::annotation::read::shape::PdfRectDifferences;
@@ -28,12 +30,14 @@ use crate::identity::AnnotationRef;
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct AnnotationDraftBase {
-    /// `/Contents`. `Some(None)` writes nothing and clears: a draft starts
-    /// from an empty dictionary, so the clear is a no-op and is accepted
-    /// rather than refused, which keeps a draft and a patch spelled the same.
-    pub contents: Option<Option<String>>,
+    /// `/Contents`. A clear is a no-op on a fresh annotation and is
+    /// accepted rather than refused, which keeps a draft and a patch spelled
+    /// the same.
+    #[serde(skip_serializing_if = "Patch::is_keep")]
+    pub contents: Patch<String>,
     /// `/Subj`.
-    pub subject: Option<Option<String>>,
+    #[serde(skip_serializing_if = "Patch::is_keep")]
+    pub subject: Patch<String>,
     /// The blend mode to bake into the appearance. Absent takes the
     /// subtype's default, which is NOT the same as asking for `normal`:
     /// the two reach different entry points in the fork.
@@ -189,16 +193,16 @@ pub struct ShapeDraftFields {
     pub border_style: Option<AnnotationBorderStyle>,
     #[serde(default)]
     pub dash_array: Option<Vec<f64>>,
-    /// `/IC`. `Some(None)` clears, which on a fresh annotation means the
-    /// shape has no fill.
-    #[serde(default)]
-    pub interior_color: Option<Option<Color>>,
-    /// `/BE /I`. `Some(None)` clears.
-    #[serde(default)]
-    pub cloudy_intensity: Option<Option<f64>>,
-    /// `/RD`. `Some(None)` clears.
-    #[serde(default)]
-    pub rect_differences: Option<Option<PdfRectDifferences>>,
+    /// `/IC`. Absent and a clear are the same thing here: a shape whose
+    /// draft says nothing about a fill has no fill.
+    #[serde(default, skip_serializing_if = "Patch::is_keep")]
+    pub interior_color: Patch<Color>,
+    /// `/BE /I`.
+    #[serde(default, skip_serializing_if = "Patch::is_keep")]
+    pub cloudy_intensity: Patch<f64>,
+    /// `/RD`.
+    #[serde(default, skip_serializing_if = "Patch::is_keep")]
+    pub rect_differences: Patch<PdfRectDifferences>,
 }
 
 /// One annotation to create.
