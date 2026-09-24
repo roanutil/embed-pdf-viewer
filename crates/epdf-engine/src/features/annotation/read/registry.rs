@@ -3,43 +3,38 @@
 //! G7. Ports
 //! `services/src/features/annotations/internal/read/annotationReaderRegistry.ts`.
 //!
-//! The TypeScript table is a partial map with an `unsupported` fallback, and
-//! so is this one. The difference is only which entries are filled in: this
-//! build has none yet, so every subtype falls through, and each subtype reader
-//! that lands moves one row out of [`FALLS_BACK_TO_UNSUPPORTED`] and into the
-//! dispatch. That list is asserted by
-//! `crates/epdf-engine/tests/annotation_reader.rs`, so the day a reader lands
-//! without being registered, or is registered without the comparison being
-//! widened, the test says which.
+//! A `match` with an `unsupported` arm, which is the same shape as the
+//! TypeScript's partial map with an `unsupported` fallback. The difference is
+//! only which entries are filled in: every subtype without an arm here takes
+//! the fallback, [`FALLS_BACK_TO_UNSUPPORTED`] says which those are, and
+//! `crates/epdf-engine/tests/annotation_reader.rs` asserts that list against
+//! the catalog. So a reader that lands without being registered fails, and so
+//! does one registered without the comparison being widened to its fields.
 
 use pdfium::Annotation;
 
 use super::dto::AnnotationKind;
+use super::ink_line::{read_ink, read_line, read_line_endings};
+use super::shape::read_shape;
+use super::text_markup::{DEFAULT_HIGHLIGHT_COLOR, DEFAULT_TEXT_MARKUP_COLOR, read_text_markup};
 use super::unsupported::read_unsupported;
+use super::vertex::read_vertex;
+use super::{dictionary_read, read_cloudy_intensity};
 use crate::error::EngineError;
+use crate::features::annotation::intent::StrikeoutIntent;
 use crate::features::annotation::subtype::AnnotationSubtype;
 
 /// The subtypes this build has no dedicated reader for.
 ///
-/// Every one of them is readable as a base shell; what is missing is the
-/// subtype's own fields. `unsupported` itself is not listed, because for it
-/// the fallback IS the reader.
-pub const FALLS_BACK_TO_UNSUPPORTED: [AnnotationSubtype; 19] = [
+/// Every one of them is still readable as a base shell; what is missing is the
+/// subtype's own fields. `unsupported` is not listed, because for it the
+/// fallback IS the reader.
+pub const FALLS_BACK_TO_UNSUPPORTED: [AnnotationSubtype; 9] = [
     AnnotationSubtype::Text,
     AnnotationSubtype::Link,
     AnnotationSubtype::FreeText,
-    AnnotationSubtype::Line,
-    AnnotationSubtype::Square,
-    AnnotationSubtype::Circle,
-    AnnotationSubtype::Polygon,
-    AnnotationSubtype::Polyline,
-    AnnotationSubtype::Highlight,
-    AnnotationSubtype::Underline,
-    AnnotationSubtype::Squiggly,
-    AnnotationSubtype::Strikeout,
     AnnotationSubtype::Stamp,
     AnnotationSubtype::Caret,
-    AnnotationSubtype::Ink,
     AnnotationSubtype::Popup,
     AnnotationSubtype::FileAttachment,
     AnnotationSubtype::Redact,
@@ -51,10 +46,34 @@ pub fn read_annotation_kind(
     annotation: &Annotation<'_>,
     raw_subtype_code: i32,
 ) -> Result<AnnotationKind, EngineError> {
-    // Decoded and then discarded, for now. The decode is here rather than at
-    // the one call site because this is where the dispatch will be, and
-    // because a subtype the decoder maps to `Unsupported` and one this table
-    // has no row for reach the same reader by different routes.
-    let _subtype = AnnotationSubtype::from_code(raw_subtype_code);
-    read_unsupported(annotation, raw_subtype_code)
+    Ok(match AnnotationSubtype::from_code(raw_subtype_code) {
+        AnnotationSubtype::Highlight => AnnotationKind::Highlight {
+            fields: read_text_markup(annotation, DEFAULT_HIGHLIGHT_COLOR)?,
+        },
+        AnnotationSubtype::Underline => AnnotationKind::Underline {
+            fields: read_text_markup(annotation, DEFAULT_TEXT_MARKUP_COLOR)?,
+        },
+        AnnotationSubtype::Squiggly => AnnotationKind::Squiggly {
+            fields: read_text_markup(annotation, DEFAULT_TEXT_MARKUP_COLOR)?,
+        },
+        AnnotationSubtype::Strikeout => AnnotationKind::Strikeout {
+            fields: read_text_markup(annotation, DEFAULT_TEXT_MARKUP_COLOR)?,
+            intent: StrikeoutIntent::from_name(
+                dictionary_read("IT", annotation.intent())?.as_deref(),
+            ),
+        },
+        AnnotationSubtype::Square => AnnotationKind::Square { fields: read_shape(annotation)? },
+        AnnotationSubtype::Circle => AnnotationKind::Circle { fields: read_shape(annotation)? },
+        AnnotationSubtype::Polygon => AnnotationKind::Polygon {
+            fields: read_vertex(annotation)?,
+            cloudy_intensity: read_cloudy_intensity(annotation),
+        },
+        AnnotationSubtype::Polyline => AnnotationKind::Polyline {
+            fields: read_vertex(annotation)?,
+            line_endings: read_line_endings(annotation),
+        },
+        AnnotationSubtype::Line => AnnotationKind::Line { fields: read_line(annotation)? },
+        AnnotationSubtype::Ink => AnnotationKind::Ink { fields: read_ink(annotation)? },
+        _ => read_unsupported(annotation, raw_subtype_code)?,
+    })
 }

@@ -1,15 +1,27 @@
 //! The wire union.
 //!
-//! G7. Ports `core/src/annotation/kinds/*/dto.ts`, one variant at a time.
+//! G7. Ports `core/src/annotation/kinds/*/dto.ts`.
 //!
 //! An annotation on the wire is the base shell plus exactly the fields its
 //! subtype has, flattened into one object and discriminated by `subtype`. The
 //! shell is not nested under a key, because the union's consumers read
 //! `annotation.rect` and `annotation.subtype` side by side and always have.
+//!
+//! Variants that share a shape share a struct rather than repeating it: the
+//! four text-markup subtypes differ only in their discriminator, and square
+//! and circle only in theirs. That is the same factoring the TypeScript uses,
+//! through `TextMarkupDTO<S>` and `ShapeDTO<S>`, and it is why a field added
+//! to one of those families cannot be added to three of its four members.
 
 use serde::{Deserialize, Serialize};
 
 use super::base::AnnotationBase;
+use super::ink_line::{InkFields, LineFields};
+use super::shape::ShapeFields;
+use super::text_markup::TextMarkupFields;
+use super::vertex::VertexFields;
+use crate::features::annotation::intent::StrikeoutIntent;
+use crate::features::annotation::vocabulary::LineEndings;
 
 /// One annotation, ready for the wire.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -22,15 +34,62 @@ pub struct AnnotationDto {
 
 /// The subtype-specific half.
 ///
-/// One variant so far. The others land with their readers, and until then
-/// every subtype takes the [`AnnotationKind::Unsupported`] road, which is the
-/// same road the TypeScript takes for a subtype it has no reader for. That is
-/// the point of the variant: it is a forward-compatibility hatch in the wire
-/// format, not a defeat, and a client already handles it.
+/// [`AnnotationKind::Unsupported`] is not a defeat. It is the wire format's
+/// forward-compatibility hatch, produced for any subtype this build has no
+/// reader for, and a client already handles it because a PDF can carry a
+/// subtype no engine knows.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "subtype", rename_all = "kebab-case")]
 #[serde(rename_all_fields = "camelCase")]
 pub enum AnnotationKind {
+    Highlight {
+        #[serde(flatten)]
+        fields: TextMarkupFields,
+    },
+    Underline {
+        #[serde(flatten)]
+        fields: TextMarkupFields,
+    },
+    Squiggly {
+        #[serde(flatten)]
+        fields: TextMarkupFields,
+    },
+    Strikeout {
+        #[serde(flatten)]
+        fields: TextMarkupFields,
+        /// `/IT`. `Some` only when this strikeout is the subordinate half of
+        /// a replace-text edit, which is why it is on this variant and not on
+        /// the shared fields.
+        intent: Option<StrikeoutIntent>,
+    },
+    Square {
+        #[serde(flatten)]
+        fields: ShapeFields,
+    },
+    Circle {
+        #[serde(flatten)]
+        fields: ShapeFields,
+    },
+    Polygon {
+        #[serde(flatten)]
+        fields: VertexFields,
+        /// `/BE`. Polygon has it and polyline does not: an open path has no
+        /// interior for a cloudy border to enclose.
+        cloudy_intensity: Option<f64>,
+    },
+    Polyline {
+        #[serde(flatten)]
+        fields: VertexFields,
+        line_endings: LineEndings,
+    },
+    Line {
+        #[serde(flatten)]
+        fields: LineFields,
+    },
+    Ink {
+        #[serde(flatten)]
+        fields: InkFields,
+    },
     Unsupported {
         /// `FPDFAnnot_GetSubtype`'s code, kept for diagnosis.
         raw_subtype_code: i32,

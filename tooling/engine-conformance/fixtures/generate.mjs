@@ -738,6 +738,90 @@ function annotationBase() {
 }
 
 /**
+ * One annotation per geometry subtype, each carrying the entries its reader
+ * has to decide something about.
+ *
+ * Separate from `annotation_base.pdf` because the two fixtures answer
+ * different questions. That one varies the shell and holds the subtype
+ * roughly constant; this one holds the shell constant and varies the subtype,
+ * so a failure names which reader rather than which shared field.
+ *
+ * The pairs are the point. A square with an explicit `/BS`, `/BE` and `/RD`
+ * next to a circle with none of them, so the resolved defaults are exercised
+ * rather than assumed. A strikeout with `/IT` next to one without. Ink with
+ * the highlighter intent next to ordinary pen ink. A highlight with no `/C`,
+ * which defaults to yellow, next to an underline with one, because the
+ * text-markup family's default differs between highlight and the other three
+ * and a reader that used one default for all four would agree with three. And
+ * a third square whose `/BE` is present with intensity zero, which draws no
+ * clouds and has to normalize to null.
+ */
+function annotationKinds() {
+  const content = Buffer.from('72 72 200 100 re\nf\n', 'latin1');
+
+  // Two quads, because a markup over two lines of text is the ordinary case
+  // and a reader that returned only the first would look right on one line.
+  const twoQuads = '[72 720 200 720 72 700 200 700 72 690 160 690 72 670 160 670]';
+  const oneQuad = '[72 640 200 640 72 620 200 620]';
+
+  const annots = [
+    // Highlight with no /C: the family default that is not black.
+    '<< /Type /Annot /Subtype /Highlight /Rect [72 670 200 720] /F 4 /NM (a-highlight) ' +
+      `/QuadPoints ${twoQuads} /CA 0.4 >>`,
+    // Underline WITH /C, so the explicit path is covered beside the default.
+    '<< /Type /Annot /Subtype /Underline /Rect [72 620 200 640] /F 4 /NM (an-underline) ' +
+      `/QuadPoints ${oneQuad} /C [0 0 1] >>`,
+    '<< /Type /Annot /Subtype /Squiggly /Rect [72 600 200 620] /F 4 /NM (a-squiggly) ' +
+      '/QuadPoints [72 620 200 620 72 600 200 600] >>',
+    // Strikeout as half of a replace-text edit.
+    '<< /Type /Annot /Subtype /StrikeOut /Rect [72 580 200 600] /F 4 /NM (an-edit-strikeout) ' +
+      '/QuadPoints [72 600 200 600 72 580 200 580] /IT /StrikeOutTextEdit >>',
+    // And a standalone one, which has no /IT at all.
+    '<< /Type /Annot /Subtype /StrikeOut /Rect [72 560 200 580] /F 4 /NM (a-plain-strikeout) ' +
+      '/QuadPoints [72 580 200 580 72 560 200 560] >>',
+    // A square with every optional border entry set: a dashed /BS with a
+    // pattern, a cloudy /BE, an /RD inset and an /IC fill.
+    '<< /Type /Annot /Subtype /Square /Rect [300 700 400 760] /F 4 /NM (a-decorated-square) ' +
+      '/C [1 0 0] /IC [0 1 0] /CA 0.8 /BS << /W 3 /S /D /D [4 2] >> ' +
+      '/BE << /S /C /I 2 >> /RD [1 2 3 4] >>',
+    // A circle with none of them, so the resolved defaults are read.
+    '<< /Type /Annot /Subtype /Circle /Rect [300 620 400 680] /F 4 /NM (a-plain-circle) >>',
+    // A /BE that is present and draws nothing. The wire domain for
+    // cloudyIntensity is a positive number or null, so a zero has to
+    // normalize to null rather than leak a value no schema admits, and no
+    // other annotation here can tell a reader that skips the check.
+    '<< /Type /Annot /Subtype /Square /Rect [300 540 400 600] /F 4 ' +
+      '/NM (a-degenerate-cloudy-square) /BE << /S /C /I 0 >> >>',
+    '<< /Type /Annot /Subtype /Polygon /Rect [300 520 420 600] /F 4 /NM (a-polygon) ' +
+      '/Vertices [300 520 420 520 360 600] /C [0 0 1] /IC [1 1 0] /BE << /S /C /I 1 >> >>',
+    '<< /Type /Annot /Subtype /PolyLine /Rect [300 420 420 500] /F 4 /NM (a-polyline) ' +
+      '/Vertices [300 420 360 500 420 420] /LE [/OpenArrow /Diamond] >>',
+    '<< /Type /Annot /Subtype /Line /Rect [450 420 560 520] /F 4 /NM (a-line) ' +
+      '/L [450 420 560 520] /LE [/Circle /ClosedArrow] /C [1 0 1] /BS << /W 2 >> >>',
+    // Two pen strokes, so a reader that returned only the first is caught.
+    '<< /Type /Annot /Subtype /Ink /Rect [450 300 560 400] /F 4 /NM (a-highlighter) ' +
+      '/InkList [[450 300 480 340 510 300] [520 320 560 380]] /IT /InkHighlight /CA 0.3 >>',
+    '<< /Type /Annot /Subtype /Ink /Rect [450 200 560 280] /F 4 /NM (plain-ink) ' +
+      '/InkList [[450 200 560 280]] >>',
+  ];
+
+  return buildPdf([
+    Buffer.from('<< /Type /Catalog /Pages 2 0 R >>', 'latin1'),
+    Buffer.from(
+      '<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 612 792] >>',
+      'latin1',
+    ),
+    Buffer.from(
+      '<< /Type /Page /Parent 2 0 R /Contents 4 0 R /Resources << >> /Annots [' +
+        annots.join(' ') +
+        '] >>',
+      'latin1',
+    ),
+    stream('', content),
+  ]);
+}
+
+/**
  * A document whose Info dictionary exercises every metadata distinction.
  *
  * `metadata.read` has to tell three states apart: a key that is absent, a key
@@ -813,6 +897,7 @@ const outputs = [
   ['rich_metadata.pdf', richMetadata()],
   ['page_actions.pdf', pageActions()],
   ['annotation_base.pdf', annotationBase()],
+  ['annotation_kinds.pdf', annotationKinds()],
   ['document_actions.pdf', documentActions()],
   ['reverse_and_gapped_text.pdf', reverseAndGappedText(font)],
 

@@ -1,0 +1,31 @@
+%PDF-1.7
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 612 792] >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /Contents 4 0 R /Resources << >> /Annots [<< /Type /Annot /Subtype /Highlight /Rect [72 670 200 720] /F 4 /NM (a-highlight) /QuadPoints [72 720 200 720 72 700 200 700 72 690 160 690 72 670 160 670] /CA 0.4 >> << /Type /Annot /Subtype /Underline /Rect [72 620 200 640] /F 4 /NM (an-underline) /QuadPoints [72 640 200 640 72 620 200 620] /C [0 0 1] >> << /Type /Annot /Subtype /Squiggly /Rect [72 600 200 620] /F 4 /NM (a-squiggly) /QuadPoints [72 620 200 620 72 600 200 600] >> << /Type /Annot /Subtype /StrikeOut /Rect [72 580 200 600] /F 4 /NM (an-edit-strikeout) /QuadPoints [72 600 200 600 72 580 200 580] /IT /StrikeOutTextEdit >> << /Type /Annot /Subtype /StrikeOut /Rect [72 560 200 580] /F 4 /NM (a-plain-strikeout) /QuadPoints [72 580 200 580 72 560 200 560] >> << /Type /Annot /Subtype /Square /Rect [300 700 400 760] /F 4 /NM (a-decorated-square) /C [1 0 0] /IC [0 1 0] /CA 0.8 /BS << /W 3 /S /D /D [4 2] >> /BE << /S /C /I 2 >> /RD [1 2 3 4] >> << /Type /Annot /Subtype /Circle /Rect [300 620 400 680] /F 4 /NM (a-plain-circle) >> << /Type /Annot /Subtype /Square /Rect [300 540 400 600] /F 4 /NM (a-degenerate-cloudy-square) /BE << /S /C /I 0 >> >> << /Type /Annot /Subtype /Polygon /Rect [300 520 420 600] /F 4 /NM (a-polygon) /Vertices [300 520 420 520 360 600] /C [0 0 1] /IC [1 1 0] /BE << /S /C /I 1 >> >> << /Type /Annot /Subtype /PolyLine /Rect [300 420 420 500] /F 4 /NM (a-polyline) /Vertices [300 420 360 500 420 420] /LE [/OpenArrow /Diamond] >> << /Type /Annot /Subtype /Line /Rect [450 420 560 520] /F 4 /NM (a-line) /L [450 420 560 520] /LE [/Circle /ClosedArrow] /C [1 0 1] /BS << /W 2 >> >> << /Type /Annot /Subtype /Ink /Rect [450 300 560 400] /F 4 /NM (a-highlighter) /InkList [[450 300 480 340 510 300] [520 320 560 380]] /IT /InkHighlight /CA 0.3 >> << /Type /Annot /Subtype /Ink /Rect [450 200 560 280] /F 4 /NM (plain-ink) /InkList [[450 200 560 280]] >>] >>
+endobj
+4 0 obj
+<<  /Length 19 >>
+stream
+72 72 200 100 re
+f
+
+endstream
+endobj
+xref
+0 5
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000145 00000 n 
+0000002082 00000 n 
+trailer
+<< /Size 5 /Root 1 0 R >>
+startxref
+2152
+%%EOF

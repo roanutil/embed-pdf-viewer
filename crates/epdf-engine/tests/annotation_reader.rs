@@ -11,12 +11,12 @@
 //! every time a subtype reader lands, and the diff under review would be the
 //! vector rather than the behaviour.
 //!
-//! So the comparison is in two halves. The base shell is compared field for
-//! field, because it is ported. The subtype half is compared by asserting
-//! that every subtype in `FALLS_BACK_TO_UNSUPPORTED` reads as `unsupported`
-//! here and that nothing else does. When a reader lands, its subtype leaves
-//! that list, this test fails, and the only way to make it pass is to widen
-//! the comparison to that subtype's fields.
+//! So the comparison is drawn along one line, `FALLS_BACK_TO_UNSUPPORTED`. A
+//! subtype not on that list is compared WHOLE, every field. One on it is
+//! compared as a base shell and additionally asserted to read as
+//! `unsupported`. When a reader lands its subtype leaves the list, and the
+//! only way to make this pass again is for that subtype's whole DTO to
+//! agree.
 
 use std::collections::BTreeSet;
 
@@ -153,10 +153,18 @@ fn base_of(dto: &serde_json::Value, what: &str) -> serde_json::Map<String, serde
     all.into_iter().filter(|(key, _)| BASE_FIELDS.contains(&key.as_str())).collect()
 }
 
+/// Whether this build produces a subtype's own fields, or only the shell.
+fn is_ported(subtype: &str) -> bool {
+    subtype == "unsupported"
+        || !FALLS_BACK_TO_UNSUPPORTED.iter().any(|listed| listed.as_str() == subtype)
+}
+
 #[test]
-fn the_base_shell_agrees_with_the_typescript_engine() {
+fn the_reads_agree_with_the_typescript_engine() {
     let file = load();
-    assert!(file.cases.len() >= 3, "the corpus shrank");
+    assert!(file.cases.len() >= 4, "the corpus shrank");
+    let mut compared_whole = 0usize;
+    let mut compared_shell = 0usize;
 
     for case in &file.cases {
         let actual = read(case);
@@ -182,10 +190,38 @@ fn the_base_shell_agrees_with_the_typescript_engine() {
                 mine_annotations.iter().zip(&theirs.annotations).enumerate()
             {
                 let what = format!("{}: page {page_index} annotation {index}", case.name);
-                assert_eq!(base_of(mine, &what), base_of(theirs, &what), "{what}: {}", case.covers,);
+                let subtype = theirs["subtype"].as_str().expect("a subtype");
+
+                if is_ported(subtype) {
+                    compared_whole += 1;
+                    assert_eq!(
+                        canonical_numbers(mine),
+                        canonical_numbers(theirs),
+                        "{what} is {subtype}, which is ported: {}",
+                        case.covers,
+                    );
+                } else {
+                    compared_shell += 1;
+                    assert_eq!(
+                        base_of(mine, &what),
+                        base_of(theirs, &what),
+                        "{what} is {subtype}, compared as a shell: {}",
+                        case.covers,
+                    );
+                    assert_eq!(
+                        mine["subtype"].as_str(),
+                        Some("unsupported"),
+                        "{what} is {subtype} and has no reader, so it should read as \
+                         unsupported",
+                    );
+                }
             }
         }
     }
+
+    // Both arms have to be exercised, or one of them is checking nothing.
+    assert!(compared_whole > 0, "no annotation in the corpus has a ported subtype");
+    assert!(compared_shell > 0, "no annotation in the corpus has an unported subtype");
 }
 
 #[test]
@@ -223,81 +259,27 @@ fn the_page_state_agrees_including_the_weak_flag() {
 }
 
 #[test]
-fn the_subtypes_that_read_as_unsupported_are_exactly_the_unported_ones() {
-    let file = load();
-    let unported: BTreeSet<&str> = FALLS_BACK_TO_UNSUPPORTED.iter().map(|s| s.as_str()).collect();
-    let mut seen: BTreeSet<String> = BTreeSet::new();
-
-    for case in &file.cases {
-        let actual = read(case);
-        for (page_index, (mine, theirs)) in
-            actual["pages"].as_array().expect("pages").iter().zip(&case.pages).enumerate()
-        {
-            for (index, (mine, theirs)) in mine["annotations"]
-                .as_array()
-                .expect("annotations")
-                .iter()
-                .zip(&theirs.annotations)
-                .enumerate()
-            {
-                let their_subtype = theirs["subtype"].as_str().expect("a subtype").to_string();
-                let my_subtype = mine["subtype"].as_str().expect("a subtype");
-                seen.insert(their_subtype.clone());
-
-                if their_subtype == "unsupported" {
-                    // The one subtype that IS ported, so the whole DTO is
-                    // compared rather than only the shell.
-                    assert_eq!(
-                        canonical_numbers(mine),
-                        canonical_numbers(theirs),
-                        "{}: page {page_index} annotation {index} is unsupported on both \
-                         sides and should agree completely",
-                        case.name,
-                    );
-                    continue;
-                }
-
-                assert!(
-                    unported.contains(their_subtype.as_str()),
-                    "{}: page {page_index} annotation {index} is {their_subtype}, which is no \
-                     longer in FALLS_BACK_TO_UNSUPPORTED: widen this comparison to its fields",
-                    case.name,
-                );
-                assert_eq!(
-                    my_subtype, "unsupported",
-                    "{}: page {page_index} annotation {index} is {their_subtype} and has no \
-                     reader, so it should read as unsupported",
-                    case.name,
-                );
-            }
-        }
-    }
-
-    // The corpus has to actually exercise the fallback and the real reader,
-    // or the assertions above are vacuous.
-    assert!(seen.contains("unsupported"), "no annotation in the corpus is unsupported");
-    assert!(
-        seen.iter().any(|s| unported.contains(s.as_str())),
-        "no annotation in the corpus has an unported subtype",
-    );
-}
-
-#[test]
-fn every_subtype_is_either_ported_or_listed() {
-    // The list is the thing the comparison above trusts, so it is checked
-    // against the catalog rather than against itself. `unsupported` is absent
-    // from it because for that subtype the fallback IS the reader.
+fn the_unported_list_names_real_subtypes_and_does_not_repeat() {
+    // The list is what the comparison above draws its line with, so it is
+    // checked against the catalog rather than against itself. `unsupported`
+    // must never appear on it: for that subtype the fallback IS the reader,
+    // and listing it would turn the whole-DTO comparison into a shell one for
+    // the one subtype that is fully ported.
     let listed: BTreeSet<&str> = FALLS_BACK_TO_UNSUPPORTED.iter().map(|s| s.as_str()).collect();
     assert_eq!(listed.len(), FALLS_BACK_TO_UNSUPPORTED.len(), "the list repeats a subtype");
+    assert!(!listed.contains("unsupported"), "unsupported is not an unported subtype");
 
-    for subtype in epdf_engine::features::annotation::subtype::ANNOTATION_SUBTYPES {
-        let expected = subtype != AnnotationSubtype::Unsupported;
-        assert_eq!(
-            listed.contains(subtype.as_str()),
-            expected,
-            "{subtype:?} is on the wrong side of the ported line",
-        );
+    let catalog: BTreeSet<&str> = epdf_engine::features::annotation::subtype::ANNOTATION_SUBTYPES
+        .iter()
+        .map(|s| s.as_str())
+        .collect();
+    for name in &listed {
+        assert!(catalog.contains(name), "{name} is not an annotation subtype");
     }
+    assert!(
+        !listed.contains(AnnotationSubtype::Highlight.as_str()),
+        "highlight has a reader and should have left the list",
+    );
 }
 
 #[test]

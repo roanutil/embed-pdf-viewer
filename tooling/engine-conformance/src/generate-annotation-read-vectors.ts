@@ -49,6 +49,12 @@ const CASES: readonly ReadCase[] = [
       'Every distinction the base shell makes: an indirect annotation, a direct one with /NM, a direct one without, the three /RT cases, present-but-empty against absent strings, /EMBD_Metadata, a reversed /Rect, and a /Sound that no reader claims.',
   },
   {
+    name: 'kinds',
+    fixture: 'tooling/engine-conformance/fixtures/annotation_kinds.pdf',
+    covers:
+      'One annotation per geometry subtype, paired so each resolved default sits beside an explicit entry: a decorated square against a bare circle, a strikeout with /IT against one without, highlighter ink against pen ink, and a highlight with no /C against an underline with one.',
+  },
+  {
     name: 'no-annotations',
     fixture: 'tooling/engine-conformance/fixtures/rich_metadata.pdf',
     covers:
