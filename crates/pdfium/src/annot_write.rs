@@ -212,6 +212,16 @@ impl Annotation<'_> {
         Ok(unsafe { pdfium_sys::EPDFAnnot_SetIntent(self.as_raw(), intent.as_ptr()) != 0 })
     }
 
+    /// `/Name`, as an `FPDF_ANNOT_NAME` code.
+    ///
+    /// Which block of that enum a code belongs to depends on the subtype,
+    /// exactly as on the read side: this layer passes the integer through and
+    /// the engine's vocabulary decides what it means.
+    pub fn set_name(&self, name: i32) -> bool {
+        // SAFETY: the handle is live.
+        unsafe { pdfium_sys::EPDFAnnot_SetName(self.as_raw(), name) != 0 }
+    }
+
     /// Append one quad to `/QuadPoints`.
     pub fn append_quad_point(&self, quad: QuadF) -> bool {
         let quad = pdfium_sys::FS_QUADPOINTSF {

@@ -19,12 +19,13 @@ use serde::{Deserialize, Serialize};
 use crate::dto::Patch;
 
 use crate::features::annotation::flags::AnnotationFlags;
+use crate::features::annotation::intent::CaretIntent;
 use crate::features::annotation::intent::InkIntent;
 use crate::features::annotation::intent::StrikeoutIntent;
 use crate::features::annotation::read::shape::PdfRectDifferences;
 use crate::features::annotation::read::style::Color;
-use crate::features::annotation::vocabulary::LineEndings;
 use crate::features::annotation::vocabulary::{AnnotationBorderStyle, BlendMode};
+use crate::features::annotation::vocabulary::{LineEndings, NoteIcon};
 use crate::geom::{InkList, LinePoints, PdfPoint, PdfQuad, PdfRect};
 use crate::identity::AnnotationRef;
 
@@ -178,6 +179,65 @@ pub enum AnnotationDraftKind {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         intent: Option<InkIntent>,
     },
+    Text {
+        #[serde(flatten)]
+        fields: TextDraftFields,
+    },
+    Caret {
+        #[serde(flatten)]
+        fields: CaretDraftFields,
+    },
+}
+
+/// What a sticky-note draft carries.
+///
+/// The visual is entirely the generator's: the closing bake draws the 20x20
+/// note icon from `/C` and `/Name`, so nothing here describes a shape. What
+/// it records is which icon and what the review thread has decided.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TextDraftFields {
+    pub rect: PdfRect,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub color: Option<Color>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub opacity: Option<f64>,
+    /// `/Name`. Defaults to the plain note, which is what a reader reports
+    /// for an annotation with no `/Name` at all.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub icon: Option<NoteIcon>,
+    /// `/StateModel`. A `String` rather than an enum on purpose: Acrobat
+    /// lets a workflow register its own model, and the reader passes an
+    /// unknown one through, so the writer has to be able to write one back.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub state_model: Option<String>,
+    /// `/State`, on the same terms.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub state: Option<String>,
+}
+
+/// What a caret draft carries.
+///
+/// A caret has no geometry beyond its `/Rect` and the `/RD` inset of the
+/// drawn symbol from it. It is a BOX kind, so its rotation is the pair.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CaretDraftFields {
+    pub rect: PdfRect,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub color: Option<Color>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub opacity: Option<f64>,
+    /// `/IT`, for the caret half of a replace-text edit.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub intent: Option<CaretIntent>,
+    /// `/RD`.
+    #[serde(default, skip_serializing_if = "Patch::is_keep")]
+    pub rect_differences: Patch<PdfRectDifferences>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rotation: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub unrotated_rect: Option<PdfRect>,
 }
 
 impl AnnotationDraftKind {
@@ -195,6 +255,8 @@ impl AnnotationDraftKind {
             Self::Polyline { .. } => S::Polyline,
             Self::Line { .. } => S::Line,
             Self::Ink { .. } => S::Ink,
+            Self::Text { .. } => S::Text,
+            Self::Caret { .. } => S::Caret,
         }
     }
 }

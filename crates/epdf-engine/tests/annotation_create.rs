@@ -270,6 +270,14 @@ fn a_draft_that_cannot_be_written_is_refused_before_anything_is_written() {
             }),
             "a rotation with no logical box to turn",
         ),
+        (
+            serde_json::json!({
+                "subtype": "text",
+                "rect": { "left": 10.0, "bottom": 10.0, "right": 30.0, "top": 30.0 },
+                "state": "accepted",
+            }),
+            "a review state belonging to no model",
+        ),
     ] {
         let mut refused_case = Case {
             name: format!("refusal: {what}"),
@@ -477,6 +485,91 @@ fn a_created_annotation_survives_a_save_and_reopen() {
     assert_eq!(rendered.appearances.len(), 1, "the /AP did not survive the save");
 }
 
+/// Open the fixture, create one annotation, and hand the caller the written
+/// annotation to inspect directly.
+///
+/// The DTO comparison cannot see everything a writer decides. Where the
+/// reader normalizes on the way back out, two different files read as the
+/// same DTO, and the one that is wrong is wrong for every OTHER reader.
+fn with_written<R>(
+    file: &VectorFile,
+    name: &str,
+    inspect: impl FnOnce(&pdfium::Annotation<'_>) -> R,
+) -> R {
+    let case =
+        file.cases.iter().find(|c| c.name == name).unwrap_or_else(|| panic!("no case {name}"));
+    let bytes = std::fs::read(test_support::workspace_root().join(&file.fixture))
+        .unwrap_or_else(|e| panic!("{name}: read {}: {e}", file.fixture));
+    let mut session = DocumentSession::new();
+    session.open_with(bytes, None, SessionAuthority::unrestricted()).expect("open");
+    let page_object_number =
+        PageObjectNumber::new(case.page_object_number).expect("a page object number");
+    let annotations = epdf_engine::features::annotation::read::page::read_page_annotations(
+        session.document().expect("open").document(),
+        0,
+        page_object_number,
+        &epdf_engine::revision::RevisionToken::new(SESSION, page_object_number, 0),
+        &mut epdf_engine::features::actions::vocabulary::ActionReadBudgetTracker::default(),
+        &CancelToken::never(),
+    )
+    .expect("the page lists");
+    let state = annotations.page_state;
+    let draft: AnnotationDraft =
+        serde_json::from_value(case.draft.clone()).expect("the draft decodes");
+
+    let owned = session.document().expect("open");
+    let page = owned.document().page(0).expect("page");
+    create_annotation(
+        owned.document(),
+        &page,
+        page_object_number,
+        &state,
+        &state,
+        &draft,
+        &AnnotationActor::default(),
+        &FixedClock(epdf_engine::clock::Timestamp::utc(1_700_000_000_000)),
+        &CancelToken::never(),
+    )
+    .unwrap_or_else(|e| panic!("{name}: create: {e}"));
+
+    // The fixture page starts empty, so the created annotation is the only
+    // one on it.
+    inspect(&page.annotation(0).expect("the created annotation"))
+}
+
+#[test]
+fn a_review_state_is_written_in_the_spelling_the_pdf_uses() {
+    // §12.5.6.3 names these with a capital. The reader passes an unknown
+    // spelling through verbatim, which is what makes a lowercase `/State`
+    // invisible on a round trip through this engine: `accepted` goes in,
+    // fails to match `Accepted` in the table on the way out, and is handed
+    // back as `accepted`. It reads correctly here and means nothing to
+    // Acrobat, so the assertion is against the dictionary.
+    let file = load();
+    for (name, model, state) in [
+        ("text-reviewed", Some("Review"), Some("Accepted")),
+        ("text-model-alone", Some("Marked"), None),
+        // A model nobody standardized is written exactly as it arrived.
+        // Normalizing it would be inventing a spelling for somebody else's
+        // vocabulary.
+        ("text-foreign-state", Some("LegalReview"), Some("AwaitingCounsel")),
+        ("text-defaults", None, None),
+    ] {
+        with_written(&file, name, |written| {
+            assert_eq!(
+                written.string_value("StateModel").expect("a dictionary read").as_deref(),
+                model,
+                "{name}: /StateModel",
+            );
+            assert_eq!(
+                written.string_value("State").expect("a dictionary read").as_deref(),
+                state,
+                "{name}: /State",
+            );
+        });
+    }
+}
+
 #[test]
 fn the_transform_keys_land_in_the_dictionary_and_not_only_in_the_dto() {
     // The reader normalizes a zero rotation back to absent, so the DTO
@@ -493,65 +586,29 @@ fn the_transform_keys_land_in_the_dictionary_and_not_only_in_the_dto() {
     ];
 
     for (name, rotation, has_box, has_dictionary) in expected {
-        let case = file.cases.iter().find(|c| c.name == name).expect(name);
-        let bytes = std::fs::read(test_support::workspace_root().join(&file.fixture))
-            .unwrap_or_else(|e| panic!("{name}: read {}: {e}", file.fixture));
-        let mut session = DocumentSession::new();
-        session.open_with(bytes, None, SessionAuthority::unrestricted()).expect("open");
-        let page_object_number =
-            PageObjectNumber::new(case.page_object_number).expect("a page object number");
-        let annotations = epdf_engine::features::annotation::read::page::read_page_annotations(
-            session.document().expect("open").document(),
-            0,
-            page_object_number,
-            &epdf_engine::revision::RevisionToken::new(SESSION, page_object_number, 0),
-            &mut epdf_engine::features::actions::vocabulary::ActionReadBudgetTracker::default(),
-            &CancelToken::never(),
-        )
-        .expect("the page lists");
-        let state = annotations.page_state;
-        let draft: AnnotationDraft =
-            serde_json::from_value(case.draft.clone()).expect("the draft decodes");
-
-        let owned = session.document().expect("open");
-        let page = owned.document().page(0).expect("page");
-        create_annotation(
-            owned.document(),
-            &page,
-            page_object_number,
-            &state,
-            &state,
-            &draft,
-            &AnnotationActor::default(),
-            &FixedClock(epdf_engine::clock::Timestamp::utc(1_700_000_000_000)),
-            &CancelToken::never(),
-        )
-        .unwrap_or_else(|e| panic!("{name}: create: {e}"));
-
-        // The fixture page starts empty, so the created annotation is the
-        // only one on it.
-        let written = page.annotation(0).expect("the created annotation");
-        assert_eq!(
-            written.has_embed_metadata(),
-            has_dictionary,
-            "{name}: the /EMBD_Metadata dictionary",
-        );
-        assert_eq!(
-            written.embed_metadata_number("Rotation").expect("a dictionary read"),
-            rotation,
-            "{name}: /Rotation",
-        );
-        assert_eq!(
-            written.embed_metadata_rect("UnrotatedRect").expect("a dictionary read").is_some(),
-            has_box,
-            "{name}: /UnrotatedRect",
-        );
-        if has_dictionary {
+        with_written(&file, name, |written| {
             assert_eq!(
-                written.embed_metadata_number("SchemaVersion").expect("a dictionary read"),
-                Some(1.0),
-                "{name}: /SchemaVersion is seeded with the first transform key",
+                written.has_embed_metadata(),
+                has_dictionary,
+                "{name}: the /EMBD_Metadata dictionary",
             );
-        }
+            assert_eq!(
+                written.embed_metadata_number("Rotation").expect("a dictionary read"),
+                rotation,
+                "{name}: /Rotation",
+            );
+            assert_eq!(
+                written.embed_metadata_rect("UnrotatedRect").expect("a dictionary read").is_some(),
+                has_box,
+                "{name}: /UnrotatedRect",
+            );
+            if has_dictionary {
+                assert_eq!(
+                    written.embed_metadata_number("SchemaVersion").expect("a dictionary read"),
+                    Some(1.0),
+                    "{name}: /SchemaVersion is seeded with the first transform key",
+                );
+            }
+        });
     }
 }

@@ -217,6 +217,20 @@ fn preflight(draft: &AnnotationDraft) -> Result<(), EngineError> {
             }
         }
         AnnotationDraftKind::Line { fields, .. } => normalized(&fields.rect)?,
+        AnnotationDraftKind::Text { fields } => {
+            normalized(&fields.rect)?;
+            // §12.5.6.3: a `/State` names a value WITHIN a model, so one
+            // without the other is a state nothing can interpret. The rule
+            // is draft-only. A patch may legitimately set one alone,
+            // because the other can already be on the annotation.
+            if fields.state.is_some() && fields.state_model.is_none() {
+                return Err(EngineError::with_message(
+                    EngineErrorCode::InvalidArg,
+                    "a text draft with a state needs a stateModel (ISO 32000 §12.5.6.3)",
+                ));
+            }
+        }
+        AnnotationDraftKind::Caret { fields } => normalized(&fields.rect)?,
         AnnotationDraftKind::Ink { fields, ink_list, .. } => {
             normalized(&fields.rect)?;
             // An ink annotation with no strokes draws nothing, and one with
@@ -253,6 +267,8 @@ fn opacity_of(kind: &AnnotationDraftKind) -> Option<f64> {
         | AnnotationDraftKind::Polyline { fields, .. } => fields.geometry.opacity,
         AnnotationDraftKind::Line { fields, .. } => fields.opacity,
         AnnotationDraftKind::Ink { fields, .. } => fields.opacity,
+        AnnotationDraftKind::Text { fields } => fields.opacity,
+        AnnotationDraftKind::Caret { fields } => fields.opacity,
     }
 }
 
@@ -378,7 +394,91 @@ fn apply_kind_draft(
             }
             super::transform::write_vertex_transform(annotation, option_patch(fields.rotation))
         }
+        AnnotationDraftKind::Text { fields } => apply_text(annotation, fields),
+        AnnotationDraftKind::Caret { fields } => apply_caret(annotation, fields),
     }
+}
+
+/// A sticky note.
+///
+/// Nothing here describes a shape. The generator bakes the icon from `/C`
+/// and `/Name`, and `/State` with `/StateModel` are dictionary-only
+/// (§12.5.6.3): they never reach the generator, so a note that has been
+/// accepted looks exactly like one that has not.
+fn apply_text(
+    annotation: &pdfium::Annotation<'_>,
+    fields: &super::draft::TextDraftFields,
+) -> Result<(), EngineError> {
+    use crate::features::annotation::state::{state_model_to_pdf, state_to_pdf};
+
+    set_rect(annotation, fields.rect)?;
+    set_color(
+        annotation,
+        AnnotationColorType::Color,
+        fields.color.unwrap_or(super::super::read::text::DEFAULT_NOTE_COLOR),
+    )?;
+    set_opacity(annotation, fields.opacity.unwrap_or(DEFAULT_OPACITY))?;
+    let icon = fields.icon.unwrap_or(crate::features::annotation::vocabulary::DEFAULT_NOTE_ICON);
+    if !annotation.set_name(icon.code()) {
+        return Err(EngineError::with_message(
+            EngineErrorCode::Unknown,
+            "EPDFAnnot_SetName refused the icon",
+        ));
+    }
+    // The model lands first. Either order produces the same dictionary, and
+    // this one means a reader that saw a partial write would find a model
+    // with no state rather than a state belonging to no model.
+    if let Some(model) = fields.state_model.as_deref() {
+        write(
+            annotation.set_string_value("StateModel", &state_model_to_pdf(model)),
+            "/StateModel",
+        )?;
+    }
+    if let Some(state) = fields.state.as_deref() {
+        write(annotation.set_string_value("State", &state_to_pdf(state)), "/State")?;
+    }
+    Ok(())
+}
+
+/// A caret: a `/Rect`, the inset of the drawn symbol from it, and an `/IT`
+/// saying whether it is half of a replace-text edit.
+fn apply_caret(
+    annotation: &pdfium::Annotation<'_>,
+    fields: &super::draft::CaretDraftFields,
+) -> Result<(), EngineError> {
+    set_rect(annotation, fields.rect)?;
+    // Before the styling, so the bake at the end of the mutation sees it.
+    super::transform::write_box_transform(
+        annotation,
+        &super::transform::AnnotationTransform {
+            rotation: option_patch(fields.rotation),
+            unrotated_rect: option_patch(fields.unrotated_rect),
+        },
+        || Ok(false),
+    )?;
+    set_color(
+        annotation,
+        AnnotationColorType::Color,
+        fields.color.unwrap_or(super::super::read::caret::DEFAULT_CARET_COLOR),
+    )?;
+    set_opacity(annotation, fields.opacity.unwrap_or(DEFAULT_OPACITY))?;
+    if let Some(intent) = fields.intent {
+        write(annotation.set_intent(intent.name()), "/IT")?;
+    }
+    if let Some(rd) = fields.rect_differences.as_set().copied()
+        && !annotation.set_rectangle_differences(
+            rd.left as f32,
+            rd.bottom as f32,
+            rd.right as f32,
+            rd.top as f32,
+        )
+    {
+        return Err(EngineError::with_message(
+            EngineErrorCode::Unknown,
+            "EPDFAnnot_SetRectangleDifferences refused the margins",
+        ));
+    }
+    Ok(())
 }
 
 /// The styling a filled geometric kind carries, plus its advisory rotation.

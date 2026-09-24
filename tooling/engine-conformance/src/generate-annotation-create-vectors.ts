@@ -282,6 +282,83 @@ const CASES: readonly CreateCase[] = [
     },
   },
   {
+    name: 'text-defaults',
+    covers:
+      'A sticky note with nothing named. The icon and the yellow fill are written explicitly rather than left to the file, so a read reports the same thing a draft that named them would.',
+    draft: {
+      subtype: 'text',
+      rect: { left: 72, bottom: 600, right: 92, top: 620 },
+    },
+  },
+  {
+    name: 'text-reviewed',
+    covers:
+      'An icon other than the default, and the review pair. `/State` and `/StateModel` are dictionary-only, so a note that has been accepted is drawn exactly like one that has not.',
+    draft: {
+      subtype: 'text',
+      rect: { left: 110, bottom: 600, right: 130, top: 620 },
+      icon: 'help',
+      color: { r: 0, g: 160, b: 255 },
+      opacity: 0.8,
+      state: 'accepted',
+      stateModel: 'review',
+      contents: 'Looks right to me.',
+    },
+  },
+  {
+    name: 'text-model-alone',
+    covers:
+      'A state model with no state, which §12.5.6.3 allows: the model implies its own default. The reverse is refused, and that refusal is a draft-only rule.',
+    draft: {
+      subtype: 'text',
+      rect: { left: 150, bottom: 600, right: 170, top: 620 },
+      stateModel: 'marked',
+    },
+  },
+  {
+    name: 'text-foreign-state',
+    covers:
+      'A model nobody standardized. Acrobat lets a workflow register one, and the reader passes it through, so the writer has to be able to write it back rather than normalize it into a standard name.',
+    draft: {
+      subtype: 'text',
+      rect: { left: 190, bottom: 600, right: 210, top: 620 },
+      stateModel: 'LegalReview',
+      state: 'AwaitingCounsel',
+    },
+  },
+  {
+    name: 'caret-defaults',
+    covers: 'A caret with only a rect. The red mark is the engine-wide default.',
+    draft: {
+      subtype: 'caret',
+      rect: { left: 72, bottom: 540, right: 84, top: 560 },
+    },
+  },
+  {
+    name: 'caret-replace',
+    covers:
+      'The caret half of a replace-text edit, with the inset of the drawn symbol from its box.',
+    draft: {
+      subtype: 'caret',
+      rect: { left: 110, bottom: 540, right: 130, top: 570 },
+      intent: 'replace',
+      color: { r: 0, g: 0, b: 255 },
+      opacity: 0.5,
+      rectDifferences: { left: 2, bottom: 3, right: 4, top: 5 },
+    },
+  },
+  {
+    name: 'caret-rotated',
+    covers:
+      'A caret is a BOX kind, so its rotation is the pair and not the lone advisory scalar the vertex families carry.',
+    draft: {
+      subtype: 'caret',
+      rect: { left: 150, bottom: 530, right: 180, top: 570 },
+      rotation: 90,
+      unrotatedRect: { left: 155, bottom: 535, right: 175, top: 565 },
+    },
+  },
+  {
     name: 'highlight-cleared-strings',
     covers:
       'A draft that explicitly clears contents and subject. Setting a null value writes an EMPTY string rather than removing the key, so a writer that used the setter would produce a field that reads back as present-and-empty instead of absent.',
