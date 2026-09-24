@@ -20,6 +20,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { decodeSubmitFormFlags } from '../../../packages/engine/core/src/dto/PdfAction';
+import { actionTypeFromCode } from '../../../packages/engine/services/src/features/actions/ActionModelReader';
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const vectorsRoot = join(packageRoot, 'vectors', 'actions');
@@ -159,6 +160,18 @@ async function main(): Promise<void> {
     names.add(entry.name);
   }
 
+  const types = {
+    schemaVersion: SCHEMA_VERSION,
+    kind: 'actions.types',
+    // Every defined code, plus the ones around the edges. The shared
+    // vocabulary reaches page, annotation, field and catalog actions, so a
+    // code mapped differently is a divergence in four places at once.
+    cases: [-2, -1, ...Array.from({ length: 24 }, (_, i) => i)].map((code) => ({
+      code,
+      type: actionTypeFromCode(code),
+    })),
+  };
+
   const payload = {
     schemaVersion: SCHEMA_VERSION,
     kind: 'actions.submitFlags',
@@ -173,7 +186,9 @@ async function main(): Promise<void> {
     }),
   };
 
-  const differed = await emit('submit-flags.json', `${JSON.stringify(payload, null, 2)}\n`, check);
+  let differed = await emit('submit-flags.json', `${JSON.stringify(payload, null, 2)}\n`, check);
+  differed =
+    (await emit('types.json', `${JSON.stringify(types, null, 2)}\n`, check)) || differed;
   if (check && differed) {
     process.stderr.write(
       '\nAction vectors differ. Regenerate with:\n' +

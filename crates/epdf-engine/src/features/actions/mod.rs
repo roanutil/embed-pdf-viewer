@@ -17,3 +17,4 @@
 //! model is not ported yet.
 
 pub mod submit_flags;
+pub mod vocabulary;

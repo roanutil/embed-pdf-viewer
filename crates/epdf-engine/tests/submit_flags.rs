@@ -132,3 +132,137 @@ fn the_raw_word_is_carried_through_unchanged() {
         assert_eq!(decode_submit_form_flags(raw).raw, raw);
     }
 }
+
+// --- G6: the shared action vocabulary.
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct TypeFile {
+    schema_version: u32,
+    kind: String,
+    cases: Vec<TypeCase>,
+}
+
+#[derive(Debug, Deserialize)]
+struct TypeCase {
+    code: i32,
+    #[serde(rename = "type")]
+    action_type: String,
+}
+
+#[test]
+fn action_type_codes_agree_with_typescript() {
+    use epdf_engine::features::actions::vocabulary::ActionType;
+
+    // The shared vocabulary reaches page actions, annotation actions, field
+    // actions and the document catalog, so a code mapped differently is a
+    // divergence in four places at once.
+    let path = test_support::corpus::vectors_dir("actions").join("types.json");
+    let text =
+        std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
+    let file: TypeFile = serde_json::from_str(&text).expect("types.json");
+    assert_eq!(file.schema_version, 1, "vector envelope moved");
+    assert_eq!(file.kind, "actions.types");
+    assert!(file.cases.len() >= 26, "the corpus shrank");
+
+    for case in &file.cases {
+        assert_eq!(
+            ActionType::from_code(case.code).as_str(),
+            case.action_type,
+            "code {}",
+            case.code,
+        );
+    }
+}
+
+#[test]
+fn an_unrecognized_code_is_unknown_rather_than_an_error() {
+    // A newer PDFium adding an action type must not make a document
+    // unreadable, and every consumer already handles Unknown.
+    use epdf_engine::features::actions::vocabulary::ActionType;
+
+    for code in [i32::MIN, -99, 19, 1_000, i32::MAX] {
+        assert_eq!(ActionType::from_code(code), ActionType::Unknown, "code {code}");
+    }
+}
+
+#[test]
+fn the_invalid_node_sentinel_is_recognized_in_both_widths() {
+    // EPDF_ACTION_NODE_INVALID reaches a caller as -1 or as the unsigned
+    // maximum, depending on how the boundary widened it. A reader that knew
+    // only one would walk off the end of a tree.
+    use epdf_engine::features::actions::vocabulary::is_valid_action_node_id;
+
+    assert!(!is_valid_action_node_id(-1));
+    assert!(!is_valid_action_node_id(0xffff_ffff));
+    assert!(is_valid_action_node_id(0));
+    assert!(is_valid_action_node_id(1));
+    assert!(is_valid_action_node_id(0xffff_fffe));
+}
+
+#[test]
+fn warning_flags_decode_and_keep_what_they_do_not_know() {
+    use epdf_engine::features::actions::vocabulary::{ActionWarning, ActionWarningFlags};
+
+    assert_eq!(ActionWarningFlags(0).to_warnings(), Vec::new());
+    assert_eq!(ActionWarningFlags(0x1).to_warnings(), [ActionWarning::CycleDropped]);
+    assert_eq!(ActionWarningFlags(0x2).to_warnings(), [ActionWarning::MalformedNext]);
+    assert_eq!(ActionWarningFlags(0x4).to_warnings(), [ActionWarning::Incomplete]);
+    assert_eq!(
+        ActionWarningFlags(0x7).to_warnings(),
+        [ActionWarning::CycleDropped, ActionWarning::MalformedNext, ActionWarning::Incomplete,]
+    );
+
+    // A bit this build does not know is not reported as a warning and is not
+    // lost either: the raw word is what lets a consumer on a newer runtime
+    // see that something was flagged.
+    let future = ActionWarningFlags(0x8000_0001);
+    assert_eq!(future.to_warnings(), [ActionWarning::CycleDropped]);
+    assert_eq!(future.0, 0x8000_0001);
+}
+
+#[test]
+fn a_budget_stops_granting_once_it_is_spent() {
+    use epdf_engine::features::actions::vocabulary::{ActionReadBudget, ActionReadBudgetTracker};
+
+    let mut tracker = ActionReadBudgetTracker::new(ActionReadBudget {
+        max_models: 2,
+        max_nodes: 3,
+        max_script_code_units: 10,
+        max_target_entries: 2,
+        max_payload_code_units: 5,
+    });
+
+    assert!(tracker.take_model());
+    assert!(tracker.take_model());
+    assert!(!tracker.take_model(), "a third model was granted against a budget of two");
+
+    for _ in 0..3 {
+        assert!(tracker.take_node());
+    }
+    assert!(!tracker.take_node());
+
+    // A single request larger than the whole budget is refused rather than
+    // partly granted, since the caller is about to allocate the whole thing.
+    assert!(!tracker.take_script(11));
+    assert!(!tracker.take_payload(6));
+    assert!(tracker.take_targets(2));
+    assert!(!tracker.take_targets(1));
+}
+
+#[test]
+fn an_exhausted_budget_stays_exhausted() {
+    use epdf_engine::features::actions::vocabulary::{ActionReadBudget, ActionReadBudgetTracker};
+
+    // A counter that wrapped would start granting again, which is how a
+    // budget becomes an invitation.
+    let mut tracker = ActionReadBudgetTracker::new(ActionReadBudget {
+        max_payload_code_units: 4,
+        ..ActionReadBudget::default()
+    });
+    assert!(tracker.take_payload(4));
+    for _ in 0..1_000 {
+        assert!(!tracker.take_payload(u32::MAX));
+    }
+    assert!(!tracker.take_payload(1));
+}

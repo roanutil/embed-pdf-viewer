@@ -1,0 +1,110 @@
+{
+  "schemaVersion": 1,
+  "kind": "actions.types",
+  "cases": [
+    {
+      "code": -2,
+      "type": "unknown"
+    },
+    {
+      "code": -1,
+      "type": "unknown"
+    },
+    {
+      "code": 0,
+      "type": "unknown"
+    },
+    {
+      "code": 1,
+      "type": "goto"
+    },
+    {
+      "code": 2,
+      "type": "goto-remote"
+    },
+    {
+      "code": 3,
+      "type": "goto-embedded"
+    },
+    {
+      "code": 4,
+      "type": "launch"
+    },
+    {
+      "code": 5,
+      "type": "thread"
+    },
+    {
+      "code": 6,
+      "type": "uri"
+    },
+    {
+      "code": 7,
+      "type": "sound"
+    },
+    {
+      "code": 8,
+      "type": "movie"
+    },
+    {
+      "code": 9,
+      "type": "hide"
+    },
+    {
+      "code": 10,
+      "type": "named"
+    },
+    {
+      "code": 11,
+      "type": "submit-form"
+    },
+    {
+      "code": 12,
+      "type": "reset-form"
+    },
+    {
+      "code": 13,
+      "type": "import-data"
+    },
+    {
+      "code": 14,
+      "type": "javascript"
+    },
+    {
+      "code": 15,
+      "type": "set-ocg-state"
+    },
+    {
+      "code": 16,
+      "type": "rendition"
+    },
+    {
+      "code": 17,
+      "type": "transition"
+    },
+    {
+      "code": 18,
+      "type": "goto-3d-view"
+    },
+    {
+      "code": 19,
+      "type": "unknown"
+    },
+    {
+      "code": 20,
+      "type": "unknown"
+    },
+    {
+      "code": 21,
+      "type": "unknown"
+    },
+    {
+      "code": 22,
+      "type": "unknown"
+    },
+    {
+      "code": 23,
+      "type": "unknown"
+    }
+  ]
+}
