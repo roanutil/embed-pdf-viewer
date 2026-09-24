@@ -504,3 +504,114 @@ fn literal_search_agrees_with_typescript() {
     }
     assert!(failures.is_empty(), "literal search divergence:\n  {}", failures.join("\n  "));
 }
+
+// --- G5: the snippet around a match.
+
+#[derive(Debug, Deserialize)]
+struct SnippetFile {
+    #[serde(rename = "schemaVersion")]
+    schema_version: u32,
+    kind: String,
+    cases: Vec<SnippetCase>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SnippetCase {
+    name: String,
+    covers: String,
+    text: String,
+    match_start: u32,
+    match_length: u32,
+    context: u32,
+    snippet: SnippetVector,
+}
+
+#[derive(Debug, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+struct SnippetVector {
+    text: String,
+    match_start: u32,
+    match_length: u32,
+}
+
+#[test]
+fn snippets_agree_with_typescript() {
+    use epdf_engine::features::search::fold::OriginalRange;
+    use epdf_engine::features::search::snippet::build_snippet;
+
+    let path = test_support::workspace_root()
+        .join("tooling/engine-conformance/vectors/search/snippet.json");
+    let text =
+        std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
+    let file: SnippetFile = serde_json::from_str(&text).expect("snippet.json");
+    assert_eq!(file.schema_version, 1, "vector envelope moved");
+    assert_eq!(file.kind, "search.snippet");
+    assert!(file.cases.len() >= 8, "the corpus shrank");
+
+    let mut failures: Vec<String> = Vec::new();
+    for case in &file.cases {
+        let actual = build_snippet(
+            &case.text,
+            OriginalRange { start: case.match_start, length: case.match_length },
+            case.context,
+        );
+        let actual = SnippetVector {
+            text: actual.text,
+            match_start: actual.match_start,
+            match_length: actual.match_length,
+        };
+        if actual != case.snippet {
+            failures.push(format!(
+                "{}: produced {:?}, TypeScript said {:?} ({})",
+                case.name, actual, case.snippet, case.covers,
+            ));
+        }
+    }
+    assert!(failures.is_empty(), "snippet divergence:\n  {}", failures.join("\n  "));
+}
+
+#[test]
+fn a_snippet_locates_its_match_inside_itself() {
+    // The property a highlighter depends on, checked as a property rather
+    // than through the vectors: the reported offset must address the match
+    // within the text returned, or the highlight lands somewhere else.
+    use epdf_engine::features::search::fold::OriginalRange;
+    use epdf_engine::features::search::snippet::build_snippet;
+
+    let path = test_support::workspace_root()
+        .join("tooling/engine-conformance/vectors/search/snippet.json");
+    let file: SnippetFile =
+        serde_json::from_str(&std::fs::read_to_string(&path).expect("read")).expect("parse");
+
+    for case in &file.cases {
+        let snippet = build_snippet(
+            &case.text,
+            OriginalRange { start: case.match_start, length: case.match_length },
+            case.context,
+        );
+        let units: Vec<u16> = snippet.text.encode_utf16().collect();
+        let end = snippet.match_start + snippet.match_length;
+        assert!(
+            end as usize <= units.len(),
+            "{}: match [{}, +{}) runs past a {}-unit snippet",
+            case.name,
+            snippet.match_start,
+            snippet.match_length,
+            units.len(),
+        );
+
+        // And the characters there are the matched ones, with whitespace
+        // flattened the same way the snippet flattened them.
+        let page: Vec<u16> = case.text.encode_utf16().collect();
+        let matched: String = String::from_utf16_lossy(
+            &page[case.match_start as usize..(case.match_start + case.match_length) as usize],
+        )
+        .chars()
+        .map(|c| if c.is_whitespace() { ' ' } else { c })
+        .collect();
+        let in_snippet =
+            String::from_utf16_lossy(&units[snippet.match_start as usize..end as usize]);
+        assert_eq!(in_snippet, matched, "{}: the offset does not address the match", case.name);
+    }
+}

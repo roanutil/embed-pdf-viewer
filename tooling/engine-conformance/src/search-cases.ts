@@ -203,6 +203,96 @@ export const LITERAL_CASES: readonly LiteralCase[] = [
   },
 ] as const;
 
+/** A snippet request: a page, a match inside it, and the context width. */
+export interface SnippetCase {
+  readonly name: string;
+  readonly covers: string;
+  readonly text: string;
+  readonly matchStart: number;
+  readonly matchLength: number;
+  readonly context: number;
+}
+
+/**
+ * The excerpt shown around a match.
+ *
+ * The rules interact at the edges, which is where the cases sit: a window that
+ * reaches the start of the page, one that finds no whitespace to cut at, and
+ * one whose boundary lands inside a surrogate pair.
+ */
+const LOREM =
+  'The quick brown fox jumps over the lazy dog. Pack my box with five dozen liquor jugs. How vexingly quick daft zebras jump.';
+
+export const SNIPPET_CASES: readonly SnippetCase[] = [
+  {
+    name: 'middle-of-a-long-page',
+    covers: 'Context on both sides, both trimmed to a word boundary.',
+    text: LOREM,
+    matchStart: 60,
+    matchLength: 3,
+    context: 20,
+  },
+  {
+    name: 'match-at-the-very-start',
+    covers: 'No leading context to trim, so the snippet starts at zero.',
+    text: LOREM,
+    matchStart: 0,
+    matchLength: 3,
+    context: 20,
+  },
+  {
+    name: 'match-at-the-very-end',
+    covers: 'No trailing context, so the snippet ends at the page end.',
+    text: LOREM,
+    matchStart: LOREM.length - 5,
+    matchLength: 5,
+    context: 20,
+  },
+  {
+    name: 'whole-page-inside-the-context',
+    covers: 'The window covers everything, so neither side trims.',
+    text: 'short page',
+    matchStart: 6,
+    matchLength: 4,
+    context: 100,
+  },
+  {
+    name: 'no-whitespace-to-cut-at',
+    covers:
+      'One very long token: the rule accepts a mid-word cut rather than widening the window.',
+    text: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaTARGETaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    matchStart: 30,
+    matchLength: 6,
+    context: 10,
+  },
+  {
+    name: 'zero-context',
+    covers: 'The snippet is the match.',
+    text: LOREM,
+    matchStart: 4,
+    matchLength: 5,
+    context: 0,
+  },
+  {
+    name: 'whitespace-flattened-length-preserving',
+    covers:
+      'Newlines and tabs become single spaces one for one, so the reported match offset stays valid.',
+    text: 'first line\n\tsecond\u00a0line here and more',
+    matchStart: 12,
+    matchLength: 6,
+    context: 10,
+  },
+  {
+    name: 'boundary-inside-a-surrogate-pair',
+    covers:
+      'The window edge lands between the halves of an astral character, and must move rather than split it.',
+    text: `aaaa\u{1F600}aaaaTARGETaaaa\u{1F600}aaaa`,
+    matchStart: 10,
+    matchLength: 6,
+    context: 5,
+  },
+] as const;
+
 export const REGEX_CASES: readonly RegexCase[] = [
   // --- Dialect membership: what the validator refuses before anything runs.
   {

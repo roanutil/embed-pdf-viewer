@@ -23,15 +23,18 @@ import {
   foldOptionsFor,
   matchLiteral,
 } from '../../../packages/engine/core/src/search/literal';
+import { buildSnippet } from '../../../packages/engine/core/src/search/snippet';
 import { matchRegex, validateSearchRegex } from '../../../packages/engine/core/src/search/regex';
 
 import {
   FOLD_CASES,
   LITERAL_CASES,
   REGEX_CASES,
+  SNIPPET_CASES,
   type FoldCase,
   type LiteralCase,
   type RegexCase,
+  type SnippetCase,
 } from './search-cases';
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -104,6 +107,17 @@ function runLiteralCase(entry: LiteralCase): LiteralResult {
   return { ...entry, matches: matchLiteral(haystack, query) };
 }
 
+function runSnippetCase(entry: SnippetCase) {
+  return {
+    ...entry,
+    snippet: buildSnippet(
+      entry.text,
+      { start: entry.matchStart, length: entry.matchLength },
+      entry.context,
+    ),
+  };
+}
+
 function runFoldCase(entry: FoldCase): FoldResult {
   const folded = foldText(entry.text, {
     keepCase: entry.keepCase,
@@ -155,8 +169,15 @@ async function main(): Promise<void> {
   const check = process.argv.includes('--check');
 
   const names = new Set<string>();
-  for (const entry of [...REGEX_CASES, ...FOLD_CASES, ...LITERAL_CASES]) {
-    const key = `${'pattern' in entry ? 'regex' : 'needle' in entry ? 'literal' : 'fold'}:${entry.name}`;
+  for (const entry of [...REGEX_CASES, ...FOLD_CASES, ...LITERAL_CASES, ...SNIPPET_CASES]) {
+    const key =
+      'pattern' in entry
+        ? `regex:${entry.name}`
+        : 'needle' in entry
+          ? `literal:${entry.name}`
+          : 'context' in entry
+            ? `snippet:${entry.name}`
+            : `fold:${entry.name}`;
     if (names.has(key)) throw new Error(`duplicate case name ${key}`);
     names.add(key);
   }
@@ -175,6 +196,12 @@ async function main(): Promise<void> {
     (await emit(
       'literal.json',
       serialize('search.literal', LITERAL_CASES.map(runLiteralCase)),
+      check,
+    )) || differed;
+  differed =
+    (await emit(
+      'snippet.json',
+      serialize('search.snippet', SNIPPET_CASES.map(runSnippetCase)),
       check,
     )) || differed;
 

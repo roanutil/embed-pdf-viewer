@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "kind": "search.snippet",
+  "cases": [
+  {"name":"middle-of-a-long-page","covers":"Context on both sides, both trimmed to a word boundary.","text":"The quick brown fox jumps over the lazy dog. Pack my box with five dozen liquor jugs. How vexingly quick daft zebras jump.","matchStart":60,"matchLength":3,"context":20,"snippet":{"text":"Pack my box with five dozen liquor","matchStart":15,"matchLength":3}},
+  {"name":"match-at-the-very-start","covers":"No leading context to trim, so the snippet starts at zero.","text":"The quick brown fox jumps over the lazy dog. Pack my box with five dozen liquor jugs. How vexingly quick daft zebras jump.","matchStart":0,"matchLength":3,"context":20,"snippet":{"text":"The quick brown fox","matchStart":0,"matchLength":3}},
+  {"name":"match-at-the-very-end","covers":"No trailing context, so the snippet ends at the page end.","text":"The quick brown fox jumps over the lazy dog. Pack my box with five dozen liquor jugs. How vexingly quick daft zebras jump.","matchStart":117,"matchLength":5,"context":20,"snippet":{"text":"quick daft zebras jump.","matchStart":18,"matchLength":5}},
+  {"name":"whole-page-inside-the-context","covers":"The window covers everything, so neither side trims.","text":"short page","matchStart":6,"matchLength":4,"context":100,"snippet":{"text":"short page","matchStart":6,"matchLength":4}},
+  {"name":"no-whitespace-to-cut-at","covers":"One very long token: the rule accepts a mid-word cut rather than widening the window.","text":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaTARGETaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","matchStart":30,"matchLength":6,"context":10,"snippet":{"text":"aaaaaaaaaaTARGETaaaaaaaaaa","matchStart":10,"matchLength":6}},
+  {"name":"zero-context","covers":"The snippet is the match.","text":"The quick brown fox jumps over the lazy dog. Pack my box with five dozen liquor jugs. How vexingly quick daft zebras jump.","matchStart":4,"matchLength":5,"context":0,"snippet":{"text":"quick","matchStart":0,"matchLength":5}},
+  {"name":"whitespace-flattened-length-preserving","covers":"Newlines and tabs become single spaces one for one, so the reported match offset stays valid.","text":"first line\n\tsecond line here and more","matchStart":12,"matchLength":6,"context":10,"snippet":{"text":"line  second line","matchStart":6,"matchLength":6}},
+  {"name":"boundary-inside-a-surrogate-pair","covers":"The window edge lands between the halves of an astral character, and must move rather than split it.","text":"aaaa😀aaaaTARGETaaaa😀aaaa","matchStart":10,"matchLength":6,"context":5,"snippet":{"text":"aaaaTARGETaaaa","matchStart":4,"matchLength":6}}
+  ]
+}

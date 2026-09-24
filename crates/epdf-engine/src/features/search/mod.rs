@@ -48,6 +48,8 @@
 pub mod dialect;
 pub mod fold;
 pub mod literal;
+pub mod matcher;
+pub mod snippet;
 
 use std::sync::OnceLock;
 
