@@ -362,6 +362,29 @@ impl Annotation<'_> {
         })
     }
 
+    /// One `/EMBD_Metadata` rect entry, in the `FS_RECTF` field order.
+    pub fn set_embed_metadata_rect(
+        &self,
+        key: &str,
+        rect: crate::RectF,
+    ) -> Result<bool, PdfiumError> {
+        let key = c_key(key)?;
+        let native = pdfium_sys::FS_RECTF {
+            left: rect.left,
+            top: rect.top,
+            right: rect.right,
+            bottom: rect.bottom,
+        };
+        // SAFETY: the handle and key are live, and `native` outlives the call.
+        Ok(unsafe {
+            pdfium_sys::EPDFAnnot_SetEmbedMetadataRect(
+                self.as_raw(),
+                key.as_ptr(),
+                &raw const native,
+            ) != 0
+        })
+    }
+
     /// Remove one `/EMBD_Metadata` entry.
     pub fn clear_embed_metadata_key(&self, key: &str) -> Result<bool, PdfiumError> {
         let key = c_key(key)?;

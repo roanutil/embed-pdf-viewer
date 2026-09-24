@@ -37,6 +37,7 @@ use super::draft::{
 use super::impact::{AnnotationListMutationMeta, AnnotationMutationKind, compute_mutation_impact};
 use crate::cancel::CancelToken;
 use crate::clock::{Clock, format_pdf_date};
+use crate::dto::Patch;
 use crate::error::{EngineError, EngineErrorCode};
 use crate::features::annotation::read::dto::AnnotationDto;
 use crate::features::annotation::read::page::read_page_annotations;
@@ -357,7 +358,7 @@ fn apply_kind_draft(
                 ));
             }
             set_line_endings(annotation, *line_endings)?;
-            write_advisory_rotation(annotation, fields.rotation)
+            super::transform::write_vertex_transform(annotation, option_patch(fields.rotation))
         }
         AnnotationDraftKind::Ink { fields, ink_list, intent } => {
             apply_stroke_style(annotation, fields)?;
@@ -375,7 +376,7 @@ fn apply_kind_draft(
                     ));
                 }
             }
-            write_advisory_rotation(annotation, fields.rotation)
+            super::transform::write_vertex_transform(annotation, option_patch(fields.rotation))
         }
     }
 }
@@ -435,7 +436,7 @@ fn apply_vertex(
             "EPDFAnnot_SetVertices refused the point list",
         ));
     }
-    write_advisory_rotation(annotation, fields.geometry.rotation)
+    super::transform::write_vertex_transform(annotation, option_patch(fields.geometry.rotation))
 }
 
 fn set_border(
@@ -480,44 +481,14 @@ fn set_line_endings(
     Ok(())
 }
 
-/// The ADVISORY rotation these families carry.
+/// A draft's `Option` field as the tri-state the transform writer takes.
 ///
-/// Advisory because their points are already rotated: the scalar records the
-/// angle that was applied so a UI can draw an oriented selection box, and
-/// PDFium ignores it when baking. An unrotated annotation carries no key,
-/// because zero degrees is not a rotation and stamping one would put a key
-/// on a file that had none.
-fn write_advisory_rotation(
-    annotation: &pdfium::Annotation<'_>,
-    rotation: Option<f64>,
-) -> Result<(), EngineError> {
-    let Some(rotation) = rotation else {
-        return Ok(());
-    };
-    let result = if rotation == 0.0 {
-        annotation.clear_embed_metadata_key("Rotation")
-    } else {
-        annotation.set_embed_metadata_number("Rotation", rotation as f32)
-    };
-    result.map_err(|e| {
-        EngineError::with_message(
-            EngineErrorCode::RuntimeUnavailable,
-            format!("writing the advisory rotation failed: {e}"),
-        )
-    })?;
-    // A vertex kind never carries the logical box: its points ARE the
-    // visual, so there is no pre-rotation rectangle to remember. Inert on
-    // create for the same reason the interior-colour clear above is: there
-    // is nothing on a new annotation to remove. It runs so that a kind
-    // whose rect stopped being derived from a rotation does not keep a
-    // stale box that a later reader would trust.
-    annotation.clear_embed_metadata_key("UnrotatedRect").map_err(|e| {
-        EngineError::with_message(
-            EngineErrorCode::RuntimeUnavailable,
-            format!("clearing the unrotated rect failed: {e}"),
-        )
-    })?;
-    Ok(())
+/// A draft has no third state: it is a whole annotation, so an absent field
+/// is one the annotation does not have. `None` therefore maps to `Keep`,
+/// which on a freshly created annotation means the same as `Clear` and costs
+/// one fewer call.
+fn option_patch<T>(value: Option<T>) -> Patch<T> {
+    value.map_or(Patch::Keep, Patch::Set)
 }
 
 fn point_to_native(point: crate::geom::PdfPoint) -> pdfium::PointF {
@@ -552,6 +523,19 @@ fn apply_shape(
     fields: &ShapeDraftFields,
 ) -> Result<(), EngineError> {
     set_rect(annotation, fields.rect)?;
+    // `/Rect` above is the ROTATED visual box. The pair below is what tells
+    // the generator to bake a turned appearance, and it has to land before
+    // the bake, which is why it is here rather than after the styling.
+    super::transform::write_box_transform(
+        annotation,
+        &super::transform::AnnotationTransform {
+            rotation: option_patch(fields.rotation),
+            unrotated_rect: option_patch(fields.unrotated_rect),
+        },
+        // A draft creates the annotation, so there is never an existing box
+        // for a lone rotation to lean on.
+        || Ok(false),
+    )?;
     set_color(
         annotation,
         AnnotationColorType::Color,

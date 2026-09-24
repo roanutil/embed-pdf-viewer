@@ -139,6 +139,30 @@ const CASES: readonly CreateCase[] = [
     },
   },
   {
+    name: 'square-rotated',
+    covers:
+      'A rotated box. `/Rect` is the enclosing axis-aligned box of the turned square; the pair under /EMBD_Metadata is what makes the generator bake a turned appearance rather than an upright one.',
+    draft: {
+      subtype: 'square',
+      rect: { left: 90, bottom: 390, right: 210, top: 510 },
+      unrotatedRect: { left: 110, bottom: 410, right: 190, top: 490 },
+      rotation: 45,
+      color: { r: 0, g: 128, b: 0 },
+      strokeWidth: 3,
+    },
+  },
+  {
+    name: 'square-zero-rotation',
+    covers:
+      'A box whose logical box is its rect and whose rotation is zero. Zero degrees clears the key rather than writing it, so the annotation carries a box and no angle.',
+    draft: {
+      subtype: 'square',
+      rect: { left: 240, bottom: 390, right: 340, top: 470 },
+      unrotatedRect: { left: 240, bottom: 390, right: 340, top: 470 },
+      rotation: 0,
+    },
+  },
+  {
     name: 'polygon',
     covers:
       'A closed vertex path with a fill and a cloudy border. Only a polygon takes /BE: an open path has no interior for one to enclose.',

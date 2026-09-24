@@ -262,6 +262,14 @@ fn a_draft_that_cannot_be_written_is_refused_before_anything_is_written() {
             }),
             "an ink stroke with no points",
         ),
+        (
+            serde_json::json!({
+                "subtype": "square",
+                "rect": { "left": 10.0, "bottom": 10.0, "right": 100.0, "top": 100.0 },
+                "rotation": 30.0,
+            }),
+            "a rotation with no logical box to turn",
+        ),
     ] {
         let mut refused_case = Case {
             name: format!("refusal: {what}"),
@@ -467,4 +475,83 @@ fn a_created_annotation_survives_a_save_and_reopen() {
     )
     .expect("render");
     assert_eq!(rendered.appearances.len(), 1, "the /AP did not survive the save");
+}
+
+#[test]
+fn the_transform_keys_land_in_the_dictionary_and_not_only_in_the_dto() {
+    // The reader normalizes a zero rotation back to absent, so the DTO
+    // cannot tell a cleared `/Rotation` from one written as zero, and it
+    // never reports `/SchemaVersion` at all. Both are things a later reader
+    // of the FILE depends on, so they are asserted against the dictionary.
+    let file = load();
+    // name -> (rotation, has an unrotated box, the dictionary exists)
+    let expected: [(&str, Option<f32>, bool, bool); 4] = [
+        ("square-rotated", Some(45.0), true, true),
+        ("square-zero-rotation", None, true, true),
+        ("ink-advisory-rotation", Some(45.0), false, true),
+        ("polyline-zero-rotation", None, false, false),
+    ];
+
+    for (name, rotation, has_box, has_dictionary) in expected {
+        let case = file.cases.iter().find(|c| c.name == name).expect(name);
+        let bytes = std::fs::read(test_support::workspace_root().join(&file.fixture))
+            .unwrap_or_else(|e| panic!("{name}: read {}: {e}", file.fixture));
+        let mut session = DocumentSession::new();
+        session.open_with(bytes, None, SessionAuthority::unrestricted()).expect("open");
+        let page_object_number =
+            PageObjectNumber::new(case.page_object_number).expect("a page object number");
+        let annotations = epdf_engine::features::annotation::read::page::read_page_annotations(
+            session.document().expect("open").document(),
+            0,
+            page_object_number,
+            &epdf_engine::revision::RevisionToken::new(SESSION, page_object_number, 0),
+            &mut epdf_engine::features::actions::vocabulary::ActionReadBudgetTracker::default(),
+            &CancelToken::never(),
+        )
+        .expect("the page lists");
+        let state = annotations.page_state;
+        let draft: AnnotationDraft =
+            serde_json::from_value(case.draft.clone()).expect("the draft decodes");
+
+        let owned = session.document().expect("open");
+        let page = owned.document().page(0).expect("page");
+        create_annotation(
+            owned.document(),
+            &page,
+            page_object_number,
+            &state,
+            &state,
+            &draft,
+            &AnnotationActor::default(),
+            &FixedClock(epdf_engine::clock::Timestamp::utc(1_700_000_000_000)),
+            &CancelToken::never(),
+        )
+        .unwrap_or_else(|e| panic!("{name}: create: {e}"));
+
+        // The fixture page starts empty, so the created annotation is the
+        // only one on it.
+        let written = page.annotation(0).expect("the created annotation");
+        assert_eq!(
+            written.has_embed_metadata(),
+            has_dictionary,
+            "{name}: the /EMBD_Metadata dictionary",
+        );
+        assert_eq!(
+            written.embed_metadata_number("Rotation").expect("a dictionary read"),
+            rotation,
+            "{name}: /Rotation",
+        );
+        assert_eq!(
+            written.embed_metadata_rect("UnrotatedRect").expect("a dictionary read").is_some(),
+            has_box,
+            "{name}: /UnrotatedRect",
+        );
+        if has_dictionary {
+            assert_eq!(
+                written.embed_metadata_number("SchemaVersion").expect("a dictionary read"),
+                Some(1.0),
+                "{name}: /SchemaVersion is seeded with the first transform key",
+            );
+        }
+    }
 }

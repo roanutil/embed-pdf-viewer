@@ -240,6 +240,14 @@ pub struct ShapeDraftFields {
     /// `/RD`.
     #[serde(default, skip_serializing_if = "Patch::is_keep")]
     pub rect_differences: Patch<PdfRectDifferences>,
+    /// `/EMBD_Metadata /Rotation`, in degrees. A box kind's rotation is
+    /// LOAD-BEARING rather than advisory: it drives the appearance bake, and
+    /// it is unsatisfiable without the pre-rotation box below.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rotation: Option<f64>,
+    /// `/EMBD_Metadata /UnrotatedRect`, the logical box the rotation turns.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub unrotated_rect: Option<PdfRect>,
 }
 
 /// The styling every geometric draft carries, with a fill.
