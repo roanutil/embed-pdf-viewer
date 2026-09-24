@@ -949,6 +949,142 @@ function annotationKinds() {
 }
 
 /**
+ * Annotations with BAKED appearance streams, which nothing else here has.
+ *
+ * `annotations.renderAppearances` only ever emits an annotation that carries
+ * an `/AP`, and every annotation in the other two fixtures is drawn by the
+ * viewer. So without this file the appearance reader returns an empty list
+ * for every document in the corpus and a comparison of that list proves
+ * nothing.
+ *
+ * What it has to separate is which annotations render ROTATION-STRIPPED. That
+ * is a narrow rule and three of the annotations here are the near misses:
+ *
+ *   - A square with `/Rotation`, `/UnrotatedRect` and an `/AP /Matrix`. This
+ *     one IS stripped: the raster draws flat and is placed by the logical box.
+ *   - A free-text CALLOUT with both fields. Not stripped, because only its
+ *     text box tilts, through an inline `cm` mid-stream, and the form
+ *     `/Matrix` is identity.
+ *   - A polygon with `/Rotation`. Not stripped: a vertex kind has its
+ *     rotation baked into its geometry, so there is no matrix to remove.
+ *
+ * Plus a square carrying all three of `/N`, `/R` and `/D`, because the mode
+ * filter has nothing to filter when every annotation has one appearance; a
+ * highlight with no `/AP` at all, which must be skipped; and a widget with no
+ * `/AP` key, which is the one case where the reader generates one.
+ */
+function annotationAppearances() {
+  const content = Buffer.from('72 72 200 100 re\nf\n', 'latin1');
+
+  // A form XObject. `extra` carries a /Matrix where one is wanted.
+  const appearance = (width, height, paint, extra = '') =>
+    stream(
+      `/Type /XObject /Subtype /Form /FormType 1 /BBox [0 0 ${width} ${height}] ` +
+        `/Resources << >>${extra ? ` ${extra}` : ''}`,
+      Buffer.from(paint, 'latin1'),
+    );
+
+  // A 30-degree rotation about the form's own origin.
+  const cos30 = '0.8660254';
+  const sin30 = '0.5';
+
+  const annots = [
+    // Three modes on one annotation.
+    '<< /Type /Annot /Subtype /Square /Rect [72 600 172 660] /F 4 /NM (a-three-mode-square) ' +
+      '/AP << /N 5 0 R /R 6 0 R /D 7 0 R >> >>',
+    // The stripped case: a box kind whose rotation is in the /AP /Matrix.
+    '<< /Type /Annot /Subtype /Square /Rect [220 580 350 680] /F 4 /NM (a-rotated-square) ' +
+      '/AP << /N 8 0 R >> ' +
+      '/EMBD_Metadata << /Rotation 30 /UnrotatedRect [240 600 340 660] >> >>',
+    // The callout: both fields, and NOT stripped.
+    // The /UnrotatedRect differs from the /Rect on purpose: if the two were
+    // equal, stripping and not stripping would place the raster identically
+    // and this annotation would not be a near miss at all.
+    '<< /Type /Annot /Subtype /FreeText /Rect [72 450 240 530] /F 4 /NM (a-rotated-callout) ' +
+      '/IT /FreeTextCallout /CL [60 430 100 470 72 480] /AP << /N 9 0 R >> ' +
+      '/EMBD_Metadata << /Rotation 30 /UnrotatedRect [90 460 220 520] >> >>',
+    // A box kind carrying the logical box and NO rotation. The pair is what
+    // authorizes stripping, so half of it is not enough: this one is placed
+    // by its /Rect like any ordinary annotation.
+    '<< /Type /Annot /Subtype /Square /Rect [380 580 480 680] /F 4 ' +
+      '/NM (a-square-with-a-box-but-no-angle) /AP << /N 11 0 R >> ' +
+      '/EMBD_Metadata << /UnrotatedRect [400 600 460 660] >> >>',
+    // The vertex kind: a rotation scalar and no unrotated box, so nothing to
+    // strip even though the scalar is there.
+    '<< /Type /Annot /Subtype /Polygon /Rect [300 420 420 520] /F 4 /NM (a-rotated-polygon) ' +
+      '/Vertices [300 420 420 420 360 520] /AP << /N 10 0 R >> ' +
+      '/EMBD_Metadata << /Rotation 45 >> >>',
+    // A page-sized annotation. Its rect is what makes the per-appearance
+    // pixel clamp reachable at a scale a test can afford: at 600 by 750 the
+    // ceiling is crossed around scale 6, where a 100-point annotation would
+    // need scale 50.
+    '<< /Type /Annot /Subtype /Square /Rect [6 20 606 770] /F 4 /NM (a-page-sized-square) ' +
+      '/AP << /N 13 0 R >> >>',
+    // No /AP at all: skipped entirely, not emitted empty.
+    '<< /Type /Annot /Subtype /Highlight /Rect [72 380 240 400] /F 4 /NM (a-bare-highlight) ' +
+      '/QuadPoints [72 400 240 400 72 380 240 380] >>',
+    // A widget with no /AP key at all, which is what the reader's generation
+    // fallback exists for. It is still absent from every result, because the
+    // available-modes guard skips it before the fallback can run.
+    '<< /Type /Annot /Subtype /Widget /Rect [72 300 240 330] /F 4 /NM (a-bare-widget) ' +
+      '/MK << /BC [0 0 0] /BG [1 1 0.8] >> /DA (0 0 0 rg /Helv 10 Tf) >>',
+  ];
+
+  return buildPdf([
+    Buffer.from(
+      '<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [12 0 R] >> >>',
+      'latin1',
+    ),
+    Buffer.from(
+      '<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 612 792] >>',
+      'latin1',
+    ),
+    Buffer.from(
+      '<< /Type /Page /Parent 2 0 R /Contents 4 0 R /Resources << >> /Annots [' +
+        annots.join(' ') +
+        ' 12 0 R] >>',
+      'latin1',
+    ),
+    stream('', content),
+
+    // 5, 6, 7: the three modes, painted in different colours so a raster that
+    // came from the wrong one is visible rather than merely different.
+    appearance(100, 60, '1 0 0 rg\n0 0 100 60 re\nf\n'),
+    appearance(100, 60, '0 1 0 rg\n0 0 100 60 re\nf\n'),
+    appearance(100, 60, '0 0 1 rg\n0 0 100 60 re\nf\n'),
+    // 8: the rotated square's appearance, whose /Matrix carries the angle.
+    appearance(
+      100,
+      60,
+      '0 0 1 rg\n0 0 100 60 re\nf\n',
+      `/Matrix [${cos30} ${sin30} -${sin30} ${cos30} 0 0]`,
+    ),
+    // 9: the callout's. Identity /Matrix, with the tilt inline, which is what
+    // makes it the near miss.
+    appearance(
+      168,
+      80,
+      `q\n${cos30} ${sin30} -${sin30} ${cos30} 0 0 cm\n1 1 0 rg\n0 0 168 80 re\nf\nQ\n`,
+    ),
+    // 10: the polygon's, already rotated into its geometry.
+    appearance(120, 100, '0 1 1 rg\n0 0 120 100 re\nf\n'),
+    // 11: the half-annotated square's.
+    appearance(100, 100, '1 0 1 rg\n0 0 100 100 re\nf\n'),
+    // 12: a merged field and widget, reachable from /AcroForm, with no /AP.
+    // This is the shape PDFium can actually generate an appearance for, and
+    // it STILL never gets one here, which is the point of having it.
+    Buffer.from(
+      '<< /Type /Annot /Subtype /Widget /Rect [72 240 240 270] /F 4 /NM (a-real-field-widget) ' +
+        '/FT /Tx /T (name) /V (Ada) /DA (0 0 0 rg /Helv 10 Tf) ' +
+        '/MK << /BC [0 0 0] /BG [1 1 1] >> >>',
+      'latin1',
+    ),
+    // 13: the page-sized square's.
+    appearance(600, 750, '0.5 0.5 0.5 rg\n0 0 600 750 re\nf\n'),
+  ]);
+}
+
+/**
  * A document whose Info dictionary exercises every metadata distinction.
  *
  * `metadata.read` has to tell three states apart: a key that is absent, a key
@@ -1025,6 +1161,7 @@ const outputs = [
   ['page_actions.pdf', pageActions()],
   ['annotation_base.pdf', annotationBase()],
   ['annotation_kinds.pdf', annotationKinds()],
+  ['annotation_appearances.pdf', annotationAppearances()],
   ['document_actions.pdf', documentActions()],
   ['reverse_and_gapped_text.pdf', reverseAndGappedText(font)],
 

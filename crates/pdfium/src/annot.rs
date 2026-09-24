@@ -528,6 +528,28 @@ impl Annotation<'_> {
         unsafe { pdfium_sys::EPDFAnnot_GetBlendMode(self.handle) as i32 }
     }
 
+    /// Which `/AP` sub-dictionaries the annotation has, as the
+    /// `EPDFAnnot_GetAvailableAppearanceModes` bit set: 1 is `/N`, 2 is `/R`,
+    /// 4 is `/D`.
+    ///
+    /// Zero means no `/AP` at all, which is the common case and not an
+    /// error: most annotations are drawn by the viewer rather than baked.
+    pub fn available_appearance_modes(&self) -> i32 {
+        // SAFETY: the handle is live.
+        unsafe { pdfium_sys::EPDFAnnot_GetAvailableAppearanceModes(self.handle) }
+    }
+
+    /// Ask PDFium to synthesize a form field's `/AP`.
+    ///
+    /// Widgets frequently ship without one, because the producer expected the
+    /// viewer to draw the control. This WRITES to the in-memory document,
+    /// which is why it is a method a caller reaches for deliberately rather
+    /// than something a read does on its way past.
+    pub fn generate_form_field_appearance(&self) -> bool {
+        // SAFETY: the handle is live.
+        unsafe { pdfium_sys::EPDFAnnot_GenerateFormFieldAP(self.handle) != 0 }
+    }
+
     /// Whether the annotation has the named appearance stream at all.
     pub fn has_appearance_stream(&self, mode: AppearanceMode) -> bool {
         // SAFETY: the handle is live.

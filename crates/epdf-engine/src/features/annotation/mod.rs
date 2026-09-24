@@ -29,6 +29,7 @@
 //!
 //! [`read`] holds the readers that walk PDFium: the base shell so far.
 
+pub mod appearance;
 pub mod flags;
 pub mod intent;
 pub mod read;

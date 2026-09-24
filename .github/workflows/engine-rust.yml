@@ -197,6 +197,12 @@ jobs:
       - name: Annotation read vectors are current
         run: pnpm --filter @embedpdf/tooling-engine-conformance run annotation-read:check
 
+      # G7's appearances. Placement rather than pixels: the two engines
+      # rasterize through different PDFium builds, so a digest would compare
+      # rasterizers. Where an appearance is placed is where the rule lives.
+      - name: Annotation appearance vectors are current
+        run: pnpm --filter @embedpdf/tooling-engine-conformance run annotation-appearance:check
+
       # multiplatform-port-order.md Section 6: a kind added to
       # worker-protocol.ts without a row in the matrix fails here, and so does
       # a row for a kind that no longer exists.

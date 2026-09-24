@@ -153,6 +153,91 @@ impl<'a> PageView<'a> {
         Ok(Bitmap { width, height, stride: native_stride as u32, bgra: pixels })
     }
 
+    /// Renders ONE annotation's appearance stream into a transparent bitmap.
+    ///
+    /// The page is still required. An appearance stream is a form XObject in
+    /// the page's resource space, so PDFium needs the page to resolve what it
+    /// references, even though nothing of the page's own content is drawn.
+    ///
+    /// `strip_rotation` picks between two entry points rather than changing
+    /// the matrix. `EPDF_RenderAnnotBitmapUnrotated` draws the form content
+    /// WITHOUT the `/Matrix` rotation and maps it onto the target rect, which
+    /// is what lets a consumer re-apply the angle as a view transform and
+    /// never re-render on rotate. It is correct only where the rotation
+    /// demonstrably lives in that matrix; the engine decides that, not this.
+    pub fn render_annotation_rgba_with_matrix(
+        &self,
+        annotation: &crate::Annotation<'_>,
+        mode: crate::AppearanceMode,
+        width: u32,
+        height: u32,
+        matrix: [f64; 6],
+        strip_rotation: bool,
+    ) -> Result<Bitmap, PdfiumError> {
+        let (native_width, native_height, native_stride, len) = bitmap_layout(width, height)?;
+        let mut pixels = Vec::new();
+        pixels.try_reserve_exact(len).map_err(|_| PdfiumError::OutOfMemory)?;
+        pixels.resize(len, 0u8);
+
+        // SAFETY: the buffer is exactly stride * height bytes, proved by
+        // bitmap_layout, and it outlives the bitmap handle destroyed below.
+        let bitmap = unsafe {
+            pdfium_sys::FPDFBitmap_CreateEx(
+                native_width,
+                native_height,
+                pdfium_sys::FPDFBitmap_BGRA as i32,
+                pixels.as_mut_ptr() as *mut c_void,
+                native_stride,
+            )
+        };
+        if bitmap.is_null() {
+            return Err(PdfiumError::Bitmap);
+        }
+
+        let fs_matrix = pdfium_sys::FS_MATRIX {
+            a: matrix[0] as f32,
+            b: matrix[1] as f32,
+            c: matrix[2] as f32,
+            d: matrix[3] as f32,
+            e: matrix[4] as f32,
+            f: matrix[5] as f32,
+        };
+
+        // SAFETY: the bitmap, page and annotation handles are all live, and
+        // the matrix outlives the call.
+        let ok = unsafe {
+            // Transparent, not white: an appearance composites over page
+            // content that this bitmap does not contain.
+            pdfium_sys::FPDFBitmap_FillRect(bitmap, 0, 0, native_width, native_height, 0x0000_0000);
+            let drawn = if strip_rotation {
+                pdfium_sys::EPDF_RenderAnnotBitmapUnrotated(
+                    bitmap,
+                    self.handle,
+                    annotation.as_raw(),
+                    mode as i32,
+                    &fs_matrix,
+                    FPDF_REVERSE_BYTE_ORDER,
+                )
+            } else {
+                pdfium_sys::EPDF_RenderAnnotBitmap(
+                    bitmap,
+                    self.handle,
+                    annotation.as_raw(),
+                    mode as i32,
+                    &fs_matrix,
+                    FPDF_REVERSE_BYTE_ORDER,
+                )
+            };
+            pdfium_sys::FPDFBitmap_Destroy(bitmap);
+            drawn
+        };
+        if ok == 0 {
+            return Err(PdfiumError::Bitmap);
+        }
+
+        Ok(Bitmap { width, height, stride: native_stride as u32, bgra: pixels })
+    }
+
     pub fn render_bgra(&self, width: u32, height: u32) -> Result<Bitmap, PdfiumError> {
         let (native_width, native_height, native_stride, len) = bitmap_layout(width, height)?;
         let mut bgra = Vec::new();

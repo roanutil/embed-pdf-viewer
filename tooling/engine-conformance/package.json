@@ -24,6 +24,8 @@
     "annotation:check": "tsx --conditions=development src/generate-annotation-vectors.ts --check",
     "annotation-read": "tsx --conditions=development src/generate-annotation-read-vectors.ts",
     "annotation-read:check": "tsx --conditions=development src/generate-annotation-read-vectors.ts --check",
+    "annotation-appearance": "tsx --conditions=development src/generate-annotation-appearance-vectors.ts",
+    "annotation-appearance:check": "tsx --conditions=development src/generate-annotation-appearance-vectors.ts --check",
     "actions": "tsx --conditions=development src/generate-action-vectors.ts",
     "actions:check": "tsx --conditions=development src/generate-action-vectors.ts --check",
     "layout": "tsx --conditions=development src/generate-layout-vectors.ts",

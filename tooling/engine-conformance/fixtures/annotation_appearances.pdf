@@ -1,0 +1,118 @@
+%PDF-1.7
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [12 0 R] >> >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 612 792] >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /Contents 4 0 R /Resources << >> /Annots [<< /Type /Annot /Subtype /Square /Rect [72 600 172 660] /F 4 /NM (a-three-mode-square) /AP << /N 5 0 R /R 6 0 R /D 7 0 R >> >> << /Type /Annot /Subtype /Square /Rect [220 580 350 680] /F 4 /NM (a-rotated-square) /AP << /N 8 0 R >> /EMBD_Metadata << /Rotation 30 /UnrotatedRect [240 600 340 660] >> >> << /Type /Annot /Subtype /FreeText /Rect [72 450 240 530] /F 4 /NM (a-rotated-callout) /IT /FreeTextCallout /CL [60 430 100 470 72 480] /AP << /N 9 0 R >> /EMBD_Metadata << /Rotation 30 /UnrotatedRect [90 460 220 520] >> >> << /Type /Annot /Subtype /Square /Rect [380 580 480 680] /F 4 /NM (a-square-with-a-box-but-no-angle) /AP << /N 11 0 R >> /EMBD_Metadata << /UnrotatedRect [400 600 460 660] >> >> << /Type /Annot /Subtype /Polygon /Rect [300 420 420 520] /F 4 /NM (a-rotated-polygon) /Vertices [300 420 420 420 360 520] /AP << /N 10 0 R >> /EMBD_Metadata << /Rotation 45 >> >> << /Type /Annot /Subtype /Square /Rect [6 20 606 770] /F 4 /NM (a-page-sized-square) /AP << /N 13 0 R >> >> << /Type /Annot /Subtype /Highlight /Rect [72 380 240 400] /F 4 /NM (a-bare-highlight) /QuadPoints [72 400 240 400 72 380 240 380] >> << /Type /Annot /Subtype /Widget /Rect [72 300 240 330] /F 4 /NM (a-bare-widget) /MK << /BC [0 0 0] /BG [1 1 0.8] >> /DA (0 0 0 rg /Helv 10 Tf) >> 12 0 R] >>
+endobj
+4 0 obj
+<<  /Length 19 >>
+stream
+72 72 200 100 re
+f
+
+endstream
+endobj
+5 0 obj
+<< /Type /XObject /Subtype /Form /FormType 1 /BBox [0 0 100 60] /Resources << >> /Length 25 >>
+stream
+1 0 0 rg
+0 0 100 60 re
+f
+
+endstream
+endobj
+6 0 obj
+<< /Type /XObject /Subtype /Form /FormType 1 /BBox [0 0 100 60] /Resources << >> /Length 25 >>
+stream
+0 1 0 rg
+0 0 100 60 re
+f
+
+endstream
+endobj
+7 0 obj
+<< /Type /XObject /Subtype /Form /FormType 1 /BBox [0 0 100 60] /Resources << >> /Length 25 >>
+stream
+0 0 1 rg
+0 0 100 60 re
+f
+
+endstream
+endobj
+8 0 obj
+<< /Type /XObject /Subtype /Form /FormType 1 /BBox [0 0 100 60] /Resources << >> /Matrix [0.8660254 0.5 -0.5 0.8660254 0 0] /Length 25 >>
+stream
+0 0 1 rg
+0 0 100 60 re
+f
+
+endstream
+endobj
+9 0 obj
+<< /Type /XObject /Subtype /Form /FormType 1 /BBox [0 0 168 80] /Resources << >> /Length 65 >>
+stream
+q
+0.8660254 0.5 -0.5 0.8660254 0 0 cm
+1 1 0 rg
+0 0 168 80 re
+f
+Q
+
+endstream
+endobj
+10 0 obj
+<< /Type /XObject /Subtype /Form /FormType 1 /BBox [0 0 120 100] /Resources << >> /Length 26 >>
+stream
+0 1 1 rg
+0 0 120 100 re
+f
+
+endstream
+endobj
+11 0 obj
+<< /Type /XObject /Subtype /Form /FormType 1 /BBox [0 0 100 100] /Resources << >> /Length 26 >>
+stream
+1 0 1 rg
+0 0 100 100 re
+f
+
+endstream
+endobj
+12 0 obj
+<< /Type /Annot /Subtype /Widget /Rect [72 240 240 270] /F 4 /NM (a-real-field-widget) /FT /Tx /T (name) /V (Ada) /DA (0 0 0 rg /Helv 10 Tf) /MK << /BC [0 0 0] /BG [1 1 1] >> >>
+endobj
+13 0 obj
+<< /Type /XObject /Subtype /Form /FormType 1 /BBox [0 0 600 750] /Resources << >> /Length 32 >>
+stream
+0.5 0.5 0.5 rg
+0 0 600 750 re
+f
+
+endstream
+endobj
+xref
+0 14
+0000000000 65535 f 
+0000000015 00000 n 
+0000000097 00000 n 
+0000000178 00000 n 
+0000001547 00000 n 
+0000001617 00000 n 
+0000001770 00000 n 
+0000001923 00000 n 
+0000002076 00000 n 
+0000002272 00000 n 
+0000002465 00000 n 
+0000002621 00000 n 
+0000002777 00000 n 
+0000002971 00000 n 
+trailer
+<< /Size 14 /Root 1 0 R >>
+startxref
+3133
+%%EOF
