@@ -139,6 +139,125 @@ const CASES: readonly CreateCase[] = [
     },
   },
   {
+    name: 'polygon',
+    covers:
+      'A closed vertex path with a fill and a cloudy border. Only a polygon takes /BE: an open path has no interior for one to enclose.',
+    draft: {
+      subtype: 'polygon',
+      rect: { left: 300, bottom: 300, right: 420, top: 380 },
+      vertices: [
+        { x: 300, y: 300 },
+        { x: 420, y: 300 },
+        { x: 360, y: 380 },
+      ],
+      color: { r: 0, g: 0, b: 255 },
+      interiorColor: { r: 255, g: 255, b: 0 },
+      cloudyIntensity: 1,
+    },
+  },
+  {
+    name: 'polyline-with-endings',
+    covers:
+      'An open vertex path with a /LE pair, which the polygon family does not have. The two endings differ, so a writer that wrote one twice is visible.',
+    draft: {
+      subtype: 'polyline',
+      rect: { left: 300, bottom: 200, right: 420, top: 280 },
+      vertices: [
+        { x: 300, y: 200 },
+        { x: 360, y: 280 },
+        { x: 420, y: 200 },
+      ],
+      lineEndings: { start: 'open-arrow', end: 'diamond' },
+    },
+  },
+  {
+    name: 'polyline-defaults',
+    covers:
+      'The same without a /LE, so the pair that draws nothing is what a reader gets back rather than an absent entry it has to interpret.',
+    draft: {
+      subtype: 'polyline',
+      rect: { left: 450, bottom: 200, right: 560, top: 280 },
+      vertices: [
+        { x: 450, y: 200 },
+        { x: 560, y: 280 },
+      ],
+    },
+  },
+  {
+    name: 'line',
+    covers: 'Two endpoints and a pair of endings, which is the whole of a line annotation.',
+    draft: {
+      subtype: 'line',
+      rect: { left: 450, bottom: 300, right: 560, top: 400 },
+      linePoints: { start: { x: 450, y: 300 }, end: { x: 560, y: 400 } },
+      lineEndings: { start: 'circle', end: 'closed-arrow' },
+      color: { r: 255, g: 0, b: 255 },
+      strokeWidth: 2,
+    },
+  },
+  {
+    name: 'ink-two-strokes',
+    covers:
+      'Two pen strokes, so a writer that appended only the first is visible, with the highlighter intent that is the only /IT ink carries.',
+    draft: {
+      subtype: 'ink',
+      rect: { left: 72, bottom: 200, right: 240, top: 300 },
+      inkList: [
+        [
+          { x: 72, y: 200 },
+          { x: 120, y: 280 },
+          { x: 160, y: 200 },
+        ],
+        [
+          { x: 180, y: 220 },
+          { x: 240, y: 300 },
+        ],
+      ],
+      intent: 'ink-highlight',
+      opacity: 0.3,
+    },
+  },
+  {
+    name: 'polygon-zero-cloud',
+    covers:
+      'A cloudy intensity of zero, which is not a cloud. A writer that passed it through writes a /BE that says the border is cloudy with no waviness, which is a different dictionary from the one a plain border has.',
+    draft: {
+      subtype: 'polygon',
+      rect: { left: 450, bottom: 450, right: 560, top: 540 },
+      vertices: [
+        { x: 450, y: 450 },
+        { x: 560, y: 450 },
+        { x: 505, y: 540 },
+      ],
+      cloudyIntensity: 0,
+    },
+  },
+  {
+    name: 'polyline-zero-rotation',
+    covers:
+      'A rotation of zero. Zero degrees is not a rotation, so the key is cleared rather than stamped, and a file that had none keeps none.',
+    draft: {
+      subtype: 'polyline',
+      rect: { left: 300, bottom: 450, right: 420, top: 540 },
+      vertices: [
+        { x: 300, y: 450 },
+        { x: 420, y: 540 },
+      ],
+      rotation: 0,
+    },
+  },
+  {
+    name: 'ink-advisory-rotation',
+    covers:
+      'A rotation scalar on a vertex kind. The strokes are already rotated, so this records the angle and never drives the generator; it also never carries a logical box, which is what separates it from the shape family.',
+    draft: {
+      subtype: 'ink',
+      rect: { left: 72, bottom: 100, right: 240, top: 180 },
+      inkList: [[{ x: 72, y: 100 }, { x: 240, y: 180 }]],
+      rotation: 45,
+    },
+  },
+  {
     name: 'highlight-cleared-strings',
     covers:
       'A draft that explicitly clears contents and subject. Setting a null value writes an EMPTY string rather than removing the key, so a writer that used the setter would produce a field that reads back as present-and-empty instead of absent.',

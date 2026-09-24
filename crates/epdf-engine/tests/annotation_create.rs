@@ -221,6 +221,8 @@ fn a_new_annotation_is_addressable() {
 #[test]
 fn a_draft_that_cannot_be_written_is_refused_before_anything_is_written() {
     // The apply boundary. A markup with no quads has no `/Rect` to derive,
+    // a vertex path of one point draws nothing, an ink stroke with no points
+    // is a pen that never touched the page,
     // and a shape with an inside-out rect describes no region; both are the
     // caller's mistake, and both have to be caught before an annotation
     // exists in the file, because nothing here can take one back out.
@@ -243,6 +245,22 @@ fn a_draft_that_cannot_be_written_is_refused_before_anything_is_written() {
                 "opacity": 2.0,
             }),
             "an opacity outside 0..=1",
+        ),
+        (
+            serde_json::json!({
+                "subtype": "polygon",
+                "rect": { "left": 10.0, "bottom": 10.0, "right": 100.0, "top": 100.0 },
+                "vertices": [{ "x": 10.0, "y": 10.0 }],
+            }),
+            "a vertex path of one point",
+        ),
+        (
+            serde_json::json!({
+                "subtype": "ink",
+                "rect": { "left": 10.0, "bottom": 10.0, "right": 100.0, "top": 100.0 },
+                "inkList": [[{ "x": 10.0, "y": 10.0 }], []],
+            }),
+            "an ink stroke with no points",
         ),
     ] {
         let mut refused_case = Case {

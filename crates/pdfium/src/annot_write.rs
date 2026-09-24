@@ -303,6 +303,72 @@ impl Annotation<'_> {
         unsafe { pdfium_sys::EPDFAnnot_ClearColor(self.as_raw(), color_type as u32) != 0 }
     }
 
+    /// `/Vertices`, the point list of a polygon or polyline.
+    pub fn set_vertices(&self, points: &[crate::PointF]) -> bool {
+        let native: Vec<pdfium_sys::FS_POINTF> =
+            points.iter().map(|p| pdfium_sys::FS_POINTF { x: p.x, y: p.y }).collect();
+        // SAFETY: the handle is live and the buffer outlives the call.
+        unsafe {
+            pdfium_sys::EPDFAnnot_SetVertices(
+                self.as_raw(),
+                native.as_ptr(),
+                native.len() as std::os::raw::c_ulong,
+            ) != 0
+        }
+    }
+
+    /// `/L`, the two endpoints of a line.
+    pub fn set_line(&self, start: crate::PointF, end: crate::PointF) -> bool {
+        let start = pdfium_sys::FS_POINTF { x: start.x, y: start.y };
+        let end = pdfium_sys::FS_POINTF { x: end.x, y: end.y };
+        // SAFETY: the handle is live and both points outlive the call.
+        unsafe {
+            pdfium_sys::EPDFAnnot_SetLine(self.as_raw(), &raw const start, &raw const end) != 0
+        }
+    }
+
+    /// `/LE`, as the two raw `FPDF_ANNOT_LINE_END` codes.
+    pub fn set_line_endings(&self, start: i32, end: i32) -> bool {
+        // SAFETY: the handle is live.
+        unsafe {
+            pdfium_sys::EPDFAnnot_SetLineEndings(self.as_raw(), start as u32, end as u32) != 0
+        }
+    }
+
+    /// Append one pen stroke to `/InkList`.
+    ///
+    /// Returns the stroke's index, or a negative value when PDFium refused.
+    /// There is no way to replace a stroke, so a writer changing an ink list
+    /// removes the whole thing first.
+    pub fn add_ink_stroke(&self, points: &[crate::PointF]) -> i32 {
+        let native: Vec<pdfium_sys::FS_POINTF> =
+            points.iter().map(|p| pdfium_sys::FS_POINTF { x: p.x, y: p.y }).collect();
+        // SAFETY: the handle is live and the buffer outlives the call.
+        unsafe { pdfium_sys::FPDFAnnot_AddInkStroke(self.as_raw(), native.as_ptr(), native.len()) }
+    }
+
+    /// Remove `/InkList` entirely.
+    pub fn remove_ink_list(&self) -> bool {
+        // SAFETY: the handle is live.
+        unsafe { pdfium_sys::FPDFAnnot_RemoveInkList(self.as_raw()) != 0 }
+    }
+
+    /// One `/EMBD_Metadata` number entry.
+    pub fn set_embed_metadata_number(&self, key: &str, value: f32) -> Result<bool, PdfiumError> {
+        let key = c_key(key)?;
+        // SAFETY: the handle and key are live.
+        Ok(unsafe {
+            pdfium_sys::EPDFAnnot_SetEmbedMetadataNumber(self.as_raw(), key.as_ptr(), value) != 0
+        })
+    }
+
+    /// Remove one `/EMBD_Metadata` entry.
+    pub fn clear_embed_metadata_key(&self, key: &str) -> Result<bool, PdfiumError> {
+        let key = c_key(key)?;
+        // SAFETY: as above.
+        Ok(unsafe { pdfium_sys::EPDFAnnot_ClearEmbedMetadataKey(self.as_raw(), key.as_ptr()) != 0 })
+    }
+
     /// Bake the `/AP /N` appearance stream from the dictionary.
     ///
     /// `blend` is a `FPDF_BLENDMODE`; `None` uses PDFium's default entry

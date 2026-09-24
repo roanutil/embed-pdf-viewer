@@ -197,10 +197,33 @@ fn preflight(draft: &AnnotationDraft) -> Result<(), EngineError> {
             }
         }
         AnnotationDraftKind::Square { fields } | AnnotationDraftKind::Circle { fields } => {
-            if fields.rect.right < fields.rect.left || fields.rect.top < fields.rect.bottom {
+            normalized(&fields.rect)?;
+        }
+        AnnotationDraftKind::Polygon { fields, .. }
+        | AnnotationDraftKind::Polyline { fields, .. } => {
+            normalized(&fields.geometry.rect)?;
+            // A polygon of one point is a point, and PDFium will write it.
+            // Two is the fewest that draws anything, and a caller that sent
+            // fewer has a bug rather than an intent.
+            if fields.vertices.len() < 2 {
                 return Err(EngineError::with_message(
                     EngineErrorCode::InvalidArg,
-                    "a shape draft's rect must be normalized: left <= right and bottom <= top",
+                    format!(
+                        "a {} draft needs at least two vertices",
+                        draft.kind.subtype().as_str()
+                    ),
+                ));
+            }
+        }
+        AnnotationDraftKind::Line { fields, .. } => normalized(&fields.rect)?,
+        AnnotationDraftKind::Ink { fields, ink_list, .. } => {
+            normalized(&fields.rect)?;
+            // An ink annotation with no strokes draws nothing, and one with
+            // an empty stroke has a pen path of no points.
+            if ink_list.is_empty() || ink_list.iter().any(Vec::is_empty) {
+                return Err(EngineError::with_message(
+                    EngineErrorCode::InvalidArg,
+                    "an ink draft needs at least one stroke and every stroke needs a point",
                 ));
             }
         }
@@ -225,7 +248,22 @@ fn opacity_of(kind: &AnnotationDraftKind) -> Option<f64> {
         AnnotationDraftKind::Square { fields } | AnnotationDraftKind::Circle { fields } => {
             fields.opacity
         }
+        AnnotationDraftKind::Polygon { fields, .. }
+        | AnnotationDraftKind::Polyline { fields, .. } => fields.geometry.opacity,
+        AnnotationDraftKind::Line { fields, .. } => fields.opacity,
+        AnnotationDraftKind::Ink { fields, .. } => fields.opacity,
     }
+}
+
+/// A rect a caller can draw in.
+fn normalized(rect: &crate::geom::PdfRect) -> Result<(), EngineError> {
+    if rect.right < rect.left || rect.top < rect.bottom {
+        return Err(EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            "a draft's rect must be normalized: left <= right and bottom <= top",
+        ));
+    }
+    Ok(())
 }
 
 fn apply_base_draft(
@@ -282,7 +320,208 @@ fn apply_kind_draft(
         AnnotationDraftKind::Square { fields } | AnnotationDraftKind::Circle { fields } => {
             apply_shape(annotation, fields)
         }
+        AnnotationDraftKind::Polygon { fields, cloudy_intensity } => {
+            apply_vertex(annotation, fields)?;
+            // Only a polygon takes this: an open path has no interior for a
+            // cloudy border to enclose.
+            //
+            // The zero filter is not observable through a reader, and it is
+            // kept anyway. `read_cloudy_intensity` normalizes a `/BE` of
+            // intensity zero back to absent, so a writer without the filter
+            // round-trips identically; what differs is the file, which then
+            // carries a `/BE` dictionary declaring a cloudy border with no
+            // waviness. Another consumer is not obliged to normalize it.
+            if let Some(intensity) = cloudy_intensity.as_set().copied().filter(|i| *i > 0.0)
+                && !annotation.set_border_effect(intensity as f32)
+            {
+                return Err(EngineError::with_message(
+                    EngineErrorCode::Unknown,
+                    "EPDFAnnot_SetBorderEffect refused the intensity",
+                ));
+            }
+            Ok(())
+        }
+        AnnotationDraftKind::Polyline { fields, line_endings } => {
+            apply_vertex(annotation, fields)?;
+            set_line_endings(annotation, *line_endings)
+        }
+        AnnotationDraftKind::Line { fields, line_points, line_endings } => {
+            apply_geometry_style(annotation, fields)?;
+            set_rect(annotation, fields.rect)?;
+            if !annotation
+                .set_line(point_to_native(line_points.start), point_to_native(line_points.end))
+            {
+                return Err(EngineError::with_message(
+                    EngineErrorCode::Unknown,
+                    "EPDFAnnot_SetLine refused the endpoints",
+                ));
+            }
+            set_line_endings(annotation, *line_endings)?;
+            write_advisory_rotation(annotation, fields.rotation)
+        }
+        AnnotationDraftKind::Ink { fields, ink_list, intent } => {
+            apply_stroke_style(annotation, fields)?;
+            set_rect(annotation, fields.rect)?;
+            if let Some(intent) = intent {
+                write(annotation.set_intent(intent.name()), "/IT")?;
+            }
+            for (index, stroke) in ink_list.iter().enumerate() {
+                let points: Vec<pdfium::PointF> =
+                    stroke.iter().copied().map(point_to_native).collect();
+                if annotation.add_ink_stroke(&points) < 0 {
+                    return Err(EngineError::with_message(
+                        EngineErrorCode::Unknown,
+                        format!("FPDFAnnot_AddInkStroke refused stroke {index}"),
+                    ));
+                }
+            }
+            write_advisory_rotation(annotation, fields.rotation)
+        }
     }
+}
+
+/// The styling a filled geometric kind carries, plus its advisory rotation.
+fn apply_geometry_style(
+    annotation: &pdfium::Annotation<'_>,
+    fields: &super::draft::GeometryDraftFields,
+) -> Result<(), EngineError> {
+    set_color(
+        annotation,
+        AnnotationColorType::Color,
+        fields.color.unwrap_or(super::super::read::style::DEFAULT_GEOMETRY_COLOR),
+    )?;
+    set_opacity(annotation, fields.opacity.unwrap_or(DEFAULT_OPACITY))?;
+    set_border(annotation, fields.border_style, fields.stroke_width, &fields.dash_array)?;
+    // The clear is inert on the create path and load-bearing off it. A
+    // freshly created annotation has no `/IC` to remove, so dropping this
+    // arm passes every create vector; these fields are the same ones an
+    // update folds onto an annotation that may already have a fill, and
+    // there the difference between clearing and doing nothing is the whole
+    // point of `Patch::Clear`.
+    match fields.interior_color.as_set() {
+        Some(color) => set_color(annotation, AnnotationColorType::InteriorColor, *color)?,
+        None => {
+            annotation.clear_color(AnnotationColorType::InteriorColor as i32);
+        }
+    }
+    Ok(())
+}
+
+/// The same without a fill.
+fn apply_stroke_style(
+    annotation: &pdfium::Annotation<'_>,
+    fields: &super::draft::StrokeDraftFields,
+) -> Result<(), EngineError> {
+    set_color(
+        annotation,
+        AnnotationColorType::Color,
+        fields.color.unwrap_or(super::super::read::style::DEFAULT_GEOMETRY_COLOR),
+    )?;
+    set_opacity(annotation, fields.opacity.unwrap_or(DEFAULT_OPACITY))?;
+    set_border(annotation, fields.border_style, fields.stroke_width, &fields.dash_array)
+}
+
+fn apply_vertex(
+    annotation: &pdfium::Annotation<'_>,
+    fields: &super::draft::VertexDraftFields,
+) -> Result<(), EngineError> {
+    apply_geometry_style(annotation, &fields.geometry)?;
+    set_rect(annotation, fields.geometry.rect)?;
+    let points: Vec<pdfium::PointF> =
+        fields.vertices.iter().copied().map(point_to_native).collect();
+    if !annotation.set_vertices(&points) {
+        return Err(EngineError::with_message(
+            EngineErrorCode::Unknown,
+            "EPDFAnnot_SetVertices refused the point list",
+        ));
+    }
+    write_advisory_rotation(annotation, fields.geometry.rotation)
+}
+
+fn set_border(
+    annotation: &pdfium::Annotation<'_>,
+    style: Option<crate::features::annotation::vocabulary::AnnotationBorderStyle>,
+    width: Option<f64>,
+    dashes: &Option<Vec<f64>>,
+) -> Result<(), EngineError> {
+    let style = style.unwrap_or(AnnotationBorderStyleDefault::STYLE);
+    let width = width.unwrap_or(AnnotationBorderStyleDefault::WIDTH);
+    if !annotation.set_border_style(style.code(), width as f32) {
+        return Err(EngineError::with_message(
+            EngineErrorCode::Unknown,
+            "EPDFAnnot_SetBorderStyle refused the border",
+        ));
+    }
+    if let Some(dashes) = dashes.as_ref().filter(|d| !d.is_empty()) {
+        let dashes: Vec<f32> = dashes.iter().map(|d| *d as f32).collect();
+        if !annotation.set_border_dash_pattern(&dashes) {
+            return Err(EngineError::with_message(
+                EngineErrorCode::Unknown,
+                "EPDFAnnot_SetBorderDashPattern refused the pattern",
+            ));
+        }
+    }
+    Ok(())
+}
+
+/// `/LE`, defaulting to the pair that draws nothing.
+fn set_line_endings(
+    annotation: &pdfium::Annotation<'_>,
+    endings: Option<crate::features::annotation::vocabulary::LineEndings>,
+) -> Result<(), EngineError> {
+    use crate::features::annotation::vocabulary::{LineEnding, LineEndings};
+    let endings = endings.unwrap_or(LineEndings { start: LineEnding::None, end: LineEnding::None });
+    if !annotation.set_line_endings(endings.start.code(), endings.end.code()) {
+        return Err(EngineError::with_message(
+            EngineErrorCode::Unknown,
+            "EPDFAnnot_SetLineEndings refused the pair",
+        ));
+    }
+    Ok(())
+}
+
+/// The ADVISORY rotation these families carry.
+///
+/// Advisory because their points are already rotated: the scalar records the
+/// angle that was applied so a UI can draw an oriented selection box, and
+/// PDFium ignores it when baking. An unrotated annotation carries no key,
+/// because zero degrees is not a rotation and stamping one would put a key
+/// on a file that had none.
+fn write_advisory_rotation(
+    annotation: &pdfium::Annotation<'_>,
+    rotation: Option<f64>,
+) -> Result<(), EngineError> {
+    let Some(rotation) = rotation else {
+        return Ok(());
+    };
+    let result = if rotation == 0.0 {
+        annotation.clear_embed_metadata_key("Rotation")
+    } else {
+        annotation.set_embed_metadata_number("Rotation", rotation as f32)
+    };
+    result.map_err(|e| {
+        EngineError::with_message(
+            EngineErrorCode::RuntimeUnavailable,
+            format!("writing the advisory rotation failed: {e}"),
+        )
+    })?;
+    // A vertex kind never carries the logical box: its points ARE the
+    // visual, so there is no pre-rotation rectangle to remember. Inert on
+    // create for the same reason the interior-colour clear above is: there
+    // is nothing on a new annotation to remove. It runs so that a kind
+    // whose rect stopped being derived from a rotation does not keep a
+    // stale box that a later reader would trust.
+    annotation.clear_embed_metadata_key("UnrotatedRect").map_err(|e| {
+        EngineError::with_message(
+            EngineErrorCode::RuntimeUnavailable,
+            format!("clearing the unrotated rect failed: {e}"),
+        )
+    })?;
+    Ok(())
+}
+
+fn point_to_native(point: crate::geom::PdfPoint) -> pdfium::PointF {
+    pdfium::PointF { x: point.x as f32, y: point.y as f32 }
 }
 
 fn apply_text_markup(
@@ -323,23 +562,7 @@ fn apply_shape(
     // `/BS` is one call taking both, so a draft that names only one still
     // has to supply the other. The defaults are the resolved ones a reader
     // would report for an annotation with no `/BS` at all.
-    let style = fields.border_style.unwrap_or(AnnotationBorderStyleDefault::STYLE);
-    let width = fields.stroke_width.unwrap_or(AnnotationBorderStyleDefault::WIDTH);
-    if !annotation.set_border_style(style.code(), width as f32) {
-        return Err(EngineError::with_message(
-            EngineErrorCode::Unknown,
-            "EPDFAnnot_SetBorderStyle refused the border",
-        ));
-    }
-    if let Some(dashes) = &fields.dash_array {
-        let dashes: Vec<f32> = dashes.iter().map(|d| *d as f32).collect();
-        if !annotation.set_border_dash_pattern(&dashes) {
-            return Err(EngineError::with_message(
-                EngineErrorCode::Unknown,
-                "EPDFAnnot_SetBorderDashPattern refused the pattern",
-            ));
-        }
-    }
+    set_border(annotation, fields.border_style, fields.stroke_width, &fields.dash_array)?;
 
     // `/IC` is CLEARED when the draft does not name one, rather than left
     // alone. On a fresh annotation the two are the same thing, so no test

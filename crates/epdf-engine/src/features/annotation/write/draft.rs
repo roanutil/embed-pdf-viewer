@@ -19,11 +19,13 @@ use serde::{Deserialize, Serialize};
 use crate::dto::Patch;
 
 use crate::features::annotation::flags::AnnotationFlags;
+use crate::features::annotation::intent::InkIntent;
 use crate::features::annotation::intent::StrikeoutIntent;
 use crate::features::annotation::read::shape::PdfRectDifferences;
 use crate::features::annotation::read::style::Color;
+use crate::features::annotation::vocabulary::LineEndings;
 use crate::features::annotation::vocabulary::{AnnotationBorderStyle, BlendMode};
-use crate::geom::{PdfQuad, PdfRect};
+use crate::geom::{InkList, LinePoints, PdfPoint, PdfQuad, PdfRect};
 use crate::identity::AnnotationRef;
 
 /// The fields every draft carries.
@@ -145,6 +147,37 @@ pub enum AnnotationDraftKind {
         #[serde(flatten)]
         fields: ShapeDraftFields,
     },
+    Polygon {
+        #[serde(flatten)]
+        fields: VertexDraftFields,
+        /// `/BE`. Polygon has it and polyline does not: an open path has no
+        /// interior for a cloudy border to enclose.
+        #[serde(default, skip_serializing_if = "Patch::is_keep")]
+        cloudy_intensity: Patch<f64>,
+    },
+    Polyline {
+        #[serde(flatten)]
+        fields: VertexDraftFields,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        line_endings: Option<LineEndings>,
+    },
+    Line {
+        #[serde(flatten)]
+        fields: GeometryDraftFields,
+        /// `/L`. Required: it is what a line annotation IS.
+        line_points: LinePoints,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        line_endings: Option<LineEndings>,
+    },
+    Ink {
+        #[serde(flatten)]
+        fields: StrokeDraftFields,
+        /// `/InkList`, one point list per pen stroke.
+        ink_list: InkList,
+        /// `/IT`. `Some` only for the Acrobat freehand highlighter.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        intent: Option<InkIntent>,
+    },
 }
 
 impl AnnotationDraftKind {
@@ -158,6 +191,10 @@ impl AnnotationDraftKind {
             Self::Strikeout { .. } => S::Strikeout,
             Self::Square { .. } => S::Square,
             Self::Circle { .. } => S::Circle,
+            Self::Polygon { .. } => S::Polygon,
+            Self::Polyline { .. } => S::Polyline,
+            Self::Line { .. } => S::Line,
+            Self::Ink { .. } => S::Ink,
         }
     }
 }
@@ -203,6 +240,69 @@ pub struct ShapeDraftFields {
     /// `/RD`.
     #[serde(default, skip_serializing_if = "Patch::is_keep")]
     pub rect_differences: Patch<PdfRectDifferences>,
+}
+
+/// The styling every geometric draft carries, with a fill.
+///
+/// The shape family adds `/BE` and `/RD` on top of this; the vertex and line
+/// families do not, because their geometry is their own points rather than a
+/// box with margins.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GeometryDraftFields {
+    /// `/Rect`. Required on every geometric kind: the caller owns the
+    /// bounding-box arithmetic, because it also owns the rotation that
+    /// produced the points inside it.
+    pub rect: PdfRect,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub color: Option<Color>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub opacity: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stroke_width: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub border_style: Option<AnnotationBorderStyle>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dash_array: Option<Vec<f64>>,
+    #[serde(default, skip_serializing_if = "Patch::is_keep")]
+    pub interior_color: Patch<Color>,
+    /// `/EMBD_Metadata /Rotation`, ADVISORY for these families: the points
+    /// are already rotated, so this records the angle that was applied and
+    /// never drives the appearance generator.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rotation: Option<f64>,
+}
+
+/// The same without a fill, for ink.
+///
+/// A pen stroke has no interior, so the field is absent rather than present
+/// and always null: the type says what the family has.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StrokeDraftFields {
+    pub rect: PdfRect,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub color: Option<Color>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub opacity: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stroke_width: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub border_style: Option<AnnotationBorderStyle>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dash_array: Option<Vec<f64>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rotation: Option<f64>,
+}
+
+/// What a polygon or polyline draft carries.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VertexDraftFields {
+    #[serde(flatten)]
+    pub geometry: GeometryDraftFields,
+    /// `/Vertices`, in order.
+    pub vertices: Vec<PdfPoint>,
 }
 
 /// One annotation to create.
