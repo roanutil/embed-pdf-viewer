@@ -45,10 +45,12 @@
 //! `crates/epdf-engine/tests/search_dialect.rs` lists what it still cannot
 //! reproduce.
 
+pub mod cursor;
 pub mod dialect;
 pub mod fold;
 pub mod literal;
 pub mod matcher;
+pub mod reader;
 pub mod snippet;
 
 use std::sync::OnceLock;
