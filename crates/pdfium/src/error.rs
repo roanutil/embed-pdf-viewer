@@ -18,6 +18,8 @@ pub enum PdfiumError {
     TextRead,
     TextRect,
     Bitmap,
+    /// PDFium refused a font: unloadable, or it carries no glyphs.
+    FontRegistration,
     Search,
     /// An argument this layer rejected before calling PDFium at all.
     InvalidArgument(&'static str),
@@ -46,6 +48,9 @@ impl std::fmt::Display for PdfiumError {
             ),
             Self::PageLoadByObjectNumber(number) => {
                 write!(f, "no page with object number {number}")
+            }
+            Self::FontRegistration => {
+                write!(f, "the font could not be registered: unloadable, or it has no glyphs")
             }
             Self::TextLoad => write!(f, "FPDFText_LoadPage failed"),
             Self::TextRead => write!(f, "EPDFText_GetTextFull failed"),

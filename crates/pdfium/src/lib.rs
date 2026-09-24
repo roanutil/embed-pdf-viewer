@@ -17,6 +17,7 @@ mod bitmap;
 mod document;
 mod error;
 mod file_access;
+mod fonts;
 mod geom;
 mod library;
 mod page;
@@ -27,6 +28,10 @@ pub use bitmap::Bitmap;
 pub use document::{Document, FileBackedDocument, PasswordPermissions};
 pub use error::PdfiumError;
 pub use file_access::FileAccess;
+pub use fonts::{
+    FontDescription, FontId, add_fallback_font, clear_fallback_fonts, clear_registered_fonts,
+    register_font_file, register_memory_font,
+};
 pub use geom::{MatrixF, QuadF, RectF};
 pub use library::Library;
 pub use page::{Page, PageView, SharedPage};
