@@ -161,6 +161,12 @@ jobs:
       - name: Render geometry vectors are current
         run: pnpm --filter @embedpdf/tooling-engine-conformance run render:check
 
+      # G5's entry gate: the two text index spaces and the map between
+      # them. core/src/text/charmap.ts stays in TypeScript for the web
+      # selection plugins, so this is what keeps the duplicate honest.
+      - name: Charmap vectors are current
+        run: pnpm --filter @embedpdf/tooling-engine-conformance run charmap:check
+
       # multiplatform-port-order.md Section 6: a kind added to
       # worker-protocol.ts without a row in the matrix fails here, and so does
       # a row for a kind that no longer exists.
