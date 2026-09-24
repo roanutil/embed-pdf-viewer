@@ -15,6 +15,7 @@
 mod base;
 mod bitmap;
 mod document;
+mod extract;
 mod error;
 mod file_access;
 mod fonts;
