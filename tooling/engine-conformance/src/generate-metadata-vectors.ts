@@ -1,14 +1,15 @@
 /**
- * Emits `vectors/metadata/read.json`: what `MetadataReader` produces for each
- * corpus document.
+ * Emits the document-level reads: `vectors/metadata/read.json` and
+ * `vectors/metadata/pages.json`.
  *
  *   pnpm --filter @embedpdf/tooling-engine-conformance run metadata
  *   pnpm --filter @embedpdf/tooling-engine-conformance run metadata:check
  *
- * G6's gate. `crates/epdf-engine/tests/metadata_corpus.rs` replays it.
+ * G6's gate. `crates/epdf-engine/tests/{metadata_corpus,pages_corpus}.rs`
+ * replay them.
  *
- * A separate generator from `generate-vectors.ts` because metadata is a
- * document-level read and that one is built around per-page vectors. Folding a
+ * A separate generator from `generate-vectors.ts` because these are
+ * document-level and that one is built around per-page vectors. Folding a
  * document-level operation into a per-page envelope would mean emitting the
  * same answer once per page.
  */
@@ -50,6 +51,12 @@ const CASES: readonly MetadataCase[] = [
     covers: 'A minimal document with almost no metadata: the mostly-absent case.',
   },
   {
+    name: 'rotated',
+    fixture: 'tooling/engine-conformance/fixtures/rotated_pages.pdf',
+    covers:
+      'Four pages at /Rotate 0, 90, 180 and 270. The listing reports the rotation and the NORMALIZED size, so a reader using the rotated size would disagree with the page a caller then opens.',
+  },
+  {
     name: 'encrypted',
     fixture: 'tooling/engine-conformance/fixtures/encrypted-r4-aes-128.pdf',
     covers: 'Metadata behind encryption, which is read through the same path once unlocked.',
@@ -74,7 +81,11 @@ async function readCase(entry: MetadataCase): Promise<unknown> {
       { scope: ['*'] },
     );
     try {
-      return { ...entry, metadata: await doc.metadata.read() };
+      return {
+        ...entry,
+        metadata: await doc.metadata.read(),
+        pages: await doc.pages.list(),
+      };
     } finally {
       await doc.close();
     }
@@ -110,13 +121,24 @@ async function emit(relative: string, text: string, check: boolean): Promise<boo
 async function main(): Promise<void> {
   const check = process.argv.includes('--check');
 
-  const cases = [];
+  const cases: Record<string, unknown>[] = [];
   for (const entry of CASES) {
     cases.push(await readCase(entry));
   }
 
-  const payload = { schemaVersion: SCHEMA_VERSION, kind: 'metadata.read', cases };
-  const differed = await emit('read.json', `${JSON.stringify(payload, null, 2)}\n`, check);
+  const metadata = {
+    schemaVersion: SCHEMA_VERSION,
+    kind: 'metadata.read',
+    cases: cases.map(({ pages: _pages, ...rest }) => rest),
+  };
+  const pages = {
+    schemaVersion: SCHEMA_VERSION,
+    kind: 'pages.list',
+    cases: cases.map(({ metadata: _metadata, ...rest }) => rest),
+  };
+  let differed = await emit('read.json', `${JSON.stringify(metadata, null, 2)}\n`, check);
+  differed =
+    (await emit('pages.json', `${JSON.stringify(pages, null, 2)}\n`, check)) || differed;
   if (check && differed) {
     process.stderr.write(
       '\nMetadata vectors differ. Regenerate with:\n' +

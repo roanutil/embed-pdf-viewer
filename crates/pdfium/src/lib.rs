@@ -22,6 +22,7 @@ mod geom;
 mod metadata;
 mod library;
 mod page;
+mod page_list;
 mod text;
 
 pub use base::{BaseDocument, LayerDocument, LayerOpenError};
@@ -37,4 +38,5 @@ pub use geom::{MatrixF, QuadF, RectF};
 pub use library::Library;
 pub use metadata::Trapped;
 pub use page::{Page, PageView, SharedPage};
+pub use page_list::PageBoxType;
 pub use text::{CharGeometry, CharGeometryFlags, TextObjectKey, TextPage};

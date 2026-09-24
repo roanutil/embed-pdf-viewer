@@ -1,0 +1,582 @@
+{
+  "schemaVersion": 1,
+  "kind": "pages.list",
+  "cases": [
+    {
+      "name": "rich",
+      "fixture": "tooling/engine-conformance/fixtures/rich_metadata.pdf",
+      "covers": "Every distinction the read has to make: an absent key, a present-but-empty one, a UTF-16 title outside Latin-1, custom keys including an empty one, and dates in both the offset and the Z forms.",
+      "pages": {
+        "pageCount": 1,
+        "pages": [
+          {
+            "index": 0,
+            "pageObjectNumber": 3,
+            "label": null,
+            "size": {
+              "width": 612,
+              "height": 792
+            },
+            "rotation": 0,
+            "userUnit": 1,
+            "boxes": {
+              "media": {
+                "left": 0,
+                "right": 612,
+                "bottom": 0,
+                "top": 792
+              },
+              "crop": {
+                "left": 0,
+                "right": 612,
+                "bottom": 0,
+                "top": 792
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "report",
+      "fixture": "pdfium-multiplatform-prototype/fixtures/report.pdf",
+      "covers": "A real document, whose Info dictionary is whatever its producer wrote.",
+      "pages": {
+        "pageCount": 14,
+        "pages": [
+          {
+            "index": 0,
+            "pageObjectNumber": 2,
+            "label": null,
+            "size": {
+              "width": 612,
+              "height": 792
+            },
+            "rotation": 0,
+            "userUnit": 1,
+            "boxes": {
+              "media": {
+                "left": 0,
+                "right": 612,
+                "bottom": 0,
+                "top": 792
+              },
+              "crop": {
+                "left": 0,
+                "right": 612,
+                "bottom": 0,
+                "top": 792
+              }
+            }
+          },
+          {
+            "index": 1,
+            "pageObjectNumber": 43,
+            "label": null,
+            "size": {
+              "width": 612,
+              "height": 792
+            },
+            "rotation": 0,
+            "userUnit": 1,
+            "boxes": {
+              "media": {
+                "left": 0,
+                "right": 612,
+                "bottom": 0,
+                "top": 792
+              },
+              "crop": {
+                "left": 0,
+                "right": 612,
+                "bottom": 0,
+                "top": 792
+              }
+            }
+          },
+          {
+            "index": 2,
+            "pageObjectNumber": 104,
+            "label": null,
+            "size": {
+              "width": 612,
+              "height": 792
+            },
+            "rotation": 0,
+            "userUnit": 1,
+            "boxes": {
+              "media": {
+                "left": 0,
+                "right": 612,
+                "bottom": 0,
+                "top": 792
+              },
+              "crop": {
+                "left": 0,
+                "right": 612,
+                "bottom": 0,
+                "top": 792
+              }
+            }
+          },
+          {
+            "index": 3,
+            "pageObjectNumber": 110,
+            "label": null,
+            "size": {
+              "width": 612,
+              "height": 792
+            },
+            "rotation": 0,
+            "userUnit": 1,
+            "boxes": {
+              "media": {
+                "left": 0,
+                "right": 612,
+                "bottom": 0,
+                "top": 792
+              },
+              "crop": {
+                "left": 0,
+                "right": 612,
+                "bottom": 0,
+                "top": 792
+              }
+            }
+          },
+          {
+            "index": 4,
+            "pageObjectNumber": 116,
+            "label": null,
+            "size": {
+              "width": 612,
+              "height": 792
+            },
+            "rotation": 0,
+            "userUnit": 1,
+            "boxes": {
+              "media": {
+                "left": 0,
+                "right": 612,
+                "bottom": 0,
+                "top": 792
+              },
+              "crop": {
+                "left": 0,
+                "right": 612,
+                "bottom": 0,
+                "top": 792
+              }
+            }
+          },
+          {
+            "index": 5,
+            "pageObjectNumber": 122,
+            "label": null,
+            "size": {
+              "width": 612,
+              "height": 792
+            },
+            "rotation": 0,
+            "userUnit": 1,
+            "boxes": {
+              "media": {
+                "left": 0,
+                "right": 612,
+                "bottom": 0,
+                "top": 792
+              },
+              "crop": {
+                "left": 0,
+                "right": 612,
+                "bottom": 0,
+                "top": 792
+              }
+            }
+          },
+          {
+            "index": 6,
+            "pageObjectNumber": 156,
+            "label": null,
+            "size": {
+              "width": 612,
+              "height": 792
+            },
+            "rotation": 0,
+            "userUnit": 1,
+            "boxes": {
+              "media": {
+                "left": 0,
+                "right": 612,
+                "bottom": 0,
+                "top": 792
+              },
+              "crop": {
+                "left": 0,
+                "right": 612,
+                "bottom": 0,
+                "top": 792
+              }
+            }
+          },
+          {
+            "index": 7,
+            "pageObjectNumber": 193,
+            "label": null,
+            "size": {
+              "width": 612,
+              "height": 792
+            },
+            "rotation": 0,
+            "userUnit": 1,
+            "boxes": {
+              "media": {
+                "left": 0,
+                "right": 612,
+                "bottom": 0,
+                "top": 792
+              },
+              "crop": {
+                "left": 0,
+                "right": 612,
+                "bottom": 0,
+                "top": 792
+              }
+            }
+          },
+          {
+            "index": 8,
+            "pageObjectNumber": 196,
+            "label": null,
+            "size": {
+              "width": 612,
+              "height": 792
+            },
+            "rotation": 0,
+            "userUnit": 1,
+            "boxes": {
+              "media": {
+                "left": 0,
+                "right": 612,
+                "bottom": 0,
+                "top": 792
+              },
+              "crop": {
+                "left": 0,
+                "right": 612,
+                "bottom": 0,
+                "top": 792
+              }
+            }
+          },
+          {
+            "index": 9,
+            "pageObjectNumber": 202,
+            "label": null,
+            "size": {
+              "width": 612,
+              "height": 792
+            },
+            "rotation": 0,
+            "userUnit": 1,
+            "boxes": {
+              "media": {
+                "left": 0,
+                "right": 612,
+                "bottom": 0,
+                "top": 792
+              },
+              "crop": {
+                "left": 0,
+                "right": 612,
+                "bottom": 0,
+                "top": 792
+              }
+            }
+          },
+          {
+            "index": 10,
+            "pageObjectNumber": 217,
+            "label": null,
+            "size": {
+              "width": 612,
+              "height": 792
+            },
+            "rotation": 0,
+            "userUnit": 1,
+            "boxes": {
+              "media": {
+                "left": 0,
+                "right": 612,
+                "bottom": 0,
+                "top": 792
+              },
+              "crop": {
+                "left": 0,
+                "right": 612,
+                "bottom": 0,
+                "top": 792
+              }
+            }
+          },
+          {
+            "index": 11,
+            "pageObjectNumber": 787,
+            "label": null,
+            "size": {
+              "width": 612,
+              "height": 792
+            },
+            "rotation": 0,
+            "userUnit": 1,
+            "boxes": {
+              "media": {
+                "left": 0,
+                "right": 612,
+                "bottom": 0,
+                "top": 792
+              },
+              "crop": {
+                "left": 0,
+                "right": 612,
+                "bottom": 0,
+                "top": 792
+              }
+            }
+          },
+          {
+            "index": 12,
+            "pageObjectNumber": 790,
+            "label": null,
+            "size": {
+              "width": 612,
+              "height": 792
+            },
+            "rotation": 0,
+            "userUnit": 1,
+            "boxes": {
+              "media": {
+                "left": 0,
+                "right": 612,
+                "bottom": 0,
+                "top": 792
+              },
+              "crop": {
+                "left": 0,
+                "right": 612,
+                "bottom": 0,
+                "top": 792
+              }
+            }
+          },
+          {
+            "index": 13,
+            "pageObjectNumber": 966,
+            "label": null,
+            "size": {
+              "width": 612,
+              "height": 792
+            },
+            "rotation": 0,
+            "userUnit": 1,
+            "boxes": {
+              "media": {
+                "left": 0,
+                "right": 612,
+                "bottom": 0,
+                "top": 792
+              },
+              "crop": {
+                "left": 0,
+                "right": 612,
+                "bottom": 0,
+                "top": 792
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "colors",
+      "fixture": "pdfium-multiplatform-prototype/fixtures/colors.pdf",
+      "covers": "A minimal document with almost no metadata: the mostly-absent case.",
+      "pages": {
+        "pageCount": 1,
+        "pages": [
+          {
+            "index": 0,
+            "pageObjectNumber": 3,
+            "label": null,
+            "size": {
+              "width": 80,
+              "height": 20
+            },
+            "rotation": 0,
+            "userUnit": 1,
+            "boxes": {
+              "media": {
+                "left": 0,
+                "right": 80,
+                "bottom": 0,
+                "top": 20
+              },
+              "crop": {
+                "left": 0,
+                "right": 80,
+                "bottom": 0,
+                "top": 20
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "rotated",
+      "fixture": "tooling/engine-conformance/fixtures/rotated_pages.pdf",
+      "covers": "Four pages at /Rotate 0, 90, 180 and 270. The listing reports the rotation and the NORMALIZED size, so a reader using the rotated size would disagree with the page a caller then opens.",
+      "pages": {
+        "pageCount": 4,
+        "pages": [
+          {
+            "index": 0,
+            "pageObjectNumber": 3,
+            "label": null,
+            "size": {
+              "width": 612,
+              "height": 792
+            },
+            "rotation": 0,
+            "userUnit": 1,
+            "boxes": {
+              "media": {
+                "left": 0,
+                "right": 612,
+                "bottom": 0,
+                "top": 792
+              },
+              "crop": {
+                "left": 0,
+                "right": 612,
+                "bottom": 0,
+                "top": 792
+              }
+            }
+          },
+          {
+            "index": 1,
+            "pageObjectNumber": 4,
+            "label": null,
+            "size": {
+              "width": 612,
+              "height": 792
+            },
+            "rotation": 90,
+            "userUnit": 1,
+            "boxes": {
+              "media": {
+                "left": 0,
+                "right": 612,
+                "bottom": 0,
+                "top": 792
+              },
+              "crop": {
+                "left": 0,
+                "right": 612,
+                "bottom": 0,
+                "top": 792
+              }
+            }
+          },
+          {
+            "index": 2,
+            "pageObjectNumber": 5,
+            "label": null,
+            "size": {
+              "width": 612,
+              "height": 792
+            },
+            "rotation": 180,
+            "userUnit": 1,
+            "boxes": {
+              "media": {
+                "left": 0,
+                "right": 612,
+                "bottom": 0,
+                "top": 792
+              },
+              "crop": {
+                "left": 0,
+                "right": 612,
+                "bottom": 0,
+                "top": 792
+              }
+            }
+          },
+          {
+            "index": 3,
+            "pageObjectNumber": 6,
+            "label": null,
+            "size": {
+              "width": 612,
+              "height": 792
+            },
+            "rotation": 270,
+            "userUnit": 1,
+            "boxes": {
+              "media": {
+                "left": 0,
+                "right": 612,
+                "bottom": 0,
+                "top": 792
+              },
+              "crop": {
+                "left": 0,
+                "right": 612,
+                "bottom": 0,
+                "top": 792
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "encrypted",
+      "fixture": "tooling/engine-conformance/fixtures/encrypted-r4-aes-128.pdf",
+      "covers": "Metadata behind encryption, which is read through the same path once unlocked.",
+      "password": "user",
+      "pages": {
+        "pageCount": 1,
+        "pages": [
+          {
+            "index": 0,
+            "pageObjectNumber": 3,
+            "label": null,
+            "size": {
+              "width": 612,
+              "height": 792
+            },
+            "rotation": 0,
+            "userUnit": 1,
+            "boxes": {
+              "media": {
+                "left": 0,
+                "right": 612,
+                "bottom": 0,
+                "top": 792
+              },
+              "crop": {
+                "left": 0,
+                "right": 612,
+                "bottom": 0,
+                "top": 792
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

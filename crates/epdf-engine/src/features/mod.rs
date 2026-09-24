@@ -12,6 +12,7 @@ pub mod fonts;
 pub mod forms;
 pub mod geometry;
 pub mod metadata;
+pub mod pages;
 pub mod redaction;
 pub mod render;
 pub mod search;
