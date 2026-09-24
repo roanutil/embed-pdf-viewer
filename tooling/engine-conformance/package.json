@@ -14,6 +14,8 @@
     "scope:check": "tsx --conditions=development src/generate-scope-vectors.ts --check",
     "security": "tsx --conditions=development src/generate-security-vectors.ts",
     "security:check": "tsx --conditions=development src/generate-security-vectors.ts --check",
+    "render": "tsx --conditions=development src/generate-render-vectors.ts",
+    "render:check": "tsx --conditions=development src/generate-render-vectors.ts --check",
     "operations": "tsx src/check-operations.ts",
     "operations:check": "tsx src/check-operations.ts --check",
     "verify:wasm-bridge": "node --experimental-strip-types src/verify-wasm-bridge.mts",

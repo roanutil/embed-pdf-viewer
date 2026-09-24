@@ -5,6 +5,11 @@ use std::rc::Rc;
 
 use crate::{Bitmap, Document, PdfiumError, TextPage};
 
+/// Emit RGBA byte order rather than PDFium's native BGRA.
+const FPDF_REVERSE_BYTE_ORDER: i32 = 0x10;
+/// Draw annotation appearances along with the page content.
+const FPDF_RENDER_ANNOT: i32 = 0x01;
+
 /// A page this layer may read but does not own.
 ///
 /// The two callers are different by design. `Page` derefs to it and closes on
@@ -61,6 +66,93 @@ impl<'a> PageView<'a> {
     /// The five calls, in this order and with this fill colour, are what the
     /// frozen vectors were generated from. Changing either changes the pixels
     /// and breaks the golden comparison on every host.
+    /// Render a region through a caller-supplied affine, into RGBA.
+    ///
+    /// The general form. [`PageView::render_bgra`] is the whole page at a
+    /// size; this is what a viewport, a rotation and a sub-rect all become,
+    /// and it is the only entry point `epdf_engine::features::render` uses.
+    ///
+    /// RGBA rather than BGRA, through `FPDF_REVERSE_BYTE_ORDER`. The
+    /// TypeScript does the same and its callers receive `rgba8`; converting in
+    /// PDFium costs nothing and converting afterwards costs a pass over every
+    /// pixel.
+    ///
+    /// `matrix` is the six affine cells in `FS_MATRIX` order, and it maps
+    /// display space, after PDFium's own `GetDisplayMatrix` has flipped the y
+    /// axis, onto the bitmap. `epdf_engine`'s
+    /// `features::render::geometry::display_rect_to_device_matrix` produces it.
+    pub fn render_rgba_with_matrix(
+        &self,
+        width: u32,
+        height: u32,
+        matrix: [f64; 6],
+        opaque_background: bool,
+        include_annotations: bool,
+    ) -> Result<Bitmap, PdfiumError> {
+        let (native_width, native_height, native_stride, len) = bitmap_layout(width, height)?;
+        let mut pixels = Vec::new();
+        pixels.try_reserve_exact(len).map_err(|_| PdfiumError::OutOfMemory)?;
+        pixels.resize(len, 0u8);
+
+        // SAFETY: the buffer is exactly stride * height bytes, proved by
+        // bitmap_layout, and it outlives the bitmap handle destroyed below.
+        let bitmap = unsafe {
+            pdfium_sys::FPDFBitmap_CreateEx(
+                native_width,
+                native_height,
+                pdfium_sys::FPDFBitmap_BGRA as i32,
+                pixels.as_mut_ptr() as *mut c_void,
+                native_stride,
+            )
+        };
+        if bitmap.is_null() {
+            return Err(PdfiumError::Bitmap);
+        }
+
+        let fs_matrix = pdfium_sys::FS_MATRIX {
+            a: matrix[0] as f32,
+            b: matrix[1] as f32,
+            c: matrix[2] as f32,
+            d: matrix[3] as f32,
+            e: matrix[4] as f32,
+            f: matrix[5] as f32,
+        };
+        // The clip is the whole bitmap. A narrower one belongs in the matrix,
+        // where it also scales; clipping here would crop instead.
+        let clip = pdfium_sys::FS_RECTF {
+            left: 0.0,
+            top: 0.0,
+            right: width as f32,
+            bottom: height as f32,
+        };
+
+        let mut flags = FPDF_REVERSE_BYTE_ORDER;
+        if include_annotations {
+            flags |= FPDF_RENDER_ANNOT;
+        }
+
+        unsafe {
+            pdfium_sys::FPDFBitmap_FillRect(
+                bitmap,
+                0,
+                0,
+                native_width,
+                native_height,
+                if opaque_background { 0xFFFF_FFFF } else { 0x0000_0000 },
+            );
+            pdfium_sys::FPDF_RenderPageBitmapWithMatrix(
+                bitmap,
+                self.handle,
+                &fs_matrix,
+                &clip,
+                flags,
+            );
+            pdfium_sys::FPDFBitmap_Destroy(bitmap);
+        }
+
+        Ok(Bitmap { width, height, stride: native_stride as u32, bgra: pixels })
+    }
+
     pub fn render_bgra(&self, width: u32, height: u32) -> Result<Bitmap, PdfiumError> {
         let (native_width, native_height, native_stride, len) = bitmap_layout(width, height)?;
         let mut bgra = Vec::new();

@@ -7,3 +7,6 @@
 //!
 //! Encoding stays a host-injected concern. Gate: exact interior BGRA on a
 //! colored fixture, plus tile, rotation, alpha and buffer-lifetime tests.
+
+pub mod geometry;
+pub mod raster;

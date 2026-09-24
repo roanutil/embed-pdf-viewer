@@ -155,6 +155,12 @@ jobs:
       - name: Security state vectors are current
         run: pnpm --filter @embedpdf/tooling-engine-conformance run security:check
 
+      # G4: the arithmetic that turns a PDF region into a device raster,
+      # before any pixel exists. A matrix that is subtly wrong makes a picture
+      # that is subtly wrong, which nobody catches by looking.
+      - name: Render geometry vectors are current
+        run: pnpm --filter @embedpdf/tooling-engine-conformance run render:check
+
       # multiplatform-port-order.md Section 6: a kind added to
       # worker-protocol.ts without a row in the matrix fails here, and so does
       # a row for a kind that no longer exists.
