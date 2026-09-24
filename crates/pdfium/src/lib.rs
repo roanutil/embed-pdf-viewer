@@ -13,6 +13,7 @@
 //! handle cross threads and misbehave later.
 
 pub(crate) mod action;
+mod action_write;
 mod annot;
 mod annot_write;
 mod base;
@@ -36,6 +37,7 @@ pub use action::{
     ActionModel, ActionNodeId, AnnotationActionEvent, DestinationLocation, DestinationView,
     DocumentActionEvent, PageActionEvent, RawDestination,
 };
+pub use action_write::{Action, Destination, view};
 pub use annot::{
     Annotation, AppearanceMode, Attachment, AttachmentExtractError, BorderStyle, DefaultAppearance,
     RectangleDifferences,

@@ -561,6 +561,131 @@ const CASES: readonly CreateCase[] = [
     },
   },
   {
+    name: 'link-dead',
+    covers:
+      'A link with nowhere to go. This is the create-then-edit flow: the rectangle is dragged first and the destination chosen afterwards, so a target of null is a legitimate state rather than a mistake.',
+    draft: {
+      subtype: 'link',
+      rect: { left: 72, bottom: 640, right: 200, top: 660 },
+      target: null,
+    },
+  },
+  {
+    name: 'link-uri',
+    covers: 'A /URI action. The reader normalizes /Dest and /A /GoTo together, so this is the one target shape it cannot confuse with the other.',
+    draft: {
+      subtype: 'link',
+      rect: { left: 210, bottom: 640, right: 340, top: 660 },
+      target: { kind: 'uri', uri: 'https://example.invalid/a?b=c#d' },
+    },
+  },
+  {
+    name: 'link-goto-xyz',
+    covers:
+      'An /XYZ destination with a left and a top and no zoom. Each component is present or retains the current value, so the absent zoom has to come back absent rather than as a zero magnification.',
+    draft: {
+      subtype: 'link',
+      rect: { left: 350, bottom: 640, right: 470, top: 660 },
+      target: {
+        kind: 'goto',
+        destination: { kind: 'xyz', pageObjectNumber: 3, left: 100, top: 700, zoom: null },
+      },
+    },
+  },
+  {
+    name: 'link-goto-fit',
+    covers: 'The parameterless fit, which writes an empty array rather than a padded one.',
+    draft: {
+      subtype: 'link',
+      rect: { left: 72, bottom: 610, right: 200, top: 630 },
+      target: { kind: 'goto', destination: { kind: 'fit', pageObjectNumber: 3 } },
+    },
+  },
+  {
+    name: 'link-goto-fit-h',
+    covers:
+      'One positional parameter. A fit type takes its parameters by position, so an absent one can only be absent by shortening the array.',
+    draft: {
+      subtype: 'link',
+      rect: { left: 210, bottom: 610, right: 340, top: 630 },
+      target: {
+        kind: 'goto',
+        destination: { kind: 'fitH', pageObjectNumber: 3, top: 500 },
+      },
+    },
+  },
+  {
+    name: 'link-goto-xyz-retain',
+    covers:
+      'An /XYZ whose left retains the current value. Zero is a real coordinate at the left edge, so an absent left cannot be written as one.',
+    draft: {
+      subtype: 'link',
+      rect: { left: 72, bottom: 580, right: 200, top: 600 },
+      target: {
+        kind: 'goto',
+        destination: { kind: 'xyz', pageObjectNumber: 3, left: null, top: 400, zoom: 2 },
+      },
+    },
+  },
+  {
+    name: 'link-goto-fit-h-retain',
+    covers:
+      'A /FitH with no top. The parameter is positional, so absent means a shorter array rather than a zero at the bottom of the page.',
+    draft: {
+      subtype: 'link',
+      rect: { left: 210, bottom: 580, right: 340, top: 600 },
+      target: {
+        kind: 'goto',
+        destination: { kind: 'fitH', pageObjectNumber: 3, top: null },
+      },
+    },
+  },
+  {
+    name: 'link-goto-fit-v',
+    covers:
+      'The vertical twin of /FitH. It takes a left where the other takes a top, and they are different view codes, so a writer with one code for both agrees with one of them.',
+    draft: {
+      subtype: 'link',
+      rect: { left: 350, bottom: 580, right: 470, top: 600 },
+      target: {
+        kind: 'goto',
+        destination: { kind: 'fitV', pageObjectNumber: 3, left: 120 },
+      },
+    },
+  },
+  {
+    name: 'link-goto-fit-bv',
+    covers:
+      'The bounding-box variants are a separate pair of codes again, fitting the content box rather than the crop box.',
+    draft: {
+      subtype: 'link',
+      rect: { left: 72, bottom: 550, right: 200, top: 570 },
+      target: {
+        kind: 'goto',
+        destination: { kind: 'fitBV', pageObjectNumber: 3, left: 90 },
+      },
+    },
+  },
+  {
+    name: 'link-goto-fit-r',
+    covers: 'The one fit type whose four coordinates are all required.',
+    draft: {
+      subtype: 'link',
+      rect: { left: 350, bottom: 610, right: 470, top: 630 },
+      target: {
+        kind: 'goto',
+        destination: {
+          kind: 'fitR',
+          pageObjectNumber: 3,
+          left: 50,
+          bottom: 100,
+          right: 400,
+          top: 600,
+        },
+      },
+    },
+  },
+  {
     name: 'highlight-cleared-strings',
     covers:
       'A draft that explicitly clears contents and subject. Setting a null value writes an EMPTY string rather than removing the key, so a writer that used the setter would produce a field that reads back as present-and-empty instead of absent.',

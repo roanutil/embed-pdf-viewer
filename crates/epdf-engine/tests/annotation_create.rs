@@ -383,6 +383,14 @@ fn a_draft_that_cannot_be_written_is_refused_before_anything_is_written() {
             }),
             "a filespec that names nothing",
         ),
+        (
+            serde_json::json!({
+                "subtype": "link",
+                "rect": { "left": 10.0, "bottom": 10.0, "right": 100.0, "top": 30.0 },
+                "target": { "kind": "uri", "uri": "" },
+            }),
+            "a link to an empty uri",
+        ),
     ] {
         let mut refused_case = Case {
             name: format!("refusal: {what}"),

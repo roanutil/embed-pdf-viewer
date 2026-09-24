@@ -23,6 +23,10 @@ pub enum PdfiumError {
     Search,
     /// A serialization PDFium declined, or one that produced no bytes.
     Save,
+    /// PDFium refused to build a destination array.
+    DestinationBuild,
+    /// PDFium refused to build an action dictionary.
+    ActionBuild,
     /// An argument this layer rejected before calling PDFium at all.
     InvalidArgument(&'static str),
     /// An allocation this layer refused to attempt or that the allocator
@@ -58,6 +62,8 @@ impl std::fmt::Display for PdfiumError {
             Self::Bitmap => write!(f, "FPDFBitmap_CreateEx failed"),
             Self::Search => write!(f, "FPDFText_FindStart failed"),
             Self::Save => write!(f, "the document could not be serialized"),
+            Self::DestinationBuild => write!(f, "the destination array could not be built"),
+            Self::ActionBuild => write!(f, "the action dictionary could not be built"),
             Self::InvalidArgument(what) => write!(f, "invalid argument: {what}"),
             Self::OutOfMemory => write!(f, "allocation refused"),
         }

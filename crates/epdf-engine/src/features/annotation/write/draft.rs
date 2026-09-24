@@ -17,6 +17,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::dto::Patch;
+use crate::features::actions::destination::PdfDestination;
 
 use crate::features::annotation::flags::AnnotationFlags;
 use crate::features::annotation::intent::CaretIntent;
@@ -202,6 +203,39 @@ pub enum AnnotationDraftKind {
         #[serde(flatten)]
         fields: FileAttachmentDraftFields,
     },
+    Link {
+        #[serde(flatten)]
+        fields: LinkDraftFields,
+    },
+}
+
+/// Where a link a writer creates may point.
+///
+/// A STRICT subset of what the reader reports, and the gap is the point.
+/// `goto-remote` and `launch` are executable-shaped actions a viewer never
+/// needs to author, and putting them out of reach of the write surface is
+/// cheaper than auditing every path that could reach one. `javascript`
+/// carries no payload to write, `named` is a viewer verb this engine does not
+/// author, and `unsupported` is by definition nothing.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "kebab-case")]
+#[serde(rename_all_fields = "camelCase")]
+pub enum LinkTargetDraft {
+    Goto { destination: PdfDestination },
+    Uri { uri: String },
+}
+
+/// What a link draft carries.
+///
+/// A link IS its hit rectangle, so `rect` is required and the target is not.
+/// `target: null` is the create-then-edit flow: the rectangle is dragged
+/// first and the destination chosen afterwards, so a link with nowhere to go
+/// is a legitimate intermediate state rather than a mistake.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LinkDraftFields {
+    pub rect: PdfRect,
+    pub target: Option<LinkTargetDraft>,
 }
 
 /// The embedded file a file-attachment draft names.
@@ -439,6 +473,7 @@ impl AnnotationDraftKind {
             Self::FreeText { .. } => S::FreeText,
             Self::Redact { .. } => S::Redact,
             Self::FileAttachment { .. } => S::FileAttachment,
+            Self::Link { .. } => S::Link,
         }
     }
 }

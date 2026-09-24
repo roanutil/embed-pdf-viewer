@@ -40,6 +40,7 @@ use crate::cancel::CancelToken;
 use crate::clock::{Clock, format_pdf_date};
 use crate::dto::Patch;
 use crate::error::{EngineError, EngineErrorCode};
+use crate::features::actions::destination::PdfDestination;
 use crate::features::annotation::intent::FreeTextIntent;
 use crate::features::annotation::read::dto::AnnotationDto;
 use crate::features::annotation::read::page::read_page_annotations;
@@ -241,6 +242,20 @@ fn preflight(
             normalized(&fields.rect)?;
             box_rotation_satisfiable(fields.rotation, fields.unrotated_rect)?;
         }
+        AnnotationDraftKind::Link { fields } => {
+            normalized(&fields.rect)?;
+            // A URI with nothing in it is a link that navigates nowhere
+            // while claiming to navigate. `target: null` already says that
+            // honestly, so the empty string is the caller's mistake.
+            if let Some(super::draft::LinkTargetDraft::Uri { uri }) = &fields.target
+                && uri.is_empty()
+            {
+                return Err(EngineError::with_message(
+                    EngineErrorCode::InvalidArg,
+                    "a link's uri is empty: send target null for a link with no destination yet",
+                ));
+            }
+        }
         AnnotationDraftKind::Redact { fields } => {
             normalized(&fields.rect)?;
             if fields.touches_label_style()
@@ -363,6 +378,9 @@ fn opacity_of(kind: &AnnotationDraftKind) -> Option<f64> {
         AnnotationDraftKind::FreeText { fields } => fields.opacity,
         AnnotationDraftKind::Redact { fields } => fields.opacity,
         AnnotationDraftKind::FileAttachment { fields } => fields.opacity,
+        // A link has no `/CA`: it draws nothing, so there is no opacity for
+        // one to have.
+        AnnotationDraftKind::Link { .. } => None,
     }
 }
 
@@ -497,6 +515,7 @@ fn apply_kind_draft(
         AnnotationDraftKind::FileAttachment { fields } => {
             apply_file_attachment(document, annotation, fields, context)
         }
+        AnnotationDraftKind::Link { fields } => apply_link(document, annotation, fields),
     }
 }
 
@@ -947,6 +966,111 @@ fn apply_file_attachment(
         ));
     }
     Ok(())
+}
+
+/// A link: a hit rectangle and where it goes.
+///
+/// No colour, no opacity, no border. A link draws nothing of its own, and the
+/// families that do all write those keys explicitly so a read round-trips;
+/// writing them here would put entries on an annotation that has no
+/// appearance for them to affect.
+fn apply_link(
+    document: &pdfium::Document,
+    annotation: &pdfium::Annotation<'_>,
+    fields: &super::draft::LinkDraftFields,
+) -> Result<(), EngineError> {
+    set_rect(annotation, fields.rect)?;
+    let Some(target) = fields.target.as_ref() else {
+        // Nothing to write. A new annotation has neither `/A` nor `/Dest`,
+        // so the dead link is what it already is.
+        return Ok(());
+    };
+    let action = match target {
+        super::draft::LinkTargetDraft::Uri { uri } => document.create_uri_action(uri),
+        super::draft::LinkTargetDraft::Goto { destination } => {
+            document.create_goto_action(build_destination(document, destination)?)
+        }
+    }
+    .map_err(|e| {
+        EngineError::with_message(
+            EngineErrorCode::Unknown,
+            format!("the link's action could not be built: {e}"),
+        )
+    })?;
+    if !annotation.set_action(action) {
+        return Err(EngineError::with_message(
+            EngineErrorCode::Unknown,
+            "EPDFAnnot_SetAction refused the action",
+        ));
+    }
+    Ok(())
+}
+
+/// Turn a wire destination into the array PDFium builds.
+///
+/// `/XYZ` has its own constructor because its three components are each
+/// present-or-retain, and a parameter array has nowhere to put that
+/// distinction: a missing `top` would arrive as a zero, which is a real
+/// coordinate at the bottom of the page.
+///
+/// The other fit types go through the array, where a missing optional becomes
+/// a SHORTER array rather than a zero: the parameters are positional, so
+/// that is the only way for one to be absent.
+///
+/// PDFium then pads it back. `link-goto-fit-h-retain` sends no top and reads
+/// one back as zero, which is why neither shortening the array nor padding it
+/// here is observable, and why `/Fit` taking a parameter it has no use for is
+/// not either. The array is built to the arity anyway: what this layer hands
+/// PDFium is what the destination MEANS, and the padding is PDFium's
+/// convention rather than something to write into the call.
+fn build_destination(
+    document: &pdfium::Document,
+    destination: &PdfDestination,
+) -> Result<pdfium::Destination, EngineError> {
+    use pdfium::view;
+
+    let page = destination.page_object_number().get();
+    let built = match destination {
+        PdfDestination::Xyz { left, top, zoom, .. } => document.create_xyz_destination(
+            page,
+            left.map(|v| v as f32),
+            top.map(|v| v as f32),
+            zoom.map(|v| v as f32),
+        ),
+        PdfDestination::Fit { .. } => document.create_view_destination(page, view::FIT, &[]),
+        PdfDestination::FitB { .. } => document.create_view_destination(page, view::FIT_B, &[]),
+        PdfDestination::FitH { top, .. } => {
+            document.create_view_destination(page, view::FIT_H, &optional(*top))
+        }
+        PdfDestination::FitBh { top, .. } => {
+            document.create_view_destination(page, view::FIT_BH, &optional(*top))
+        }
+        PdfDestination::FitV { left, .. } => {
+            document.create_view_destination(page, view::FIT_V, &optional(*left))
+        }
+        PdfDestination::FitBv { left, .. } => {
+            document.create_view_destination(page, view::FIT_BV, &optional(*left))
+        }
+        PdfDestination::FitR { left, bottom, right, top, .. } => document.create_view_destination(
+            page,
+            view::FIT_R,
+            &[*left as f32, *bottom as f32, *right as f32, *top as f32],
+        ),
+    };
+    built.map_err(|e| {
+        EngineError::with_message(
+            match e {
+                pdfium::PdfiumError::PageLoadByObjectNumber(_) => EngineErrorCode::NotFound,
+                _ => EngineErrorCode::Unknown,
+            },
+            format!("the link destination could not be built: {e}"),
+        )
+    })
+}
+
+/// One optional coordinate as the parameter list a fit type takes.
+fn optional(value: Option<f64>) -> Vec<f32> {
+    value.map(|v| vec![v as f32]).unwrap_or_default()
 }
 
 /// What a draft with no icon creates.
