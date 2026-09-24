@@ -13,14 +13,35 @@
 //! looks, and a host with no font registry wired can still create everything
 //! that does not name a registered font.
 
+use std::collections::BTreeMap;
+
 use crate::error::{EngineError, EngineErrorCode};
 use crate::features::fonts::FontRegistry;
+
+/// One binary payload that arrived with a mutation.
+///
+/// The bytes are borrowed rather than owned: a stamp image or an attachment
+/// can be megabytes, and a writer reads it once and hands it straight to
+/// PDFium, so there is nothing for a copy to buy.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct WriteResource<'a> {
+    pub bytes: &'a [u8],
+    /// What the caller says the bytes are. Advisory: a file attachment takes
+    /// any bytes at all and records this as the stream's `/Subtype`.
+    pub mime_type: Option<&'a str>,
+}
+
+/// The payloads accompanying one mutation, keyed as the caller keyed them.
+pub type WriteResourceMap<'a> = BTreeMap<String, WriteResource<'a>>;
 
 /// The capabilities threaded into a per-subtype writer.
 #[derive(Debug, Default, Clone, Copy)]
 pub struct AnnotationWriteContext<'a> {
     /// This thread's fonts, for a `/DA` that names a registered family.
     pub fonts: Option<&'a FontRegistry>,
+    /// The binaries this mutation brought with it. A draft names one by key
+    /// rather than carrying it, because a draft is JSON and a PNG is not.
+    pub resources: Option<&'a WriteResourceMap<'a>>,
 }
 
 impl<'a> AnnotationWriteContext<'a> {
@@ -32,7 +53,27 @@ impl<'a> AnnotationWriteContext<'a> {
 
     /// With this thread's font registry.
     pub fn with_fonts(fonts: &'a FontRegistry) -> Self {
-        Self { fonts: Some(fonts) }
+        Self { fonts: Some(fonts), resources: None }
+    }
+
+    /// With the binaries this mutation carried.
+    pub fn with_resources(mut self, resources: &'a WriteResourceMap<'a>) -> Self {
+        self.resources = Some(resources);
+        self
+    }
+
+    /// Look up one payload.
+    ///
+    /// A key with nothing behind it is the caller's mistake rather than a
+    /// missing file: the draft and the payloads travel together, so a draft
+    /// naming a key that did not arrive means the two were assembled apart.
+    pub fn resource(&self, key: &str) -> Result<WriteResource<'a>, EngineError> {
+        self.resources.and_then(|map| map.get(key)).copied().ok_or_else(|| {
+            EngineError::with_message(
+                EngineErrorCode::InvalidArg,
+                format!("the draft names resource '{key}' but no such payload accompanied it"),
+            )
+        })
     }
 
     /// Resolve a registered font key to this thread's id.

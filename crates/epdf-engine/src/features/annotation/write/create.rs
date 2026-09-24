@@ -92,7 +92,7 @@ pub fn create_annotation(
 ) -> Result<AnnotationCreateResult, EngineError> {
     cancel.check()?;
     // The apply boundary. Everything below this line writes.
-    preflight(draft)?;
+    preflight(draft, context)?;
     cancel.check()?;
 
     let subtype = draft.kind.subtype();
@@ -104,7 +104,7 @@ pub fn create_annotation(
     })?;
 
     apply_base_draft(&annotation, &draft.base)?;
-    apply_kind_draft(&annotation, &draft.kind, context)?;
+    apply_kind_draft(document, &annotation, &draft.kind, context)?;
 
     // After the subtype writer, so a writer that set `/T` or `/M` itself
     // cannot win.
@@ -184,7 +184,10 @@ pub fn create_annotation(
 }
 
 /// Everything that can refuse a draft, before anything is written.
-fn preflight(draft: &AnnotationDraft) -> Result<(), EngineError> {
+fn preflight(
+    draft: &AnnotationDraft,
+    context: &AnnotationWriteContext<'_>,
+) -> Result<(), EngineError> {
     match &draft.kind {
         AnnotationDraftKind::Highlight { fields }
         | AnnotationDraftKind::Underline { fields }
@@ -202,6 +205,7 @@ fn preflight(draft: &AnnotationDraft) -> Result<(), EngineError> {
         }
         AnnotationDraftKind::Square { fields } | AnnotationDraftKind::Circle { fields } => {
             normalized(&fields.rect)?;
+            box_rotation_satisfiable(fields.rotation, fields.unrotated_rect)?;
         }
         AnnotationDraftKind::Polygon { fields, .. }
         | AnnotationDraftKind::Polyline { fields, .. } => {
@@ -233,8 +237,31 @@ fn preflight(draft: &AnnotationDraft) -> Result<(), EngineError> {
                 ));
             }
         }
-        AnnotationDraftKind::Caret { fields } => normalized(&fields.rect)?,
-        AnnotationDraftKind::Redact { fields } => normalized(&fields.rect)?,
+        AnnotationDraftKind::Caret { fields } => {
+            normalized(&fields.rect)?;
+            box_rotation_satisfiable(fields.rotation, fields.unrotated_rect)?;
+        }
+        AnnotationDraftKind::Redact { fields } => {
+            normalized(&fields.rect)?;
+            if fields.touches_label_style()
+                && let Some(family) = fields.font_family.as_deref()
+            {
+                font_resolvable(family, context)?;
+            }
+        }
+        AnnotationDraftKind::FileAttachment { fields } => {
+            normalized(&fields.rect)?;
+            // The payload is checked BEFORE the annotation exists. A marker
+            // in the file pointing at a filespec with no stream is worse
+            // than no marker: a reader finds an attachment it cannot open.
+            context.resource(&fields.file.resource)?;
+            if fields.file.name.is_empty() {
+                return Err(EngineError::with_message(
+                    EngineErrorCode::InvalidArg,
+                    "an attachment's file needs a name: a filespec without one names nothing",
+                ));
+            }
+        }
         AnnotationDraftKind::FreeText { fields } => {
             normalized(&fields.rect)?;
             // A callout with no leader is a plain box wearing the wrong
@@ -260,6 +287,8 @@ fn preflight(draft: &AnnotationDraft) -> Result<(), EngineError> {
                     ),
                 ));
             }
+            box_rotation_satisfiable(fields.rotation, fields.unrotated_rect)?;
+            font_resolvable(&fields.font_family, context)?;
         }
         AnnotationDraftKind::Ink { fields, ink_list, .. } => {
             normalized(&fields.rect)?;
@@ -284,6 +313,38 @@ fn preflight(draft: &AnnotationDraft) -> Result<(), EngineError> {
     Ok(())
 }
 
+/// A box kind's rotation needs the box it turns.
+///
+/// Checked in PREFLIGHT rather than at the write, and that placement is the
+/// whole point. The transform writer refuses the same pair, but by the time
+/// it runs the annotation exists, and nothing in this layer can take one back
+/// out of the document. A draft is always the create case, so there is never
+/// an existing `/UnrotatedRect` for a lone rotation to lean on.
+fn box_rotation_satisfiable(
+    rotation: Option<f64>,
+    unrotated_rect: Option<crate::geom::PdfRect>,
+) -> Result<(), EngineError> {
+    if rotation.is_some_and(|degrees| degrees != 0.0) && unrotated_rect.is_none() {
+        return Err(EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            "rotation requires unrotatedRect: a box kind's appearance is baked from the pair",
+        ));
+    }
+    Ok(())
+}
+
+/// A `/DA` family this host can actually write.
+///
+/// Same reason as above: resolving a registered font can fail, and finding
+/// that out after the annotation exists leaves a free text in the file with
+/// no `/DA`.
+fn font_resolvable(family: &str, context: &AnnotationWriteContext<'_>) -> Result<(), EngineError> {
+    if crate::features::annotation::vocabulary::StandardFont::from_family(family).is_none() {
+        context.resolve_font(family)?;
+    }
+    Ok(())
+}
+
 fn opacity_of(kind: &AnnotationDraftKind) -> Option<f64> {
     match kind {
         AnnotationDraftKind::Highlight { fields }
@@ -301,6 +362,7 @@ fn opacity_of(kind: &AnnotationDraftKind) -> Option<f64> {
         AnnotationDraftKind::Caret { fields } => fields.opacity,
         AnnotationDraftKind::FreeText { fields } => fields.opacity,
         AnnotationDraftKind::Redact { fields } => fields.opacity,
+        AnnotationDraftKind::FileAttachment { fields } => fields.opacity,
     }
 }
 
@@ -349,6 +411,7 @@ fn apply_flags(
 }
 
 fn apply_kind_draft(
+    document: &pdfium::Document,
     annotation: &pdfium::Annotation<'_>,
     kind: &AnnotationDraftKind,
     context: &AnnotationWriteContext<'_>,
@@ -431,6 +494,9 @@ fn apply_kind_draft(
         AnnotationDraftKind::Caret { fields } => apply_caret(annotation, fields),
         AnnotationDraftKind::FreeText { fields } => apply_free_text(annotation, fields, context),
         AnnotationDraftKind::Redact { fields } => apply_redact(annotation, fields, context),
+        AnnotationDraftKind::FileAttachment { fields } => {
+            apply_file_attachment(document, annotation, fields, context)
+        }
     }
 }
 
@@ -811,6 +877,89 @@ fn apply_redact(
     }
     Ok(())
 }
+
+/// A file-attachment marker, and the file it names.
+///
+/// Two writes that look like one. `FPDFAnnot_AddFileAttachment` creates the
+/// `/FS` filespec, which carries the NAME; the bytes go into the stream it
+/// points at, and PDFium derives the size, the checksum and the creation date
+/// from them. A marker with a filespec and no stream is a reader finding an
+/// attachment it cannot open, which is why the payload is checked in
+/// preflight rather than here.
+fn apply_file_attachment(
+    document: &pdfium::Document,
+    annotation: &pdfium::Annotation<'_>,
+    fields: &super::draft::FileAttachmentDraftFields,
+    context: &AnnotationWriteContext<'_>,
+) -> Result<(), EngineError> {
+    set_rect(annotation, fields.rect)?;
+    set_color(
+        annotation,
+        AnnotationColorType::Color,
+        fields.color.unwrap_or(super::super::read::file_attachment::DEFAULT_FILE_ATTACHMENT_COLOR),
+    )?;
+    set_opacity(annotation, fields.opacity.unwrap_or(DEFAULT_OPACITY))?;
+    let icon = fields.icon.unwrap_or(DEFAULT_DRAFT_FILE_ATTACHMENT_ICON);
+    if !annotation.set_name(icon.code()) {
+        return Err(EngineError::with_message(
+            EngineErrorCode::Unknown,
+            "EPDFAnnot_SetName refused the icon",
+        ));
+    }
+
+    let resource = context.resource(&fields.file.resource)?;
+    let attachment = annotation.add_file_attachment(&fields.file.name).ok_or_else(|| {
+        EngineError::with_message(
+            EngineErrorCode::Unknown,
+            "FPDFAnnot_AddFileAttachment returned nothing",
+        )
+    })?;
+    // A zero-byte attachment is a real attachment, so this call is made
+    // whatever the length: skipping it would leave a filespec naming a
+    // stream that does not exist.
+    if !attachment.set_file(document, resource.bytes) {
+        return Err(EngineError::with_message(
+            EngineErrorCode::Unknown,
+            "FPDFAttachment_SetFile refused the bytes",
+        ));
+    }
+    let mime = fields
+        .file
+        .mime_type
+        .as_deref()
+        .or(resource.mime_type)
+        .unwrap_or(DEFAULT_ATTACHMENT_MIME_TYPE);
+    match attachment.set_mime_type(mime) {
+        Ok(true) => {}
+        Ok(false) | Err(_) => {
+            return Err(EngineError::with_message(
+                EngineErrorCode::Unknown,
+                format!("EPDFAttachment_SetSubtype refused '{mime}'"),
+            ));
+        }
+    }
+    if let Some(description) = fields.file.description.as_deref()
+        && !attachment.set_description(description)
+    {
+        return Err(EngineError::with_message(
+            EngineErrorCode::Unknown,
+            "EPDFAttachment_SetDescription refused the description",
+        ));
+    }
+    Ok(())
+}
+
+/// What a draft with no icon creates.
+///
+/// Not the reader's default. §12.5.6.15 says an ABSENT `/Name` reads as a
+/// push pin; a tool creating an attachment marker draws a paperclip. The
+/// writer always writes the key, so the two never disagree about one file.
+const DEFAULT_DRAFT_FILE_ATTACHMENT_ICON:
+    crate::features::annotation::vocabulary::FileAttachmentIcon =
+    crate::features::annotation::vocabulary::FileAttachmentIcon::Paperclip;
+
+/// What a file whose producer declared nothing is recorded as.
+const DEFAULT_ATTACHMENT_MIME_TYPE: &str = "application/octet-stream";
 
 /// `/DA`: the font, the size and the colour, as one entry.
 ///

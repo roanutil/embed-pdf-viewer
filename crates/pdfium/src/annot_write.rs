@@ -284,6 +284,21 @@ impl Annotation<'_> {
         }
     }
 
+    /// Add an `/FS` filespec and return the embedded file it names.
+    ///
+    /// The attachment is empty until [`crate::Attachment::set_file`] writes
+    /// bytes into it. The two are separate because PDFium's own calls are:
+    /// the filespec carries the NAME and the stream carries everything else,
+    /// including the size and checksum PDFium derives.
+    pub fn add_file_attachment(&self, name: &str) -> Option<crate::Attachment<'_>> {
+        let name = wide(name);
+        // SAFETY: the handle is live and the name outlives the call.
+        let handle =
+            unsafe { pdfium_sys::FPDFAnnot_AddFileAttachment(self.as_raw(), name.as_ptr()) };
+        // SAFETY: the handle is PDFium's and is not owned by this wrapper.
+        unsafe { crate::Attachment::from_raw(handle) }
+    }
+
     /// `/OverlayText`, a redaction's label.
     pub fn set_overlay_text(&self, text: &str) -> bool {
         let text = wide(text);

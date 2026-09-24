@@ -53,6 +53,33 @@ interface CreateCase {
   readonly name: string;
   readonly covers: string;
   readonly draft: Record<string, unknown>;
+  /**
+   * Binary payloads the draft names by key. A draft is JSON and a file is
+   * not, so the recorded draft keeps the key and the bytes are recorded
+   * beside it as a number array for the Rust runner to rebuild.
+   */
+  readonly resources?: Readonly<Record<string, readonly number[]>>;
+}
+
+/**
+ * Turn every `{ resource: key }` in a draft into the inline bytes the public
+ * API takes. The recorded draft keeps the key: that is what the Rust engine
+ * parses, and its own write context carries the same payloads.
+ */
+function materialize(value: unknown, resources: Record<string, readonly number[]>): unknown {
+  if (Array.isArray(value)) return value.map((entry) => materialize(entry, resources));
+  if (value === null || typeof value !== 'object') return value;
+  const entries = Object.entries(value as Record<string, unknown>);
+  const ref = entries.find(([key]) => key === 'resource');
+  if (ref && typeof ref[1] === 'string') {
+    const bytes = resources[ref[1]];
+    if (!bytes) throw new Error(`no payload for resource '${ref[1]}'`);
+    return Object.fromEntries([
+      ['data', Uint8Array.from(bytes)],
+      ...entries.filter(([key]) => key !== 'resource'),
+    ]);
+  }
+  return Object.fromEntries(entries.map(([key, entry]) => [key, materialize(entry, resources)]));
 }
 
 const CASES: readonly CreateCase[] = [
@@ -159,6 +186,16 @@ const CASES: readonly CreateCase[] = [
       subtype: 'square',
       rect: { left: 240, bottom: 390, right: 340, top: 470 },
       unrotatedRect: { left: 240, bottom: 390, right: 340, top: 470 },
+      rotation: 0,
+    },
+  },
+  {
+    name: 'square-zero-rotation-no-box',
+    covers:
+      'Zero degrees with no logical box, which is not the unsatisfiable pair. Nothing is being rotated, so there is nothing for a box to be the pre-rotation form of.',
+    draft: {
+      subtype: 'square',
+      rect: { left: 350, bottom: 390, right: 430, top: 470 },
       rotation: 0,
     },
   },
@@ -495,6 +532,35 @@ const CASES: readonly CreateCase[] = [
     },
   },
   {
+    name: 'file-attachment',
+    covers:
+      'A marker and the file it names. PDFium derives the size, the checksum and the creation date from the bytes, so the read back proves the stream was written and not just the filespec.',
+    resources: { r0: [116, 104, 101, 32, 113, 117, 105, 99, 107, 32, 98, 114, 111, 119, 110, 32, 102, 111, 120, 10] },
+    draft: {
+      subtype: 'file-attachment',
+      rect: { left: 72, bottom: 100, right: 92, top: 120 },
+      file: {
+        resource: 'r0',
+        name: 'notes.txt',
+        mimeType: 'text/plain',
+        description: 'A short note.',
+      },
+      icon: 'tag',
+      color: { r: 0, g: 200, b: 120 },
+    },
+  },
+  {
+    name: 'file-attachment-defaults',
+    covers:
+      'The writer default icon is the paperclip, which is NOT what an absent /Name reads as. The key is always written, so the two never disagree about one file.',
+    resources: { r0: [] },
+    draft: {
+      subtype: 'file-attachment',
+      rect: { left: 110, bottom: 100, right: 130, top: 120 },
+      file: { resource: 'r0', name: 'empty.bin' },
+    },
+  },
+  {
     name: 'highlight-cleared-strings',
     covers:
       'A draft that explicitly clears contents and subject. Setting a null value writes an EMPTY string rather than removing the key, so a writer that used the setter would produce a field that reads back as present-and-empty instead of absent.',
@@ -544,7 +610,8 @@ async function readCase(entry: CreateCase): Promise<unknown> {
       const first = listing.pages[0];
       if (!first) throw new Error(`${entry.name}: the fixture has no pages`);
       const page = doc.page(first.pageObjectNumber);
-      const result = await page.annotations.create(entry.draft as never);
+      const draft = materialize(entry.draft, { ...(entry.resources ?? {}) }) as never;
+      const result = await page.annotations.create(draft);
 
       // The whole created DTO minus the timestamp, plus the envelope's own
       // conclusions, which are what the impact classifier decided.
@@ -568,14 +635,22 @@ async function readCase(entry: CreateCase): Promise<unknown> {
   }
 }
 
-/** See `generate-annotation-read-vectors.ts`. */
+/**
+ * See `generate-annotation-read-vectors.ts`. `creationDate` joins the list
+ * for the same reason `modified` is dropped: PDFium stamps it from the clock
+ * when the attachment's bytes are written, so the two engines record
+ * different instants for the same file. Its PRESENCE is what matters, and
+ * the Rust runner asserts that.
+ */
 function normalizeSessionIds(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(normalizeSessionIds);
   if (value === null || typeof value !== 'object') return value;
   return Object.fromEntries(
-    Object.entries(value as Record<string, unknown>).map(([key, entry]) =>
-      key === 'docSessionId' ? [key, '<session>'] : [key, normalizeSessionIds(entry)],
-    ),
+    Object.entries(value as Record<string, unknown>).map(([key, entry]) => {
+      if (key === 'docSessionId') return [key, '<session>'];
+      if (key === 'creationDate' && typeof entry === 'string') return [key, '<stamped>'];
+      return [key, normalizeSessionIds(entry)];
+    }),
   );
 }
 

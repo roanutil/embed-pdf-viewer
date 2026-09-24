@@ -26,7 +26,9 @@ use crate::features::annotation::intent::StrikeoutIntent;
 use crate::features::annotation::read::shape::PdfRectDifferences;
 use crate::features::annotation::read::style::Color;
 use crate::features::annotation::vocabulary::{AnnotationBorderStyle, BlendMode};
-use crate::features::annotation::vocabulary::{LineEnding, LineEndings, NoteIcon, TextAlignment};
+use crate::features::annotation::vocabulary::{
+    FileAttachmentIcon, LineEnding, LineEndings, NoteIcon, TextAlignment,
+};
 use crate::geom::{CalloutLine, InkList, LinePoints, PdfPoint, PdfQuad, PdfRect};
 use crate::identity::AnnotationRef;
 
@@ -196,6 +198,56 @@ pub enum AnnotationDraftKind {
         #[serde(flatten)]
         fields: RedactDraftFields,
     },
+    FileAttachment {
+        #[serde(flatten)]
+        fields: FileAttachmentDraftFields,
+    },
+}
+
+/// The embedded file a file-attachment draft names.
+///
+/// The bytes are NOT here. A draft is JSON and a file is not, so the draft
+/// carries a key and the bytes travel beside it as a payload on the write
+/// context.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AttachmentFileDraft {
+    /// The payload key.
+    pub resource: String,
+    /// `/UF`, the display name. Required: a filespec without one names
+    /// nothing.
+    pub name: String,
+    /// The stream's `/Subtype`. Defaults to `application/octet-stream`,
+    /// which is what a reader reports for a file whose producer said
+    /// nothing.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mime_type: Option<String>,
+    /// `/Desc`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+}
+
+/// What a file-attachment draft carries.
+///
+/// The icon is generator-owned in exactly the way a sticky note's is: the
+/// closing bake draws it from `/C` and `/Name`. Unlike a stamp, the bytes are
+/// never sniffed, because ANY bytes are a valid attachment.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FileAttachmentDraftFields {
+    pub rect: PdfRect,
+    pub file: AttachmentFileDraft,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub color: Option<Color>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub opacity: Option<f64>,
+    /// `/Name`. The writer's default is the paperclip, which is NOT the
+    /// reader's default of a push pin. That asymmetry is deliberate and is
+    /// the TypeScript's: §12.5.6.15 says an absent `/Name` reads as
+    /// `PushPin`, and a tool creating an attachment marker draws a
+    /// paperclip. Since the writer always writes the key, the two never meet.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub icon: Option<FileAttachmentIcon>,
 }
 
 /// What a redaction draft carries.
@@ -386,6 +438,7 @@ impl AnnotationDraftKind {
             Self::Caret { .. } => S::Caret,
             Self::FreeText { .. } => S::FreeText,
             Self::Redact { .. } => S::Redact,
+            Self::FileAttachment { .. } => S::FileAttachment,
         }
     }
 }

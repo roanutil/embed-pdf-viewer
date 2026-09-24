@@ -862,7 +862,46 @@ pub struct Attachment<'owner> {
     _annotation: PhantomData<&'owner ()>,
 }
 
-impl Attachment<'_> {
+impl<'owner> Attachment<'owner> {
+    /// Wrap a handle PDFium produced.
+    ///
+    /// # Safety
+    /// `handle` must be a live `FPDF_ATTACHMENT` belonging to something that
+    /// outlives `'owner`.
+    pub(crate) unsafe fn from_raw(handle: pdfium_sys::FPDF_ATTACHMENT) -> Option<Self> {
+        (!handle.is_null()).then_some(Self { handle, _annotation: PhantomData })
+    }
+
+    /// Write the embedded file's bytes.
+    ///
+    /// PDFium derives `/Params` `Size`, `CheckSum` and `CreationDate` from
+    /// what is written here, which is why an empty attachment is a real call
+    /// with a null pointer rather than no call at all: skipping it would
+    /// leave a filespec naming a stream that does not exist.
+    pub fn set_file(&self, document: &Document, bytes: &[u8]) -> bool {
+        let (ptr, len) = if bytes.is_empty() {
+            (std::ptr::null(), 0)
+        } else {
+            (bytes.as_ptr().cast::<std::ffi::c_void>(), bytes.len() as std::os::raw::c_ulong)
+        };
+        // SAFETY: both handles are live and the buffer outlives the call.
+        unsafe { pdfium_sys::FPDFAttachment_SetFile(self.handle, document.as_raw(), ptr, len) != 0 }
+    }
+
+    /// `/Subtype` of the stream, which is the declared MIME type.
+    pub fn set_mime_type(&self, mime: &str) -> Result<bool, PdfiumError> {
+        let mime = CString::new(mime).map_err(|_| PdfiumError::InvalidArgument("mime type"))?;
+        // SAFETY: the handle is live and the string outlives the call.
+        Ok(unsafe { pdfium_sys::EPDFAttachment_SetSubtype(self.handle, mime.as_ptr()) != 0 })
+    }
+
+    /// `/Desc`.
+    pub fn set_description(&self, description: &str) -> bool {
+        let description: Vec<u16> = description.encode_utf16().chain(std::iter::once(0)).collect();
+        // SAFETY: the handle is live and the string outlives the call.
+        unsafe { pdfium_sys::EPDFAttachment_SetDescription(self.handle, description.as_ptr()) != 0 }
+    }
+
     /// `/UF`, the display name.
     pub fn name(&self) -> Result<Option<String>, PdfiumError> {
         read_utf16_bytes(|buffer, len| {

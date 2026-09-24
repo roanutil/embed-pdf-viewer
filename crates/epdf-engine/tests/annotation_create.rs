@@ -46,6 +46,11 @@ struct Case {
     name: String,
     covers: String,
     draft: serde_json::Value,
+    /// The binaries this draft names by key. A draft is JSON and a file is
+    /// not, so the bytes travel beside it exactly as they do in a real
+    /// mutation.
+    #[serde(default)]
+    resources: std::collections::BTreeMap<String, Vec<u8>>,
     page_object_number: u32,
     created: serde_json::Value,
     has_modified: bool,
@@ -76,6 +81,51 @@ struct Created {
     meta: serde_json::Value,
 }
 
+/// PDFium stamps an attachment's `/Params /CreationDate` from the clock when
+/// the bytes are written, so the two engines record different instants for
+/// the same file. The generator writes the token; this puts the Rust side on
+/// the same footing, and the PRESENCE of a real date is asserted separately.
+const STAMPED: &str = "<stamped>";
+
+/// Borrow the case's payloads as the write context takes them.
+fn write_resources(
+    bytes: &std::collections::BTreeMap<String, Vec<u8>>,
+) -> epdf_engine::features::annotation::write::context::WriteResourceMap<'_> {
+    bytes
+        .iter()
+        .map(|(key, value)| {
+            (
+                key.clone(),
+                epdf_engine::features::annotation::write::context::WriteResource {
+                    bytes: value.as_slice(),
+                    mime_type: None,
+                },
+            )
+        })
+        .collect()
+}
+
+fn normalize_stamps(value: &serde_json::Value) -> serde_json::Value {
+    match value {
+        serde_json::Value::Array(items) => {
+            serde_json::Value::Array(items.iter().map(normalize_stamps).collect())
+        }
+        serde_json::Value::Object(fields) => serde_json::Value::Object(
+            fields
+                .iter()
+                .map(|(key, entry)| {
+                    if key == "creationDate" && entry.is_string() {
+                        (key.clone(), serde_json::Value::from(STAMPED))
+                    } else {
+                        (key.clone(), normalize_stamps(entry))
+                    }
+                })
+                .collect(),
+        ),
+        _ => value.clone(),
+    }
+}
+
 /// Open the fixture, create one annotation, and report what came back.
 fn create(file: &VectorFile, case: &Case) -> Result<Created, epdf_engine::error::EngineError> {
     let bytes = std::fs::read(test_support::workspace_root().join(&file.fixture))
@@ -100,6 +150,7 @@ fn create(file: &VectorFile, case: &Case) -> Result<Created, epdf_engine::error:
 
     let draft: AnnotationDraft = serde_json::from_value(case.draft.clone())
         .unwrap_or_else(|e| panic!("{}: the draft does not decode: {e}", case.name));
+    let resources = write_resources(&case.resources);
 
     let owned = session.document().expect("open");
     let page = owned.document().page(0).expect("page");
@@ -111,7 +162,7 @@ fn create(file: &VectorFile, case: &Case) -> Result<Created, epdf_engine::error:
         &state,
         &draft,
         &AnnotationActor::default(),
-        &AnnotationWriteContext::empty(),
+        &AnnotationWriteContext::empty().with_resources(&resources),
         // A fixed clock, because `/M` is dropped from the comparison and a
         // wall clock would make this test's own output depend on when it ran.
         &FixedClock(epdf_engine::clock::Timestamp::utc(1_700_000_000_000)),
@@ -140,8 +191,19 @@ fn a_created_annotation_reads_back_as_the_typescript_engines_did() {
             case.name,
         );
 
+        // An attachment's creation date is PDFium's own stamp, so it is
+        // replaced by the token the generator wrote and its shape is
+        // asserted here instead: a PDF date, not an empty string.
+        if let Some(date) = mine
+            .get("file")
+            .and_then(|file| file.get("creationDate"))
+            .and_then(serde_json::Value::as_str)
+        {
+            assert!(date.starts_with("D:"), "{}: /Params /CreationDate is {date}", case.name);
+        }
+
         assert_eq!(
-            test_support::canonical_numbers(&serde_json::Value::Object(mine)),
+            test_support::canonical_numbers(&normalize_stamps(&serde_json::Value::Object(mine))),
             test_support::canonical_numbers(&case.created),
             "{}: {}",
             case.name,
@@ -305,9 +367,28 @@ fn a_draft_that_cannot_be_written_is_refused_before_anything_is_written() {
             }),
             "a font this host has no registry to resolve",
         ),
+        (
+            serde_json::json!({
+                "subtype": "file-attachment",
+                "rect": { "left": 10.0, "bottom": 10.0, "right": 30.0, "top": 30.0 },
+                "file": { "resource": "never-arrived", "name": "notes.txt" },
+            }),
+            "a file whose bytes did not travel with the draft",
+        ),
+        (
+            serde_json::json!({
+                "subtype": "file-attachment",
+                "rect": { "left": 10.0, "bottom": 10.0, "right": 30.0, "top": 30.0 },
+                "file": { "resource": "r0", "name": "" },
+            }),
+            "a filespec that names nothing",
+        ),
     ] {
         let mut refused_case = Case {
             name: format!("refusal: {what}"),
+            // One payload, so the refusals that are ABOUT a payload can be
+            // about the payload rather than about its absence.
+            resources: [(String::from("r0"), b"bytes".to_vec())].into_iter().collect(),
             covers: what.to_string(),
             draft,
             page_object_number: case.page_object_number,
@@ -319,25 +400,84 @@ fn a_draft_that_cannot_be_written_is_refused_before_anything_is_written() {
                 should_refetch: serde_json::Value::Null,
             },
         };
-        let error = create(&file, &refused_case).expect_err(what);
+        // Both creates go through ONE document. Running them through two
+        // would make the second assertion vacuous: a fresh document has an
+        // empty page whatever the first draft did to its own copy.
+        let (error, after) = refuse_then_create(
+            &file,
+            &refused_case,
+            &serde_json::json!({
+                "subtype": "highlight",
+                "quadPoints": [{
+                    "p1": { "x": 0.0, "y": 10.0 }, "p2": { "x": 10.0, "y": 10.0 },
+                    "p3": { "x": 0.0, "y": 0.0 }, "p4": { "x": 10.0, "y": 0.0 }
+                }],
+            }),
+        );
         assert!(error.is(EngineErrorCode::InvalidArg), "{what}: {error}");
-
-        // And nothing was added to the page: the refusal happened before the
-        // first write.
-        refused_case.draft = serde_json::json!({
-            "subtype": "highlight",
-            "quadPoints": [{
-                "p1": { "x": 0.0, "y": 10.0 }, "p2": { "x": 10.0, "y": 10.0 },
-                "p3": { "x": 0.0, "y": 0.0 }, "p4": { "x": 10.0, "y": 0.0 }
-            }],
-        });
-        let after = create(&file, &refused_case).expect("a valid draft still creates");
         assert_eq!(
-            after.dto["index"].as_u64(),
+            after["index"].as_u64(),
             Some(0),
             "{what}: the refused draft left something on the page",
         );
+        let _ = &mut refused_case;
     }
+}
+
+/// Refuse one draft and create another, against the SAME document.
+///
+/// The point of the pair is the index the second create reports. A refusal
+/// that happened after the first native write leaves an annotation behind,
+/// and the only way to see it is to ask the same page again: nothing can
+/// take an annotation back out of a document this layer has written to.
+fn refuse_then_create(
+    file: &VectorFile,
+    refused: &Case,
+    valid: &serde_json::Value,
+) -> (epdf_engine::error::EngineError, serde_json::Value) {
+    let bytes = std::fs::read(test_support::workspace_root().join(&file.fixture))
+        .unwrap_or_else(|e| panic!("read {}: {e}", file.fixture));
+    let mut session = DocumentSession::new();
+    session.open_with(bytes, None, SessionAuthority::unrestricted()).expect("open");
+    let page_object_number =
+        PageObjectNumber::new(refused.page_object_number).expect("a page object number");
+    let state = epdf_engine::features::annotation::read::page::read_page_annotations(
+        session.document().expect("open").document(),
+        0,
+        page_object_number,
+        &epdf_engine::revision::RevisionToken::new(SESSION, page_object_number, 0),
+        &mut epdf_engine::features::actions::vocabulary::ActionReadBudgetTracker::default(),
+        &CancelToken::never(),
+    )
+    .expect("the page lists")
+    .page_state;
+    let resources = write_resources(&refused.resources);
+    let owned = session.document().expect("open");
+    let page = owned.document().page(0).expect("page");
+    let clock = FixedClock(epdf_engine::clock::Timestamp::utc(1_700_000_000_000));
+
+    let run = |draft: &serde_json::Value| {
+        let draft: AnnotationDraft = serde_json::from_value(draft.clone())
+            .unwrap_or_else(|e| panic!("{}: the draft does not decode: {e}", refused.name));
+        create_annotation(
+            owned.document(),
+            &page,
+            page_object_number,
+            &state,
+            &state,
+            &draft,
+            &AnnotationActor::default(),
+            &AnnotationWriteContext::empty().with_resources(&resources),
+            &clock,
+            &CancelToken::never(),
+        )
+    };
+
+    let error =
+        run(&refused.draft).err().unwrap_or_else(|| panic!("{}: not refused", refused.name));
+    let created =
+        run(valid).unwrap_or_else(|e| panic!("{}: a valid draft still creates: {e}", refused.name));
+    (error, serde_json::to_value(&created.created).expect("serialize"))
 }
 
 #[test]
@@ -379,6 +519,7 @@ fn a_created_annotation_ships_with_an_appearance() {
     assert!(before.annotations.is_empty(), "the fixture starts with no annotations");
 
     let draft: AnnotationDraft = serde_json::from_value(case.draft.clone()).expect("draft");
+    let resources = write_resources(&case.resources);
     let owned = session.document().expect("open");
     let page = owned.document().page(0).expect("page");
     create_annotation(
@@ -389,7 +530,7 @@ fn a_created_annotation_ships_with_an_appearance() {
         &before.page_state,
         &draft,
         &AnnotationActor::default(),
-        &AnnotationWriteContext::empty(),
+        &AnnotationWriteContext::empty().with_resources(&resources),
         &FixedClock(epdf_engine::clock::Timestamp::utc(1_700_000_000_000)),
         &CancelToken::never(),
     )
@@ -548,6 +689,7 @@ fn with_written<R>(
     let state = annotations.page_state;
     let draft: AnnotationDraft =
         serde_json::from_value(case.draft.clone()).expect("the draft decodes");
+    let resources = write_resources(&case.resources);
 
     let owned = session.document().expect("open");
     let page = owned.document().page(0).expect("page");
@@ -559,7 +701,7 @@ fn with_written<R>(
         &state,
         &draft,
         &AnnotationActor::default(),
-        &AnnotationWriteContext::empty(),
+        &AnnotationWriteContext::empty().with_resources(&resources),
         &FixedClock(epdf_engine::clock::Timestamp::utc(1_700_000_000_000)),
         &CancelToken::never(),
     )
