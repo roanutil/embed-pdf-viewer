@@ -234,6 +234,7 @@ fn preflight(draft: &AnnotationDraft) -> Result<(), EngineError> {
             }
         }
         AnnotationDraftKind::Caret { fields } => normalized(&fields.rect)?,
+        AnnotationDraftKind::Redact { fields } => normalized(&fields.rect)?,
         AnnotationDraftKind::FreeText { fields } => {
             normalized(&fields.rect)?;
             // A callout with no leader is a plain box wearing the wrong
@@ -299,6 +300,7 @@ fn opacity_of(kind: &AnnotationDraftKind) -> Option<f64> {
         AnnotationDraftKind::Text { fields } => fields.opacity,
         AnnotationDraftKind::Caret { fields } => fields.opacity,
         AnnotationDraftKind::FreeText { fields } => fields.opacity,
+        AnnotationDraftKind::Redact { fields } => fields.opacity,
     }
 }
 
@@ -428,6 +430,7 @@ fn apply_kind_draft(
         AnnotationDraftKind::Text { fields } => apply_text(annotation, fields),
         AnnotationDraftKind::Caret { fields } => apply_caret(annotation, fields),
         AnnotationDraftKind::FreeText { fields } => apply_free_text(annotation, fields, context),
+        AnnotationDraftKind::Redact { fields } => apply_redact(annotation, fields, context),
     }
 }
 
@@ -722,6 +725,91 @@ fn apply_free_text(
         },
         || Ok(false),
     )
+}
+
+/// A redaction marking.
+///
+/// `/Rect` is written from the draft rather than derived from the quads, and
+/// that is the difference from the text-markup family. A text redaction's
+/// quads are the regions and the box is the caller's arithmetic over them; an
+/// AREA redaction has no quads at all and `/Rect` IS the region, so there
+/// would be nothing to derive it from.
+fn apply_redact(
+    annotation: &pdfium::Annotation<'_>,
+    fields: &super::draft::RedactDraftFields,
+    context: &AnnotationWriteContext<'_>,
+) -> Result<(), EngineError> {
+    set_rect(annotation, fields.rect)?;
+    for quad in &fields.quad_points {
+        if !annotation.append_quad_point(quad_to_native(*quad)) {
+            return Err(EngineError::with_message(
+                EngineErrorCode::Unknown,
+                "FPDFAnnot_AppendAttachmentPoints refused a quad",
+            ));
+        }
+    }
+
+    set_color(
+        annotation,
+        AnnotationColorType::Color,
+        fields.color.unwrap_or(super::super::read::redact::DEFAULT_REDACT_COLOR),
+    )?;
+    set_opacity(annotation, fields.opacity.unwrap_or(DEFAULT_OPACITY))?;
+    // `/IC` is WRITTEN or absent, never cleared. Absent is the ISO default
+    // and means the region is left transparent after the apply, which is a
+    // different instruction from filling it with anything, white included.
+    if let Some(fill) = fields.interior_color {
+        set_color(annotation, AnnotationColorType::InteriorColor, fill)?;
+    }
+
+    // An empty label is not a label. Writing one would put an `/OverlayText`
+    // on the annotation that draws nothing and obliges a `/DA` beside it.
+    //
+    // The filter is not observable: PDFium answers an empty `/OverlayText`
+    // the same way it answers an absent one, so a build without it passes
+    // `a_redaction_gets_a_default_appearance_only_when_it_has_a_label` too.
+    // It stays because the `/DA` rule above reads the SAME emptiness, and
+    // two places deciding what an empty label means should decide it once.
+    if let Some(text) = fields.overlay_text.as_deref().filter(|text| !text.is_empty())
+        && !annotation.set_overlay_text(text)
+    {
+        return Err(EngineError::with_message(
+            EngineErrorCode::Unknown,
+            "EPDFAnnot_SetOverlayText refused the label",
+        ));
+    }
+    // Only written when true: `/Repeat` absent already means do not tile.
+    if fields.repeat && !annotation.set_overlay_text_repeat(true) {
+        return Err(EngineError::with_message(
+            EngineErrorCode::Unknown,
+            "EPDFAnnot_SetOverlayTextRepeat refused",
+        ));
+    }
+
+    if fields.touches_label_style() {
+        let family = fields
+            .font_family
+            .as_deref()
+            .unwrap_or(crate::features::annotation::vocabulary::DEFAULT_STANDARD_FONT.as_str());
+        set_default_appearance(
+            annotation,
+            family,
+            fields.font_size.unwrap_or(super::super::read::redact::DEFAULT_FONT_SIZE),
+            fields.font_color.unwrap_or(super::super::read::redact::DEFAULT_LABEL_COLOR),
+            context,
+        )?;
+    }
+    // `/Q` only when asked. Unlike free text, where the alignment is part of
+    // the required triple, a redaction with no label has nothing to align.
+    if let Some(align) = fields.text_align
+        && !annotation.set_text_alignment(align.code())
+    {
+        return Err(EngineError::with_message(
+            EngineErrorCode::Unknown,
+            "EPDFAnnot_SetTextAlignment refused the alignment",
+        ));
+    }
+    Ok(())
 }
 
 /// `/DA`: the font, the size and the colour, as one entry.

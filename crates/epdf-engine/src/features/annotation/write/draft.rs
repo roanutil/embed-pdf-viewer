@@ -192,6 +192,73 @@ pub enum AnnotationDraftKind {
         #[serde(flatten)]
         fields: FreeTextDraftFields,
     },
+    Redact {
+        #[serde(flatten)]
+        fields: RedactDraftFields,
+    },
+}
+
+/// What a redaction draft carries.
+///
+/// A redaction marking is the NON-DESTRUCTIVE half of a redaction: it says
+/// what should be removed and what the region must look like afterwards.
+/// Creating one removes nothing, which is why nothing here is irreversible.
+///
+/// Two colours, and neither is a stroke. `color` is `/C`, the outline a
+/// reviewer sees BEFORE the redaction is applied. `interior_color` is `/IC`,
+/// the fill painted where the content was, AFTER.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RedactDraftFields {
+    /// `/Rect`. Required even for a text redaction: the caller owns the
+    /// arithmetic that turns the quads into a box.
+    pub rect: PdfRect,
+    /// `/QuadPoints`, for a text redaction. Absent or empty makes it an area
+    /// redaction, where `/Rect` is the region.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub quad_points: Vec<PdfQuad>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub color: Option<Color>,
+    /// `/CA`, the MARKING-stage opacity. The applied overlay always paints
+    /// opaque, so this never survives an apply.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub opacity: Option<f64>,
+    /// `/IC`. Absent leaves the region transparent, which is the ISO default
+    /// and is NOT the same as a white fill.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub interior_color: Option<Color>,
+    /// `/OverlayText`, the label drawn over the region.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub overlay_text: Option<String>,
+    /// `/Repeat`, which tiles that label to fill the region.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub repeat: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub font_family: Option<String>,
+    /// `/DA` size. Zero is MEANINGFUL here and means auto-fit to the region,
+    /// which is why this family does not refuse it the way free text does.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub font_size: Option<f64>,
+    /// The `/DA` colour, which for a redaction is the label text.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub font_color: Option<Color>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub text_align: Option<TextAlignment>,
+}
+
+impl RedactDraftFields {
+    /// Whether this draft says anything about the label's styling.
+    ///
+    /// ISO 32000-2 requires a `/DA` alongside an `/OverlayText`, so a draft
+    /// that sets a label always emits one and fills any member it did not
+    /// name. A draft with no label and no styling emits none, because a `/DA`
+    /// on a redaction with nothing to draw is an entry describing nothing.
+    pub fn touches_label_style(&self) -> bool {
+        self.overlay_text.as_ref().is_some_and(|text| !text.is_empty())
+            || self.font_family.is_some()
+            || self.font_size.is_some()
+            || self.font_color.is_some()
+    }
 }
 
 /// What a free-text draft carries.
@@ -318,6 +385,7 @@ impl AnnotationDraftKind {
             Self::Text { .. } => S::Text,
             Self::Caret { .. } => S::Caret,
             Self::FreeText { .. } => S::FreeText,
+            Self::Redact { .. } => S::Redact,
         }
     }
 }

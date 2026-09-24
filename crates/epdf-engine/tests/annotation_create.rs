@@ -604,6 +604,33 @@ fn a_review_state_is_written_in_the_spelling_the_pdf_uses() {
 }
 
 #[test]
+fn a_redaction_gets_a_default_appearance_only_when_it_has_a_label() {
+    // ISO 32000-2 requires a `/DA` alongside an `/OverlayText`, and a
+    // redaction with no label has nothing for one to describe. The DTO
+    // cannot tell the two apart: the reader reports the SAME defaults for a
+    // missing `/DA` that a writer would have put in one, so an engine that
+    // emitted a `/DA` on every redaction passes every vector while leaving
+    // an entry in the file that says nothing.
+    let file = load();
+    for (name, has_da, overlay) in [
+        ("redact-text-with-label", true, Some("REDACTED")),
+        ("redact-autofit-label", true, Some("gone")),
+        ("redact-area", false, None),
+        // An empty string is not a label, so it obliges no `/DA` either.
+        ("redact-empty-label", false, None),
+    ] {
+        with_written(&file, name, |written| {
+            assert_eq!(written.default_appearance().is_some(), has_da, "{name}: /DA");
+            assert_eq!(
+                written.overlay_text().expect("a dictionary read").as_deref(),
+                overlay,
+                "{name}: /OverlayText",
+            );
+        });
+    }
+}
+
+#[test]
 fn the_transform_keys_land_in_the_dictionary_and_not_only_in_the_dto() {
     // The reader normalizes a zero rotation back to absent, so the DTO
     // cannot tell a cleared `/Rotation` from one written as zero, and it

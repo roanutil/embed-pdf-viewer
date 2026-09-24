@@ -284,6 +284,19 @@ impl Annotation<'_> {
         }
     }
 
+    /// `/OverlayText`, a redaction's label.
+    pub fn set_overlay_text(&self, text: &str) -> bool {
+        let text = wide(text);
+        // SAFETY: the handle is live and the string outlives the call.
+        unsafe { pdfium_sys::EPDFAnnot_SetOverlayText(self.as_raw(), text.as_ptr()) != 0 }
+    }
+
+    /// `/Repeat`, which tiles that label across the region.
+    pub fn set_overlay_text_repeat(&self, repeat: bool) -> bool {
+        // SAFETY: the handle is live.
+        unsafe { pdfium_sys::EPDFAnnot_SetOverlayTextRepeat(self.as_raw(), i32::from(repeat)) != 0 }
+    }
+
     /// `/Name`, as an `FPDF_ANNOT_NAME` code.
     ///
     /// Which block of that enum a code belongs to depends on the subtype,

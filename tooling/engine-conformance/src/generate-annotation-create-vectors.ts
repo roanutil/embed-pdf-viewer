@@ -430,6 +430,71 @@ const CASES: readonly CreateCase[] = [
     },
   },
   {
+    name: 'redact-area',
+    covers:
+      'An area redaction: no quads, so /Rect is the region. Nothing here removes anything; the marking declares what apply would do.',
+    draft: {
+      subtype: 'redact',
+      rect: { left: 72, bottom: 200, right: 260, top: 240 },
+    },
+  },
+  {
+    name: 'redact-text-with-label',
+    covers:
+      'A text redaction with quads, the /IC fill painted after apply, and a tiled label. The /DA is emitted because a label obliges one.',
+    draft: {
+      subtype: 'redact',
+      // Deliberately wider than the quads enclose: a marking gets a margin,
+      // and a writer that derived the box from the quads the way the
+      // text-markup family does would lose it.
+      rect: { left: 276, bottom: 196, right: 474, top: 244 },
+      quadPoints: [
+        {
+          p1: { x: 280, y: 240 },
+          p2: { x: 470, y: 240 },
+          p3: { x: 280, y: 220 },
+          p4: { x: 470, y: 220 },
+        },
+        {
+          p1: { x: 280, y: 218 },
+          p2: { x: 400, y: 218 },
+          p3: { x: 280, y: 200 },
+          p4: { x: 400, y: 200 },
+        },
+      ],
+      color: { r: 255, g: 128, b: 0 },
+      interiorColor: { r: 0, g: 0, b: 0 },
+      opacity: 0.6,
+      overlayText: 'REDACTED',
+      repeat: true,
+      fontFamily: 'helvetica-bold',
+      fontSize: 9,
+      fontColor: { r: 255, g: 255, b: 255 },
+      textAlign: 'center',
+    },
+  },
+  {
+    name: 'redact-autofit-label',
+    covers:
+      'A label at size zero, which for a redaction means auto-fit to the region rather than nothing. Free text refuses the same number.',
+    draft: {
+      subtype: 'redact',
+      rect: { left: 72, bottom: 150, right: 260, top: 190 },
+      overlayText: 'gone',
+      fontSize: 0,
+    },
+  },
+  {
+    name: 'redact-empty-label',
+    covers:
+      'An empty overlay text, which is not a label. A writer that wrote it would put an /OverlayText on the annotation that draws nothing and obliges a /DA beside it.',
+    draft: {
+      subtype: 'redact',
+      rect: { left: 280, bottom: 150, right: 470, top: 190 },
+      overlayText: '',
+    },
+  },
+  {
     name: 'highlight-cleared-strings',
     covers:
       'A draft that explicitly clears contents and subject. Setting a null value writes an EMPTY string rather than removing the key, so a writer that used the setter would produce a field that reads back as present-and-empty instead of absent.',
