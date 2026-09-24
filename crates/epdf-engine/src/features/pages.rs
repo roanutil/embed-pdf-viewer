@@ -8,21 +8,19 @@
 //! the one place an index is the right address: the caller is enumerating, and
 //! the object number is what it is producing rather than what it has.
 //!
-//! # Not here yet
-//!
-//! Page open and close actions. `PageLayout.actions` comes from
-//! `ActionModelReader`, which is 522 lines of its own and belongs with
-//! `actions.read`. The field is on the struct so adding it later does not
-//! reshape the wire, and it is always absent until then; the conformance
-//! runner asserts that the corpus has no page carrying one, so this stays a
-//! known gap rather than a silent difference.
+//! Page open and close actions are read here too, through
+//! [`crate::features::actions`], because `PageLayout` carries them and a
+//! caller listing pages should not have to make a second call to find out
+//! whether opening one runs a script.
 
 use serde::{Deserialize, Serialize};
 
-use pdfium::{Document, PageBoxType};
+use pdfium::{Document, PageActionEvent, PageBoxType};
 
 use crate::cancel::CancelToken;
 use crate::error::{EngineError, EngineErrorCode};
+use crate::features::actions::reader::{ActionTree, read_action_model};
+use crate::features::actions::vocabulary::ActionReadBudgetTracker;
 use crate::geom::{PdfRect, PdfRotation, PdfSize, normalize_pdf_rect};
 use crate::identity::PageObjectNumber;
 
@@ -56,6 +54,19 @@ pub struct PageLayout {
     /// `/UserUnit`, defaulting to 1.
     pub user_unit: f32,
     pub boxes: PageBoxes,
+    /// Open and close actions, absent when the page has neither.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub actions: Option<PageActions>,
+}
+
+/// What a page asks a viewer to do when it opens or closes.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PageActions {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub open: Option<ActionTree>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub close: Option<ActionTree>,
 }
 
 /// The whole listing.
@@ -74,6 +85,11 @@ pub fn list_pages(
     cancel.check()?;
     let count = document.page_count();
     let mut pages = Vec::with_capacity(count as usize);
+    // One budget across the whole listing, not one per page. PDFium's own
+    // limits are per model, so a document with a script on every page could
+    // otherwise build an unbounded snapshot out of individually reasonable
+    // ones.
+    let mut budget = ActionReadBudgetTracker::default();
 
     for index in 0..count {
         cancel.check()?;
@@ -102,10 +118,32 @@ pub fn list_pages(
             rotation: rotation_of(document, index),
             user_unit: document.page_user_unit_by_index(index),
             boxes: boxes_of(document, index),
+            actions: actions_of(document, number.get(), &mut budget)?,
         });
     }
 
     Ok(PageListSnapshot { page_count: pages.len() as u32, pages })
+}
+
+/// A page's action trees, or `None` when it has neither.
+///
+/// A page with an unreadable action model is an error rather than a page with
+/// no actions: silently reporting none would tell a caller the document said
+/// nothing when in fact it said something this build could not read.
+fn actions_of(
+    document: &Document,
+    page_object_number: u32,
+    budget: &mut ActionReadBudgetTracker,
+) -> Result<Option<PageActions>, EngineError> {
+    let mut read = |event: PageActionEvent| -> Result<Option<ActionTree>, EngineError> {
+        match document.page_action_model(page_object_number, event) {
+            Some(model) => read_action_model(&model, budget).map(Some),
+            None => Ok(None),
+        }
+    };
+    let open = read(PageActionEvent::Open)?;
+    let close = read(PageActionEvent::Close)?;
+    Ok((open.is_some() || close.is_some()).then_some(PageActions { open, close }))
 }
 
 fn rotation_of(document: &Document, index: u32) -> PdfRotation {

@@ -16,5 +16,7 @@
 //! mistake is both silent and serious. The reader that walks PDFium's action
 //! model is not ported yet.
 
+pub mod destination;
+pub mod reader;
 pub mod submit_flags;
 pub mod vocabulary;

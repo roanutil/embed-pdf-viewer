@@ -12,6 +12,7 @@
 //! confinement rather than papering over it with atomics that would let a
 //! handle cross threads and misbehave later.
 
+mod action;
 mod base;
 mod bitmap;
 mod document;
@@ -26,6 +27,10 @@ mod page;
 mod page_list;
 mod text;
 
+pub use action::{
+    ActionModel, ActionNodeId, DestinationLocation, DestinationView, PageActionEvent,
+    RawDestination,
+};
 pub use base::{BaseDocument, LayerDocument, LayerOpenError};
 pub use bitmap::Bitmap;
 pub use document::{Document, FileBackedDocument, PasswordPermissions};

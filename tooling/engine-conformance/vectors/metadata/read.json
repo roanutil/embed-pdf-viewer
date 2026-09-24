@@ -76,6 +76,23 @@
       }
     },
     {
+      "name": "page-actions",
+      "fixture": "tooling/engine-conformance/fixtures/page_actions.pdf",
+      "covers": "A page carrying open and close actions: a JavaScript node chaining to a URI through /Next, and a GoTo with an explicit /XYZ destination. PageLayout.actions was absent on both sides until this existed, so a comparison could not tell an unread action from a missing one.",
+      "metadata": {
+        "title": null,
+        "author": null,
+        "subject": null,
+        "keywords": null,
+        "producer": null,
+        "creator": null,
+        "created": null,
+        "modified": null,
+        "trapped": "unknown",
+        "custom": {}
+      }
+    },
+    {
       "name": "encrypted",
       "fixture": "tooling/engine-conformance/fixtures/encrypted-r4-aes-128.pdf",
       "covers": "Metadata behind encryption, which is read through the same path once unlocked.",

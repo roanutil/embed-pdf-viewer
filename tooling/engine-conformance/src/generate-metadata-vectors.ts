@@ -57,6 +57,12 @@ const CASES: readonly MetadataCase[] = [
       'Four pages at /Rotate 0, 90, 180 and 270. The listing reports the rotation and the NORMALIZED size, so a reader using the rotated size would disagree with the page a caller then opens.',
   },
   {
+    name: 'page-actions',
+    fixture: 'tooling/engine-conformance/fixtures/page_actions.pdf',
+    covers:
+      'A page carrying open and close actions: a JavaScript node chaining to a URI through /Next, and a GoTo with an explicit /XYZ destination. PageLayout.actions was absent on both sides until this existed, so a comparison could not tell an unread action from a missing one.',
+  },
+  {
     name: 'encrypted',
     fixture: 'tooling/engine-conformance/fixtures/encrypted-r4-aes-128.pdf',
     covers: 'Metadata behind encryption, which is read through the same path once unlocked.',

@@ -536,6 +536,52 @@ function reverseAndGappedText(font) {
 }
 
 /**
+ * A page carrying open and close actions, with a `/Next` chain.
+ *
+ * `pages.list` reports `PageLayout.actions` and nothing in the repository
+ * produced one, so the field was absent on both sides and a comparison could
+ * not tell an unread action from an absent one.
+ *
+ * The open action is a JavaScript node whose `/Next` is a URI node, so the
+ * chain is two deep. The close action is a GoTo pointing at the second page
+ * with an explicit `/XYZ` destination, which is the destination shape a
+ * viewer actually has to honour.
+ */
+function pageActions() {
+  const content = Buffer.from('72 72 200 100 re\nf\n', 'latin1');
+
+  return buildPdf([
+    Buffer.from('<< /Type /Catalog /Pages 2 0 R >>', 'latin1'),
+    Buffer.from(
+      '<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 /MediaBox [0 0 612 792] >>',
+      'latin1',
+    ),
+    // The first page carries both events.
+    Buffer.from(
+      '<< /Type /Page /Parent 2 0 R /Contents 5 0 R /Resources << >> ' +
+        '/AA << /O 6 0 R /C 8 0 R >> >>',
+      'latin1',
+    ),
+    Buffer.from(
+      '<< /Type /Page /Parent 2 0 R /Contents 5 0 R /Resources << >> >>',
+      'latin1',
+    ),
+    stream('', content),
+    // Open: JavaScript, then a URI through /Next.
+    Buffer.from(
+      '<< /Type /Action /S /JavaScript /JS (app.alert\\(\'opened\'\\);) /Next 7 0 R >>',
+      'latin1',
+    ),
+    Buffer.from(
+      '<< /Type /Action /S /URI /URI (https://example.test/opened) >>',
+      'latin1',
+    ),
+    // Close: GoTo page two, /XYZ with a left, a top and no zoom.
+    Buffer.from('<< /Type /Action /S /GoTo /D [4 0 R /XYZ 100 200 null] >>', 'latin1'),
+  ]);
+}
+
+/**
  * A document whose Info dictionary exercises every metadata distinction.
  *
  * `metadata.read` has to tell three states apart: a key that is absent, a key
@@ -609,6 +655,7 @@ const outputs = [
   ['rotated_pages.pdf', rotatedPages(font)],
   ['non_identity_text.pdf', nonIdentityText(font)],
   ['rich_metadata.pdf', richMetadata()],
+  ['page_actions.pdf', pageActions()],
   ['reverse_and_gapped_text.pdf', reverseAndGappedText(font)],
 
   // Revision 2, RC4-40. The oldest handler still in the wild.

@@ -87,24 +87,31 @@ fn the_listing_agrees_with_the_typescript_engine() {
 }
 
 #[test]
-fn no_page_in_the_corpus_carries_an_action() {
-    // PageLayout.actions is not ported: it comes from ActionModelReader, which
-    // is its own group. The comparison above would not notice, because a
-    // field absent on both sides matches. This asserts the reason it is
-    // absent, so the day a fixture gains a page action the gap becomes a
-    // failure rather than a silent difference.
+fn a_page_with_actions_reports_them() {
+    // PageLayout.actions was absent on both sides until page_actions.pdf
+    // existed, so the comparison above could not tell an unread action from a
+    // missing one. This asserts the corpus still contains one.
     let file = load();
-    for case in &file.cases {
-        let pages = case.pages["pages"].as_array().expect("pages");
-        for page in pages {
-            assert!(
-                page.get("actions").is_none(),
-                "{}: page {} carries an action, which the Rust listing does not read yet",
-                case.name,
-                page["index"],
-            );
-        }
-    }
+    let case = file
+        .cases
+        .iter()
+        .find(|c| c.name == "page-actions")
+        .expect("the page-actions fixture is in the corpus");
+
+    let pages = case.pages["pages"].as_array().expect("pages");
+    let with_actions = pages.iter().filter(|p| p.get("actions").is_some()).count();
+    assert_eq!(with_actions, 1, "exactly one page in that fixture carries actions");
+
+    let actions = pages[0]["actions"].as_object().expect("actions");
+    assert!(actions.contains_key("open"), "the open action is missing");
+    assert!(actions.contains_key("close"), "the close action is missing");
+
+    // And the listing produced by Rust has them too, which the comparison
+    // above already proves but which is worth failing separately: a mapping
+    // that dropped the field would otherwise look like a corpus problem.
+    let snapshot = listed(case);
+    assert!(snapshot.pages[0].actions.is_some(), "the Rust listing dropped the actions");
+    assert!(snapshot.pages[1].actions.is_none(), "a page with no actions reported some");
 }
 
 #[test]

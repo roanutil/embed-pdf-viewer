@@ -543,6 +543,104 @@
       }
     },
     {
+      "name": "page-actions",
+      "fixture": "tooling/engine-conformance/fixtures/page_actions.pdf",
+      "covers": "A page carrying open and close actions: a JavaScript node chaining to a URI through /Next, and a GoTo with an explicit /XYZ destination. PageLayout.actions was absent on both sides until this existed, so a comparison could not tell an unread action from a missing one.",
+      "pages": {
+        "pageCount": 2,
+        "pages": [
+          {
+            "index": 0,
+            "pageObjectNumber": 3,
+            "label": null,
+            "size": {
+              "width": 612,
+              "height": 792
+            },
+            "rotation": 0,
+            "userUnit": 1,
+            "boxes": {
+              "media": {
+                "left": 0,
+                "right": 612,
+                "bottom": 0,
+                "top": 792
+              },
+              "crop": {
+                "left": 0,
+                "right": 612,
+                "bottom": 0,
+                "top": 792
+              }
+            },
+            "actions": {
+              "open": {
+                "root": {
+                  "type": "javascript",
+                  "subtype": "JavaScript",
+                  "script": "app.alert('opened');",
+                  "next": [
+                    {
+                      "type": "uri",
+                      "subtype": "URI",
+                      "uri": "https://example.test/opened",
+                      "isMap": false,
+                      "next": []
+                    }
+                  ]
+                },
+                "incomplete": false,
+                "warningFlags": 0,
+                "warnings": []
+              },
+              "close": {
+                "root": {
+                  "type": "goto",
+                  "subtype": "GoTo",
+                  "destination": {
+                    "kind": "xyz",
+                    "pageObjectNumber": 4,
+                    "left": 100,
+                    "top": 200,
+                    "zoom": null
+                  },
+                  "next": []
+                },
+                "incomplete": false,
+                "warningFlags": 0,
+                "warnings": []
+              }
+            }
+          },
+          {
+            "index": 1,
+            "pageObjectNumber": 4,
+            "label": null,
+            "size": {
+              "width": 612,
+              "height": 792
+            },
+            "rotation": 0,
+            "userUnit": 1,
+            "boxes": {
+              "media": {
+                "left": 0,
+                "right": 612,
+                "bottom": 0,
+                "top": 792
+              },
+              "crop": {
+                "left": 0,
+                "right": 612,
+                "bottom": 0,
+                "top": 792
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "encrypted",
       "fixture": "tooling/engine-conformance/fixtures/encrypted-r4-aes-128.pdf",
       "covers": "Metadata behind encryption, which is read through the same path once unlocked.",
