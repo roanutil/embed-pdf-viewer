@@ -1,0 +1,614 @@
+{
+  "schemaVersion": 1,
+  "kind": "actions.submitFlags",
+  "cases": [
+    {
+      "name": "none",
+      "covers": "No flags: the Table 240 defaults, FDF and POST.",
+      "raw": 0,
+      "flags": {
+        "raw": 0,
+        "exclude": false,
+        "includeNoValueFields": false,
+        "format": "fdf",
+        "method": "post",
+        "submitCoordinates": false,
+        "includeAppendSaves": false,
+        "includeAnnotations": false,
+        "canonicalFormat": false,
+        "exclNonUserAnnots": false,
+        "exclFKey": false,
+        "embedForm": false
+      }
+    },
+    {
+      "name": "bit-1-alone",
+      "covers": "Bit 1 with nothing else set.",
+      "raw": 1,
+      "flags": {
+        "raw": 1,
+        "exclude": true,
+        "includeNoValueFields": false,
+        "format": "fdf",
+        "method": "post",
+        "submitCoordinates": false,
+        "includeAppendSaves": false,
+        "includeAnnotations": false,
+        "canonicalFormat": false,
+        "exclNonUserAnnots": false,
+        "exclFKey": false,
+        "embedForm": false
+      }
+    },
+    {
+      "name": "bit-2-alone",
+      "covers": "Bit 2 with nothing else set.",
+      "raw": 2,
+      "flags": {
+        "raw": 2,
+        "exclude": false,
+        "includeNoValueFields": true,
+        "format": "fdf",
+        "method": "post",
+        "submitCoordinates": false,
+        "includeAppendSaves": false,
+        "includeAnnotations": false,
+        "canonicalFormat": false,
+        "exclNonUserAnnots": false,
+        "exclFKey": false,
+        "embedForm": false
+      }
+    },
+    {
+      "name": "bit-3-alone",
+      "covers": "Bit 3 with nothing else set.",
+      "raw": 4,
+      "flags": {
+        "raw": 4,
+        "exclude": false,
+        "includeNoValueFields": false,
+        "format": "html",
+        "method": "post",
+        "submitCoordinates": false,
+        "includeAppendSaves": false,
+        "includeAnnotations": false,
+        "canonicalFormat": false,
+        "exclNonUserAnnots": false,
+        "exclFKey": false,
+        "embedForm": false
+      }
+    },
+    {
+      "name": "bit-4-alone",
+      "covers": "Bit 4 with nothing else set.",
+      "raw": 8,
+      "flags": {
+        "raw": 8,
+        "exclude": false,
+        "includeNoValueFields": false,
+        "format": "fdf",
+        "method": "post",
+        "submitCoordinates": false,
+        "includeAppendSaves": false,
+        "includeAnnotations": false,
+        "canonicalFormat": false,
+        "exclNonUserAnnots": false,
+        "exclFKey": false,
+        "embedForm": false
+      }
+    },
+    {
+      "name": "bit-5-alone",
+      "covers": "Bit 5 with nothing else set.",
+      "raw": 16,
+      "flags": {
+        "raw": 16,
+        "exclude": false,
+        "includeNoValueFields": false,
+        "format": "fdf",
+        "method": "post",
+        "submitCoordinates": true,
+        "includeAppendSaves": false,
+        "includeAnnotations": false,
+        "canonicalFormat": false,
+        "exclNonUserAnnots": false,
+        "exclFKey": false,
+        "embedForm": false
+      }
+    },
+    {
+      "name": "bit-6-alone",
+      "covers": "Bit 6 with nothing else set.",
+      "raw": 32,
+      "flags": {
+        "raw": 32,
+        "exclude": false,
+        "includeNoValueFields": false,
+        "format": "xfdf",
+        "method": "post",
+        "submitCoordinates": false,
+        "includeAppendSaves": false,
+        "includeAnnotations": false,
+        "canonicalFormat": false,
+        "exclNonUserAnnots": false,
+        "exclFKey": false,
+        "embedForm": false
+      }
+    },
+    {
+      "name": "bit-7-alone",
+      "covers": "Bit 7 with nothing else set.",
+      "raw": 64,
+      "flags": {
+        "raw": 64,
+        "exclude": false,
+        "includeNoValueFields": false,
+        "format": "fdf",
+        "method": "post",
+        "submitCoordinates": false,
+        "includeAppendSaves": true,
+        "includeAnnotations": false,
+        "canonicalFormat": false,
+        "exclNonUserAnnots": false,
+        "exclFKey": false,
+        "embedForm": false
+      }
+    },
+    {
+      "name": "bit-8-alone",
+      "covers": "Bit 8 with nothing else set.",
+      "raw": 128,
+      "flags": {
+        "raw": 128,
+        "exclude": false,
+        "includeNoValueFields": false,
+        "format": "fdf",
+        "method": "post",
+        "submitCoordinates": false,
+        "includeAppendSaves": false,
+        "includeAnnotations": true,
+        "canonicalFormat": false,
+        "exclNonUserAnnots": false,
+        "exclFKey": false,
+        "embedForm": false
+      }
+    },
+    {
+      "name": "bit-9-alone",
+      "covers": "Bit 9 with nothing else set.",
+      "raw": 256,
+      "flags": {
+        "raw": 256,
+        "exclude": false,
+        "includeNoValueFields": false,
+        "format": "pdf",
+        "method": "post",
+        "submitCoordinates": false,
+        "includeAppendSaves": false,
+        "includeAnnotations": false,
+        "canonicalFormat": false,
+        "exclNonUserAnnots": false,
+        "exclFKey": false,
+        "embedForm": false
+      }
+    },
+    {
+      "name": "bit-10-alone",
+      "covers": "Bit 10 with nothing else set.",
+      "raw": 512,
+      "flags": {
+        "raw": 512,
+        "exclude": false,
+        "includeNoValueFields": false,
+        "format": "fdf",
+        "method": "post",
+        "submitCoordinates": false,
+        "includeAppendSaves": false,
+        "includeAnnotations": false,
+        "canonicalFormat": true,
+        "exclNonUserAnnots": false,
+        "exclFKey": false,
+        "embedForm": false
+      }
+    },
+    {
+      "name": "bit-11-alone",
+      "covers": "Bit 11 with nothing else set.",
+      "raw": 1024,
+      "flags": {
+        "raw": 1024,
+        "exclude": false,
+        "includeNoValueFields": false,
+        "format": "fdf",
+        "method": "post",
+        "submitCoordinates": false,
+        "includeAppendSaves": false,
+        "includeAnnotations": false,
+        "canonicalFormat": false,
+        "exclNonUserAnnots": true,
+        "exclFKey": false,
+        "embedForm": false
+      }
+    },
+    {
+      "name": "bit-12-alone",
+      "covers": "Bit 12 with nothing else set.",
+      "raw": 2048,
+      "flags": {
+        "raw": 2048,
+        "exclude": false,
+        "includeNoValueFields": false,
+        "format": "fdf",
+        "method": "post",
+        "submitCoordinates": false,
+        "includeAppendSaves": false,
+        "includeAnnotations": false,
+        "canonicalFormat": false,
+        "exclNonUserAnnots": false,
+        "exclFKey": true,
+        "embedForm": false
+      }
+    },
+    {
+      "name": "bit-13-alone",
+      "covers": "Bit 13 with nothing else set.",
+      "raw": 4096,
+      "flags": {
+        "raw": 4096,
+        "exclude": false,
+        "includeNoValueFields": false,
+        "format": "fdf",
+        "method": "post",
+        "submitCoordinates": false,
+        "includeAppendSaves": false,
+        "includeAnnotations": false,
+        "canonicalFormat": false,
+        "exclNonUserAnnots": false,
+        "exclFKey": false,
+        "embedForm": false
+      }
+    },
+    {
+      "name": "bit-14-alone",
+      "covers": "Bit 14 with nothing else set.",
+      "raw": 8192,
+      "flags": {
+        "raw": 8192,
+        "exclude": false,
+        "includeNoValueFields": false,
+        "format": "fdf",
+        "method": "post",
+        "submitCoordinates": false,
+        "includeAppendSaves": false,
+        "includeAnnotations": false,
+        "canonicalFormat": false,
+        "exclNonUserAnnots": false,
+        "exclFKey": false,
+        "embedForm": true
+      }
+    },
+    {
+      "name": "bit-15-alone",
+      "covers": "Bit 15 with nothing else set.",
+      "raw": 16384,
+      "flags": {
+        "raw": 16384,
+        "exclude": false,
+        "includeNoValueFields": false,
+        "format": "fdf",
+        "method": "post",
+        "submitCoordinates": false,
+        "includeAppendSaves": false,
+        "includeAnnotations": false,
+        "canonicalFormat": false,
+        "exclNonUserAnnots": false,
+        "exclFKey": false,
+        "embedForm": false
+      }
+    },
+    {
+      "name": "bit-16-alone",
+      "covers": "Bit 16 with nothing else set.",
+      "raw": 32768,
+      "flags": {
+        "raw": 32768,
+        "exclude": false,
+        "includeNoValueFields": false,
+        "format": "fdf",
+        "method": "post",
+        "submitCoordinates": false,
+        "includeAppendSaves": false,
+        "includeAnnotations": false,
+        "canonicalFormat": false,
+        "exclNonUserAnnots": false,
+        "exclFKey": false,
+        "embedForm": false
+      }
+    },
+    {
+      "name": "pdf-beats-xfdf",
+      "covers": "SubmitPDF dominates: the spec says all other flags are ignored except GetMethod.",
+      "raw": 288,
+      "flags": {
+        "raw": 288,
+        "exclude": false,
+        "includeNoValueFields": false,
+        "format": "pdf",
+        "method": "post",
+        "submitCoordinates": false,
+        "includeAppendSaves": false,
+        "includeAnnotations": false,
+        "canonicalFormat": false,
+        "exclNonUserAnnots": false,
+        "exclFKey": false,
+        "embedForm": false
+      }
+    },
+    {
+      "name": "pdf-beats-html",
+      "covers": "The same, against the HTML bit.",
+      "raw": 260,
+      "flags": {
+        "raw": 260,
+        "exclude": false,
+        "includeNoValueFields": false,
+        "format": "pdf",
+        "method": "post",
+        "submitCoordinates": false,
+        "includeAppendSaves": false,
+        "includeAnnotations": false,
+        "canonicalFormat": false,
+        "exclNonUserAnnots": false,
+        "exclFKey": false,
+        "embedForm": false
+      }
+    },
+    {
+      "name": "xfdf-beats-html",
+      "covers": "XFDF takes precedence over HTML when both are set.",
+      "raw": 36,
+      "flags": {
+        "raw": 36,
+        "exclude": false,
+        "includeNoValueFields": false,
+        "format": "xfdf",
+        "method": "post",
+        "submitCoordinates": false,
+        "includeAppendSaves": false,
+        "includeAnnotations": false,
+        "canonicalFormat": false,
+        "exclNonUserAnnots": false,
+        "exclFKey": false,
+        "embedForm": false
+      }
+    },
+    {
+      "name": "all-three-format-bits",
+      "covers": "Everything set at once, where the order of the checks is the whole answer.",
+      "raw": 292,
+      "flags": {
+        "raw": 292,
+        "exclude": false,
+        "includeNoValueFields": false,
+        "format": "pdf",
+        "method": "post",
+        "submitCoordinates": false,
+        "includeAppendSaves": false,
+        "includeAnnotations": false,
+        "canonicalFormat": false,
+        "exclNonUserAnnots": false,
+        "exclFKey": false,
+        "embedForm": false
+      }
+    },
+    {
+      "name": "get-with-html",
+      "covers": "GetMethod is meaningful with an export format.",
+      "raw": 12,
+      "flags": {
+        "raw": 12,
+        "exclude": false,
+        "includeNoValueFields": false,
+        "format": "html",
+        "method": "get",
+        "submitCoordinates": false,
+        "includeAppendSaves": false,
+        "includeAnnotations": false,
+        "canonicalFormat": false,
+        "exclNonUserAnnots": false,
+        "exclFKey": false,
+        "embedForm": false
+      }
+    },
+    {
+      "name": "get-with-pdf",
+      "covers": "Bit 9's exception keeps GetMethod alive for SubmitPDF.",
+      "raw": 264,
+      "flags": {
+        "raw": 264,
+        "exclude": false,
+        "includeNoValueFields": false,
+        "format": "pdf",
+        "method": "get",
+        "submitCoordinates": false,
+        "includeAppendSaves": false,
+        "includeAnnotations": false,
+        "canonicalFormat": false,
+        "exclNonUserAnnots": false,
+        "exclFKey": false,
+        "embedForm": false
+      }
+    },
+    {
+      "name": "get-with-xfdf",
+      "covers": "XFDF is not one of the two, so this posts despite the bit.",
+      "raw": 40,
+      "flags": {
+        "raw": 40,
+        "exclude": false,
+        "includeNoValueFields": false,
+        "format": "xfdf",
+        "method": "post",
+        "submitCoordinates": false,
+        "includeAppendSaves": false,
+        "includeAnnotations": false,
+        "canonicalFormat": false,
+        "exclNonUserAnnots": false,
+        "exclFKey": false,
+        "embedForm": false
+      }
+    },
+    {
+      "name": "get-with-fdf",
+      "covers": "The default format ignores GetMethod entirely.",
+      "raw": 8,
+      "flags": {
+        "raw": 8,
+        "exclude": false,
+        "includeNoValueFields": false,
+        "format": "fdf",
+        "method": "post",
+        "submitCoordinates": false,
+        "includeAppendSaves": false,
+        "includeAnnotations": false,
+        "canonicalFormat": false,
+        "exclNonUserAnnots": false,
+        "exclFKey": false,
+        "embedForm": false
+      }
+    },
+    {
+      "name": "excl-f-key-and-embed-form",
+      "covers": "Bits 12 and 14, with the reserved 13 between them.",
+      "raw": 10240,
+      "flags": {
+        "raw": 10240,
+        "exclude": false,
+        "includeNoValueFields": false,
+        "format": "fdf",
+        "method": "post",
+        "submitCoordinates": false,
+        "includeAppendSaves": false,
+        "includeAnnotations": false,
+        "canonicalFormat": false,
+        "exclNonUserAnnots": false,
+        "exclFKey": true,
+        "embedForm": true
+      }
+    },
+    {
+      "name": "reserved-bit-13-only",
+      "covers": "Bit 13 is reserved, so setting it changes nothing a consumer sees.",
+      "raw": 4096,
+      "flags": {
+        "raw": 4096,
+        "exclude": false,
+        "includeNoValueFields": false,
+        "format": "fdf",
+        "method": "post",
+        "submitCoordinates": false,
+        "includeAppendSaves": false,
+        "includeAnnotations": false,
+        "canonicalFormat": false,
+        "exclNonUserAnnots": false,
+        "exclFKey": false,
+        "embedForm": false
+      }
+    },
+    {
+      "name": "exclude-with-fields",
+      "covers": "Exclude mode, the common non-default.",
+      "raw": 1,
+      "flags": {
+        "raw": 1,
+        "exclude": true,
+        "includeNoValueFields": false,
+        "format": "fdf",
+        "method": "post",
+        "submitCoordinates": false,
+        "includeAppendSaves": false,
+        "includeAnnotations": false,
+        "canonicalFormat": false,
+        "exclNonUserAnnots": false,
+        "exclFKey": false,
+        "embedForm": false
+      }
+    },
+    {
+      "name": "html-get-with-coordinates",
+      "covers": "An HTML GET submission that also asks for click coordinates.",
+      "raw": 28,
+      "flags": {
+        "raw": 28,
+        "exclude": false,
+        "includeNoValueFields": false,
+        "format": "html",
+        "method": "get",
+        "submitCoordinates": true,
+        "includeAppendSaves": false,
+        "includeAnnotations": false,
+        "canonicalFormat": false,
+        "exclNonUserAnnots": false,
+        "exclFKey": false,
+        "embedForm": false
+      }
+    },
+    {
+      "name": "fdf-with-everything-fdf-only",
+      "covers": "The FDF-only bits together: append saves, annotations, current user only.",
+      "raw": 1216,
+      "flags": {
+        "raw": 1216,
+        "exclude": false,
+        "includeNoValueFields": false,
+        "format": "fdf",
+        "method": "post",
+        "submitCoordinates": false,
+        "includeAppendSaves": true,
+        "includeAnnotations": true,
+        "canonicalFormat": false,
+        "exclNonUserAnnots": true,
+        "exclFKey": false,
+        "embedForm": false
+      }
+    },
+    {
+      "name": "all-bits",
+      "covers": "Every bit set.",
+      "raw": 65535,
+      "flags": {
+        "raw": 65535,
+        "exclude": true,
+        "includeNoValueFields": true,
+        "format": "pdf",
+        "method": "get",
+        "submitCoordinates": true,
+        "includeAppendSaves": true,
+        "includeAnnotations": true,
+        "canonicalFormat": true,
+        "exclNonUserAnnots": true,
+        "exclFKey": true,
+        "embedForm": true
+      }
+    },
+    {
+      "name": "high-bits-outside-the-table",
+      "covers": "Bits past 16, which the decode must ignore rather than misread.",
+      "raw": 4294901764,
+      "flags": {
+        "raw": 4294901764,
+        "exclude": false,
+        "includeNoValueFields": false,
+        "format": "html",
+        "method": "post",
+        "submitCoordinates": false,
+        "includeAppendSaves": false,
+        "includeAnnotations": false,
+        "canonicalFormat": false,
+        "exclNonUserAnnots": false,
+        "exclFKey": false,
+        "embedForm": false
+      }
+    }
+  ]
+}

@@ -173,6 +173,12 @@ jobs:
       - name: Metadata vectors are current
         run: pnpm --filter @embedpdf/tooling-engine-conformance run metadata:check
 
+      # G6: ISO 32000-2 Table 240, where a bit at the wrong position sends
+      # a form submission to the wrong place in the wrong format and nothing
+      # downstream can tell.
+      - name: Action vectors are current
+        run: pnpm --filter @embedpdf/tooling-engine-conformance run actions:check
+
       # multiplatform-port-order.md Section 6: a kind added to
       # worker-protocol.ts without a row in the matrix fails here, and so does
       # a row for a kind that no longer exists.

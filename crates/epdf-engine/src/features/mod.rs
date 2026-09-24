@@ -4,6 +4,7 @@
 //! with a session TypeScript still owns. G11 onward are writes and need the
 //! Stage B session (G10).
 
+pub mod actions;
 pub mod annotation;
 pub mod assembly;
 pub mod extract;

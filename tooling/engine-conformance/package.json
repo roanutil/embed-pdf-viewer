@@ -20,6 +20,8 @@
     "charmap:check": "tsx --conditions=development src/generate-charmap-vectors.ts --check",
     "metadata": "tsx --conditions=development src/generate-metadata-vectors.ts",
     "metadata:check": "tsx --conditions=development src/generate-metadata-vectors.ts --check",
+    "actions": "tsx --conditions=development src/generate-action-vectors.ts",
+    "actions:check": "tsx --conditions=development src/generate-action-vectors.ts --check",
     "operations": "tsx src/check-operations.ts",
     "operations:check": "tsx src/check-operations.ts --check",
     "verify:wasm-bridge": "node --experimental-strip-types src/verify-wasm-bridge.mts",
