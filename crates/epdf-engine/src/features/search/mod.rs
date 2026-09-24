@@ -46,6 +46,8 @@
 //! reproduce.
 
 pub mod dialect;
+pub mod fold;
+pub mod literal;
 
 use std::sync::OnceLock;
 
@@ -244,8 +246,11 @@ pub fn match_regex(
     // against a haystack whose terminators are normalized. See
     // `normalized_haystack` for what that costs and why it is scoped to
     // patterns that actually anchor.
-    let normalized =
-        if dialect::has_line_anchor(pattern) { dialect::normalize_line_terminators(text) } else { None };
+    let normalized = if dialect::has_line_anchor(pattern) {
+        dialect::normalize_line_terminators(text)
+    } else {
+        None
+    };
     let haystack: &str = normalized.as_ref().map_or(text, |(shadow, _)| shadow.as_str());
     let to_original = |offset: usize| match &normalized {
         Some((_, back)) => back[offset],
@@ -283,7 +288,10 @@ pub fn match_regex(
                 continue;
             }
         }
-        out.push(SearchMatchRange { start: utf16_at[start], length: utf16_at[end] - utf16_at[start] });
+        out.push(SearchMatchRange {
+            start: utf16_at[start],
+            length: utf16_at[end] - utf16_at[start],
+        });
     }
     Ok(out)
 }

@@ -21,6 +21,10 @@ ts-rs = "=12.0.1"
 # from a search box needs. Neither does both.
 regress = "=0.12.0"
 regex = "=1.13.1"
+# G5's fold is NFKD, which is a 30,000-entry table nobody should transcribe.
+# `unicode-normalization` is the crate `regex` and `idna` already build on, so
+# it is not a new supply-chain surface so much as an explicit one.
+unicode-normalization = "=0.1.24"
 
 [build-dependencies]
 build-support = { path = "../build-support" }

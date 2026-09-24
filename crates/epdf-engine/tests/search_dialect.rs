@@ -254,9 +254,28 @@ struct FoldFile {
 struct FoldCase {
     name: String,
     text: String,
+    #[serde(default, rename = "keepCase")]
+    keep_case: bool,
+    #[serde(default, rename = "keepMarks")]
+    keep_marks: bool,
     folded: String,
     /// Folded code unit to the UTF-16 index of the code point it came from.
     map: Vec<usize>,
+    /// `toOriginalRange` over every folded range.
+    ranges: Vec<FoldRange>,
+}
+
+#[derive(Debug, Deserialize)]
+struct FoldRange {
+    start: usize,
+    length: usize,
+    original: OriginalRangeVector,
+}
+
+#[derive(Debug, Deserialize, PartialEq, Eq)]
+struct OriginalRangeVector {
+    start: u32,
+    length: u32,
 }
 
 fn load_folds() -> FoldFile {
@@ -274,11 +293,10 @@ fn load_folds() -> FoldFile {
 
 /// The fold vectors satisfy the invariants `toOriginalRange` depends on.
 ///
-/// The Rust fold itself is G5, not Phase 0: NFKD is a Unicode table, not a
-/// hundred lines. What Phase 0 owes is the vector file, and a vector file
-/// nothing reads is a file nobody notices breaking. So this checks the
-/// properties the whole anchor stage rests on, and doubles as the skeleton the
-/// G5 runner grows into:
+/// Kept alongside the parity test below rather than replaced by it. Parity
+/// says the two implementations agree; this says what they agree ON, so a
+/// corpus regenerated from a broken TypeScript fold fails here rather than
+/// being adopted by Rust as the new truth. The properties:
 ///
 /// - one map entry per folded UTF-16 code unit, so a folded offset always has
 ///   an original to translate to;
@@ -344,4 +362,145 @@ fn the_fold_vectors_keep_the_properties_the_anchor_stage_rests_on() {
         file.cases.len(),
         failures.join("\n  "),
     );
+}
+
+// --- G5: the Rust fold against the TypeScript one.
+
+#[test]
+fn the_fold_agrees_with_typescript() {
+    use epdf_engine::features::search::fold::{FoldOptions, fold_text};
+
+    // NFKD, mark stripping and the case round trip, on the corpus the entry
+    // gate names: the Kelvin sign, the long s, the sharp s, final sigma,
+    // ligatures, combining marks and astral text.
+    let file = load_folds();
+    let mut failures: Vec<String> = Vec::new();
+
+    for case in &file.cases {
+        let options = FoldOptions { keep_case: case.keep_case, keep_marks: case.keep_marks };
+        let actual = fold_text(&case.text, options);
+        if actual.folded != case.folded {
+            failures.push(format!(
+                "{}: folded {:?}, TypeScript said {:?}",
+                case.name, actual.folded, case.folded,
+            ));
+            continue;
+        }
+        let actual_map: Vec<usize> = actual.map.iter().map(|u| *u as usize).collect();
+        if actual_map != case.map {
+            failures.push(format!(
+                "{}: map {:?}, TypeScript said {:?}",
+                case.name, actual_map, case.map,
+            ));
+        }
+    }
+
+    assert!(failures.is_empty(), "fold divergence:\n  {}", failures.join("\n  "));
+}
+
+#[test]
+fn folded_ranges_translate_back_the_same_way() {
+    use epdf_engine::features::search::fold::{FoldOptions, fold_text, to_original_range};
+
+    // The translation the whole anchor stage rests on: a match found in
+    // folded space becomes a range in the original. Exhaustive over every
+    // folded range in every case, because the boundary that matters is a
+    // range ending on the first unit of a collapsed whitespace run, and a
+    // sampled sweep steps over it.
+    let file = load_folds();
+    let mut failures: Vec<String> = Vec::new();
+    let mut probes = 0usize;
+
+    for case in &file.cases {
+        let options = FoldOptions { keep_case: case.keep_case, keep_marks: case.keep_marks };
+        let folded = fold_text(&case.text, options);
+        for probe in &case.ranges {
+            let Some(actual) = to_original_range(&folded, probe.start, probe.length) else {
+                failures.push(format!(
+                    "{}: range [{}, {}) translated to nothing",
+                    case.name, probe.start, probe.length,
+                ));
+                continue;
+            };
+            let expected = &probe.original;
+            if actual.start != expected.start || actual.length != expected.length {
+                failures.push(format!(
+                    "{}: folded [{}, +{}) became [{}, +{}), TypeScript said [{}, +{})",
+                    case.name,
+                    probe.start,
+                    probe.length,
+                    actual.start,
+                    actual.length,
+                    expected.start,
+                    expected.length,
+                ));
+            }
+            probes += 1;
+        }
+    }
+
+    assert!(failures.is_empty(), "range translation divergence:\n  {}", failures.join("\n  "));
+    assert!(probes >= 1_000, "only {probes} ranges checked");
+}
+
+// --- G5: literal search.
+
+#[derive(Debug, Deserialize)]
+struct LiteralFile {
+    #[serde(rename = "schemaVersion")]
+    schema_version: u32,
+    kind: String,
+    cases: Vec<LiteralCase>,
+}
+
+#[derive(Debug, Deserialize)]
+struct LiteralCase {
+    name: String,
+    covers: String,
+    haystack: String,
+    needle: String,
+    #[serde(default, rename = "matchCase")]
+    match_case: bool,
+    #[serde(default, rename = "matchDiacritics")]
+    match_diacritics: bool,
+    #[serde(default, rename = "wholeWord")]
+    whole_word: bool,
+    matches: Vec<Range>,
+}
+
+#[test]
+fn literal_search_agrees_with_typescript() {
+    use epdf_engine::features::search::fold::fold_text;
+    use epdf_engine::features::search::literal::{LiteralQuery, match_literal};
+
+    let path = test_support::workspace_root()
+        .join("tooling/engine-conformance/vectors/search/literal.json");
+    let text =
+        std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
+    let file: LiteralFile = serde_json::from_str(&text).expect("literal.json");
+    assert_eq!(file.schema_version, 1, "vector envelope moved");
+    assert_eq!(file.kind, "search.literal");
+    assert!(file.cases.len() >= 22, "the corpus shrank");
+
+    let mut failures: Vec<String> = Vec::new();
+    for case in &file.cases {
+        let query = LiteralQuery {
+            text: case.needle.clone(),
+            match_case: case.match_case,
+            match_diacritics: case.match_diacritics,
+            whole_word: case.whole_word,
+        };
+        let haystack = fold_text(&case.haystack, query.fold_options());
+        let actual: Vec<Range> = match_literal(&haystack, &query)
+            .into_iter()
+            .map(|r| Range { start: r.start as usize, length: r.length as usize })
+            .collect();
+        if actual != case.matches {
+            failures.push(format!(
+                "{}: matched {:?}, TypeScript said {:?} ({})",
+                case.name, actual, case.matches, case.covers,
+            ));
+        }
+    }
+    assert!(failures.is_empty(), "literal search divergence:\n  {}", failures.join("\n  "));
 }

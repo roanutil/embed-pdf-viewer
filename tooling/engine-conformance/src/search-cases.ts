@@ -40,6 +40,169 @@ const ASTRAL = 'a\u{1F600}b\u{1D400}c'; // emoji and MATHEMATICAL BOLD CAPITAL A
 const FOLDING = 'KK k sſ S ß ss ς σ'; // K, Kelvin, k, s, long s, S, sharp s, ss, final sigma, sigma
 const MIXED_SCRIPT = 'abc أهلا 123 中文 ́combining';
 
+/** A literal query and the page it runs against. */
+export interface LiteralCase {
+  readonly name: string;
+  readonly covers: string;
+  readonly haystack: string;
+  readonly needle: string;
+  readonly matchCase?: boolean;
+  readonly matchDiacritics?: boolean;
+  readonly wholeWord?: boolean;
+}
+
+/**
+ * Literal search, which is the default mode and the one most queries use.
+ *
+ * The cases lean on the interactions rather than on breadth: folding against
+ * whole-word, folding against diacritics, and the places a fold changes the
+ * length of what it matched so the range has to translate back.
+ */
+export const LITERAL_CASES: readonly LiteralCase[] = [
+  {
+    name: 'plain-ascii',
+    covers: 'The dominant query.',
+    haystack: 'The cat sat on the mat.',
+    needle: 'cat',
+  },
+  {
+    name: 'case-insensitive-by-default',
+    covers: 'A query with no flags ignores case, which is what a search box does.',
+    haystack: 'The CAT sat.',
+    needle: 'cat',
+  },
+  {
+    name: 'case-sensitive',
+    covers: 'matchCase keeps the fold from lowering either side.',
+    haystack: 'The CAT sat on the cat.',
+    needle: 'cat',
+    matchCase: true,
+  },
+  {
+    name: 'accents-ignored-by-default',
+    covers: 'café is found by cafe, which is the fold doing its job.',
+    haystack: 'Un caf\u00e9 noir.',
+    needle: 'cafe',
+  },
+  {
+    name: 'accents-respected',
+    covers:
+      'matchDiacritics keeps the marks, so cafe must not match caf\u00e9 by stopping before the accent.',
+    haystack: 'Un caf\u00e9 noir et un cafe clair.',
+    needle: 'cafe',
+    matchDiacritics: true,
+  },
+  {
+    name: 'ligature-in-the-page',
+    covers: 'NFKD splits the ligature, so a two-letter needle finds a one-character page.',
+    haystack: 'The \ufb01nal word.',
+    needle: 'final',
+  },
+  {
+    name: 'ligature-in-the-needle',
+    covers: 'The same fold applies to what was typed.',
+    haystack: 'The final word.',
+    needle: '\ufb01nal',
+  },
+  {
+    name: 'line-wrapped-phrase',
+    covers: 'A whitespace run collapses, so a wrapped phrase is still one match.',
+    haystack: 'hello\n   world',
+    needle: 'hello world',
+  },
+  {
+    name: 'needle-with-its-own-whitespace-run',
+    covers: 'Both sides collapse, so the query need not guess the page layout.',
+    haystack: 'hello world',
+    needle: 'hello    world',
+  },
+  {
+    name: 'whole-word-rejects-a-prefix',
+    covers: 'Concatenate contains cat and is not the word cat.',
+    haystack: 'The cat in Concatenate.',
+    needle: 'cat',
+    wholeWord: true,
+  },
+  {
+    name: 'whole-word-across-an-accent',
+    covers:
+      'The word test uses Unicode letters, so caf never whole-word matches inside caf\u00e9 even after the accent is folded away.',
+    haystack: 'Un caf\u00e9.',
+    needle: 'caf',
+    wholeWord: true,
+  },
+  {
+    name: 'whole-word-against-a-non-ascii-letter',
+    covers:
+      'The word test is Unicode letters, not the ASCII set. A CJK character beside the needle is a word character, so this must NOT match; an ASCII-only rule would return a hit.',
+    haystack: '\u732bcat\u732b and a lone cat',
+    needle: 'cat',
+    wholeWord: true,
+  },
+  {
+    name: 'whole-word-against-cyrillic',
+    covers: 'The same rule in another script, so the case is not about CJK width.',
+    haystack: '\u0434cat\u0434 and a lone cat',
+    needle: 'cat',
+    wholeWord: true,
+  },
+  {
+    name: 'overlapping-candidates',
+    covers: 'Matches do not overlap: the scan resumes after the one it took.',
+    haystack: 'aaaa',
+    needle: 'aa',
+  },
+  {
+    name: 'empty-needle',
+    covers: 'Nothing searchable, which would otherwise match every position.',
+    haystack: 'anything',
+    needle: '',
+  },
+  {
+    name: 'whitespace-only-needle',
+    covers: 'Folds to a single space, which would match every collapsed run.',
+    haystack: 'a   b',
+    needle: '   ',
+  },
+  {
+    name: 'needle-longer-than-the-page',
+    covers: 'The scan must not run off the end.',
+    haystack: 'ab',
+    needle: 'abcdef',
+  },
+  {
+    name: 'no-match',
+    covers: 'The empty answer.',
+    haystack: 'The cat sat.',
+    needle: 'dog',
+  },
+  {
+    name: 'sharp-s-folds-to-ss',
+    covers: 'The case round trip, which a plain lowercase would miss.',
+    haystack: 'Stra\u00dfe',
+    needle: 'strasse',
+  },
+  {
+    name: 'astral-haystack',
+    covers:
+      'A supplementary character is two code units, so a match after it has to translate through the map rather than by counting characters.',
+    haystack: 'a\u{1F600}bcd',
+    needle: 'bcd',
+  },
+  {
+    name: 'match-at-the-very-start',
+    covers: 'Offset zero, where an off-by-one hides.',
+    haystack: 'cat sat',
+    needle: 'cat',
+  },
+  {
+    name: 'match-at-the-very-end',
+    covers: 'The last unit, where the other off-by-one hides.',
+    haystack: 'sat cat',
+    needle: 'cat',
+  },
+] as const;
+
 export const REGEX_CASES: readonly RegexCase[] = [
   // --- Dialect membership: what the validator refuses before anything runs.
   {

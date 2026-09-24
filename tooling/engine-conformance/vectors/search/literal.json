@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "kind": "search.literal",
+  "cases": [
+  {"name":"plain-ascii","covers":"The dominant query.","haystack":"The cat sat on the mat.","needle":"cat","matches":[{"start":4,"length":3}]},
+  {"name":"case-insensitive-by-default","covers":"A query with no flags ignores case, which is what a search box does.","haystack":"The CAT sat.","needle":"cat","matches":[{"start":4,"length":3}]},
+  {"name":"case-sensitive","covers":"matchCase keeps the fold from lowering either side.","haystack":"The CAT sat on the cat.","needle":"cat","matchCase":true,"matches":[{"start":19,"length":3}]},
+  {"name":"accents-ignored-by-default","covers":"café is found by cafe, which is the fold doing its job.","haystack":"Un café noir.","needle":"cafe","matches":[{"start":3,"length":4}]},
+  {"name":"accents-respected","covers":"matchDiacritics keeps the marks, so cafe must not match café by stopping before the accent.","haystack":"Un café noir et un cafe clair.","needle":"cafe","matchDiacritics":true,"matches":[{"start":19,"length":4}]},
+  {"name":"ligature-in-the-page","covers":"NFKD splits the ligature, so a two-letter needle finds a one-character page.","haystack":"The ﬁnal word.","needle":"final","matches":[{"start":4,"length":4}]},
+  {"name":"ligature-in-the-needle","covers":"The same fold applies to what was typed.","haystack":"The final word.","needle":"ﬁnal","matches":[{"start":4,"length":5}]},
+  {"name":"line-wrapped-phrase","covers":"A whitespace run collapses, so a wrapped phrase is still one match.","haystack":"hello\n   world","needle":"hello world","matches":[{"start":0,"length":14}]},
+  {"name":"needle-with-its-own-whitespace-run","covers":"Both sides collapse, so the query need not guess the page layout.","haystack":"hello world","needle":"hello    world","matches":[{"start":0,"length":11}]},
+  {"name":"whole-word-rejects-a-prefix","covers":"Concatenate contains cat and is not the word cat.","haystack":"The cat in Concatenate.","needle":"cat","wholeWord":true,"matches":[{"start":4,"length":3}]},
+  {"name":"whole-word-across-an-accent","covers":"The word test uses Unicode letters, so caf never whole-word matches inside café even after the accent is folded away.","haystack":"Un café.","needle":"caf","wholeWord":true,"matches":[]},
+  {"name":"whole-word-against-a-non-ascii-letter","covers":"The word test is Unicode letters, not the ASCII set. A CJK character beside the needle is a word character, so this must NOT match; an ASCII-only rule would return a hit.","haystack":"猫cat猫 and a lone cat","needle":"cat","wholeWord":true,"matches":[{"start":17,"length":3}]},
+  {"name":"whole-word-against-cyrillic","covers":"The same rule in another script, so the case is not about CJK width.","haystack":"дcatд and a lone cat","needle":"cat","wholeWord":true,"matches":[{"start":17,"length":3}]},
+  {"name":"overlapping-candidates","covers":"Matches do not overlap: the scan resumes after the one it took.","haystack":"aaaa","needle":"aa","matches":[{"start":0,"length":2},{"start":2,"length":2}]},
+  {"name":"empty-needle","covers":"Nothing searchable, which would otherwise match every position.","haystack":"anything","needle":"","matches":[]},
+  {"name":"whitespace-only-needle","covers":"Folds to a single space, which would match every collapsed run.","haystack":"a   b","needle":"   ","matches":[]},
+  {"name":"needle-longer-than-the-page","covers":"The scan must not run off the end.","haystack":"ab","needle":"abcdef","matches":[]},
+  {"name":"no-match","covers":"The empty answer.","haystack":"The cat sat.","needle":"dog","matches":[]},
+  {"name":"sharp-s-folds-to-ss","covers":"The case round trip, which a plain lowercase would miss.","haystack":"Straße","needle":"strasse","matches":[{"start":0,"length":6}]},
+  {"name":"astral-haystack","covers":"A supplementary character is two code units, so a match after it has to translate through the map rather than by counting characters.","haystack":"a😀bcd","needle":"bcd","matches":[{"start":3,"length":3}]},
+  {"name":"match-at-the-very-start","covers":"Offset zero, where an off-by-one hides.","haystack":"cat sat","needle":"cat","matches":[{"start":0,"length":3}]},
+  {"name":"match-at-the-very-end","covers":"The last unit, where the other off-by-one hides.","haystack":"sat cat","needle":"cat","matches":[{"start":4,"length":3}]}
+  ]
+}

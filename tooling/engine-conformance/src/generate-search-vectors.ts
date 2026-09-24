@@ -18,10 +18,21 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { foldText } from '../../../packages/engine/core/src/search/fold';
+import { foldText, toOriginalRange } from '../../../packages/engine/core/src/search/fold';
+import {
+  foldOptionsFor,
+  matchLiteral,
+} from '../../../packages/engine/core/src/search/literal';
 import { matchRegex, validateSearchRegex } from '../../../packages/engine/core/src/search/regex';
 
-import { FOLD_CASES, REGEX_CASES, type FoldCase, type RegexCase } from './search-cases';
+import {
+  FOLD_CASES,
+  LITERAL_CASES,
+  REGEX_CASES,
+  type FoldCase,
+  type LiteralCase,
+  type RegexCase,
+} from './search-cases';
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const vectorsRoot = join(packageRoot, 'vectors', 'search');
@@ -46,6 +57,19 @@ interface FoldResult extends FoldCase {
   readonly folded: string;
   /** Folded code unit to the UTF-16 index of the code point it came from. */
   readonly map: readonly number[];
+  /**
+   * `toOriginalRange` over every folded range, so the translation the anchor
+   * stage rests on is pinned rather than only its invariants.
+   *
+   * Exhaustive because the cases are short. A sampled sweep would step over
+   * the boundary that matters: a range ending on the first unit of a
+   * collapsed whitespace run.
+   */
+  readonly ranges: readonly {
+    readonly start: number;
+    readonly length: number;
+    readonly original: { readonly start: number; readonly length: number };
+  }[];
 }
 
 function runRegexCase(entry: RegexCase): RegexResult {
@@ -64,12 +88,34 @@ function runRegexCase(entry: RegexCase): RegexResult {
   return { ...entry, valid: true, results };
 }
 
+interface LiteralResult extends LiteralCase {
+  /** Matches in the original text's UTF-16 code-unit space. */
+  readonly matches: readonly MatchRange[];
+}
+
+function runLiteralCase(entry: LiteralCase): LiteralResult {
+  const query = {
+    text: entry.needle,
+    matchCase: entry.matchCase ?? false,
+    matchDiacritics: entry.matchDiacritics ?? false,
+    wholeWord: entry.wholeWord ?? false,
+  };
+  const haystack = foldText(entry.haystack, foldOptionsFor(query));
+  return { ...entry, matches: matchLiteral(haystack, query) };
+}
+
 function runFoldCase(entry: FoldCase): FoldResult {
   const folded = foldText(entry.text, {
     keepCase: entry.keepCase,
     keepMarks: entry.keepMarks,
   });
-  return { ...entry, folded: folded.folded, map: [...folded.map] };
+  const ranges: FoldResult['ranges'] = [];
+  for (let start = 0; start < folded.folded.length; start++) {
+    for (let length = 1; start + length <= folded.folded.length; length++) {
+      ranges.push({ start, length, original: toOriginalRange(folded, start, length) });
+    }
+  }
+  return { ...entry, folded: folded.folded, map: [...folded.map], ranges };
 }
 
 function serialize(kind: string, entries: readonly unknown[]): string {
@@ -109,8 +155,8 @@ async function main(): Promise<void> {
   const check = process.argv.includes('--check');
 
   const names = new Set<string>();
-  for (const entry of [...REGEX_CASES, ...FOLD_CASES]) {
-    const key = `${'pattern' in entry ? 'regex' : 'fold'}:${entry.name}`;
+  for (const entry of [...REGEX_CASES, ...FOLD_CASES, ...LITERAL_CASES]) {
+    const key = `${'pattern' in entry ? 'regex' : 'needle' in entry ? 'literal' : 'fold'}:${entry.name}`;
     if (names.has(key)) throw new Error(`duplicate case name ${key}`);
     names.add(key);
   }
@@ -125,6 +171,12 @@ async function main(): Promise<void> {
   differed =
     (await emit('fold.json', serialize('search.fold', FOLD_CASES.map(runFoldCase)), check)) ||
     differed;
+  differed =
+    (await emit(
+      'literal.json',
+      serialize('search.literal', LITERAL_CASES.map(runLiteralCase)),
+      check,
+    )) || differed;
 
   if (check && differed) {
     process.stderr.write(
