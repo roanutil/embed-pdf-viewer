@@ -36,3 +36,4 @@ pub mod read;
 pub mod state;
 pub mod subtype;
 pub mod vocabulary;
+pub mod write;

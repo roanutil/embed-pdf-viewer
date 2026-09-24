@@ -233,6 +233,13 @@ jobs:
       - name: Save vectors are current
         run: pnpm --filter @embedpdf/tooling-engine-conformance run save:check
 
+      # G11's two pure decisions, pinned before the mutators that use them.
+      # A wrong appearance verdict destroys a stream that cannot be
+      # recomputed; a wrong impact verdict lets a client dereference an index
+      # that now points somewhere else.
+      - name: Annotation write vectors are current
+        run: pnpm --filter @embedpdf/tooling-engine-conformance run annotation-write:check
+
       # multiplatform-port-order.md Section 6: a kind added to
       # worker-protocol.ts without a row in the matrix fails here, and so does
       # a row for a kind that no longer exists.
