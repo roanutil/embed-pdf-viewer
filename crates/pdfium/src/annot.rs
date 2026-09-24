@@ -135,6 +135,24 @@ impl Document {
     }
 }
 
+impl<'page> Annotation<'page> {
+    /// Wrap a handle this crate just created.
+    ///
+    /// # Safety
+    /// `handle` must be an `FPDF_ANNOTATION` the caller owns and has not
+    /// closed, and `'page` must not outlive the page it belongs to. The
+    /// lifetime is unbounded here, so the caller chooses it.
+    pub(crate) unsafe fn from_raw_owned(
+        handle: pdfium_sys::FPDF_ANNOTATION,
+    ) -> Option<Annotation<'page>> {
+        (!handle.is_null()).then_some(Annotation {
+            handle,
+            _page: PhantomData,
+            _not_send: PhantomData,
+        })
+    }
+}
+
 impl Drop for Annotation<'_> {
     fn drop(&mut self) {
         // SAFETY: the handle came from FPDFPage_GetAnnot and is closed once.

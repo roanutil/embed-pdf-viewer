@@ -14,6 +14,7 @@
 
 pub(crate) mod action;
 mod annot;
+mod annot_write;
 mod base;
 mod bitmap;
 mod document;

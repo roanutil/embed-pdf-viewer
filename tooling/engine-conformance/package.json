@@ -38,6 +38,8 @@
     "save:check": "tsx --conditions=development src/generate-save-vectors.ts --check",
     "annotation-write": "tsx --conditions=development src/generate-annotation-write-vectors.ts",
     "annotation-write:check": "tsx --conditions=development src/generate-annotation-write-vectors.ts --check",
+    "annotation-create": "tsx --conditions=development src/generate-annotation-create-vectors.ts",
+    "annotation-create:check": "tsx --conditions=development src/generate-annotation-create-vectors.ts --check",
     "actions": "tsx --conditions=development src/generate-action-vectors.ts",
     "actions:check": "tsx --conditions=development src/generate-action-vectors.ts --check",
     "layout": "tsx --conditions=development src/generate-layout-vectors.ts",
