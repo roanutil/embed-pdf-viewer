@@ -53,6 +53,13 @@ const SECOND_QUAD = {
 
 const SQUARE_RECT = { left: 300, bottom: 600, right: 400, top: 660 };
 
+const TRIANGLE_RECT = { left: 300, bottom: 300, right: 420, top: 380 };
+const TRIANGLE = [
+  { x: 300, y: 300 },
+  { x: 420, y: 300 },
+  { x: 360, y: 380 },
+];
+
 interface UpdateCase {
   readonly name: string;
   readonly covers: string;
@@ -153,6 +160,167 @@ const CASES: readonly UpdateCase[] = [
     covers: 'The /IT a strikeout can carry, set by a patch rather than at creation.',
     draft: { subtype: 'strikeout', quadPoints: [QUAD] },
     patch: { subtype: 'strikeout', intent: 'strikeout-text-edit' },
+  },
+  {
+    name: 'polygon-fewer-vertices',
+    covers:
+      'A vertex list that SHRINKS, which /QuadPoints cannot do. SetVertices replaces the array rather than appending to it, so there is no stale tail and no preflight to refuse one.',
+    draft: {
+      subtype: 'polygon',
+      rect: TRIANGLE_RECT,
+      vertices: [
+        { x: 300, y: 300 },
+        { x: 420, y: 300 },
+        { x: 420, y: 380 },
+        { x: 300, y: 380 },
+      ],
+    },
+    patch: {
+      subtype: 'polygon',
+      vertices: TRIANGLE,
+    },
+  },
+  {
+    name: 'polygon-degenerate',
+    covers:
+      'A polygon flattened onto a line. PDFium has no appearance to bake for one, so the verdict is a third thing: the edit landed and the stream could not be rebuilt. A client is told rather than shown a stale picture.',
+    draft: {
+      subtype: 'polygon',
+      rect: TRIANGLE_RECT,
+      vertices: TRIANGLE,
+    },
+    patch: {
+      subtype: 'polygon',
+      rect: { left: 300, bottom: 300, right: 420, top: 300 },
+      vertices: [
+        { x: 300, y: 300 },
+        { x: 420, y: 300 },
+      ],
+    },
+  },
+  {
+    name: 'polygon-clear-cloudy',
+    covers: 'A polygon is the one vertex kind with a /BE, and it clears on the same terms a shape does.',
+    draft: {
+      subtype: 'polygon',
+      rect: TRIANGLE_RECT,
+      vertices: TRIANGLE,
+      cloudyIntensity: 2,
+    },
+    patch: { subtype: 'polygon', cloudyIntensity: null },
+  },
+  {
+    name: 'polygon-clear-interior',
+    covers:
+      'A tri-state clear of a fill that was there. On the create path clearing and not saying are the same thing; here they are not.',
+    draft: {
+      subtype: 'polygon',
+      rect: TRIANGLE_RECT,
+      vertices: TRIANGLE,
+      interiorColor: { r: 0, g: 255, b: 0 },
+    },
+    patch: { subtype: 'polygon', interiorColor: null },
+  },
+  {
+    name: 'polygon-width-only',
+    covers:
+      'A border width with no style. /BS takes both in one call, so the writer has to READ the style rather than default it: defaulting would reset a dashed border nobody mentioned.',
+    draft: {
+      subtype: 'polygon',
+      rect: TRIANGLE_RECT,
+      vertices: TRIANGLE,
+      borderStyle: 'dashed',
+      dashArray: [4, 2],
+    },
+    patch: { subtype: 'polygon', strokeWidth: 4 },
+  },
+  {
+    name: 'polygon-style-only',
+    covers:
+      'The other half of the /BS read-modify-write: a style with no width. Defaulting the width would reset a three-point border nobody mentioned.',
+    draft: {
+      subtype: 'polygon',
+      rect: TRIANGLE_RECT,
+      vertices: TRIANGLE,
+      strokeWidth: 3,
+    },
+    patch: { subtype: 'polygon', borderStyle: 'dashed', dashArray: [5, 3] },
+  },
+  {
+    name: 'polygon-clear-rotation',
+    covers:
+      'The advisory scalar, removed. A vertex kind carries an angle and no logical box, so clearing it is the whole of un-rotating one.',
+    draft: {
+      subtype: 'polygon',
+      rect: TRIANGLE_RECT,
+      vertices: TRIANGLE,
+      rotation: 30,
+    },
+    patch: { subtype: 'polygon', rotation: null },
+  },
+  {
+    name: 'polyline-endings',
+    covers: 'The /LE pair, changed after creation. The two ends differ, so a writer that wrote one twice is visible.',
+    draft: {
+      subtype: 'polyline',
+      rect: TRIANGLE_RECT,
+      vertices: TRIANGLE,
+      lineEndings: { start: 'none', end: 'none' },
+    },
+    patch: { subtype: 'polyline', lineEndings: { start: 'diamond', end: 'open-arrow' } },
+  },
+  {
+    name: 'line-endpoints',
+    covers: 'Moving a line is moving its two points, and its /Rect is the caller arithmetic over them.',
+    draft: {
+      subtype: 'line',
+      rect: { left: 450, bottom: 300, right: 560, top: 400 },
+      linePoints: { start: { x: 450, y: 300 }, end: { x: 560, y: 400 } },
+    },
+    patch: {
+      subtype: 'line',
+      rect: { left: 450, bottom: 300, right: 520, top: 340 },
+      linePoints: { start: { x: 450, y: 340 }, end: { x: 520, y: 300 } },
+    },
+  },
+  {
+    name: 'ink-replace-strokes',
+    covers:
+      'A new pen path. There is no way to replace one stroke, so the whole list goes and the new one is appended; half of that leaves the old strokes under the new ones.',
+    draft: {
+      subtype: 'ink',
+      rect: { left: 72, bottom: 200, right: 240, top: 300 },
+      inkList: [
+        [
+          { x: 72, y: 200 },
+          { x: 120, y: 280 },
+          { x: 160, y: 200 },
+        ],
+        [
+          { x: 180, y: 220 },
+          { x: 240, y: 300 },
+        ],
+      ],
+    },
+    patch: {
+      subtype: 'ink',
+      inkList: [
+        [
+          { x: 80, y: 210 },
+          { x: 130, y: 260 },
+        ],
+      ],
+    },
+  },
+  {
+    name: 'ink-intent',
+    covers: 'The only /IT ink carries, set after creation.',
+    draft: {
+      subtype: 'ink',
+      rect: { left: 72, bottom: 200, right: 240, top: 300 },
+      inkList: [[{ x: 72, y: 200 }, { x: 240, y: 300 }]],
+    },
+    patch: { subtype: 'ink', intent: 'ink-highlight' },
   },
 ];
 

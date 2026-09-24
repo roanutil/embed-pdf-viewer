@@ -312,6 +312,10 @@ fn opacity_of(kind: &AnnotationPatchKind) -> Option<f64> {
         AnnotationPatchKind::Square { fields } | AnnotationPatchKind::Circle { fields } => {
             fields.opacity
         }
+        AnnotationPatchKind::Polygon { fields, .. }
+        | AnnotationPatchKind::Polyline { fields, .. } => fields.geometry.opacity,
+        AnnotationPatchKind::Line { fields, .. } => fields.opacity,
+        AnnotationPatchKind::Ink { fields, .. } => fields.opacity,
     }
 }
 
@@ -352,7 +356,210 @@ fn apply_kind_patch(
         AnnotationPatchKind::Square { fields } | AnnotationPatchKind::Circle { fields } => {
             apply_shape_patch(annotation, fields)
         }
+        AnnotationPatchKind::Polygon { fields, cloudy_intensity } => {
+            apply_vertex_patch(annotation, fields)?;
+            // Only a polygon takes `/BE`, and a clear or a non-positive
+            // value both remove it: never leave a degenerate entry the read
+            // side would normalize away.
+            match cloudy_intensity {
+                Patch::Keep => {}
+                Patch::Set(value) if *value > 0.0 => {
+                    if !annotation.set_border_effect(*value as f32) {
+                        return Err(EngineError::with_message(
+                            EngineErrorCode::Unknown,
+                            "EPDFAnnot_SetBorderEffect refused the intensity",
+                        ));
+                    }
+                }
+                _ => {
+                    annotation.clear_border_effect();
+                }
+            }
+            Ok(())
+        }
+        AnnotationPatchKind::Polyline { fields, line_endings } => {
+            apply_vertex_patch(annotation, fields)?;
+            if let Some(endings) = line_endings {
+                set_line_endings(annotation, *endings)?;
+            }
+            Ok(())
+        }
+        AnnotationPatchKind::Line { fields, line_points, line_endings } => {
+            apply_geometry_style_patch(annotation, fields)?;
+            if let Some(points) = line_points
+                && !annotation.set_line(point_to_native(points.start), point_to_native(points.end))
+            {
+                return Err(EngineError::with_message(
+                    EngineErrorCode::Unknown,
+                    "EPDFAnnot_SetLine refused the endpoints",
+                ));
+            }
+            if let Some(endings) = line_endings {
+                set_line_endings(annotation, *endings)?;
+            }
+            Ok(())
+        }
+        AnnotationPatchKind::Ink { fields, ink_list, intent } => {
+            apply_stroke_style_patch(annotation, fields)?;
+            if let Some(intent) = intent {
+                write(annotation.set_intent(intent.name()), "/IT")?;
+            }
+            if let Some(strokes) = ink_list {
+                // There is no way to replace ONE stroke, so a patch that
+                // changes the pen path removes the whole list and appends
+                // the new one. Half of that would leave a drawing with the
+                // old strokes under the new ones.
+                if !annotation.remove_ink_list() {
+                    return Err(EngineError::with_message(
+                        EngineErrorCode::Unknown,
+                        "FPDFAnnot_RemoveInkList refused",
+                    ));
+                }
+                for (index, stroke) in strokes.iter().enumerate() {
+                    let points: Vec<pdfium::PointF> =
+                        stroke.iter().copied().map(point_to_native).collect();
+                    if annotation.add_ink_stroke(&points) < 0 {
+                        return Err(EngineError::with_message(
+                            EngineErrorCode::Unknown,
+                            format!("FPDFAnnot_AddInkStroke refused stroke {index}"),
+                        ));
+                    }
+                }
+            }
+            Ok(())
+        }
     }
+}
+
+/// A polygon's or polyline's own geometry, plus the styling it shares.
+fn apply_vertex_patch(
+    annotation: &pdfium::Annotation<'_>,
+    fields: &super::patch::VertexPatchFields,
+) -> Result<(), EngineError> {
+    apply_geometry_style_patch(annotation, &fields.geometry)?;
+    // Unlike `/QuadPoints`, a vertex list can shrink: `EPDFAnnot_SetVertices`
+    // replaces the array rather than appending to it, so there is no stale
+    // tail to leave behind and no preflight to refuse one.
+    if let Some(vertices) = &fields.vertices {
+        let points: Vec<pdfium::PointF> = vertices.iter().copied().map(point_to_native).collect();
+        if !annotation.set_vertices(&points) {
+            return Err(EngineError::with_message(
+                EngineErrorCode::Unknown,
+                "EPDFAnnot_SetVertices refused the point list",
+            ));
+        }
+    }
+    Ok(())
+}
+
+/// The styling a filled geometric patch may change.
+fn apply_geometry_style_patch(
+    annotation: &pdfium::Annotation<'_>,
+    fields: &super::patch::GeometryPatchFields,
+) -> Result<(), EngineError> {
+    if let Some(rect) = fields.rect {
+        set_rect(annotation, rect)?;
+    }
+    if let Some(color) = fields.color {
+        set_color(annotation, AnnotationColorType::Color, color)?;
+    }
+    set_opacity_patch(annotation, fields.opacity)?;
+    patch_border(annotation, fields.border_style, fields.stroke_width, &fields.dash_array)?;
+    match &fields.interior_color {
+        Patch::Keep => {}
+        Patch::Set(color) => set_color(annotation, AnnotationColorType::InteriorColor, *color)?,
+        Patch::Clear => {
+            annotation.clear_color(AnnotationColorType::InteriorColor as i32);
+        }
+    }
+    super::transform::write_vertex_transform(annotation, fields.rotation.clone())
+}
+
+/// The same without a fill.
+fn apply_stroke_style_patch(
+    annotation: &pdfium::Annotation<'_>,
+    fields: &super::patch::StrokePatchFields,
+) -> Result<(), EngineError> {
+    if let Some(rect) = fields.rect {
+        set_rect(annotation, rect)?;
+    }
+    if let Some(color) = fields.color {
+        set_color(annotation, AnnotationColorType::Color, color)?;
+    }
+    set_opacity_patch(annotation, fields.opacity)?;
+    patch_border(annotation, fields.border_style, fields.stroke_width, &fields.dash_array)?;
+    super::transform::write_vertex_transform(annotation, fields.rotation.clone())
+}
+
+fn set_opacity_patch(
+    annotation: &pdfium::Annotation<'_>,
+    opacity: Option<f64>,
+) -> Result<(), EngineError> {
+    if let Some(opacity) = opacity
+        && !annotation.set_opacity(opacity)
+    {
+        return Err(EngineError::with_message(
+            EngineErrorCode::Unknown,
+            "EPDFAnnot_SetOpacity refused the value",
+        ));
+    }
+    Ok(())
+}
+
+/// `/BS` and `/D`, read-modify-write.
+///
+/// The native call takes the style AND the width together, so a patch naming
+/// either has to READ the other rather than defaulting it: defaulting would
+/// reset a width the caller never mentioned.
+fn patch_border(
+    annotation: &pdfium::Annotation<'_>,
+    style: Option<crate::features::annotation::vocabulary::AnnotationBorderStyle>,
+    width: Option<f64>,
+    dashes: &Option<Vec<f64>>,
+) -> Result<(), EngineError> {
+    if style.is_some() || width.is_some() {
+        let current = annotation.border_style();
+        let style = style.unwrap_or(
+            crate::features::annotation::vocabulary::AnnotationBorderStyle::from_code(
+                current.style_code,
+            ),
+        );
+        let width = width.unwrap_or(f64::from(current.width));
+        if !annotation.set_border_style(style.code(), width as f32) {
+            return Err(EngineError::with_message(
+                EngineErrorCode::Unknown,
+                "EPDFAnnot_SetBorderStyle refused the border",
+            ));
+        }
+    }
+    if let Some(dashes) = dashes.as_ref().filter(|d| !d.is_empty()) {
+        let dashes: Vec<f32> = dashes.iter().map(|d| *d as f32).collect();
+        if !annotation.set_border_dash_pattern(&dashes) {
+            return Err(EngineError::with_message(
+                EngineErrorCode::Unknown,
+                "EPDFAnnot_SetBorderDashPattern refused the pattern",
+            ));
+        }
+    }
+    Ok(())
+}
+
+/// `/LE`, both ends.
+fn set_line_endings(
+    annotation: &pdfium::Annotation<'_>,
+    endings: crate::features::annotation::vocabulary::LineEndings,
+) -> Result<(), EngineError> {
+    if !annotation.set_line_endings(endings.start.code(), endings.end.code()) {
+        return Err(EngineError::with_message(
+            EngineErrorCode::Unknown,
+            "EPDFAnnot_SetLineEndings refused the pair",
+        ));
+    }
+    Ok(())
+}
+
+fn point_to_native(point: crate::geom::PdfPoint) -> pdfium::PointF {
+    pdfium::PointF { x: point.x as f32, y: point.y as f32 }
 }
 
 fn apply_text_markup_patch(

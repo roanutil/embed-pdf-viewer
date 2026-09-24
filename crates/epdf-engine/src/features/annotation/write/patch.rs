@@ -35,13 +35,13 @@ use serde::{Deserialize, Serialize};
 use crate::dto::Patch;
 
 use super::draft::AnnotationFlagsPatch;
-use crate::features::annotation::intent::StrikeoutIntent;
+use crate::features::annotation::intent::{InkIntent, StrikeoutIntent};
 use crate::features::annotation::read::shape::PdfRectDifferences;
 use crate::features::annotation::read::style::Color;
 use crate::features::annotation::vocabulary::{
-    AnnotationBorderStyle, AnnotationReplyType, BlendMode,
+    AnnotationBorderStyle, AnnotationReplyType, BlendMode, LineEndings,
 };
-use crate::geom::{PdfQuad, PdfRect};
+use crate::geom::{InkList, LinePoints, PdfPoint, PdfQuad, PdfRect};
 use crate::identity::AnnotationRef;
 
 /// The fields every patch carries.
@@ -102,6 +102,94 @@ pub enum AnnotationPatchKind {
         #[serde(flatten)]
         fields: ShapePatchFields,
     },
+    Polygon {
+        #[serde(flatten)]
+        fields: VertexPatchFields,
+        #[serde(default, skip_serializing_if = "Patch::is_keep")]
+        cloudy_intensity: Patch<f64>,
+    },
+    Polyline {
+        #[serde(flatten)]
+        fields: VertexPatchFields,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        line_endings: Option<LineEndings>,
+    },
+    Line {
+        #[serde(flatten)]
+        fields: GeometryPatchFields,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        line_points: Option<LinePoints>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        line_endings: Option<LineEndings>,
+    },
+    Ink {
+        #[serde(flatten)]
+        fields: StrokePatchFields,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        ink_list: Option<InkList>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        intent: Option<InkIntent>,
+    },
+}
+
+/// The styling every geometric patch may change, with a fill.
+///
+/// `rect` is here rather than derived. A vertex kind's box is the caller's
+/// arithmetic over its points, the same as on a draft: a patch that moved the
+/// points and left the box would be describing two different annotations.
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct GeometryPatchFields {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rect: Option<PdfRect>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub color: Option<Color>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub opacity: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub stroke_width: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub border_style: Option<AnnotationBorderStyle>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub dash_array: Option<Vec<f64>>,
+    #[serde(skip_serializing_if = "Patch::is_keep")]
+    pub interior_color: Patch<Color>,
+    /// The advisory scalar. `Clear`, and a zero, both remove the key.
+    #[serde(skip_serializing_if = "Patch::is_keep")]
+    pub rotation: Patch<f64>,
+}
+
+/// The same without a fill, for ink.
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct StrokePatchFields {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rect: Option<PdfRect>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub color: Option<Color>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub opacity: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub stroke_width: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub border_style: Option<AnnotationBorderStyle>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub dash_array: Option<Vec<f64>>,
+    #[serde(skip_serializing_if = "Patch::is_keep")]
+    pub rotation: Patch<f64>,
+}
+
+/// What a polygon or polyline patch may change.
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct VertexPatchFields {
+    #[serde(flatten)]
+    pub geometry: GeometryPatchFields,
+    /// A replacement `/Vertices`. Unlike `/QuadPoints`, this one CAN shrink:
+    /// `EPDFAnnot_SetVertices` replaces the array rather than appending to
+    /// it, so a shorter path is an ordinary edit.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub vertices: Option<Vec<PdfPoint>>,
 }
 
 impl AnnotationPatchKind {
@@ -114,6 +202,10 @@ impl AnnotationPatchKind {
             Self::Strikeout { .. } => S::Strikeout,
             Self::Square { .. } => S::Square,
             Self::Circle { .. } => S::Circle,
+            Self::Polygon { .. } => S::Polygon,
+            Self::Polyline { .. } => S::Polyline,
+            Self::Line { .. } => S::Line,
+            Self::Ink { .. } => S::Ink,
         }
     }
 }

@@ -205,6 +205,7 @@ fn the_appearance_verdict_agrees_with_the_typescript_engine() {
     let file = load();
     let mut preserved = 0usize;
     let mut regenerated = 0usize;
+    let mut unavailable = 0usize;
 
     for case in &file.cases {
         let result = run(&file, case).unwrap_or_else(|e| panic!("{}: {e}", case.name));
@@ -212,12 +213,18 @@ fn the_appearance_verdict_agrees_with_the_typescript_engine() {
         match case.appearance["action"].as_str() {
             Some("preserved") => preserved += 1,
             Some("regenerated") => regenerated += 1,
+            // The third verdict: the edit landed and PDFium had nothing to
+            // bake, which a degenerate geometry produces. It is reported
+            // rather than swallowed, so a client knows its cached raster is
+            // stale rather than being shown one that no longer matches.
+            Some("generation-unavailable") => unavailable += 1,
             other => panic!("{}: an appearance action of {other:?}", case.name),
         }
     }
 
     assert!(preserved > 0, "no case preserves an appearance");
     assert!(regenerated > 0, "no case re-bakes one");
+    assert!(unavailable > 0, "no case reaches the third verdict");
 }
 
 #[test]
