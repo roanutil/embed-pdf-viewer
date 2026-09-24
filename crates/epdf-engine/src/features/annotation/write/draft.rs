@@ -28,7 +28,7 @@ use crate::features::annotation::read::shape::PdfRectDifferences;
 use crate::features::annotation::read::style::Color;
 use crate::features::annotation::vocabulary::{AnnotationBorderStyle, BlendMode};
 use crate::features::annotation::vocabulary::{
-    FileAttachmentIcon, LineEnding, LineEndings, NoteIcon, TextAlignment,
+    FileAttachmentIcon, LineEnding, LineEndings, NoteIcon, StandardFont, TextAlignment,
 };
 use crate::geom::{CalloutLine, InkList, LinePoints, PdfPoint, PdfQuad, PdfRect};
 use crate::identity::AnnotationRef;
@@ -211,6 +211,69 @@ pub enum AnnotationDraftKind {
         #[serde(flatten)]
         fields: StampDraftFields,
     },
+    Widget {
+        #[serde(flatten)]
+        fields: WidgetDraftFields,
+    },
+}
+
+/// What a widget draft carries.
+///
+/// Creates an INERT widget: placed and styled, and not yet a form control.
+/// Binding it to a field is `forms`' job, and it is what bakes the
+/// family-correct appearance, because the look of a checkbox comes from the
+/// FIELD rather than from the widget.
+///
+/// The vocabulary is the sibling kinds' (`color` strokes, `interior_color`
+/// fills) over the widget's own dictionaries: `/MK` for the colours, `/BS`
+/// for the border, `/DA` for the text defaults, `/Q` for the alignment. A
+/// widget's colours are not `/C` and `/IC`, so a writer reusing the ordinary
+/// colour path produces a widget whose border no reader reports.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WidgetDraftFields {
+    pub rect: PdfRect,
+    /// `/MK /BC`. `Clear` writes no border colour, which is not the same as
+    /// a black one.
+    #[serde(default, skip_serializing_if = "Patch::is_keep")]
+    pub color: Patch<Color>,
+    /// `/MK /BG`. `Clear` is a transparent background.
+    #[serde(default, skip_serializing_if = "Patch::is_keep")]
+    pub interior_color: Patch<Color>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stroke_width: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub border_style: Option<AnnotationBorderStyle>,
+    /// `/DA` font. One of the fourteen standard names only: a widget's text
+    /// is drawn by the form machinery, which has no registered-font path.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub font_family: Option<StandardFont>,
+    /// `/DA` size. Zero means auto-size, as it does on a redaction label and
+    /// unlike on a free text.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub font_size: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub font_color: Option<Color>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub text_align: Option<TextAlignment>,
+}
+
+impl WidgetDraftFields {
+    /// Whether this draft says anything about the border.
+    ///
+    /// `/BS` is one call taking a style AND a width, so naming either means
+    /// supplying both; saying nothing means leaving the entry off entirely.
+    pub fn touches_border(&self) -> bool {
+        self.stroke_width.is_some() || self.border_style.is_some()
+    }
+
+    /// Whether it says anything about the text.
+    ///
+    /// `/DA` packs the font, the size and the colour into one string, on the
+    /// same terms.
+    pub fn touches_text_style(&self) -> bool {
+        self.font_family.is_some() || self.font_size.is_some() || self.font_color.is_some()
+    }
 }
 
 /// What a stamp draft carries.
@@ -538,6 +601,7 @@ impl AnnotationDraftKind {
             Self::FileAttachment { .. } => S::FileAttachment,
             Self::Link { .. } => S::Link,
             Self::Stamp { .. } => S::Stamp,
+            Self::Widget { .. } => S::Widget,
         }
     }
 }

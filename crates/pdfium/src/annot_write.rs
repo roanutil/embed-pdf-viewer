@@ -299,6 +299,31 @@ impl Annotation<'_> {
         unsafe { crate::Attachment::from_raw(handle) }
     }
 
+    /// One `/MK` colour entry.
+    ///
+    /// A widget's colours are NOT `/C` and `/IC`. §12.5.6.19 gives it an
+    /// appearance-characteristics dictionary instead, so a writer that used
+    /// the ordinary colour path would leave a widget with a border and a
+    /// background that no reader reports.
+    pub fn set_mk_color(&self, which: i32, color: (u8, u8, u8)) -> bool {
+        // SAFETY: the handle is live.
+        unsafe {
+            pdfium_sys::EPDFAnnot_SetMKColor(
+                self.as_raw(),
+                which as u32,
+                u32::from(color.0),
+                u32::from(color.1),
+                u32::from(color.2),
+            ) != 0
+        }
+    }
+
+    /// Remove one `/MK` colour entry.
+    pub fn clear_mk_color(&self, which: i32) -> bool {
+        // SAFETY: the handle is live.
+        unsafe { pdfium_sys::EPDFAnnot_ClearMKColor(self.as_raw(), which as u32) != 0 }
+    }
+
     /// `/OverlayText`, a redaction's label.
     pub fn set_overlay_text(&self, text: &str) -> bool {
         let text = wide(text);

@@ -745,6 +745,74 @@ const CASES: readonly CreateCase[] = [
     },
   },
   {
+    name: 'widget-bare',
+    covers:
+      'An inert widget with only a rect. Every entry it does not name is left off, because an unwritten entry is what the FIELD supplies when one adopts the widget, and a default stamped now would override it.',
+    draft: {
+      subtype: 'widget',
+      rect: { left: 72, bottom: 250, right: 240, top: 274 },
+    },
+  },
+  {
+    name: 'widget-styled',
+    covers:
+      'The whole widget-plane surface. The colours are /MK rather than /C and /IC, so a writer that used the ordinary colour path leaves a widget whose border and background no reader reports.',
+    draft: {
+      subtype: 'widget',
+      rect: { left: 260, bottom: 250, right: 440, top: 274 },
+      color: { r: 30, g: 30, b: 120 },
+      interiorColor: { r: 245, g: 245, b: 230 },
+      strokeWidth: 2,
+      borderStyle: 'beveled',
+      fontFamily: 'times-roman',
+      fontSize: 11,
+      fontColor: { r: 20, g: 20, b: 20 },
+      textAlign: 'center',
+    },
+  },
+  {
+    name: 'widget-autosize-text',
+    covers:
+      'A /DA size of zero, which for a form control means auto-size to the box. Naming one member of the triple supplies the other two, because /DA is a single string.',
+    draft: {
+      subtype: 'widget',
+      rect: { left: 72, bottom: 210, right: 240, top: 240 },
+      fontSize: 0,
+    },
+  },
+  {
+    name: 'widget-width-only',
+    covers:
+      'A border width with no style. /BS is one call taking both, so naming either has to supply the other; saying nothing leaves the entry off.',
+    draft: {
+      subtype: 'widget',
+      rect: { left: 72, bottom: 170, right: 240, top: 200 },
+      strokeWidth: 3,
+    },
+  },
+  {
+    name: 'widget-font-default',
+    covers:
+      'A /DA size with no family, so the default family is what lands. The other two members of the triple are supplied because /DA is a single string.',
+    draft: {
+      subtype: 'widget',
+      rect: { left: 260, bottom: 170, right: 440, top: 200 },
+      fontSize: 14,
+    },
+  },
+  {
+    name: 'widget-cleared-colours',
+    covers:
+      'An explicit no-colour on both /MK entries, which is a widget that draws no border and has a transparent background. Different from not saying, though not on a new annotation.',
+    draft: {
+      subtype: 'widget',
+      rect: { left: 260, bottom: 210, right: 440, top: 240 },
+      color: null,
+      interiorColor: null,
+      borderStyle: 'dashed',
+    },
+  },
+  {
     name: 'highlight-cleared-strings',
     covers:
       'A draft that explicitly clears contents and subject. Setting a null value writes an EMPTY string rather than removing the key, so a writer that used the setter would produce a field that reads back as present-and-empty instead of absent.',

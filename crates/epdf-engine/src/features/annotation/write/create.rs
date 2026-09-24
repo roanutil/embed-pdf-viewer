@@ -269,6 +269,7 @@ fn preflight(
                 ));
             }
         }
+        AnnotationDraftKind::Widget { fields } => normalized(&fields.rect)?,
         AnnotationDraftKind::Link { fields } => {
             normalized(&fields.rect)?;
             // A URI with nothing in it is a link that navigates nowhere
@@ -407,7 +408,11 @@ fn opacity_of(kind: &AnnotationDraftKind) -> Option<f64> {
         AnnotationDraftKind::FileAttachment { fields } => fields.opacity,
         // A link has no `/CA`: it draws nothing, so there is no opacity for
         // one to have. A stamp's content carries its own transparency.
-        AnnotationDraftKind::Link { .. } | AnnotationDraftKind::Stamp { .. } => None,
+        // A widget has no `/CA` either: its transparency is `/MK /BG` being
+        // absent rather than a number on the annotation.
+        AnnotationDraftKind::Link { .. }
+        | AnnotationDraftKind::Stamp { .. }
+        | AnnotationDraftKind::Widget { .. } => None,
     }
 }
 
@@ -547,6 +552,7 @@ fn apply_kind_draft(
         AnnotationDraftKind::Stamp { fields } => {
             apply_stamp(document, page, annotation, fields, context)
         }
+        AnnotationDraftKind::Widget { fields } => apply_widget(annotation, fields),
     }
 }
 
@@ -994,6 +1000,99 @@ fn apply_file_attachment(
         return Err(EngineError::with_message(
             EngineErrorCode::Unknown,
             "EPDFAttachment_SetDescription refused the description",
+        ));
+    }
+    Ok(())
+}
+
+/// An inert widget: placed and styled, and not yet a form control.
+///
+/// Every entry is written only when the draft names it, which is the
+/// opposite of every other family here. The others write their defaults
+/// explicitly so a read round-trips the same values; a widget's unwritten
+/// entries are what the FIELD supplies when one adopts it, and stamping a
+/// default now would override the field's own answer with this engine's.
+fn apply_widget(
+    annotation: &pdfium::Annotation<'_>,
+    fields: &super::draft::WidgetDraftFields,
+) -> Result<(), EngineError> {
+    set_rect(annotation, fields.rect)?;
+    set_mk_color(annotation, MK_BORDER_COLOR, &fields.color)?;
+    set_mk_color(annotation, MK_BACKGROUND_COLOR, &fields.interior_color)?;
+
+    // `/BS` takes both members in one call, so naming either supplies both.
+    //
+    // The guard is not observable: `read_border_fields` resolves a missing
+    // `/BS` to the same solid, one-point border this would write, so a
+    // build that wrote it unconditionally passes every vector. It stays
+    // because the entry it would add is one the FIELD supplies on adoption,
+    // and writing it now decides for the field. `/DA` is the same rule and
+    // IS observable, because the widget reader reports its three members
+    // only when the entry exists.
+    if fields.touches_border() {
+        set_border(annotation, fields.border_style, fields.stroke_width, &None)?;
+    }
+    // `/DA` packs all three into one string, on the same terms.
+    if fields.touches_text_style() {
+        let family = fields
+            .font_family
+            .unwrap_or(crate::features::annotation::vocabulary::DEFAULT_STANDARD_FONT);
+        let color =
+            fields.font_color.unwrap_or(super::super::read::free_text::DEFAULT_FREE_TEXT_COLOR);
+        let size = fields.font_size.unwrap_or(super::super::read::redact::DEFAULT_FONT_SIZE);
+        if !annotation.set_default_appearance(
+            family.code(),
+            size as f32,
+            (color.r, color.g, color.b),
+        ) {
+            return Err(EngineError::with_message(
+                EngineErrorCode::Unknown,
+                "EPDFAnnot_SetDefaultAppearance refused the widget's text defaults",
+            ));
+        }
+    }
+    // `/Q` is attempted and its refusal ignored, which is the one place in
+    // these writers that does not report a false. PDFium declines it on a
+    // widget with no `/FT`, and an inert widget by definition has none: the
+    // alignment belongs to the field's text, and there is no field yet. So
+    // the refusal here is the expected answer rather than a failure, and
+    // `widget-styled` records a left alignment for a draft that asked for a
+    // centred one, on both engines.
+    if let Some(align) = fields.text_align {
+        let _ = annotation.set_text_alignment(align.code());
+    }
+    Ok(())
+}
+
+/// `EPDF_MK_COLORTYPE`, the same two codes the widget reader uses.
+const MK_BORDER_COLOR: i32 = 0;
+const MK_BACKGROUND_COLOR: i32 = 1;
+
+/// One `/MK` colour, tri-state.
+///
+/// `Keep` leaves the entry alone, and on a new widget that means absent.
+/// `Clear` is an explicit "no colour here", which on a background is
+/// transparent and on a border is a widget that draws none.
+///
+/// On the create path the two are the same thing, because there is no `/MK`
+/// entry to leave alone or to remove: swapping them passes every vector.
+/// They separate on the update path, where a widget can already have a
+/// background and the difference between keeping it and removing it is the
+/// whole of what a patch means.
+fn set_mk_color(
+    annotation: &pdfium::Annotation<'_>,
+    which: i32,
+    color: &Patch<Color>,
+) -> Result<(), EngineError> {
+    let ok = match color {
+        Patch::Keep => return Ok(()),
+        Patch::Clear => annotation.clear_mk_color(which),
+        Patch::Set(color) => annotation.set_mk_color(which, (color.r, color.g, color.b)),
+    };
+    if !ok {
+        return Err(EngineError::with_message(
+            EngineErrorCode::Unknown,
+            "PDFium refused a widget /MK colour",
         ));
     }
     Ok(())

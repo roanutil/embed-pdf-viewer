@@ -38,7 +38,7 @@ live under `tooling/engine-conformance/vectors/`, and every generator has a
 | G9 | `pages.extract`, read back semantically | `vectors/pages/extract.json`, `tests/page_extract_corpus.rs` |
 | G10 | `document.saveBuffer`, both modes, read back semantically | `vectors/save/roundtrip.json`, `tests/document_save.rs` |
 | G11 | the appearance and mutation-impact classifiers | `vectors/annotation/write.json`, `tests/annotation_write.rs` |
-| G11 | `annotations.create`, text markup and shapes | `vectors/annotation/create.json`, `tests/annotation_create.rs` |
+| G11 | `annotations.create`, every writable subtype | `vectors/annotation/create.json`, `tests/annotation_create.rs` |
 | G11 | `annotations.delete`, all three reference kinds | `vectors/annotation/delete.json`, `tests/annotation_delete.rs` |
 | G11 | `annotations.update`, with the appearance verdict | `vectors/annotation/update.json`, `tests/annotation_update.rs` |
 | G11 | `annotations.move` | `vectors/annotation/move.json`, `tests/annotation_move.rs` |
@@ -72,9 +72,12 @@ Phase 2 is done: every read group from G2 through G9 is ported and gated.
 G10's save is done; its session authority, event stream and
 `WorkerHost.finishMutation` are not.
 
-G11 covers four operations across six subtypes: the four text-markup kinds
-and the two shapes. The other twelve subtypes have readers and no writers, so
-a draft or patch naming one is refused rather than half-written.
+`annotations.create` covers all eighteen writable subtypes. The two it does
+not are the two that cannot be drafted: a popup is a child of the annotation
+it belongs to rather than a thing a caller places, and `unsupported` is the
+reader's name for a subtype this build does not model. `update` still covers
+the six it started with, so a patch naming any of the other twelve is refused
+rather than half-written.
 
 G12 through G15: forms writes, page assembly and redaction, the remaining
 mutators, and the server surfaces. None of it is blocked by anything outside
@@ -203,6 +206,24 @@ version interpolated them into a `python3 -c` string, where a multi-line
 pattern could silently fail to match while the mutant was still reported as
 surviving. That produced one false negative, on sorting a `pages.extract`
 selection, and the four mutants recorded as equivalent were re-verified
-afterwards. Four still survive and are documented where they live: the
-redundant appearance guard, the unexercised attachment-tree skip, the negative
-blend-mode cast, and the stamp label's second route.
+afterwards.
+
+Fourteen survive in total and each is documented at the line it survives on.
+They fall into three groups, and the grouping is worth more than the list.
+
+Some are guards for a case the corpus cannot produce: the redundant appearance
+guard, the unexercised attachment-tree skip, the negative blend-mode cast.
+
+Some are writes whose effect a reader normalizes away, so the difference is in
+the FILE rather than in anything this project can observe. Writing a `/BE` of
+intensity zero is one, because `read_cloudy_intensity` filters a zero back to
+absent; so is a `/Fit` destination carrying a parameter, because PDFium pads
+the array back up to the fit type's arity on the way out either way.
+
+The largest group is writes that are inert on the create path and load-bearing
+on the update path that does not exist yet. Every clear is one of these: there
+is nothing on a new annotation to remove, so clearing an interior colour, an
+unrotated box or a widget's `/MK` entry passes every create vector whether it
+runs or not. They stay because the same functions serve both paths, and the
+day `update` reaches those subtypes the difference between keeping a value and
+removing it is the whole of what a patch means.
