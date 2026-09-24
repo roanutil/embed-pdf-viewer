@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "operation": "pages.text",
+  "case": "embedded-orientations",
+  "fixture": "tooling/engine-conformance/fixtures/embedded_orientations.pdf",
+  "covers": "Every run variant the reader discriminates, with the font program embedded: upright, rotated, shear-only, mirrored, quarter-turn, and a zero-size object whose glyphs are degenerate.",
+  "pages": [
+  {"index":0,"pageObjectNumber":3,"snapshot":{"text":"Upright ABC xyz\r\nRotated ABC\r\nSheared ABC\r\nMirrored ABC\r\nVertical ABC Degenerate","charCount":80}}
+  ]
+}

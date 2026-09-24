@@ -125,6 +125,7 @@ function readFont() {
   return {
     program: font,
     scale,
+    toGlyph,
     widthOf: (codePoint) => scale(advance(toGlyph(codePoint))),
     bbox: [
       scale(head.readInt16BE(36)),
@@ -383,6 +384,93 @@ function rotatedPages(font) {
 }
 
 /**
+ * A page whose extracted text is not the same size as its character list.
+ *
+ * Every other fixture here has an identity char map, so the whole
+ * character-to-text translation was pinned only against hand-built snapshots.
+ * `multiplatform-port-order.md` G5 asks for "fixtures with non-empty
+ * `charMap` (non-BMP, non-printing)", and this is that.
+ *
+ * The trick is that PDFium extracts through `/ToUnicode`, not through the
+ * glyphs. So the font is a Type0 with Identity-H encoding over an embedded
+ * Roboto, and the CMap maps one CID to a supplementary code point and another
+ * to nothing at all. The glyphs drawn are ordinary letters; what the text
+ * layer says they mean is what makes the map non-identity.
+ */
+function nonIdentityText(font) {
+  // Real glyph ids for the letters, plus glyph 0. In Identity-H the CID is
+  // the glyph id, so CID 0 is `.notdef`: it has no entry in the font's own
+  // cmap and none in the CMap below, so PDFium reports no Unicode for it and
+  // the character contributes zero text units. That is the dropped case, and
+  // it is the only way to produce one without a broken font.
+  const letters = ['A', 'C', 'D'].map((c) => font.toGlyph(c.codePointAt(0)));
+  const glyphs = [letters[0], 0, letters[1], letters[2]];
+  const hex = glyphs.map((g) => g.toString(16).padStart(4, '0')).join('');
+
+  // CID 0 -> U+1F600, two UTF-16 units from one character.
+  // CID 1 -> nothing, a character contributing zero units.
+  // CIDs 2 and 3 -> ordinary letters, one unit each.
+  const toUnicode = [
+    '/CIDInit /ProcSet findresource begin',
+    '12 dict begin begincmap',
+    '/CMapName /EmbedPDF-NonIdentity def',
+    '/CMapType 2 def',
+    '/CIDSystemInfo << /Registry (Adobe) /Ordering (UCS) /Supplement 0 >> def',
+    '1 begincodespacerange',
+    '<0000> <ffff>',
+    'endcodespacerange',
+    '3 beginbfchar',
+    // A supplementary code point, written as the surrogate pair PDF requires.
+    `<${glyphs[0].toString(16).padStart(4, '0')}> <d83dde00>`,
+    `<${glyphs[2].toString(16).padStart(4, '0')}> <0043>`,
+    `<${glyphs[3].toString(16).padStart(4, '0')}> <0044>`,
+    'endbfchar',
+    // CID 0 is deliberately absent, which is what makes it contribute nothing.
+    'endcmap CMapName currentdict /CMap defineresource pop end end',
+  ].join('\n');
+
+  const content = Buffer.from(
+    `BT\n/F1 24 Tf\n1 0 0 1 72 700 Tm\n<${hex}> Tj\nET\n`,
+    'latin1',
+  );
+
+  const widths = glyphs.map((g) => `${g} [${font.widthOf(65)}]`).join(' ');
+
+  return buildPdf([
+    Buffer.from('<< /Type /Catalog /Pages 2 0 R >>', 'latin1'),
+    Buffer.from(
+      '<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 612 792] >>',
+      'latin1',
+    ),
+    Buffer.from(
+      '<< /Type /Page /Parent 2 0 R /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>',
+      'latin1',
+    ),
+    stream('', content),
+    Buffer.from(
+      '<< /Type /Font /Subtype /Type0 /BaseFont /Roboto-Regular /Encoding /Identity-H ' +
+        '/DescendantFonts [6 0 R] /ToUnicode 9 0 R >>',
+      'latin1',
+    ),
+    Buffer.from(
+      `<< /Type /Font /Subtype /CIDFontType2 /BaseFont /Roboto-Regular ` +
+        `/CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> ` +
+        `/FontDescriptor 7 0 R /DW 1000 /W [${widths}] /CIDToGIDMap /Identity >>`,
+      'latin1',
+    ),
+    Buffer.from(
+      `<< /Type /FontDescriptor /FontName /Roboto-Regular /Flags 4 ` +
+        `/FontBBox [${font.bbox.join(' ')}] /ItalicAngle 0 /Ascent ${font.ascent} ` +
+        `/Descent ${font.descent} /CapHeight ${font.capHeight} /StemV 80 ` +
+        `/FontFile2 8 0 R >>`,
+      'latin1',
+    ),
+    stream(`/Length1 ${font.program.length}`, font.program),
+    stream('', Buffer.from(toUnicode, 'latin1')),
+  ]);
+}
+
+/**
  * The permission words the encrypted fixtures declare.
  *
  * Bits 1 and 2 are reserved as zero, so a word is built by clearing the bits
@@ -396,6 +484,7 @@ const font = readFont();
 const outputs = [
   ['embedded_orientations.pdf', embeddedOrientations(font)],
   ['rotated_pages.pdf', rotatedPages(font)],
+  ['non_identity_text.pdf', nonIdentityText(font)],
 
   // Revision 2, RC4-40. The oldest handler still in the wild.
   [

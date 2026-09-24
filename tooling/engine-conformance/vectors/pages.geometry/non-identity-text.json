@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "operation": "pages.geometry",
+  "case": "non-identity-text",
+  "fixture": "tooling/engine-conformance/fixtures/non_identity_text.pdf",
+  "covers": "A page whose character list and text are different sizes: a Type0 font whose /ToUnicode maps one CID to a supplementary code point and leaves .notdef unmapped, so one character contributes two text units and another contributes none. Every other fixture here has an identity map, which left the translation pinned only against hand-built snapshots.",
+  "pages": [
+  {"index":0,"pageObjectNumber":3,"snapshot":{"runs":[{"rect":{"left":72,"bottom":693.496,"right":134.592,"top":725.344},"charStart":0,"glyphs":[{"looseBox":{"left":72,"right":87.648,"bottom":693.496,"top":725.344},"flags":0,"tightBox":{"left":72.336,"right":87.36,"bottom":700,"top":717.328}},{"looseBox":{"left":72,"right":87.648,"bottom":693.496,"top":725.344},"flags":0,"tightBox":{"left":72.336,"right":87.36,"bottom":700,"top":717.328}},{"looseBox":{"left":87.648,"right":103.296,"bottom":693.496,"top":725.344},"flags":0,"tightBox":{"left":88.824,"right":97.128,"bottom":700,"top":717.328}},{"looseBox":{"left":103.296,"right":118.944,"bottom":693.496,"top":725.344},"flags":0,"tightBox":{"left":104.712,"right":117.816,"bottom":699.784,"top":717.568}},{"looseBox":{"left":118.944,"right":134.592,"bottom":693.496,"top":725.344},"flags":0,"tightBox":{"left":120.936,"right":133.272,"bottom":700,"top":717.328}}],"fontSize":24}]}}
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "operation": "pages.text",
+  "case": "non-identity-text",
+  "fixture": "tooling/engine-conformance/fixtures/non_identity_text.pdf",
+  "covers": "A page whose character list and text are different sizes: a Type0 font whose /ToUnicode maps one CID to a supplementary code point and leaves .notdef unmapped, so one character contributes two text units and another contributes none. Every other fixture here has an identity map, which left the translation pinned only against hand-built snapshots.",
+  "pages": [
+  {"index":0,"pageObjectNumber":3,"snapshot":{"text":"😀CD","charCount":5,"charMap":[[3,2]]}}
+  ]
+}

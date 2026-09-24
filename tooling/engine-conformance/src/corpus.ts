@@ -25,7 +25,7 @@
  */
 
 /** Operations a corpus case can carry vectors for. */
-export type CorpusOperation = 'pages.geometry';
+export type CorpusOperation = 'pages.geometry' | 'pages.text';
 
 export interface CorpusCase {
   /** Stable slug. Names the vector file: `vectors/<operation>/<name>.json`. */
@@ -53,7 +53,7 @@ export const CORPUS: readonly CorpusCase[] = [
     covers:
       'Every run variant the reader discriminates, with the font program embedded: upright, rotated, shear-only, mirrored, quarter-turn, and a zero-size object whose glyphs are degenerate.',
     pages: 'all',
-    operations: ['pages.geometry'],
+    operations: ['pages.geometry', 'pages.text'],
   },
   {
     name: 'report',
@@ -65,7 +65,7 @@ export const CORPUS: readonly CorpusCase[] = [
     // page 4 is the densest page and the one the prototype's own report vector
     // uses.
     pages: [0, 4],
-    operations: ['pages.geometry'],
+    operations: ['pages.geometry', 'pages.text'],
   },
   {
     name: 'font-size-zero',
@@ -73,7 +73,15 @@ export const CORPUS: readonly CorpusCase[] = [
     covers:
       'The degenerate-glyph convention in isolation. Names Helvetica and embeds nothing, which is safe here and only here: every glyph comes back zeroed and flagged empty, so no substituted metric reaches the snapshot.',
     pages: 'all',
-    operations: ['pages.geometry'],
+    operations: ['pages.geometry', 'pages.text'],
+  },
+  {
+    name: 'non-identity-text',
+    fixture: 'tooling/engine-conformance/fixtures/non_identity_text.pdf',
+    covers:
+      "A page whose character list and text are different sizes: a Type0 font whose /ToUnicode maps one CID to a supplementary code point and leaves .notdef unmapped, so one character contributes two text units and another contributes none. Every other fixture here has an identity map, which left the translation pinned only against hand-built snapshots.",
+    pages: 'all',
+    operations: ['pages.geometry', 'pages.text'],
   },
   {
     name: 'colors',
@@ -81,6 +89,6 @@ export const CORPUS: readonly CorpusCase[] = [
     covers:
       'Saturated interior colors and no text at all: the empty-snapshot case, and the document the raster gate will share.',
     pages: 'all',
-    operations: ['pages.geometry'],
+    operations: ['pages.geometry', 'pages.text'],
   },
 ];

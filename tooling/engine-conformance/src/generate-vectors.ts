@@ -149,6 +149,8 @@ async function readOperation(
   switch (operation) {
     case 'pages.geometry':
       return await doc.page(pageObjectNumber).geometry.read();
+    case 'pages.text':
+      return await doc.page(pageObjectNumber).text.read();
     default: {
       // Exhaustiveness: adding an operation to CorpusOperation must not
       // silently emit nothing.

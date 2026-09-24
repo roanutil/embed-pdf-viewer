@@ -78,6 +78,94 @@ impl<'a> TextPage<'a> {
         Ok(Self { handle, _page: PhantomData, _not_send: PhantomData })
     }
 
+    /// The page's text in full UTF-16 fidelity.
+    ///
+    /// `EPDFText_GetTextFull` rather than `FPDFText_GetText`: the latter has a
+    /// UCS-2 encoder that silently drops supplementary characters, so an emoji
+    /// or a rare CJK ideograph would vanish from the extracted text while
+    /// still occupying a character slot.
+    ///
+    /// One call, with the buffer sized at the maximum possible expansion of
+    /// two units per character plus a terminator, so there is no measure
+    /// round-trip.
+    pub fn text_full(&self) -> Result<String, PdfiumError> {
+        let char_count = self.char_count();
+        if char_count == 0 {
+            return Ok(String::new());
+        }
+        // Two units per character plus the NUL. The multiplication is on u64
+        // because a pathological page could otherwise overflow the count.
+        let units = u64::from(char_count) * 2 + 1;
+        let units = i32::try_from(units)
+            .map_err(|_| PdfiumError::InvalidArgument("page has too many characters"))?;
+
+        let mut buffer = Vec::new();
+        buffer.try_reserve_exact(units as usize).map_err(|_| PdfiumError::OutOfMemory)?;
+        buffer.resize(units as usize, 0u16);
+
+        // SAFETY: the buffer holds `units` u16 values, which is what the
+        // length argument claims, and it outlives the call.
+        let written =
+            unsafe { pdfium_sys::EPDFText_GetTextFull(self.handle, buffer.as_mut_ptr(), units) };
+        // The return counts units INCLUDING the terminator, so one or fewer
+        // means no text.
+        if written <= 1 {
+            return Ok(String::new());
+        }
+        let produced = (written as usize - 1).min(buffer.len());
+
+        // Lossy on purpose. A lone surrogate is a malformed pair PDFium
+        // produced from a malformed font; refusing the whole page over one
+        // would lose the other 5,000 characters, and the replacement
+        // character is what JavaScript's own decoder would leave there.
+        Ok(String::from_utf16_lossy(&buffer[..produced]))
+    }
+
+    /// The character-to-text anchors, or empty when the two spaces agree.
+    ///
+    /// Measure then fill. Zero anchors is the common page and skips the
+    /// second call entirely.
+    pub fn char_to_text_map(&self) -> Result<Vec<(u32, u32)>, PdfiumError> {
+        // SAFETY: a null buffer with zero length is the documented measure
+        // call.
+        let count =
+            unsafe { pdfium_sys::EPDFText_GetCharToTextMap(self.handle, std::ptr::null_mut(), 0) };
+        if count < 0 {
+            return Err(PdfiumError::TextRead);
+        }
+        if count == 0 {
+            return Ok(Vec::new());
+        }
+
+        let mut anchors = Vec::new();
+        anchors.try_reserve_exact(count as usize).map_err(|_| PdfiumError::OutOfMemory)?;
+        anchors.resize(
+            count as usize,
+            pdfium_sys::EPDF_CHAR_MAP_ANCHOR { char_index: 0, text_offset: 0 },
+        );
+
+        // SAFETY: the buffer holds `count` anchors, which is what the length
+        // argument claims, and it outlives the call.
+        let filled = unsafe {
+            pdfium_sys::EPDFText_GetCharToTextMap(self.handle, anchors.as_mut_ptr(), count)
+        };
+        if filled < 0 {
+            return Err(PdfiumError::TextRead);
+        }
+        anchors.truncate(filled.min(count) as usize);
+
+        // Negative indices would mean PDFium contradicted itself; refuse
+        // rather than cast them into enormous unsigned values that would then
+        // fail an invariant check with a confusing message.
+        anchors
+            .into_iter()
+            .map(|a| match (u32::try_from(a.char_index), u32::try_from(a.text_offset)) {
+                (Ok(char_index), Ok(text_offset)) => Ok((char_index, text_offset)),
+                _ => Err(PdfiumError::TextRead),
+            })
+            .collect()
+    }
+
     pub fn char_count(&self) -> u32 {
         unsafe { pdfium_sys::FPDFText_CountChars(self.handle) }.max(0) as u32
     }
@@ -209,9 +297,8 @@ impl<'a> TextPage<'a> {
         let needle: Vec<u16> = query.encode_utf16().chain(std::iter::once(0)).collect();
         let flags = if case_sensitive { pdfium_sys::FPDF_MATCHCASE } else { 0 };
 
-        let search = unsafe {
-            pdfium_sys::FPDFText_FindStart(self.handle, needle.as_ptr(), flags as _, 0)
-        };
+        let search =
+            unsafe { pdfium_sys::FPDFText_FindStart(self.handle, needle.as_ptr(), flags as _, 0) };
         if search.is_null() {
             return Err(PdfiumError::Search);
         }

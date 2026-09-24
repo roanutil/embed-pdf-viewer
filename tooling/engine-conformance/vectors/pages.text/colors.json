@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "operation": "pages.text",
+  "case": "colors",
+  "fixture": "pdfium-multiplatform-prototype/fixtures/colors.pdf",
+  "covers": "Saturated interior colors and no text at all: the empty-snapshot case, and the document the raster gate will share.",
+  "pages": [
+  {"index":0,"pageObjectNumber":3,"snapshot":{"text":"","charCount":0}}
+  ]
+}
