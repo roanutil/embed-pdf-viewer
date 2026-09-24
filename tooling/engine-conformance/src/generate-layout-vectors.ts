@@ -130,9 +130,21 @@ function runPage(snapshot: PageGeometrySnapshot) {
       ...probes.flatMap((glyph) => {
         const quad = textGlyphQuad(layout, glyph);
         if (!quad) return [];
-        const x = q((quad.p1.x + quad.p4.x) / 2);
-        const y = q((quad.p1.y + quad.p4.y) / 2);
-        return [{ x, y, glyph: textGlyphAt(layout, { x, y }) }];
+        const cx = q((quad.p1.x + quad.p4.x) / 2);
+        const cy = q((quad.p1.y + quad.p4.y) / 2);
+        // The centre, where the tight and loose boxes both contain the point,
+        // plus two near the loose box's corners, where they do not. Hit
+        // testing prefers the TIGHT box, and mutation testing found that
+        // untested when every probe sat in the middle of a glyph.
+        const lx = q(Math.min(quad.p1.x, quad.p3.x));
+        const ly = q(Math.min(quad.p3.y, quad.p4.y));
+        const hx = q(Math.max(quad.p2.x, quad.p4.x));
+        const hy = q(Math.max(quad.p1.y, quad.p2.y));
+        return [
+          { x: cx, y: cy },
+          { x: lx, y: ly },
+          { x: hx, y: hy },
+        ].map((p) => ({ ...p, glyph: textGlyphAt(layout, p) }));
       }),
       { x: -10_000, y: -10_000, glyph: textGlyphAt(layout, { x: -10_000, y: -10_000 }) },
     ],

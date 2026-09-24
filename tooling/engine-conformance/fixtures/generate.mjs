@@ -471,6 +471,71 @@ function nonIdentityText(font) {
 }
 
 /**
+ * Two layout cases no other fixture produces: a run that reads backwards, and
+ * a run with a gap wide enough to split it.
+ *
+ * `layout.ts` derives a segment's `advance` from the glyph SEQUENCE rather
+ * than from geometry, and it splits a sub-run when the gap between two glyphs
+ * exceeds 2.5 average advances. Mutation testing found both untested: every
+ * segment in the corpus advanced forward, and no probed range contained a gap
+ * that wide, so a port could reverse the advance rule or double the factor and
+ * stay green.
+ *
+ * Both are made with TJ adjustments inside ONE text object, so they stay one
+ * run. A positive TJ number moves BACKWARD along the baseline, which is what
+ * lets the second line place its glyphs right to left without a second text
+ * object and without a font that has right-to-left glyphs.
+ */
+function reverseAndGappedText(font) {
+  const widths = [];
+  for (let code = FIRST_CHAR; code <= LAST_CHAR; code++) widths.push(font.widthOf(code));
+
+  // Backwards: after each glyph the pen moves back far enough that the next
+  // lands to its left, but NOT far enough to exceed 2.5 average advances,
+  // which would split the run into one sub-run per glyph and leave every
+  // advance forward again. A positive TJ number moves backward by
+  // value/1000 times the font size, so 1200 at 24pt is 28.8 points against an
+  // average advance of about 15.6.
+  const backwards = '(A) 1200 (B) 1200 (C) 1200 (D)';
+  // Gapped: a forward jump between 2.5 and 5 average advances, so the split
+  // happens at the real factor and stops happening at a doubled one. 2500 at
+  // 24pt is 60 points, against a 39-point threshold and a 78-point doubled
+  // one.
+  const gapped = '(E) -2500 (F)';
+
+  const content =
+    `BT\n/F1 24 Tf\n1 0 0 1 400 700 Tm\n[${backwards}] TJ\nET\n` +
+    `BT\n/F1 24 Tf\n1 0 0 1 72 600 Tm\n[${gapped}] TJ\nET\n`;
+
+  return buildPdf([
+    Buffer.from('<< /Type /Catalog /Pages 2 0 R >>', 'latin1'),
+    Buffer.from(
+      '<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 612 792] >>',
+      'latin1',
+    ),
+    Buffer.from(
+      '<< /Type /Page /Parent 2 0 R /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>',
+      'latin1',
+    ),
+    stream('', Buffer.from(content, 'latin1')),
+    Buffer.from(
+      `<< /Type /Font /Subtype /TrueType /BaseFont /Roboto-Regular ` +
+        `/FirstChar ${FIRST_CHAR} /LastChar ${LAST_CHAR} /Widths [${widths.join(' ')}] ` +
+        `/Encoding /WinAnsiEncoding /FontDescriptor 6 0 R >>`,
+      'latin1',
+    ),
+    Buffer.from(
+      `<< /Type /FontDescriptor /FontName /Roboto-Regular /Flags 32 ` +
+        `/FontBBox [${font.bbox.join(' ')}] /ItalicAngle 0 /Ascent ${font.ascent} ` +
+        `/Descent ${font.descent} /CapHeight ${font.capHeight} /StemV 80 ` +
+        `/FontFile2 7 0 R >>`,
+      'latin1',
+    ),
+    stream(`/Length1 ${font.program.length}`, font.program),
+  ]);
+}
+
+/**
  * A document whose Info dictionary exercises every metadata distinction.
  *
  * `metadata.read` has to tell three states apart: a key that is absent, a key
@@ -544,6 +609,7 @@ const outputs = [
   ['rotated_pages.pdf', rotatedPages(font)],
   ['non_identity_text.pdf', nonIdentityText(font)],
   ['rich_metadata.pdf', richMetadata()],
+  ['reverse_and_gapped_text.pdf', reverseAndGappedText(font)],
 
   // Revision 2, RC4-40. The oldest handler still in the wild.
   [

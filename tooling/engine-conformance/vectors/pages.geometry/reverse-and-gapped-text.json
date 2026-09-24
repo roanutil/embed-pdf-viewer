@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "operation": "pages.geometry",
+  "case": "reverse-and-gapped-text",
+  "fixture": "tooling/engine-conformance/fixtures/reverse_and_gapped_text.pdf",
+  "covers": "Two layout cases nothing else produces: a run whose glyphs read backwards, so a segment's advance is -1, and a run with a gap wide enough to split it. Mutation testing found both untested.",
+  "pages": [
+  {"index":0,"pageObjectNumber":3,"snapshot":{"runs":[{"rect":{"left":359.824,"bottom":693.496,"right":415.648,"top":725.344},"charStart":0,"glyphs":[{"looseBox":{"left":400,"right":415.648,"bottom":693.496,"top":725.344},"flags":0,"tightBox":{"left":400.336,"right":415.36,"bottom":700,"top":717.064}},{"looseBox":{"left":386.848,"right":401.8,"bottom":693.496,"top":725.344},"flags":0,"tightBox":{"left":388.84,"right":400.432,"bottom":700,"top":717.064}},{"looseBox":{"left":373,"right":388.624,"bottom":693.496,"top":725.344},"flags":0,"tightBox":{"left":374.416,"right":387.52,"bottom":699.784,"top":717.304}},{"looseBox":{"left":359.824,"right":375.568,"bottom":693.496,"top":725.344},"flags":0,"tightBox":{"left":361.816,"right":374.152,"bottom":700,"top":717.064}}],"fontSize":24},{"rect":{"left":0,"bottom":0,"right":0,"top":0},"charStart":4,"glyphs":[{"looseBox":{"left":0,"bottom":0,"right":0,"top":0},"flags":2},{"looseBox":{"left":0,"bottom":0,"right":0,"top":0},"flags":2}],"fontSize":1},{"rect":{"left":72,"bottom":593.496,"right":158.904,"top":625.344},"charStart":6,"glyphs":[{"looseBox":{"left":72,"right":85.632,"bottom":593.496,"top":625.344},"flags":0,"tightBox":{"left":73.992,"right":84.816,"bottom":600,"top":617.064}},{"looseBox":{"left":0,"bottom":0,"right":0,"top":0},"flags":2},{"looseBox":{"left":145.632,"right":158.904,"bottom":593.496,"top":625.344},"flags":0,"tightBox":{"left":147.624,"right":158.184,"bottom":600,"top":617.064}}],"fontSize":24}]}}
+  ]
+}

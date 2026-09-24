@@ -84,6 +84,14 @@ export const CORPUS: readonly CorpusCase[] = [
     operations: ['pages.geometry', 'pages.text'],
   },
   {
+    name: 'reverse-and-gapped-text',
+    fixture: 'tooling/engine-conformance/fixtures/reverse_and_gapped_text.pdf',
+    covers:
+      "Two layout cases nothing else produces: a run whose glyphs read backwards, so a segment's advance is -1, and a run with a gap wide enough to split it. Mutation testing found both untested.",
+    pages: 'all',
+    operations: ['pages.geometry', 'pages.text'],
+  },
+  {
     name: 'colors',
     fixture: 'pdfium-multiplatform-prototype/fixtures/colors.pdf',
     covers:

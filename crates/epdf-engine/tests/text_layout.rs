@@ -5,13 +5,14 @@
 //! rather than replacing it. `vectors/text/layout.json` is that pin, and this
 //! is what reads it.
 //!
-//! # The Rust layout is not written yet
+//! # Two kinds of test, both worth keeping
 //!
-//! So this runner checks the vectors' own invariants rather than comparing
-//! two implementations, exactly as the fold runner did before its port landed.
-//! A vector file nothing reads is a file nobody notices breaking, and the
-//! properties below are the ones a port has to satisfy on its first day:
-//! whatever it computes, these are the shapes it has to produce.
+//! The parity tests compare the Rust layout against the TypeScript one. The
+//! invariant tests check the vectors' own shapes: that a segment's rect bounds
+//! its quad, that an empty range yields no segment, that runs tile the glyphs.
+//! Parity says the two implementations agree; the invariants say what they
+//! agree ON, so a corpus regenerated from a broken TypeScript fails here
+//! rather than being adopted by Rust as the new truth.
 //!
 //! Regenerate with:
 //!   pnpm --filter @embedpdf/tooling-engine-conformance run layout
@@ -352,4 +353,187 @@ fn a_word_can_cross_a_line_boundary_between_abutting_runs() {
         "no probe crosses a line boundary any more; if the corpus lost its \
          multi-orientation page this test is no longer covering anything",
     );
+}
+
+// --- G5: the Rust layout against the TypeScript one.
+
+/// The geometry snapshot each layout case was built from.
+fn snapshot_for(
+    case_name: &str,
+    page_index: u32,
+) -> epdf_engine::features::geometry::PageGeometrySnapshot {
+    let path =
+        test_support::corpus::vectors_dir("pages.geometry").join(format!("{case_name}.json"));
+    let text =
+        std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
+    let file: serde_json::Value = serde_json::from_str(&text).expect("geometry vector");
+    let page = file["pages"]
+        .as_array()
+        .expect("pages")
+        .iter()
+        .find(|p| p["index"] == page_index)
+        .unwrap_or_else(|| panic!("{case_name} has no page {page_index}"));
+    serde_json::from_value(page["snapshot"].clone()).expect("snapshot")
+}
+
+/// Round to the corpus quantum, as the generator does.
+fn q(value: f64) -> f64 {
+    (value * 10_000.0).round() / 10_000.0
+}
+
+fn same_point(actual: epdf_engine::geom::PdfPoint, expected: Point) -> bool {
+    q(actual.x) == expected.x && q(actual.y) == expected.y
+}
+
+#[test]
+fn the_layout_shape_agrees_with_typescript() {
+    use epdf_engine::features::text::layout::build_page_text_layout;
+
+    let file = load();
+    for (case, page) in pages(&file) {
+        let layout = build_page_text_layout(&snapshot_for(&case.name, page.index));
+        let where_ = format!("{} page {}", case.name, page.index);
+        assert_eq!(layout.glyphs.len() as u32, page.layout.glyph_count, "{where_}: glyph count");
+        assert_eq!(layout.runs.len() as u32, page.layout.run_count, "{where_}: run count");
+        assert_eq!(
+            layout.frames.len() as u32,
+            page.layout.frame_count,
+            "{where_}: frame count, which is the orientation clustering",
+        );
+    }
+}
+
+#[test]
+fn glyph_quads_and_ranges_agree_with_typescript() {
+    use epdf_engine::features::text::layout::{
+        build_page_text_layout, expand_text_range_to_line, expand_text_range_to_word,
+        text_glyph_quad,
+    };
+
+    let file = load();
+    let mut probes = 0usize;
+    for (case, page) in pages(&file) {
+        let layout = build_page_text_layout(&snapshot_for(&case.name, page.index));
+        for probe in &page.layout.glyphs {
+            let where_ = format!("{} page {} glyph {}", case.name, page.index, probe.glyph);
+
+            let actual_quad = text_glyph_quad(&layout, probe.glyph);
+            match (&actual_quad, &probe.quad) {
+                (None, None) => {}
+                (Some(a), Some(e)) => {
+                    assert!(
+                        same_point(a.p1, e.p1)
+                            && same_point(a.p2, e.p2)
+                            && same_point(a.p3, e.p3)
+                            && same_point(a.p4, e.p4),
+                        "{where_}: quad {a:?} against {e:?}",
+                    );
+                }
+                _ => panic!("{where_}: one side produced a quad and the other did not"),
+            }
+
+            assert_eq!(
+                expand_text_range_to_word(&layout, probe.glyph),
+                probe.word,
+                "{where_}: word range",
+            );
+            assert_eq!(
+                expand_text_range_to_line(&layout, probe.glyph),
+                probe.line,
+                "{where_}: line range",
+            );
+            probes += 1;
+        }
+    }
+    assert!(probes >= 80, "only {probes} glyph probes ran");
+}
+
+#[test]
+fn segments_agree_with_typescript() {
+    use epdf_engine::features::text::layout::{build_page_text_layout, text_segments_for_range};
+
+    // The merge, which is the part adapted from Chromium and the part where a
+    // reimplementation drifts. Every probe range in the corpus: single
+    // glyphs, whole words, whole lines.
+    let file = load();
+    let mut failures = Vec::new();
+    let mut probes = 0usize;
+
+    for (case, page) in pages(&file) {
+        let layout = build_page_text_layout(&snapshot_for(&case.name, page.index));
+        for probe in &page.layout.segments {
+            let actual = text_segments_for_range(&layout, probe.start, probe.count);
+            let where_ = format!(
+                "{} page {} range [{}, +{})",
+                case.name, page.index, probe.start, probe.count,
+            );
+            if actual.len() != probe.segments.len() {
+                failures.push(format!(
+                    "{where_}: {} segments against {}",
+                    actual.len(),
+                    probe.segments.len(),
+                ));
+                continue;
+            }
+            for (i, (a, e)) in actual.iter().zip(&probe.segments).enumerate() {
+                if i32::from(a.advance) != e.advance {
+                    failures.push(format!(
+                        "{where_} segment {i}: advance {} against {}",
+                        a.advance, e.advance,
+                    ));
+                }
+                if !(same_point(a.quad.p1, e.quad.p1)
+                    && same_point(a.quad.p2, e.quad.p2)
+                    && same_point(a.quad.p3, e.quad.p3)
+                    && same_point(a.quad.p4, e.quad.p4))
+                {
+                    failures.push(format!("{where_} segment {i}: quad differs"));
+                }
+                if q(a.rect.left) != e.rect.left
+                    || q(a.rect.bottom) != e.rect.bottom
+                    || q(a.rect.right) != e.rect.right
+                    || q(a.rect.top) != e.rect.top
+                {
+                    failures.push(format!(
+                        "{where_} segment {i}: rect [{}, {}, {}, {}] against [{}, {}, {}, {}]",
+                        q(a.rect.left),
+                        q(a.rect.bottom),
+                        q(a.rect.right),
+                        q(a.rect.top),
+                        e.rect.left,
+                        e.rect.bottom,
+                        e.rect.right,
+                        e.rect.top,
+                    ));
+                }
+            }
+            probes += 1;
+        }
+    }
+    assert!(failures.is_empty(), "segment divergence:\n  {}", failures.join("\n  "));
+    assert!(probes >= 150, "only {probes} segment probes ran");
+}
+
+#[test]
+fn hit_tests_agree_with_typescript() {
+    use epdf_engine::features::text::layout::{build_page_text_layout, text_glyph_at};
+    use epdf_engine::geom::PdfPoint;
+
+    let file = load();
+    let mut failures = Vec::new();
+    for (case, page) in pages(&file) {
+        let layout = build_page_text_layout(&snapshot_for(&case.name, page.index));
+        for probe in &page.layout.hits {
+            // 1.5 is the TypeScript's default tolerance factor, which the
+            // generator used.
+            let actual = text_glyph_at(&layout, PdfPoint { x: probe.x, y: probe.y }, 1.5);
+            if actual != probe.glyph {
+                failures.push(format!(
+                    "{} page {} at ({}, {}): {actual:?} against {:?}",
+                    case.name, page.index, probe.x, probe.y, probe.glyph,
+                ));
+            }
+        }
+    }
+    assert!(failures.is_empty(), "hit test divergence:\n  {}", failures.join("\n  "));
 }
