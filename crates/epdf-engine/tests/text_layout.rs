@@ -160,6 +160,23 @@ fn word_and_line_ranges_contain_their_glyph_and_stay_on_the_page() {
 }
 
 #[test]
+fn a_degenerate_glyph_has_no_quad_and_a_real_one_does() {
+    // `textGlyphQuad` returns null for an empty glyph, which is the anchor a
+    // caret would otherwise be placed at. font-size-zero.pdf is the corpus's
+    // all-degenerate page and the only place this is exercised.
+    let file = load();
+    let mut with_quad = 0usize;
+    let mut without = 0usize;
+    for (_, page) in pages(&file) {
+        for probe in &page.layout.glyphs {
+            if probe.quad.is_some() { with_quad += 1 } else { without += 1 }
+        }
+    }
+    assert!(with_quad > 0, "no probe glyph has a quad, so the corpus has no real text");
+    assert!(without > 0, "no probe glyph is degenerate; font-size-zero.pdf should contribute one",);
+}
+
+#[test]
 fn every_segment_rect_bounds_its_own_quad() {
     // `rect` is documented as the quad's axis-aligned bounds, produced by the
     // same constructor. A consumer that highlights with the rect and hit-tests
@@ -317,14 +334,16 @@ fn a_word_can_cross_a_line_boundary_between_abutting_runs() {
         .iter()
         .flat_map(|case| case.pages.iter().map(move |page| (case, page)))
         .flat_map(|(case, page)| {
-            page.layout.glyphs.iter().filter_map(move |probe| {
-                (probe.word.0 < probe.line.0 || probe.word.1 > probe.line.1).then(|| {
+            page.layout
+                .glyphs
+                .iter()
+                .filter(|probe| probe.word.0 < probe.line.0 || probe.word.1 > probe.line.1)
+                .map(move |probe| {
                     format!(
                         "{} page {} glyph {}: word {:?} line {:?}",
                         case.name, page.index, probe.glyph, probe.word, probe.line,
                     )
                 })
-            })
         })
         .collect();
 
