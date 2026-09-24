@@ -7,7 +7,7 @@ use crate::{FileAccess, Library, Page, PdfiumError};
 /// An open `FPDF_DOCUMENT` and the bytes PDFium is reading from.
 #[derive(Debug)]
 pub struct Document {
-    handle: pdfium_sys::FPDF_DOCUMENT,
+    pub(crate) handle: pdfium_sys::FPDF_DOCUMENT,
     /// `FPDF_LoadMemDocument64` does NOT copy: PDFium reads from this buffer
     /// for the document's whole life, so the Document owns it. Field order
     /// matters, because fields drop after the `Drop` impl body runs, which is

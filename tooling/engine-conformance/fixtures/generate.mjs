@@ -471,6 +471,64 @@ function nonIdentityText(font) {
 }
 
 /**
+ * A document whose Info dictionary exercises every metadata distinction.
+ *
+ * `metadata.read` has to tell three states apart: a key that is absent, a key
+ * that is present and empty, and a key with a value. No fixture in the
+ * repository had all three, and the difference is what a patch operates on, so
+ * a reader that collapsed absent into empty would look correct on every
+ * document here.
+ *
+ * Also carries a UTF-16 title with characters outside Latin-1, two custom
+ * keys, and dates in both the offset and the Z forms PDF permits.
+ */
+function richMetadata() {
+  // A UTF-16BE text string, which is how a PDF carries anything outside
+  // PDFDocEncoding. The BOM is what marks it as such.
+  const utf16 = (text) => {
+    const units = [0xfeff, ...Array.from(text, (c) => c.codePointAt(0))].flatMap((cp) =>
+      cp > 0xffff
+        ? [0xd800 + ((cp - 0x10000) >> 10), 0xdc00 + ((cp - 0x10000) & 0x3ff)]
+        : [cp],
+    );
+    return `<${units.map((u) => u.toString(16).padStart(4, '0')).join('')}>`;
+  };
+
+  const info = [
+    `/Title ${utf16('Sm\u00f8rrebr\u00f8d \u4e2d\u6587 \u{1F600}')}`,
+    '/Author (Ada Lovelace)',
+    // Present and empty, which must not read as absent.
+    '/Subject ()',
+    // /Keywords is deliberately absent.
+    '/Producer (EmbedPDF conformance fixtures)',
+    '/Creator (generate.mjs)',
+    // An offset date and a Z date, the two shapes PDF permits.
+    "/CreationDate (D:20240115093000+01'00')",
+    '/ModDate (D:20240220120000Z)',
+    '/Trapped /False',
+    // Custom keys, which the reader reports separately from the reserved ones.
+    '/EmbedPDFCustom (a custom value)',
+    '/EmbedPDFEmpty ()',
+  ].join(' ');
+
+  const objects = [
+    Buffer.from('<< /Type /Catalog /Pages 2 0 R >>', 'latin1'),
+    Buffer.from(
+      '<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 612 792] >>',
+      'latin1',
+    ),
+    Buffer.from(
+      '<< /Type /Page /Parent 2 0 R /Contents 4 0 R /Resources << >> >>',
+      'latin1',
+    ),
+    stream('', Buffer.from('72 72 100 100 re\nf\n', 'latin1')),
+    Buffer.from(`<< ${info} >>`, 'latin1'),
+  ];
+
+  return buildPdf(objects, ' /Info 5 0 R');
+}
+
+/**
  * The permission words the encrypted fixtures declare.
  *
  * Bits 1 and 2 are reserved as zero, so a word is built by clearing the bits
@@ -485,6 +543,7 @@ const outputs = [
   ['embedded_orientations.pdf', embeddedOrientations(font)],
   ['rotated_pages.pdf', rotatedPages(font)],
   ['non_identity_text.pdf', nonIdentityText(font)],
+  ['rich_metadata.pdf', richMetadata()],
 
   // Revision 2, RC4-40. The oldest handler still in the wild.
   [

@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "kind": "metadata.read",
+  "cases": [
+    {
+      "name": "rich",
+      "fixture": "tooling/engine-conformance/fixtures/rich_metadata.pdf",
+      "covers": "Every distinction the read has to make: an absent key, a present-but-empty one, a UTF-16 title outside Latin-1, custom keys including an empty one, and dates in both the offset and the Z forms.",
+      "metadata": {
+        "title": "Smørrebrød 中文 😀",
+        "author": "Ada Lovelace",
+        "subject": "",
+        "keywords": null,
+        "producer": "EmbedPDF conformance fixtures",
+        "creator": "generate.mjs",
+        "created": "2024-01-15T08:30:00.000Z",
+        "modified": "2024-02-20T12:00:00.000Z",
+        "trapped": "false",
+        "custom": {
+          "EmbedPDFCustom": "a custom value",
+          "EmbedPDFEmpty": ""
+        }
+      }
+    },
+    {
+      "name": "report",
+      "fixture": "pdfium-multiplatform-prototype/fixtures/report.pdf",
+      "covers": "A real document, whose Info dictionary is whatever its producer wrote.",
+      "metadata": {
+        "title": null,
+        "author": null,
+        "subject": null,
+        "keywords": null,
+        "producer": "pdfeTeX-1.21a",
+        "creator": "TeX",
+        "created": "2009-04-01T23:39:25.000Z",
+        "modified": null,
+        "trapped": "unknown",
+        "custom": {
+          "PTEX.Fullbanner": "This is pdfeTeX, Version 3.141592-1.21a-2.2 (Web2C 7.5.4) kpathsea version 3.5.6"
+        }
+      }
+    },
+    {
+      "name": "colors",
+      "fixture": "pdfium-multiplatform-prototype/fixtures/colors.pdf",
+      "covers": "A minimal document with almost no metadata: the mostly-absent case.",
+      "metadata": {
+        "title": null,
+        "author": null,
+        "subject": null,
+        "keywords": null,
+        "producer": null,
+        "creator": null,
+        "created": null,
+        "modified": null,
+        "trapped": "unknown",
+        "custom": {}
+      }
+    },
+    {
+      "name": "encrypted",
+      "fixture": "tooling/engine-conformance/fixtures/encrypted-r4-aes-128.pdf",
+      "covers": "Metadata behind encryption, which is read through the same path once unlocked.",
+      "password": "user",
+      "metadata": {
+        "title": null,
+        "author": null,
+        "subject": null,
+        "keywords": null,
+        "producer": null,
+        "creator": null,
+        "created": null,
+        "modified": null,
+        "trapped": "unknown",
+        "custom": {}
+      }
+    }
+  ]
+}

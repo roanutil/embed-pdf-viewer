@@ -19,6 +19,7 @@ mod error;
 mod file_access;
 mod fonts;
 mod geom;
+mod metadata;
 mod library;
 mod page;
 mod text;
@@ -34,5 +35,6 @@ pub use fonts::{
 };
 pub use geom::{MatrixF, QuadF, RectF};
 pub use library::Library;
+pub use metadata::Trapped;
 pub use page::{Page, PageView, SharedPage};
 pub use text::{CharGeometry, CharGeometryFlags, TextObjectKey, TextPage};

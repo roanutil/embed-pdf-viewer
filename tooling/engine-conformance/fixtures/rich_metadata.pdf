@@ -1,0 +1,35 @@
+%PDF-1.7
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 612 792] >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /Contents 4 0 R /Resources << >> >>
+endobj
+4 0 obj
+<<  /Length 19 >>
+stream
+72 72 100 100 re
+f
+
+endstream
+endobj
+5 0 obj
+<< /Title <feff0053006d00f80072007200650062007200f8006400204e2d65870020d83dde00> /Author (Ada Lovelace) /Subject () /Producer (EmbedPDF conformance fixtures) /Creator (generate.mjs) /CreationDate (D:20240115093000+01'00') /ModDate (D:20240220120000Z) /Trapped /False /EmbedPDFCustom (a custom value) /EmbedPDFEmpty () >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000145 00000 n 
+0000000225 00000 n 
+0000000295 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R /Info 5 0 R >>
+startxref
+631
+%%EOF

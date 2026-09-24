@@ -167,6 +167,12 @@ jobs:
       - name: Charmap vectors are current
         run: pnpm --filter @embedpdf/tooling-engine-conformance run charmap:check
 
+      # G5's literal and snippet halves, and G6's metadata read. Both are
+      # document-level rather than per-page, so they have generators of
+      # their own rather than rows in the per-page corpus.
+      - name: Metadata vectors are current
+        run: pnpm --filter @embedpdf/tooling-engine-conformance run metadata:check
+
       # multiplatform-port-order.md Section 6: a kind added to
       # worker-protocol.ts without a row in the matrix fails here, and so does
       # a row for a kind that no longer exists.
