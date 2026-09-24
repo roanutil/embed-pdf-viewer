@@ -10,3 +10,11 @@
 //! `attachments.create`, `attachments.delete`, `pieceInfo.update`,
 //! `pieceInfo.clear`. Gate: `annotations.readFile` is byte-equal to the
 //! TypeScript path.
+//!
+//! # What is here
+//!
+//! [`attachments`], the read half: the catalog's `/EmbeddedFiles` name tree
+//! and the bytes-out call, over the same metadata projection G7's
+//! file-attachment annotation already uses. Piece info is not ported.
+
+pub mod attachments;

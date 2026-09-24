@@ -203,6 +203,12 @@ jobs:
       - name: Annotation appearance vectors are current
         run: pnpm --filter @embedpdf/tooling-engine-conformance run annotation-appearance:check
 
+      # G8's reads. The embedded-file tree and what each entry decodes to,
+      # bytes included: a deflate stream has one correct decoding, so unlike
+      # a raster there is nothing build-specific in the path.
+      - name: Attachment vectors are current
+        run: pnpm --filter @embedpdf/tooling-engine-conformance run attachments:check
+
       # multiplatform-port-order.md Section 6: a kind added to
       # worker-protocol.ts without a row in the matrix fails here, and so does
       # a row for a kind that no longer exists.

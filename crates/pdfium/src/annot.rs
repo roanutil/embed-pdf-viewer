@@ -738,6 +738,101 @@ where
     Ok(Some(String::from_utf16_lossy(&buffer[..produced])))
 }
 
+/// Why an extraction produced nothing.
+///
+/// `EPDFAttachmentExtractStatus`. Separate from [`PdfiumError`] because each
+/// of these means something specific about the DOCUMENT rather than about the
+/// runtime, and the engine maps them to different error codes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AttachmentExtractError {
+    /// No `/EF`: the filespec names a file the document does not embed.
+    NoFileStream,
+    /// The stream is there and its filters will not decode.
+    DecodeFailed,
+    /// Larger than the caller's ceiling.
+    SizeLimitExceeded,
+    /// The destination refused the bytes.
+    WriteFailed,
+    /// A status this build does not know, kept rather than collapsed.
+    Unknown(u32),
+}
+
+impl AttachmentExtractError {
+    fn from_status(status: u32) -> Self {
+        match status {
+            1 => Self::NoFileStream,
+            2 => Self::DecodeFailed,
+            3 => Self::SizeLimitExceeded,
+            4 => Self::WriteFailed,
+            other => Self::Unknown(other),
+        }
+    }
+}
+
+impl std::fmt::Display for AttachmentExtractError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::NoFileStream => write!(f, "the filespec has no embedded file stream (/EF)"),
+            Self::DecodeFailed => write!(f, "the embedded file stream failed to decode"),
+            Self::SizeLimitExceeded => {
+                write!(f, "the embedded file exceeds the decoded-size limit")
+            }
+            Self::WriteFailed => write!(f, "writing the extracted file failed"),
+            Self::Unknown(status) => write!(f, "extraction failed with status {status}"),
+        }
+    }
+}
+
+impl Document {
+    /// How many entries the catalog's `/EmbeddedFiles` name tree holds.
+    pub fn attachment_count(&self) -> u32 {
+        // SAFETY: the handle is live.
+        let count = unsafe { pdfium_sys::FPDFDoc_GetAttachmentCount(self.as_raw()) };
+        u32::try_from(count).unwrap_or(0)
+    }
+
+    /// One entry of the name tree, by position.
+    ///
+    /// Position is DISPLAY order, not an address: creating or removing an
+    /// entry shifts every index after it. The durable address is the tree
+    /// key, which [`Document::attachment_key`] reads and
+    /// [`Document::attachment_index_by_key`] resolves.
+    pub fn attachment(&self, index: u32) -> Option<Attachment<'_>> {
+        let index = i32::try_from(index).ok()?;
+        // SAFETY: the handle is live for the borrow this returns.
+        let handle = unsafe { pdfium_sys::FPDFDoc_GetAttachment(self.as_raw(), index) };
+        (!handle.is_null()).then_some(Attachment { handle, _annotation: PhantomData })
+    }
+
+    /// The name-tree KEY at `index`, which is the durable address.
+    ///
+    /// Usually equal to the file's display name, and not reliably so: keys
+    /// are unique within the tree by construction while two `/UF` values can
+    /// collide, so a foreign document can have both files called
+    /// `report.pdf` under two different keys.
+    pub fn attachment_key(&self, index: u32) -> Result<Option<String>, PdfiumError> {
+        let Ok(index) = i32::try_from(index) else {
+            return Ok(None);
+        };
+        read_utf16_bytes(|buffer, len| {
+            // SAFETY: the handle is live and `len` describes `buffer` in
+            // bytes.
+            unsafe { pdfium_sys::EPDFDoc_GetAttachmentKey(self.as_raw(), index, buffer, len) }
+        })
+    }
+
+    /// The current index of the entry with this key, or `None`.
+    pub fn attachment_index_by_key(&self, key: &str) -> Option<u32> {
+        let mut units: Vec<u16> = key.encode_utf16().collect();
+        units.push(0);
+        // SAFETY: the handle is live and the key is NUL-terminated and
+        // outlives the call.
+        let index =
+            unsafe { pdfium_sys::EPDFDoc_GetAttachmentIndexByKey(self.as_raw(), units.as_ptr()) };
+        u32::try_from(index).ok()
+    }
+}
+
 /// An embedded file, read through the filespec that names it.
 ///
 /// Unretained, like everything `FPDF_ATTACHMENT` addresses: there is no close
@@ -788,6 +883,53 @@ impl Attachment<'_> {
                 pdfium_sys::FPDFAttachment_GetStringValue(self.handle, key.as_ptr(), buffer, len)
             }
         })
+    }
+
+    /// Decode the embedded file into a fresh buffer.
+    ///
+    /// `max_decoded_bytes` of zero is unbudgeted, which is the fork's
+    /// convention and not this layer's choice.
+    ///
+    /// The decode happens ONCE, inside PDFium, into a buffer it owns and this
+    /// frees. A zero-byte embedded file is a valid result and not a failure:
+    /// an empty file is a file.
+    pub fn extract(&self, max_decoded_bytes: u64) -> Result<Vec<u8>, AttachmentExtractError> {
+        let mut buffer: *mut std::ffi::c_void = std::ptr::null_mut();
+        let mut size = 0u32;
+        // The fork's status enum is unsigned, and `u32::MAX` is a value it
+        // never issues, so an untouched out-parameter is distinguishable from
+        // every real status.
+        let mut status = u32::MAX;
+
+        // SAFETY: the handle is live and all three out-parameters are valid.
+        let ok = unsafe {
+            pdfium_sys::EPDFAttachment_ExtractFileToOwnedBuffer(
+                self.handle,
+                max_decoded_bytes,
+                &raw mut buffer,
+                &raw mut size,
+                &raw mut status,
+            )
+        };
+        if ok == 0 {
+            return Err(AttachmentExtractError::from_status(status));
+        }
+        if size == 0 || buffer.is_null() {
+            // Still free it: a zero-size success can hand back a buffer.
+            if !buffer.is_null() {
+                // SAFETY: the buffer came from the call above and is freed
+                // once.
+                unsafe { pdfium_sys::EPDF_FreeBuffer(buffer) };
+            }
+            return Ok(Vec::new());
+        }
+
+        // SAFETY: PDFium reported `size` readable bytes at `buffer`.
+        let bytes =
+            unsafe { std::slice::from_raw_parts(buffer.cast::<u8>(), size as usize) }.to_vec();
+        // SAFETY: as above, and nothing else holds the pointer.
+        unsafe { pdfium_sys::EPDF_FreeBuffer(buffer) };
+        Ok(bytes)
     }
 
     /// One `/Params` integer entry.

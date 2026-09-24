@@ -1085,6 +1085,88 @@ function annotationAppearances() {
 }
 
 /**
+ * The catalog's `/EmbeddedFiles` name tree, with the distinctions a listing
+ * and a download have to make.
+ *
+ * Nothing in the repository had one. `annotation_kinds.pdf` embeds a file
+ * through a FileAttachment annotation's `/FS`, which is the other home, and a
+ * reader that only ever saw that one would never exercise the tree at all.
+ *
+ *   - A key that is NOT the display name. Keys are unique within the tree by
+ *     construction while two `/UF` values can collide, so addressing by name
+ *     is the mistake this entry exists to catch.
+ *   - An entry with no `/Params`, no `/Desc` and no `/Subtype`, so every
+ *     optional field of the projection is absent on one entry and present on
+ *     another.
+ *   - A zero-byte file, which decodes successfully to nothing. An empty file
+ *     is a file, and a reader that treated the size as a failure signal would
+ *     report it as broken.
+ *   - A filespec with no `/EF` at all, which is what an extraction failure
+ *     looks like from a document that is otherwise fine.
+ *   - A tree entry whose value is not a filespec, sorted into the middle, so
+ *     a reader that stopped at it rather than skipping it loses everything
+ *     after it and still returns a plausible listing.
+ *
+ * Tree order is key order, which is what the name tree guarantees and what a
+ * listing's index means. The keys here are deliberately out of order relative
+ * to the object numbers so a reader that followed the objects rather than the
+ * tree is visible.
+ */
+function attachments() {
+  const notes = Buffer.from('the notes\n', 'latin1');
+  const empty = Buffer.alloc(0);
+
+  return buildPdf([
+    Buffer.from(
+      '<< /Type /Catalog /Pages 2 0 R /Names << /EmbeddedFiles << /Names [' +
+        '(aaa-first) 4 0 R (bbb-not-a-filespec) 10 0 R (mmm-middle) 6 0 R ' +
+        '(zzz-last) 8 0 R (zzz-no-stream) 9 0 R' +
+        '] >> >> >>',
+      'latin1',
+    ),
+    Buffer.from(
+      '<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 612 792] >>',
+      'latin1',
+    ),
+    Buffer.from('<< /Type /Page /Parent 2 0 R /Resources << >> >>', 'latin1'),
+
+    // 4/5: every optional field present, and a key that is not the name.
+    Buffer.from(
+      '<< /Type /Filespec /F (notes.txt) /UF (notes.txt) /Desc (release notes) ' +
+        '/EF << /F 5 0 R >> >>',
+      'latin1',
+    ),
+    stream(
+      '/Type /EmbeddedFile /Subtype /text#2Fplain /Params << ' +
+        `/Size ${notes.length} /CheckSum <FEDCBA9876543210FEDCBA9876543210> ` +
+        '/CreationDate (D:20240401090000Z) >>',
+      notes,
+    ),
+
+    // 6/7: nothing optional at all.
+    Buffer.from('<< /Type /Filespec /F (bare.bin) /UF (bare.bin) /EF << /F 7 0 R >> >>', 'latin1'),
+    stream('/Type /EmbeddedFile', empty),
+
+    // 8: a second reference to the first stream, under a different key. Two
+    // entries can name one file, and a listing reports two.
+    Buffer.from(
+      '<< /Type /Filespec /F (notes.txt) /UF (also-notes.txt) /EF << /F 5 0 R >> >>',
+      'latin1',
+    ),
+
+    // 9: a filespec with no /EF. The entry is in the tree and has a name, and
+    // there is nothing to decode.
+    Buffer.from('<< /Type /Filespec /F (missing.bin) /UF (missing.bin) >>', 'latin1'),
+
+    // 10: a tree entry whose value is not a filespec at all. It sorts into
+    // the MIDDLE of the tree on purpose: a reader that stopped at the first
+    // entry it could not open, rather than skipping it, would lose every
+    // entry after it and still return a plausible listing.
+    Buffer.from('42', 'latin1'),
+  ]);
+}
+
+/**
  * A document whose Info dictionary exercises every metadata distinction.
  *
  * `metadata.read` has to tell three states apart: a key that is absent, a key
@@ -1162,6 +1244,7 @@ const outputs = [
   ['annotation_base.pdf', annotationBase()],
   ['annotation_kinds.pdf', annotationKinds()],
   ['annotation_appearances.pdf', annotationAppearances()],
+  ['attachments.pdf', attachments()],
   ['document_actions.pdf', documentActions()],
   ['reverse_and_gapped_text.pdf', reverseAndGappedText(font)],
 

@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "kind": "files.attachments",
+  "cases": [
+  {"name":"tree","fixture":"tooling/engine-conformance/fixtures/attachments.pdf","covers":"A key that is not the display name, an entry with no optional fields at all, a zero-byte file, two entries sharing one stream, and a filespec with no /EF whose download fails.","items":[{"name":"notes.txt","mimeType":"text/plain","description":"release notes","size":10,"checksum":"fedcba9876543210fedcba9876543210","creationDate":"D:20240401090000Z","key":"aaa-first","index":0},{"name":"","key":"bbb-not-a-filespec","index":1},{"name":"bare.bin","key":"mmm-middle","index":2},{"name":"also-notes.txt","mimeType":"text/plain","size":10,"checksum":"fedcba9876543210fedcba9876543210","creationDate":"D:20240401090000Z","key":"zzz-last","index":3},{"name":"missing.bin","key":"zzz-no-stream","index":4}],"downloads":[{"key":"aaa-first","name":"notes.txt","mimeType":"text/plain","size":10,"bytes":"746865206e6f7465730a"},{"key":"bbb-not-a-filespec","errorCode":"InvalidArg","error":"attachment has no embedded file stream (missing /EF)"},{"key":"mmm-middle","name":"bare.bin","size":0,"bytes":""},{"key":"zzz-last","name":"also-notes.txt","mimeType":"text/plain","size":10,"bytes":"746865206e6f7465730a"},{"key":"zzz-no-stream","errorCode":"InvalidArg","error":"attachment has no embedded file stream (missing /EF)"}]},
+  {"name":"none","fixture":"tooling/engine-conformance/fixtures/rich_metadata.pdf","covers":"A document with no /EmbeddedFiles name tree. The empty listing is a different answer from a failed one.","items":[],"downloads":[]}
+  ]
+}

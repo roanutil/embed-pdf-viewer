@@ -33,7 +33,8 @@ pub use action::{
     DocumentActionEvent, PageActionEvent, RawDestination,
 };
 pub use annot::{
-    Annotation, AppearanceMode, Attachment, BorderStyle, DefaultAppearance, RectangleDifferences,
+    Annotation, AppearanceMode, Attachment, AttachmentExtractError, BorderStyle, DefaultAppearance,
+    RectangleDifferences,
 };
 pub use base::{BaseDocument, LayerDocument, LayerOpenError};
 pub use bitmap::Bitmap;

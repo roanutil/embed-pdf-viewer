@@ -1,0 +1,57 @@
+%PDF-1.7
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R /Names << /EmbeddedFiles << /Names [(aaa-first) 4 0 R (bbb-not-a-filespec) 10 0 R (mmm-middle) 6 0 R (zzz-last) 8 0 R (zzz-no-stream) 9 0 R] >> >> >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 612 792] >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /Resources << >> >>
+endobj
+4 0 obj
+<< /Type /Filespec /F (notes.txt) /UF (notes.txt) /Desc (release notes) /EF << /F 5 0 R >> >>
+endobj
+5 0 obj
+<< /Type /EmbeddedFile /Subtype /text#2Fplain /Params << /Size 10 /CheckSum <FEDCBA9876543210FEDCBA9876543210> /CreationDate (D:20240401090000Z) >> /Length 10 >>
+stream
+the notes
+
+endstream
+endobj
+6 0 obj
+<< /Type /Filespec /F (bare.bin) /UF (bare.bin) /EF << /F 7 0 R >> >>
+endobj
+7 0 obj
+<< /Type /EmbeddedFile /Length 0 >>
+stream
+
+endstream
+endobj
+8 0 obj
+<< /Type /Filespec /F (notes.txt) /UF (also-notes.txt) /EF << /F 5 0 R >> >>
+endobj
+9 0 obj
+<< /Type /Filespec /F (missing.bin) /UF (missing.bin) >>
+endobj
+10 0 obj
+42
+endobj
+xref
+0 11
+0000000000 65535 f 
+0000000015 00000 n 
+0000000211 00000 n 
+0000000292 00000 n 
+0000000356 00000 n 
+0000000465 00000 n 
+0000000670 00000 n 
+0000000755 00000 n 
+0000000824 00000 n 
+0000000916 00000 n 
+0000000988 00000 n 
+trailer
+<< /Size 11 /Root 1 0 R >>
+startxref
+1007
+%%EOF
