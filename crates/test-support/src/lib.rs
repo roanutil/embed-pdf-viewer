@@ -41,3 +41,40 @@ pub const ENCRYPTED: &str = "pdfium-multiplatform-prototype/fixtures/encrypted-h
 /// Carries text runs that are not upright, which is the only way to reach the
 /// rotated arm of the geometry reader.
 pub const ROTATED_TEXT: &str = "examples/viewer-react/public/rotated_text.pdf";
+
+/// Put a JSON tree into the one spelling both engines agree on.
+///
+/// Two things differ between a `serde_json` value and the JavaScript that
+/// produced the vector, and neither is a difference in what the engines did.
+///
+/// A whole number: JSON has one number type, and `serde_json` writes `700.0`
+/// where JavaScript writes `700`. Every integral float becomes an integer.
+///
+/// The last bit of a fraction: `serde_json`'s float parser is not always
+/// correctly rounded. `0.9019607843137255`, which is what JavaScript prints
+/// for `230 / 255`, parses back one unit in the last place high, so a value
+/// the Rust engine COMPUTED as `230.0 / 255.0` differs from the same value
+/// read out of the vector file. Rounding both to fifteen significant digits
+/// erases that and nothing else: an `f64` carries not quite sixteen, and any
+/// difference in what a writer actually wrote shows up in the third decimal
+/// rather than the sixteenth.
+pub fn canonical_numbers(value: &serde_json::Value) -> serde_json::Value {
+    match value {
+        serde_json::Value::Number(number) => match number.as_f64() {
+            Some(float) if float.fract() == 0.0 && float.abs() < 9e15 => {
+                serde_json::Value::from(float as i64)
+            }
+            Some(float) => {
+                serde_json::Value::from(format!("{float:.14e}").parse::<f64>().unwrap_or(float))
+            }
+            None => value.clone(),
+        },
+        serde_json::Value::Array(items) => {
+            serde_json::Value::Array(items.iter().map(canonical_numbers).collect())
+        }
+        serde_json::Value::Object(fields) => serde_json::Value::Object(
+            fields.iter().map(|(key, entry)| (key.clone(), canonical_numbers(entry))).collect(),
+        ),
+        _ => value.clone(),
+    }
+}

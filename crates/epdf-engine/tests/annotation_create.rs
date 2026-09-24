@@ -20,6 +20,7 @@ use epdf_engine::access::DocumentAccess;
 use epdf_engine::cancel::CancelToken;
 use epdf_engine::clock::FixedClock;
 use epdf_engine::error::EngineErrorCode;
+use epdf_engine::features::annotation::write::context::AnnotationWriteContext;
 use epdf_engine::features::annotation::write::create::create_annotation;
 use epdf_engine::features::annotation::write::draft::{AnnotationActor, AnnotationDraft};
 use epdf_engine::identity::PageObjectNumber;
@@ -69,26 +70,6 @@ fn load() -> VectorFile {
     file
 }
 
-/// See `annotation_reader.rs`: JSON has one number type and the two
-/// serializers spell a whole one differently.
-fn canonical_numbers(value: &serde_json::Value) -> serde_json::Value {
-    match value {
-        serde_json::Value::Number(number) => match number.as_f64() {
-            Some(float) if float.fract() == 0.0 && float.abs() < 9e15 => {
-                serde_json::Value::from(float as i64)
-            }
-            _ => value.clone(),
-        },
-        serde_json::Value::Array(items) => {
-            serde_json::Value::Array(items.iter().map(canonical_numbers).collect())
-        }
-        serde_json::Value::Object(fields) => serde_json::Value::Object(
-            fields.iter().map(|(key, entry)| (key.clone(), canonical_numbers(entry))).collect(),
-        ),
-        _ => value.clone(),
-    }
-}
-
 #[derive(Debug)]
 struct Created {
     dto: serde_json::Value,
@@ -130,6 +111,7 @@ fn create(file: &VectorFile, case: &Case) -> Result<Created, epdf_engine::error:
         &state,
         &draft,
         &AnnotationActor::default(),
+        &AnnotationWriteContext::empty(),
         // A fixed clock, because `/M` is dropped from the comparison and a
         // wall clock would make this test's own output depend on when it ran.
         &FixedClock(epdf_engine::clock::Timestamp::utc(1_700_000_000_000)),
@@ -159,8 +141,8 @@ fn a_created_annotation_reads_back_as_the_typescript_engines_did() {
         );
 
         assert_eq!(
-            canonical_numbers(&serde_json::Value::Object(mine)),
-            canonical_numbers(&case.created),
+            test_support::canonical_numbers(&serde_json::Value::Object(mine)),
+            test_support::canonical_numbers(&case.created),
             "{}: {}",
             case.name,
             case.covers,
@@ -179,8 +161,8 @@ fn a_create_is_append_only_and_says_so() {
         let meta = created.meta.as_object().expect("an object");
 
         assert_eq!(
-            canonical_numbers(&meta["changed"]),
-            canonical_numbers(&case.meta.changed),
+            test_support::canonical_numbers(&meta["changed"]),
+            test_support::canonical_numbers(&case.meta.changed),
             "{}: the changed list",
             case.name,
         );
@@ -278,6 +260,51 @@ fn a_draft_that_cannot_be_written_is_refused_before_anything_is_written() {
             }),
             "a review state belonging to no model",
         ),
+        (
+            serde_json::json!({
+                "subtype": "free-text",
+                "intent": "free-text-callout",
+                "rect": { "left": 10.0, "bottom": 10.0, "right": 100.0, "top": 60.0 },
+                "fontFamily": "helvetica",
+                "fontSize": 12.0,
+                "textAlign": "left",
+            }),
+            "a callout with no leader to call anything out with",
+        ),
+        (
+            serde_json::json!({
+                "subtype": "free-text",
+                "intent": "free-text",
+                "rect": { "left": 10.0, "bottom": 10.0, "right": 100.0, "top": 60.0 },
+                "fontFamily": "helvetica",
+                "fontSize": 12.0,
+                "textAlign": "left",
+                "calloutLine": [{ "x": 0.0, "y": 0.0 }, { "x": 10.0, "y": 10.0 }],
+            }),
+            "a leader on a plain text box",
+        ),
+        (
+            serde_json::json!({
+                "subtype": "free-text",
+                "intent": "free-text",
+                "rect": { "left": 10.0, "bottom": 10.0, "right": 100.0, "top": 60.0 },
+                "fontFamily": "helvetica",
+                "fontSize": 0.0,
+                "textAlign": "left",
+            }),
+            "text drawn at no size at all",
+        ),
+        (
+            serde_json::json!({
+                "subtype": "free-text",
+                "intent": "free-text",
+                "rect": { "left": 10.0, "bottom": 10.0, "right": 100.0, "top": 60.0 },
+                "fontFamily": "a-font-nobody-registered",
+                "fontSize": 12.0,
+                "textAlign": "left",
+            }),
+            "a font this host has no registry to resolve",
+        ),
     ] {
         let mut refused_case = Case {
             name: format!("refusal: {what}"),
@@ -362,6 +389,7 @@ fn a_created_annotation_ships_with_an_appearance() {
         &before.page_state,
         &draft,
         &AnnotationActor::default(),
+        &AnnotationWriteContext::empty(),
         &FixedClock(epdf_engine::clock::Timestamp::utc(1_700_000_000_000)),
         &CancelToken::never(),
     )
@@ -444,6 +472,7 @@ fn a_created_annotation_survives_a_save_and_reopen() {
             &before.page_state,
             &draft,
             &AnnotationActor::default(),
+            &AnnotationWriteContext::empty(),
             &FixedClock(epdf_engine::clock::Timestamp::utc(1_700_000_000_000)),
             &CancelToken::never(),
         )
@@ -467,7 +496,10 @@ fn a_created_annotation_survives_a_save_and_reopen() {
     assert_eq!(listing.annotations.len(), 1, "the annotation did not survive the save");
     let dto = serde_json::to_value(&listing.annotations[0]).expect("serialize");
     assert_eq!(dto["subtype"].as_str(), Some("square"));
-    assert_eq!(canonical_numbers(&dto["rect"]), canonical_numbers(&case.created["rect"]));
+    assert_eq!(
+        test_support::canonical_numbers(&dto["rect"]),
+        test_support::canonical_numbers(&case.created["rect"])
+    );
     assert_eq!(dto["interiorColor"], case.created["interiorColor"]);
 
     // And it still draws, which is what the page's regenerated content
@@ -527,6 +559,7 @@ fn with_written<R>(
         &state,
         &draft,
         &AnnotationActor::default(),
+        &AnnotationWriteContext::empty(),
         &FixedClock(epdf_engine::clock::Timestamp::utc(1_700_000_000_000)),
         &CancelToken::never(),
     )

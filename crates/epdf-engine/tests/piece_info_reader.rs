@@ -62,27 +62,6 @@ fn open(case: &Case) -> Document {
         .unwrap_or_else(|e| panic!("{}: open: {e}", case.name))
 }
 
-/// See `annotation_reader.rs`: JSON has one number type and these two
-/// serializers spell a whole one differently. A `/PieceInfo` number is a PDF
-/// real, so a value of 7 is a float on this side and an integer on the other.
-fn canonical_numbers(value: &serde_json::Value) -> serde_json::Value {
-    match value {
-        serde_json::Value::Number(number) => match number.as_f64() {
-            Some(float) if float.fract() == 0.0 && float.abs() < 9e15 => {
-                serde_json::Value::from(float as i64)
-            }
-            _ => value.clone(),
-        },
-        serde_json::Value::Array(items) => {
-            serde_json::Value::Array(items.iter().map(canonical_numbers).collect())
-        }
-        serde_json::Value::Object(fields) => serde_json::Value::Object(
-            fields.iter().map(|(key, entry)| (key.clone(), canonical_numbers(entry))).collect(),
-        ),
-        _ => value.clone(),
-    }
-}
-
 fn holder_of(case: &Case, label: &str) -> PieceInfoHolder {
     match label {
         "catalog" => PieceInfoHolder::Catalog,
@@ -121,8 +100,10 @@ fn the_reads_agree_with_the_typescript_engine() {
                     absent += 1;
                 }
                 assert_eq!(
-                    canonical_numbers(&serde_json::to_value(&mine).expect("serialize")),
-                    canonical_numbers(theirs),
+                    test_support::canonical_numbers(
+                        &serde_json::to_value(&mine).expect("serialize")
+                    ),
+                    test_support::canonical_numbers(theirs),
                     "{}: {label}/{application}: {}",
                     case.name,
                     case.covers,

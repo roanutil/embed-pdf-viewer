@@ -359,6 +359,77 @@ const CASES: readonly CreateCase[] = [
     },
   },
   {
+    name: 'free-text-plain',
+    covers:
+      'A plain text box. The three colours are three different entries: /DA draws the border and the text, /C is the background, and a TextColor override is absent here so the text follows /DA.',
+    draft: {
+      subtype: 'free-text',
+      intent: 'free-text',
+      rect: { left: 72, bottom: 400, right: 260, top: 470 },
+      fontFamily: 'helvetica',
+      fontSize: 14,
+      textAlign: 'left',
+      contents: 'A note in a box.',
+    },
+  },
+  {
+    name: 'free-text-three-colours',
+    covers:
+      'All three at once, with a text colour that overrides the /DA one. A writer that wrote /DA after the override would put the border colour back over the text.',
+    draft: {
+      subtype: 'free-text',
+      intent: 'free-text',
+      rect: { left: 280, bottom: 400, right: 470, top: 470 },
+      fontFamily: 'times-bold',
+      fontSize: 18,
+      textAlign: 'center',
+      color: { r: 0, g: 0, b: 200 },
+      fontColor: { r: 200, g: 0, b: 0 },
+      interiorColor: { r: 240, g: 240, b: 200 },
+      opacity: 0.9,
+      strokeWidth: 2,
+      borderStyle: 'dashed',
+      dashArray: [4, 2],
+      rectDifferences: { left: 3, bottom: 3, right: 3, top: 3 },
+      contents: 'Red text, blue border, cream box.',
+    },
+  },
+  {
+    name: 'free-text-callout',
+    covers:
+      'A callout: the same annotation with a /CL leader and an ending on the called-out end. The other end touches the text box, where an arrowhead would be drawn into the box it belongs to.',
+    draft: {
+      subtype: 'free-text',
+      intent: 'free-text-callout',
+      rect: { left: 300, bottom: 300, right: 470, top: 360 },
+      fontFamily: 'helvetica-oblique',
+      fontSize: 11,
+      textAlign: 'right',
+      calloutLine: [
+        { x: 200, y: 250 },
+        { x: 260, y: 300 },
+        { x: 300, y: 330 },
+      ],
+      lineEnding: 'open-arrow',
+      contents: 'This bit here.',
+    },
+  },
+  {
+    name: 'free-text-rotated',
+    covers:
+      'A box kind, so the rotation is the pair. A callout would rotate its text box alone and leave the leader in page space.',
+    draft: {
+      subtype: 'free-text',
+      intent: 'free-text',
+      rect: { left: 72, bottom: 300, right: 190, top: 380 },
+      fontFamily: 'courier',
+      fontSize: 10,
+      textAlign: 'left',
+      rotation: 15,
+      unrotatedRect: { left: 80, bottom: 310, right: 180, top: 370 },
+    },
+  },
+  {
     name: 'highlight-cleared-strings',
     covers:
       'A draft that explicitly clears contents and subject. Setting a null value writes an EMPTY string rather than removing the key, so a writer that used the setter would produce a field that reads back as present-and-empty instead of absent.',

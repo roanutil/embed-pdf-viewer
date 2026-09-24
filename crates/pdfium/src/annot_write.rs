@@ -212,6 +212,78 @@ impl Annotation<'_> {
         Ok(unsafe { pdfium_sys::EPDFAnnot_SetIntent(self.as_raw(), intent.as_ptr()) != 0 })
     }
 
+    /// `/DA`, built from one of the fourteen standard fonts.
+    ///
+    /// The colour here is the `/DA` colour, which a free text uses for its
+    /// border and its default text and a redaction for its overlay label. It
+    /// is not `/C`.
+    pub fn set_default_appearance(
+        &self,
+        font_code: i32,
+        font_size: f32,
+        color: (u8, u8, u8),
+    ) -> bool {
+        // SAFETY: the handle is live.
+        unsafe {
+            pdfium_sys::EPDFAnnot_SetDefaultAppearance(
+                self.as_raw(),
+                font_code,
+                font_size,
+                u32::from(color.0),
+                u32::from(color.1),
+                u32::from(color.2),
+            ) != 0
+        }
+    }
+
+    /// The same from a font registered on this thread.
+    ///
+    /// The id is a per-thread counter, which is why it is a [`crate::FontId`]
+    /// rather than a number: it names a different font on another thread and
+    /// nothing at all on one that has registered nothing.
+    pub fn set_default_appearance_registered_font(
+        &self,
+        font: crate::FontId,
+        font_size: f32,
+        color: (u8, u8, u8),
+    ) -> bool {
+        // SAFETY: the handle is live.
+        unsafe {
+            pdfium_sys::EPDFAnnot_SetDefaultAppearanceRegisteredFont(
+                self.as_raw(),
+                font.raw(),
+                font_size,
+                u32::from(color.0),
+                u32::from(color.1),
+                u32::from(color.2),
+            ) != 0
+        }
+    }
+
+    /// `/Q`, as an `FPDF_TEXT_ALIGNMENT` code.
+    pub fn set_text_alignment(&self, alignment: i32) -> bool {
+        // SAFETY: the handle is live.
+        unsafe { pdfium_sys::EPDFAnnot_SetTextAlignment(self.as_raw(), alignment as u32) != 0 }
+    }
+
+    /// `/CL`, a free-text callout's leader line.
+    ///
+    /// Two points draw a straight leader and three a knee-jointed one. The
+    /// count is passed through rather than checked: which counts are legal is
+    /// §12.5.6.6's business, and the engine's.
+    pub fn set_callout_line(&self, points: &[crate::PointF]) -> bool {
+        let native: Vec<pdfium_sys::FS_POINTF> =
+            points.iter().map(|p| pdfium_sys::FS_POINTF { x: p.x, y: p.y }).collect();
+        // SAFETY: the handle is live and the buffer outlives the call.
+        unsafe {
+            pdfium_sys::EPDFAnnot_SetCalloutLine(
+                self.as_raw(),
+                native.as_ptr(),
+                native.len() as std::os::raw::c_ulong,
+            ) != 0
+        }
+    }
+
     /// `/Name`, as an `FPDF_ANNOT_NAME` code.
     ///
     /// Which block of that enum a code belongs to depends on the subtype,

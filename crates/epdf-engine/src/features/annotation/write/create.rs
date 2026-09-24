@@ -30,6 +30,7 @@
 use pdfium::{PageView, QuadF, RectF};
 use serde::{Deserialize, Serialize};
 
+use super::context::AnnotationWriteContext;
 use super::draft::{
     AnnotationActor, AnnotationDraft, AnnotationDraftBase, AnnotationDraftKind, ShapeDraftFields,
     TextMarkupDraftFields,
@@ -39,6 +40,7 @@ use crate::cancel::CancelToken;
 use crate::clock::{Clock, format_pdf_date};
 use crate::dto::Patch;
 use crate::error::{EngineError, EngineErrorCode};
+use crate::features::annotation::intent::FreeTextIntent;
 use crate::features::annotation::read::dto::AnnotationDto;
 use crate::features::annotation::read::page::read_page_annotations;
 use crate::features::annotation::read::style::Color;
@@ -84,6 +86,7 @@ pub fn create_annotation(
     state_after: &PageState,
     draft: &AnnotationDraft,
     actor: &AnnotationActor,
+    context: &AnnotationWriteContext<'_>,
     clock: &dyn Clock,
     cancel: &CancelToken,
 ) -> Result<AnnotationCreateResult, EngineError> {
@@ -101,7 +104,7 @@ pub fn create_annotation(
     })?;
 
     apply_base_draft(&annotation, &draft.base)?;
-    apply_kind_draft(&annotation, &draft.kind)?;
+    apply_kind_draft(&annotation, &draft.kind, context)?;
 
     // After the subtype writer, so a writer that set `/T` or `/M` itself
     // cannot win.
@@ -231,6 +234,32 @@ fn preflight(draft: &AnnotationDraft) -> Result<(), EngineError> {
             }
         }
         AnnotationDraftKind::Caret { fields } => normalized(&fields.rect)?,
+        AnnotationDraftKind::FreeText { fields } => {
+            normalized(&fields.rect)?;
+            // A callout with no leader is a plain box wearing the wrong
+            // `/IT`, and a leader on a plain box is geometry nothing draws.
+            // Both are the caller having decided one thing and said another.
+            let is_callout = fields.intent == FreeTextIntent::FreeTextCallout;
+            if is_callout != fields.callout_line.is_some() {
+                return Err(EngineError::with_message(
+                    EngineErrorCode::InvalidArg,
+                    if is_callout {
+                        "a free-text-callout draft needs a calloutLine"
+                    } else {
+                        "a calloutLine belongs to a free-text-callout, not a plain text box"
+                    },
+                ));
+            }
+            if fields.font_size <= 0.0 {
+                return Err(EngineError::with_message(
+                    EngineErrorCode::InvalidArg,
+                    format!(
+                        "a free-text draft's fontSize must be positive, not {}",
+                        fields.font_size
+                    ),
+                ));
+            }
+        }
         AnnotationDraftKind::Ink { fields, ink_list, .. } => {
             normalized(&fields.rect)?;
             // An ink annotation with no strokes draws nothing, and one with
@@ -269,6 +298,7 @@ fn opacity_of(kind: &AnnotationDraftKind) -> Option<f64> {
         AnnotationDraftKind::Ink { fields, .. } => fields.opacity,
         AnnotationDraftKind::Text { fields } => fields.opacity,
         AnnotationDraftKind::Caret { fields } => fields.opacity,
+        AnnotationDraftKind::FreeText { fields } => fields.opacity,
     }
 }
 
@@ -319,6 +349,7 @@ fn apply_flags(
 fn apply_kind_draft(
     annotation: &pdfium::Annotation<'_>,
     kind: &AnnotationDraftKind,
+    context: &AnnotationWriteContext<'_>,
 ) -> Result<(), EngineError> {
     match kind {
         AnnotationDraftKind::Highlight { fields } => {
@@ -396,6 +427,7 @@ fn apply_kind_draft(
         }
         AnnotationDraftKind::Text { fields } => apply_text(annotation, fields),
         AnnotationDraftKind::Caret { fields } => apply_caret(annotation, fields),
+        AnnotationDraftKind::FreeText { fields } => apply_free_text(annotation, fields, context),
     }
 }
 
@@ -589,6 +621,138 @@ fn set_line_endings(
 /// one fewer call.
 fn option_patch<T>(value: Option<T>) -> Patch<T> {
     value.map_or(Patch::Keep, Patch::Set)
+}
+
+/// A free text, and the callout that is the same annotation with a leader.
+///
+/// The colour order matters. `/DA` carries the border and the default text
+/// colour together, so the `TextColor` override has to land AFTER it or the
+/// `/DA` write would put the border colour back over the text.
+fn apply_free_text(
+    annotation: &pdfium::Annotation<'_>,
+    fields: &super::draft::FreeTextDraftFields,
+    context: &AnnotationWriteContext<'_>,
+) -> Result<(), EngineError> {
+    set_rect(annotation, fields.rect)?;
+
+    // `/C` on a free text is the BOX BACKGROUND, not the mark. Absent is a
+    // transparent box, and it is cleared rather than left alone so a draft
+    // that says nothing about a background gets one that is not there. Inert
+    // on the create path, where there is nothing to clear; it is the same
+    // fields an update folds onto a box that may already have a background.
+    match fields.interior_color {
+        Some(color) => set_color(annotation, AnnotationColorType::Color, color)?,
+        None => {
+            annotation.clear_color(AnnotationColorType::Color as i32);
+        }
+    }
+    set_opacity(annotation, fields.opacity.unwrap_or(DEFAULT_OPACITY))?;
+    set_border(annotation, fields.border_style, fields.stroke_width, &fields.dash_array)?;
+
+    let da_color = fields.color.unwrap_or(super::super::read::free_text::DEFAULT_FREE_TEXT_COLOR);
+    set_default_appearance(annotation, &fields.font_family, fields.font_size, da_color, context)?;
+    // The TypeScript writes the override second so that it "wins". It does
+    // not have to: `/DA` and `TextColor` are two different entries, and
+    // swapping these two lines changes nothing in the file or in a read.
+    // The order is kept because a future `/DA` writer that also reset the
+    // override would make it matter, silently.
+    if let Some(font_color) = fields.font_color {
+        set_color(annotation, AnnotationColorType::TextColor, font_color)?;
+    }
+
+    if !annotation.set_text_alignment(fields.text_align.code()) {
+        return Err(EngineError::with_message(
+            EngineErrorCode::Unknown,
+            "EPDFAnnot_SetTextAlignment refused the alignment",
+        ));
+    }
+    write(annotation.set_intent(fields.intent.name()), "/IT")?;
+
+    if let Some(rd) = fields.rect_differences.as_set().copied()
+        && !annotation.set_rectangle_differences(
+            rd.left as f32,
+            rd.bottom as f32,
+            rd.right as f32,
+            rd.top as f32,
+        )
+    {
+        return Err(EngineError::with_message(
+            EngineErrorCode::Unknown,
+            "EPDFAnnot_SetRectangleDifferences refused the margins",
+        ));
+    }
+
+    if let Some(callout) = fields.callout_line.as_ref() {
+        let points: Vec<pdfium::PointF> = match callout {
+            crate::geom::CalloutLine::Straight(points) => {
+                points.iter().copied().map(point_to_native).collect()
+            }
+            crate::geom::CalloutLine::Kneed(points) => {
+                points.iter().copied().map(point_to_native).collect()
+            }
+        };
+        if !annotation.set_callout_line(&points) {
+            return Err(EngineError::with_message(
+                EngineErrorCode::Unknown,
+                "EPDFAnnot_SetCalloutLine refused the leader",
+            ));
+        }
+    }
+    // The `/LE` pair, with the ending on the CALLED-OUT end. The other end
+    // touches the text box, where an arrowhead would be drawn into the box
+    // it belongs to, so it is always the one that draws nothing.
+    if let Some(ending) = fields.line_ending {
+        set_line_endings(
+            annotation,
+            Some(crate::features::annotation::vocabulary::LineEndings {
+                start: crate::features::annotation::vocabulary::LineEnding::None,
+                end: ending,
+            }),
+        )?;
+    }
+
+    // A plain box rotates like a square. A callout's rotation turns its TEXT
+    // BOX only: the leader stays in page space, because a leader that turned
+    // with the box would stop pointing at the thing it calls out.
+    super::transform::write_box_transform(
+        annotation,
+        &super::transform::AnnotationTransform {
+            rotation: option_patch(fields.rotation),
+            unrotated_rect: option_patch(fields.unrotated_rect),
+        },
+        || Ok(false),
+    )
+}
+
+/// `/DA`: the font, the size and the colour, as one entry.
+///
+/// A family that is not one of the fourteen standard names is a key into this
+/// thread's font registry. A key with no registry behind it is refused rather
+/// than quietly downgraded to Helvetica, which would embed the wrong glyphs
+/// into a document that asked for a specific face.
+fn set_default_appearance(
+    annotation: &pdfium::Annotation<'_>,
+    family: &str,
+    size: f64,
+    color: Color,
+    context: &AnnotationWriteContext<'_>,
+) -> Result<(), EngineError> {
+    let rgb = (color.r, color.g, color.b);
+    let ok = match crate::features::annotation::vocabulary::StandardFont::from_family(family) {
+        Some(standard) => annotation.set_default_appearance(standard.code(), size as f32, rgb),
+        None => annotation.set_default_appearance_registered_font(
+            context.resolve_font(family)?,
+            size as f32,
+            rgb,
+        ),
+    };
+    if !ok {
+        return Err(EngineError::with_message(
+            EngineErrorCode::Unknown,
+            format!("PDFium refused a /DA naming '{family}'"),
+        ));
+    }
+    Ok(())
 }
 
 fn point_to_native(point: crate::geom::PdfPoint) -> pdfium::PointF {

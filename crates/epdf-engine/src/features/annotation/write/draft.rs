@@ -20,13 +20,14 @@ use crate::dto::Patch;
 
 use crate::features::annotation::flags::AnnotationFlags;
 use crate::features::annotation::intent::CaretIntent;
+use crate::features::annotation::intent::FreeTextIntent;
 use crate::features::annotation::intent::InkIntent;
 use crate::features::annotation::intent::StrikeoutIntent;
 use crate::features::annotation::read::shape::PdfRectDifferences;
 use crate::features::annotation::read::style::Color;
 use crate::features::annotation::vocabulary::{AnnotationBorderStyle, BlendMode};
-use crate::features::annotation::vocabulary::{LineEndings, NoteIcon};
-use crate::geom::{InkList, LinePoints, PdfPoint, PdfQuad, PdfRect};
+use crate::features::annotation::vocabulary::{LineEnding, LineEndings, NoteIcon, TextAlignment};
+use crate::geom::{CalloutLine, InkList, LinePoints, PdfPoint, PdfQuad, PdfRect};
 use crate::identity::AnnotationRef;
 
 /// The fields every draft carries.
@@ -187,6 +188,65 @@ pub enum AnnotationDraftKind {
         #[serde(flatten)]
         fields: CaretDraftFields,
     },
+    FreeText {
+        #[serde(flatten)]
+        fields: FreeTextDraftFields,
+    },
+}
+
+/// What a free-text draft carries.
+///
+/// Three colours, and they are three different entries. `color` is the `/DA`
+/// colour, which draws the border AND the text; `font_color` is a `TextColor`
+/// override for the text alone; `interior_color` is `/C`, the box background.
+/// A reader that conflated any two of them would report a black-bordered box
+/// as a black-filled one.
+///
+/// The intent, the font, the size and the alignment are all REQUIRED. A free
+/// text has no meaningful default font, and a draft that omitted one would be
+/// asking the engine to decide how somebody's text looks.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FreeTextDraftFields {
+    pub rect: PdfRect,
+    /// `/IT`. Selects a plain box or a callout.
+    pub intent: FreeTextIntent,
+    /// One of the fourteen standard names, or the key of a font registered
+    /// through `fonts`. The standard names are reserved: a registered font
+    /// keyed `helvetica` resolves as the standard one and never reaches the
+    /// registry.
+    pub font_family: String,
+    pub font_size: f64,
+    pub text_align: TextAlignment,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub color: Option<Color>,
+    /// The `TextColor` override. Absent leaves the text following `color`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub font_color: Option<Color>,
+    /// `/C`, the box background. Absent is a transparent box.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub interior_color: Option<Color>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub opacity: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stroke_width: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub border_style: Option<AnnotationBorderStyle>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dash_array: Option<Vec<f64>>,
+    #[serde(default, skip_serializing_if = "Patch::is_keep")]
+    pub rect_differences: Patch<PdfRectDifferences>,
+    /// `/CL`, for a callout.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub callout_line: Option<CalloutLine>,
+    /// `/LE`, the ending at the called-out end of the leader. The other end
+    /// touches the text box and never draws one.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub line_ending: Option<LineEnding>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rotation: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub unrotated_rect: Option<PdfRect>,
 }
 
 /// What a sticky-note draft carries.
@@ -257,6 +317,7 @@ impl AnnotationDraftKind {
             Self::Ink { .. } => S::Ink,
             Self::Text { .. } => S::Text,
             Self::Caret { .. } => S::Caret,
+            Self::FreeText { .. } => S::FreeText,
         }
     }
 }

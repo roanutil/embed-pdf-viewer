@@ -90,31 +90,6 @@ fn read(case: &Case) -> serde_json::Value {
     serde_json::to_value(&snapshot).expect("serialize")
 }
 
-/// Rewrite every integral float as an integer, on both sides.
-///
-/// JSON has one number type and these two serializers disagree about how to
-/// spell a whole one: JavaScript writes `700` for a coordinate and `serde_json`
-/// writes `700.0` for the same `f64`. Comparing `Value`s therefore fails on a
-/// rect that is identical. Only integral values are touched, and both sides
-/// get the same treatment, so a real difference still is one.
-fn canonical_numbers(value: &serde_json::Value) -> serde_json::Value {
-    match value {
-        serde_json::Value::Number(number) => match number.as_f64() {
-            Some(float) if float.fract() == 0.0 && float.abs() < 9e15 => {
-                serde_json::Value::from(float as i64)
-            }
-            _ => value.clone(),
-        },
-        serde_json::Value::Array(items) => {
-            serde_json::Value::Array(items.iter().map(canonical_numbers).collect())
-        }
-        serde_json::Value::Object(fields) => serde_json::Value::Object(
-            fields.iter().map(|(key, entry)| (key.clone(), canonical_numbers(entry))).collect(),
-        ),
-        _ => value.clone(),
-    }
-}
-
 #[test]
 fn the_reads_agree_with_the_typescript_engine() {
     let file = load();
@@ -147,8 +122,8 @@ fn the_reads_agree_with_the_typescript_engine() {
                 let subtype = theirs["subtype"].as_str().expect("a subtype");
                 compared += 1;
                 assert_eq!(
-                    canonical_numbers(mine),
-                    canonical_numbers(theirs),
+                    test_support::canonical_numbers(mine),
+                    test_support::canonical_numbers(theirs),
                     "{}: page {page_index} annotation {index} is {subtype}: {}",
                     case.name,
                     case.covers,
@@ -176,8 +151,8 @@ fn the_page_state_agrees_including_the_weak_flag() {
         let pages = actual["pages"].as_array().expect("pages");
         for (page_index, (mine, theirs)) in pages.iter().zip(&case.pages).enumerate() {
             assert_eq!(
-                canonical_numbers(&mine["pageState"]),
-                canonical_numbers(&theirs.page_state),
+                test_support::canonical_numbers(&mine["pageState"]),
+                test_support::canonical_numbers(&theirs.page_state),
                 "{}: page {page_index} state differs",
                 case.name,
             );

@@ -59,26 +59,6 @@ fn read(case: &Case) -> serde_json::Value {
     serde_json::to_value(&snapshot).expect("serialize")
 }
 
-/// See `annotation_reader.rs`: the two serializers spell a whole number
-/// differently and JSON has one number type.
-fn canonical_numbers(value: &serde_json::Value) -> serde_json::Value {
-    match value {
-        serde_json::Value::Number(number) => match number.as_f64() {
-            Some(float) if float.fract() == 0.0 && float.abs() < 9e15 => {
-                serde_json::Value::from(float as i64)
-            }
-            _ => value.clone(),
-        },
-        serde_json::Value::Array(items) => {
-            serde_json::Value::Array(items.iter().map(canonical_numbers).collect())
-        }
-        serde_json::Value::Object(fields) => serde_json::Value::Object(
-            fields.iter().map(|(key, entry)| (key.clone(), canonical_numbers(entry))).collect(),
-        ),
-        _ => value.clone(),
-    }
-}
-
 #[test]
 fn the_snapshot_agrees_with_the_typescript_engine() {
     let file = load();
@@ -87,8 +67,8 @@ fn the_snapshot_agrees_with_the_typescript_engine() {
 
     for case in &file.cases {
         let actual = read(case);
-        let theirs = canonical_numbers(&case.snapshot);
-        let mine = canonical_numbers(&actual);
+        let theirs = test_support::canonical_numbers(&case.snapshot);
+        let mine = test_support::canonical_numbers(&actual);
 
         // Compared field by field before the whole, so a failure names which
         // one rather than printing two large objects.

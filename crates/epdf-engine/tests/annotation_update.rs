@@ -17,6 +17,7 @@ use epdf_engine::clock::{FixedClock, Timestamp};
 use epdf_engine::error::EngineErrorCode;
 use epdf_engine::features::actions::vocabulary::ActionReadBudgetTracker;
 use epdf_engine::features::annotation::read::page::read_page_annotations;
+use epdf_engine::features::annotation::write::context::AnnotationWriteContext;
 use epdf_engine::features::annotation::write::create::create_annotation;
 use epdf_engine::features::annotation::write::draft::{AnnotationActor, AnnotationDraft};
 use epdf_engine::features::annotation::write::patch::AnnotationPatch;
@@ -70,25 +71,6 @@ fn load() -> VectorFile {
     assert_eq!(file.schema_version, SCHEMA_VERSION, "vector envelope moved");
     assert_eq!(file.kind, "annotation.update");
     file
-}
-
-/// See `annotation_reader.rs`.
-fn canonical_numbers(value: &serde_json::Value) -> serde_json::Value {
-    match value {
-        serde_json::Value::Number(number) => match number.as_f64() {
-            Some(float) if float.fract() == 0.0 && float.abs() < 9e15 => {
-                serde_json::Value::from(float as i64)
-            }
-            _ => value.clone(),
-        },
-        serde_json::Value::Array(items) => {
-            serde_json::Value::Array(items.iter().map(canonical_numbers).collect())
-        }
-        serde_json::Value::Object(fields) => serde_json::Value::Object(
-            fields.iter().map(|(key, entry)| (key.clone(), canonical_numbers(entry))).collect(),
-        ),
-        _ => value.clone(),
-    }
 }
 
 fn states(page: PageObjectNumber, weak: bool) -> (PageState, PageState) {
@@ -148,6 +130,7 @@ fn run(file: &VectorFile, case: &Case) -> Result<Updated, epdf_engine::error::En
         &after,
         &draft,
         &AnnotationActor::default(),
+        &AnnotationWriteContext::empty(),
         &created_at,
         &CancelToken::never(),
     )
@@ -206,8 +189,8 @@ fn an_updated_annotation_reads_back_as_the_typescript_engines_did() {
         );
 
         assert_eq!(
-            canonical_numbers(&serde_json::Value::Object(mine)),
-            canonical_numbers(&case.updated),
+            test_support::canonical_numbers(&serde_json::Value::Object(mine)),
+            test_support::canonical_numbers(&case.updated),
             "{}: {}",
             case.name,
             case.covers,
