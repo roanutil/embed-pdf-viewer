@@ -277,6 +277,14 @@ impl Document {
         })
     }
 
+    /// The library keeping PDFium initialized on this thread.
+    ///
+    /// Cloning the `Rc` rather than borrowing it, because the point is to
+    /// open a SECOND document that outlives the borrow of the first.
+    pub(crate) fn library(&self) -> Rc<Library> {
+        self.library.clone()
+    }
+
     /// The raw handle, for the operations this layer has not wrapped yet.
     ///
     /// # Safety

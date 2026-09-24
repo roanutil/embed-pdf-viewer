@@ -207,6 +207,69 @@ pub enum AnnotationDraftKind {
         #[serde(flatten)]
         fields: LinkDraftFields,
     },
+    Stamp {
+        #[serde(flatten)]
+        fields: StampDraftFields,
+    },
+}
+
+/// What a stamp draft carries.
+///
+/// The only family whose CONTENT is a binary. Everything else describes a
+/// shape the appearance generator draws; a stamp arrives with the picture
+/// already made, and the writer's job is to put it in the box.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StampDraftFields {
+    pub rect: PdfRect,
+    /// The payload key for what the stamp displays: PNG, JPEG, or a
+    /// single-page PDF. The format is SNIFFED, never taken from a declared
+    /// mime type: handing JPEG bytes to the PNG decoder builds a corrupt
+    /// image object rather than failing.
+    pub source: ResourceRef,
+    /// `/Name`, the advisory label. The PDF's own spelling: a stamp's label
+    /// is already a name, so there is no wire vocabulary to translate.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    /// How the content scales into the box. `contain` preserves the aspect
+    /// ratio and stays whole.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fit: Option<StampFitDraft>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rotation: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub unrotated_rect: Option<PdfRect>,
+}
+
+/// A reference to a binary that travelled beside the draft.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ResourceRef {
+    pub resource: String,
+}
+
+/// The CSS `object-fit` vocabulary the wire uses.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum StampFitDraft {
+    /// Whole content, letterboxed.
+    #[default]
+    Contain,
+    /// Whole box, cropped.
+    Cover,
+    /// Whole box, distorted. Spelled `fill` on the wire and `Stretch` in the
+    /// fork's enum, which are the same policy under two names.
+    Fill,
+}
+
+impl StampFitDraft {
+    pub fn native(self) -> pdfium::StampFit {
+        match self {
+            Self::Contain => pdfium::StampFit::Contain,
+            Self::Cover => pdfium::StampFit::Cover,
+            Self::Fill => pdfium::StampFit::Stretch,
+        }
+    }
 }
 
 /// Where a link a writer creates may point.
@@ -474,6 +537,7 @@ impl AnnotationDraftKind {
             Self::Redact { .. } => S::Redact,
             Self::FileAttachment { .. } => S::FileAttachment,
             Self::Link { .. } => S::Link,
+            Self::Stamp { .. } => S::Stamp,
         }
     }
 }

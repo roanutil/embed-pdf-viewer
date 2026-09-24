@@ -99,7 +99,9 @@ impl Document {
                 (params.as_ptr(), params.len() as std::os::raw::c_ulong)
             };
             // SAFETY: the page handle is live and `params` outlives the call.
-            unsafe { pdfium_sys::EPDFDest_CreateView(page, std::os::raw::c_ulong::from(view), ptr, count) }
+            unsafe {
+                pdfium_sys::EPDFDest_CreateView(page, std::os::raw::c_ulong::from(view), ptr, count)
+            }
         })
     }
 

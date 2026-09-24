@@ -686,6 +686,65 @@ const CASES: readonly CreateCase[] = [
     },
   },
   {
+    name: 'stamp-png-contain',
+    covers:
+      'A 4x2 image in a square box under the default fit. Aspect is preserved and the leftover space is split evenly, so a writer that pinned the image to a corner is visible in the appearance.',
+    resources: { r0: [137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 4, 0, 0, 0, 2, 8, 2, 0, 0, 0, 240, 202, 234, 52, 0, 0, 0, 16, 73, 68, 65, 84, 120, 156, 99, 184, 163, 161, 1, 71, 12, 200, 28, 0, 127, 154, 9, 97, 122, 180, 22, 59, 0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130] },
+    draft: {
+      subtype: 'stamp',
+      rect: { left: 72, bottom: 400, right: 152, top: 480 },
+      source: { resource: 'r0' },
+      name: 'Approved',
+    },
+  },
+  {
+    name: 'stamp-png-cover',
+    covers: 'The same bytes filling the box instead, which crops rather than letterboxes.',
+    resources: { r0: [137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 4, 0, 0, 0, 2, 8, 2, 0, 0, 0, 240, 202, 234, 52, 0, 0, 0, 16, 73, 68, 65, 84, 120, 156, 99, 184, 163, 161, 1, 71, 12, 200, 28, 0, 127, 154, 9, 97, 122, 180, 22, 59, 0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130] },
+    draft: {
+      subtype: 'stamp',
+      rect: { left: 170, bottom: 400, right: 250, top: 480 },
+      source: { resource: 'r0' },
+      fit: 'cover',
+    },
+  },
+  {
+    name: 'stamp-png-fill',
+    covers: 'And distorting it, which is the one policy that discards the aspect ratio.',
+    resources: { r0: [137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 4, 0, 0, 0, 2, 8, 2, 0, 0, 0, 240, 202, 234, 52, 0, 0, 0, 16, 73, 68, 65, 84, 120, 156, 99, 184, 163, 161, 1, 71, 12, 200, 28, 0, 127, 154, 9, 97, 122, 180, 22, 59, 0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130] },
+    draft: {
+      subtype: 'stamp',
+      rect: { left: 270, bottom: 400, right: 350, top: 480 },
+      source: { resource: 'r0' },
+      fit: 'fill',
+    },
+  },
+  {
+    name: 'stamp-other-name',
+    covers:
+      'A second enumerated label, to prove the code reaches the document rather than one label being hardcoded. A label outside the set is refused: the reader reports a custom /Name a file carries, and the writer will not author one.',
+    resources: { r0: [137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 4, 0, 0, 0, 2, 8, 2, 0, 0, 0, 240, 202, 234, 52, 0, 0, 0, 16, 73, 68, 65, 84, 120, 156, 99, 184, 163, 161, 1, 71, 12, 200, 28, 0, 127, 154, 9, 97, 122, 180, 22, 59, 0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130] },
+    draft: {
+      subtype: 'stamp',
+      rect: { left: 370, bottom: 400, right: 450, top: 480 },
+      source: { resource: 'r0' },
+      name: 'Draft',
+    },
+  },
+  {
+    name: 'stamp-rotated',
+    covers:
+      'A rotated stamp, authored in the unrotated frame and turned by an /AP matrix. Fitting into the rotated box instead bakes the letterbox bands in and the closing re-fit shrinks the image a second time.',
+    resources: { r0: [137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 4, 0, 0, 0, 2, 8, 2, 0, 0, 0, 240, 202, 234, 52, 0, 0, 0, 16, 73, 68, 65, 84, 120, 156, 99, 184, 163, 161, 1, 71, 12, 200, 28, 0, 127, 154, 9, 97, 122, 180, 22, 59, 0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130] },
+    draft: {
+      subtype: 'stamp',
+      rect: { left: 60, bottom: 290, right: 180, top: 380 },
+      unrotatedRect: { left: 75, bottom: 305, right: 165, top: 365 },
+      source: { resource: 'r0' },
+      rotation: 30,
+    },
+  },
+  {
     name: 'highlight-cleared-strings',
     covers:
       'A draft that explicitly clears contents and subject. Setting a null value writes an EMPTY string rather than removing the key, so a writer that used the setter would produce a field that reads back as present-and-empty instead of absent.',

@@ -31,6 +31,7 @@ mod page;
 mod page_list;
 mod piece_info;
 mod save;
+mod stamp;
 mod text;
 
 pub use action::{
@@ -59,4 +60,5 @@ pub use page::{Page, PageView, SharedPage};
 pub use page_list::PageBoxType;
 pub use piece_info::{PieceInfoHolder, object_type};
 pub use save::{LayerOutput, LayerSaveError, PdfSaveMode};
+pub use stamp::{ImageObject, StampFit};
 pub use text::{CharGeometry, CharGeometryFlags, TextObjectKey, TextPage};

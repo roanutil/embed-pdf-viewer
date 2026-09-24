@@ -105,7 +105,7 @@ pub fn create_annotation(
     })?;
 
     apply_base_draft(&annotation, &draft.base)?;
-    apply_kind_draft(document, &annotation, &draft.kind, context)?;
+    apply_kind_draft(document, page, &annotation, &draft.kind, context)?;
 
     // After the subtype writer, so a writer that set `/T` or `/M` itself
     // cannot win.
@@ -241,6 +241,33 @@ fn preflight(
         AnnotationDraftKind::Caret { fields } => {
             normalized(&fields.rect)?;
             box_rotation_satisfiable(fields.rotation, fields.unrotated_rect)?;
+        }
+        AnnotationDraftKind::Stamp { fields } => {
+            normalized(&fields.rect)?;
+            box_rotation_satisfiable(fields.rotation, fields.unrotated_rect)?;
+            // The bytes are sniffed BEFORE the annotation exists. A stamp
+            // with no appearance is an empty box in the file, and the only
+            // thing that could tell a reader why is a log nobody has.
+            let resource = context.resource(&fields.source.resource)?;
+            if crate::features::binary::sniff(resource.bytes).is_none() {
+                return Err(EngineError::with_message(
+                    EngineErrorCode::InvalidArg,
+                    "a stamp's source must be PNG, JPEG or PDF bytes",
+                ));
+            }
+            // The READER reports a custom label and this refuses to author
+            // one, and the asymmetry is deliberate. A file may carry any
+            // `/Name` and dropping it would lose what the document said; a
+            // label this engine writes should be one a viewer can draw, and
+            // the twenty-three the fork enumerates are that set.
+            if let Some(name) = fields.name.as_deref()
+                && crate::features::annotation::vocabulary::stamp_name_to_code(name).is_none()
+            {
+                return Err(EngineError::with_message(
+                    EngineErrorCode::InvalidArg,
+                    format!("'{name}' is not one of the standard stamp labels"),
+                ));
+            }
         }
         AnnotationDraftKind::Link { fields } => {
             normalized(&fields.rect)?;
@@ -379,8 +406,8 @@ fn opacity_of(kind: &AnnotationDraftKind) -> Option<f64> {
         AnnotationDraftKind::Redact { fields } => fields.opacity,
         AnnotationDraftKind::FileAttachment { fields } => fields.opacity,
         // A link has no `/CA`: it draws nothing, so there is no opacity for
-        // one to have.
-        AnnotationDraftKind::Link { .. } => None,
+        // one to have. A stamp's content carries its own transparency.
+        AnnotationDraftKind::Link { .. } | AnnotationDraftKind::Stamp { .. } => None,
     }
 }
 
@@ -430,6 +457,7 @@ fn apply_flags(
 
 fn apply_kind_draft(
     document: &pdfium::Document,
+    page: &PageView<'_>,
     annotation: &pdfium::Annotation<'_>,
     kind: &AnnotationDraftKind,
     context: &AnnotationWriteContext<'_>,
@@ -516,6 +544,9 @@ fn apply_kind_draft(
             apply_file_attachment(document, annotation, fields, context)
         }
         AnnotationDraftKind::Link { fields } => apply_link(document, annotation, fields),
+        AnnotationDraftKind::Stamp { fields } => {
+            apply_stamp(document, page, annotation, fields, context)
+        }
     }
 }
 
@@ -963,6 +994,292 @@ fn apply_file_attachment(
         return Err(EngineError::with_message(
             EngineErrorCode::Unknown,
             "EPDFAttachment_SetDescription refused the description",
+        ));
+    }
+    Ok(())
+}
+
+/// A stamp: a picture in a box.
+///
+/// The only writer that builds an `/AP` itself. Everything else fills a
+/// dictionary and lets the closing bake draw it; there is no generator arm
+/// for a stamp, so the appearance authored here is what ships.
+///
+/// # Why a rotated stamp is authored twice
+///
+/// The appearance has to be built in the UNROTATED frame and turned by an
+/// `/AP /Matrix` afterwards. Fitting the image into the rotated `/Rect`
+/// instead bakes the letterbox bands INTO the appearance, and the closing
+/// re-fit, which records the content rect from that padded box and fits it
+/// into the logical box, then shrinks the image by the aspect ratio a second
+/// time. The result is a small picture adrift in white space, and only when
+/// rotated: at zero degrees the two frames coincide, so it fills and nothing
+/// looks wrong.
+///
+/// So a rotated stamp clears the transform keys, authors into the logical
+/// box, writes the transform, sets the real `/Rect`, and re-fits once.
+fn apply_stamp(
+    document: &pdfium::Document,
+    page: &PageView<'_>,
+    annotation: &pdfium::Annotation<'_>,
+    fields: &super::draft::StampDraftFields,
+    context: &AnnotationWriteContext<'_>,
+) -> Result<(), EngineError> {
+    if let Some(name) = fields.name.as_deref() {
+        set_stamp_name(annotation, name)?;
+    }
+    let fit = fields.fit.unwrap_or_default();
+    let resource = context.resource(&fields.source.resource)?;
+
+    // A rotation with no logical box was refused in preflight, so the pair
+    // is either both present or the stamp is upright.
+    let Some(logical) =
+        fields.unrotated_rect.filter(|_| fields.rotation.is_some_and(|degrees| degrees != 0.0))
+    else {
+        set_rect(annotation, fields.rect)?;
+        set_stamp_content(document, page, annotation, resource.bytes, fit, fields.rect)?;
+        // Still written: a draft that names a zero rotation is saying the
+        // stamp is upright, and the clear is what makes that true.
+        return super::transform::write_box_transform(
+            annotation,
+            &super::transform::AnnotationTransform {
+                rotation: option_patch(fields.rotation),
+                unrotated_rect: option_patch(fields.unrotated_rect),
+            },
+            || Ok(false),
+        );
+    };
+
+    // Author in the unrotated frame, with the transform keys cleared so the
+    // internal re-fit records an image-shaped content rect rather than the
+    // padded box.
+    super::transform::write_box_transform(
+        annotation,
+        &super::transform::AnnotationTransform {
+            rotation: Patch::Clear,
+            unrotated_rect: Patch::Clear,
+        },
+        || Ok(false),
+    )?;
+    set_rect(annotation, logical)?;
+    set_stamp_content(document, page, annotation, resource.bytes, fit, logical)?;
+
+    // Then apply the transform: the keys bake the `/Matrix`, `/Rect` becomes
+    // the enclosing box, and one re-fit reconciles the two.
+    super::transform::write_box_transform(
+        annotation,
+        &super::transform::AnnotationTransform {
+            rotation: option_patch(fields.rotation),
+            unrotated_rect: Patch::Set(logical),
+        },
+        || Ok(true),
+    )?;
+    set_rect(annotation, fields.rect)?;
+    refit(annotation, fit)
+}
+
+/// Put the content in, replacing whatever was there.
+fn set_stamp_content(
+    document: &pdfium::Document,
+    page: &PageView<'_>,
+    annotation: &pdfium::Annotation<'_>,
+    bytes: &[u8],
+    fit: super::draft::StampFitDraft,
+    rect: crate::geom::PdfRect,
+) -> Result<(), EngineError> {
+    // Replace rather than merge. Inert on create, where the annotation has
+    // no objects yet, and load-bearing on the update path, where replacing
+    // a stamp's bytes has to drop what was drawn rather than paint over it.
+    // The two share this function so they cannot drift.
+    for index in (0..annotation.object_count()).rev() {
+        annotation.remove_object(index);
+    }
+
+    let format = crate::features::binary::sniff(bytes).ok_or_else(|| {
+        EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            "the stamp source is not a format this build places",
+        )
+    })?;
+    match format {
+        crate::features::binary::BinaryFormat::Pdf => {
+            set_appearance_from_pdf(document, annotation, bytes)?;
+        }
+        crate::features::binary::BinaryFormat::Png { width, height }
+        | crate::features::binary::BinaryFormat::Jpeg { width, height } => {
+            append_image(document, page, annotation, bytes, format, width, height, fit, rect)?;
+        }
+    }
+
+    // Normalizes the bounding box, records the content rect a later re-fit
+    // reads, and applies any transform keys already on the annotation.
+    //
+    // The POLICY passed here is not observable on the create path: the
+    // placement above already sized the content, so the re-fit finds it
+    // filling the box and every policy agrees. It matters for the update
+    // path, where a geometry-only change re-fits content it did not place.
+    refit(annotation, fit)
+}
+
+/// PNG or JPEG: an image object painted inside `/Rect`.
+///
+/// The appearance's coordinate space lines up with page space, so an image
+/// placed outside `/Rect` falls outside the form's clip and renders blank.
+/// The fit is computed HERE from the sniffed intrinsic size, because the
+/// object does not know its own dimensions until it has a matrix.
+#[allow(clippy::too_many_arguments)]
+fn append_image(
+    document: &pdfium::Document,
+    page: &PageView<'_>,
+    annotation: &pdfium::Annotation<'_>,
+    bytes: &[u8],
+    format: crate::features::binary::BinaryFormat,
+    width: u32,
+    height: u32,
+    fit: super::draft::StampFitDraft,
+    rect: crate::geom::PdfRect,
+) -> Result<(), EngineError> {
+    let object = document.new_image_object().ok_or_else(|| {
+        EngineError::with_message(
+            EngineErrorCode::Unknown,
+            "FPDFPageObj_NewImageObj returned nothing",
+        )
+    })?;
+    let decoded = match format {
+        crate::features::binary::BinaryFormat::Png { .. } => object.set_png(page, bytes),
+        _ => object.set_jpeg(page, bytes),
+    };
+    if !decoded {
+        return Err(EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            "PDFium rejected the stamp image data",
+        ));
+    }
+
+    let placement = fit_into(f64::from(width), f64::from(height), rect, fit);
+    // An image object's unit square IS its whole image, so the matrix is
+    // how it gets a size at all: with the identity it draws one point wide.
+    if !object.set_matrix(pdfium::MatrixF {
+        a: placement.width as f32,
+        b: 0.0,
+        c: 0.0,
+        d: placement.height as f32,
+        e: 0.0,
+        f: 0.0,
+    }) {
+        return Err(EngineError::with_message(
+            EngineErrorCode::Unknown,
+            "FPDFPageObj_SetMatrix refused the image size",
+        ));
+    }
+    object.transform(1.0, 0.0, 0.0, 1.0, placement.left, placement.bottom);
+    annotation.append_object(object).map_err(|_| {
+        EngineError::with_message(
+            EngineErrorCode::Unknown,
+            "FPDFAnnot_AppendObject refused the image",
+        )
+    })
+}
+
+/// Where content of a given size sits inside a box.
+struct Placement {
+    left: f64,
+    bottom: f64,
+    width: f64,
+    height: f64,
+}
+
+/// The fit policy, as arithmetic.
+///
+/// The aspect-preserving fits centre what is left over, which is what makes
+/// `contain` letterbox evenly rather than pinning the image to a corner.
+fn fit_into(
+    width: f64,
+    height: f64,
+    rect: crate::geom::PdfRect,
+    fit: super::draft::StampFitDraft,
+) -> Placement {
+    let box_width = (rect.right - rect.left).max(0.0);
+    let box_height = (rect.top - rect.bottom).max(0.0);
+    // A zero intrinsic dimension cannot reach here: the sniffer rejects one.
+    // The guard is for the divide, not for the file.
+    if fit == super::draft::StampFitDraft::Fill || width <= 0.0 || height <= 0.0 {
+        return Placement {
+            left: rect.left,
+            bottom: rect.bottom,
+            width: box_width,
+            height: box_height,
+        };
+    }
+    let scale = if fit == super::draft::StampFitDraft::Contain {
+        (box_width / width).min(box_height / height)
+    } else {
+        (box_width / width).max(box_height / height)
+    };
+    let scaled_width = width * scale;
+    let scaled_height = height * scale;
+    Placement {
+        left: rect.left + (box_width - scaled_width) / 2.0,
+        bottom: rect.bottom + (box_height - scaled_height) / 2.0,
+        width: scaled_width,
+        height: scaled_height,
+    }
+}
+
+/// A single-page PDF: its first page, deep-cloned in as the `/AP`.
+///
+/// The temporary document is opened only for the clone and closed straight
+/// after, because the clone is a copy rather than a reference.
+fn set_appearance_from_pdf(
+    document: &pdfium::Document,
+    annotation: &pdfium::Annotation<'_>,
+    bytes: &[u8],
+) -> Result<(), EngineError> {
+    let source = document.open_sibling(bytes).map_err(|e| {
+        EngineError::with_message(
+            EngineErrorCode::MalformedPdf,
+            format!("the stamp source PDF could not be opened: {e}"),
+        )
+    })?;
+    if !annotation.set_appearance_from_page(&source, 0) {
+        return Err(EngineError::with_message(
+            EngineErrorCode::Unknown,
+            "EPDFAnnot_SetAppearanceFromPage refused the page",
+        ));
+    }
+    Ok(())
+}
+
+fn refit(
+    annotation: &pdfium::Annotation<'_>,
+    fit: super::draft::StampFitDraft,
+) -> Result<(), EngineError> {
+    if !annotation.update_appearance_to_rect(fit.native()) {
+        return Err(EngineError::with_message(
+            EngineErrorCode::Unknown,
+            "EPDFAnnot_UpdateAppearanceToRect refused the fit",
+        ));
+    }
+    Ok(())
+}
+
+/// `/Name` on a stamp.
+///
+/// Only an enumerated label reaches here: preflight refused anything else,
+/// so a missing code at this point is the preflight and the writer
+/// disagreeing rather than a file being unusual.
+fn set_stamp_name(annotation: &pdfium::Annotation<'_>, name: &str) -> Result<(), EngineError> {
+    let code =
+        crate::features::annotation::vocabulary::stamp_name_to_code(name).ok_or_else(|| {
+            EngineError::with_message(
+                EngineErrorCode::Unknown,
+                format!("the stamp label '{name}' passed preflight and has no code"),
+            )
+        })?;
+    if !annotation.set_name(code) {
+        return Err(EngineError::with_message(
+            EngineErrorCode::Unknown,
+            format!("EPDFAnnot_SetName refused the stamp label '{name}'"),
         ));
     }
     Ok(())

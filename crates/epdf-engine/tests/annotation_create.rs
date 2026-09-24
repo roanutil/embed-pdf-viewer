@@ -391,12 +391,44 @@ fn a_draft_that_cannot_be_written_is_refused_before_anything_is_written() {
             }),
             "a link to an empty uri",
         ),
+        (
+            serde_json::json!({
+                "subtype": "stamp",
+                "rect": { "left": 10.0, "bottom": 10.0, "right": 100.0, "top": 60.0 },
+                "source": { "resource": "not-a-format" },
+            }),
+            "a stamp whose source is not a format this build places",
+        ),
+        (
+            serde_json::json!({
+                "subtype": "stamp",
+                "rect": { "left": 10.0, "bottom": 10.0, "right": 100.0, "top": 60.0 },
+                "source": { "resource": "r0" },
+                "name": "QuarterlyReviewed",
+            }),
+            "a stamp label outside the enumerated set",
+        ),
     ] {
         let mut refused_case = Case {
             name: format!("refusal: {what}"),
-            // One payload, so the refusals that are ABOUT a payload can be
-            // about the payload rather than about its absence.
-            resources: [(String::from("r0"), b"bytes".to_vec())].into_iter().collect(),
+            // Two payloads, so a refusal that is about something OTHER
+            // than the bytes gets bytes that pass the sniffer: with only
+            // the unusable payload, every stamp refusal would be the same
+            // refusal and the later checks would never run.
+            resources: [
+                (
+                    String::from("r0"),
+                    vec![
+                        137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 4,
+                        0, 0, 0, 2, 8, 2, 0, 0, 0, 240, 202, 234, 52, 0, 0, 0, 16, 73, 68, 65, 84,
+                        120, 156, 99, 184, 163, 161, 1, 71, 12, 200, 28, 0, 127, 154, 9, 97, 122,
+                        180, 22, 59, 0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130,
+                    ],
+                ),
+                (String::from("not-a-format"), b"bytes".to_vec()),
+            ]
+            .into_iter()
+            .collect(),
             covers: what.to_string(),
             draft,
             page_object_number: case.page_object_number,
@@ -751,6 +783,59 @@ fn a_review_state_is_written_in_the_spelling_the_pdf_uses() {
             );
         });
     }
+}
+
+#[test]
+fn a_stamp_fit_policy_decides_where_the_picture_lands() {
+    // The DTO carries the annotation's `/Rect` and never the placement
+    // inside it, so three fits of the same bytes into the same box read
+    // back identically. What differs is the appearance, and that is what
+    // this asserts.
+    //
+    // The source is 4x2 in an 80x80 box, and the bounds are in the
+    // appearance form's own space, which the closing re-fit anchors at the
+    // box's origin. `contain` fits the width and centres the 40-point band;
+    // `cover` fits the height and overflows 40 points either side, which is
+    // the crop; `fill` takes the box exactly and distorts.
+    let file = load();
+    for (name, expected) in [
+        ("stamp-png-contain", [0.0_f32, 20.0, 80.0, 60.0]),
+        ("stamp-png-cover", [-40.0, 0.0, 120.0, 80.0]),
+        ("stamp-png-fill", [0.0, 0.0, 80.0, 80.0]),
+    ] {
+        with_written(&file, name, |written| {
+            assert_eq!(written.object_count(), 1, "{name}: appearance objects");
+            let bounds = written.object_bounds(0).expect("the image object's bounds");
+            let actual = [bounds.left, bounds.bottom, bounds.right, bounds.top];
+            for (got, want) in actual.iter().zip(expected.iter()) {
+                assert!(
+                    (got - want).abs() < 0.5,
+                    "{name}: placed at {actual:?}, expected about {expected:?}",
+                );
+            }
+        });
+    }
+}
+
+#[test]
+fn a_rotated_stamp_is_authored_in_the_frame_it_is_turned_from() {
+    // Authoring into the ROTATED box bakes the letterbox bands in, and the
+    // closing re-fit then shrinks the picture by the aspect ratio a second
+    // time. The symptom is a small image adrift in white space, and it only
+    // appears when rotated, because at zero degrees the two frames coincide.
+    //
+    // So the assertion is that the content fills the LOGICAL box: 90x60,
+    // with a 4:2 source, is a 90-point band 45 points tall.
+    let file = load();
+    with_written(&file, "stamp-rotated", |written| {
+        let bounds = written.object_bounds(0).expect("the image object's bounds");
+        let width = bounds.right - bounds.left;
+        let height = bounds.top - bounds.bottom;
+        assert!(
+            (width - 90.0).abs() < 0.5 && (height - 45.0).abs() < 0.5,
+            "the content is {width}x{height}, expected about 90x45 in the logical box",
+        );
+    });
 }
 
 #[test]
