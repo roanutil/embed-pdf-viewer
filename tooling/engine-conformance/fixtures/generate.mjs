@@ -1224,8 +1224,13 @@ function formFields() {
 
   return buildPdf([
     Buffer.from(
+      // The last entry of /Fields is a DIRECT dictionary rather than a
+      // reference. Legal, rare, and unwritable: PDFium's form write API
+      // addresses a field by object number and a direct dictionary has
+      // none, so the reader reports it by name and every writer refuses it.
       '<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [4 0 R 5 0 R 6 0 R 9 0 R ' +
-        '10 0 R 11 0 R 12 0 R 13 0 R 17 0 R 18 0 R] ' +
+        '10 0 R 11 0 R 12 0 R 13 0 R 17 0 R 18 0 R ' +
+        '<< /FT /Tx /T (inline.direct) /V (no object number) >>] ' +
         '/NeedAppearances true /CO [4 0 R 99 0 R] >> >>',
       'latin1',
     ),

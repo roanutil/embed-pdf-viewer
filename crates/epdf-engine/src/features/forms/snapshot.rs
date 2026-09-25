@@ -571,7 +571,7 @@ fn read_field_actions(
 /// Every string on a field is optional in the file, so an absent one is
 /// `Ok(None)` rather than an error; this is for the runtime declining to
 /// answer, which is not a fact about the document.
-fn text(
+pub(super) fn text(
     result: Result<Option<String>, pdfium::PdfiumError>,
 ) -> Result<Option<String>, EngineError> {
     result.map_err(|e| {
@@ -580,4 +580,30 @@ fn text(
             format!("reading a form field string failed: {e}"),
         )
     })
+}
+
+impl FormFieldDto {
+    /// Every widget the field has, whatever its family.
+    ///
+    /// The families store them in two shapes: a toggle's widgets carry an
+    /// appearance state and the rest do not. A caller matching object
+    /// numbers does not care which, so this flattens the distinction rather
+    /// than making every such caller repeat the match.
+    pub fn widgets(&self) -> impl Iterator<Item = &FormWidgetRef> {
+        use FormFieldKind as K;
+        let plain: &[FormWidgetRef] = match &self.kind {
+            K::Text { widgets, .. }
+            | K::Combobox { widgets, .. }
+            | K::Listbox { widgets, .. }
+            | K::Pushbutton { widgets }
+            | K::Signature { widgets }
+            | K::Unknown { widgets, .. } => widgets,
+            K::Checkbox { .. } | K::Radio { .. } => &[],
+        };
+        let toggles: &[ToggleFieldWidget] = match &self.kind {
+            K::Checkbox { widgets, .. } | K::Radio { widgets, .. } => widgets,
+            _ => &[],
+        };
+        plain.iter().chain(toggles.iter().map(|toggle| &toggle.widget))
+    }
 }

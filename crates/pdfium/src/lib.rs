@@ -24,6 +24,7 @@ mod extract;
 mod file_access;
 mod fonts;
 mod form;
+mod form_write;
 mod geom;
 mod library;
 mod metadata;
@@ -53,6 +54,7 @@ pub use fonts::{
     register_font_file, register_memory_font,
 };
 pub use form::{FieldActionEvent, FormDataFormat, FormField, FormModel};
+pub use form_write::ChangedWidgets;
 pub use geom::{MatrixF, PointF, QuadF, RectF};
 pub use library::Library;
 pub use metadata::Trapped;

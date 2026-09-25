@@ -53,7 +53,9 @@
     "operations": "tsx src/check-operations.ts",
     "operations:check": "tsx src/check-operations.ts --check",
     "verify:wasm-bridge": "node --experimental-strip-types src/verify-wasm-bridge.mts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "form-write": "tsx --conditions=development src/generate-form-write-vectors.ts",
+    "form-write:check": "tsx --conditions=development src/generate-form-write-vectors.ts --check"
   },
   "devDependencies": {
     "@embedpdf/engine": "workspace:*",

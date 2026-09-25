@@ -215,6 +215,11 @@ jobs:
       - name: Form vectors are current
         run: pnpm --filter @embedpdf/tooling-engine-conformance run forms:check
 
+      # G12's value writes. The changed-widget list is the half a field
+      # comparison misses: one write can change two widgets, or none.
+      - name: Form write vectors are current
+        run: pnpm --filter @embedpdf/tooling-engine-conformance run form-write:check
+
       # G8's /PieceInfo, on both holders. The catalog and page accessor
       # families differ only by a page object number, so a branch written the
       # wrong way round reads one while claiming the other.
