@@ -7724,6 +7724,1329 @@
       }
     },
     {
+      "name": "update/write-done-past-the-end-pads-with-holes",
+      "fn": "update",
+      "args": [
+        {
+          "snapshot": {
+            "formKind": "acroform",
+            "needsAppearances": false,
+            "fields": [
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "fieldObjectNumber": 4
+                },
+                "fieldObjectNumber": 4,
+                "name": "maxlen_text",
+                "family": "text",
+                "origin": "acroform",
+                "flags": {
+                  "readOnly": false,
+                  "required": false,
+                  "noExport": false,
+                  "raw": 0
+                },
+                "alternateName": "Max length",
+                "mappingName": null,
+                "widgets": [
+                  {
+                    "annotObjectNumber": 104,
+                    "pageObjectNumber": 3
+                  }
+                ],
+                "valueEntry": {
+                  "kind": "scalar",
+                  "value": "abc"
+                },
+                "defaultValueEntry": {
+                  "kind": "none"
+                },
+                "value": "abc",
+                "defaultValue": "",
+                "maxLength": 5,
+                "multiline": false,
+                "password": false,
+                "comb": false
+              },
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "fieldObjectNumber": 5
+                },
+                "fieldObjectNumber": 5,
+                "name": "ro",
+                "family": "text",
+                "origin": "acroform",
+                "flags": {
+                  "readOnly": true,
+                  "required": false,
+                  "noExport": false,
+                  "raw": 1
+                },
+                "alternateName": null,
+                "mappingName": null,
+                "widgets": [
+                  {
+                    "annotObjectNumber": 105,
+                    "pageObjectNumber": 3
+                  }
+                ],
+                "valueEntry": {
+                  "kind": "scalar",
+                  "value": "x"
+                },
+                "defaultValueEntry": {
+                  "kind": "none"
+                },
+                "value": "x",
+                "defaultValue": "",
+                "maxLength": null,
+                "multiline": false,
+                "password": false,
+                "comb": false
+              },
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "fieldObjectNumber": 6
+                },
+                "fieldObjectNumber": 6,
+                "name": "notes",
+                "family": "text",
+                "origin": "acroform",
+                "flags": {
+                  "readOnly": false,
+                  "required": false,
+                  "noExport": false,
+                  "raw": 0
+                },
+                "alternateName": null,
+                "mappingName": null,
+                "widgets": [
+                  {
+                    "annotObjectNumber": 106,
+                    "pageObjectNumber": 3
+                  }
+                ],
+                "valueEntry": {
+                  "kind": "scalar",
+                  "value": "l1\nl2"
+                },
+                "defaultValueEntry": {
+                  "kind": "none"
+                },
+                "value": "l1\nl2",
+                "defaultValue": "",
+                "maxLength": null,
+                "multiline": true,
+                "password": true,
+                "comb": true
+              },
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "fieldObjectNumber": 7
+                },
+                "fieldObjectNumber": 7,
+                "name": "agree",
+                "family": "checkbox",
+                "origin": "acroform",
+                "flags": {
+                  "readOnly": false,
+                  "required": false,
+                  "noExport": false,
+                  "raw": 0
+                },
+                "alternateName": null,
+                "mappingName": null,
+                "widgets": [
+                  {
+                    "annotObjectNumber": 107,
+                    "pageObjectNumber": 3,
+                    "onState": "On"
+                  }
+                ],
+                "valueEntry": {
+                  "kind": "scalar",
+                  "value": "Yes"
+                },
+                "defaultValueEntry": {
+                  "kind": "none"
+                },
+                "checked": true
+              },
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "fieldObjectNumber": 8
+                },
+                "fieldObjectNumber": 8,
+                "name": "bare",
+                "family": "checkbox",
+                "origin": "acroform",
+                "flags": {
+                  "readOnly": false,
+                  "required": false,
+                  "noExport": false,
+                  "raw": 0
+                },
+                "alternateName": null,
+                "mappingName": null,
+                "widgets": [
+                  {
+                    "annotObjectNumber": 108,
+                    "pageObjectNumber": 3
+                  }
+                ],
+                "valueEntry": {
+                  "kind": "none"
+                },
+                "defaultValueEntry": {
+                  "kind": "none"
+                },
+                "checked": false
+              },
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "fieldObjectNumber": 9
+                },
+                "fieldObjectNumber": 9,
+                "name": "size",
+                "family": "radio",
+                "origin": "acroform",
+                "flags": {
+                  "readOnly": false,
+                  "required": false,
+                  "noExport": false,
+                  "raw": 0
+                },
+                "alternateName": null,
+                "mappingName": null,
+                "widgets": [
+                  {
+                    "annotObjectNumber": 109,
+                    "pageObjectNumber": 3,
+                    "onState": "S",
+                    "checked": false
+                  },
+                  {
+                    "annotObjectNumber": 110,
+                    "pageObjectNumber": 3,
+                    "onState": "M",
+                    "checked": true
+                  },
+                  {
+                    "annotObjectNumber": 111,
+                    "pageObjectNumber": 3
+                  }
+                ],
+                "valueEntry": {
+                  "kind": "none"
+                },
+                "defaultValueEntry": {
+                  "kind": "none"
+                }
+              },
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "fieldObjectNumber": 12
+                },
+                "fieldObjectNumber": 12,
+                "name": "colour",
+                "family": "combobox",
+                "origin": "acroform",
+                "flags": {
+                  "readOnly": false,
+                  "required": false,
+                  "noExport": false,
+                  "raw": 0
+                },
+                "alternateName": null,
+                "mappingName": null,
+                "widgets": [
+                  {
+                    "annotObjectNumber": 112,
+                    "pageObjectNumber": 3
+                  }
+                ],
+                "valueEntry": {
+                  "kind": "scalar",
+                  "value": "r"
+                },
+                "defaultValueEntry": {
+                  "kind": "none"
+                },
+                "value": "r",
+                "edit": true,
+                "options": [
+                  {
+                    "label": "Red",
+                    "value": "r"
+                  },
+                  {
+                    "label": "Green",
+                    "value": "g"
+                  }
+                ]
+              },
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "fieldObjectNumber": 13
+                },
+                "fieldObjectNumber": 13,
+                "name": "colour2",
+                "family": "combobox",
+                "origin": "acroform",
+                "flags": {
+                  "readOnly": false,
+                  "required": false,
+                  "noExport": false,
+                  "raw": 0
+                },
+                "alternateName": null,
+                "mappingName": null,
+                "widgets": [
+                  {
+                    "annotObjectNumber": 113,
+                    "pageObjectNumber": 3
+                  }
+                ],
+                "valueEntry": {
+                  "kind": "none"
+                },
+                "defaultValueEntry": {
+                  "kind": "none"
+                },
+                "value": "",
+                "edit": false,
+                "options": [
+                  {
+                    "label": "Red",
+                    "value": "r"
+                  },
+                  {
+                    "label": "Green",
+                    "value": "g"
+                  }
+                ]
+              },
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "fieldObjectNumber": 14
+                },
+                "fieldObjectNumber": 14,
+                "name": "colours",
+                "family": "listbox",
+                "origin": "acroform",
+                "flags": {
+                  "readOnly": false,
+                  "required": false,
+                  "noExport": false,
+                  "raw": 0
+                },
+                "alternateName": null,
+                "mappingName": null,
+                "widgets": [
+                  {
+                    "annotObjectNumber": 114,
+                    "pageObjectNumber": 3
+                  }
+                ],
+                "valueEntry": {
+                  "kind": "array",
+                  "values": [
+                    "r",
+                    "g"
+                  ]
+                },
+                "defaultValueEntry": {
+                  "kind": "none"
+                },
+                "multiSelect": true,
+                "options": [
+                  {
+                    "label": "Red",
+                    "value": "r"
+                  },
+                  {
+                    "label": "Green",
+                    "value": "g"
+                  }
+                ],
+                "selectedValues": [
+                  "r",
+                  "g"
+                ]
+              },
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "fieldObjectNumber": 15
+                },
+                "fieldObjectNumber": 15,
+                "name": "go",
+                "family": "pushbutton",
+                "origin": "acroform",
+                "flags": {
+                  "readOnly": false,
+                  "required": false,
+                  "noExport": false,
+                  "raw": 0
+                },
+                "alternateName": null,
+                "mappingName": null,
+                "widgets": [
+                  {
+                    "annotObjectNumber": 115,
+                    "pageObjectNumber": 3
+                  }
+                ],
+                "valueEntry": {
+                  "kind": "none"
+                },
+                "defaultValueEntry": {
+                  "kind": "none"
+                }
+              },
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "fieldObjectNumber": 16
+                },
+                "fieldObjectNumber": 16,
+                "name": "sig",
+                "family": "signature",
+                "origin": "acroform",
+                "flags": {
+                  "readOnly": false,
+                  "required": false,
+                  "noExport": false,
+                  "raw": 0
+                },
+                "alternateName": null,
+                "mappingName": null,
+                "widgets": [
+                  {
+                    "annotObjectNumber": 116,
+                    "pageObjectNumber": 3
+                  }
+                ],
+                "valueEntry": {
+                  "kind": "none"
+                },
+                "defaultValueEntry": {
+                  "kind": "none"
+                }
+              },
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "fieldObjectNumber": 17
+                },
+                "fieldObjectNumber": 17,
+                "name": "mystery",
+                "family": "unknown",
+                "origin": "acroform",
+                "flags": {
+                  "readOnly": false,
+                  "required": false,
+                  "noExport": false,
+                  "raw": 0
+                },
+                "alternateName": null,
+                "mappingName": null,
+                "widgets": [
+                  {
+                    "annotObjectNumber": 117,
+                    "pageObjectNumber": 3
+                  }
+                ],
+                "valueEntry": {
+                  "kind": "none"
+                },
+                "defaultValueEntry": {
+                  "kind": "none"
+                }
+              },
+              {
+                "ref": {
+                  "kind": "fqn",
+                  "name": "loose.field"
+                },
+                "fieldObjectNumber": 0,
+                "name": "loose.field",
+                "family": "text",
+                "origin": "acroform",
+                "flags": {
+                  "readOnly": false,
+                  "required": false,
+                  "noExport": false,
+                  "raw": 0
+                },
+                "alternateName": null,
+                "mappingName": null,
+                "widgets": [
+                  {
+                    "annotObjectNumber": 0,
+                    "pageObjectNumber": 3
+                  },
+                  {
+                    "annotObjectNumber": 118,
+                    "pageObjectNumber": 4
+                  }
+                ],
+                "valueEntry": {
+                  "kind": "scalar",
+                  "value": "q"
+                },
+                "defaultValueEntry": {
+                  "kind": "none"
+                },
+                "value": "q",
+                "defaultValue": "",
+                "maxLength": null,
+                "multiline": false,
+                "password": false,
+                "comb": false
+              },
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "fieldObjectNumber": 19
+                },
+                "fieldObjectNumber": 19,
+                "name": "spread",
+                "family": "text",
+                "origin": "acroform",
+                "flags": {
+                  "readOnly": false,
+                  "required": false,
+                  "noExport": false,
+                  "raw": 0
+                },
+                "alternateName": null,
+                "mappingName": null,
+                "widgets": [
+                  {
+                    "annotObjectNumber": 119,
+                    "pageObjectNumber": 3
+                  },
+                  {
+                    "annotObjectNumber": 120,
+                    "pageObjectNumber": 4
+                  },
+                  {
+                    "annotObjectNumber": 121,
+                    "pageObjectNumber": 3
+                  }
+                ],
+                "valueEntry": {
+                  "kind": "scalar",
+                  "value": "v"
+                },
+                "defaultValueEntry": {
+                  "kind": "none"
+                },
+                "value": "v",
+                "defaultValue": "",
+                "maxLength": null,
+                "multiline": false,
+                "password": false,
+                "comb": false
+              }
+            ],
+            "calculationOrder": []
+          },
+          "byKey": {
+            "obj:4": 0,
+            "obj:5": 1,
+            "obj:6": 2,
+            "obj:7": 3,
+            "obj:8": 4,
+            "obj:9": 5,
+            "obj:12": 6,
+            "obj:13": 7,
+            "obj:14": 8,
+            "obj:15": 9,
+            "obj:16": 10,
+            "obj:17": 11,
+            "fqn:loose.field": 12,
+            "obj:19": 13,
+            "obj:77": 99
+          },
+          "byWidget": {
+            "104": 0,
+            "105": 1,
+            "106": 2,
+            "107": 3,
+            "108": 4,
+            "109": 5,
+            "110": 5,
+            "111": 5,
+            "112": 6,
+            "113": 7,
+            "114": 8,
+            "115": 9,
+            "116": 10,
+            "117": 11,
+            "118": 12,
+            "119": 13,
+            "120": 13,
+            "121": 13,
+            "177": 99
+          },
+          "writing": {},
+          "geom": {},
+          "seq": 1
+        },
+        {
+          "t": "writeDone",
+          "key": "obj:77",
+          "field": {
+            "ref": {
+              "kind": "objectNumber",
+              "fieldObjectNumber": 4
+            },
+            "fieldObjectNumber": 4,
+            "name": "maxlen_text",
+            "family": "text",
+            "origin": "acroform",
+            "flags": {
+              "readOnly": false,
+              "required": false,
+              "noExport": false,
+              "raw": 0
+            },
+            "alternateName": "Max length",
+            "mappingName": null,
+            "widgets": [
+              {
+                "annotObjectNumber": 104,
+                "pageObjectNumber": 3
+              }
+            ],
+            "valueEntry": {
+              "kind": "scalar",
+              "value": "abc"
+            },
+            "defaultValueEntry": {
+              "kind": "none"
+            },
+            "value": "abc",
+            "defaultValue": "",
+            "maxLength": 5,
+            "multiline": false,
+            "password": false,
+            "comb": false
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "snapshot": {
+            "formKind": "acroform",
+            "needsAppearances": false,
+            "fields": [
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "fieldObjectNumber": 4
+                },
+                "fieldObjectNumber": 4,
+                "name": "maxlen_text",
+                "family": "text",
+                "origin": "acroform",
+                "flags": {
+                  "readOnly": false,
+                  "required": false,
+                  "noExport": false,
+                  "raw": 0
+                },
+                "alternateName": "Max length",
+                "mappingName": null,
+                "widgets": [
+                  {
+                    "annotObjectNumber": 104,
+                    "pageObjectNumber": 3
+                  }
+                ],
+                "valueEntry": {
+                  "kind": "scalar",
+                  "value": "abc"
+                },
+                "defaultValueEntry": {
+                  "kind": "none"
+                },
+                "value": "abc",
+                "defaultValue": "",
+                "maxLength": 5,
+                "multiline": false,
+                "password": false,
+                "comb": false
+              },
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "fieldObjectNumber": 5
+                },
+                "fieldObjectNumber": 5,
+                "name": "ro",
+                "family": "text",
+                "origin": "acroform",
+                "flags": {
+                  "readOnly": true,
+                  "required": false,
+                  "noExport": false,
+                  "raw": 1
+                },
+                "alternateName": null,
+                "mappingName": null,
+                "widgets": [
+                  {
+                    "annotObjectNumber": 105,
+                    "pageObjectNumber": 3
+                  }
+                ],
+                "valueEntry": {
+                  "kind": "scalar",
+                  "value": "x"
+                },
+                "defaultValueEntry": {
+                  "kind": "none"
+                },
+                "value": "x",
+                "defaultValue": "",
+                "maxLength": null,
+                "multiline": false,
+                "password": false,
+                "comb": false
+              },
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "fieldObjectNumber": 6
+                },
+                "fieldObjectNumber": 6,
+                "name": "notes",
+                "family": "text",
+                "origin": "acroform",
+                "flags": {
+                  "readOnly": false,
+                  "required": false,
+                  "noExport": false,
+                  "raw": 0
+                },
+                "alternateName": null,
+                "mappingName": null,
+                "widgets": [
+                  {
+                    "annotObjectNumber": 106,
+                    "pageObjectNumber": 3
+                  }
+                ],
+                "valueEntry": {
+                  "kind": "scalar",
+                  "value": "l1\nl2"
+                },
+                "defaultValueEntry": {
+                  "kind": "none"
+                },
+                "value": "l1\nl2",
+                "defaultValue": "",
+                "maxLength": null,
+                "multiline": true,
+                "password": true,
+                "comb": true
+              },
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "fieldObjectNumber": 7
+                },
+                "fieldObjectNumber": 7,
+                "name": "agree",
+                "family": "checkbox",
+                "origin": "acroform",
+                "flags": {
+                  "readOnly": false,
+                  "required": false,
+                  "noExport": false,
+                  "raw": 0
+                },
+                "alternateName": null,
+                "mappingName": null,
+                "widgets": [
+                  {
+                    "annotObjectNumber": 107,
+                    "pageObjectNumber": 3,
+                    "onState": "On"
+                  }
+                ],
+                "valueEntry": {
+                  "kind": "scalar",
+                  "value": "Yes"
+                },
+                "defaultValueEntry": {
+                  "kind": "none"
+                },
+                "checked": true
+              },
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "fieldObjectNumber": 8
+                },
+                "fieldObjectNumber": 8,
+                "name": "bare",
+                "family": "checkbox",
+                "origin": "acroform",
+                "flags": {
+                  "readOnly": false,
+                  "required": false,
+                  "noExport": false,
+                  "raw": 0
+                },
+                "alternateName": null,
+                "mappingName": null,
+                "widgets": [
+                  {
+                    "annotObjectNumber": 108,
+                    "pageObjectNumber": 3
+                  }
+                ],
+                "valueEntry": {
+                  "kind": "none"
+                },
+                "defaultValueEntry": {
+                  "kind": "none"
+                },
+                "checked": false
+              },
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "fieldObjectNumber": 9
+                },
+                "fieldObjectNumber": 9,
+                "name": "size",
+                "family": "radio",
+                "origin": "acroform",
+                "flags": {
+                  "readOnly": false,
+                  "required": false,
+                  "noExport": false,
+                  "raw": 0
+                },
+                "alternateName": null,
+                "mappingName": null,
+                "widgets": [
+                  {
+                    "annotObjectNumber": 109,
+                    "pageObjectNumber": 3,
+                    "onState": "S",
+                    "checked": false
+                  },
+                  {
+                    "annotObjectNumber": 110,
+                    "pageObjectNumber": 3,
+                    "onState": "M",
+                    "checked": true
+                  },
+                  {
+                    "annotObjectNumber": 111,
+                    "pageObjectNumber": 3
+                  }
+                ],
+                "valueEntry": {
+                  "kind": "none"
+                },
+                "defaultValueEntry": {
+                  "kind": "none"
+                }
+              },
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "fieldObjectNumber": 12
+                },
+                "fieldObjectNumber": 12,
+                "name": "colour",
+                "family": "combobox",
+                "origin": "acroform",
+                "flags": {
+                  "readOnly": false,
+                  "required": false,
+                  "noExport": false,
+                  "raw": 0
+                },
+                "alternateName": null,
+                "mappingName": null,
+                "widgets": [
+                  {
+                    "annotObjectNumber": 112,
+                    "pageObjectNumber": 3
+                  }
+                ],
+                "valueEntry": {
+                  "kind": "scalar",
+                  "value": "r"
+                },
+                "defaultValueEntry": {
+                  "kind": "none"
+                },
+                "value": "r",
+                "edit": true,
+                "options": [
+                  {
+                    "label": "Red",
+                    "value": "r"
+                  },
+                  {
+                    "label": "Green",
+                    "value": "g"
+                  }
+                ]
+              },
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "fieldObjectNumber": 13
+                },
+                "fieldObjectNumber": 13,
+                "name": "colour2",
+                "family": "combobox",
+                "origin": "acroform",
+                "flags": {
+                  "readOnly": false,
+                  "required": false,
+                  "noExport": false,
+                  "raw": 0
+                },
+                "alternateName": null,
+                "mappingName": null,
+                "widgets": [
+                  {
+                    "annotObjectNumber": 113,
+                    "pageObjectNumber": 3
+                  }
+                ],
+                "valueEntry": {
+                  "kind": "none"
+                },
+                "defaultValueEntry": {
+                  "kind": "none"
+                },
+                "value": "",
+                "edit": false,
+                "options": [
+                  {
+                    "label": "Red",
+                    "value": "r"
+                  },
+                  {
+                    "label": "Green",
+                    "value": "g"
+                  }
+                ]
+              },
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "fieldObjectNumber": 14
+                },
+                "fieldObjectNumber": 14,
+                "name": "colours",
+                "family": "listbox",
+                "origin": "acroform",
+                "flags": {
+                  "readOnly": false,
+                  "required": false,
+                  "noExport": false,
+                  "raw": 0
+                },
+                "alternateName": null,
+                "mappingName": null,
+                "widgets": [
+                  {
+                    "annotObjectNumber": 114,
+                    "pageObjectNumber": 3
+                  }
+                ],
+                "valueEntry": {
+                  "kind": "array",
+                  "values": [
+                    "r",
+                    "g"
+                  ]
+                },
+                "defaultValueEntry": {
+                  "kind": "none"
+                },
+                "multiSelect": true,
+                "options": [
+                  {
+                    "label": "Red",
+                    "value": "r"
+                  },
+                  {
+                    "label": "Green",
+                    "value": "g"
+                  }
+                ],
+                "selectedValues": [
+                  "r",
+                  "g"
+                ]
+              },
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "fieldObjectNumber": 15
+                },
+                "fieldObjectNumber": 15,
+                "name": "go",
+                "family": "pushbutton",
+                "origin": "acroform",
+                "flags": {
+                  "readOnly": false,
+                  "required": false,
+                  "noExport": false,
+                  "raw": 0
+                },
+                "alternateName": null,
+                "mappingName": null,
+                "widgets": [
+                  {
+                    "annotObjectNumber": 115,
+                    "pageObjectNumber": 3
+                  }
+                ],
+                "valueEntry": {
+                  "kind": "none"
+                },
+                "defaultValueEntry": {
+                  "kind": "none"
+                }
+              },
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "fieldObjectNumber": 16
+                },
+                "fieldObjectNumber": 16,
+                "name": "sig",
+                "family": "signature",
+                "origin": "acroform",
+                "flags": {
+                  "readOnly": false,
+                  "required": false,
+                  "noExport": false,
+                  "raw": 0
+                },
+                "alternateName": null,
+                "mappingName": null,
+                "widgets": [
+                  {
+                    "annotObjectNumber": 116,
+                    "pageObjectNumber": 3
+                  }
+                ],
+                "valueEntry": {
+                  "kind": "none"
+                },
+                "defaultValueEntry": {
+                  "kind": "none"
+                }
+              },
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "fieldObjectNumber": 17
+                },
+                "fieldObjectNumber": 17,
+                "name": "mystery",
+                "family": "unknown",
+                "origin": "acroform",
+                "flags": {
+                  "readOnly": false,
+                  "required": false,
+                  "noExport": false,
+                  "raw": 0
+                },
+                "alternateName": null,
+                "mappingName": null,
+                "widgets": [
+                  {
+                    "annotObjectNumber": 117,
+                    "pageObjectNumber": 3
+                  }
+                ],
+                "valueEntry": {
+                  "kind": "none"
+                },
+                "defaultValueEntry": {
+                  "kind": "none"
+                }
+              },
+              {
+                "ref": {
+                  "kind": "fqn",
+                  "name": "loose.field"
+                },
+                "fieldObjectNumber": 0,
+                "name": "loose.field",
+                "family": "text",
+                "origin": "acroform",
+                "flags": {
+                  "readOnly": false,
+                  "required": false,
+                  "noExport": false,
+                  "raw": 0
+                },
+                "alternateName": null,
+                "mappingName": null,
+                "widgets": [
+                  {
+                    "annotObjectNumber": 0,
+                    "pageObjectNumber": 3
+                  },
+                  {
+                    "annotObjectNumber": 118,
+                    "pageObjectNumber": 4
+                  }
+                ],
+                "valueEntry": {
+                  "kind": "scalar",
+                  "value": "q"
+                },
+                "defaultValueEntry": {
+                  "kind": "none"
+                },
+                "value": "q",
+                "defaultValue": "",
+                "maxLength": null,
+                "multiline": false,
+                "password": false,
+                "comb": false
+              },
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "fieldObjectNumber": 19
+                },
+                "fieldObjectNumber": 19,
+                "name": "spread",
+                "family": "text",
+                "origin": "acroform",
+                "flags": {
+                  "readOnly": false,
+                  "required": false,
+                  "noExport": false,
+                  "raw": 0
+                },
+                "alternateName": null,
+                "mappingName": null,
+                "widgets": [
+                  {
+                    "annotObjectNumber": 119,
+                    "pageObjectNumber": 3
+                  },
+                  {
+                    "annotObjectNumber": 120,
+                    "pageObjectNumber": 4
+                  },
+                  {
+                    "annotObjectNumber": 121,
+                    "pageObjectNumber": 3
+                  }
+                ],
+                "valueEntry": {
+                  "kind": "scalar",
+                  "value": "v"
+                },
+                "defaultValueEntry": {
+                  "kind": "none"
+                },
+                "value": "v",
+                "defaultValue": "",
+                "maxLength": null,
+                "multiline": false,
+                "password": false,
+                "comb": false
+              },
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "fieldObjectNumber": 4
+                },
+                "fieldObjectNumber": 4,
+                "name": "maxlen_text",
+                "family": "text",
+                "origin": "acroform",
+                "flags": {
+                  "readOnly": false,
+                  "required": false,
+                  "noExport": false,
+                  "raw": 0
+                },
+                "alternateName": "Max length",
+                "mappingName": null,
+                "widgets": [
+                  {
+                    "annotObjectNumber": 104,
+                    "pageObjectNumber": 3
+                  }
+                ],
+                "valueEntry": {
+                  "kind": "scalar",
+                  "value": "abc"
+                },
+                "defaultValueEntry": {
+                  "kind": "none"
+                },
+                "value": "abc",
+                "defaultValue": "",
+                "maxLength": 5,
+                "multiline": false,
+                "password": false,
+                "comb": false
+              }
+            ],
+            "calculationOrder": []
+          },
+          "byKey": {
+            "obj:4": 99,
+            "obj:5": 1,
+            "obj:6": 2,
+            "obj:7": 3,
+            "obj:8": 4,
+            "obj:9": 5,
+            "obj:12": 6,
+            "obj:13": 7,
+            "obj:14": 8,
+            "obj:15": 9,
+            "obj:16": 10,
+            "obj:17": 11,
+            "fqn:loose.field": 12,
+            "obj:19": 13
+          },
+          "byWidget": {
+            "104": 99,
+            "105": 1,
+            "106": 2,
+            "107": 3,
+            "108": 4,
+            "109": 5,
+            "110": 5,
+            "111": 5,
+            "112": 6,
+            "113": 7,
+            "114": 8,
+            "115": 9,
+            "116": 10,
+            "117": 11,
+            "118": 12,
+            "119": 13,
+            "120": 13,
+            "121": 13
+          },
+          "writing": {},
+          "geom": {},
+          "seq": 2
+        }
+      }
+    },
+    {
       "name": "update/write-failed",
       "fn": "update",
       "args": [

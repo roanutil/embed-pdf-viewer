@@ -95,7 +95,9 @@ type Index = (BTreeMap<FieldKey, f64>, BTreeMap<String, f64>);
 fn index(snapshot: &Value) -> Index {
     let mut by_key = BTreeMap::new();
     let mut by_widget = BTreeMap::new();
-    for (i, field) in fields_of(snapshot).iter().enumerate() {
+    // `forEach` skips the holes a past-the-end write leaves, which the
+    // Rust model holds as nulls.
+    for (i, field) in fields_of(snapshot).iter().enumerate().filter(|(_, f)| !f.is_null()) {
         by_key.insert(field_key_of(field), i as f64);
         for w in get(field, "widgets").and_then(Value::as_array).into_iter().flatten() {
             if let Some(n) = get(w, "annotObjectNumber").and_then(Value::as_f64)
@@ -134,14 +136,10 @@ pub fn update(model: &Rc<Model>, msg: &Msg) -> Rc<Model> {
             let Some(&i) = model.by_key.get(key) else { return model.clone() };
             let mut fields = fields_of(current).to_vec();
             let i = i as usize;
-            if i < fields.len() {
-                fields[i] = field.clone();
-            } else {
-                // `fields[i] = field` past the end pads with holes, which
-                // JSON prints as null.
-                fields.resize(i, Value::Null);
-                fields.push(field.clone());
-            }
+            // `fields[i] = field` past the end pads with holes, which JSON
+            // prints as null.
+            fields.resize(fields.len().max(i + 1), Value::Null);
+            fields[i] = field.clone();
             let mut snapshot = current.clone();
             if let Value::Object(members) = &mut snapshot {
                 members.insert("fields".into(), Value::Array(fields));

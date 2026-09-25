@@ -122,6 +122,7 @@ const modelCases: FunctionCase[] = [
   }),
   fc('update', 'write-done-without-snapshot', initialModel(), { t: 'writeDone', key: 'obj:4', field: TEXT }),
   fc('update', 'write-done-unknown-key', writing, { t: 'writeDone', key: 'obj:404', field: TEXT }),
+  fc('update', 'write-done-past-the-end-pads-with-holes', pastEnd, { t: 'writeDone', key: 'obj:77', field: TEXT }),
   fc('update', 'write-failed', writing, { t: 'writeFailed', key: 'obj:4' }),
   fc('update', 'write-failed-not-writing', loaded, { t: 'writeFailed', key: 'obj:4' }),
   fc('update', 'page-geom', loaded, { t: 'pageGeom', pageObjectNumber: 3, boxes: { 104: box(1, 2) } }),
