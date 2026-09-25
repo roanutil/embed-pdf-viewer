@@ -388,6 +388,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "epdf-plugin-search"
+version = "0.0.0"
+dependencies = [
+ "epdf-geometry",
+ "epdf-kernel",
+ "epdf-plugin-stage",
+ "plugin-conformance",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "epdf-plugin-selection"
 version = "0.0.0"
 dependencies = [
@@ -404,6 +416,20 @@ name = "epdf-plugin-shell"
 version = "0.0.0"
 dependencies = [
  "epdf-kernel",
+ "plugin-conformance",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "epdf-plugin-stage"
+version = "0.0.0"
+dependencies = [
+ "epdf-geometry",
+ "epdf-kernel",
+ "epdf-plugin-actions",
+ "epdf-plugin-interaction",
+ "epdf-stage-core",
  "plugin-conformance",
  "serde",
  "serde_json",

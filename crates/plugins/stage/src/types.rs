@@ -1,0 +1,502 @@
+//! `types.ts`: the settings vocabulary, the slice state and its actions, the
+//! options the verbs take, the host frame seam, and the token.
+
+use std::fmt;
+use std::rc::Rc;
+use std::sync::LazyLock;
+
+use epdf_geometry::{PageFrame, PageRotation, PageTransform, Point, Rect, Size};
+use epdf_kernel::Token;
+use epdf_stage_core::{
+    Align, AlignValue, Alignment, AlignmentValue, Anchor, Camera, Direction, PageBox, SizingMode,
+    SpreadMode, ZoomSpec,
+};
+use serde::{Deserialize, Serialize};
+
+use crate::capability::StageCapability;
+
+/// `PageObjectNumber`, as the engine contract spells a page.
+pub type PageObjectNumber = u32;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum LayoutKind {
+    Vertical,
+    Horizontal,
+    Grid,
+}
+
+/// Navigation either tweens the camera or jumps.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ScrollBehaviorKind {
+    Smooth,
+    Instant,
+}
+
+/// Continuous scroll over the whole document, or one item at a time.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum FlowMode {
+    Continuous,
+    Paged,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ColumnsPolicy {
+    /// About the square root of the item count.
+    Square,
+    /// Wrapped: as many columns as fit the viewport line at the current zoom.
+    Auto,
+}
+
+/// Grid column policy: `'square'`, `'auto'` or a fixed count.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum GridColumns {
+    Policy(ColumnsPolicy),
+    Count(f64),
+}
+
+/// Space between items. A number is world units (scales with zoom);
+/// `{px}` is screen px (zoom-stable).
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum Gap {
+    World(f64),
+    Px { px: f64 },
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Orientation {
+    Portrait,
+    Landscape,
+}
+
+/// The one environmental fact a headless stage has: the box it was told
+/// about with `set_viewport`.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub struct StageBox {
+    pub width: f64,
+    pub height: f64,
+    /// Of the container. A square box is portrait.
+    pub orientation: Orientation,
+}
+
+/// A declarative box query: bounds inclusive, every field optional, AND-ed.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BoxQuery {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub min_width: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub max_width: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub min_height: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub max_height: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub orientation: Option<Orientation>,
+}
+
+/// A rule's `when`: a query, or a predicate for anything the box can answer.
+#[derive(Clone)]
+pub enum RuleWhen {
+    Query(BoxQuery),
+    Predicate(Rc<dyn Fn(&StageBox) -> bool>),
+}
+
+impl fmt::Debug for RuleWhen {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            RuleWhen::Query(q) => f.debug_tuple("Query").field(q).finish(),
+            RuleWhen::Predicate(_) => f.write_str("Predicate(fn)"),
+        }
+    }
+}
+
+/// One `@container` block for the settings bag: when the box matches,
+/// assert this patch. Rules apply in source order, later winning per key.
+#[derive(Clone, Debug)]
+pub struct ResponsiveRule {
+    pub name: Option<String>,
+    pub when: RuleWhen,
+    /// Absent for a pure named query.
+    pub settings: Option<PartialSettings>,
+}
+
+/// The navigation-only `'keep'`: this axis does not move on arrival.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Keep {
+    Keep,
+}
+
+/// One axis of the arrival policy: an `AlignValue` or `'keep'`.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum ArrivalAlignValue {
+    Keep(Keep),
+    Align(AlignValue),
+}
+
+impl ArrivalAlignValue {
+    pub const KEEP: ArrivalAlignValue = ArrivalAlignValue::Keep(Keep::Keep);
+
+    pub fn named(align: Align) -> Self {
+        ArrivalAlignValue::Align(AlignValue::Named(align))
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub struct ArrivalAlignment {
+    pub x: ArrivalAlignValue,
+    pub y: ArrivalAlignValue,
+}
+
+/// `Partial<ArrivalAlignment>`, the per-call override.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct PartialArrivalAlignment {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub x: Option<ArrivalAlignValue>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub y: Option<ArrivalAlignValue>,
+}
+
+/// The stage's orthogonal, independently settable primitives.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StageSettings {
+    pub flow: FlowMode,
+    pub layout: LayoutKind,
+    pub spread: SpreadMode,
+    pub sizing: SizingMode,
+    pub columns: GridColumns,
+    pub bounded: bool,
+    pub padding: f64,
+    pub gap: Gap,
+    pub page_frame: PageFrame,
+    pub direction: Direction,
+    pub fit_align: Alignment,
+    pub arrival_align: ArrivalAlignment,
+    pub zoom_align: AlignmentValue,
+    pub anchor_align: AlignmentValue,
+    pub view_rotation: PageRotation,
+    pub zoom: ZoomSpec,
+    pub scroll_behavior: ScrollBehaviorKind,
+    pub view_units_per_point: f64,
+}
+
+/// `Partial<StageSettings>`. `None` is an absent (or `undefined`) key.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PartialSettings {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub flow: Option<FlowMode>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub layout: Option<LayoutKind>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub spread: Option<SpreadMode>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sizing: Option<SizingMode>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub columns: Option<GridColumns>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bounded: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub padding: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub gap: Option<Gap>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub page_frame: Option<PageFrame>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub direction: Option<Direction>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fit_align: Option<Alignment>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub arrival_align: Option<ArrivalAlignment>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub zoom_align: Option<AlignmentValue>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub anchor_align: Option<AlignmentValue>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub view_rotation: Option<PageRotation>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub zoom: Option<ZoomSpec>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub scroll_behavior: Option<ScrollBehaviorKind>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub view_units_per_point: Option<f64>,
+}
+
+impl PartialSettings {
+    /// A patch that sets only the zoom intent.
+    pub fn zoom(zoom: ZoomSpec) -> Self {
+        PartialSettings { zoom: Some(zoom), ..Default::default() }
+    }
+}
+
+impl From<StageSettings> for PartialSettings {
+    fn from(s: StageSettings) -> Self {
+        PartialSettings {
+            flow: Some(s.flow),
+            layout: Some(s.layout),
+            spread: Some(s.spread),
+            sizing: Some(s.sizing),
+            columns: Some(s.columns),
+            bounded: Some(s.bounded),
+            padding: Some(s.padding),
+            gap: Some(s.gap),
+            page_frame: Some(s.page_frame),
+            direction: Some(s.direction),
+            fit_align: Some(s.fit_align),
+            arrival_align: Some(s.arrival_align),
+            zoom_align: Some(s.zoom_align),
+            anchor_align: Some(s.anchor_align),
+            view_rotation: Some(s.view_rotation),
+            zoom: Some(s.zoom),
+            scroll_behavior: Some(s.scroll_behavior),
+            view_units_per_point: Some(s.view_units_per_point),
+        }
+    }
+}
+
+/// A laid-out page handed to the shell: the layout box plus identity, the
+/// device-snapped screen origin, the page transform and the on-screen
+/// region in un-rotated page points.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VisiblePage {
+    #[serde(flatten)]
+    pub page: PageBox,
+    pub pon: PageObjectNumber,
+    pub screen_x: f64,
+    pub screen_y: f64,
+    pub transform: PageTransform,
+    pub visible_rect: Rect,
+}
+
+/// What last drove the camera or cursor.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum MotionCause {
+    User,
+    Programmatic,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StageState {
+    #[serde(flatten)]
+    pub settings: StageSettings,
+    pub camera: Camera,
+    /// The one-way render-commit latch.
+    pub placed: bool,
+    /// Names of the matching responsive rules, in source order.
+    pub active_rules: Vec<String>,
+    /// False while the zoom is in motion.
+    pub camera_resting: bool,
+    pub vp: Size,
+    /// Device px per view px.
+    pub dpr: f64,
+    /// The current page, valid in both flows.
+    pub cursor: usize,
+    pub motion_cause: MotionCause,
+}
+
+// A PATCH carries a whole settings bag; actions are short-lived values, so
+// the size difference costs nothing a box would save.
+#[allow(clippy::large_enum_variant)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "type")]
+pub enum StageAction {
+    #[serde(rename = "CAMERA")]
+    Camera { camera: Camera },
+    #[serde(rename = "CAMERA_REST")]
+    CameraRest { resting: bool },
+    #[serde(rename = "PLACED")]
+    Placed,
+    #[serde(rename = "VP")]
+    Vp { vp: Size },
+    #[serde(rename = "DPR")]
+    Dpr { dpr: f64 },
+    #[serde(rename = "CURSOR")]
+    Cursor { cursor: usize },
+    #[serde(rename = "MOTION_CAUSE")]
+    MotionCause { cause: MotionCause },
+    #[serde(rename = "PATCH")]
+    Patch { patch: PartialSettings },
+    #[serde(rename = "RESPONSIVE")]
+    Responsive { active: Vec<String> },
+}
+
+/// A page-relative view memento: what I'm looking at and how zoomed.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Viewpoint {
+    pub anchor: Anchor,
+    pub zoom: ZoomSpec,
+}
+
+/// Durable, serializable view state: the unit of session persistence.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StageViewState {
+    #[serde(flatten)]
+    pub settings: StageSettings,
+    /// `undefined` restores page 0 (`view.cursor ?? 0`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cursor: Option<usize>,
+    pub anchor: Anchor,
+}
+
+/// The host frame seam: `requestAnimationFrame` and `cancelAnimationFrame`.
+///
+/// The TypeScript binds `globalThis.requestAnimationFrame` when the host has
+/// one and otherwise runs frameless (navigation jumps, no rest detector, no
+/// momentum). Rust has no ambient frame clock, so the host passes one in
+/// [`StageConfig::scheduler`]; without it the stage is frameless. A handle
+/// is never 0, which the capability reads as "nothing scheduled".
+pub trait Scheduler {
+    /// Run the callback on the next frame with the frame's timestamp in ms.
+    fn raf(&self, callback: Box<dyn FnOnce(f64)>) -> u64;
+    /// Cancel a scheduled callback.
+    fn caf(&self, handle: u64);
+}
+
+/// `StageScrollToOptions`: absolute offsets in screen px into the scroll
+/// range; an omitted axis does not move. `behavior` defaults to instant.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct StageScrollToOptions {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub left: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub top: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub behavior: Option<ScrollBehaviorKind>,
+}
+
+/// Options for the navigation intents.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GoToOptions {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub behavior: Option<ScrollBehaviorKind>,
+    /// Restore this viewpoint instead of a fresh placement.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub viewpoint: Option<Viewpoint>,
+    /// Override the landing for this navigation only.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub arrival_align: Option<PartialArrivalAlignment>,
+}
+
+impl GoToOptions {
+    pub fn behavior(behavior: ScrollBehaviorKind) -> Self {
+        GoToOptions { behavior: Some(behavior), ..Default::default() }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum RevealWord {
+    Keep,
+    Start,
+    Center,
+    End,
+}
+
+/// One axis of a reveal arrival: `'keep' | 'start' | 'center' | 'end'` or a
+/// viewport fraction.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum RevealAnchorValue {
+    Word(RevealWord),
+    Fraction(f64),
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct RevealAnchor {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub x: Option<RevealAnchorValue>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub y: Option<RevealAnchorValue>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum RevealZoomWord {
+    Keep,
+    Fit,
+    FitWidth,
+    FitHeight,
+}
+
+/// What happens to zoom on a reveal, relative to its target rect.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum RevealZoom {
+    Word(RevealZoomWord),
+    Level { level: f64 },
+}
+
+/// Options for `reveal`. With none of `rect`, `zoom` and `anchor` set it is
+/// a bare reveal (minimal movement, cursor untouched).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct RevealOptions {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub behavior: Option<ScrollBehaviorKind>,
+    /// Viewer coordinates on the page; `None` (absent or `null`) is the
+    /// whole page.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rect: Option<Rect>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub zoom: Option<RevealZoom>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub anchor: Option<RevealAnchor>,
+}
+
+/// `beginGesture`'s options.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct GestureOptions {
+    /// Rubber-band overscroll for this gesture.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub elastic: Option<bool>,
+}
+
+/// One entry of `pages()`.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct PageEntry {
+    pub index: usize,
+    pub pon: PageObjectNumber,
+    pub label: Option<String>,
+}
+
+/// `pageAt`'s hit: the page under a screen point and its content point.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub struct PageHit {
+    pub pon: PageObjectNumber,
+    pub point: Point,
+    pub scale: f64,
+    /// Total display rotation (document `/Rotate` plus view rotation).
+    pub rotation: PageRotation,
+    /// Zoom relative to the page's 100% baseline.
+    pub zoom: f64,
+}
+
+/// `StageConfig`: settings overrides plus the capability's own config.
+#[derive(Clone, Default)]
+pub struct StageConfig {
+    pub settings: PartialSettings,
+    /// The host frame seam; `None` is frameless. See [`Scheduler`].
+    pub scheduler: Option<Rc<dyn Scheduler>>,
+    /// Container queries; `None` is [`crate::settings::default_responsive`],
+    /// an empty list opts out.
+    pub responsive: Option<Vec<ResponsiveRule>>,
+}
+
+/// The main lens's token, `'stage'`.
+pub static STAGE: LazyLock<Token<StageCapability>> = LazyLock::new(|| Token::new("stage"));
+
+/// `Size`, re-exported for the viewport intents.
+pub type Viewport = Size;

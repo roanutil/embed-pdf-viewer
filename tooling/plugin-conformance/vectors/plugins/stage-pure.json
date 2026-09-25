@@ -1,0 +1,4286 @@
+{
+  "schemaVersion": 1,
+  "kind": "function",
+  "describes": "packages/plugin/stage: the settings registry, motion laws, responsive rules and reducer.",
+  "cases": [
+    {
+      "name": "settingsEqual/defaults",
+      "fn": "settingsEqual",
+      "args": [
+        {
+          "flow": "continuous",
+          "layout": "vertical",
+          "spread": "none",
+          "sizing": "intrinsic",
+          "columns": "square",
+          "bounded": true,
+          "padding": 24,
+          "gap": 16,
+          "pageFrame": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "direction": "ltr",
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "arrivalAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoomAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "anchorAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "viewRotation": 0,
+          "zoom": {
+            "mode": "automatic"
+          },
+          "scrollBehavior": "smooth",
+          "viewUnitsPerPoint": 1.3333333333333333
+        },
+        {
+          "flow": "continuous",
+          "layout": "vertical",
+          "spread": "none",
+          "sizing": "intrinsic",
+          "columns": "square",
+          "bounded": true,
+          "padding": 24,
+          "gap": 16,
+          "pageFrame": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "direction": "ltr",
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "arrivalAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoomAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "anchorAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "viewRotation": 0,
+          "zoom": {
+            "mode": "automatic"
+          },
+          "scrollBehavior": "smooth",
+          "viewUnitsPerPoint": 1.3333333333333333
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "settingsEqual/fresh-objects",
+      "fn": "settingsEqual",
+      "args": [
+        {
+          "flow": "continuous",
+          "layout": "vertical",
+          "spread": "none",
+          "sizing": "intrinsic",
+          "columns": "square",
+          "bounded": true,
+          "padding": 24,
+          "gap": 16,
+          "pageFrame": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "direction": "ltr",
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "arrivalAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoomAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "anchorAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "viewRotation": 0,
+          "zoom": {
+            "mode": "automatic"
+          },
+          "scrollBehavior": "smooth",
+          "viewUnitsPerPoint": 1.3333333333333333
+        },
+        {
+          "flow": "continuous",
+          "layout": "vertical",
+          "spread": "none",
+          "sizing": "intrinsic",
+          "columns": "square",
+          "bounded": true,
+          "padding": 24,
+          "gap": 16,
+          "pageFrame": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "direction": "ltr",
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "arrivalAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoomAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "anchorAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "viewRotation": 0,
+          "zoom": {
+            "mode": "automatic"
+          },
+          "scrollBehavior": "smooth",
+          "viewUnitsPerPoint": 1.3333333333333333
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "settingsEqual/primitive-differs",
+      "fn": "settingsEqual",
+      "args": [
+        {
+          "flow": "continuous",
+          "layout": "vertical",
+          "spread": "none",
+          "sizing": "intrinsic",
+          "columns": "square",
+          "bounded": true,
+          "padding": 24,
+          "gap": 16,
+          "pageFrame": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "direction": "ltr",
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "arrivalAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoomAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "anchorAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "viewRotation": 0,
+          "zoom": {
+            "mode": "automatic"
+          },
+          "scrollBehavior": "smooth",
+          "viewUnitsPerPoint": 1.3333333333333333
+        },
+        {
+          "flow": "continuous",
+          "layout": "vertical",
+          "spread": "none",
+          "sizing": "intrinsic",
+          "columns": "square",
+          "bounded": true,
+          "padding": 4,
+          "gap": 16,
+          "pageFrame": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "direction": "ltr",
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "arrivalAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoomAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "anchorAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "viewRotation": 0,
+          "zoom": {
+            "mode": "automatic"
+          },
+          "scrollBehavior": "smooth",
+          "viewUnitsPerPoint": 1.3333333333333333
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "settingsEqual/object-member-differs",
+      "fn": "settingsEqual",
+      "args": [
+        {
+          "flow": "continuous",
+          "layout": "vertical",
+          "spread": "none",
+          "sizing": "intrinsic",
+          "columns": "square",
+          "bounded": true,
+          "padding": 24,
+          "gap": 16,
+          "pageFrame": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "direction": "ltr",
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "arrivalAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoomAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "anchorAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "viewRotation": 0,
+          "zoom": {
+            "mode": "automatic"
+          },
+          "scrollBehavior": "smooth",
+          "viewUnitsPerPoint": 1.3333333333333333
+        },
+        {
+          "flow": "continuous",
+          "layout": "vertical",
+          "spread": "none",
+          "sizing": "intrinsic",
+          "columns": "square",
+          "bounded": true,
+          "padding": 24,
+          "gap": 16,
+          "pageFrame": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "direction": "ltr",
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "arrivalAlign": {
+            "x": "start",
+            "y": 0.35
+          },
+          "zoomAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "anchorAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "viewRotation": 0,
+          "zoom": {
+            "mode": "automatic"
+          },
+          "scrollBehavior": "smooth",
+          "viewUnitsPerPoint": 1.3333333333333333
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "settingsEqual/number-vs-object",
+      "fn": "settingsEqual",
+      "args": [
+        {
+          "flow": "continuous",
+          "layout": "vertical",
+          "spread": "none",
+          "sizing": "intrinsic",
+          "columns": "square",
+          "bounded": true,
+          "padding": 24,
+          "gap": 16,
+          "pageFrame": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "direction": "ltr",
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "arrivalAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoomAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "anchorAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "viewRotation": 0,
+          "zoom": {
+            "mode": "automatic"
+          },
+          "scrollBehavior": "smooth",
+          "viewUnitsPerPoint": 1.3333333333333333
+        },
+        {
+          "flow": "continuous",
+          "layout": "vertical",
+          "spread": "none",
+          "sizing": "intrinsic",
+          "columns": "square",
+          "bounded": true,
+          "padding": 24,
+          "gap": {
+            "px": 16
+          },
+          "pageFrame": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "direction": "ltr",
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "arrivalAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoomAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "anchorAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "viewRotation": 0,
+          "zoom": {
+            "mode": "automatic"
+          },
+          "scrollBehavior": "smooth",
+          "viewUnitsPerPoint": 1.3333333333333333
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "settingsEqual/object-vs-number",
+      "fn": "settingsEqual",
+      "args": [
+        {
+          "flow": "continuous",
+          "layout": "vertical",
+          "spread": "none",
+          "sizing": "intrinsic",
+          "columns": "square",
+          "bounded": true,
+          "padding": 24,
+          "gap": {
+            "px": 16
+          },
+          "pageFrame": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "direction": "ltr",
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "arrivalAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoomAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "anchorAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "viewRotation": 0,
+          "zoom": {
+            "mode": "automatic"
+          },
+          "scrollBehavior": "smooth",
+          "viewUnitsPerPoint": 1.3333333333333333
+        },
+        {
+          "flow": "continuous",
+          "layout": "vertical",
+          "spread": "none",
+          "sizing": "intrinsic",
+          "columns": "square",
+          "bounded": true,
+          "padding": 24,
+          "gap": 16,
+          "pageFrame": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "direction": "ltr",
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "arrivalAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoomAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "anchorAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "viewRotation": 0,
+          "zoom": {
+            "mode": "automatic"
+          },
+          "scrollBehavior": "smooth",
+          "viewUnitsPerPoint": 1.3333333333333333
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "settingsEqual/gap-px-objects",
+      "fn": "settingsEqual",
+      "args": [
+        {
+          "flow": "continuous",
+          "layout": "vertical",
+          "spread": "none",
+          "sizing": "intrinsic",
+          "columns": "square",
+          "bounded": true,
+          "padding": 24,
+          "gap": {
+            "px": 16
+          },
+          "pageFrame": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "direction": "ltr",
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "arrivalAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoomAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "anchorAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "viewRotation": 0,
+          "zoom": {
+            "mode": "automatic"
+          },
+          "scrollBehavior": "smooth",
+          "viewUnitsPerPoint": 1.3333333333333333
+        },
+        {
+          "flow": "continuous",
+          "layout": "vertical",
+          "spread": "none",
+          "sizing": "intrinsic",
+          "columns": "square",
+          "bounded": true,
+          "padding": 24,
+          "gap": {
+            "px": 16
+          },
+          "pageFrame": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "direction": "ltr",
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "arrivalAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoomAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "anchorAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "viewRotation": 0,
+          "zoom": {
+            "mode": "automatic"
+          },
+          "scrollBehavior": "smooth",
+          "viewUnitsPerPoint": 1.3333333333333333
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "settingsEqual/last-key-differs",
+      "fn": "settingsEqual",
+      "args": [
+        {
+          "flow": "continuous",
+          "layout": "vertical",
+          "spread": "none",
+          "sizing": "intrinsic",
+          "columns": "square",
+          "bounded": true,
+          "padding": 24,
+          "gap": 16,
+          "pageFrame": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "direction": "ltr",
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "arrivalAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoomAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "anchorAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "viewRotation": 0,
+          "zoom": {
+            "mode": "automatic"
+          },
+          "scrollBehavior": "smooth",
+          "viewUnitsPerPoint": 1.3333333333333333
+        },
+        {
+          "flow": "continuous",
+          "layout": "vertical",
+          "spread": "none",
+          "sizing": "intrinsic",
+          "columns": "square",
+          "bounded": true,
+          "padding": 24,
+          "gap": 16,
+          "pageFrame": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "direction": "ltr",
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "arrivalAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoomAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "anchorAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "viewRotation": 0,
+          "zoom": {
+            "mode": "automatic"
+          },
+          "scrollBehavior": "smooth",
+          "viewUnitsPerPoint": 1
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "settingsEqual/string-vs-string",
+      "fn": "settingsEqual",
+      "args": [
+        {
+          "flow": "continuous",
+          "layout": "vertical",
+          "spread": "none",
+          "sizing": "intrinsic",
+          "columns": "square",
+          "bounded": true,
+          "padding": 24,
+          "gap": 16,
+          "pageFrame": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "direction": "ltr",
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "arrivalAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoomAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "anchorAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "viewRotation": 0,
+          "zoom": {
+            "mode": "automatic"
+          },
+          "scrollBehavior": "smooth",
+          "viewUnitsPerPoint": 1.3333333333333333
+        },
+        {
+          "flow": "paged",
+          "layout": "vertical",
+          "spread": "none",
+          "sizing": "intrinsic",
+          "columns": "square",
+          "bounded": true,
+          "padding": 24,
+          "gap": 16,
+          "pageFrame": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "direction": "ltr",
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "arrivalAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoomAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "anchorAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "viewRotation": 0,
+          "zoom": {
+            "mode": "automatic"
+          },
+          "scrollBehavior": "smooth",
+          "viewUnitsPerPoint": 1.3333333333333333
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "constants/all",
+      "fn": "constants",
+      "args": [],
+      "outcome": {
+        "returned": {
+          "DEFAULT_SETTINGS": {
+            "flow": "continuous",
+            "layout": "vertical",
+            "spread": "none",
+            "sizing": "intrinsic",
+            "columns": "square",
+            "bounded": true,
+            "padding": 24,
+            "gap": 16,
+            "pageFrame": {
+              "top": 0,
+              "right": 0,
+              "bottom": 0,
+              "left": 0
+            },
+            "direction": "ltr",
+            "fitAlign": {
+              "x": "center",
+              "y": "center"
+            },
+            "arrivalAlign": {
+              "x": "start",
+              "y": "start"
+            },
+            "zoomAlign": {
+              "x": "center",
+              "y": "center"
+            },
+            "anchorAlign": {
+              "x": "start",
+              "y": "start"
+            },
+            "viewRotation": 0,
+            "zoom": {
+              "mode": "automatic"
+            },
+            "scrollBehavior": "smooth",
+            "viewUnitsPerPoint": 1.3333333333333333
+          },
+          "DEFAULT_RESPONSIVE": [
+            {
+              "name": "compact",
+              "when": {
+                "maxWidth": 600
+              },
+              "settings": {
+                "padding": 4
+              }
+            }
+          ],
+          "SETTINGS_EFFECT": {
+            "flow": "reflow",
+            "layout": "scene",
+            "spread": "scene",
+            "sizing": "scene",
+            "columns": "scene",
+            "bounded": "reclamp",
+            "padding": "reclamp",
+            "gap": "scene",
+            "pageFrame": "scene",
+            "direction": "scene",
+            "fitAlign": "reclamp",
+            "arrivalAlign": "none",
+            "zoomAlign": "none",
+            "anchorAlign": "none",
+            "viewRotation": "scene",
+            "zoom": "refit",
+            "scrollBehavior": "none",
+            "viewUnitsPerPoint": "scene"
+          },
+          "SETTING_KEYS": [
+            "flow",
+            "layout",
+            "spread",
+            "sizing",
+            "columns",
+            "bounded",
+            "padding",
+            "gap",
+            "pageFrame",
+            "direction",
+            "fitAlign",
+            "arrivalAlign",
+            "zoomAlign",
+            "anchorAlign",
+            "viewRotation",
+            "zoom",
+            "scrollBehavior",
+            "viewUnitsPerPoint"
+          ],
+          "RUBBER": 0.55,
+          "FLING_DECAY": 0.998,
+          "FLING_STOP": 0.02,
+          "SPRING_OMEGA": 0.015
+        }
+      }
+    },
+    {
+      "name": "rubberOut/zero",
+      "fn": "rubberOut",
+      "args": [
+        0,
+        800
+      ],
+      "outcome": {
+        "returned": 0
+      }
+    },
+    {
+      "name": "rubberOut/small",
+      "fn": "rubberOut",
+      "args": [
+        10,
+        800
+      ],
+      "outcome": {
+        "returned": 5.462445685909323
+      }
+    },
+    {
+      "name": "rubberOut/large",
+      "fn": "rubberOut",
+      "args": [
+        5000,
+        320
+      ],
+      "outcome": {
+        "returned": 286.64495114006513
+      }
+    },
+    {
+      "name": "rubberOut/far",
+      "fn": "rubberOut",
+      "args": [
+        1000000000,
+        800
+      ],
+      "outcome": {
+        "returned": 799.9988363653289
+      }
+    },
+    {
+      "name": "rubberIn/zero",
+      "fn": "rubberIn",
+      "args": [
+        0,
+        800
+      ],
+      "outcome": {
+        "returned": 0
+      }
+    },
+    {
+      "name": "rubberIn/inverse",
+      "fn": "rubberIn",
+      "args": [
+        96.70329670329672,
+        800
+      ],
+      "outcome": {
+        "returned": 200
+      }
+    },
+    {
+      "name": "rubberIn/near-asymptote",
+      "fn": "rubberIn",
+      "args": [
+        799,
+        800
+      ],
+      "outcome": {
+        "returned": 1162181.8181818181
+      }
+    },
+    {
+      "name": "rubberIn/at-asymptote",
+      "fn": "rubberIn",
+      "args": [
+        800,
+        800
+      ],
+      "outcome": {
+        "returned": {
+          "$number": "Infinity"
+        }
+      }
+    },
+    {
+      "name": "glideStep/moving",
+      "fn": "glideStep",
+      "args": [
+        0,
+        1.2,
+        16
+      ],
+      "outcome": {
+        "returned": {
+          "p": 18.897365270215055,
+          "v": 1.162170658776882,
+          "done": false
+        }
+      }
+    },
+    {
+      "name": "glideStep/negative",
+      "fn": "glideStep",
+      "args": [
+        100,
+        -2,
+        32
+      ],
+      "outcome": {
+        "returned": {
+          "p": 37.98576355284685,
+          "v": -1.8758897779470722,
+          "done": false
+        }
+      }
+    },
+    {
+      "name": "glideStep/stops",
+      "fn": "glideStep",
+      "args": [
+        50,
+        0.0201,
+        16
+      ],
+      "outcome": {
+        "returned": {
+          "p": 50.316530868276104,
+          "v": 0,
+          "done": true
+        }
+      }
+    },
+    {
+      "name": "glideStep/stops-negative",
+      "fn": "glideStep",
+      "args": [
+        50,
+        -0.02,
+        1
+      ],
+      "outcome": {
+        "returned": {
+          "p": 49.98002,
+          "v": 0,
+          "done": true
+        }
+      }
+    },
+    {
+      "name": "glideStep/zero-dt",
+      "fn": "glideStep",
+      "args": [
+        0,
+        1,
+        0
+      ],
+      "outcome": {
+        "returned": {
+          "p": 0,
+          "v": 1,
+          "done": false
+        }
+      }
+    },
+    {
+      "name": "springStep/far",
+      "fn": "springStep",
+      "args": [
+        100,
+        0,
+        0,
+        16
+      ],
+      "outcome": {
+        "returned": {
+          "p": 94.24,
+          "v": -0.36,
+          "done": false
+        }
+      }
+    },
+    {
+      "name": "springStep/moving",
+      "fn": "springStep",
+      "args": [
+        -40,
+        0.5,
+        0,
+        16
+      ],
+      "outcome": {
+        "returned": {
+          "p": -33.536,
+          "v": 0.404,
+          "done": false
+        }
+      }
+    },
+    {
+      "name": "springStep/lands",
+      "fn": "springStep",
+      "args": [
+        0.2,
+        0.001,
+        0,
+        16
+      ],
+      "outcome": {
+        "returned": {
+          "p": 0,
+          "v": 0,
+          "done": true
+        }
+      }
+    },
+    {
+      "name": "springStep/near-but-fast",
+      "fn": "springStep",
+      "args": [
+        0.2,
+        1,
+        0,
+        16
+      ],
+      "outcome": {
+        "returned": {
+          "p": 8.508479999999999,
+          "v": 0.51928,
+          "done": false
+        }
+      }
+    },
+    {
+      "name": "springStep/close-but-moving",
+      "fn": "springStep",
+      "args": [
+        10.1,
+        0,
+        10,
+        1
+      ],
+      "outcome": {
+        "returned": {
+          "p": 10,
+          "v": 0,
+          "done": true
+        }
+      }
+    },
+    {
+      "name": "easeOutCubic/zero",
+      "fn": "easeOutCubic",
+      "args": [
+        0
+      ],
+      "outcome": {
+        "returned": 0
+      }
+    },
+    {
+      "name": "easeOutCubic/half",
+      "fn": "easeOutCubic",
+      "args": [
+        0.5
+      ],
+      "outcome": {
+        "returned": 0.875
+      }
+    },
+    {
+      "name": "easeOutCubic/one",
+      "fn": "easeOutCubic",
+      "args": [
+        1
+      ],
+      "outcome": {
+        "returned": 1
+      }
+    },
+    {
+      "name": "easeOutCubic/quarter",
+      "fn": "easeOutCubic",
+      "args": [
+        0.25
+      ],
+      "outcome": {
+        "returned": 0.578125
+      }
+    },
+    {
+      "name": "zoomLerp/start",
+      "fn": "zoomLerp",
+      "args": [
+        1,
+        4,
+        0
+      ],
+      "outcome": {
+        "returned": 1
+      }
+    },
+    {
+      "name": "zoomLerp/half",
+      "fn": "zoomLerp",
+      "args": [
+        1,
+        4,
+        0.5
+      ],
+      "outcome": {
+        "returned": 2
+      }
+    },
+    {
+      "name": "zoomLerp/end",
+      "fn": "zoomLerp",
+      "args": [
+        0.5,
+        2,
+        1
+      ],
+      "outcome": {
+        "returned": 2
+      }
+    },
+    {
+      "name": "zoomLerp/down",
+      "fn": "zoomLerp",
+      "args": [
+        3,
+        1,
+        0.3
+      ],
+      "outcome": {
+        "returned": 2.157669279974593
+      }
+    },
+    {
+      "name": "boxOf/portrait",
+      "fn": "boxOf",
+      "args": [
+        {
+          "width": 500,
+          "height": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "width": 500,
+          "height": 800,
+          "orientation": "portrait"
+        }
+      }
+    },
+    {
+      "name": "boxOf/landscape",
+      "fn": "boxOf",
+      "args": [
+        {
+          "width": 1200,
+          "height": 700
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "width": 1200,
+          "height": 700,
+          "orientation": "landscape"
+        }
+      }
+    },
+    {
+      "name": "boxOf/square",
+      "fn": "boxOf",
+      "args": [
+        {
+          "width": 600,
+          "height": 600
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "width": 600,
+          "height": 600,
+          "orientation": "portrait"
+        }
+      }
+    },
+    {
+      "name": "boxOf/empty",
+      "fn": "boxOf",
+      "args": [
+        {
+          "width": 0,
+          "height": 0
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "width": 0,
+          "height": 0,
+          "orientation": "portrait"
+        }
+      }
+    },
+    {
+      "name": "matchesQuery/empty-query",
+      "fn": "matchesQuery",
+      "args": [
+        {},
+        {
+          "width": 500,
+          "height": 800,
+          "orientation": "portrait"
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "matchesQuery/min-width-pass",
+      "fn": "matchesQuery",
+      "args": [
+        {
+          "minWidth": 500
+        },
+        {
+          "width": 500,
+          "height": 800,
+          "orientation": "portrait"
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "matchesQuery/min-width-fail",
+      "fn": "matchesQuery",
+      "args": [
+        {
+          "minWidth": 501
+        },
+        {
+          "width": 500,
+          "height": 800,
+          "orientation": "portrait"
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "matchesQuery/max-width-pass",
+      "fn": "matchesQuery",
+      "args": [
+        {
+          "maxWidth": 500
+        },
+        {
+          "width": 500,
+          "height": 800,
+          "orientation": "portrait"
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "matchesQuery/max-width-fail",
+      "fn": "matchesQuery",
+      "args": [
+        {
+          "maxWidth": 499
+        },
+        {
+          "width": 500,
+          "height": 800,
+          "orientation": "portrait"
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "matchesQuery/min-height-pass",
+      "fn": "matchesQuery",
+      "args": [
+        {
+          "minHeight": 800
+        },
+        {
+          "width": 500,
+          "height": 800,
+          "orientation": "portrait"
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "matchesQuery/min-height-fail",
+      "fn": "matchesQuery",
+      "args": [
+        {
+          "minHeight": 801
+        },
+        {
+          "width": 500,
+          "height": 800,
+          "orientation": "portrait"
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "matchesQuery/max-height-pass",
+      "fn": "matchesQuery",
+      "args": [
+        {
+          "maxHeight": 800
+        },
+        {
+          "width": 500,
+          "height": 800,
+          "orientation": "portrait"
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "matchesQuery/max-height-fail",
+      "fn": "matchesQuery",
+      "args": [
+        {
+          "maxHeight": 799
+        },
+        {
+          "width": 500,
+          "height": 800,
+          "orientation": "portrait"
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "matchesQuery/orientation-pass",
+      "fn": "matchesQuery",
+      "args": [
+        {
+          "orientation": "landscape"
+        },
+        {
+          "width": 1200,
+          "height": 700,
+          "orientation": "landscape"
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "matchesQuery/orientation-fail",
+      "fn": "matchesQuery",
+      "args": [
+        {
+          "orientation": "portrait"
+        },
+        {
+          "width": 1200,
+          "height": 700,
+          "orientation": "landscape"
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "matchesQuery/all-pass",
+      "fn": "matchesQuery",
+      "args": [
+        {
+          "minWidth": 1000,
+          "maxWidth": 1300,
+          "minHeight": 600,
+          "maxHeight": 800,
+          "orientation": "landscape"
+        },
+        {
+          "width": 1200,
+          "height": 700,
+          "orientation": "landscape"
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "mergeSettings/patch",
+      "fn": "mergeSettings",
+      "args": [
+        {
+          "flow": "continuous",
+          "layout": "vertical",
+          "spread": "none",
+          "sizing": "intrinsic",
+          "columns": "square",
+          "bounded": true,
+          "padding": 24,
+          "gap": 16,
+          "pageFrame": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "direction": "ltr",
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "arrivalAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoomAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "anchorAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "viewRotation": 0,
+          "zoom": {
+            "mode": "automatic"
+          },
+          "scrollBehavior": "smooth",
+          "viewUnitsPerPoint": 1.3333333333333333
+        },
+        {
+          "padding": 4,
+          "gap": {
+            "px": 8
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "flow": "continuous",
+          "layout": "vertical",
+          "spread": "none",
+          "sizing": "intrinsic",
+          "columns": "square",
+          "bounded": true,
+          "padding": 4,
+          "gap": {
+            "px": 8
+          },
+          "pageFrame": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "direction": "ltr",
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "arrivalAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoomAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "anchorAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "viewRotation": 0,
+          "zoom": {
+            "mode": "automatic"
+          },
+          "scrollBehavior": "smooth",
+          "viewUnitsPerPoint": 1.3333333333333333
+        }
+      }
+    },
+    {
+      "name": "mergeSettings/undefined-skipped",
+      "fn": "mergeSettings",
+      "args": [
+        {
+          "flow": "continuous",
+          "layout": "vertical",
+          "spread": "none",
+          "sizing": "intrinsic",
+          "columns": "square",
+          "bounded": true,
+          "padding": 24,
+          "gap": 16,
+          "pageFrame": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "direction": "ltr",
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "arrivalAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoomAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "anchorAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "viewRotation": 0,
+          "zoom": {
+            "mode": "automatic"
+          },
+          "scrollBehavior": "smooth",
+          "viewUnitsPerPoint": 1.3333333333333333
+        },
+        {
+          "padding": {
+            "$undefined": true
+          },
+          "layout": "grid"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "flow": "continuous",
+          "layout": "grid",
+          "spread": "none",
+          "sizing": "intrinsic",
+          "columns": "square",
+          "bounded": true,
+          "padding": 24,
+          "gap": 16,
+          "pageFrame": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "direction": "ltr",
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "arrivalAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoomAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "anchorAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "viewRotation": 0,
+          "zoom": {
+            "mode": "automatic"
+          },
+          "scrollBehavior": "smooth",
+          "viewUnitsPerPoint": 1.3333333333333333
+        }
+      }
+    },
+    {
+      "name": "mergeSettings/empty",
+      "fn": "mergeSettings",
+      "args": [
+        {
+          "flow": "continuous",
+          "layout": "vertical",
+          "spread": "none",
+          "sizing": "intrinsic",
+          "columns": "square",
+          "bounded": true,
+          "padding": 24,
+          "gap": 16,
+          "pageFrame": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "direction": "ltr",
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "arrivalAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoomAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "anchorAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "viewRotation": 0,
+          "zoom": {
+            "mode": "automatic"
+          },
+          "scrollBehavior": "smooth",
+          "viewUnitsPerPoint": 1.3333333333333333
+        },
+        {}
+      ],
+      "outcome": {
+        "returned": {
+          "flow": "continuous",
+          "layout": "vertical",
+          "spread": "none",
+          "sizing": "intrinsic",
+          "columns": "square",
+          "bounded": true,
+          "padding": 24,
+          "gap": 16,
+          "pageFrame": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "direction": "ltr",
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "arrivalAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoomAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "anchorAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "viewRotation": 0,
+          "zoom": {
+            "mode": "automatic"
+          },
+          "scrollBehavior": "smooth",
+          "viewUnitsPerPoint": 1.3333333333333333
+        }
+      }
+    },
+    {
+      "name": "eqSetting/same-primitive",
+      "fn": "eqSetting",
+      "args": [
+        4,
+        4
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "eqSetting/different-primitive",
+      "fn": "eqSetting",
+      "args": [
+        4,
+        5
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "eqSetting/nan",
+      "fn": "eqSetting",
+      "args": [
+        {
+          "$number": "NaN"
+        },
+        {
+          "$number": "NaN"
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "eqSetting/strings",
+      "fn": "eqSetting",
+      "args": [
+        "grid",
+        "grid"
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "eqSetting/objects-equal",
+      "fn": "eqSetting",
+      "args": [
+        {
+          "x": "start",
+          "y": 0.5
+        },
+        {
+          "x": "start",
+          "y": 0.5
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "eqSetting/objects-differ",
+      "fn": "eqSetting",
+      "args": [
+        {
+          "x": "start",
+          "y": 0.5
+        },
+        {
+          "x": "start",
+          "y": 0.25
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "eqSetting/object-primitive",
+      "fn": "eqSetting",
+      "args": [
+        {
+          "px": 4
+        },
+        4
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "eqSetting/primitive-object",
+      "fn": "eqSetting",
+      "args": [
+        4,
+        {
+          "px": 4
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "resolveResponsive/defaults-compact",
+      "fn": "resolveResponsive",
+      "args": [
+        {
+          "flow": "continuous",
+          "layout": "vertical",
+          "spread": "none",
+          "sizing": "intrinsic",
+          "columns": "square",
+          "bounded": true,
+          "padding": 24,
+          "gap": 16,
+          "pageFrame": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "direction": "ltr",
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "arrivalAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoomAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "anchorAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "viewRotation": 0,
+          "zoom": {
+            "mode": "automatic"
+          },
+          "scrollBehavior": "smooth",
+          "viewUnitsPerPoint": 1.3333333333333333
+        },
+        [
+          {
+            "name": "compact",
+            "when": {
+              "maxWidth": 600
+            },
+            "settings": {
+              "padding": 4
+            }
+          }
+        ],
+        {
+          "width": 500,
+          "height": 800,
+          "orientation": "portrait"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "effective": {
+            "flow": "continuous",
+            "layout": "vertical",
+            "spread": "none",
+            "sizing": "intrinsic",
+            "columns": "square",
+            "bounded": true,
+            "padding": 4,
+            "gap": 16,
+            "pageFrame": {
+              "top": 0,
+              "right": 0,
+              "bottom": 0,
+              "left": 0
+            },
+            "direction": "ltr",
+            "fitAlign": {
+              "x": "center",
+              "y": "center"
+            },
+            "arrivalAlign": {
+              "x": "start",
+              "y": "start"
+            },
+            "zoomAlign": {
+              "x": "center",
+              "y": "center"
+            },
+            "anchorAlign": {
+              "x": "start",
+              "y": "start"
+            },
+            "viewRotation": 0,
+            "zoom": {
+              "mode": "automatic"
+            },
+            "scrollBehavior": "smooth",
+            "viewUnitsPerPoint": 1.3333333333333333
+          },
+          "active": [
+            "compact"
+          ]
+        }
+      }
+    },
+    {
+      "name": "resolveResponsive/defaults-wide",
+      "fn": "resolveResponsive",
+      "args": [
+        {
+          "flow": "continuous",
+          "layout": "vertical",
+          "spread": "none",
+          "sizing": "intrinsic",
+          "columns": "square",
+          "bounded": true,
+          "padding": 24,
+          "gap": 16,
+          "pageFrame": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "direction": "ltr",
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "arrivalAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoomAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "anchorAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "viewRotation": 0,
+          "zoom": {
+            "mode": "automatic"
+          },
+          "scrollBehavior": "smooth",
+          "viewUnitsPerPoint": 1.3333333333333333
+        },
+        [
+          {
+            "name": "compact",
+            "when": {
+              "maxWidth": 600
+            },
+            "settings": {
+              "padding": 4
+            }
+          }
+        ],
+        {
+          "width": 1200,
+          "height": 700,
+          "orientation": "landscape"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "effective": {
+            "flow": "continuous",
+            "layout": "vertical",
+            "spread": "none",
+            "sizing": "intrinsic",
+            "columns": "square",
+            "bounded": true,
+            "padding": 24,
+            "gap": 16,
+            "pageFrame": {
+              "top": 0,
+              "right": 0,
+              "bottom": 0,
+              "left": 0
+            },
+            "direction": "ltr",
+            "fitAlign": {
+              "x": "center",
+              "y": "center"
+            },
+            "arrivalAlign": {
+              "x": "start",
+              "y": "start"
+            },
+            "zoomAlign": {
+              "x": "center",
+              "y": "center"
+            },
+            "anchorAlign": {
+              "x": "start",
+              "y": "start"
+            },
+            "viewRotation": 0,
+            "zoom": {
+              "mode": "automatic"
+            },
+            "scrollBehavior": "smooth",
+            "viewUnitsPerPoint": 1.3333333333333333
+          },
+          "active": []
+        }
+      }
+    },
+    {
+      "name": "resolveResponsive/no-rules",
+      "fn": "resolveResponsive",
+      "args": [
+        {
+          "flow": "continuous",
+          "layout": "vertical",
+          "spread": "none",
+          "sizing": "intrinsic",
+          "columns": "square",
+          "bounded": true,
+          "padding": 24,
+          "gap": 16,
+          "pageFrame": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "direction": "ltr",
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "arrivalAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoomAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "anchorAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "viewRotation": 0,
+          "zoom": {
+            "mode": "automatic"
+          },
+          "scrollBehavior": "smooth",
+          "viewUnitsPerPoint": 1.3333333333333333
+        },
+        [],
+        {
+          "width": 500,
+          "height": 800,
+          "orientation": "portrait"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "effective": {
+            "flow": "continuous",
+            "layout": "vertical",
+            "spread": "none",
+            "sizing": "intrinsic",
+            "columns": "square",
+            "bounded": true,
+            "padding": 24,
+            "gap": 16,
+            "pageFrame": {
+              "top": 0,
+              "right": 0,
+              "bottom": 0,
+              "left": 0
+            },
+            "direction": "ltr",
+            "fitAlign": {
+              "x": "center",
+              "y": "center"
+            },
+            "arrivalAlign": {
+              "x": "start",
+              "y": "start"
+            },
+            "zoomAlign": {
+              "x": "center",
+              "y": "center"
+            },
+            "anchorAlign": {
+              "x": "start",
+              "y": "start"
+            },
+            "viewRotation": 0,
+            "zoom": {
+              "mode": "automatic"
+            },
+            "scrollBehavior": "smooth",
+            "viewUnitsPerPoint": 1.3333333333333333
+          },
+          "active": []
+        }
+      }
+    },
+    {
+      "name": "resolveResponsive/later-wins-per-key",
+      "fn": "resolveResponsive",
+      "args": [
+        {
+          "flow": "continuous",
+          "layout": "vertical",
+          "spread": "none",
+          "sizing": "intrinsic",
+          "columns": "square",
+          "bounded": true,
+          "padding": 24,
+          "gap": 16,
+          "pageFrame": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "direction": "ltr",
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "arrivalAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoomAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "anchorAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "viewRotation": 0,
+          "zoom": {
+            "mode": "automatic"
+          },
+          "scrollBehavior": "smooth",
+          "viewUnitsPerPoint": 1.3333333333333333
+        },
+        [
+          {
+            "name": "a",
+            "when": {
+              "maxWidth": 600
+            },
+            "settings": {
+              "padding": 4,
+              "gap": 8
+            }
+          },
+          {
+            "when": {
+              "orientation": "portrait"
+            },
+            "settings": {
+              "padding": 2
+            }
+          },
+          {
+            "name": "b",
+            "when": {
+              "minWidth": 700
+            },
+            "settings": {
+              "gap": 99
+            }
+          },
+          {
+            "name": "pure",
+            "when": {}
+          },
+          {
+            "name": "c",
+            "when": {
+              "maxHeight": 900
+            },
+            "settings": {
+              "layout": "grid",
+              "columns": "auto"
+            }
+          }
+        ],
+        {
+          "width": 500,
+          "height": 800,
+          "orientation": "portrait"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "effective": {
+            "flow": "continuous",
+            "layout": "grid",
+            "spread": "none",
+            "sizing": "intrinsic",
+            "columns": "auto",
+            "bounded": true,
+            "padding": 2,
+            "gap": 8,
+            "pageFrame": {
+              "top": 0,
+              "right": 0,
+              "bottom": 0,
+              "left": 0
+            },
+            "direction": "ltr",
+            "fitAlign": {
+              "x": "center",
+              "y": "center"
+            },
+            "arrivalAlign": {
+              "x": "start",
+              "y": "start"
+            },
+            "zoomAlign": {
+              "x": "center",
+              "y": "center"
+            },
+            "anchorAlign": {
+              "x": "start",
+              "y": "start"
+            },
+            "viewRotation": 0,
+            "zoom": {
+              "mode": "automatic"
+            },
+            "scrollBehavior": "smooth",
+            "viewUnitsPerPoint": 1.3333333333333333
+          },
+          "active": [
+            "a",
+            "pure",
+            "c"
+          ]
+        }
+      }
+    },
+    {
+      "name": "resolveResponsive/predicates",
+      "fn": "resolveResponsive",
+      "args": [
+        {
+          "flow": "continuous",
+          "layout": "vertical",
+          "spread": "none",
+          "sizing": "intrinsic",
+          "columns": "square",
+          "bounded": true,
+          "padding": 24,
+          "gap": 16,
+          "pageFrame": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "direction": "ltr",
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "arrivalAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoomAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "anchorAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "viewRotation": 0,
+          "zoom": {
+            "mode": "automatic"
+          },
+          "scrollBehavior": "smooth",
+          "viewUnitsPerPoint": 1.3333333333333333
+        },
+        [
+          {
+            "name": "yes",
+            "when": {
+              "$returns": 1
+            },
+            "settings": {
+              "bounded": false
+            }
+          },
+          {
+            "name": "no",
+            "when": {
+              "$returns": 0
+            },
+            "settings": {
+              "padding": 0
+            }
+          },
+          {
+            "name": "empty-string",
+            "when": {
+              "$returns": ""
+            }
+          },
+          {
+            "name": "object",
+            "when": {
+              "$returns": {
+                "any": true
+              }
+            },
+            "settings": {
+              "spread": "odd"
+            }
+          }
+        ],
+        {
+          "width": 1200,
+          "height": 700,
+          "orientation": "landscape"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "effective": {
+            "flow": "continuous",
+            "layout": "vertical",
+            "spread": "odd",
+            "sizing": "intrinsic",
+            "columns": "square",
+            "bounded": false,
+            "padding": 24,
+            "gap": 16,
+            "pageFrame": {
+              "top": 0,
+              "right": 0,
+              "bottom": 0,
+              "left": 0
+            },
+            "direction": "ltr",
+            "fitAlign": {
+              "x": "center",
+              "y": "center"
+            },
+            "arrivalAlign": {
+              "x": "start",
+              "y": "start"
+            },
+            "zoomAlign": {
+              "x": "center",
+              "y": "center"
+            },
+            "anchorAlign": {
+              "x": "start",
+              "y": "start"
+            },
+            "viewRotation": 0,
+            "zoom": {
+              "mode": "automatic"
+            },
+            "scrollBehavior": "smooth",
+            "viewUnitsPerPoint": 1.3333333333333333
+          },
+          "active": [
+            "yes",
+            "object"
+          ]
+        }
+      }
+    },
+    {
+      "name": "resolveResponsive/undefined-in-patch",
+      "fn": "resolveResponsive",
+      "args": [
+        {
+          "flow": "continuous",
+          "layout": "vertical",
+          "spread": "none",
+          "sizing": "intrinsic",
+          "columns": "square",
+          "bounded": true,
+          "padding": 24,
+          "gap": 16,
+          "pageFrame": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "direction": "ltr",
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "arrivalAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoomAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "anchorAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "viewRotation": 0,
+          "zoom": {
+            "mode": "automatic"
+          },
+          "scrollBehavior": "smooth",
+          "viewUnitsPerPoint": 1.3333333333333333
+        },
+        [
+          {
+            "name": "u",
+            "when": {},
+            "settings": {
+              "padding": {
+                "$undefined": true
+              }
+            }
+          }
+        ],
+        {
+          "width": 500,
+          "height": 800,
+          "orientation": "portrait"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "effective": {
+            "flow": "continuous",
+            "layout": "vertical",
+            "spread": "none",
+            "sizing": "intrinsic",
+            "columns": "square",
+            "bounded": true,
+            "padding": 24,
+            "gap": 16,
+            "pageFrame": {
+              "top": 0,
+              "right": 0,
+              "bottom": 0,
+              "left": 0
+            },
+            "direction": "ltr",
+            "fitAlign": {
+              "x": "center",
+              "y": "center"
+            },
+            "arrivalAlign": {
+              "x": "start",
+              "y": "start"
+            },
+            "zoomAlign": {
+              "x": "center",
+              "y": "center"
+            },
+            "anchorAlign": {
+              "x": "start",
+              "y": "start"
+            },
+            "viewRotation": 0,
+            "zoom": {
+              "mode": "automatic"
+            },
+            "scrollBehavior": "smooth",
+            "viewUnitsPerPoint": 1.3333333333333333
+          },
+          "active": [
+            "u"
+          ]
+        }
+      }
+    },
+    {
+      "name": "initialStageState/empty",
+      "fn": "initialStageState",
+      "args": [
+        {}
+      ],
+      "outcome": {
+        "returned": {
+          "camera": {
+            "x": 0,
+            "y": 0,
+            "zoom": 1
+          },
+          "placed": false,
+          "cameraResting": true,
+          "vp": {
+            "width": 0,
+            "height": 0
+          },
+          "dpr": 1,
+          "cursor": 0,
+          "motionCause": "user",
+          "activeRules": [],
+          "flow": "continuous",
+          "layout": "vertical",
+          "spread": "none",
+          "sizing": "intrinsic",
+          "columns": "square",
+          "bounded": true,
+          "padding": 24,
+          "gap": 16,
+          "pageFrame": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "direction": "ltr",
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "arrivalAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoomAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "anchorAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "viewRotation": 0,
+          "zoom": {
+            "mode": "automatic"
+          },
+          "scrollBehavior": "smooth",
+          "viewUnitsPerPoint": 1.3333333333333333
+        }
+      }
+    },
+    {
+      "name": "initialStageState/overrides",
+      "fn": "initialStageState",
+      "args": [
+        {
+          "layout": "grid",
+          "columns": 3,
+          "zoom": {
+            "level": 0.2
+          },
+          "padding": 0,
+          "gap": {
+            "px": 8
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "camera": {
+            "x": 0,
+            "y": 0,
+            "zoom": 1
+          },
+          "placed": false,
+          "cameraResting": true,
+          "vp": {
+            "width": 0,
+            "height": 0
+          },
+          "dpr": 1,
+          "cursor": 0,
+          "motionCause": "user",
+          "activeRules": [],
+          "flow": "continuous",
+          "layout": "grid",
+          "spread": "none",
+          "sizing": "intrinsic",
+          "columns": 3,
+          "bounded": true,
+          "padding": 0,
+          "gap": {
+            "px": 8
+          },
+          "pageFrame": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "direction": "ltr",
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "arrivalAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoomAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "anchorAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "viewRotation": 0,
+          "zoom": {
+            "level": 0.2
+          },
+          "scrollBehavior": "smooth",
+          "viewUnitsPerPoint": 1.3333333333333333
+        }
+      }
+    },
+    {
+      "name": "initialStageState/strips-capability-config",
+      "fn": "initialStageState",
+      "args": [
+        {
+          "responsive": [],
+          "scheduler": "frames",
+          "flow": "paged"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "camera": {
+            "x": 0,
+            "y": 0,
+            "zoom": 1
+          },
+          "placed": false,
+          "cameraResting": true,
+          "vp": {
+            "width": 0,
+            "height": 0
+          },
+          "dpr": 1,
+          "cursor": 0,
+          "motionCause": "user",
+          "activeRules": [],
+          "flow": "paged",
+          "layout": "vertical",
+          "spread": "none",
+          "sizing": "intrinsic",
+          "columns": "square",
+          "bounded": true,
+          "padding": 24,
+          "gap": 16,
+          "pageFrame": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "direction": "ltr",
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "arrivalAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoomAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "anchorAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "viewRotation": 0,
+          "zoom": {
+            "mode": "automatic"
+          },
+          "scrollBehavior": "smooth",
+          "viewUnitsPerPoint": 1.3333333333333333
+        }
+      }
+    },
+    {
+      "name": "stageReducer/camera",
+      "fn": "stageReducer",
+      "args": [
+        {
+          "camera": {
+            "x": 0,
+            "y": 0,
+            "zoom": 1
+          },
+          "placed": false,
+          "cameraResting": true,
+          "vp": {
+            "width": 0,
+            "height": 0
+          },
+          "dpr": 1,
+          "cursor": 0,
+          "motionCause": "user",
+          "activeRules": [],
+          "flow": "continuous",
+          "layout": "vertical",
+          "spread": "none",
+          "sizing": "intrinsic",
+          "columns": "square",
+          "bounded": true,
+          "padding": 24,
+          "gap": 16,
+          "pageFrame": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "direction": "ltr",
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "arrivalAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoomAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "anchorAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "viewRotation": 0,
+          "zoom": {
+            "mode": "automatic"
+          },
+          "scrollBehavior": "smooth",
+          "viewUnitsPerPoint": 1
+        },
+        {
+          "type": "CAMERA",
+          "camera": {
+            "x": 1,
+            "y": 2,
+            "zoom": 3
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "state": {
+            "camera": {
+              "x": 1,
+              "y": 2,
+              "zoom": 3
+            },
+            "placed": false,
+            "cameraResting": true,
+            "vp": {
+              "width": 0,
+              "height": 0
+            },
+            "dpr": 1,
+            "cursor": 0,
+            "motionCause": "user",
+            "activeRules": [],
+            "flow": "continuous",
+            "layout": "vertical",
+            "spread": "none",
+            "sizing": "intrinsic",
+            "columns": "square",
+            "bounded": true,
+            "padding": 24,
+            "gap": 16,
+            "pageFrame": {
+              "top": 0,
+              "right": 0,
+              "bottom": 0,
+              "left": 0
+            },
+            "direction": "ltr",
+            "fitAlign": {
+              "x": "center",
+              "y": "center"
+            },
+            "arrivalAlign": {
+              "x": "start",
+              "y": "start"
+            },
+            "zoomAlign": {
+              "x": "center",
+              "y": "center"
+            },
+            "anchorAlign": {
+              "x": "start",
+              "y": "start"
+            },
+            "viewRotation": 0,
+            "zoom": {
+              "mode": "automatic"
+            },
+            "scrollBehavior": "smooth",
+            "viewUnitsPerPoint": 1
+          },
+          "same": false
+        }
+      }
+    },
+    {
+      "name": "stageReducer/camera-rest-change",
+      "fn": "stageReducer",
+      "args": [
+        {
+          "camera": {
+            "x": 0,
+            "y": 0,
+            "zoom": 1
+          },
+          "placed": false,
+          "cameraResting": true,
+          "vp": {
+            "width": 0,
+            "height": 0
+          },
+          "dpr": 1,
+          "cursor": 0,
+          "motionCause": "user",
+          "activeRules": [],
+          "flow": "continuous",
+          "layout": "vertical",
+          "spread": "none",
+          "sizing": "intrinsic",
+          "columns": "square",
+          "bounded": true,
+          "padding": 24,
+          "gap": 16,
+          "pageFrame": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "direction": "ltr",
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "arrivalAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoomAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "anchorAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "viewRotation": 0,
+          "zoom": {
+            "mode": "automatic"
+          },
+          "scrollBehavior": "smooth",
+          "viewUnitsPerPoint": 1
+        },
+        {
+          "type": "CAMERA_REST",
+          "resting": false
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "state": {
+            "camera": {
+              "x": 0,
+              "y": 0,
+              "zoom": 1
+            },
+            "placed": false,
+            "cameraResting": false,
+            "vp": {
+              "width": 0,
+              "height": 0
+            },
+            "dpr": 1,
+            "cursor": 0,
+            "motionCause": "user",
+            "activeRules": [],
+            "flow": "continuous",
+            "layout": "vertical",
+            "spread": "none",
+            "sizing": "intrinsic",
+            "columns": "square",
+            "bounded": true,
+            "padding": 24,
+            "gap": 16,
+            "pageFrame": {
+              "top": 0,
+              "right": 0,
+              "bottom": 0,
+              "left": 0
+            },
+            "direction": "ltr",
+            "fitAlign": {
+              "x": "center",
+              "y": "center"
+            },
+            "arrivalAlign": {
+              "x": "start",
+              "y": "start"
+            },
+            "zoomAlign": {
+              "x": "center",
+              "y": "center"
+            },
+            "anchorAlign": {
+              "x": "start",
+              "y": "start"
+            },
+            "viewRotation": 0,
+            "zoom": {
+              "mode": "automatic"
+            },
+            "scrollBehavior": "smooth",
+            "viewUnitsPerPoint": 1
+          },
+          "same": false
+        }
+      }
+    },
+    {
+      "name": "stageReducer/camera-rest-same",
+      "fn": "stageReducer",
+      "args": [
+        {
+          "camera": {
+            "x": 0,
+            "y": 0,
+            "zoom": 1
+          },
+          "placed": false,
+          "cameraResting": true,
+          "vp": {
+            "width": 0,
+            "height": 0
+          },
+          "dpr": 1,
+          "cursor": 0,
+          "motionCause": "user",
+          "activeRules": [],
+          "flow": "continuous",
+          "layout": "vertical",
+          "spread": "none",
+          "sizing": "intrinsic",
+          "columns": "square",
+          "bounded": true,
+          "padding": 24,
+          "gap": 16,
+          "pageFrame": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "direction": "ltr",
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "arrivalAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoomAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "anchorAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "viewRotation": 0,
+          "zoom": {
+            "mode": "automatic"
+          },
+          "scrollBehavior": "smooth",
+          "viewUnitsPerPoint": 1
+        },
+        {
+          "type": "CAMERA_REST",
+          "resting": true
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "state": {
+            "camera": {
+              "x": 0,
+              "y": 0,
+              "zoom": 1
+            },
+            "placed": false,
+            "cameraResting": true,
+            "vp": {
+              "width": 0,
+              "height": 0
+            },
+            "dpr": 1,
+            "cursor": 0,
+            "motionCause": "user",
+            "activeRules": [],
+            "flow": "continuous",
+            "layout": "vertical",
+            "spread": "none",
+            "sizing": "intrinsic",
+            "columns": "square",
+            "bounded": true,
+            "padding": 24,
+            "gap": 16,
+            "pageFrame": {
+              "top": 0,
+              "right": 0,
+              "bottom": 0,
+              "left": 0
+            },
+            "direction": "ltr",
+            "fitAlign": {
+              "x": "center",
+              "y": "center"
+            },
+            "arrivalAlign": {
+              "x": "start",
+              "y": "start"
+            },
+            "zoomAlign": {
+              "x": "center",
+              "y": "center"
+            },
+            "anchorAlign": {
+              "x": "start",
+              "y": "start"
+            },
+            "viewRotation": 0,
+            "zoom": {
+              "mode": "automatic"
+            },
+            "scrollBehavior": "smooth",
+            "viewUnitsPerPoint": 1
+          },
+          "same": true
+        }
+      }
+    },
+    {
+      "name": "stageReducer/placed",
+      "fn": "stageReducer",
+      "args": [
+        {
+          "camera": {
+            "x": 0,
+            "y": 0,
+            "zoom": 1
+          },
+          "placed": false,
+          "cameraResting": true,
+          "vp": {
+            "width": 0,
+            "height": 0
+          },
+          "dpr": 1,
+          "cursor": 0,
+          "motionCause": "user",
+          "activeRules": [],
+          "flow": "continuous",
+          "layout": "vertical",
+          "spread": "none",
+          "sizing": "intrinsic",
+          "columns": "square",
+          "bounded": true,
+          "padding": 24,
+          "gap": 16,
+          "pageFrame": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "direction": "ltr",
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "arrivalAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoomAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "anchorAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "viewRotation": 0,
+          "zoom": {
+            "mode": "automatic"
+          },
+          "scrollBehavior": "smooth",
+          "viewUnitsPerPoint": 1
+        },
+        {
+          "type": "PLACED"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "state": {
+            "camera": {
+              "x": 0,
+              "y": 0,
+              "zoom": 1
+            },
+            "placed": true,
+            "cameraResting": true,
+            "vp": {
+              "width": 0,
+              "height": 0
+            },
+            "dpr": 1,
+            "cursor": 0,
+            "motionCause": "user",
+            "activeRules": [],
+            "flow": "continuous",
+            "layout": "vertical",
+            "spread": "none",
+            "sizing": "intrinsic",
+            "columns": "square",
+            "bounded": true,
+            "padding": 24,
+            "gap": 16,
+            "pageFrame": {
+              "top": 0,
+              "right": 0,
+              "bottom": 0,
+              "left": 0
+            },
+            "direction": "ltr",
+            "fitAlign": {
+              "x": "center",
+              "y": "center"
+            },
+            "arrivalAlign": {
+              "x": "start",
+              "y": "start"
+            },
+            "zoomAlign": {
+              "x": "center",
+              "y": "center"
+            },
+            "anchorAlign": {
+              "x": "start",
+              "y": "start"
+            },
+            "viewRotation": 0,
+            "zoom": {
+              "mode": "automatic"
+            },
+            "scrollBehavior": "smooth",
+            "viewUnitsPerPoint": 1
+          },
+          "same": false
+        }
+      }
+    },
+    {
+      "name": "stageReducer/placed-again",
+      "fn": "stageReducer",
+      "args": [
+        {
+          "camera": {
+            "x": 0,
+            "y": 0,
+            "zoom": 1
+          },
+          "placed": true,
+          "cameraResting": true,
+          "vp": {
+            "width": 0,
+            "height": 0
+          },
+          "dpr": 1,
+          "cursor": 0,
+          "motionCause": "user",
+          "activeRules": [],
+          "flow": "continuous",
+          "layout": "vertical",
+          "spread": "none",
+          "sizing": "intrinsic",
+          "columns": "square",
+          "bounded": true,
+          "padding": 24,
+          "gap": 16,
+          "pageFrame": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "direction": "ltr",
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "arrivalAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoomAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "anchorAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "viewRotation": 0,
+          "zoom": {
+            "mode": "automatic"
+          },
+          "scrollBehavior": "smooth",
+          "viewUnitsPerPoint": 1
+        },
+        {
+          "type": "PLACED"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "state": {
+            "camera": {
+              "x": 0,
+              "y": 0,
+              "zoom": 1
+            },
+            "placed": true,
+            "cameraResting": true,
+            "vp": {
+              "width": 0,
+              "height": 0
+            },
+            "dpr": 1,
+            "cursor": 0,
+            "motionCause": "user",
+            "activeRules": [],
+            "flow": "continuous",
+            "layout": "vertical",
+            "spread": "none",
+            "sizing": "intrinsic",
+            "columns": "square",
+            "bounded": true,
+            "padding": 24,
+            "gap": 16,
+            "pageFrame": {
+              "top": 0,
+              "right": 0,
+              "bottom": 0,
+              "left": 0
+            },
+            "direction": "ltr",
+            "fitAlign": {
+              "x": "center",
+              "y": "center"
+            },
+            "arrivalAlign": {
+              "x": "start",
+              "y": "start"
+            },
+            "zoomAlign": {
+              "x": "center",
+              "y": "center"
+            },
+            "anchorAlign": {
+              "x": "start",
+              "y": "start"
+            },
+            "viewRotation": 0,
+            "zoom": {
+              "mode": "automatic"
+            },
+            "scrollBehavior": "smooth",
+            "viewUnitsPerPoint": 1
+          },
+          "same": true
+        }
+      }
+    },
+    {
+      "name": "stageReducer/vp",
+      "fn": "stageReducer",
+      "args": [
+        {
+          "camera": {
+            "x": 0,
+            "y": 0,
+            "zoom": 1
+          },
+          "placed": false,
+          "cameraResting": true,
+          "vp": {
+            "width": 0,
+            "height": 0
+          },
+          "dpr": 1,
+          "cursor": 0,
+          "motionCause": "user",
+          "activeRules": [],
+          "flow": "continuous",
+          "layout": "vertical",
+          "spread": "none",
+          "sizing": "intrinsic",
+          "columns": "square",
+          "bounded": true,
+          "padding": 24,
+          "gap": 16,
+          "pageFrame": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "direction": "ltr",
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "arrivalAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoomAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "anchorAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "viewRotation": 0,
+          "zoom": {
+            "mode": "automatic"
+          },
+          "scrollBehavior": "smooth",
+          "viewUnitsPerPoint": 1
+        },
+        {
+          "type": "VP",
+          "vp": {
+            "width": 1000,
+            "height": 700
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "state": {
+            "camera": {
+              "x": 0,
+              "y": 0,
+              "zoom": 1
+            },
+            "placed": false,
+            "cameraResting": true,
+            "vp": {
+              "width": 1000,
+              "height": 700
+            },
+            "dpr": 1,
+            "cursor": 0,
+            "motionCause": "user",
+            "activeRules": [],
+            "flow": "continuous",
+            "layout": "vertical",
+            "spread": "none",
+            "sizing": "intrinsic",
+            "columns": "square",
+            "bounded": true,
+            "padding": 24,
+            "gap": 16,
+            "pageFrame": {
+              "top": 0,
+              "right": 0,
+              "bottom": 0,
+              "left": 0
+            },
+            "direction": "ltr",
+            "fitAlign": {
+              "x": "center",
+              "y": "center"
+            },
+            "arrivalAlign": {
+              "x": "start",
+              "y": "start"
+            },
+            "zoomAlign": {
+              "x": "center",
+              "y": "center"
+            },
+            "anchorAlign": {
+              "x": "start",
+              "y": "start"
+            },
+            "viewRotation": 0,
+            "zoom": {
+              "mode": "automatic"
+            },
+            "scrollBehavior": "smooth",
+            "viewUnitsPerPoint": 1
+          },
+          "same": false
+        }
+      }
+    },
+    {
+      "name": "stageReducer/dpr",
+      "fn": "stageReducer",
+      "args": [
+        {
+          "camera": {
+            "x": 0,
+            "y": 0,
+            "zoom": 1
+          },
+          "placed": false,
+          "cameraResting": true,
+          "vp": {
+            "width": 0,
+            "height": 0
+          },
+          "dpr": 1,
+          "cursor": 0,
+          "motionCause": "user",
+          "activeRules": [],
+          "flow": "continuous",
+          "layout": "vertical",
+          "spread": "none",
+          "sizing": "intrinsic",
+          "columns": "square",
+          "bounded": true,
+          "padding": 24,
+          "gap": 16,
+          "pageFrame": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "direction": "ltr",
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "arrivalAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoomAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "anchorAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "viewRotation": 0,
+          "zoom": {
+            "mode": "automatic"
+          },
+          "scrollBehavior": "smooth",
+          "viewUnitsPerPoint": 1
+        },
+        {
+          "type": "DPR",
+          "dpr": 2
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "state": {
+            "camera": {
+              "x": 0,
+              "y": 0,
+              "zoom": 1
+            },
+            "placed": false,
+            "cameraResting": true,
+            "vp": {
+              "width": 0,
+              "height": 0
+            },
+            "dpr": 2,
+            "cursor": 0,
+            "motionCause": "user",
+            "activeRules": [],
+            "flow": "continuous",
+            "layout": "vertical",
+            "spread": "none",
+            "sizing": "intrinsic",
+            "columns": "square",
+            "bounded": true,
+            "padding": 24,
+            "gap": 16,
+            "pageFrame": {
+              "top": 0,
+              "right": 0,
+              "bottom": 0,
+              "left": 0
+            },
+            "direction": "ltr",
+            "fitAlign": {
+              "x": "center",
+              "y": "center"
+            },
+            "arrivalAlign": {
+              "x": "start",
+              "y": "start"
+            },
+            "zoomAlign": {
+              "x": "center",
+              "y": "center"
+            },
+            "anchorAlign": {
+              "x": "start",
+              "y": "start"
+            },
+            "viewRotation": 0,
+            "zoom": {
+              "mode": "automatic"
+            },
+            "scrollBehavior": "smooth",
+            "viewUnitsPerPoint": 1
+          },
+          "same": false
+        }
+      }
+    },
+    {
+      "name": "stageReducer/cursor",
+      "fn": "stageReducer",
+      "args": [
+        {
+          "camera": {
+            "x": 0,
+            "y": 0,
+            "zoom": 1
+          },
+          "placed": false,
+          "cameraResting": true,
+          "vp": {
+            "width": 0,
+            "height": 0
+          },
+          "dpr": 1,
+          "cursor": 0,
+          "motionCause": "user",
+          "activeRules": [],
+          "flow": "continuous",
+          "layout": "vertical",
+          "spread": "none",
+          "sizing": "intrinsic",
+          "columns": "square",
+          "bounded": true,
+          "padding": 24,
+          "gap": 16,
+          "pageFrame": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "direction": "ltr",
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "arrivalAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoomAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "anchorAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "viewRotation": 0,
+          "zoom": {
+            "mode": "automatic"
+          },
+          "scrollBehavior": "smooth",
+          "viewUnitsPerPoint": 1
+        },
+        {
+          "type": "CURSOR",
+          "cursor": 4
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "state": {
+            "camera": {
+              "x": 0,
+              "y": 0,
+              "zoom": 1
+            },
+            "placed": false,
+            "cameraResting": true,
+            "vp": {
+              "width": 0,
+              "height": 0
+            },
+            "dpr": 1,
+            "cursor": 4,
+            "motionCause": "user",
+            "activeRules": [],
+            "flow": "continuous",
+            "layout": "vertical",
+            "spread": "none",
+            "sizing": "intrinsic",
+            "columns": "square",
+            "bounded": true,
+            "padding": 24,
+            "gap": 16,
+            "pageFrame": {
+              "top": 0,
+              "right": 0,
+              "bottom": 0,
+              "left": 0
+            },
+            "direction": "ltr",
+            "fitAlign": {
+              "x": "center",
+              "y": "center"
+            },
+            "arrivalAlign": {
+              "x": "start",
+              "y": "start"
+            },
+            "zoomAlign": {
+              "x": "center",
+              "y": "center"
+            },
+            "anchorAlign": {
+              "x": "start",
+              "y": "start"
+            },
+            "viewRotation": 0,
+            "zoom": {
+              "mode": "automatic"
+            },
+            "scrollBehavior": "smooth",
+            "viewUnitsPerPoint": 1
+          },
+          "same": false
+        }
+      }
+    },
+    {
+      "name": "stageReducer/motion-cause",
+      "fn": "stageReducer",
+      "args": [
+        {
+          "camera": {
+            "x": 0,
+            "y": 0,
+            "zoom": 1
+          },
+          "placed": false,
+          "cameraResting": true,
+          "vp": {
+            "width": 0,
+            "height": 0
+          },
+          "dpr": 1,
+          "cursor": 0,
+          "motionCause": "user",
+          "activeRules": [],
+          "flow": "continuous",
+          "layout": "vertical",
+          "spread": "none",
+          "sizing": "intrinsic",
+          "columns": "square",
+          "bounded": true,
+          "padding": 24,
+          "gap": 16,
+          "pageFrame": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "direction": "ltr",
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "arrivalAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoomAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "anchorAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "viewRotation": 0,
+          "zoom": {
+            "mode": "automatic"
+          },
+          "scrollBehavior": "smooth",
+          "viewUnitsPerPoint": 1
+        },
+        {
+          "type": "MOTION_CAUSE",
+          "cause": "programmatic"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "state": {
+            "camera": {
+              "x": 0,
+              "y": 0,
+              "zoom": 1
+            },
+            "placed": false,
+            "cameraResting": true,
+            "vp": {
+              "width": 0,
+              "height": 0
+            },
+            "dpr": 1,
+            "cursor": 0,
+            "motionCause": "programmatic",
+            "activeRules": [],
+            "flow": "continuous",
+            "layout": "vertical",
+            "spread": "none",
+            "sizing": "intrinsic",
+            "columns": "square",
+            "bounded": true,
+            "padding": 24,
+            "gap": 16,
+            "pageFrame": {
+              "top": 0,
+              "right": 0,
+              "bottom": 0,
+              "left": 0
+            },
+            "direction": "ltr",
+            "fitAlign": {
+              "x": "center",
+              "y": "center"
+            },
+            "arrivalAlign": {
+              "x": "start",
+              "y": "start"
+            },
+            "zoomAlign": {
+              "x": "center",
+              "y": "center"
+            },
+            "anchorAlign": {
+              "x": "start",
+              "y": "start"
+            },
+            "viewRotation": 0,
+            "zoom": {
+              "mode": "automatic"
+            },
+            "scrollBehavior": "smooth",
+            "viewUnitsPerPoint": 1
+          },
+          "same": false
+        }
+      }
+    },
+    {
+      "name": "stageReducer/patch",
+      "fn": "stageReducer",
+      "args": [
+        {
+          "camera": {
+            "x": 0,
+            "y": 0,
+            "zoom": 1
+          },
+          "placed": false,
+          "cameraResting": true,
+          "vp": {
+            "width": 0,
+            "height": 0
+          },
+          "dpr": 1,
+          "cursor": 0,
+          "motionCause": "user",
+          "activeRules": [],
+          "flow": "continuous",
+          "layout": "vertical",
+          "spread": "none",
+          "sizing": "intrinsic",
+          "columns": "square",
+          "bounded": true,
+          "padding": 24,
+          "gap": 16,
+          "pageFrame": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "direction": "ltr",
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "arrivalAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoomAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "anchorAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "viewRotation": 0,
+          "zoom": {
+            "mode": "automatic"
+          },
+          "scrollBehavior": "smooth",
+          "viewUnitsPerPoint": 1
+        },
+        {
+          "type": "PATCH",
+          "patch": {
+            "layout": "horizontal",
+            "padding": {
+              "$undefined": true
+            },
+            "zoom": {
+              "level": 2
+            }
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "state": {
+            "camera": {
+              "x": 0,
+              "y": 0,
+              "zoom": 1
+            },
+            "placed": false,
+            "cameraResting": true,
+            "vp": {
+              "width": 0,
+              "height": 0
+            },
+            "dpr": 1,
+            "cursor": 0,
+            "motionCause": "user",
+            "activeRules": [],
+            "flow": "continuous",
+            "layout": "horizontal",
+            "spread": "none",
+            "sizing": "intrinsic",
+            "columns": "square",
+            "bounded": true,
+            "padding": 24,
+            "gap": 16,
+            "pageFrame": {
+              "top": 0,
+              "right": 0,
+              "bottom": 0,
+              "left": 0
+            },
+            "direction": "ltr",
+            "fitAlign": {
+              "x": "center",
+              "y": "center"
+            },
+            "arrivalAlign": {
+              "x": "start",
+              "y": "start"
+            },
+            "zoomAlign": {
+              "x": "center",
+              "y": "center"
+            },
+            "anchorAlign": {
+              "x": "start",
+              "y": "start"
+            },
+            "viewRotation": 0,
+            "zoom": {
+              "level": 2
+            },
+            "scrollBehavior": "smooth",
+            "viewUnitsPerPoint": 1
+          },
+          "same": false
+        }
+      }
+    },
+    {
+      "name": "stageReducer/patch-empty",
+      "fn": "stageReducer",
+      "args": [
+        {
+          "camera": {
+            "x": 0,
+            "y": 0,
+            "zoom": 1
+          },
+          "placed": false,
+          "cameraResting": true,
+          "vp": {
+            "width": 0,
+            "height": 0
+          },
+          "dpr": 1,
+          "cursor": 0,
+          "motionCause": "user",
+          "activeRules": [],
+          "flow": "continuous",
+          "layout": "vertical",
+          "spread": "none",
+          "sizing": "intrinsic",
+          "columns": "square",
+          "bounded": true,
+          "padding": 24,
+          "gap": 16,
+          "pageFrame": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "direction": "ltr",
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "arrivalAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoomAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "anchorAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "viewRotation": 0,
+          "zoom": {
+            "mode": "automatic"
+          },
+          "scrollBehavior": "smooth",
+          "viewUnitsPerPoint": 1
+        },
+        {
+          "type": "PATCH",
+          "patch": {}
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "state": {
+            "camera": {
+              "x": 0,
+              "y": 0,
+              "zoom": 1
+            },
+            "placed": false,
+            "cameraResting": true,
+            "vp": {
+              "width": 0,
+              "height": 0
+            },
+            "dpr": 1,
+            "cursor": 0,
+            "motionCause": "user",
+            "activeRules": [],
+            "flow": "continuous",
+            "layout": "vertical",
+            "spread": "none",
+            "sizing": "intrinsic",
+            "columns": "square",
+            "bounded": true,
+            "padding": 24,
+            "gap": 16,
+            "pageFrame": {
+              "top": 0,
+              "right": 0,
+              "bottom": 0,
+              "left": 0
+            },
+            "direction": "ltr",
+            "fitAlign": {
+              "x": "center",
+              "y": "center"
+            },
+            "arrivalAlign": {
+              "x": "start",
+              "y": "start"
+            },
+            "zoomAlign": {
+              "x": "center",
+              "y": "center"
+            },
+            "anchorAlign": {
+              "x": "start",
+              "y": "start"
+            },
+            "viewRotation": 0,
+            "zoom": {
+              "mode": "automatic"
+            },
+            "scrollBehavior": "smooth",
+            "viewUnitsPerPoint": 1
+          },
+          "same": false
+        }
+      }
+    },
+    {
+      "name": "stageReducer/responsive",
+      "fn": "stageReducer",
+      "args": [
+        {
+          "camera": {
+            "x": 0,
+            "y": 0,
+            "zoom": 1
+          },
+          "placed": false,
+          "cameraResting": true,
+          "vp": {
+            "width": 0,
+            "height": 0
+          },
+          "dpr": 1,
+          "cursor": 0,
+          "motionCause": "user",
+          "activeRules": [],
+          "flow": "continuous",
+          "layout": "vertical",
+          "spread": "none",
+          "sizing": "intrinsic",
+          "columns": "square",
+          "bounded": true,
+          "padding": 24,
+          "gap": 16,
+          "pageFrame": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "direction": "ltr",
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "arrivalAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "zoomAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "anchorAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "viewRotation": 0,
+          "zoom": {
+            "mode": "automatic"
+          },
+          "scrollBehavior": "smooth",
+          "viewUnitsPerPoint": 1
+        },
+        {
+          "type": "RESPONSIVE",
+          "active": [
+            "compact"
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "state": {
+            "camera": {
+              "x": 0,
+              "y": 0,
+              "zoom": 1
+            },
+            "placed": false,
+            "cameraResting": true,
+            "vp": {
+              "width": 0,
+              "height": 0
+            },
+            "dpr": 1,
+            "cursor": 0,
+            "motionCause": "user",
+            "activeRules": [
+              "compact"
+            ],
+            "flow": "continuous",
+            "layout": "vertical",
+            "spread": "none",
+            "sizing": "intrinsic",
+            "columns": "square",
+            "bounded": true,
+            "padding": 24,
+            "gap": 16,
+            "pageFrame": {
+              "top": 0,
+              "right": 0,
+              "bottom": 0,
+              "left": 0
+            },
+            "direction": "ltr",
+            "fitAlign": {
+              "x": "center",
+              "y": "center"
+            },
+            "arrivalAlign": {
+              "x": "start",
+              "y": "start"
+            },
+            "zoomAlign": {
+              "x": "center",
+              "y": "center"
+            },
+            "anchorAlign": {
+              "x": "start",
+              "y": "start"
+            },
+            "viewRotation": 0,
+            "zoom": {
+              "mode": "automatic"
+            },
+            "scrollBehavior": "smooth",
+            "viewUnitsPerPoint": 1
+          },
+          "same": false
+        }
+      }
+    }
+  ]
+}

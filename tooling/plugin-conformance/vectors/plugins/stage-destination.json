@@ -1,0 +1,1571 @@
+{
+  "schemaVersion": 1,
+  "kind": "function",
+  "describes": "packages/plugin/stage/src/destination.ts: PDF destinations onto reveal options.",
+  "cases": [
+    {
+      "name": "destinationToReveal/xyz-all",
+      "fn": "destinationToReveal",
+      "args": [
+        {
+          "kind": "xyz",
+          "pageObjectNumber": 12,
+          "left": 100,
+          "top": 700,
+          "zoom": 1.5
+        },
+        {
+          "index": 3,
+          "pageObjectNumber": 12,
+          "label": null,
+          "size": {
+            "width": 612,
+            "height": 792
+          },
+          "rotation": 0,
+          "userUnit": 1,
+          "boxes": {
+            "media": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            },
+            "crop": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            }
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "pageIndex": 3,
+          "options": {
+            "rect": {
+              "x": 100,
+              "y": 92,
+              "width": 0,
+              "height": 0
+            },
+            "anchor": {
+              "x": "start",
+              "y": "start"
+            },
+            "zoom": {
+              "level": 1.5
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "destinationToReveal/xyz-null-left-zero-zoom",
+      "fn": "destinationToReveal",
+      "args": [
+        {
+          "kind": "xyz",
+          "pageObjectNumber": 12,
+          "left": null,
+          "top": 700,
+          "zoom": 0
+        },
+        {
+          "index": 3,
+          "pageObjectNumber": 12,
+          "label": null,
+          "size": {
+            "width": 612,
+            "height": 792
+          },
+          "rotation": 0,
+          "userUnit": 1,
+          "boxes": {
+            "media": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            },
+            "crop": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            }
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "pageIndex": 3,
+          "options": {
+            "rect": {
+              "x": 0,
+              "y": 92,
+              "width": 0,
+              "height": 0
+            },
+            "anchor": {
+              "x": "keep",
+              "y": "start"
+            },
+            "zoom": "keep"
+          }
+        }
+      }
+    },
+    {
+      "name": "destinationToReveal/xyz-null-top",
+      "fn": "destinationToReveal",
+      "args": [
+        {
+          "kind": "xyz",
+          "pageObjectNumber": 12,
+          "left": 100,
+          "top": null,
+          "zoom": null
+        },
+        {
+          "index": 3,
+          "pageObjectNumber": 12,
+          "label": null,
+          "size": {
+            "width": 612,
+            "height": 792
+          },
+          "rotation": 0,
+          "userUnit": 1,
+          "boxes": {
+            "media": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            },
+            "crop": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            }
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "pageIndex": 3,
+          "options": {
+            "rect": {
+              "x": 100,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            },
+            "anchor": {
+              "x": "start",
+              "y": "keep"
+            },
+            "zoom": "keep"
+          }
+        }
+      }
+    },
+    {
+      "name": "destinationToReveal/xyz-absent",
+      "fn": "destinationToReveal",
+      "args": [
+        {
+          "kind": "xyz",
+          "pageObjectNumber": 12
+        },
+        {
+          "index": 3,
+          "pageObjectNumber": 12,
+          "label": null,
+          "size": {
+            "width": 612,
+            "height": 792
+          },
+          "rotation": 0,
+          "userUnit": 1,
+          "boxes": {
+            "media": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            },
+            "crop": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            }
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "pageIndex": 3,
+          "options": {
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            },
+            "anchor": {
+              "x": "keep",
+              "y": "keep"
+            },
+            "zoom": "keep"
+          }
+        }
+      }
+    },
+    {
+      "name": "destinationToReveal/xyz-cropped",
+      "fn": "destinationToReveal",
+      "args": [
+        {
+          "kind": "xyz",
+          "pageObjectNumber": 12,
+          "left": 110,
+          "top": 708,
+          "zoom": 2
+        },
+        {
+          "index": 3,
+          "pageObjectNumber": 12,
+          "label": null,
+          "size": {
+            "width": 600,
+            "height": 780
+          },
+          "rotation": 0,
+          "userUnit": 1,
+          "boxes": {
+            "media": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            },
+            "crop": {
+              "left": 10,
+              "bottom": 8,
+              "right": 610,
+              "top": 788
+            }
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "pageIndex": 3,
+          "options": {
+            "rect": {
+              "x": 100,
+              "y": 80,
+              "width": 0,
+              "height": 0
+            },
+            "anchor": {
+              "x": "start",
+              "y": "start"
+            },
+            "zoom": {
+              "level": 2
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "destinationToReveal/xyz-rotated",
+      "fn": "destinationToReveal",
+      "args": [
+        {
+          "kind": "xyz",
+          "pageObjectNumber": 12,
+          "left": 100,
+          "top": 700,
+          "zoom": 1
+        },
+        {
+          "index": 3,
+          "pageObjectNumber": 12,
+          "label": null,
+          "size": {
+            "width": 612,
+            "height": 792
+          },
+          "rotation": 90,
+          "userUnit": 1,
+          "boxes": {
+            "media": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            },
+            "crop": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            }
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "pageIndex": 3,
+          "options": {
+            "rect": {
+              "x": 100,
+              "y": 92,
+              "width": 0,
+              "height": 0
+            },
+            "anchor": {
+              "x": "start",
+              "y": "start"
+            },
+            "zoom": {
+              "level": 1
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "destinationToReveal/xyz-user-unit",
+      "fn": "destinationToReveal",
+      "args": [
+        {
+          "kind": "xyz",
+          "pageObjectNumber": 12,
+          "left": 100,
+          "top": 700
+        },
+        {
+          "index": 3,
+          "pageObjectNumber": 12,
+          "label": null,
+          "size": {
+            "width": 612,
+            "height": 792
+          },
+          "rotation": 0,
+          "userUnit": 2,
+          "boxes": {
+            "media": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            },
+            "crop": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            }
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "pageIndex": 3,
+          "options": {
+            "rect": {
+              "x": 100,
+              "y": 92,
+              "width": 0,
+              "height": 0
+            },
+            "anchor": {
+              "x": "start",
+              "y": "start"
+            },
+            "zoom": "keep"
+          }
+        }
+      }
+    },
+    {
+      "name": "destinationToReveal/xyz-negative-zoom",
+      "fn": "destinationToReveal",
+      "args": [
+        {
+          "kind": "xyz",
+          "pageObjectNumber": 12,
+          "left": 0,
+          "top": 0,
+          "zoom": -1
+        },
+        {
+          "index": 3,
+          "pageObjectNumber": 12,
+          "label": null,
+          "size": {
+            "width": 612,
+            "height": 792
+          },
+          "rotation": 0,
+          "userUnit": 1,
+          "boxes": {
+            "media": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            },
+            "crop": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            }
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "pageIndex": 3,
+          "options": {
+            "rect": {
+              "x": 0,
+              "y": 792,
+              "width": 0,
+              "height": 0
+            },
+            "anchor": {
+              "x": "start",
+              "y": "start"
+            },
+            "zoom": {
+              "level": -1
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "destinationToReveal/fit",
+      "fn": "destinationToReveal",
+      "args": [
+        {
+          "kind": "fit",
+          "pageObjectNumber": 12
+        },
+        {
+          "index": 3,
+          "pageObjectNumber": 12,
+          "label": null,
+          "size": {
+            "width": 612,
+            "height": 792
+          },
+          "rotation": 0,
+          "userUnit": 1,
+          "boxes": {
+            "media": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            },
+            "crop": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            }
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "pageIndex": 3,
+          "options": {
+            "zoom": "fit"
+          }
+        }
+      }
+    },
+    {
+      "name": "destinationToReveal/fit-with-bbox",
+      "fn": "destinationToReveal",
+      "args": [
+        {
+          "kind": "fit",
+          "pageObjectNumber": 12
+        },
+        {
+          "index": 3,
+          "pageObjectNumber": 12,
+          "label": null,
+          "size": {
+            "width": 612,
+            "height": 792
+          },
+          "rotation": 0,
+          "userUnit": 1,
+          "boxes": {
+            "media": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            },
+            "crop": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            }
+          }
+        },
+        {
+          "x": 50,
+          "y": 60,
+          "width": 400,
+          "height": 500
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "pageIndex": 3,
+          "options": {
+            "zoom": "fit"
+          }
+        }
+      }
+    },
+    {
+      "name": "destinationToReveal/fitH",
+      "fn": "destinationToReveal",
+      "args": [
+        {
+          "kind": "fitH",
+          "pageObjectNumber": 12,
+          "top": 700
+        },
+        {
+          "index": 3,
+          "pageObjectNumber": 12,
+          "label": null,
+          "size": {
+            "width": 612,
+            "height": 792
+          },
+          "rotation": 0,
+          "userUnit": 1,
+          "boxes": {
+            "media": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            },
+            "crop": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            }
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "pageIndex": 3,
+          "options": {
+            "rect": {
+              "x": 0,
+              "y": 92,
+              "width": 612,
+              "height": 0
+            },
+            "zoom": "fit-width",
+            "anchor": {
+              "y": "start"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "destinationToReveal/fitH-null",
+      "fn": "destinationToReveal",
+      "args": [
+        {
+          "kind": "fitH",
+          "pageObjectNumber": 12,
+          "top": null
+        },
+        {
+          "index": 3,
+          "pageObjectNumber": 12,
+          "label": null,
+          "size": {
+            "width": 612,
+            "height": 792
+          },
+          "rotation": 0,
+          "userUnit": 1,
+          "boxes": {
+            "media": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            },
+            "crop": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            }
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "pageIndex": 3,
+          "options": {
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 612,
+              "height": 0
+            },
+            "zoom": "fit-width",
+            "anchor": {
+              "y": "keep"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "destinationToReveal/fitH-absent-cropped",
+      "fn": "destinationToReveal",
+      "args": [
+        {
+          "kind": "fitH",
+          "pageObjectNumber": 12
+        },
+        {
+          "index": 3,
+          "pageObjectNumber": 12,
+          "label": null,
+          "size": {
+            "width": 600,
+            "height": 780
+          },
+          "rotation": 0,
+          "userUnit": 1,
+          "boxes": {
+            "media": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            },
+            "crop": {
+              "left": 10,
+              "bottom": 8,
+              "right": 610,
+              "top": 788
+            }
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "pageIndex": 3,
+          "options": {
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 600,
+              "height": 0
+            },
+            "zoom": "fit-width",
+            "anchor": {
+              "y": "keep"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "destinationToReveal/fitH-cropped",
+      "fn": "destinationToReveal",
+      "args": [
+        {
+          "kind": "fitH",
+          "pageObjectNumber": 12,
+          "top": 500
+        },
+        {
+          "index": 3,
+          "pageObjectNumber": 12,
+          "label": null,
+          "size": {
+            "width": 600,
+            "height": 780
+          },
+          "rotation": 0,
+          "userUnit": 1,
+          "boxes": {
+            "media": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            },
+            "crop": {
+              "left": 10,
+              "bottom": 8,
+              "right": 610,
+              "top": 788
+            }
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "pageIndex": 3,
+          "options": {
+            "rect": {
+              "x": 0,
+              "y": 288,
+              "width": 600,
+              "height": 0
+            },
+            "zoom": "fit-width",
+            "anchor": {
+              "y": "start"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "destinationToReveal/fitV",
+      "fn": "destinationToReveal",
+      "args": [
+        {
+          "kind": "fitV",
+          "pageObjectNumber": 12,
+          "left": 200
+        },
+        {
+          "index": 3,
+          "pageObjectNumber": 12,
+          "label": null,
+          "size": {
+            "width": 612,
+            "height": 792
+          },
+          "rotation": 0,
+          "userUnit": 1,
+          "boxes": {
+            "media": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            },
+            "crop": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            }
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "pageIndex": 3,
+          "options": {
+            "rect": {
+              "x": 200,
+              "y": 0,
+              "width": 0,
+              "height": 792
+            },
+            "zoom": "fit-height",
+            "anchor": {
+              "x": "start"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "destinationToReveal/fitV-null",
+      "fn": "destinationToReveal",
+      "args": [
+        {
+          "kind": "fitV",
+          "pageObjectNumber": 12,
+          "left": null
+        },
+        {
+          "index": 3,
+          "pageObjectNumber": 12,
+          "label": null,
+          "size": {
+            "width": 600,
+            "height": 780
+          },
+          "rotation": 0,
+          "userUnit": 1,
+          "boxes": {
+            "media": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            },
+            "crop": {
+              "left": 10,
+              "bottom": 8,
+              "right": 610,
+              "top": 788
+            }
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "pageIndex": 3,
+          "options": {
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 780
+            },
+            "zoom": "fit-height",
+            "anchor": {
+              "x": "keep"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "destinationToReveal/fitV-cropped",
+      "fn": "destinationToReveal",
+      "args": [
+        {
+          "kind": "fitV",
+          "pageObjectNumber": 12,
+          "left": 200
+        },
+        {
+          "index": 3,
+          "pageObjectNumber": 12,
+          "label": null,
+          "size": {
+            "width": 600,
+            "height": 780
+          },
+          "rotation": 0,
+          "userUnit": 1,
+          "boxes": {
+            "media": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            },
+            "crop": {
+              "left": 10,
+              "bottom": 8,
+              "right": 610,
+              "top": 788
+            }
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "pageIndex": 3,
+          "options": {
+            "rect": {
+              "x": 190,
+              "y": 0,
+              "width": 0,
+              "height": 780
+            },
+            "zoom": "fit-height",
+            "anchor": {
+              "x": "start"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "destinationToReveal/fitR",
+      "fn": "destinationToReveal",
+      "args": [
+        {
+          "kind": "fitR",
+          "pageObjectNumber": 12,
+          "left": 100,
+          "bottom": 200,
+          "right": 300,
+          "top": 600
+        },
+        {
+          "index": 3,
+          "pageObjectNumber": 12,
+          "label": null,
+          "size": {
+            "width": 612,
+            "height": 792
+          },
+          "rotation": 0,
+          "userUnit": 1,
+          "boxes": {
+            "media": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            },
+            "crop": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            }
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "pageIndex": 3,
+          "options": {
+            "rect": {
+              "x": 100,
+              "y": 192,
+              "width": 200,
+              "height": 400
+            },
+            "zoom": "fit"
+          }
+        }
+      }
+    },
+    {
+      "name": "destinationToReveal/fitR-inverted",
+      "fn": "destinationToReveal",
+      "args": [
+        {
+          "kind": "fitR",
+          "pageObjectNumber": 12,
+          "left": 300,
+          "bottom": 600,
+          "right": 100,
+          "top": 200
+        },
+        {
+          "index": 3,
+          "pageObjectNumber": 12,
+          "label": null,
+          "size": {
+            "width": 600,
+            "height": 780
+          },
+          "rotation": 0,
+          "userUnit": 1,
+          "boxes": {
+            "media": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            },
+            "crop": {
+              "left": 10,
+              "bottom": 8,
+              "right": 610,
+              "top": 788
+            }
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "pageIndex": 3,
+          "options": {
+            "rect": {
+              "x": 90,
+              "y": 188,
+              "width": 200,
+              "height": 400
+            },
+            "zoom": "fit"
+          }
+        }
+      }
+    },
+    {
+      "name": "destinationToReveal/fitB",
+      "fn": "destinationToReveal",
+      "args": [
+        {
+          "kind": "fitB",
+          "pageObjectNumber": 12
+        },
+        {
+          "index": 3,
+          "pageObjectNumber": 12,
+          "label": null,
+          "size": {
+            "width": 612,
+            "height": 792
+          },
+          "rotation": 0,
+          "userUnit": 1,
+          "boxes": {
+            "media": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            },
+            "crop": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            }
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "pageIndex": 3,
+          "options": {
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 612,
+              "height": 792
+            },
+            "zoom": "fit"
+          }
+        }
+      }
+    },
+    {
+      "name": "destinationToReveal/fitB-bbox",
+      "fn": "destinationToReveal",
+      "args": [
+        {
+          "kind": "fitB",
+          "pageObjectNumber": 12
+        },
+        {
+          "index": 3,
+          "pageObjectNumber": 12,
+          "label": null,
+          "size": {
+            "width": 612,
+            "height": 792
+          },
+          "rotation": 0,
+          "userUnit": 1,
+          "boxes": {
+            "media": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            },
+            "crop": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            }
+          }
+        },
+        {
+          "x": 50,
+          "y": 60,
+          "width": 400,
+          "height": 500
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "pageIndex": 3,
+          "options": {
+            "rect": {
+              "x": 50,
+              "y": 60,
+              "width": 400,
+              "height": 500
+            },
+            "zoom": "fit"
+          }
+        }
+      }
+    },
+    {
+      "name": "destinationToReveal/fitBH",
+      "fn": "destinationToReveal",
+      "args": [
+        {
+          "kind": "fitBH",
+          "pageObjectNumber": 12,
+          "top": 700
+        },
+        {
+          "index": 3,
+          "pageObjectNumber": 12,
+          "label": null,
+          "size": {
+            "width": 612,
+            "height": 792
+          },
+          "rotation": 0,
+          "userUnit": 1,
+          "boxes": {
+            "media": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            },
+            "crop": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            }
+          }
+        },
+        {
+          "x": 50,
+          "y": 60,
+          "width": 400,
+          "height": 500
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "pageIndex": 3,
+          "options": {
+            "rect": {
+              "x": 50,
+              "y": 92,
+              "width": 400,
+              "height": 0
+            },
+            "zoom": "fit-width",
+            "anchor": {
+              "y": "start"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "destinationToReveal/fitBH-null-bbox",
+      "fn": "destinationToReveal",
+      "args": [
+        {
+          "kind": "fitBH",
+          "pageObjectNumber": 12,
+          "top": null
+        },
+        {
+          "index": 3,
+          "pageObjectNumber": 12,
+          "label": null,
+          "size": {
+            "width": 612,
+            "height": 792
+          },
+          "rotation": 0,
+          "userUnit": 1,
+          "boxes": {
+            "media": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            },
+            "crop": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            }
+          }
+        },
+        {
+          "x": 50,
+          "y": 60,
+          "width": 400,
+          "height": 500
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "pageIndex": 3,
+          "options": {
+            "rect": {
+              "x": 50,
+              "y": 60,
+              "width": 400,
+              "height": 0
+            },
+            "zoom": "fit-width",
+            "anchor": {
+              "y": "keep"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "destinationToReveal/fitBH-absent-page",
+      "fn": "destinationToReveal",
+      "args": [
+        {
+          "kind": "fitBH",
+          "pageObjectNumber": 12
+        },
+        {
+          "index": 3,
+          "pageObjectNumber": 12,
+          "label": null,
+          "size": {
+            "width": 612,
+            "height": 792
+          },
+          "rotation": 0,
+          "userUnit": 1,
+          "boxes": {
+            "media": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            },
+            "crop": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            }
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "pageIndex": 3,
+          "options": {
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 612,
+              "height": 0
+            },
+            "zoom": "fit-width",
+            "anchor": {
+              "y": "keep"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "destinationToReveal/fitBV",
+      "fn": "destinationToReveal",
+      "args": [
+        {
+          "kind": "fitBV",
+          "pageObjectNumber": 12,
+          "left": 150
+        },
+        {
+          "index": 3,
+          "pageObjectNumber": 12,
+          "label": null,
+          "size": {
+            "width": 600,
+            "height": 780
+          },
+          "rotation": 0,
+          "userUnit": 1,
+          "boxes": {
+            "media": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            },
+            "crop": {
+              "left": 10,
+              "bottom": 8,
+              "right": 610,
+              "top": 788
+            }
+          }
+        },
+        {
+          "x": 50,
+          "y": 60,
+          "width": 400,
+          "height": 500
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "pageIndex": 3,
+          "options": {
+            "rect": {
+              "x": 140,
+              "y": 60,
+              "width": 0,
+              "height": 500
+            },
+            "zoom": "fit-height",
+            "anchor": {
+              "x": "start"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "destinationToReveal/fitBV-null-bbox",
+      "fn": "destinationToReveal",
+      "args": [
+        {
+          "kind": "fitBV",
+          "pageObjectNumber": 12,
+          "left": null
+        },
+        {
+          "index": 3,
+          "pageObjectNumber": 12,
+          "label": null,
+          "size": {
+            "width": 612,
+            "height": 792
+          },
+          "rotation": 0,
+          "userUnit": 1,
+          "boxes": {
+            "media": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            },
+            "crop": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            }
+          }
+        },
+        {
+          "x": 50,
+          "y": 60,
+          "width": 400,
+          "height": 500
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "pageIndex": 3,
+          "options": {
+            "rect": {
+              "x": 50,
+              "y": 60,
+              "width": 0,
+              "height": 500
+            },
+            "zoom": "fit-height",
+            "anchor": {
+              "x": "keep"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "destinationToReveal/fitBV-absent-page",
+      "fn": "destinationToReveal",
+      "args": [
+        {
+          "kind": "fitBV",
+          "pageObjectNumber": 12
+        },
+        {
+          "index": 3,
+          "pageObjectNumber": 12,
+          "label": null,
+          "size": {
+            "width": 612,
+            "height": 792
+          },
+          "rotation": 0,
+          "userUnit": 1,
+          "boxes": {
+            "media": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            },
+            "crop": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            }
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "pageIndex": 3,
+          "options": {
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 792
+            },
+            "zoom": "fit-height",
+            "anchor": {
+              "x": "keep"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "destinationToReveal/zero-user-unit-throws",
+      "fn": "destinationToReveal",
+      "args": [
+        {
+          "kind": "fit",
+          "pageObjectNumber": 12
+        },
+        {
+          "index": 3,
+          "pageObjectNumber": 12,
+          "label": null,
+          "size": {
+            "width": 612,
+            "height": 792
+          },
+          "rotation": 0,
+          "userUnit": 0,
+          "boxes": {
+            "media": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            },
+            "crop": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            }
+          }
+        }
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "Error",
+            "message": "Mat2D.invert: non-invertible matrix (det = 0)"
+          }
+        }
+      }
+    },
+    {
+      "name": "destinationToReveal/absent-user-unit",
+      "fn": "destinationToReveal",
+      "args": [
+        {
+          "kind": "xyz",
+          "pageObjectNumber": 12,
+          "left": 5,
+          "top": 6
+        },
+        {
+          "index": 3,
+          "pageObjectNumber": 12,
+          "label": null,
+          "size": {
+            "width": 612,
+            "height": 792
+          },
+          "rotation": 0,
+          "userUnit": {
+            "$undefined": true
+          },
+          "boxes": {
+            "media": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            },
+            "crop": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            }
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "pageIndex": 3,
+          "options": {
+            "rect": {
+              "x": 5,
+              "y": 786,
+              "width": 0,
+              "height": 0
+            },
+            "anchor": {
+              "x": "start",
+              "y": "start"
+            },
+            "zoom": "keep"
+          }
+        }
+      }
+    }
+  ]
+}
