@@ -384,6 +384,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "epdf-plugin-link"
+version = "0.0.0"
+dependencies = [
+ "epdf-annotation-core",
+ "epdf-geometry",
+ "epdf-kernel",
+ "epdf-plugin-actions",
+ "epdf-plugin-annotation",
+ "epdf-plugin-interaction",
+ "epdf-plugin-stage",
+ "plugin-conformance",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "epdf-plugin-metadata"
 version = "0.0.0"
 dependencies = [

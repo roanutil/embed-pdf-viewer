@@ -1,0 +1,618 @@
+{
+  "schemaVersion": 1,
+  "kind": "function",
+  "describes": "packages/plugin/link: the page-cache reducer and its initial state.",
+  "cases": [
+    {
+      "name": "initial-state",
+      "fn": "initialLinkState",
+      "args": [],
+      "outcome": {
+        "returned": {
+          "pages": {}
+        }
+      }
+    },
+    {
+      "name": "set-a-first-page",
+      "fn": "linkReducer",
+      "args": [
+        {
+          "pages": {}
+        },
+        {
+          "type": "SET_PAGE",
+          "pon": 1,
+          "items": [
+            {
+              "id": "obj:1",
+              "rect": {
+                "x": 1,
+                "y": 10,
+                "width": 20,
+                "height": 5
+              },
+              "target": {
+                "kind": "uri",
+                "uri": "https://example.com/1"
+              },
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 1
+              },
+              "attached": false
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "changed": true,
+          "state": {
+            "pages": {
+              "1": [
+                {
+                  "id": "obj:1",
+                  "rect": {
+                    "x": 1,
+                    "y": 10,
+                    "width": 20,
+                    "height": 5
+                  },
+                  "target": {
+                    "kind": "uri",
+                    "uri": "https://example.com/1"
+                  },
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 1
+                  },
+                  "attached": false
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "set-another-page",
+      "fn": "linkReducer",
+      "args": [
+        {
+          "pages": {
+            "1": [
+              {
+                "id": "obj:1",
+                "rect": {
+                  "x": 1,
+                  "y": 10,
+                  "width": 20,
+                  "height": 5
+                },
+                "target": {
+                  "kind": "uri",
+                  "uri": "https://example.com/1"
+                },
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1,
+                  "annotObjectNumber": 1
+                },
+                "attached": false
+              }
+            ],
+            "3": []
+          }
+        },
+        {
+          "type": "SET_PAGE",
+          "pon": 2,
+          "items": [
+            {
+              "id": "obj:2",
+              "rect": {
+                "x": 2,
+                "y": 10,
+                "width": 20,
+                "height": 5
+              },
+              "target": {
+                "kind": "uri",
+                "uri": "https://example.com/2"
+              },
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 2
+              },
+              "attached": false,
+              "activate": {
+                "root": {
+                  "type": "uri",
+                  "subtype": "URI",
+                  "uri": "u",
+                  "next": []
+                },
+                "incomplete": false,
+                "warningFlags": 0,
+                "warnings": []
+              },
+              "hoverEvents": {
+                "enter": true,
+                "exit": false
+              }
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "changed": true,
+          "state": {
+            "pages": {
+              "1": [
+                {
+                  "id": "obj:1",
+                  "rect": {
+                    "x": 1,
+                    "y": 10,
+                    "width": 20,
+                    "height": 5
+                  },
+                  "target": {
+                    "kind": "uri",
+                    "uri": "https://example.com/1"
+                  },
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 1
+                  },
+                  "attached": false
+                }
+              ],
+              "2": [
+                {
+                  "id": "obj:2",
+                  "rect": {
+                    "x": 2,
+                    "y": 10,
+                    "width": 20,
+                    "height": 5
+                  },
+                  "target": {
+                    "kind": "uri",
+                    "uri": "https://example.com/2"
+                  },
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 2
+                  },
+                  "attached": false,
+                  "activate": {
+                    "root": {
+                      "type": "uri",
+                      "subtype": "URI",
+                      "uri": "u",
+                      "next": []
+                    },
+                    "incomplete": false,
+                    "warningFlags": 0,
+                    "warnings": []
+                  },
+                  "hoverEvents": {
+                    "enter": true,
+                    "exit": false
+                  }
+                }
+              ],
+              "3": []
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "set-replaces-a-page",
+      "fn": "linkReducer",
+      "args": [
+        {
+          "pages": {
+            "1": [
+              {
+                "id": "obj:1",
+                "rect": {
+                  "x": 1,
+                  "y": 10,
+                  "width": 20,
+                  "height": 5
+                },
+                "target": {
+                  "kind": "uri",
+                  "uri": "https://example.com/1"
+                },
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1,
+                  "annotObjectNumber": 1
+                },
+                "attached": false
+              }
+            ],
+            "3": []
+          }
+        },
+        {
+          "type": "SET_PAGE",
+          "pon": 1,
+          "items": [
+            {
+              "id": "obj:4",
+              "rect": {
+                "x": 4,
+                "y": 10,
+                "width": 20,
+                "height": 5
+              },
+              "target": {
+                "kind": "uri",
+                "uri": "https://example.com/4"
+              },
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 4
+              },
+              "attached": false
+            },
+            {
+              "id": "obj:5",
+              "rect": {
+                "x": 5,
+                "y": 10,
+                "width": 20,
+                "height": 5
+              },
+              "target": {
+                "kind": "uri",
+                "uri": "https://example.com/5"
+              },
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 5
+              },
+              "attached": true
+            }
+          ]
+        }
+      ],
+      "covers": "SET_PAGE replaces the page and keeps the others.",
+      "outcome": {
+        "returned": {
+          "changed": true,
+          "state": {
+            "pages": {
+              "1": [
+                {
+                  "id": "obj:4",
+                  "rect": {
+                    "x": 4,
+                    "y": 10,
+                    "width": 20,
+                    "height": 5
+                  },
+                  "target": {
+                    "kind": "uri",
+                    "uri": "https://example.com/4"
+                  },
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 4
+                  },
+                  "attached": false
+                },
+                {
+                  "id": "obj:5",
+                  "rect": {
+                    "x": 5,
+                    "y": 10,
+                    "width": 20,
+                    "height": 5
+                  },
+                  "target": {
+                    "kind": "uri",
+                    "uri": "https://example.com/5"
+                  },
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 5
+                  },
+                  "attached": true
+                }
+              ],
+              "3": []
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "set-an-empty-page",
+      "fn": "linkReducer",
+      "args": [
+        {
+          "pages": {
+            "1": [
+              {
+                "id": "obj:1",
+                "rect": {
+                  "x": 1,
+                  "y": 10,
+                  "width": 20,
+                  "height": 5
+                },
+                "target": {
+                  "kind": "uri",
+                  "uri": "https://example.com/1"
+                },
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1,
+                  "annotObjectNumber": 1
+                },
+                "attached": false
+              }
+            ],
+            "3": []
+          }
+        },
+        {
+          "type": "SET_PAGE",
+          "pon": 0,
+          "items": []
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "changed": true,
+          "state": {
+            "pages": {
+              "0": [],
+              "1": [
+                {
+                  "id": "obj:1",
+                  "rect": {
+                    "x": 1,
+                    "y": 10,
+                    "width": 20,
+                    "height": 5
+                  },
+                  "target": {
+                    "kind": "uri",
+                    "uri": "https://example.com/1"
+                  },
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 1
+                  },
+                  "attached": false
+                }
+              ],
+              "3": []
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "drop-a-page",
+      "fn": "linkReducer",
+      "args": [
+        {
+          "pages": {
+            "1": [
+              {
+                "id": "obj:1",
+                "rect": {
+                  "x": 1,
+                  "y": 10,
+                  "width": 20,
+                  "height": 5
+                },
+                "target": {
+                  "kind": "uri",
+                  "uri": "https://example.com/1"
+                },
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1,
+                  "annotObjectNumber": 1
+                },
+                "attached": false
+              }
+            ],
+            "3": []
+          }
+        },
+        {
+          "type": "DROP_PAGE",
+          "pon": 1
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "changed": true,
+          "state": {
+            "pages": {
+              "3": []
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "drop-an-empty-page",
+      "fn": "linkReducer",
+      "args": [
+        {
+          "pages": {
+            "1": [
+              {
+                "id": "obj:1",
+                "rect": {
+                  "x": 1,
+                  "y": 10,
+                  "width": 20,
+                  "height": 5
+                },
+                "target": {
+                  "kind": "uri",
+                  "uri": "https://example.com/1"
+                },
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1,
+                  "annotObjectNumber": 1
+                },
+                "attached": false
+              }
+            ],
+            "3": []
+          }
+        },
+        {
+          "type": "DROP_PAGE",
+          "pon": 3
+        }
+      ],
+      "covers": "A page cached with no links is still present, so dropping it makes a new state.",
+      "outcome": {
+        "returned": {
+          "changed": true,
+          "state": {
+            "pages": {
+              "1": [
+                {
+                  "id": "obj:1",
+                  "rect": {
+                    "x": 1,
+                    "y": 10,
+                    "width": 20,
+                    "height": 5
+                  },
+                  "target": {
+                    "kind": "uri",
+                    "uri": "https://example.com/1"
+                  },
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 1
+                  },
+                  "attached": false
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "drop-an-absent-page",
+      "fn": "linkReducer",
+      "args": [
+        {
+          "pages": {
+            "1": [
+              {
+                "id": "obj:1",
+                "rect": {
+                  "x": 1,
+                  "y": 10,
+                  "width": 20,
+                  "height": 5
+                },
+                "target": {
+                  "kind": "uri",
+                  "uri": "https://example.com/1"
+                },
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1,
+                  "annotObjectNumber": 1
+                },
+                "attached": false
+              }
+            ],
+            "3": []
+          }
+        },
+        {
+          "type": "DROP_PAGE",
+          "pon": 2
+        }
+      ],
+      "covers": "Dropping a page that is not cached returns the same state.",
+      "outcome": {
+        "returned": {
+          "changed": false,
+          "state": {
+            "pages": {
+              "1": [
+                {
+                  "id": "obj:1",
+                  "rect": {
+                    "x": 1,
+                    "y": 10,
+                    "width": 20,
+                    "height": 5
+                  },
+                  "target": {
+                    "kind": "uri",
+                    "uri": "https://example.com/1"
+                  },
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 1
+                  },
+                  "attached": false
+                }
+              ],
+              "3": []
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "drop-from-empty",
+      "fn": "linkReducer",
+      "args": [
+        {
+          "pages": {}
+        },
+        {
+          "type": "DROP_PAGE",
+          "pon": 1
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "changed": false,
+          "state": {
+            "pages": {}
+          }
+        }
+      }
+    }
+  ]
+}
