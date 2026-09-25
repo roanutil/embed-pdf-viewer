@@ -220,6 +220,11 @@ jobs:
       - name: Form write vectors are current
         run: pnpm --filter @embedpdf/tooling-engine-conformance run form-write:check
 
+      # G12's structural writes: creating a field, its widgets, and the
+      # joins between them.
+      - name: Form field vectors are current
+        run: pnpm --filter @embedpdf/tooling-engine-conformance run form-field:check
+
       # G8's /PieceInfo, on both holders. The catalog and page accessor
       # families differ only by a page object number, so a branch written the
       # wrong way round reads one while claiming the other.

@@ -86,9 +86,9 @@ pub struct FormSetValueResult {
 }
 
 /// Where in the model a caller's reference landed.
-struct ResolvedField {
-    index: u32,
-    object_number: u32,
+pub(super) struct ResolvedField {
+    pub(super) index: u32,
+    pub(super) object_number: u32,
 }
 
 /// Resolve a reference against a model.
@@ -97,7 +97,10 @@ struct ResolvedField {
 /// compared against every field's, which is linear and is what the
 /// TypeScript does: a name reference exists FOR the fields that have no
 /// object number, so there is no index to consult.
-fn resolve(model: &FormModel<'_>, reference: &FormFieldRef) -> Result<ResolvedField, EngineError> {
+pub(super) fn resolve(
+    model: &FormModel<'_>,
+    reference: &FormFieldRef,
+) -> Result<ResolvedField, EngineError> {
     match reference {
         FormFieldRef::ObjectNumber { field } => model
             .field_index_by_object_number(*field)
@@ -128,7 +131,7 @@ fn resolve(model: &FormModel<'_>, reference: &FormFieldRef) -> Result<ResolvedFi
 /// PDFium's write API addresses a field by object number, and a direct
 /// dictionary has none. The read side still reports such a field, by name,
 /// because a document that contains one is not broken; it is only unwritable.
-fn require_writable(resolved: &ResolvedField) -> Result<u32, EngineError> {
+pub(super) fn require_writable(resolved: &ResolvedField) -> Result<u32, EngineError> {
     if resolved.object_number == 0 {
         return Err(EngineError::with_message(
             EngineErrorCode::InvalidArg,
@@ -223,10 +226,31 @@ pub fn reset(
 }
 
 /// Load a model, or say the document has no form machinery at all.
-fn load_model(document: &Document) -> Result<FormModel<'_>, EngineError> {
+pub(super) fn load_model(document: &Document) -> Result<FormModel<'_>, EngineError> {
     document.form_model().ok_or_else(|| {
         EngineError::with_message(EngineErrorCode::Unknown, "the form model could not be loaded")
     })
+}
+
+/// Read a field back through a FRESH model.
+///
+/// Shared with the structural operations, which all end the same way: the
+/// model that resolved the reference was a snapshot taken before the write.
+pub(super) fn read_field_back(
+    document: &Document,
+    object_number: u32,
+    cancel: &CancelToken,
+) -> Result<FormFieldDto, EngineError> {
+    cancel.check()?;
+    let model = load_model(document)?;
+    let index = model.field_index_by_object_number(object_number).ok_or_else(|| {
+        EngineError::with_message(
+            EngineErrorCode::Unknown,
+            "the form field vanished after the write",
+        )
+    })?;
+    let field = model.field(index).expect("the index resolved");
+    read_field(&model, &field, index, &mut ActionReadBudgetTracker::default())
 }
 
 /// Read the field back through a FRESH model, and turn the changed object

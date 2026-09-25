@@ -1015,13 +1015,13 @@ fn apply_file_attachment(
 /// explicitly so a read round-trips the same values; a widget's unwritten
 /// entries are what the FIELD supplies when one adopts it, and stamping a
 /// default now would override the field's own answer with this engine's.
-fn apply_widget(
+pub fn apply_widget(
     annotation: &pdfium::Annotation<'_>,
     fields: &super::draft::WidgetDraftFields,
 ) -> Result<(), EngineError> {
     set_rect(annotation, fields.rect)?;
-    set_mk_color_patch(annotation, MK_BORDER_COLOR, &fields.color)?;
-    set_mk_color_patch(annotation, MK_BACKGROUND_COLOR, &fields.interior_color)?;
+    set_mk_color_patch(annotation, MK_BORDER_COLOR, &fields.style.color)?;
+    set_mk_color_patch(annotation, MK_BACKGROUND_COLOR, &fields.style.interior_color)?;
 
     // `/BS` takes both members in one call, so naming either supplies both.
     //
@@ -1032,17 +1032,20 @@ fn apply_widget(
     // and writing it now decides for the field. `/DA` is the same rule and
     // IS observable, because the widget reader reports its three members
     // only when the entry exists.
-    if fields.touches_border() {
-        set_border(annotation, fields.border_style, fields.stroke_width, &None)?;
+    if fields.style.touches_border() {
+        set_border(annotation, fields.style.border_style, fields.style.stroke_width, &None)?;
     }
     // `/DA` packs all three into one string, on the same terms.
-    if fields.touches_text_style() {
+    if fields.style.touches_text_style() {
         let family = fields
+            .style
             .font_family
             .unwrap_or(crate::features::annotation::vocabulary::DEFAULT_STANDARD_FONT);
-        let color =
-            fields.font_color.unwrap_or(super::super::read::free_text::DEFAULT_FREE_TEXT_COLOR);
-        let size = fields.font_size.unwrap_or(super::super::read::redact::DEFAULT_FONT_SIZE);
+        let color = fields
+            .style
+            .font_color
+            .unwrap_or(super::super::read::free_text::DEFAULT_FREE_TEXT_COLOR);
+        let size = fields.style.font_size.unwrap_or(super::super::read::redact::DEFAULT_FONT_SIZE);
         if !annotation.set_default_appearance(
             family.code(),
             size as f32,
@@ -1061,7 +1064,7 @@ fn apply_widget(
     // the refusal here is the expected answer rather than a failure, and
     // `widget-styled` records a left alignment for a draft that asked for a
     // centred one, on both engines.
-    if let Some(align) = fields.text_align {
+    if let Some(align) = fields.style.text_align {
         let _ = annotation.set_text_alignment(align.code());
     }
     Ok(())

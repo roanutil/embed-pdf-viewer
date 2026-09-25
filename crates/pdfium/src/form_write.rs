@@ -42,6 +42,27 @@ impl ChangedWidgets {
     }
 }
 
+/// Which kind of control `create_field` makes.
+///
+/// `EPDF_FORMFIELD_FAMILY_*`. A push button and a signature are missing
+/// deliberately: the fork's creator does not make them, and a family this
+/// layer could name but not create would be a promise the call cannot keep.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CreatableFieldFamily {
+    Checkbox = 2,
+    Radio = 3,
+    Text = 4,
+    Combobox = 5,
+    Listbox = 6,
+}
+
+/// What a field deletion detached.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DetachedWidgets {
+    pub object_numbers: Vec<u32>,
+    pub total: usize,
+}
+
 /// What an import applied and what it did not.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct FormImportCounts {
@@ -139,6 +160,193 @@ impl Document {
             appearances_baked: report.appearances_baked,
             need_appearances_cleared: report.need_appearances_cleared != 0,
         })
+    }
+
+    /// Make a field, and return its object number.
+    ///
+    /// Zero is a refusal: a name that collides with a sibling, or one a
+    /// field cannot have. The call makes the FIELD only; its widgets are
+    /// born through the annotation plane and adopted with
+    /// [`Document::attach_widget`].
+    pub fn create_field(&self, family: CreatableFieldFamily, full_name: &str) -> Option<u32> {
+        let name: Vec<u16> = full_name.encode_utf16().chain(std::iter::once(0)).collect();
+        // SAFETY: the handle is live and the name outlives the call.
+        let object_number = unsafe {
+            pdfium_sys::EPDFForm_CreateField(self.as_raw(), family as i32, name.as_ptr())
+        };
+        (object_number > 0).then_some(object_number)
+    }
+
+    /// Adopt an existing widget annotation into a field.
+    ///
+    /// `on_state` names the appearance a toggle turns on with, and is empty
+    /// for the families that have none.
+    pub fn attach_widget(
+        &self,
+        field_object_number: u32,
+        widget_object_number: u32,
+        on_state: &str,
+    ) -> Result<bool, PdfiumError> {
+        let state = CString::new(on_state).map_err(|_| PdfiumError::InvalidArgument("on state"))?;
+        // SAFETY: the handle is live and the string outlives the call.
+        Ok(unsafe {
+            pdfium_sys::EPDFForm_AttachWidget(
+                self.as_raw(),
+                field_object_number,
+                widget_object_number,
+                state.as_ptr(),
+            ) != 0
+        })
+    }
+
+    /// Release a widget from its field, leaving it an inert annotation.
+    pub fn detach_widget(&self, field_object_number: u32, widget_object_number: u32) -> bool {
+        // SAFETY: the handle is live.
+        unsafe {
+            pdfium_sys::EPDFForm_DetachWidget(
+                self.as_raw(),
+                field_object_number,
+                widget_object_number,
+            ) != 0
+        }
+    }
+
+    /// Delete a terminal field, detaching its widgets.
+    ///
+    /// The widgets survive as inert annotations, which is why their object
+    /// numbers come back: removing them from their pages is the annotation
+    /// plane's job, and a caller that did not know which they were could
+    /// not ask for it.
+    pub fn delete_field(&self, field_object_number: u32) -> Option<DetachedWidgets> {
+        let mut buffer = [0u32; CHANGED_WIDGETS_CAPACITY];
+        let mut count: std::os::raw::c_ulong = 0;
+        // SAFETY: the handle is live and both out-parameters are valid.
+        let ok = unsafe {
+            pdfium_sys::EPDFForm_DeleteField(
+                self.as_raw(),
+                field_object_number,
+                buffer.as_mut_ptr(),
+                CHANGED_WIDGETS_CAPACITY as std::os::raw::c_ulong,
+                &raw mut count,
+            )
+        };
+        if ok == 0 {
+            return None;
+        }
+        let total = count as usize;
+        Some(DetachedWidgets {
+            object_numbers: buffer[..total.min(CHANGED_WIDGETS_CAPACITY)].to_vec(),
+            total,
+        })
+    }
+
+    /// `/T`, the partial name.
+    pub fn set_field_name(&self, field_object_number: u32, name: &str) -> bool {
+        self.wide_field_setter(pdfium_sys::EPDFForm_SetFieldName, field_object_number, name)
+    }
+
+    /// `/TU`, the accessible label.
+    pub fn set_field_alternate_name(&self, field_object_number: u32, name: &str) -> bool {
+        self.wide_field_setter(
+            pdfium_sys::EPDFForm_SetFieldAlternateName,
+            field_object_number,
+            name,
+        )
+    }
+
+    /// `/TM`, the export name.
+    pub fn set_field_mapping_name(&self, field_object_number: u32, name: &str) -> bool {
+        self.wide_field_setter(pdfium_sys::EPDFForm_SetFieldMappingName, field_object_number, name)
+    }
+
+    fn wide_field_setter(
+        &self,
+        setter: unsafe extern "C" fn(
+            pdfium_sys::FPDF_DOCUMENT,
+            u32,
+            pdfium_sys::FPDF_WIDESTRING,
+        ) -> i32,
+        field_object_number: u32,
+        value: &str,
+    ) -> bool {
+        let value: Vec<u16> = value.encode_utf16().chain(std::iter::once(0)).collect();
+        // SAFETY: the handle is live and the string outlives the call.
+        unsafe { setter(self.as_raw(), field_object_number, value.as_ptr()) != 0 }
+    }
+
+    /// `/Ff`, as bits to set and bits to clear.
+    ///
+    /// Two masks rather than a word, because a field's flags include bits
+    /// this build does not model and writing a whole word would drop them.
+    pub fn set_field_flags(&self, field_object_number: u32, set: u32, clear: u32) -> bool {
+        // SAFETY: the handle is live.
+        unsafe {
+            pdfium_sys::EPDFForm_SetFieldFlags(self.as_raw(), field_object_number, set, clear) != 0
+        }
+    }
+
+    /// `/MaxLen`.
+    pub fn set_field_max_length(&self, field_object_number: u32, max_length: i32) -> bool {
+        // SAFETY: the handle is live.
+        unsafe {
+            pdfium_sys::EPDFForm_SetFieldMaxLen(self.as_raw(), field_object_number, max_length) != 0
+        }
+    }
+
+    /// `/Opt`, the label and export value of each choice.
+    pub fn set_field_options(
+        &self,
+        field_object_number: u32,
+        labels: &[String],
+        exports: &[String],
+    ) -> bool {
+        let encode = |values: &[String]| -> Vec<Vec<u16>> {
+            values
+                .iter()
+                .map(|value| value.encode_utf16().chain(std::iter::once(0)).collect())
+                .collect()
+        };
+        let labels = encode(labels);
+        let exports = encode(exports);
+        let label_pointers: Vec<*const u16> = labels.iter().map(|v| v.as_ptr()).collect();
+        let export_pointers: Vec<*const u16> = exports.iter().map(|v| v.as_ptr()).collect();
+        // SAFETY: the handle is live, both arrays are as long as the count,
+        // and every string outlives the call.
+        unsafe {
+            pdfium_sys::EPDFForm_SetFieldOptions(
+                self.as_raw(),
+                field_object_number,
+                label_pointers.as_ptr().cast(),
+                export_pointers.as_ptr().cast(),
+                label_pointers.len().min(export_pointers.len()) as std::os::raw::c_ulong,
+            ) != 0
+        }
+    }
+
+    /// `/DV`.
+    pub fn set_field_default_values(&self, field_object_number: u32, values: &[String]) -> bool {
+        let encoded: Vec<Vec<u16>> = values
+            .iter()
+            .map(|value| value.encode_utf16().chain(std::iter::once(0)).collect())
+            .collect();
+        let pointers: Vec<*const u16> = encoded.iter().map(|value| value.as_ptr()).collect();
+        // SAFETY: as above.
+        unsafe {
+            pdfium_sys::EPDFForm_SetFieldDefaultValues(
+                self.as_raw(),
+                field_object_number,
+                pointers.as_ptr().cast(),
+                pointers.len() as std::os::raw::c_ulong,
+            ) != 0
+        }
+    }
+
+    /// Remove `/DV`, which is not the same as setting it to nothing.
+    pub fn remove_field_default_value(&self, field_object_number: u32) -> bool {
+        // SAFETY: the handle is live.
+        unsafe {
+            pdfium_sys::EPDFForm_RemoveFieldDefaultValue(self.as_raw(), field_object_number) != 0
+        }
     }
 
     /// `/V` on a text field.

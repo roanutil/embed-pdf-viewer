@@ -43,6 +43,7 @@ live under `tooling/engine-conformance/vectors/`, and every generator has a
 | G11 | `annotations.update`, every writable subtype, with the appearance verdict | `vectors/annotation/update.json`, `tests/annotation_update.rs` |
 | G11 | `annotations.move` | `vectors/annotation/move.json`, `tests/annotation_move.rs` |
 | G12 | `forms.setValue`, `forms.reset`, `forms.import`, `forms.repair` | `vectors/forms/write.json`, `tests/form_write.rs` |
+| G12 | `forms.createField`, `updateField`, `deleteField`, `attachWidget`, `detachWidget` | `vectors/forms/field.json`, `tests/form_field.rs` |
 
 ## Done, tested against fixtures rather than vectors
 
@@ -79,10 +80,17 @@ popup is a child of the annotation it belongs to rather than a thing a caller
 places, and `unsupported` is the reader's name for a subtype this build does
 not model.
 
-G12 has its value writes, its import and its repair. The six field-structure
-operations (`forms.applyEffects`, `forms.createField`, `forms.updateField`,
-`forms.deleteField`, `forms.attachWidget`, `forms.detachWidget`) are not
-started.
+G12 has everything but `forms.applyEffects`, which is the form-JavaScript
+effect applier and depends on a capability rather than on a port: web keeps
+`packages/core/js-sandbox` and mobile reports unsupported.
+
+`forms.deleteField` is the field-plane half only. The TypeScript's
+`WorkerHost` cascades into the annotation plane to take the detached widgets
+off their pages, and that cascade is G15's. `deleting_a_field_leaves_its
+_widgets_on_the_page` asserts the half that IS here, and
+`delete-merged-field-refused` records what the cascade does to a merged
+field/widget dictionary: the annotation plane will not delete a widget, so
+the whole operation is refused.
 
 G13 through G15: page assembly and redaction, the remaining mutators, and the
 server surfaces. None of it is blocked by anything outside the repository.

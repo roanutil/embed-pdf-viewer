@@ -233,32 +233,45 @@ pub enum AnnotationDraftKind {
 #[serde(rename_all = "camelCase")]
 pub struct WidgetDraftFields {
     pub rect: PdfRect,
+    #[serde(flatten)]
+    pub style: WidgetStyleFields,
+}
+
+/// The widget-plane styling, without the placement.
+///
+/// Split out because `forms.createField` places a widget and styles it in
+/// one call, and the styling half is the same vocabulary. One type means a
+/// widget born through `annotations.create` and one born beside a field
+/// cannot drift, which is the whole reason the TypeScript shares it too.
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct WidgetStyleFields {
     /// `/MK /BC`. `Clear` writes no border colour, which is not the same as
     /// a black one.
-    #[serde(default, skip_serializing_if = "Patch::is_keep")]
+    #[serde(skip_serializing_if = "Patch::is_keep")]
     pub color: Patch<Color>,
     /// `/MK /BG`. `Clear` is a transparent background.
-    #[serde(default, skip_serializing_if = "Patch::is_keep")]
+    #[serde(skip_serializing_if = "Patch::is_keep")]
     pub interior_color: Patch<Color>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub stroke_width: Option<f64>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub border_style: Option<AnnotationBorderStyle>,
     /// `/DA` font. One of the fourteen standard names only: a widget's text
     /// is drawn by the form machinery, which has no registered-font path.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub font_family: Option<StandardFont>,
     /// `/DA` size. Zero means auto-size, as it does on a redaction label and
     /// unlike on a free text.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub font_size: Option<f64>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub font_color: Option<Color>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub text_align: Option<TextAlignment>,
 }
 
-impl WidgetDraftFields {
+impl WidgetStyleFields {
     /// Whether this draft says anything about the border.
     ///
     /// `/BS` is one call taking a style AND a width, so naming either means
