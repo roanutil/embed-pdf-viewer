@@ -8387,6 +8387,80 @@
         {
           "op": "call",
           "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "registerTool",
+          "args": [
+            {
+              "id": "hand",
+              "cursor": "move",
+              "enables": {
+                "$set": [
+                  "scroll"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "activateTool",
+          "args": [
+            "hand"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "dispatch",
+          "args": [
+            {
+              "phase": "move",
+              "viewport": {
+                "x": 5,
+                "y": 5
+              },
+              "modifiers": {
+                "shift": false,
+                "alt": false,
+                "ctrl": false,
+                "meta": false
+              },
+              "source": "stage"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "cursor",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "activateTool",
+          "args": [
+            "pointer"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
             "token": "stage",
             "doc": "a"
           },
@@ -10921,6 +10995,400 @@
         },
         {
           "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 0
+            }
+          },
+          "state": {
+            "plugins": {
+              "stage::a": {
+                "camera": {
+                  "zoom": 1,
+                  "x": -200,
+                  "y": 426
+                },
+                "placed": true,
+                "cameraResting": true,
+                "vp": {
+                  "width": 1000,
+                  "height": 700
+                },
+                "dpr": 1,
+                "cursor": 0,
+                "motionCause": "user",
+                "activeRules": [],
+                "flow": "continuous",
+                "layout": "vertical",
+                "spread": "none",
+                "sizing": "intrinsic",
+                "columns": "square",
+                "bounded": true,
+                "padding": 24,
+                "gap": 16,
+                "pageFrame": {
+                  "top": 0,
+                  "right": 0,
+                  "bottom": 0,
+                  "left": 0
+                },
+                "direction": "ltr",
+                "fitAlign": {
+                  "x": "center",
+                  "y": "center"
+                },
+                "arrivalAlign": {
+                  "x": "start",
+                  "y": "start"
+                },
+                "zoomAlign": {
+                  "x": "center",
+                  "y": "center"
+                },
+                "anchorAlign": {
+                  "x": "start",
+                  "y": "start"
+                },
+                "viewRotation": 0,
+                "zoom": {
+                  "mode": "automatic"
+                },
+                "scrollBehavior": "instant",
+                "viewUnitsPerPoint": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "interaction::a",
+              "action": {
+                "type": "SET_TOOL",
+                "toolId": "hand"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "stage::a": {
+                "camera": {
+                  "zoom": 1,
+                  "x": -200,
+                  "y": 426
+                },
+                "placed": true,
+                "cameraResting": true,
+                "vp": {
+                  "width": 1000,
+                  "height": 700
+                },
+                "dpr": 1,
+                "cursor": 0,
+                "motionCause": "user",
+                "activeRules": [],
+                "flow": "continuous",
+                "layout": "vertical",
+                "spread": "none",
+                "sizing": "intrinsic",
+                "columns": "square",
+                "bounded": true,
+                "padding": 24,
+                "gap": 16,
+                "pageFrame": {
+                  "top": 0,
+                  "right": 0,
+                  "bottom": 0,
+                  "left": 0
+                },
+                "direction": "ltr",
+                "fitAlign": {
+                  "x": "center",
+                  "y": "center"
+                },
+                "arrivalAlign": {
+                  "x": "start",
+                  "y": "start"
+                },
+                "zoomAlign": {
+                  "x": "center",
+                  "y": "center"
+                },
+                "anchorAlign": {
+                  "x": "start",
+                  "y": "start"
+                },
+                "viewRotation": 0,
+                "zoom": {
+                  "mode": "automatic"
+                },
+                "scrollBehavior": "instant",
+                "viewUnitsPerPoint": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "stage::a": {
+                "camera": {
+                  "zoom": 1,
+                  "x": -200,
+                  "y": 426
+                },
+                "placed": true,
+                "cameraResting": true,
+                "vp": {
+                  "width": 1000,
+                  "height": 700
+                },
+                "dpr": 1,
+                "cursor": 0,
+                "motionCause": "user",
+                "activeRules": [],
+                "flow": "continuous",
+                "layout": "vertical",
+                "spread": "none",
+                "sizing": "intrinsic",
+                "columns": "square",
+                "bounded": true,
+                "padding": 24,
+                "gap": 16,
+                "pageFrame": {
+                  "top": 0,
+                  "right": 0,
+                  "bottom": 0,
+                  "left": 0
+                },
+                "direction": "ltr",
+                "fitAlign": {
+                  "x": "center",
+                  "y": "center"
+                },
+                "arrivalAlign": {
+                  "x": "start",
+                  "y": "start"
+                },
+                "zoomAlign": {
+                  "x": "center",
+                  "y": "center"
+                },
+                "anchorAlign": {
+                  "x": "start",
+                  "y": "start"
+                },
+                "viewRotation": 0,
+                "zoom": {
+                  "mode": "automatic"
+                },
+                "scrollBehavior": "instant",
+                "viewUnitsPerPoint": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": "default"
+          },
+          "state": {
+            "plugins": {
+              "stage::a": {
+                "camera": {
+                  "zoom": 1,
+                  "x": -200,
+                  "y": 426
+                },
+                "placed": true,
+                "cameraResting": true,
+                "vp": {
+                  "width": 1000,
+                  "height": 700
+                },
+                "dpr": 1,
+                "cursor": 0,
+                "motionCause": "user",
+                "activeRules": [],
+                "flow": "continuous",
+                "layout": "vertical",
+                "spread": "none",
+                "sizing": "intrinsic",
+                "columns": "square",
+                "bounded": true,
+                "padding": 24,
+                "gap": 16,
+                "pageFrame": {
+                  "top": 0,
+                  "right": 0,
+                  "bottom": 0,
+                  "left": 0
+                },
+                "direction": "ltr",
+                "fitAlign": {
+                  "x": "center",
+                  "y": "center"
+                },
+                "arrivalAlign": {
+                  "x": "start",
+                  "y": "start"
+                },
+                "zoomAlign": {
+                  "x": "center",
+                  "y": "center"
+                },
+                "anchorAlign": {
+                  "x": "start",
+                  "y": "start"
+                },
+                "viewRotation": 0,
+                "zoom": {
+                  "mode": "automatic"
+                },
+                "scrollBehavior": "instant",
+                "viewUnitsPerPoint": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "interaction::a",
+              "action": {
+                "type": "SET_TOOL",
+                "toolId": "pointer"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "stage::a": {
+                "camera": {
+                  "zoom": 1,
+                  "x": -200,
+                  "y": 426
+                },
+                "placed": true,
+                "cameraResting": true,
+                "vp": {
+                  "width": 1000,
+                  "height": 700
+                },
+                "dpr": 1,
+                "cursor": 0,
+                "motionCause": "user",
+                "activeRules": [],
+                "flow": "continuous",
+                "layout": "vertical",
+                "spread": "none",
+                "sizing": "intrinsic",
+                "columns": "square",
+                "bounded": true,
+                "padding": 24,
+                "gap": 16,
+                "pageFrame": {
+                  "top": 0,
+                  "right": 0,
+                  "bottom": 0,
+                  "left": 0
+                },
+                "direction": "ltr",
+                "fitAlign": {
+                  "x": "center",
+                  "y": "center"
+                },
+                "arrivalAlign": {
+                  "x": "start",
+                  "y": "start"
+                },
+                "zoomAlign": {
+                  "x": "center",
+                  "y": "center"
+                },
+                "anchorAlign": {
+                  "x": "start",
+                  "y": "start"
+                },
+                "viewRotation": 0,
+                "zoom": {
+                  "mode": "automatic"
+                },
+                "scrollBehavior": "instant",
+                "viewUnitsPerPoint": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
           "actions": [
             {
               "slice": "stage::a",
@@ -11032,7 +11500,7 @@
           },
           "outcome": {
             "returned": {
-              "$ref": 0
+              "$ref": 1
             }
           },
           "state": {
