@@ -30,6 +30,11 @@ fn tools_and_gestures_match_the_typescript() {
 }
 
 #[test]
+fn markup_matches_the_typescript() {
+    scenarios("plugins/annotation-markup.json");
+}
+
+#[test]
 fn grouping_matches_the_typescript() {
     scenarios("plugins/annotation-grouping.json");
 }
