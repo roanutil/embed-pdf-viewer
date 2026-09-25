@@ -1,7 +1,7 @@
 {
   "total": {
-    "statements": "1782/1833",
-    "branches": "368/397"
+    "statements": "2989/3040",
+    "branches": "704/734"
   },
   "files": {
     "packages/core/main/src/context.ts": {
@@ -142,6 +142,50 @@
         249,
         252
       ],
+      "uncoveredBranches": []
+    },
+    "packages/core/ui/src/helpers.ts": {
+      "statements": "21/21",
+      "branches": "0/0",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/core/ui/src/index.ts": {
+      "statements": "44/44",
+      "branches": "0/0",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/core/ui/src/projection.ts": {
+      "statements": "120/120",
+      "branches": "28/28",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/core/ui/src/schema.ts": {
+      "statements": "325/325",
+      "branches": "65/65",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/core/ui/src/shortcuts.ts": {
+      "statements": "116/116",
+      "branches": "68/69",
+      "uncoveredLines": [],
+      "uncoveredBranches": [
+        "65:25#0"
+      ]
+    },
+    "packages/core/ui/src/solver.ts": {
+      "statements": "387/387",
+      "branches": "99/99",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/core/ui/src/transforms.ts": {
+      "statements": "194/194",
+      "branches": "76/76",
+      "uncoveredLines": [],
       "uncoveredBranches": []
     },
     "packages/plugin/metadata/src/capability.ts": {
