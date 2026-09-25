@@ -18541,6 +18541,71 @@
       }
     },
     {
+      "name": "scene/squiggly-rotated-tall",
+      "fn": "scene",
+      "args": [
+        {
+          "id": "i",
+          "ref": null,
+          "subtype": "squiggly",
+          "geom": {
+            "t": "quads",
+            "quads": [
+              {
+                "upperStart": {
+                  "x": 50,
+                  "y": 50
+                },
+                "upperEnd": {
+                  "x": 158.75693444439798,
+                  "y": 100.71419140888393
+                },
+                "lowerStart": {
+                  "x": 41.54763476518601,
+                  "y": 68.126155740733
+                },
+                "lowerEnd": {
+                  "x": 150.304569209584,
+                  "y": 118.84034714961693
+                }
+              }
+            ]
+          },
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "style": {
+            "color": "#e5484d",
+            "interiorColor": null,
+            "strokeWidth": 2,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "source": "vector",
+          "selected": false
+        }
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "kind": "path",
+            "d": "M 42.224 66.676 Q 43.988 65.733 44.399 67.69 T 46.574 68.705 T 48.749 69.719 T 50.924 70.733 T 53.1 71.747 T 55.275 72.762 T 57.45 73.776 T 59.625 74.79 T 61.8 75.805 T 63.975 76.819 T 66.15 77.833 T 68.325 78.847 T 70.501 79.862 T 72.676 80.876 T 74.851 81.89 T 77.026 82.905 T 79.201 83.919 T 81.376 84.933 T 83.551 85.947 T 85.727 86.962 T 87.902 87.976 T 90.077 88.99 T 92.252 90.005 T 94.427 91.019 T 96.602 92.033 T 98.777 93.047 T 100.953 94.062 T 103.128 95.076 T 105.303 96.09 T 107.478 97.105 T 109.653 98.119 T 111.828 99.133 T 114.003 100.147 T 116.179 101.162 T 118.354 102.176 T 120.529 103.19 T 122.704 104.205 T 124.879 105.219 T 127.054 106.233 T 129.229 107.247 T 131.405 108.262 T 133.58 109.276 T 135.755 110.29 T 137.93 111.305 T 140.105 112.319 T 142.28 113.333 T 144.455 114.347 T 146.63 115.362 T 148.806 116.376 T 150.981 117.39",
+            "paint": {
+              "stroke": "#e5484d",
+              "width": 1.1999999999999997,
+              "opacity": 1
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "scene/line-none",
       "fn": "scene",
       "args": [
@@ -21502,6 +21567,24 @@
                   "x": 10,
                   "y": 174
                 }
+              },
+              {
+                "upperStart": {
+                  "x": 10,
+                  "y": 190
+                },
+                "upperEnd": {
+                  "x": 70,
+                  "y": 190
+                },
+                "lowerStart": {
+                  "x": 10,
+                  "y": 190
+                },
+                "lowerEnd": {
+                  "x": 70,
+                  "y": 190
+                }
               }
             ]
           },
@@ -21648,6 +21731,24 @@
                   "x": 10,
                   "y": 174
                 }
+              },
+              {
+                "upperStart": {
+                  "x": 10,
+                  "y": 190
+                },
+                "upperEnd": {
+                  "x": 70,
+                  "y": 190
+                },
+                "lowerStart": {
+                  "x": 10,
+                  "y": 190
+                },
+                "lowerEnd": {
+                  "x": 70,
+                  "y": 190
+                }
               }
             ]
           },
@@ -21793,6 +21894,24 @@
                 "lowerEnd": {
                   "x": 10,
                   "y": 174
+                }
+              },
+              {
+                "upperStart": {
+                  "x": 10,
+                  "y": 190
+                },
+                "upperEnd": {
+                  "x": 70,
+                  "y": 190
+                },
+                "lowerStart": {
+                  "x": 10,
+                  "y": 190
+                },
+                "lowerEnd": {
+                  "x": 70,
+                  "y": 190
                 }
               }
             ]
@@ -21976,6 +22095,24 @@
                 "lowerEnd": {
                   "x": 10,
                   "y": 174
+                }
+              },
+              {
+                "upperStart": {
+                  "x": 10,
+                  "y": 190
+                },
+                "upperEnd": {
+                  "x": 70,
+                  "y": 190
+                },
+                "lowerStart": {
+                  "x": 10,
+                  "y": 190
+                },
+                "lowerEnd": {
+                  "x": 70,
+                  "y": 190
                 }
               }
             ]
@@ -23238,6 +23375,24 @@
                   "x": 10,
                   "y": 174
                 }
+              },
+              {
+                "upperStart": {
+                  "x": 10,
+                  "y": 190
+                },
+                "upperEnd": {
+                  "x": 70,
+                  "y": 190
+                },
+                "lowerStart": {
+                  "x": 10,
+                  "y": 190
+                },
+                "lowerEnd": {
+                  "x": 70,
+                  "y": 190
+                }
               }
             ]
           },
@@ -23329,6 +23484,24 @@
                 "lowerEnd": {
                   "x": 10,
                   "y": 174
+                }
+              },
+              {
+                "upperStart": {
+                  "x": 10,
+                  "y": 190
+                },
+                "upperEnd": {
+                  "x": 70,
+                  "y": 190
+                },
+                "lowerStart": {
+                  "x": 10,
+                  "y": 190
+                },
+                "lowerEnd": {
+                  "x": 70,
+                  "y": 190
                 }
               }
             ]
@@ -30968,6 +31141,46 @@
             },
             "text": "x",
             "fontSize": 10,
+            "fontFamily": "helvetica",
+            "paint": {
+              "fill": "#ff0000",
+              "opacity": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "layoutRedactLabel/font-equals-height",
+      "fn": "layoutRedactLabel",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 200,
+          "height": 50
+        },
+        {
+          "text": "Fit",
+          "repeat": false
+        },
+        {
+          "fontFamily": "helvetica",
+          "fontSize": 50,
+          "fontColor": "#ff0000",
+          "textAlign": "left"
+        }
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "kind": "text",
+            "at": {
+              "x": 0,
+              "y": 47.5
+            },
+            "text": "Fit",
+            "fontSize": 50,
             "fontFamily": "helvetica",
             "paint": {
               "fill": "#ff0000",

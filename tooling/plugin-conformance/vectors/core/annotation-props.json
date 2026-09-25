@@ -41905,6 +41905,94 @@
       }
     },
     {
+      "name": "defaultsFor/filled-style-kept",
+      "fn": "defaultsFor",
+      "args": [
+        {
+          "style": {
+            "color": "#e5484d",
+            "interiorColor": "#123456",
+            "strokeWidth": 2,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "defaults": {
+            "square": {
+              "color": "#000000"
+            }
+          }
+        },
+        "square"
+      ],
+      "outcome": {
+        "returned": {
+          "color": "#000000",
+          "interiorColor": "#123456",
+          "strokeWidth": 2,
+          "opacity": 1,
+          "blendMode": "normal",
+          "border": {
+            "kind": "solid"
+          },
+          "fontFamily": "helvetica",
+          "fontSize": 14,
+          "fontColor": "#000000",
+          "textAlign": "left",
+          "lineEndings": {
+            "start": "none",
+            "end": "none"
+          }
+        }
+      }
+    },
+    {
+      "name": "defaultsFor/filled-style-cleared",
+      "fn": "defaultsFor",
+      "args": [
+        {
+          "style": {
+            "color": "#e5484d",
+            "interiorColor": "#123456",
+            "strokeWidth": 2,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "defaults": {
+            "square": {
+              "interiorColor": null
+            }
+          }
+        },
+        "square"
+      ],
+      "outcome": {
+        "returned": {
+          "color": "#e5484d",
+          "interiorColor": null,
+          "strokeWidth": 2,
+          "opacity": 1,
+          "blendMode": "normal",
+          "border": {
+            "kind": "solid"
+          },
+          "fontFamily": "helvetica",
+          "fontSize": 14,
+          "fontColor": "#000000",
+          "textAlign": "left",
+          "lineEndings": {
+            "start": "none",
+            "end": "none"
+          }
+        }
+      }
+    },
+    {
       "name": "defaultsFor/prototype-key",
       "fn": "defaultsFor",
       "args": [

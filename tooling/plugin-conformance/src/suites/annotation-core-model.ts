@@ -313,6 +313,8 @@ const propCases: FunctionCase[] = [
   c('defaultsFor', 'other-subtype', { defaults: { square: { color: '#abcdef' } } }, 'circle'),
   c('defaultsFor', 'null-fill-and-link', { defaults: { link: { interiorColor: null, link: null } } }, 'link'),
   c('defaultsFor', 'custom-style', { style: style({ color: '#000000', strokeWidth: 9 }) }, 'ink'),
+  c('defaultsFor', 'filled-style-kept', { style: style({ interiorColor: '#123456' }), defaults: { square: { color: '#000000' } } }, 'square'),
+  c('defaultsFor', 'filled-style-cleared', { style: style({ interiorColor: '#123456' }), defaults: { square: { interiorColor: null } } }, 'square'),
   c('defaultsFor', 'prototype-key', {}, 'constructor'),
   c('defaultsFor', 'extra-key', { defaults: { square: { bogus: 1 } as never } }, 'square'),
 ];
@@ -341,6 +343,7 @@ const VIEWS = [
   ['z3-r270', { zoom: 3, rotation: 270 }],
   ['z0-r180', { zoom: 0, rotation: 180 }],
   ['z1.5-r-90', { zoom: 1.5, rotation: -90 }],
+  ['zNaN-r90', { zoom: NaN, rotation: 90 }],
 ] as const;
 const anchorCases: FunctionCase[] = [];
 for (const subtype of ['square', 'text', 'file-attachment', 'unknown']) {
@@ -461,6 +464,7 @@ const HIT_ANNOTS: Annot[] = [
   sq('readonly', rc(20, 600, 30, 30), { flags: flags({ readOnly: true }) }),
   annot('widget', 'widget-text', gRect(rc(20, 550, 80, 20)), { flags: flags({ readOnly: true }) }),
   annot('reply', 'text', gRect(rc(100, 100, 20, 20)), { irt: 'sq' }),
+  annot('review-state', 'text', gRect(rc(120, 120, 20, 20)), { data: { subtype: 'text', state: 'accepted' } as never }),
   annot('reply2', 'text', gRect(rc(200, 200, 20, 20)), { irt: 'sq' }),
   annot('child-link', 'link', gRect(rc(100, 100, 80, 60)), { group: 'sq', irt: 'sq' }),
   sq('other-page', rc(100, 100, 80, 60), { pon: 2 }),
@@ -583,6 +587,8 @@ hitCases.push(
   ...hc('nozoom-view-handle', ['nozoom'], PON, v(575, 715), CG, 6, undefined, undefined, { zoom: 2, rotation: 0 }),
   ...hc('rotated-stamp-knob', ['stamp'], PON, g2knob(), CG, 6),
   ...hc('union-of-substrate-only', ['reply', 'reply2'], PON, v(200, 180), CG, 6),
+  ...hc('locked-knob', ['locked'], PON, v(130, 626), CG, 6),
+  ...hc('note-knob', ['note'], PON, v(30, -4), CG, 6),
 );
 function g2knob(): Vec {
   // the rotated stamp's knob: the top-edge midpoint pushed out along the tilted normal
@@ -647,6 +653,7 @@ for (const subtype of ['highlight', 'underline', 'strikeout', 'squiggly', 'myste
 }
 sceneCases.push(c('scene', 'squiggly-long', item('squiggly', gQuads([tq(0.5, 0.25, 1000.123, 30)]))));
 sceneCases.push(c('scene', 'squiggly-short', item('squiggly', gQuads([tq(0, 0, 2, 10)]))));
+sceneCases.push(c('scene', 'squiggly-rotated-tall', item('squiggly', gQuads([tqRot(50, 50, 120, 20, 25)]))));
 for (const e of ENDINGS) sceneCases.push(c('scene', `line-${e}`, item('line', gLine(v(0, 0), v(100, 50), ends(e, e)), { style: style({ interiorColor: '#ff0000' }) })));
 sceneCases.push(c('scene', 'link', item('link', geom('rect'))));
 sceneCases.push(c('scene', 'caret-rot', item('caret', geom('caret-rot45'), { style: style({ opacity: 0.3 }) })));
@@ -654,7 +661,7 @@ sceneCases.push(c('scene', 'ink-cloudy', item('ink', geom('ink'), { style: style
 const REDACT_TEXT = { fontFamily: 'helvetica', fontSize: 10, fontColor: '#ff0000', textAlign: 'left' as const };
 for (const [gname, gm] of [
   ['area', gRect(rc(10, 10, 200, 60))],
-  ['text', gQuads([tq(10, 100, 150, 14), tqRot(10, 130, 150, 14, 20), tq(10, 160, 0, 14)])],
+  ['text', gQuads([tq(10, 100, 150, 14), tqRot(10, 130, 150, 14, 20), tq(10, 160, 0, 14), tq(10, 190, 60, 0)])],
   ['line', gLine(v(0, 0), v(10, 10))],
 ] as const) {
   sceneCases.push(
@@ -688,6 +695,7 @@ for (const [label, lb, text] of [
 }
 sceneCases.push(c('layoutRedactLabel', 'repeat-capped-400', rc(0, 0, 2000, 2000), { text: 'x', repeat: true }, { ...REDACT_TEXT, fontSize: 4 }));
 sceneCases.push(c('layoutRedactLabel', 'repeat-tiny-region', rc(0, 0, 1, 1), { text: 'x', repeat: true }, REDACT_TEXT));
+sceneCases.push(c('layoutRedactLabel', 'font-equals-height', rc(0, 0, 200, 50), { text: 'Fit', repeat: false }, { ...REDACT_TEXT, fontSize: 50 }));
 
 // ── placement and ink ────────────────────────────────────────────────────────
 
@@ -712,6 +720,7 @@ const POLICIES = [
   ['segment', { length: 100 }],
   ['segment-45', { length: 100, angleDeg: 45 }],
   ['segment-180', { length: 50, angleDeg: 180 }],
+  ['segment-up', { length: 100, angleDeg: -90 }],
   ['segment-and-box', { length: 30, width: 5, height: 5 }],
 ] as const;
 for (const [pname, policy] of POLICIES) {
@@ -760,6 +769,9 @@ for (const [label, pts, opts] of [
   ['reversed', [v(100, 5), v(50, 3), v(0, 0)], OPTS],
   ['loose-threshold', [v(0, 0), v(50, 30), v(100, 0)], { deviationThreshold: 0.5, axisSnapDegrees: 45 }],
   ['closed-loop', [v(0, 0), v(50, 50), v(0, 1)], OPTS],
+  ['offset-horizontal', [v(40, 30), v(90, 32), v(140, 31)], OPTS],
+  ['offset-vertical', [v(40, 30), v(42, 80), v(41, 130)], OPTS],
+  ['length-exactly-3', [v(10, 10), v(11.5, 10.05), v(13, 10)], OPTS],
 ] as const) {
   placeCases.push(c('straightenInkStroke', label, pts, opts));
 }

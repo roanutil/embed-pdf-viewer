@@ -100647,6 +100647,74 @@
       }
     },
     {
+      "name": "geomScene/cloudy-too-narrow",
+      "fn": "geomScene",
+      "args": [
+        {
+          "t": "rect",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 8,
+            "height": 30
+          },
+          "ellipse": false
+        },
+        1,
+        {
+          "kind": "cloudy",
+          "intensity": 1
+        }
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "kind": "rect",
+            "rect": {
+              "x": 0.5,
+              "y": 0.5,
+              "width": 7,
+              "height": 29
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "geomScene/cloudy-too-short",
+      "fn": "geomScene",
+      "args": [
+        {
+          "t": "rect",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 30,
+            "height": 8
+          },
+          "ellipse": false
+        },
+        1,
+        {
+          "kind": "cloudy",
+          "intensity": 1
+        }
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "kind": "rect",
+            "rect": {
+              "x": 0.5,
+              "y": 0.5,
+              "width": 29,
+              "height": 7
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "geomScene/cloudy-ellipse-small",
       "fn": "geomScene",
       "args": [
@@ -100871,6 +100939,168 @@
           "y": 18.5,
           "width": 163,
           "height": 163
+        }
+      }
+    },
+    {
+      "name": "geomVisualBounds/callout-rot-nan",
+      "fn": "geomVisualBounds",
+      "args": [
+        {
+          "t": "text",
+          "rect": {
+            "x": 100,
+            "y": 100,
+            "width": 120,
+            "height": 40
+          },
+          "callout": {
+            "tip": {
+              "x": 20,
+              "y": 20
+            },
+            "ending": "closed-arrow"
+          },
+          "rot": {
+            "$number": "NaN"
+          }
+        },
+        3
+      ],
+      "outcome": {
+        "returned": {
+          "x": 18.5,
+          "y": 18.5,
+          "width": 203,
+          "height": 123
+        }
+      }
+    },
+    {
+      "name": "geomVisualBounds/miter-within-limit-sw8",
+      "fn": "geomVisualBounds",
+      "args": [
+        {
+          "t": "poly",
+          "points": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 100,
+              "y": 10
+            },
+            {
+              "x": 0,
+              "y": 40
+            }
+          ],
+          "closed": false
+        },
+        8
+      ],
+      "outcome": {
+        "returned": {
+          "x": -1.1493915422653815,
+          "y": -3.9801487608399566,
+          "width": 121.63957367229679,
+          "height": 47.81145390172456
+        }
+      }
+    },
+    {
+      "name": "geomVisualBounds/miter-within-limit-sw1",
+      "fn": "geomVisualBounds",
+      "args": [
+        {
+          "t": "poly",
+          "points": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 100,
+              "y": 10
+            },
+            {
+              "x": 0,
+              "y": 40
+            }
+          ],
+          "closed": false
+        },
+        1
+      ],
+      "outcome": {
+        "returned": {
+          "x": -0.1436739427831727,
+          "y": -0.4975185951049946,
+          "width": 102.70494670903709,
+          "height": 40.976431737715565
+        }
+      }
+    },
+    {
+      "name": "obbFromGeom/line-rot-nan",
+      "fn": "obbFromGeom",
+      "args": [
+        {
+          "t": "line",
+          "a": {
+            "x": 0,
+            "y": 0
+          },
+          "b": {
+            "x": 50,
+            "y": 20
+          },
+          "rot": {
+            "$number": "NaN"
+          }
+        },
+        2
+      ],
+      "outcome": {
+        "returned": {
+          "corners": [
+            {
+              "x": {
+                "$number": "NaN"
+              },
+              "y": {
+                "$number": "NaN"
+              }
+            },
+            {
+              "x": {
+                "$number": "NaN"
+              },
+              "y": {
+                "$number": "NaN"
+              }
+            },
+            {
+              "x": {
+                "$number": "NaN"
+              },
+              "y": {
+                "$number": "NaN"
+              }
+            },
+            {
+              "x": {
+                "$number": "NaN"
+              },
+              "y": {
+                "$number": "NaN"
+              }
+            }
+          ],
+          "angle": {
+            "$number": "NaN"
+          }
         }
       }
     },
@@ -137412,6 +137642,45 @@
             "height": 4
           },
           "ellipse": false
+        }
+      }
+    },
+    {
+      "name": "geomDragHandle/rect-rot-nan-se",
+      "fn": "geomDragHandle",
+      "args": [
+        {
+          "t": "rect",
+          "rect": {
+            "x": 100,
+            "y": 100,
+            "width": 80,
+            "height": 60
+          },
+          "ellipse": false,
+          "rot": {
+            "$number": "NaN"
+          }
+        },
+        "se",
+        {
+          "x": 220,
+          "y": 200
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "rect",
+          "rect": {
+            "x": 100,
+            "y": 100,
+            "width": 120,
+            "height": 100
+          },
+          "ellipse": false,
+          "rot": {
+            "$number": "NaN"
+          }
         }
       }
     },

@@ -412,15 +412,9 @@ fn set_text(m: &Model, id: &str, text: &str) -> Step {
         return same();
     };
     let mut next = a.clone();
+    // A DTO is an object; the spread of a scalar one is not ported.
     if let Some(Value::Object(data)) = &mut next.data {
         data.insert("contents".into(), Value::String(text.into()));
-    } else if let Some(data) = &next.data
-        && !data.is_null()
-        && data.as_bool() != Some(false)
-    {
-        // A DTO that is not an object: `{ ...data, contents }` keeps only
-        // the new member (a string spreads its characters; not ported).
-        next.data = Some(serde_json::json!({ "contents": text }));
     }
     changed(Model { by_id: with_annot(m, id, to_vector(next)), ..m.clone() })
 }

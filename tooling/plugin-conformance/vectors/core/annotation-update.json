@@ -16861,7 +16861,1388 @@
       }
     },
     {
-      "name": "runs/edit-5-edit-down-group-member",
+      "name": "runs/edit-5-edit-group-resize-one-axis",
+      "fn": "runs",
+      "args": [
+        {
+          "byId": {
+            "hl": {
+              "id": "hl",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 10059
+              },
+              "pon": 1,
+              "subtype": "highlight",
+              "geom": {
+                "t": "quads",
+                "quads": [
+                  {
+                    "upperStart": {
+                      "x": 10,
+                      "y": 400
+                    },
+                    "upperEnd": {
+                      "x": 210,
+                      "y": 400
+                    },
+                    "lowerStart": {
+                      "x": 10,
+                      "y": 414
+                    },
+                    "lowerEnd": {
+                      "x": 210,
+                      "y": 414
+                    }
+                  }
+                ]
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "sq": {
+              "id": "sq",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 10405
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 100,
+                  "width": 80,
+                  "height": 60
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "sq2": {
+              "id": "sq2",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 22605
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 300,
+                  "y": 100,
+                  "width": 80,
+                  "height": 60
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": "#ffffff",
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "ci": {
+              "id": "ci",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 9901
+              },
+              "pon": 1,
+              "subtype": "circle",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 250,
+                  "width": 80,
+                  "height": 60
+                },
+                "ellipse": true
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "ln": {
+              "id": "ln",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 10185
+              },
+              "pon": 1,
+              "subtype": "line",
+              "geom": {
+                "t": "line",
+                "a": {
+                  "x": 300,
+                  "y": 250
+                },
+                "b": {
+                  "x": 400,
+                  "y": 300
+                },
+                "ends": {
+                  "start": "none",
+                  "end": "closed-arrow"
+                }
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "pg": {
+              "id": "pg",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 10302
+              },
+              "pon": 1,
+              "subtype": "polygon",
+              "geom": {
+                "t": "poly",
+                "points": [
+                  {
+                    "x": 100,
+                    "y": 500
+                  },
+                  {
+                    "x": 200,
+                    "y": 500
+                  },
+                  {
+                    "x": 150,
+                    "y": 580
+                  }
+                ],
+                "closed": true
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "pl": {
+              "id": "pl",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 10307
+              },
+              "pon": 1,
+              "subtype": "polyline",
+              "geom": {
+                "t": "poly",
+                "points": [
+                  {
+                    "x": 300,
+                    "y": 500
+                  },
+                  {
+                    "x": 350,
+                    "y": 560
+                  },
+                  {
+                    "x": 400,
+                    "y": 500
+                  }
+                ],
+                "closed": false,
+                "ends": {
+                  "start": "none",
+                  "end": "none"
+                },
+                "rot": 20
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "ink": {
+              "id": "ink",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 12959
+              },
+              "pon": 1,
+              "subtype": "ink",
+              "geom": {
+                "t": "ink",
+                "strokes": [
+                  [
+                    {
+                      "x": 450,
+                      "y": 100
+                    },
+                    {
+                      "x": 500,
+                      "y": 150
+                    },
+                    {
+                      "x": 550,
+                      "y": 100
+                    }
+                  ]
+                ]
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "ft": {
+              "id": "ft",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 10005
+              },
+              "pon": 1,
+              "subtype": "free-text",
+              "geom": {
+                "t": "text",
+                "rect": {
+                  "x": 450,
+                  "y": 250,
+                  "width": 100,
+                  "height": 40
+                }
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector",
+              "text": {
+                "fontFamily": "helvetica",
+                "fontSize": 12,
+                "fontColor": "#000000",
+                "textAlign": "left"
+              },
+              "data": {
+                "subtype": "free-text",
+                "contents": "hello"
+              }
+            },
+            "callout": {
+              "id": "callout",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 58953
+              },
+              "pon": 1,
+              "subtype": "free-text",
+              "geom": {
+                "t": "text",
+                "rect": {
+                  "x": 200,
+                  "y": 600,
+                  "width": 100,
+                  "height": 40
+                },
+                "callout": {
+                  "tip": {
+                    "x": 100,
+                    "y": 550
+                  },
+                  "ending": "open-arrow"
+                }
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector",
+              "text": {
+                "fontFamily": "helvetica",
+                "fontSize": 12,
+                "fontColor": "#000000",
+                "textAlign": "left"
+              }
+            },
+            "stamp": {
+              "id": "stamp",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 61436
+              },
+              "pon": 1,
+              "subtype": "stamp",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 450,
+                  "y": 400,
+                  "width": 80,
+                  "height": 40
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "baked",
+              "apBox": {
+                "x": 450,
+                "y": 400,
+                "width": 80,
+                "height": 40
+              }
+            },
+            "note": {
+              "id": "note",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 52025
+              },
+              "pon": 1,
+              "subtype": "text",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 20,
+                  "y": 20,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "baked",
+              "apBox": {
+                "x": 20,
+                "y": 20,
+                "width": 20,
+                "height": 20
+              }
+            },
+            "caret": {
+              "id": "caret",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 35164
+              },
+              "pon": 1,
+              "subtype": "caret",
+              "geom": {
+                "t": "caret",
+                "rect": {
+                  "x": 250,
+                  "y": 400,
+                  "width": 6,
+                  "height": 6
+                }
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "link": {
+              "id": "link",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 86497
+              },
+              "pon": 1,
+              "subtype": "link",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 20,
+                  "y": 700,
+                  "width": 100,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector",
+              "link": {
+                "kind": "uri",
+                "uri": "https://example.com"
+              }
+            },
+            "redact": {
+              "id": "redact",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 104
+              },
+              "pon": 1,
+              "subtype": "redact",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 300,
+                  "y": 650,
+                  "width": 100,
+                  "height": 50
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "locked": {
+              "id": "locked",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 40273
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 650,
+                  "width": 60,
+                  "height": 40
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": false,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": true,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "lockedc": {
+              "id": "lockedc",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 48562
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 200,
+                  "y": 700,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": false,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": true
+              },
+              "source": "vector"
+            },
+            "baked": {
+              "id": "baked",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 4900
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 450,
+                  "y": 500,
+                  "width": 60,
+                  "height": 40
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "baked",
+              "apBox": {
+                "x": 448,
+                "y": 498,
+                "width": 64,
+                "height": 44
+              }
+            },
+            "widget": {
+              "id": "widget",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 45771
+              },
+              "pon": 1,
+              "subtype": "widget-text",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 20,
+                  "y": 550,
+                  "width": 80,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "baked",
+              "text": {
+                "fontFamily": "helvetica",
+                "fontSize": 12,
+                "fontColor": "#000000",
+                "textAlign": "left"
+              }
+            },
+            "nozoom": {
+              "id": "nozoom",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 87931
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 560,
+                  "y": 700,
+                  "width": 30,
+                  "height": 30
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": false,
+                "noZoom": true,
+                "noRotate": true,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "child": {
+              "id": "child",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 35253
+              },
+              "pon": 1,
+              "subtype": "link",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 100,
+                  "width": 80,
+                  "height": 60
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector",
+              "group": "sq",
+              "irt": "sq",
+              "data": {
+                "subtype": "link",
+                "target": {
+                  "kind": "uri",
+                  "uri": "https://example.com"
+                }
+              }
+            },
+            "other-page": {
+              "id": "other-page",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 97331
+              },
+              "pon": 2,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 100,
+                  "width": 80,
+                  "height": 60
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            }
+          },
+          "order": [
+            "hl",
+            "sq",
+            "sq2",
+            "ci",
+            "ln",
+            "pg",
+            "pl",
+            "ink",
+            "ft",
+            "callout",
+            "stamp",
+            "note",
+            "caret",
+            "link",
+            "redact",
+            "locked",
+            "lockedc",
+            "baked",
+            "widget",
+            "nozoom",
+            "child",
+            "other-page"
+          ]
+        },
+        [
+          {
+            "name": "edit-group-resize-one-axis",
+            "over": {
+              "selected": [
+                "sq",
+                "sq2"
+              ]
+            },
+            "msgs": [
+              {
+                "t": "editPointer",
+                "phase": "down",
+                "in": {
+                  "pon": 1,
+                  "point": {
+                    "x": 380,
+                    "y": 130
+                  },
+                  "shift": false
+                }
+              },
+              {
+                "t": "editPointer",
+                "phase": "move",
+                "in": {
+                  "pon": 1,
+                  "point": {
+                    "x": 420,
+                    "y": 130
+                  },
+                  "shift": false
+                }
+              },
+              {
+                "t": "editPointer",
+                "phase": "up",
+                "in": {
+                  "pon": 1,
+                  "point": {
+                    "x": 420,
+                    "y": 130
+                  },
+                  "shift": false
+                }
+              }
+            ]
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "name": "edit-group-resize-one-axis",
+            "steps": [
+              {
+                "same": false,
+                "effects": [],
+                "draft": {
+                  "g": "group",
+                  "op": "resize",
+                  "ids": [
+                    "sq",
+                    "sq2"
+                  ],
+                  "handle": "e",
+                  "anchor": {
+                    "x": 100,
+                    "y": 130
+                  },
+                  "base": {
+                    "x": 100,
+                    "y": 100,
+                    "width": 280,
+                    "height": 60
+                  },
+                  "cur": {
+                    "x": 100,
+                    "y": 100,
+                    "width": 280,
+                    "height": 60
+                  }
+                },
+                "selected": [
+                  "sq",
+                  "sq2"
+                ]
+              },
+              {
+                "same": false,
+                "effects": [],
+                "draft": {
+                  "g": "group",
+                  "op": "resize",
+                  "ids": [
+                    "sq",
+                    "sq2"
+                  ],
+                  "handle": "e",
+                  "anchor": {
+                    "x": 100,
+                    "y": 130
+                  },
+                  "base": {
+                    "x": 100,
+                    "y": 100,
+                    "width": 280,
+                    "height": 60
+                  },
+                  "cur": {
+                    "x": 100,
+                    "y": 100,
+                    "width": 320,
+                    "height": 60
+                  }
+                },
+                "selected": [
+                  "sq",
+                  "sq2"
+                ]
+              },
+              {
+                "same": false,
+                "effects": [
+                  {
+                    "fx": "patch",
+                    "id": "sq",
+                    "scope": {
+                      "kind": "geometry"
+                    }
+                  },
+                  {
+                    "fx": "patch",
+                    "id": "sq2",
+                    "scope": {
+                      "kind": "geometry"
+                    }
+                  }
+                ],
+                "draft": null,
+                "selected": [
+                  "sq",
+                  "sq2"
+                ]
+              }
+            ],
+            "model": {
+              "order": [
+                "hl",
+                "sq",
+                "sq2",
+                "ci",
+                "ln",
+                "pg",
+                "pl",
+                "ink",
+                "ft",
+                "callout",
+                "stamp",
+                "note",
+                "caret",
+                "link",
+                "redact",
+                "locked",
+                "lockedc",
+                "baked",
+                "widget",
+                "nozoom",
+                "child",
+                "other-page"
+              ],
+              "selected": [
+                "sq",
+                "sq2"
+              ],
+              "hovered": null,
+              "draft": null,
+              "preview": null,
+              "seq": 0,
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "defaults": {},
+              "hitMargin": 6,
+              "editing": null,
+              "snap": {
+                "guides": true,
+                "guideThreshold": 5,
+                "rotation": true,
+                "rotationAngles": [
+                  0,
+                  90,
+                  180,
+                  270
+                ],
+                "rotationThreshold": 4
+              },
+              "byId": {
+                "sq": {
+                  "id": "sq",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 10405
+                  },
+                  "pon": 1,
+                  "subtype": "square",
+                  "geom": {
+                    "t": "rect",
+                    "rect": {
+                      "x": 100.00000000000001,
+                      "y": 100,
+                      "width": 91.42857142857142,
+                      "height": 60
+                    },
+                    "ellipse": false
+                  },
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "flags": {
+                    "invisible": false,
+                    "hidden": false,
+                    "print": true,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": false
+                  },
+                  "source": "vector"
+                },
+                "sq2": {
+                  "id": "sq2",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 22605
+                  },
+                  "pon": 1,
+                  "subtype": "square",
+                  "geom": {
+                    "t": "rect",
+                    "rect": {
+                      "x": 328.57142857142856,
+                      "y": 100,
+                      "width": 91.42857142857142,
+                      "height": 60
+                    },
+                    "ellipse": false
+                  },
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": "#ffffff",
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "flags": {
+                    "invisible": false,
+                    "hidden": false,
+                    "print": true,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": false
+                  },
+                  "source": "vector"
+                }
+              }
+            },
+            "removed": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "runs/edit-6-edit-down-group-member",
       "fn": "runs",
       "args": [
         {
@@ -17321,7 +18702,7 @@
       }
     },
     {
-      "name": "runs/marquee-6-marquee-select",
+      "name": "runs/marquee-7-marquee-select",
       "fn": "runs",
       "args": [
         {
@@ -19621,7 +21002,7 @@
       }
     },
     {
-      "name": "runs/marquee-7-marquee-groups",
+      "name": "runs/marquee-8-marquee-groups",
       "fn": "runs",
       "args": [
         {
@@ -20033,7 +21414,7 @@
       }
     },
     {
-      "name": "runs/create-8-create-square",
+      "name": "runs/create-9-create-square",
       "fn": "runs",
       "args": [
         {
@@ -22249,7 +23630,7 @@
       }
     },
     {
-      "name": "runs/create-9-create-square-rotation-no-upright",
+      "name": "runs/create-10-create-square-rotation-no-upright",
       "fn": "runs",
       "args": [
         {
@@ -24262,7 +25643,7 @@
       }
     },
     {
-      "name": "runs/create-10-create-free-text-click",
+      "name": "runs/create-11-create-free-text-click",
       "fn": "runs",
       "args": [
         {
@@ -26557,7 +27938,7 @@
       }
     },
     {
-      "name": "runs/create-11-create-line-click-box-policy",
+      "name": "runs/create-12-create-line-click-box-policy",
       "fn": "runs",
       "args": [
         {
@@ -28756,7 +30137,7 @@
       }
     },
     {
-      "name": "runs/create-12-create-poly-clamped",
+      "name": "runs/create-13-create-poly-clamped",
       "fn": "runs",
       "args": [
         {
@@ -31072,7 +32453,7 @@
       }
     },
     {
-      "name": "runs/create-13-create-callout-drag-box",
+      "name": "runs/create-14-create-callout-drag-box",
       "fn": "runs",
       "args": [
         {
@@ -33288,7 +34669,7 @@
       }
     },
     {
-      "name": "runs/create-14-create-replace-text-preset",
+      "name": "runs/create-15-create-replace-text-preset",
       "fn": "runs",
       "args": [
         {
@@ -33383,6 +34764,359 @@
                   },
                   "advance": 1
                 }
+              }
+            ]
+          },
+          {
+            "name": "create-callout-rotation-without-upright",
+            "over": {},
+            "msgs": [
+              {
+                "t": "createPointer",
+                "phase": "down",
+                "subtype": "free-text-callout",
+                "in": {
+                  "pon": 1,
+                  "point": {
+                    "x": 10,
+                    "y": 10
+                  },
+                  "shift": false,
+                  "displayRotation": 90
+                }
+              }
+            ]
+          },
+          {
+            "name": "create-callout-upright-at-zero",
+            "over": {},
+            "msgs": [
+              {
+                "t": "createPointer",
+                "phase": "down",
+                "subtype": "free-text-callout",
+                "in": {
+                  "pon": 1,
+                  "point": {
+                    "x": 10,
+                    "y": 10
+                  },
+                  "shift": false,
+                  "upright": true,
+                  "displayRotation": 0
+                }
+              }
+            ]
+          },
+          {
+            "name": "create-free-text-thin-drag",
+            "over": {},
+            "msgs": [
+              {
+                "t": "createPointer",
+                "phase": "down",
+                "subtype": "free-text",
+                "in": {
+                  "pon": 1,
+                  "point": {
+                    "x": 100,
+                    "y": 100
+                  },
+                  "shift": false
+                }
+              },
+              {
+                "t": "createPointer",
+                "phase": "move",
+                "subtype": "free-text",
+                "in": {
+                  "pon": 1,
+                  "point": {
+                    "x": 200,
+                    "y": 101
+                  },
+                  "shift": false
+                }
+              },
+              {
+                "t": "createPointer",
+                "phase": "up",
+                "subtype": "free-text",
+                "in": {
+                  "pon": 1,
+                  "point": {
+                    "x": 200,
+                    "y": 101
+                  },
+                  "shift": false
+                }
+              }
+            ]
+          },
+          {
+            "name": "create-free-text-drag-exactly-min",
+            "over": {},
+            "msgs": [
+              {
+                "t": "createPointer",
+                "phase": "down",
+                "subtype": "free-text",
+                "in": {
+                  "pon": 1,
+                  "point": {
+                    "x": 100,
+                    "y": 100
+                  },
+                  "shift": false
+                }
+              },
+              {
+                "t": "createPointer",
+                "phase": "move",
+                "subtype": "free-text",
+                "in": {
+                  "pon": 1,
+                  "point": {
+                    "x": 103,
+                    "y": 100
+                  },
+                  "shift": false
+                }
+              },
+              {
+                "t": "createPointer",
+                "phase": "up",
+                "subtype": "free-text",
+                "in": {
+                  "pon": 1,
+                  "point": {
+                    "x": 103,
+                    "y": 100
+                  },
+                  "shift": false
+                }
+              }
+            ]
+          },
+          {
+            "name": "create-line-short-offset",
+            "over": {},
+            "msgs": [
+              {
+                "t": "createPointer",
+                "phase": "down",
+                "subtype": "line",
+                "in": {
+                  "pon": 1,
+                  "point": {
+                    "x": 100,
+                    "y": 100
+                  },
+                  "shift": false
+                }
+              },
+              {
+                "t": "createPointer",
+                "phase": "move",
+                "subtype": "line",
+                "in": {
+                  "pon": 1,
+                  "point": {
+                    "x": 104,
+                    "y": 100
+                  },
+                  "shift": false
+                }
+              },
+              {
+                "t": "createPointer",
+                "phase": "up",
+                "subtype": "line",
+                "in": {
+                  "pon": 1,
+                  "point": {
+                    "x": 104,
+                    "y": 100
+                  },
+                  "shift": false
+                }
+              }
+            ]
+          },
+          {
+            "name": "create-ink-exactly-min",
+            "over": {},
+            "msgs": [
+              {
+                "t": "createPointer",
+                "phase": "down",
+                "subtype": "ink",
+                "in": {
+                  "pon": 1,
+                  "point": {
+                    "x": 10,
+                    "y": 10
+                  },
+                  "shift": false
+                }
+              },
+              {
+                "t": "createPointer",
+                "phase": "move",
+                "subtype": "ink",
+                "in": {
+                  "pon": 1,
+                  "point": {
+                    "x": 13,
+                    "y": 10
+                  },
+                  "shift": false
+                }
+              },
+              {
+                "t": "createPointer",
+                "phase": "up",
+                "subtype": "ink",
+                "in": {
+                  "pon": 1,
+                  "point": {
+                    "x": 13,
+                    "y": 10
+                  },
+                  "shift": false
+                }
+              }
+            ]
+          },
+          {
+            "name": "create-ink-far-dots",
+            "over": {},
+            "msgs": [
+              {
+                "t": "createPointer",
+                "phase": "down",
+                "subtype": "ink",
+                "in": {
+                  "pon": 1,
+                  "point": {
+                    "x": 10,
+                    "y": 10
+                  },
+                  "shift": false
+                },
+                "deferInkCommit": true
+              },
+              {
+                "t": "createPointer",
+                "phase": "up",
+                "subtype": "ink",
+                "in": {
+                  "pon": 1,
+                  "point": {
+                    "x": 10,
+                    "y": 10
+                  },
+                  "shift": false
+                },
+                "deferInkCommit": true
+              },
+              {
+                "t": "createPointer",
+                "phase": "down",
+                "subtype": "ink",
+                "in": {
+                  "pon": 1,
+                  "point": {
+                    "x": 90,
+                    "y": 90
+                  },
+                  "shift": false
+                },
+                "deferInkCommit": true
+              },
+              {
+                "t": "createPointer",
+                "phase": "up",
+                "subtype": "ink",
+                "in": {
+                  "pon": 1,
+                  "point": {
+                    "x": 90,
+                    "y": 90
+                  },
+                  "shift": false
+                },
+                "deferInkCommit": true
+              },
+              {
+                "t": "finishInkDraft"
+              }
+            ]
+          },
+          {
+            "name": "create-markup-degenerate-offset",
+            "over": {},
+            "msgs": [
+              {
+                "t": "createMarkup",
+                "subtype": "underline",
+                "pon": 1,
+                "quads": [
+                  {
+                    "upperStart": {
+                      "x": 50,
+                      "y": 50
+                    },
+                    "upperEnd": {
+                      "x": 50,
+                      "y": 50
+                    },
+                    "lowerStart": {
+                      "x": 50,
+                      "y": 62
+                    },
+                    "lowerEnd": {
+                      "x": 50,
+                      "y": 62
+                    }
+                  },
+                  {
+                    "upperStart": {
+                      "x": 50,
+                      "y": 50
+                    },
+                    "upperEnd": {
+                      "x": 60,
+                      "y": 50
+                    },
+                    "lowerStart": {
+                      "x": 50,
+                      "y": 50
+                    },
+                    "lowerEnd": {
+                      "x": 60,
+                      "y": 50
+                    }
+                  },
+                  {
+                    "upperStart": {
+                      "x": 50,
+                      "y": 60
+                    },
+                    "upperEnd": {
+                      "x": 50,
+                      "y": 60
+                    },
+                    "lowerStart": {
+                      "x": 50,
+                      "y": 60
+                    },
+                    "lowerEnd": {
+                      "x": 50,
+                      "y": 60
+                    }
+                  }
+                ]
               }
             ]
           },
@@ -33654,6 +35388,902 @@
             "removed": []
           },
           {
+            "name": "create-callout-rotation-without-upright",
+            "steps": [
+              {
+                "same": false,
+                "effects": [],
+                "draft": {
+                  "g": "create-callout",
+                  "subtype": "free-text-callout",
+                  "preset": "free-text-callout",
+                  "pon": 1,
+                  "step": "knee",
+                  "tip": {
+                    "x": 10,
+                    "y": 10
+                  },
+                  "cur": {
+                    "x": 10,
+                    "y": 10
+                  }
+                },
+                "selected": []
+              }
+            ],
+            "model": {
+              "order": [],
+              "selected": [],
+              "hovered": null,
+              "draft": {
+                "g": "create-callout",
+                "subtype": "free-text-callout",
+                "preset": "free-text-callout",
+                "pon": 1,
+                "step": "knee",
+                "tip": {
+                  "x": 10,
+                  "y": 10
+                },
+                "cur": {
+                  "x": 10,
+                  "y": 10
+                }
+              },
+              "preview": null,
+              "seq": 0,
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "defaults": {},
+              "hitMargin": 6,
+              "editing": null,
+              "snap": {
+                "guides": true,
+                "guideThreshold": 5,
+                "rotation": true,
+                "rotationAngles": [
+                  0,
+                  90,
+                  180,
+                  270
+                ],
+                "rotationThreshold": 4
+              },
+              "byId": {}
+            },
+            "removed": []
+          },
+          {
+            "name": "create-callout-upright-at-zero",
+            "steps": [
+              {
+                "same": false,
+                "effects": [],
+                "draft": {
+                  "g": "create-callout",
+                  "subtype": "free-text-callout",
+                  "preset": "free-text-callout",
+                  "pon": 1,
+                  "step": "knee",
+                  "tip": {
+                    "x": 10,
+                    "y": 10
+                  },
+                  "cur": {
+                    "x": 10,
+                    "y": 10
+                  }
+                },
+                "selected": []
+              }
+            ],
+            "model": {
+              "order": [],
+              "selected": [],
+              "hovered": null,
+              "draft": {
+                "g": "create-callout",
+                "subtype": "free-text-callout",
+                "preset": "free-text-callout",
+                "pon": 1,
+                "step": "knee",
+                "tip": {
+                  "x": 10,
+                  "y": 10
+                },
+                "cur": {
+                  "x": 10,
+                  "y": 10
+                }
+              },
+              "preview": null,
+              "seq": 0,
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "defaults": {},
+              "hitMargin": 6,
+              "editing": null,
+              "snap": {
+                "guides": true,
+                "guideThreshold": 5,
+                "rotation": true,
+                "rotationAngles": [
+                  0,
+                  90,
+                  180,
+                  270
+                ],
+                "rotationThreshold": 4
+              },
+              "byId": {}
+            },
+            "removed": []
+          },
+          {
+            "name": "create-free-text-thin-drag",
+            "steps": [
+              {
+                "same": false,
+                "effects": [],
+                "draft": {
+                  "g": "create-rect",
+                  "subtype": "free-text",
+                  "preset": "free-text",
+                  "pon": 1,
+                  "from": {
+                    "x": 100,
+                    "y": 100
+                  },
+                  "to": {
+                    "x": 100,
+                    "y": 100
+                  },
+                  "ellipse": false
+                },
+                "selected": []
+              },
+              {
+                "same": false,
+                "effects": [],
+                "draft": {
+                  "g": "create-rect",
+                  "subtype": "free-text",
+                  "preset": "free-text",
+                  "pon": 1,
+                  "from": {
+                    "x": 100,
+                    "y": 100
+                  },
+                  "to": {
+                    "x": 200,
+                    "y": 101
+                  },
+                  "ellipse": false
+                },
+                "selected": []
+              },
+              {
+                "same": false,
+                "effects": [
+                  {
+                    "fx": "create",
+                    "id": "tmp:1"
+                  }
+                ],
+                "draft": null,
+                "selected": [
+                  "tmp:1"
+                ]
+              }
+            ],
+            "model": {
+              "order": [
+                "tmp:1"
+              ],
+              "selected": [
+                "tmp:1"
+              ],
+              "hovered": null,
+              "draft": null,
+              "preview": null,
+              "seq": 1,
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "defaults": {},
+              "hitMargin": 6,
+              "editing": "tmp:1",
+              "snap": {
+                "guides": true,
+                "guideThreshold": 5,
+                "rotation": true,
+                "rotationAngles": [
+                  0,
+                  90,
+                  180,
+                  270
+                ],
+                "rotationThreshold": 4
+              },
+              "byId": {
+                "tmp:1": {
+                  "id": "tmp:1",
+                  "ref": null,
+                  "pon": 1,
+                  "subtype": "free-text",
+                  "geom": {
+                    "t": "text",
+                    "rect": {
+                      "x": 100,
+                      "y": 100,
+                      "width": 100,
+                      "height": 1
+                    }
+                  },
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "text": {
+                    "fontFamily": "helvetica",
+                    "fontSize": 14,
+                    "fontColor": "#000000",
+                    "textAlign": "left"
+                  },
+                  "flags": {
+                    "invisible": false,
+                    "hidden": false,
+                    "print": true,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": false
+                  },
+                  "source": "vector"
+                }
+              }
+            },
+            "removed": []
+          },
+          {
+            "name": "create-free-text-drag-exactly-min",
+            "steps": [
+              {
+                "same": false,
+                "effects": [],
+                "draft": {
+                  "g": "create-rect",
+                  "subtype": "free-text",
+                  "preset": "free-text",
+                  "pon": 1,
+                  "from": {
+                    "x": 100,
+                    "y": 100
+                  },
+                  "to": {
+                    "x": 100,
+                    "y": 100
+                  },
+                  "ellipse": false
+                },
+                "selected": []
+              },
+              {
+                "same": false,
+                "effects": [],
+                "draft": {
+                  "g": "create-rect",
+                  "subtype": "free-text",
+                  "preset": "free-text",
+                  "pon": 1,
+                  "from": {
+                    "x": 100,
+                    "y": 100
+                  },
+                  "to": {
+                    "x": 103,
+                    "y": 100
+                  },
+                  "ellipse": false
+                },
+                "selected": []
+              },
+              {
+                "same": false,
+                "effects": [
+                  {
+                    "fx": "create",
+                    "id": "tmp:1"
+                  }
+                ],
+                "draft": null,
+                "selected": [
+                  "tmp:1"
+                ]
+              }
+            ],
+            "model": {
+              "order": [
+                "tmp:1"
+              ],
+              "selected": [
+                "tmp:1"
+              ],
+              "hovered": null,
+              "draft": null,
+              "preview": null,
+              "seq": 1,
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "defaults": {},
+              "hitMargin": 6,
+              "editing": "tmp:1",
+              "snap": {
+                "guides": true,
+                "guideThreshold": 5,
+                "rotation": true,
+                "rotationAngles": [
+                  0,
+                  90,
+                  180,
+                  270
+                ],
+                "rotationThreshold": 4
+              },
+              "byId": {
+                "tmp:1": {
+                  "id": "tmp:1",
+                  "ref": null,
+                  "pon": 1,
+                  "subtype": "free-text",
+                  "geom": {
+                    "t": "text",
+                    "rect": {
+                      "x": 100,
+                      "y": 100,
+                      "width": 3,
+                      "height": 0
+                    }
+                  },
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "text": {
+                    "fontFamily": "helvetica",
+                    "fontSize": 14,
+                    "fontColor": "#000000",
+                    "textAlign": "left"
+                  },
+                  "flags": {
+                    "invisible": false,
+                    "hidden": false,
+                    "print": true,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": false
+                  },
+                  "source": "vector"
+                }
+              }
+            },
+            "removed": []
+          },
+          {
+            "name": "create-line-short-offset",
+            "steps": [
+              {
+                "same": false,
+                "effects": [],
+                "draft": {
+                  "g": "create-line",
+                  "subtype": "line",
+                  "preset": "line",
+                  "pon": 1,
+                  "from": {
+                    "x": 100,
+                    "y": 100
+                  },
+                  "to": {
+                    "x": 100,
+                    "y": 100
+                  }
+                },
+                "selected": []
+              },
+              {
+                "same": false,
+                "effects": [],
+                "draft": {
+                  "g": "create-line",
+                  "subtype": "line",
+                  "preset": "line",
+                  "pon": 1,
+                  "from": {
+                    "x": 100,
+                    "y": 100
+                  },
+                  "to": {
+                    "x": 104,
+                    "y": 100
+                  }
+                },
+                "selected": []
+              },
+              {
+                "same": false,
+                "effects": [
+                  {
+                    "fx": "create",
+                    "id": "tmp:1"
+                  }
+                ],
+                "draft": null,
+                "selected": [
+                  "tmp:1"
+                ]
+              }
+            ],
+            "model": {
+              "order": [
+                "tmp:1"
+              ],
+              "selected": [
+                "tmp:1"
+              ],
+              "hovered": null,
+              "draft": null,
+              "preview": null,
+              "seq": 1,
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "defaults": {},
+              "hitMargin": 6,
+              "editing": null,
+              "snap": {
+                "guides": true,
+                "guideThreshold": 5,
+                "rotation": true,
+                "rotationAngles": [
+                  0,
+                  90,
+                  180,
+                  270
+                ],
+                "rotationThreshold": 4
+              },
+              "byId": {
+                "tmp:1": {
+                  "id": "tmp:1",
+                  "ref": null,
+                  "pon": 1,
+                  "subtype": "line",
+                  "geom": {
+                    "t": "line",
+                    "a": {
+                      "x": 100,
+                      "y": 100
+                    },
+                    "b": {
+                      "x": 104,
+                      "y": 100
+                    },
+                    "ends": {
+                      "start": "none",
+                      "end": "none"
+                    }
+                  },
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "flags": {
+                    "invisible": false,
+                    "hidden": false,
+                    "print": true,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": false
+                  },
+                  "source": "vector"
+                }
+              }
+            },
+            "removed": []
+          },
+          {
+            "name": "create-ink-exactly-min",
+            "steps": [
+              {
+                "same": false,
+                "effects": [],
+                "draft": {
+                  "g": "create-ink",
+                  "subtype": "ink",
+                  "preset": "ink",
+                  "pon": 1,
+                  "strokes": [
+                    [
+                      {
+                        "x": 10,
+                        "y": 10
+                      }
+                    ]
+                  ]
+                },
+                "selected": []
+              },
+              {
+                "same": false,
+                "effects": [],
+                "draft": {
+                  "g": "create-ink",
+                  "subtype": "ink",
+                  "preset": "ink",
+                  "pon": 1,
+                  "strokes": [
+                    [
+                      {
+                        "x": 10,
+                        "y": 10
+                      },
+                      {
+                        "x": 13,
+                        "y": 10
+                      }
+                    ]
+                  ]
+                },
+                "selected": []
+              },
+              {
+                "same": false,
+                "effects": [
+                  {
+                    "fx": "create",
+                    "id": "tmp:1"
+                  }
+                ],
+                "draft": null,
+                "selected": [
+                  "tmp:1"
+                ]
+              }
+            ],
+            "model": {
+              "order": [
+                "tmp:1"
+              ],
+              "selected": [
+                "tmp:1"
+              ],
+              "hovered": null,
+              "draft": null,
+              "preview": null,
+              "seq": 1,
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "defaults": {},
+              "hitMargin": 6,
+              "editing": null,
+              "snap": {
+                "guides": true,
+                "guideThreshold": 5,
+                "rotation": true,
+                "rotationAngles": [
+                  0,
+                  90,
+                  180,
+                  270
+                ],
+                "rotationThreshold": 4
+              },
+              "byId": {
+                "tmp:1": {
+                  "id": "tmp:1",
+                  "ref": null,
+                  "pon": 1,
+                  "subtype": "ink",
+                  "geom": {
+                    "t": "ink",
+                    "strokes": [
+                      [
+                        {
+                          "x": 10,
+                          "y": 10
+                        },
+                        {
+                          "x": 13,
+                          "y": 10
+                        }
+                      ]
+                    ]
+                  },
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "flags": {
+                    "invisible": false,
+                    "hidden": false,
+                    "print": true,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": false
+                  },
+                  "source": "vector"
+                }
+              }
+            },
+            "removed": []
+          },
+          {
+            "name": "create-ink-far-dots",
+            "steps": [
+              {
+                "same": false,
+                "effects": [],
+                "draft": {
+                  "g": "create-ink",
+                  "subtype": "ink",
+                  "preset": "ink",
+                  "pon": 1,
+                  "strokes": [
+                    [
+                      {
+                        "x": 10,
+                        "y": 10
+                      }
+                    ]
+                  ]
+                },
+                "selected": []
+              },
+              {
+                "same": true,
+                "effects": [],
+                "draft": {
+                  "g": "create-ink",
+                  "subtype": "ink",
+                  "preset": "ink",
+                  "pon": 1,
+                  "strokes": [
+                    [
+                      {
+                        "x": 10,
+                        "y": 10
+                      }
+                    ]
+                  ]
+                },
+                "selected": []
+              },
+              {
+                "same": false,
+                "effects": [],
+                "draft": {
+                  "g": "create-ink",
+                  "subtype": "ink",
+                  "preset": "ink",
+                  "pon": 1,
+                  "strokes": [
+                    [
+                      {
+                        "x": 10,
+                        "y": 10
+                      }
+                    ],
+                    [
+                      {
+                        "x": 90,
+                        "y": 90
+                      }
+                    ]
+                  ]
+                },
+                "selected": []
+              },
+              {
+                "same": true,
+                "effects": [],
+                "draft": {
+                  "g": "create-ink",
+                  "subtype": "ink",
+                  "preset": "ink",
+                  "pon": 1,
+                  "strokes": [
+                    [
+                      {
+                        "x": 10,
+                        "y": 10
+                      }
+                    ],
+                    [
+                      {
+                        "x": 90,
+                        "y": 90
+                      }
+                    ]
+                  ]
+                },
+                "selected": []
+              },
+              {
+                "same": false,
+                "effects": [],
+                "draft": null,
+                "selected": []
+              }
+            ],
+            "model": {
+              "order": [],
+              "selected": [],
+              "hovered": null,
+              "draft": null,
+              "preview": null,
+              "seq": 0,
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "defaults": {},
+              "hitMargin": 6,
+              "editing": null,
+              "snap": {
+                "guides": true,
+                "guideThreshold": 5,
+                "rotation": true,
+                "rotationAngles": [
+                  0,
+                  90,
+                  180,
+                  270
+                ],
+                "rotationThreshold": 4
+              },
+              "byId": {}
+            },
+            "removed": []
+          },
+          {
+            "name": "create-markup-degenerate-offset",
+            "steps": [
+              {
+                "same": true,
+                "effects": [],
+                "draft": null,
+                "selected": []
+              }
+            ],
+            "model": {
+              "order": [],
+              "selected": [],
+              "hovered": null,
+              "draft": null,
+              "preview": null,
+              "seq": 0,
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "defaults": {},
+              "hitMargin": 6,
+              "editing": null,
+              "snap": {
+                "guides": true,
+                "guideThreshold": 5,
+                "rotation": true,
+                "rotationAngles": [
+                  0,
+                  90,
+                  180,
+                  270
+                ],
+                "rotationThreshold": 4
+              },
+              "byId": {}
+            },
+            "removed": []
+          },
+          {
             "name": "create-line-flags",
             "steps": [
               {
@@ -33803,7 +36433,7 @@
       }
     },
     {
-      "name": "runs/create-15-create-square-selects-and-seq",
+      "name": "runs/create-16-create-square-selects-and-seq",
       "fn": "runs",
       "args": [
         {
@@ -35061,6 +37691,122 @@
                 }
               }
             ]
+          },
+          {
+            "name": "create-polygon-clears-selection",
+            "over": {
+              "selected": [
+                "sq"
+              ]
+            },
+            "msgs": [
+              {
+                "t": "createPointer",
+                "phase": "down",
+                "subtype": "polygon",
+                "in": {
+                  "pon": 1,
+                  "point": {
+                    "x": 10,
+                    "y": 10
+                  },
+                  "shift": false
+                }
+              }
+            ]
+          },
+          {
+            "name": "create-callout-clears-selection",
+            "over": {
+              "selected": [
+                "sq"
+              ]
+            },
+            "msgs": [
+              {
+                "t": "createPointer",
+                "phase": "down",
+                "subtype": "free-text-callout",
+                "in": {
+                  "pon": 1,
+                  "point": {
+                    "x": 10,
+                    "y": 10
+                  },
+                  "shift": false
+                }
+              }
+            ]
+          },
+          {
+            "name": "create-replace-text-clears-preview",
+            "over": {
+              "preview": {
+                "subtype": "highlight",
+                "preset": "highlight",
+                "byPage": {}
+              }
+            },
+            "msgs": [
+              {
+                "t": "createPointer",
+                "phase": "down",
+                "subtype": "square",
+                "in": {
+                  "pon": 1,
+                  "point": {
+                    "x": 1,
+                    "y": 1
+                  },
+                  "shift": false
+                }
+              },
+              {
+                "t": "createReplaceText",
+                "pon": 1,
+                "quads": [
+                  {
+                    "upperStart": {
+                      "x": 10,
+                      "y": 10
+                    },
+                    "upperEnd": {
+                      "x": 110,
+                      "y": 10
+                    },
+                    "lowerStart": {
+                      "x": 10,
+                      "y": 22
+                    },
+                    "lowerEnd": {
+                      "x": 110,
+                      "y": 22
+                    }
+                  }
+                ],
+                "anchor": {
+                  "glyphQuad": {
+                    "upperStart": {
+                      "x": 100,
+                      "y": 10
+                    },
+                    "upperEnd": {
+                      "x": 110,
+                      "y": 10
+                    },
+                    "lowerStart": {
+                      "x": 100,
+                      "y": 22
+                    },
+                    "lowerEnd": {
+                      "x": 110,
+                      "y": 22
+                    }
+                  },
+                  "advance": 1
+                }
+              }
+            ]
           }
         ]
       ],
@@ -35554,12 +38300,410 @@
               }
             },
             "removed": []
+          },
+          {
+            "name": "create-polygon-clears-selection",
+            "steps": [
+              {
+                "same": false,
+                "effects": [],
+                "draft": {
+                  "g": "create-poly",
+                  "subtype": "polygon",
+                  "preset": "polygon",
+                  "pon": 1,
+                  "points": [
+                    {
+                      "x": 10,
+                      "y": 10
+                    }
+                  ],
+                  "cur": {
+                    "x": 10,
+                    "y": 10
+                  },
+                  "closed": true
+                },
+                "selected": []
+              }
+            ],
+            "model": {
+              "order": [
+                "hl",
+                "sq",
+                "sq2",
+                "ci",
+                "ln",
+                "pg",
+                "pl",
+                "ink",
+                "ft",
+                "callout",
+                "stamp",
+                "note",
+                "caret",
+                "link",
+                "redact",
+                "locked",
+                "lockedc",
+                "baked",
+                "widget",
+                "nozoom",
+                "child",
+                "other-page"
+              ],
+              "selected": [],
+              "hovered": null,
+              "draft": {
+                "g": "create-poly",
+                "subtype": "polygon",
+                "preset": "polygon",
+                "pon": 1,
+                "points": [
+                  {
+                    "x": 10,
+                    "y": 10
+                  }
+                ],
+                "cur": {
+                  "x": 10,
+                  "y": 10
+                },
+                "closed": true
+              },
+              "preview": null,
+              "seq": 0,
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "defaults": {},
+              "hitMargin": 6,
+              "editing": null,
+              "snap": {
+                "guides": true,
+                "guideThreshold": 5,
+                "rotation": true,
+                "rotationAngles": [
+                  0,
+                  90,
+                  180,
+                  270
+                ],
+                "rotationThreshold": 4
+              },
+              "byId": {}
+            },
+            "removed": []
+          },
+          {
+            "name": "create-callout-clears-selection",
+            "steps": [
+              {
+                "same": false,
+                "effects": [],
+                "draft": {
+                  "g": "create-callout",
+                  "subtype": "free-text-callout",
+                  "preset": "free-text-callout",
+                  "pon": 1,
+                  "step": "knee",
+                  "tip": {
+                    "x": 10,
+                    "y": 10
+                  },
+                  "cur": {
+                    "x": 10,
+                    "y": 10
+                  }
+                },
+                "selected": []
+              }
+            ],
+            "model": {
+              "order": [
+                "hl",
+                "sq",
+                "sq2",
+                "ci",
+                "ln",
+                "pg",
+                "pl",
+                "ink",
+                "ft",
+                "callout",
+                "stamp",
+                "note",
+                "caret",
+                "link",
+                "redact",
+                "locked",
+                "lockedc",
+                "baked",
+                "widget",
+                "nozoom",
+                "child",
+                "other-page"
+              ],
+              "selected": [],
+              "hovered": null,
+              "draft": {
+                "g": "create-callout",
+                "subtype": "free-text-callout",
+                "preset": "free-text-callout",
+                "pon": 1,
+                "step": "knee",
+                "tip": {
+                  "x": 10,
+                  "y": 10
+                },
+                "cur": {
+                  "x": 10,
+                  "y": 10
+                }
+              },
+              "preview": null,
+              "seq": 0,
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "defaults": {},
+              "hitMargin": 6,
+              "editing": null,
+              "snap": {
+                "guides": true,
+                "guideThreshold": 5,
+                "rotation": true,
+                "rotationAngles": [
+                  0,
+                  90,
+                  180,
+                  270
+                ],
+                "rotationThreshold": 4
+              },
+              "byId": {}
+            },
+            "removed": []
+          },
+          {
+            "name": "create-replace-text-clears-preview",
+            "steps": [
+              {
+                "same": false,
+                "effects": [],
+                "draft": {
+                  "g": "create-rect",
+                  "subtype": "square",
+                  "preset": "square",
+                  "pon": 1,
+                  "from": {
+                    "x": 1,
+                    "y": 1
+                  },
+                  "to": {
+                    "x": 1,
+                    "y": 1
+                  },
+                  "ellipse": false
+                },
+                "selected": []
+              },
+              {
+                "same": false,
+                "effects": [
+                  {
+                    "fx": "createGroup",
+                    "primary": "tmp:1",
+                    "members": [
+                      "tmp:2"
+                    ]
+                  }
+                ],
+                "draft": null,
+                "selected": [
+                  "tmp:1",
+                  "tmp:2"
+                ]
+              }
+            ],
+            "model": {
+              "order": [
+                "hl",
+                "sq",
+                "sq2",
+                "ci",
+                "ln",
+                "pg",
+                "pl",
+                "ink",
+                "ft",
+                "callout",
+                "stamp",
+                "note",
+                "caret",
+                "link",
+                "redact",
+                "locked",
+                "lockedc",
+                "baked",
+                "widget",
+                "nozoom",
+                "child",
+                "other-page",
+                "tmp:1",
+                "tmp:2"
+              ],
+              "selected": [
+                "tmp:1",
+                "tmp:2"
+              ],
+              "hovered": null,
+              "draft": null,
+              "preview": null,
+              "seq": 2,
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "defaults": {},
+              "hitMargin": 6,
+              "editing": null,
+              "snap": {
+                "guides": true,
+                "guideThreshold": 5,
+                "rotation": true,
+                "rotationAngles": [
+                  0,
+                  90,
+                  180,
+                  270
+                ],
+                "rotationThreshold": 4
+              },
+              "byId": {
+                "tmp:1": {
+                  "id": "tmp:1",
+                  "ref": null,
+                  "pon": 1,
+                  "subtype": "caret",
+                  "intent": "replace",
+                  "geom": {
+                    "t": "caret",
+                    "rect": {
+                      "x": 107,
+                      "y": 16,
+                      "width": 6,
+                      "height": 6
+                    }
+                  },
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "flags": {
+                    "invisible": false,
+                    "hidden": false,
+                    "print": true,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": false
+                  },
+                  "source": "vector"
+                },
+                "tmp:2": {
+                  "id": "tmp:2",
+                  "ref": null,
+                  "pon": 1,
+                  "subtype": "strikeout",
+                  "intent": "strikeout-text-edit",
+                  "geom": {
+                    "t": "quads",
+                    "quads": [
+                      {
+                        "upperStart": {
+                          "x": 10,
+                          "y": 10
+                        },
+                        "upperEnd": {
+                          "x": 110,
+                          "y": 10
+                        },
+                        "lowerStart": {
+                          "x": 10,
+                          "y": 22
+                        },
+                        "lowerEnd": {
+                          "x": 110,
+                          "y": 22
+                        }
+                      }
+                    ]
+                  },
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "flags": {
+                    "invisible": false,
+                    "hidden": false,
+                    "print": true,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": false
+                  },
+                  "source": "vector",
+                  "irt": "tmp:1",
+                  "group": "tmp:1"
+                }
+              }
+            },
+            "removed": []
           }
         ]
       }
     },
     {
-      "name": "runs/markup-16-markup-preview",
+      "name": "runs/markup-17-markup-preview",
       "fn": "runs",
       "args": [
         {
@@ -35973,7 +39117,7 @@
       }
     },
     {
-      "name": "runs/select-17-select",
+      "name": "runs/select-18-select",
       "fn": "runs",
       "args": [
         {
@@ -37339,7 +40483,7 @@
       }
     },
     {
-      "name": "runs/select-18-select-group",
+      "name": "runs/select-19-select-group",
       "fn": "runs",
       "args": [
         {
@@ -37716,7 +40860,7 @@
       }
     },
     {
-      "name": "runs/deselect-19-deselect-all",
+      "name": "runs/deselect-20-deselect-all",
       "fn": "runs",
       "args": [
         {
@@ -39004,7 +42148,7 @@
       }
     },
     {
-      "name": "runs/hover-20-hover",
+      "name": "runs/hover-21-hover",
       "fn": "runs",
       "args": [
         {
@@ -40194,7 +43338,7 @@
       }
     },
     {
-      "name": "runs/set-21-set-props-empty-selection",
+      "name": "runs/set-22-set-props-empty-selection",
       "fn": "runs",
       "args": [
         {
@@ -43055,7 +46199,7 @@
       }
     },
     {
-      "name": "runs/set-22-set-props-border",
+      "name": "runs/set-23-set-props-border",
       "fn": "runs",
       "args": [
         {
@@ -44975,7 +48119,7 @@
       }
     },
     {
-      "name": "runs/set-23-set-props-link-kind-null",
+      "name": "runs/set-24-set-props-link-kind-null",
       "fn": "runs",
       "args": [
         {
@@ -45106,7 +48250,7 @@
       }
     },
     {
-      "name": "runs/set-24-set-props-link-kind-unset-to-null",
+      "name": "runs/set-25-set-props-link-kind-unset-to-null",
       "fn": "runs",
       "args": [
         {
@@ -45292,7 +48436,7 @@
       }
     },
     {
-      "name": "runs/set-25-set-flags-uncommitted",
+      "name": "runs/set-26-set-flags-uncommitted",
       "fn": "runs",
       "args": [
         {
@@ -45752,7 +48896,7 @@
       }
     },
     {
-      "name": "runs/set-26-set-defaults",
+      "name": "runs/set-27-set-defaults",
       "fn": "runs",
       "args": [
         {
@@ -45802,6 +48946,30 @@
                 "patch": {
                   "interiorColor": null,
                   "link": null
+                }
+              }
+            ]
+          },
+          {
+            "name": "set-defaults-keeps-fill",
+            "over": {},
+            "msgs": [
+              {
+                "t": "setDefaults",
+                "subtype": "square",
+                "patch": {
+                  "interiorColor": "#ff0000",
+                  "link": {
+                    "kind": "uri",
+                    "uri": "x"
+                  }
+                }
+              },
+              {
+                "t": "setDefaults",
+                "subtype": "square",
+                "patch": {
+                  "color": "#000000"
                 }
               }
             ]
@@ -45947,6 +49115,67 @@
             "removed": []
           },
           {
+            "name": "set-defaults-keeps-fill",
+            "steps": [
+              {
+                "same": false,
+                "effects": [],
+                "draft": null,
+                "selected": []
+              },
+              {
+                "same": false,
+                "effects": [],
+                "draft": null,
+                "selected": []
+              }
+            ],
+            "model": {
+              "order": [],
+              "selected": [],
+              "hovered": null,
+              "draft": null,
+              "preview": null,
+              "seq": 0,
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "defaults": {
+                "square": {
+                  "interiorColor": "#ff0000",
+                  "link": {
+                    "kind": "uri",
+                    "uri": "x"
+                  },
+                  "color": "#000000"
+                }
+              },
+              "hitMargin": 6,
+              "editing": null,
+              "snap": {
+                "guides": true,
+                "guideThreshold": 5,
+                "rotation": true,
+                "rotationAngles": [
+                  0,
+                  90,
+                  180,
+                  270
+                ],
+                "rotationThreshold": 4
+              },
+              "byId": {}
+            },
+            "removed": []
+          },
+          {
             "name": "set-snap",
             "steps": [
               {
@@ -45999,7 +49228,7 @@
       }
     },
     {
-      "name": "runs/rotate90-27-rotate90-single",
+      "name": "runs/rotate90-28-rotate90-single",
       "fn": "runs",
       "args": [
         {
@@ -47897,7 +51126,7 @@
       }
     },
     {
-      "name": "runs/reset-28-reset-rotation",
+      "name": "runs/reset-29-reset-rotation",
       "fn": "runs",
       "args": [
         {
@@ -49388,7 +52617,7 @@
       }
     },
     {
-      "name": "runs/delete-29-delete",
+      "name": "runs/delete-30-delete",
       "fn": "runs",
       "args": [
         {
@@ -50608,7 +53837,7 @@
       }
     },
     {
-      "name": "runs/delete-30-delete-uncommitted",
+      "name": "runs/delete-31-delete-uncommitted",
       "fn": "runs",
       "args": [
         {
@@ -50990,7 +54219,7 @@
       }
     },
     {
-      "name": "runs/delete-31-delete-authority",
+      "name": "runs/delete-32-delete-authority",
       "fn": "runs",
       "args": [
         {
@@ -51181,7 +54410,7 @@
       }
     },
     {
-      "name": "runs/cancel-32-cancel",
+      "name": "runs/cancel-33-cancel",
       "fn": "runs",
       "args": [
         {
@@ -52392,7 +55621,7 @@
       }
     },
     {
-      "name": "runs/loaded-33-loaded",
+      "name": "runs/loaded-34-loaded",
       "fn": "runs",
       "args": [
         {
@@ -53781,7 +57010,7 @@
       }
     },
     {
-      "name": "runs/hydrated-34-hydrated-reaps",
+      "name": "runs/hydrated-35-hydrated-reaps",
       "fn": "runs",
       "args": [
         {
@@ -56937,6 +60166,19 @@
                 ]
               }
             ]
+          },
+          {
+            "name": "hydrated-empty-hover",
+            "over": {
+              "hovered": "",
+              "editing": ""
+            },
+            "msgs": [
+              {
+                "t": "hydrated",
+                "annots": []
+              }
+            ]
           }
         ]
       ],
@@ -59306,12 +62548,81 @@
               }
             },
             "removed": []
+          },
+          {
+            "name": "hydrated-empty-hover",
+            "steps": [
+              {
+                "same": false,
+                "effects": [],
+                "draft": null,
+                "selected": []
+              }
+            ],
+            "model": {
+              "order": [],
+              "selected": [],
+              "hovered": "",
+              "draft": null,
+              "preview": null,
+              "seq": 0,
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "defaults": {},
+              "hitMargin": 6,
+              "editing": "",
+              "snap": {
+                "guides": true,
+                "guideThreshold": 5,
+                "rotation": true,
+                "rotationAngles": [
+                  0,
+                  90,
+                  180,
+                  270
+                ],
+                "rotationThreshold": 4
+              },
+              "byId": {}
+            },
+            "removed": [
+              "hl",
+              "sq",
+              "sq2",
+              "ci",
+              "ln",
+              "pg",
+              "pl",
+              "ink",
+              "ft",
+              "callout",
+              "stamp",
+              "note",
+              "caret",
+              "link",
+              "redact",
+              "locked",
+              "lockedc",
+              "baked",
+              "widget",
+              "nozoom",
+              "child",
+              "other-page"
+            ]
           }
         ]
       }
     },
     {
-      "name": "runs/hydrated-35-hydrated-bump",
+      "name": "runs/hydrated-36-hydrated-bump",
       "fn": "runs",
       "args": [
         {
@@ -59857,7 +63168,7 @@
       }
     },
     {
-      "name": "runs/created-36-created",
+      "name": "runs/created-37-created",
       "fn": "runs",
       "args": [
         {
@@ -60554,7 +63865,7 @@
       }
     },
     {
-      "name": "runs/create-37-create-failed",
+      "name": "runs/create-38-create-failed",
       "fn": "runs",
       "args": [
         {
@@ -60922,7 +64233,7 @@
       }
     },
     {
-      "name": "runs/upsert-38-upsert",
+      "name": "runs/upsert-39-upsert",
       "fn": "runs",
       "args": [
         {
@@ -63345,7 +66656,7 @@
       }
     },
     {
-      "name": "runs/bump-39-bump-ap",
+      "name": "runs/bump-40-bump-ap",
       "fn": "runs",
       "args": [
         {
@@ -64582,7 +67893,7 @@
       }
     },
     {
-      "name": "runs/remove-40-remove",
+      "name": "runs/remove-41-remove",
       "fn": "runs",
       "args": [
         {
@@ -65715,6 +69026,20 @@
                 ]
               }
             ]
+          },
+          {
+            "name": "remove-keeps-editing",
+            "over": {
+              "editing": "ft"
+            },
+            "msgs": [
+              {
+                "t": "remove",
+                "ids": [
+                  "sq"
+                ]
+              }
+            ]
           }
         ]
       ],
@@ -65891,12 +69216,82 @@
             "removed": [
               "sq"
             ]
+          },
+          {
+            "name": "remove-keeps-editing",
+            "steps": [
+              {
+                "same": false,
+                "effects": [],
+                "draft": null,
+                "selected": []
+              }
+            ],
+            "model": {
+              "order": [
+                "hl",
+                "sq2",
+                "ci",
+                "ln",
+                "pg",
+                "pl",
+                "ink",
+                "ft",
+                "callout",
+                "stamp",
+                "note",
+                "caret",
+                "link",
+                "redact",
+                "locked",
+                "lockedc",
+                "baked",
+                "widget",
+                "nozoom",
+                "child",
+                "other-page"
+              ],
+              "selected": [],
+              "hovered": null,
+              "draft": null,
+              "preview": null,
+              "seq": 0,
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "defaults": {},
+              "hitMargin": 6,
+              "editing": "ft",
+              "snap": {
+                "guides": true,
+                "guideThreshold": 5,
+                "rotation": true,
+                "rotationAngles": [
+                  0,
+                  90,
+                  180,
+                  270
+                ],
+                "rotationThreshold": 4
+              },
+              "byId": {}
+            },
+            "removed": [
+              "sq"
+            ]
           }
         ]
       }
     },
     {
-      "name": "runs/text-41-text-edit",
+      "name": "runs/text-42-text-edit",
       "fn": "runs",
       "args": [
         {
@@ -67059,6 +70454,29 @@
                 "text": "y"
               }
             ]
+          },
+          {
+            "name": "text-edit-drops-draft",
+            "over": {},
+            "msgs": [
+              {
+                "t": "createPointer",
+                "phase": "down",
+                "subtype": "square",
+                "in": {
+                  "pon": 1,
+                  "point": {
+                    "x": 1,
+                    "y": 1
+                  },
+                  "shift": false
+                }
+              },
+              {
+                "t": "beginTextEdit",
+                "id": "ft"
+              }
+            ]
           }
         ]
       ],
@@ -67575,12 +70993,1020 @@
               }
             },
             "removed": []
+          },
+          {
+            "name": "text-edit-drops-draft",
+            "steps": [
+              {
+                "same": false,
+                "effects": [],
+                "draft": {
+                  "g": "create-rect",
+                  "subtype": "square",
+                  "preset": "square",
+                  "pon": 1,
+                  "from": {
+                    "x": 1,
+                    "y": 1
+                  },
+                  "to": {
+                    "x": 1,
+                    "y": 1
+                  },
+                  "ellipse": false
+                },
+                "selected": []
+              },
+              {
+                "same": false,
+                "effects": [],
+                "draft": null,
+                "selected": [
+                  "ft"
+                ]
+              }
+            ],
+            "model": {
+              "order": [
+                "hl",
+                "sq",
+                "sq2",
+                "ci",
+                "ln",
+                "pg",
+                "pl",
+                "ink",
+                "ft",
+                "callout",
+                "stamp",
+                "note",
+                "caret",
+                "link",
+                "redact",
+                "locked",
+                "lockedc",
+                "baked",
+                "widget",
+                "nozoom",
+                "child",
+                "other-page"
+              ],
+              "selected": [
+                "ft"
+              ],
+              "hovered": null,
+              "draft": null,
+              "preview": null,
+              "seq": 0,
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "defaults": {},
+              "hitMargin": 6,
+              "editing": "ft",
+              "snap": {
+                "guides": true,
+                "guideThreshold": 5,
+                "rotation": true,
+                "rotationAngles": [
+                  0,
+                  90,
+                  180,
+                  270
+                ],
+                "rotationThreshold": 4
+              },
+              "byId": {}
+            },
+            "removed": []
           }
         ]
       }
     },
     {
-      "name": "runs/baked-42-baked-handle-flips",
+      "name": "runs/draft-43-draft-create-rect-upright-nan",
+      "fn": "runs",
+      "args": [
+        {
+          "byId": {},
+          "order": []
+        },
+        [
+          {
+            "name": "draft-create-rect-upright-nan",
+            "over": {
+              "draft": {
+                "g": "create-rect",
+                "subtype": "square",
+                "preset": "square",
+                "pon": 1,
+                "from": {
+                  "x": 0,
+                  "y": 0
+                },
+                "to": {
+                  "x": 50,
+                  "y": 30
+                },
+                "ellipse": false,
+                "displayRotation": {
+                  "$number": "NaN"
+                },
+                "upright": true
+              }
+            },
+            "msgs": [
+              {
+                "t": "createPointer",
+                "phase": "up",
+                "subtype": "square",
+                "in": {
+                  "pon": 1,
+                  "point": {
+                    "x": 50,
+                    "y": 30
+                  },
+                  "shift": false
+                }
+              }
+            ]
+          },
+          {
+            "name": "draft-create-rect-no-preset",
+            "over": {
+              "defaults": {
+                "square": {
+                  "color": "#00ff00"
+                }
+              },
+              "draft": {
+                "g": "create-rect",
+                "subtype": "square",
+                "pon": 1,
+                "from": {
+                  "x": 0,
+                  "y": 0
+                },
+                "to": {
+                  "x": 50,
+                  "y": 50
+                },
+                "ellipse": false
+              }
+            },
+            "msgs": [
+              {
+                "t": "createPointer",
+                "phase": "up",
+                "subtype": "square",
+                "in": {
+                  "pon": 1,
+                  "point": {
+                    "x": 50,
+                    "y": 50
+                  },
+                  "shift": false
+                }
+              }
+            ]
+          },
+          {
+            "name": "draft-create-line-no-preset",
+            "over": {
+              "draft": {
+                "g": "create-line",
+                "subtype": "line",
+                "pon": 1,
+                "from": {
+                  "x": 0,
+                  "y": 0
+                },
+                "to": {
+                  "x": 50,
+                  "y": 50
+                }
+              }
+            },
+            "msgs": [
+              {
+                "t": "createPointer",
+                "phase": "up",
+                "subtype": "line",
+                "in": {
+                  "pon": 1,
+                  "point": {
+                    "x": 50,
+                    "y": 50
+                  },
+                  "shift": false
+                }
+              }
+            ]
+          },
+          {
+            "name": "draft-create-ink-no-preset",
+            "over": {
+              "draft": {
+                "g": "create-ink",
+                "subtype": "ink",
+                "pon": 1,
+                "strokes": [
+                  [
+                    {
+                      "x": 0,
+                      "y": 0
+                    },
+                    {
+                      "x": 50,
+                      "y": 50
+                    }
+                  ]
+                ]
+              }
+            },
+            "msgs": [
+              {
+                "t": "finishInkDraft"
+              }
+            ]
+          },
+          {
+            "name": "draft-create-poly-no-preset",
+            "over": {
+              "draft": {
+                "g": "create-poly",
+                "subtype": "polyline",
+                "pon": 1,
+                "points": [
+                  {
+                    "x": 0,
+                    "y": 0
+                  },
+                  {
+                    "x": 50,
+                    "y": 50
+                  }
+                ],
+                "cur": {
+                  "x": 50,
+                  "y": 50
+                },
+                "closed": false
+              }
+            },
+            "msgs": [
+              {
+                "t": "finishCreationDraft"
+              }
+            ]
+          },
+          {
+            "name": "draft-create-callout-no-preset",
+            "over": {
+              "draft": {
+                "g": "create-callout",
+                "subtype": "free-text-callout",
+                "pon": 1,
+                "step": "box",
+                "tip": {
+                  "x": 0,
+                  "y": 0
+                },
+                "cur": {
+                  "x": 50,
+                  "y": 50
+                },
+                "boxFrom": {
+                  "x": 50,
+                  "y": 50
+                }
+              }
+            },
+            "msgs": [
+              {
+                "t": "createPointer",
+                "phase": "up",
+                "subtype": "free-text-callout",
+                "in": {
+                  "pon": 1,
+                  "point": {
+                    "x": 50,
+                    "y": 50
+                  },
+                  "shift": false
+                }
+              }
+            ]
+          },
+          {
+            "name": "draft-create-ink-no-strokes",
+            "over": {
+              "draft": {
+                "g": "create-ink",
+                "subtype": "ink",
+                "pon": 1,
+                "preset": "ink",
+                "strokes": []
+              }
+            },
+            "msgs": [
+              {
+                "t": "createPointer",
+                "phase": "up",
+                "subtype": "ink",
+                "in": {
+                  "pon": 1,
+                  "point": {
+                    "x": 1,
+                    "y": 1
+                  },
+                  "shift": false
+                },
+                "straightenInk": {
+                  "deviationThreshold": 0.1,
+                  "axisSnapDegrees": 10
+                }
+              }
+            ]
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "name": "draft-create-rect-upright-nan",
+            "steps": [
+              {
+                "same": false,
+                "effects": [
+                  {
+                    "fx": "create",
+                    "id": "tmp:1"
+                  }
+                ],
+                "draft": null,
+                "selected": [
+                  "tmp:1"
+                ]
+              }
+            ],
+            "model": {
+              "order": [
+                "tmp:1"
+              ],
+              "selected": [
+                "tmp:1"
+              ],
+              "hovered": null,
+              "draft": null,
+              "preview": null,
+              "seq": 1,
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "defaults": {},
+              "hitMargin": 6,
+              "editing": null,
+              "snap": {
+                "guides": true,
+                "guideThreshold": 5,
+                "rotation": true,
+                "rotationAngles": [
+                  0,
+                  90,
+                  180,
+                  270
+                ],
+                "rotationThreshold": 4
+              },
+              "byId": {
+                "tmp:1": {
+                  "id": "tmp:1",
+                  "ref": null,
+                  "pon": 1,
+                  "subtype": "square",
+                  "geom": {
+                    "t": "rect",
+                    "rect": {
+                      "x": 0,
+                      "y": 0,
+                      "width": 50,
+                      "height": 30
+                    },
+                    "ellipse": false
+                  },
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "flags": {
+                    "invisible": false,
+                    "hidden": false,
+                    "print": true,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": false
+                  },
+                  "source": "vector"
+                }
+              }
+            },
+            "removed": []
+          },
+          {
+            "name": "draft-create-rect-no-preset",
+            "steps": [
+              {
+                "same": false,
+                "effects": [
+                  {
+                    "fx": "create",
+                    "id": "tmp:1"
+                  }
+                ],
+                "draft": null,
+                "selected": [
+                  "tmp:1"
+                ]
+              }
+            ],
+            "model": {
+              "order": [
+                "tmp:1"
+              ],
+              "selected": [
+                "tmp:1"
+              ],
+              "hovered": null,
+              "draft": null,
+              "preview": null,
+              "seq": 1,
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "defaults": {
+                "square": {
+                  "color": "#00ff00"
+                }
+              },
+              "hitMargin": 6,
+              "editing": null,
+              "snap": {
+                "guides": true,
+                "guideThreshold": 5,
+                "rotation": true,
+                "rotationAngles": [
+                  0,
+                  90,
+                  180,
+                  270
+                ],
+                "rotationThreshold": 4
+              },
+              "byId": {
+                "tmp:1": {
+                  "id": "tmp:1",
+                  "ref": null,
+                  "pon": 1,
+                  "subtype": "square",
+                  "geom": {
+                    "t": "rect",
+                    "rect": {
+                      "x": 0,
+                      "y": 0,
+                      "width": 50,
+                      "height": 50
+                    },
+                    "ellipse": false
+                  },
+                  "style": {
+                    "color": "#00ff00",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "flags": {
+                    "invisible": false,
+                    "hidden": false,
+                    "print": true,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": false
+                  },
+                  "source": "vector"
+                }
+              }
+            },
+            "removed": []
+          },
+          {
+            "name": "draft-create-line-no-preset",
+            "steps": [
+              {
+                "same": false,
+                "effects": [
+                  {
+                    "fx": "create",
+                    "id": "tmp:1"
+                  }
+                ],
+                "draft": null,
+                "selected": [
+                  "tmp:1"
+                ]
+              }
+            ],
+            "model": {
+              "order": [
+                "tmp:1"
+              ],
+              "selected": [
+                "tmp:1"
+              ],
+              "hovered": null,
+              "draft": null,
+              "preview": null,
+              "seq": 1,
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "defaults": {},
+              "hitMargin": 6,
+              "editing": null,
+              "snap": {
+                "guides": true,
+                "guideThreshold": 5,
+                "rotation": true,
+                "rotationAngles": [
+                  0,
+                  90,
+                  180,
+                  270
+                ],
+                "rotationThreshold": 4
+              },
+              "byId": {
+                "tmp:1": {
+                  "id": "tmp:1",
+                  "ref": null,
+                  "pon": 1,
+                  "subtype": "line",
+                  "geom": {
+                    "t": "line",
+                    "a": {
+                      "x": 0,
+                      "y": 0
+                    },
+                    "b": {
+                      "x": 50,
+                      "y": 50
+                    },
+                    "ends": {
+                      "start": "none",
+                      "end": "none"
+                    }
+                  },
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "flags": {
+                    "invisible": false,
+                    "hidden": false,
+                    "print": true,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": false
+                  },
+                  "source": "vector"
+                }
+              }
+            },
+            "removed": []
+          },
+          {
+            "name": "draft-create-ink-no-preset",
+            "steps": [
+              {
+                "same": false,
+                "effects": [
+                  {
+                    "fx": "create",
+                    "id": "tmp:1"
+                  }
+                ],
+                "draft": null,
+                "selected": [
+                  "tmp:1"
+                ]
+              }
+            ],
+            "model": {
+              "order": [
+                "tmp:1"
+              ],
+              "selected": [
+                "tmp:1"
+              ],
+              "hovered": null,
+              "draft": null,
+              "preview": null,
+              "seq": 1,
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "defaults": {},
+              "hitMargin": 6,
+              "editing": null,
+              "snap": {
+                "guides": true,
+                "guideThreshold": 5,
+                "rotation": true,
+                "rotationAngles": [
+                  0,
+                  90,
+                  180,
+                  270
+                ],
+                "rotationThreshold": 4
+              },
+              "byId": {
+                "tmp:1": {
+                  "id": "tmp:1",
+                  "ref": null,
+                  "pon": 1,
+                  "subtype": "ink",
+                  "geom": {
+                    "t": "ink",
+                    "strokes": [
+                      [
+                        {
+                          "x": 0,
+                          "y": 0
+                        },
+                        {
+                          "x": 50,
+                          "y": 50
+                        }
+                      ]
+                    ]
+                  },
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "flags": {
+                    "invisible": false,
+                    "hidden": false,
+                    "print": true,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": false
+                  },
+                  "source": "vector"
+                }
+              }
+            },
+            "removed": []
+          },
+          {
+            "name": "draft-create-poly-no-preset",
+            "steps": [
+              {
+                "same": false,
+                "effects": [
+                  {
+                    "fx": "create",
+                    "id": "tmp:1"
+                  }
+                ],
+                "draft": null,
+                "selected": [
+                  "tmp:1"
+                ]
+              }
+            ],
+            "model": {
+              "order": [
+                "tmp:1"
+              ],
+              "selected": [
+                "tmp:1"
+              ],
+              "hovered": null,
+              "draft": null,
+              "preview": null,
+              "seq": 1,
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "defaults": {},
+              "hitMargin": 6,
+              "editing": null,
+              "snap": {
+                "guides": true,
+                "guideThreshold": 5,
+                "rotation": true,
+                "rotationAngles": [
+                  0,
+                  90,
+                  180,
+                  270
+                ],
+                "rotationThreshold": 4
+              },
+              "byId": {
+                "tmp:1": {
+                  "id": "tmp:1",
+                  "ref": null,
+                  "pon": 1,
+                  "subtype": "polyline",
+                  "geom": {
+                    "t": "poly",
+                    "points": [
+                      {
+                        "x": 0,
+                        "y": 0
+                      },
+                      {
+                        "x": 50,
+                        "y": 50
+                      }
+                    ],
+                    "closed": false,
+                    "ends": {
+                      "start": "none",
+                      "end": "none"
+                    }
+                  },
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "flags": {
+                    "invisible": false,
+                    "hidden": false,
+                    "print": true,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": false
+                  },
+                  "source": "vector"
+                }
+              }
+            },
+            "removed": []
+          },
+          {
+            "name": "draft-create-callout-no-preset",
+            "steps": [
+              {
+                "same": false,
+                "effects": [
+                  {
+                    "fx": "create",
+                    "id": "tmp:1"
+                  }
+                ],
+                "draft": null,
+                "selected": [
+                  "tmp:1"
+                ]
+              }
+            ],
+            "model": {
+              "order": [
+                "tmp:1"
+              ],
+              "selected": [
+                "tmp:1"
+              ],
+              "hovered": null,
+              "draft": null,
+              "preview": null,
+              "seq": 1,
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "defaults": {},
+              "hitMargin": 6,
+              "editing": "tmp:1",
+              "snap": {
+                "guides": true,
+                "guideThreshold": 5,
+                "rotation": true,
+                "rotationAngles": [
+                  0,
+                  90,
+                  180,
+                  270
+                ],
+                "rotationThreshold": 4
+              },
+              "byId": {
+                "tmp:1": {
+                  "id": "tmp:1",
+                  "ref": null,
+                  "pon": 1,
+                  "subtype": "free-text",
+                  "geom": {
+                    "t": "text",
+                    "rect": {
+                      "x": 50,
+                      "y": 50,
+                      "width": 150,
+                      "height": 40
+                    },
+                    "callout": {
+                      "tip": {
+                        "x": 0,
+                        "y": 0
+                      },
+                      "ending": "open-arrow"
+                    }
+                  },
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "text": {
+                    "fontFamily": "helvetica",
+                    "fontSize": 14,
+                    "fontColor": "#000000",
+                    "textAlign": "left"
+                  },
+                  "flags": {
+                    "invisible": false,
+                    "hidden": false,
+                    "print": true,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": false
+                  },
+                  "source": "vector"
+                }
+              }
+            },
+            "removed": []
+          },
+          {
+            "name": "draft-create-ink-no-strokes",
+            "steps": [
+              {
+                "same": false,
+                "effects": [],
+                "draft": null,
+                "selected": []
+              }
+            ],
+            "model": {
+              "order": [],
+              "selected": [],
+              "hovered": null,
+              "draft": null,
+              "preview": null,
+              "seq": 0,
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "defaults": {},
+              "hitMargin": 6,
+              "editing": null,
+              "snap": {
+                "guides": true,
+                "guideThreshold": 5,
+                "rotation": true,
+                "rotationAngles": [
+                  0,
+                  90,
+                  180,
+                  270
+                ],
+                "rotationThreshold": 4
+              },
+              "byId": {}
+            },
+            "removed": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "runs/baked-44-baked-handle-flips",
       "fn": "runs",
       "args": [
         {
@@ -69207,7 +73633,7 @@
       }
     },
     {
-      "name": "runs/baked-43-baked-weird-opaque",
+      "name": "runs/baked-45-baked-weird-opaque",
       "fn": "runs",
       "args": [
         {
@@ -69409,7 +73835,7 @@
       }
     },
     {
-      "name": "runs/draft-44-draft-move-missing-member",
+      "name": "runs/draft-46-draft-move-missing-member",
       "fn": "runs",
       "args": [
         {
@@ -71784,786 +76210,7 @@
       }
     },
     {
-      "name": "runs/draft-45-draft-create-rect-no-preset",
-      "fn": "runs",
-      "args": [
-        {
-          "byId": {},
-          "order": []
-        },
-        [
-          {
-            "name": "draft-create-rect-no-preset",
-            "over": {
-              "defaults": {
-                "square": {
-                  "color": "#00ff00"
-                }
-              },
-              "draft": {
-                "g": "create-rect",
-                "subtype": "square",
-                "pon": 1,
-                "from": {
-                  "x": 0,
-                  "y": 0
-                },
-                "to": {
-                  "x": 50,
-                  "y": 50
-                },
-                "ellipse": false
-              }
-            },
-            "msgs": [
-              {
-                "t": "createPointer",
-                "phase": "up",
-                "subtype": "square",
-                "in": {
-                  "pon": 1,
-                  "point": {
-                    "x": 50,
-                    "y": 50
-                  },
-                  "shift": false
-                }
-              }
-            ]
-          },
-          {
-            "name": "draft-create-line-no-preset",
-            "over": {
-              "draft": {
-                "g": "create-line",
-                "subtype": "line",
-                "pon": 1,
-                "from": {
-                  "x": 0,
-                  "y": 0
-                },
-                "to": {
-                  "x": 50,
-                  "y": 50
-                }
-              }
-            },
-            "msgs": [
-              {
-                "t": "createPointer",
-                "phase": "up",
-                "subtype": "line",
-                "in": {
-                  "pon": 1,
-                  "point": {
-                    "x": 50,
-                    "y": 50
-                  },
-                  "shift": false
-                }
-              }
-            ]
-          },
-          {
-            "name": "draft-create-ink-no-preset",
-            "over": {
-              "draft": {
-                "g": "create-ink",
-                "subtype": "ink",
-                "pon": 1,
-                "strokes": [
-                  [
-                    {
-                      "x": 0,
-                      "y": 0
-                    },
-                    {
-                      "x": 50,
-                      "y": 50
-                    }
-                  ]
-                ]
-              }
-            },
-            "msgs": [
-              {
-                "t": "finishInkDraft"
-              }
-            ]
-          },
-          {
-            "name": "draft-create-poly-no-preset",
-            "over": {
-              "draft": {
-                "g": "create-poly",
-                "subtype": "polyline",
-                "pon": 1,
-                "points": [
-                  {
-                    "x": 0,
-                    "y": 0
-                  },
-                  {
-                    "x": 50,
-                    "y": 50
-                  }
-                ],
-                "cur": {
-                  "x": 50,
-                  "y": 50
-                },
-                "closed": false
-              }
-            },
-            "msgs": [
-              {
-                "t": "finishCreationDraft"
-              }
-            ]
-          },
-          {
-            "name": "draft-create-callout-no-preset",
-            "over": {
-              "draft": {
-                "g": "create-callout",
-                "subtype": "free-text-callout",
-                "pon": 1,
-                "step": "box",
-                "tip": {
-                  "x": 0,
-                  "y": 0
-                },
-                "cur": {
-                  "x": 50,
-                  "y": 50
-                },
-                "boxFrom": {
-                  "x": 50,
-                  "y": 50
-                }
-              }
-            },
-            "msgs": [
-              {
-                "t": "createPointer",
-                "phase": "up",
-                "subtype": "free-text-callout",
-                "in": {
-                  "pon": 1,
-                  "point": {
-                    "x": 50,
-                    "y": 50
-                  },
-                  "shift": false
-                }
-              }
-            ]
-          },
-          {
-            "name": "draft-create-ink-no-strokes",
-            "over": {
-              "draft": {
-                "g": "create-ink",
-                "subtype": "ink",
-                "pon": 1,
-                "preset": "ink",
-                "strokes": []
-              }
-            },
-            "msgs": [
-              {
-                "t": "createPointer",
-                "phase": "up",
-                "subtype": "ink",
-                "in": {
-                  "pon": 1,
-                  "point": {
-                    "x": 1,
-                    "y": 1
-                  },
-                  "shift": false
-                },
-                "straightenInk": {
-                  "deviationThreshold": 0.1,
-                  "axisSnapDegrees": 10
-                }
-              }
-            ]
-          }
-        ]
-      ],
-      "outcome": {
-        "returned": [
-          {
-            "name": "draft-create-rect-no-preset",
-            "steps": [
-              {
-                "same": false,
-                "effects": [
-                  {
-                    "fx": "create",
-                    "id": "tmp:1"
-                  }
-                ],
-                "draft": null,
-                "selected": [
-                  "tmp:1"
-                ]
-              }
-            ],
-            "model": {
-              "order": [
-                "tmp:1"
-              ],
-              "selected": [
-                "tmp:1"
-              ],
-              "hovered": null,
-              "draft": null,
-              "preview": null,
-              "seq": 1,
-              "style": {
-                "color": "#e5484d",
-                "interiorColor": null,
-                "strokeWidth": 2,
-                "opacity": 1,
-                "blendMode": "normal",
-                "border": {
-                  "kind": "solid"
-                }
-              },
-              "defaults": {
-                "square": {
-                  "color": "#00ff00"
-                }
-              },
-              "hitMargin": 6,
-              "editing": null,
-              "snap": {
-                "guides": true,
-                "guideThreshold": 5,
-                "rotation": true,
-                "rotationAngles": [
-                  0,
-                  90,
-                  180,
-                  270
-                ],
-                "rotationThreshold": 4
-              },
-              "byId": {
-                "tmp:1": {
-                  "id": "tmp:1",
-                  "ref": null,
-                  "pon": 1,
-                  "subtype": "square",
-                  "geom": {
-                    "t": "rect",
-                    "rect": {
-                      "x": 0,
-                      "y": 0,
-                      "width": 50,
-                      "height": 50
-                    },
-                    "ellipse": false
-                  },
-                  "style": {
-                    "color": "#00ff00",
-                    "interiorColor": null,
-                    "strokeWidth": 2,
-                    "opacity": 1,
-                    "blendMode": "normal",
-                    "border": {
-                      "kind": "solid"
-                    }
-                  },
-                  "flags": {
-                    "invisible": false,
-                    "hidden": false,
-                    "print": true,
-                    "noZoom": false,
-                    "noRotate": false,
-                    "noView": false,
-                    "readOnly": false,
-                    "locked": false,
-                    "toggleNoView": false,
-                    "lockedContents": false
-                  },
-                  "source": "vector"
-                }
-              }
-            },
-            "removed": []
-          },
-          {
-            "name": "draft-create-line-no-preset",
-            "steps": [
-              {
-                "same": false,
-                "effects": [
-                  {
-                    "fx": "create",
-                    "id": "tmp:1"
-                  }
-                ],
-                "draft": null,
-                "selected": [
-                  "tmp:1"
-                ]
-              }
-            ],
-            "model": {
-              "order": [
-                "tmp:1"
-              ],
-              "selected": [
-                "tmp:1"
-              ],
-              "hovered": null,
-              "draft": null,
-              "preview": null,
-              "seq": 1,
-              "style": {
-                "color": "#e5484d",
-                "interiorColor": null,
-                "strokeWidth": 2,
-                "opacity": 1,
-                "blendMode": "normal",
-                "border": {
-                  "kind": "solid"
-                }
-              },
-              "defaults": {},
-              "hitMargin": 6,
-              "editing": null,
-              "snap": {
-                "guides": true,
-                "guideThreshold": 5,
-                "rotation": true,
-                "rotationAngles": [
-                  0,
-                  90,
-                  180,
-                  270
-                ],
-                "rotationThreshold": 4
-              },
-              "byId": {
-                "tmp:1": {
-                  "id": "tmp:1",
-                  "ref": null,
-                  "pon": 1,
-                  "subtype": "line",
-                  "geom": {
-                    "t": "line",
-                    "a": {
-                      "x": 0,
-                      "y": 0
-                    },
-                    "b": {
-                      "x": 50,
-                      "y": 50
-                    },
-                    "ends": {
-                      "start": "none",
-                      "end": "none"
-                    }
-                  },
-                  "style": {
-                    "color": "#e5484d",
-                    "interiorColor": null,
-                    "strokeWidth": 2,
-                    "opacity": 1,
-                    "blendMode": "normal",
-                    "border": {
-                      "kind": "solid"
-                    }
-                  },
-                  "flags": {
-                    "invisible": false,
-                    "hidden": false,
-                    "print": true,
-                    "noZoom": false,
-                    "noRotate": false,
-                    "noView": false,
-                    "readOnly": false,
-                    "locked": false,
-                    "toggleNoView": false,
-                    "lockedContents": false
-                  },
-                  "source": "vector"
-                }
-              }
-            },
-            "removed": []
-          },
-          {
-            "name": "draft-create-ink-no-preset",
-            "steps": [
-              {
-                "same": false,
-                "effects": [
-                  {
-                    "fx": "create",
-                    "id": "tmp:1"
-                  }
-                ],
-                "draft": null,
-                "selected": [
-                  "tmp:1"
-                ]
-              }
-            ],
-            "model": {
-              "order": [
-                "tmp:1"
-              ],
-              "selected": [
-                "tmp:1"
-              ],
-              "hovered": null,
-              "draft": null,
-              "preview": null,
-              "seq": 1,
-              "style": {
-                "color": "#e5484d",
-                "interiorColor": null,
-                "strokeWidth": 2,
-                "opacity": 1,
-                "blendMode": "normal",
-                "border": {
-                  "kind": "solid"
-                }
-              },
-              "defaults": {},
-              "hitMargin": 6,
-              "editing": null,
-              "snap": {
-                "guides": true,
-                "guideThreshold": 5,
-                "rotation": true,
-                "rotationAngles": [
-                  0,
-                  90,
-                  180,
-                  270
-                ],
-                "rotationThreshold": 4
-              },
-              "byId": {
-                "tmp:1": {
-                  "id": "tmp:1",
-                  "ref": null,
-                  "pon": 1,
-                  "subtype": "ink",
-                  "geom": {
-                    "t": "ink",
-                    "strokes": [
-                      [
-                        {
-                          "x": 0,
-                          "y": 0
-                        },
-                        {
-                          "x": 50,
-                          "y": 50
-                        }
-                      ]
-                    ]
-                  },
-                  "style": {
-                    "color": "#e5484d",
-                    "interiorColor": null,
-                    "strokeWidth": 2,
-                    "opacity": 1,
-                    "blendMode": "normal",
-                    "border": {
-                      "kind": "solid"
-                    }
-                  },
-                  "flags": {
-                    "invisible": false,
-                    "hidden": false,
-                    "print": true,
-                    "noZoom": false,
-                    "noRotate": false,
-                    "noView": false,
-                    "readOnly": false,
-                    "locked": false,
-                    "toggleNoView": false,
-                    "lockedContents": false
-                  },
-                  "source": "vector"
-                }
-              }
-            },
-            "removed": []
-          },
-          {
-            "name": "draft-create-poly-no-preset",
-            "steps": [
-              {
-                "same": false,
-                "effects": [
-                  {
-                    "fx": "create",
-                    "id": "tmp:1"
-                  }
-                ],
-                "draft": null,
-                "selected": [
-                  "tmp:1"
-                ]
-              }
-            ],
-            "model": {
-              "order": [
-                "tmp:1"
-              ],
-              "selected": [
-                "tmp:1"
-              ],
-              "hovered": null,
-              "draft": null,
-              "preview": null,
-              "seq": 1,
-              "style": {
-                "color": "#e5484d",
-                "interiorColor": null,
-                "strokeWidth": 2,
-                "opacity": 1,
-                "blendMode": "normal",
-                "border": {
-                  "kind": "solid"
-                }
-              },
-              "defaults": {},
-              "hitMargin": 6,
-              "editing": null,
-              "snap": {
-                "guides": true,
-                "guideThreshold": 5,
-                "rotation": true,
-                "rotationAngles": [
-                  0,
-                  90,
-                  180,
-                  270
-                ],
-                "rotationThreshold": 4
-              },
-              "byId": {
-                "tmp:1": {
-                  "id": "tmp:1",
-                  "ref": null,
-                  "pon": 1,
-                  "subtype": "polyline",
-                  "geom": {
-                    "t": "poly",
-                    "points": [
-                      {
-                        "x": 0,
-                        "y": 0
-                      },
-                      {
-                        "x": 50,
-                        "y": 50
-                      }
-                    ],
-                    "closed": false,
-                    "ends": {
-                      "start": "none",
-                      "end": "none"
-                    }
-                  },
-                  "style": {
-                    "color": "#e5484d",
-                    "interiorColor": null,
-                    "strokeWidth": 2,
-                    "opacity": 1,
-                    "blendMode": "normal",
-                    "border": {
-                      "kind": "solid"
-                    }
-                  },
-                  "flags": {
-                    "invisible": false,
-                    "hidden": false,
-                    "print": true,
-                    "noZoom": false,
-                    "noRotate": false,
-                    "noView": false,
-                    "readOnly": false,
-                    "locked": false,
-                    "toggleNoView": false,
-                    "lockedContents": false
-                  },
-                  "source": "vector"
-                }
-              }
-            },
-            "removed": []
-          },
-          {
-            "name": "draft-create-callout-no-preset",
-            "steps": [
-              {
-                "same": false,
-                "effects": [
-                  {
-                    "fx": "create",
-                    "id": "tmp:1"
-                  }
-                ],
-                "draft": null,
-                "selected": [
-                  "tmp:1"
-                ]
-              }
-            ],
-            "model": {
-              "order": [
-                "tmp:1"
-              ],
-              "selected": [
-                "tmp:1"
-              ],
-              "hovered": null,
-              "draft": null,
-              "preview": null,
-              "seq": 1,
-              "style": {
-                "color": "#e5484d",
-                "interiorColor": null,
-                "strokeWidth": 2,
-                "opacity": 1,
-                "blendMode": "normal",
-                "border": {
-                  "kind": "solid"
-                }
-              },
-              "defaults": {},
-              "hitMargin": 6,
-              "editing": "tmp:1",
-              "snap": {
-                "guides": true,
-                "guideThreshold": 5,
-                "rotation": true,
-                "rotationAngles": [
-                  0,
-                  90,
-                  180,
-                  270
-                ],
-                "rotationThreshold": 4
-              },
-              "byId": {
-                "tmp:1": {
-                  "id": "tmp:1",
-                  "ref": null,
-                  "pon": 1,
-                  "subtype": "free-text",
-                  "geom": {
-                    "t": "text",
-                    "rect": {
-                      "x": 50,
-                      "y": 50,
-                      "width": 150,
-                      "height": 40
-                    },
-                    "callout": {
-                      "tip": {
-                        "x": 0,
-                        "y": 0
-                      },
-                      "ending": "open-arrow"
-                    }
-                  },
-                  "style": {
-                    "color": "#e5484d",
-                    "interiorColor": null,
-                    "strokeWidth": 2,
-                    "opacity": 1,
-                    "blendMode": "normal",
-                    "border": {
-                      "kind": "solid"
-                    }
-                  },
-                  "text": {
-                    "fontFamily": "helvetica",
-                    "fontSize": 14,
-                    "fontColor": "#000000",
-                    "textAlign": "left"
-                  },
-                  "flags": {
-                    "invisible": false,
-                    "hidden": false,
-                    "print": true,
-                    "noZoom": false,
-                    "noRotate": false,
-                    "noView": false,
-                    "readOnly": false,
-                    "locked": false,
-                    "toggleNoView": false,
-                    "lockedContents": false
-                  },
-                  "source": "vector"
-                }
-              }
-            },
-            "removed": []
-          },
-          {
-            "name": "draft-create-ink-no-strokes",
-            "steps": [
-              {
-                "same": false,
-                "effects": [],
-                "draft": null,
-                "selected": []
-              }
-            ],
-            "model": {
-              "order": [],
-              "selected": [],
-              "hovered": null,
-              "draft": null,
-              "preview": null,
-              "seq": 0,
-              "style": {
-                "color": "#e5484d",
-                "interiorColor": null,
-                "strokeWidth": 2,
-                "opacity": 1,
-                "blendMode": "normal",
-                "border": {
-                  "kind": "solid"
-                }
-              },
-              "defaults": {},
-              "hitMargin": 6,
-              "editing": null,
-              "snap": {
-                "guides": true,
-                "guideThreshold": 5,
-                "rotation": true,
-                "rotationAngles": [
-                  0,
-                  90,
-                  180,
-                  270
-                ],
-                "rotationThreshold": 4
-              },
-              "byId": {}
-            },
-            "removed": []
-          }
-        ]
-      }
-    },
-    {
-      "name": "runs/created-46-created-relationships",
+      "name": "runs/created-47-created-relationships",
       "fn": "runs",
       "args": [
         {
@@ -78156,6 +81803,211 @@
             "x": 100,
             "y": 80
           }
+        }
+      ],
+      "outcome": {
+        "returned": 0
+      }
+    },
+    {
+      "name": "calloutBox/dragged-thin",
+      "fn": "calloutBox",
+      "args": [
+        {
+          "g": "create-callout",
+          "subtype": "free-text-callout",
+          "pon": 1,
+          "step": "box",
+          "tip": {
+            "x": 10,
+            "y": 10
+          },
+          "knee": {
+            "x": 50,
+            "y": 60
+          },
+          "cur": {
+            "x": 100,
+            "y": 80
+          },
+          "boxFrom": {
+            "x": 100,
+            "y": 80
+          },
+          "boxTo": {
+            "x": 300,
+            "y": 81
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 100,
+          "y": 80,
+          "width": 200,
+          "height": 1
+        }
+      }
+    },
+    {
+      "name": "calloutUprightRot/dragged-thin",
+      "fn": "calloutUprightRot",
+      "args": [
+        {
+          "g": "create-callout",
+          "subtype": "free-text-callout",
+          "pon": 1,
+          "step": "box",
+          "tip": {
+            "x": 10,
+            "y": 10
+          },
+          "knee": {
+            "x": 50,
+            "y": 60
+          },
+          "cur": {
+            "x": 100,
+            "y": 80
+          },
+          "boxFrom": {
+            "x": 100,
+            "y": 80
+          },
+          "boxTo": {
+            "x": 300,
+            "y": 81
+          }
+        }
+      ],
+      "outcome": {
+        "returned": 0
+      }
+    },
+    {
+      "name": "calloutBox/upright-nan",
+      "fn": "calloutBox",
+      "args": [
+        {
+          "g": "create-callout",
+          "subtype": "free-text-callout",
+          "pon": 1,
+          "step": "box",
+          "tip": {
+            "x": 10,
+            "y": 10
+          },
+          "knee": {
+            "x": 50,
+            "y": 60
+          },
+          "cur": {
+            "x": 100,
+            "y": 80
+          },
+          "upright": true,
+          "displayRotation": {
+            "$number": "NaN"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 100,
+          "y": 80,
+          "width": 150,
+          "height": 40
+        }
+      }
+    },
+    {
+      "name": "calloutUprightRot/upright-nan",
+      "fn": "calloutUprightRot",
+      "args": [
+        {
+          "g": "create-callout",
+          "subtype": "free-text-callout",
+          "pon": 1,
+          "step": "box",
+          "tip": {
+            "x": 10,
+            "y": 10
+          },
+          "knee": {
+            "x": 50,
+            "y": 60
+          },
+          "cur": {
+            "x": 100,
+            "y": 80
+          },
+          "upright": true,
+          "displayRotation": {
+            "$number": "NaN"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": 0
+      }
+    },
+    {
+      "name": "calloutBox/upright-zero",
+      "fn": "calloutBox",
+      "args": [
+        {
+          "g": "create-callout",
+          "subtype": "free-text-callout",
+          "pon": 1,
+          "step": "box",
+          "tip": {
+            "x": 10,
+            "y": 10
+          },
+          "knee": {
+            "x": 50,
+            "y": 60
+          },
+          "cur": {
+            "x": 100,
+            "y": 80
+          },
+          "upright": true,
+          "displayRotation": 0
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 100,
+          "y": 80,
+          "width": 150,
+          "height": 40
+        }
+      }
+    },
+    {
+      "name": "calloutUprightRot/upright-zero",
+      "fn": "calloutUprightRot",
+      "args": [
+        {
+          "g": "create-callout",
+          "subtype": "free-text-callout",
+          "pon": 1,
+          "step": "box",
+          "tip": {
+            "x": 10,
+            "y": 10
+          },
+          "knee": {
+            "x": 50,
+            "y": 60
+          },
+          "cur": {
+            "x": 100,
+            "y": 80
+          },
+          "upright": true,
+          "displayRotation": 0
         }
       ],
       "outcome": {

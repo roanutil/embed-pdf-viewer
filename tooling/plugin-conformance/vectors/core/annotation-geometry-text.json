@@ -1554,6 +1554,153 @@
       }
     },
     {
+      "name": "caretRectFromAnchor/advance-zero",
+      "fn": "caretRectFromAnchor",
+      "args": [
+        {
+          "glyphQuad": {
+            "upperStart": {
+              "x": 10,
+              "y": 10
+            },
+            "upperEnd": {
+              "x": 60,
+              "y": 10
+            },
+            "lowerStart": {
+              "x": 10,
+              "y": 22
+            },
+            "lowerEnd": {
+              "x": 60,
+              "y": 22
+            }
+          },
+          "advance": 0
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 7,
+          "y": 16,
+          "width": 6,
+          "height": 6
+        }
+      }
+    },
+    {
+      "name": "caretGeomFromAnchor/advance-zero",
+      "fn": "caretGeomFromAnchor",
+      "args": [
+        {
+          "glyphQuad": {
+            "upperStart": {
+              "x": 10,
+              "y": 10
+            },
+            "upperEnd": {
+              "x": 60,
+              "y": 10
+            },
+            "lowerStart": {
+              "x": 10,
+              "y": 22
+            },
+            "lowerEnd": {
+              "x": 60,
+              "y": 22
+            }
+          },
+          "advance": 0
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "caret",
+          "rect": {
+            "x": 7,
+            "y": 16,
+            "width": 6,
+            "height": 6
+          }
+        }
+      }
+    },
+    {
+      "name": "caretRectFromAnchor/advance-zero-rot30",
+      "fn": "caretRectFromAnchor",
+      "args": [
+        {
+          "glyphQuad": {
+            "upperStart": {
+              "x": 100,
+              "y": 100
+            },
+            "upperEnd": {
+              "x": 143.30127018922195,
+              "y": 125
+            },
+            "lowerStart": {
+              "x": 94,
+              "y": 110.39230484541326
+            },
+            "lowerEnd": {
+              "x": 137.30127018922195,
+              "y": 135.39230484541326
+            }
+          },
+          "advance": 0
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 91,
+          "y": 104.39230484541326,
+          "width": 6,
+          "height": 6
+        }
+      }
+    },
+    {
+      "name": "caretGeomFromAnchor/advance-zero-rot30",
+      "fn": "caretGeomFromAnchor",
+      "args": [
+        {
+          "glyphQuad": {
+            "upperStart": {
+              "x": 100,
+              "y": 100
+            },
+            "upperEnd": {
+              "x": 143.30127018922195,
+              "y": 125
+            },
+            "lowerStart": {
+              "x": 94,
+              "y": 110.39230484541326
+            },
+            "lowerEnd": {
+              "x": 137.30127018922195,
+              "y": 135.39230484541326
+            }
+          },
+          "advance": 0
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "caret",
+          "rect": {
+            "x": 92.5,
+            "y": 104.79422863405995,
+            "width": 6,
+            "height": 6
+          },
+          "rot": 30
+        }
+      }
+    },
+    {
       "name": "pdfToContentPoint/p0",
       "fn": "pdfToContentPoint",
       "args": [

@@ -1565,6 +1565,27 @@
       }
     },
     {
+      "name": "rectsIntersect/sum-not-product",
+      "fn": "rectsIntersect",
+      "args": [
+        {
+          "x": 4,
+          "y": 4,
+          "width": 2,
+          "height": 2
+        },
+        {
+          "x": 3,
+          "y": 3,
+          "width": 1.2,
+          "height": 1.2
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
       "name": "unionRect/empty",
       "fn": "unionRect",
       "args": [
@@ -1825,6 +1846,36 @@
         "returned": {
           "$number": "NaN"
         }
+      }
+    },
+    {
+      "name": "normalizeDeg/100000000000000000000",
+      "fn": "normalizeDeg",
+      "args": [
+        100000000000000000000
+      ],
+      "outcome": {
+        "returned": 280
+      }
+    },
+    {
+      "name": "normalizeDeg/-100000000000000000000",
+      "fn": "normalizeDeg",
+      "args": [
+        -100000000000000000000
+      ],
+      "outcome": {
+        "returned": 80
+      }
+    },
+    {
+      "name": "normalizeDeg/123456789.123",
+      "fn": "normalizeDeg",
+      "args": [
+        123456789.123
+      ],
+      "outcome": {
+        "returned": 189.12299999594688
       }
     },
     {
@@ -2411,6 +2462,103 @@
             "x": 10,
             "y": 10
           }
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "apSizeChanged/ink-stretched",
+      "fn": "apSizeChanged",
+      "args": [
+        {
+          "t": "ink",
+          "strokes": [
+            [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 4,
+                "y": 4
+              }
+            ]
+          ]
+        },
+        {
+          "t": "ink",
+          "strokes": [
+            [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 9,
+                "y": 4
+              }
+            ]
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "apSizeChanged/width-by-exactly-0.01",
+      "fn": "apSizeChanged",
+      "args": [
+        {
+          "t": "rect",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 5
+          },
+          "ellipse": false
+        },
+        {
+          "t": "rect",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0.01,
+            "height": 5
+          },
+          "ellipse": false
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "apSizeChanged/height-by-exactly-0.01",
+      "fn": "apSizeChanged",
+      "args": [
+        {
+          "t": "rect",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 5,
+            "height": 0
+          },
+          "ellipse": false
+        },
+        {
+          "t": "rect",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 5,
+            "height": 0.01
+          },
+          "ellipse": false
         }
       ],
       "outcome": {
@@ -5034,6 +5182,108 @@
       }
     },
     {
+      "name": "chordThrough/parallel-on-right-edge",
+      "fn": "chordThrough",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 600,
+          "height": 800
+        },
+        {
+          "x": 600,
+          "y": 400
+        },
+        90
+      ],
+      "outcome": {
+        "returned": {
+          "a": {
+            "x": 600,
+            "y": 0
+          },
+          "b": {
+            "x": 600,
+            "y": 800
+          }
+        }
+      }
+    },
+    {
+      "name": "chordThrough/parallel-on-bottom-edge",
+      "fn": "chordThrough",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 600,
+          "height": 800
+        },
+        {
+          "x": 300,
+          "y": 800
+        },
+        0
+      ],
+      "outcome": {
+        "returned": {
+          "a": {
+            "x": 0,
+            "y": 800
+          },
+          "b": {
+            "x": 600,
+            "y": 800
+          }
+        }
+      }
+    },
+    {
+      "name": "chordThrough/infinite-box-end",
+      "fn": "chordThrough",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": {
+            "$number": "Infinity"
+          },
+          "height": 100
+        },
+        {
+          "x": 50,
+          "y": 50
+        },
+        0
+      ],
+      "outcome": {
+        "returned": null
+      }
+    },
+    {
+      "name": "chordThrough/infinite-box-start",
+      "fn": "chordThrough",
+      "args": [
+        {
+          "x": {
+            "$number": "-Infinity"
+          },
+          "y": 0,
+          "width": 100,
+          "height": 100
+        },
+        {
+          "x": 50,
+          "y": 50
+        },
+        0
+      ],
+      "outcome": {
+        "returned": null
+      }
+    },
+    {
       "name": "placeRotateKnob/no-page",
       "fn": "placeRotateKnob",
       "args": [
@@ -5410,6 +5660,92 @@
           "from": {
             "x": 140,
             "y": 24
+          }
+        }
+      }
+    },
+    {
+      "name": "placeRotateKnob/clamp-bottom",
+      "fn": "placeRotateKnob",
+      "args": [
+        [
+          {
+            "x": 180.00000000000006,
+            "y": 795
+          },
+          {
+            "x": 100.00000000000006,
+            "y": 795
+          },
+          {
+            "x": 99.99999999999997,
+            "y": 5
+          },
+          {
+            "x": 179.99999999999994,
+            "y": 5
+          }
+        ],
+        24,
+        {
+          "x": 0,
+          "y": 0,
+          "width": 600,
+          "height": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "at": {
+            "x": 140.00000000000006,
+            "y": 800
+          },
+          "from": {
+            "x": 140.00000000000006,
+            "y": 795
+          }
+        }
+      }
+    },
+    {
+      "name": "placeRotateKnob/clamp-right",
+      "fn": "placeRotateKnob",
+      "args": [
+        [
+          {
+            "x": 330,
+            "y": -165
+          },
+          {
+            "x": 330.00000000000006,
+            "y": 425
+          },
+          {
+            "x": 270,
+            "y": 425
+          },
+          {
+            "x": 270,
+            "y": -165
+          }
+        ],
+        24,
+        {
+          "x": 0,
+          "y": 0,
+          "width": 600,
+          "height": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "at": {
+            "x": 354,
+            "y": 130
+          },
+          "from": {
+            "x": 330,
+            "y": 130
           }
         }
       }
@@ -6345,6 +6681,138 @@
       ],
       "outcome": {
         "returned": false
+      }
+    },
+    {
+      "name": "quadIntersectsRect/tilted-long-side-gap",
+      "fn": "quadIntersectsRect",
+      "args": [
+        [
+          {
+            "x": 118.18019484660536,
+            "y": 66.10912703473991
+          },
+          {
+            "x": 188.89087296526012,
+            "y": 136.81980515339464
+          },
+          {
+            "x": 181.81980515339464,
+            "y": 143.89087296526012
+          },
+          {
+            "x": 111.10912703473988,
+            "y": 73.18019484660539
+          }
+        ],
+        {
+          "x": 160,
+          "y": 115,
+          "width": 4,
+          "height": 4
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "quadIntersectsRect/tilted-end-gap",
+      "fn": "quadIntersectsRect",
+      "args": [
+        [
+          {
+            "x": 118.18019484660536,
+            "y": 66.10912703473991
+          },
+          {
+            "x": 188.89087296526012,
+            "y": 136.81980515339464
+          },
+          {
+            "x": 181.81980515339464,
+            "y": 143.89087296526012
+          },
+          {
+            "x": 111.10912703473988,
+            "y": 73.18019484660539
+          }
+        ],
+        {
+          "x": 188,
+          "y": 150,
+          "width": 6,
+          "height": 6
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "quadIntersectsRect/tilted-near-long-side",
+      "fn": "quadIntersectsRect",
+      "args": [
+        [
+          {
+            "x": 118.18019484660536,
+            "y": 66.10912703473991
+          },
+          {
+            "x": 188.89087296526012,
+            "y": 136.81980515339464
+          },
+          {
+            "x": 181.81980515339464,
+            "y": 143.89087296526012
+          },
+          {
+            "x": 111.10912703473988,
+            "y": 73.18019484660539
+          }
+        ],
+        {
+          "x": 152,
+          "y": 104,
+          "width": 4,
+          "height": 4
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "quadIntersectsRect/tilted-near-end",
+      "fn": "quadIntersectsRect",
+      "args": [
+        [
+          {
+            "x": 118.18019484660536,
+            "y": 66.10912703473991
+          },
+          {
+            "x": 188.89087296526012,
+            "y": 136.81980515339464
+          },
+          {
+            "x": 181.81980515339464,
+            "y": 143.89087296526012
+          },
+          {
+            "x": 111.10912703473988,
+            "y": 73.18019484660539
+          }
+        ],
+        {
+          "x": 180,
+          "y": 140,
+          "width": 6,
+          "height": 6
+        }
+      ],
+      "outcome": {
+        "returned": true
       }
     }
   ]

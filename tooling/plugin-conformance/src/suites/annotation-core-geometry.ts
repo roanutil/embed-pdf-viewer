@@ -112,6 +112,7 @@ const basics: FunctionCase[] = [
   c('rectsIntersect', 'apart-y-before', rc(0, 20, 10, 10), rc(0, 0, 5, 5)),
   c('rectsIntersect', 'contained', rc(0, 0, 100, 100), rc(10, 10, 5, 5)),
   c('rectsIntersect', 'zero-size-inside', rc(0, 0, 10, 10), rc(5, 5, 0, 0)),
+  c('rectsIntersect', 'sum-not-product', rc(4, 4, 2, 2), rc(3, 3, 1.2, 1.2)),
 
   c('unionRect', 'empty', []),
   c('unionRect', 'one', [v(3, 4)]),
@@ -119,7 +120,7 @@ const basics: FunctionCase[] = [
   c('unionRect', 'nan', [v(3, 4), v(NaN, 1)]),
   c('unionRect', 'infinite', [v(-Infinity, 0), v(1, Infinity)]),
 
-  ...[0, 90, -90, 360, 450, -450, 359.999, -0.5, 1e-12, 720.25, NaN, Infinity].map((d) =>
+  ...[0, 90, -90, 360, 450, -450, 359.999, -0.5, 1e-12, 720.25, NaN, Infinity, 1e20, -1e20, 123456789.123].map((d) =>
     c('normalizeDeg', `${d}`, d),
   ),
 
@@ -139,6 +140,9 @@ const basics: FunctionCase[] = [
   c('apSizeChanged', 'ink', gInk([[v(0, 0), v(4, 4)]]), gInk([[v(1, 1), v(5, 5)]])),
   c('apSizeChanged', 'quads', gQuads([tq(0, 0, 10, 5)]), gQuads([tq(0, 0, 12, 5)])),
   c('apSizeChanged', 'rect-to-line', gRect(rc(0, 0, 10, 10)), gLine(v(0, 0), v(10, 10))),
+  c('apSizeChanged', 'ink-stretched', gInk([[v(0, 0), v(4, 4)]]), gInk([[v(0, 0), v(9, 4)]])),
+  c('apSizeChanged', 'width-by-exactly-0.01', gRect(rc(0, 0, 0, 5)), gRect(rc(0, 0, 0.01, 5))),
+  c('apSizeChanged', 'height-by-exactly-0.01', gRect(rc(0, 0, 5, 0)), gRect(rc(0, 0, 5, 0.01))),
 
   ...[0, 30, 90, 45, -90].map((d) => c('rotatedAabb', `deg-${d}`, rc(10, 20, 40, 20), d)),
   c('rotatedAabb', 'nan', rc(10, 20, 40, 20), NaN),
@@ -203,6 +207,10 @@ const basics: FunctionCase[] = [
   c('chordThrough', 'on-edge', PAGE, v(0, 400), 90),
   c('chordThrough', 'zero-box', rc(10, 10, 0, 0), v(10, 10), 45),
   c('chordThrough', 'nan-angle', PAGE, v(300, 400), NaN),
+  c('chordThrough', 'parallel-on-right-edge', PAGE, v(600, 400), 90),
+  c('chordThrough', 'parallel-on-bottom-edge', PAGE, v(300, 800), 0),
+  c('chordThrough', 'infinite-box-end', rc(0, 0, Infinity, 100), v(50, 50), 0),
+  c('chordThrough', 'infinite-box-start', rc(-Infinity, 0, 100, 100), v(50, 50), 0),
 
   c('placeRotateKnob', 'no-page', corners(rc(100, 100, 80, 60)), 24),
   c('placeRotateKnob', 'inside', corners(rc(100, 100, 80, 60)), 24, PAGE),
@@ -213,6 +221,8 @@ const basics: FunctionCase[] = [
   c('placeRotateKnob', 'flat-box-flip', corners(rc(100, 5, 80, 0)), 24, PAGE),
   c('placeRotateKnob', 'flat-box-offpage', corners(rc(100, -5, 80, 0)), 24, PAGE),
   c('placeRotateKnob', 'on-page-edge', corners(rc(100, 24, 80, 60)), 24, PAGE),
+  c('placeRotateKnob', 'clamp-bottom', turned(rc(100, 5, 80, 790), 180), 24, PAGE),
+  c('placeRotateKnob', 'clamp-right', turned(rc(5, 100, 590, 60), 90), 24, PAGE),
 
   ...[SOLID, DASHED, cloudy(1), cloudy(0), cloudy(2.5)].flatMap((b, i) => [
     c('shapeRectFor', `rect-border${i}`, rc(10, 10, 100, 50), false, { color: '#000', interiorColor: null, strokeWidth: 2, opacity: 1, blendMode: 'normal', border: b }),
@@ -239,6 +249,10 @@ const basics: FunctionCase[] = [
   c('quadIntersectsRect', 'degenerate-quad-outside', corners(rc(50, 50, 0, 0)), rc(0, 0, 10, 10)),
   c('quadIntersectsRect', 'flat-quad', corners(rc(0, 5, 20, 0)), rc(5, 0, 5, 10)),
   c('quadIntersectsRect', 'quad-axis-gap', [v(0, 0), v(10, 10), v(0, 20), v(-10, 10)], rc(8, 0, 4, 4)),
+  c('quadIntersectsRect', 'tilted-long-side-gap', turned(rc(100, 100, 100, 10), 45), rc(160, 115, 4, 4)),
+  c('quadIntersectsRect', 'tilted-end-gap', turned(rc(100, 100, 100, 10), 45), rc(188, 150, 6, 6)),
+  c('quadIntersectsRect', 'tilted-near-long-side', turned(rc(100, 100, 100, 10), 45), rc(152, 104, 4, 4)),
+  c('quadIntersectsRect', 'tilted-near-end', turned(rc(100, 100, 100, 10), 45), rc(180, 140, 6, 6)),
 ];
 
 // ── per-geom functions, crossed with GEOMS ───────────────────────────────────
@@ -315,11 +329,19 @@ for (const [name, gm] of GEOMS) {
 shapes.push(c('geomScene', 'rect-default-width', geom('rect')));
 shapes.push(c('geomScene', 'cloudy-small-box', gRect(rc(0, 0, 10, 10)), 2, cloudy(2)));
 shapes.push(c('geomScene', 'cloudy-just-fits', gRect(rc(0, 0, 11, 30)), 1, cloudy(1)));
+shapes.push(c('geomScene', 'cloudy-too-narrow', gRect(rc(0, 0, 8, 30)), 1, cloudy(1)));
+shapes.push(c('geomScene', 'cloudy-too-short', gRect(rc(0, 0, 30, 8)), 1, cloudy(1)));
 shapes.push(c('geomScene', 'cloudy-ellipse-small', gRect(rc(0, 0, 10, 10), true), 2, cloudy(2)));
 shapes.push(c('geomScene', 'cloudy-poly-two', gPoly([v(0, 0), v(40, 40)], true), 1, cloudy(1)));
 shapes.push(c('geomScene', 'cloudy-open-poly', gPoly([v(0, 0), v(40, 40), v(80, 0)], false), 1, cloudy(1)));
 shapes.push(c('geomScene', 'callout-leader-zero', gText(rc(100, 100, 120, 40), { tip: v(220, 120), ending: 'open-arrow' }), 2));
 shapes.push(c('geomVisualBounds', 'callout-rot-sw3', gText(rc(100, 100, 120, 40), { tip: v(20, 20), ending: 'closed-arrow' }, 90), 3));
+shapes.push(c('geomVisualBounds', 'callout-rot-nan', gText(rc(100, 100, 120, 40), { tip: v(20, 20), ending: 'closed-arrow' }, NaN), 3));
+// A join sharp enough that its miter tip reaches past the side offsets, but
+// within the miter limit only at the real limit (10 h, not 10 + h or 10 / h).
+shapes.push(c('geomVisualBounds', 'miter-within-limit-sw8', gPoly([v(0, 0), v(100, 10), v(0, 40)], false), 8));
+shapes.push(c('geomVisualBounds', 'miter-within-limit-sw1', gPoly([v(0, 0), v(100, 10), v(0, 40)], false), 1));
+shapes.push(c('obbFromGeom', 'line-rot-nan', gLine(v(0, 0), v(50, 20), undefined, NaN), 2));
 
 // Drag every handle a geom offers, plus the bogus ones, to one target.
 const dragTo = v(210, 185);
@@ -328,6 +350,7 @@ for (const [name, gm] of GEOMS) {
   for (const id of [...new Set(ids)]) shapes.push(c('geomDragHandle', `${name}-${id}`, gm, id, dragTo));
 }
 shapes.push(c('geomDragHandle', 'rect-nw-collapse', geom('rect'), 'nw', v(178, 158)));
+shapes.push(c('geomDragHandle', 'rect-rot-nan-se', gRect(rc(100, 100, 80, 60), false, NaN), 'se', v(220, 200)));
 shapes.push(c('geomDragHandle', 'rect-rot30-se-shrink', geom('rect-rot30'), 'se', v(120, 110)));
 shapes.push(c('geomDragHandle', 'poly-v-empty-string', geom('poly-closed'), 'v', v(0, 0)));
 shapes.push(c('geomDragHandle', 'poly-astral', geom('poly-closed'), '\u{1F600}1', v(0, 0)));
@@ -395,6 +418,8 @@ hits.push(c('geomHitProbe', 'poly-closed-two-points', gPoly([v(0, 0), v(100, 0)]
 hits.push(c('geomHitProbe', 'ellipse-thick-stroke', gRect(rc(0, 0, 10, 10), true), 0, false, 30, [v(5, 5), v(0, 5), v(20, 5)]));
 hits.push(c('geomHitProbe', 'rect-rot-local-frame', gRect(rc(100, 100, 80, 60), false, 45), 1, true, 2, [v(140, 130), v(100, 100), v(181, 130), v(140, 80)]));
 hits.push(c('geomHitProbe', 'caret-rot', gCaret(rc(100, 100, 10, 10), 45), 1, false, 1, [v(105, 105), v(100, 100), v(92, 105)]));
+hits.push(c('geomHitProbe', 'callout-rot30-box-local', gText(rc(100, 100, 120, 40), { tip: v(20, 20), ending: 'none' }, 30), 1, false, 2, [v(160, 120), v(215, 150), v(105, 90), v(215, 95), v(105, 150), v(60, 70)]));
+hits.push(c('geomHitProbe', 'callout-rot-nan', gText(rc(100, 100, 120, 40), { tip: v(20, 20), ending: 'none' }, NaN), 1, false, 2, [v(160, 120), v(60, 70)]));
 hits.push(c('geomHitProbe', 'callout-rot-box-local', gText(rc(100, 100, 120, 40), { tip: v(20, 20), ending: 'none' }, 90), 1, false, 2, [v(160, 120), v(145, 60), v(175, 180), v(110, 105), v(60, 70)]));
 hits.push(c('geomHitProbe', 'quads-rotated-inside', gQuads([tqRot(40, 40, 80, 10, 30)]), 0, true, 0, [v(60, 55), v(40, 40), v(100, 45), v(90, 80)]));
 
@@ -435,6 +460,8 @@ const text: FunctionCase[] = [
     ['rot180', tqRot(100, 100, 50, 12, 180), 1],
     ['zero-baseline', { upperStart: v(10, 0), upperEnd: v(10, 0), lowerStart: v(10, 12), lowerEnd: v(10, 12) }, 1],
     ['zero-baseline-and-ink', { upperStart: v(10, 12), upperEnd: v(10, 12), lowerStart: v(10, 12), lowerEnd: v(10, 12) }, 1],
+    ['advance-zero', tq(10, 10, 50, 12), 0],
+    ['advance-zero-rot30', tqRot(100, 100, 50, 12, 30), 0],
   ].flatMap(([label, q, adv]) => [
     c('caretRectFromAnchor', label as string, { glyphQuad: q, advance: adv }),
     c('caretGeomFromAnchor', label as string, { glyphQuad: q, advance: adv }),
@@ -528,6 +555,14 @@ for (const [label, box, i, sw] of [
   ['ellipse-both-narrow-i5', rc(0, 0, 55, 58), 5, 1],
   ['ellipse-two-curls', rc(0, 0, 42, 42), 3, 1],
   ['ellipse-two-curls-b', rc(0, 0, 44, 42), 3, 1],
+  ['ellipse-pinched-width', rc(0, 0, 33.5, 50.5), 3, 1],
+  ['ellipse-pinched-height', rc(0, 0, 50.5, 33.5), 3, 1],
+  ['ellipse-pinched-3.3', rc(0, 0, 33.8, 50.5), 3, 1],
+  ['ellipse-pinched-3.3-height', rc(0, 0, 50.5, 33.8), 3, 1],
+  ['ellipse-width-exactly-5', rc(0, 0, 11.75, 100), 0.5, 1],
+  ['ellipse-width-4-height-exactly-20', rc(0, 0, 10.75, 26.75), 0.5, 1],
+  ['ellipse-height-exactly-5', rc(0, 0, 100, 11.75), 0.5, 1],
+  ['ellipse-height-4-width-exactly-20', rc(0, 0, 26.75, 10.75), 0.5, 1],
   ['rect-tiny-intensity', rc(0, 0, 400, 300), 0.01, 0],
 ] as const) {
   if (sw > 0) cloudyCases.push(c('cloudyPath', `${label}-ellipse`, box, true, i, sw));
@@ -546,6 +581,8 @@ const POLYS: [string, Vec[]][] = [
   ['star', [v(50, 0), v(61, 35), v(98, 35), v(68, 57), v(79, 91), v(50, 70), v(21, 91), v(32, 57), v(2, 35), v(39, 35)]],
   ['duplicate-last-x', [v(0, 0), v(100, 0), v(0, 1)]],
   ['two-same', [v(5, 5), v(5, 5)]],
+  ['collinear', [v(0, 0), v(50, 0), v(100, 0)]],
+  ['collinear-back', [v(100, 0), v(0, 0), v(50, 0)]],
 ];
 for (const [name, pts] of POLYS) {
   for (const i of INTENSITIES) {

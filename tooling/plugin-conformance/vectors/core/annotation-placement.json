@@ -3158,6 +3158,512 @@
       }
     },
     {
+      "name": "resolveClickPlacement/segment-up-none-mid",
+      "fn": "resolveClickPlacement",
+      "args": [
+        {
+          "x": 300,
+          "y": 400
+        },
+        {
+          "length": 100,
+          "angleDeg": -90
+        },
+        {
+          "$undefined": true
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "segment",
+          "a": {
+            "x": 300,
+            "y": 400
+          },
+          "b": {
+            "x": 300,
+            "y": 300
+          }
+        }
+      }
+    },
+    {
+      "name": "resolveClickPlacement/segment-up-none-corner",
+      "fn": "resolveClickPlacement",
+      "args": [
+        {
+          "x": 590,
+          "y": 5
+        },
+        {
+          "length": 100,
+          "angleDeg": -90
+        },
+        {
+          "$undefined": true
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "segment",
+          "a": {
+            "x": 590,
+            "y": 5
+          },
+          "b": {
+            "x": 590,
+            "y": -95
+          }
+        }
+      }
+    },
+    {
+      "name": "resolveClickPlacement/segment-up-empty-mid",
+      "fn": "resolveClickPlacement",
+      "args": [
+        {
+          "x": 300,
+          "y": 400
+        },
+        {
+          "length": 100,
+          "angleDeg": -90
+        },
+        {}
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "segment",
+          "a": {
+            "x": 300,
+            "y": 400
+          },
+          "b": {
+            "x": 300,
+            "y": 300
+          }
+        }
+      }
+    },
+    {
+      "name": "resolveClickPlacement/segment-up-empty-corner",
+      "fn": "resolveClickPlacement",
+      "args": [
+        {
+          "x": 590,
+          "y": 5
+        },
+        {
+          "length": 100,
+          "angleDeg": -90
+        },
+        {}
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "segment",
+          "a": {
+            "x": 590,
+            "y": 5
+          },
+          "b": {
+            "x": 590,
+            "y": -95
+          }
+        }
+      }
+    },
+    {
+      "name": "resolveClickPlacement/segment-up-page-mid",
+      "fn": "resolveClickPlacement",
+      "args": [
+        {
+          "x": 300,
+          "y": 400
+        },
+        {
+          "length": 100,
+          "angleDeg": -90
+        },
+        {
+          "pageBox": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "segment",
+          "a": {
+            "x": 300,
+            "y": 400
+          },
+          "b": {
+            "x": 300,
+            "y": 300
+          }
+        }
+      }
+    },
+    {
+      "name": "resolveClickPlacement/segment-up-page-corner",
+      "fn": "resolveClickPlacement",
+      "args": [
+        {
+          "x": 590,
+          "y": 5
+        },
+        {
+          "length": 100,
+          "angleDeg": -90
+        },
+        {
+          "pageBox": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "segment",
+          "a": {
+            "x": 590,
+            "y": 100
+          },
+          "b": {
+            "x": 590,
+            "y": 0
+          }
+        }
+      }
+    },
+    {
+      "name": "resolveClickPlacement/segment-up-upright-0-mid",
+      "fn": "resolveClickPlacement",
+      "args": [
+        {
+          "x": 300,
+          "y": 400
+        },
+        {
+          "length": 100,
+          "angleDeg": -90
+        },
+        {
+          "upright": true,
+          "displayRotation": 0
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "segment",
+          "a": {
+            "x": 300,
+            "y": 400
+          },
+          "b": {
+            "x": 300,
+            "y": 300
+          }
+        }
+      }
+    },
+    {
+      "name": "resolveClickPlacement/segment-up-upright-0-corner",
+      "fn": "resolveClickPlacement",
+      "args": [
+        {
+          "x": 590,
+          "y": 5
+        },
+        {
+          "length": 100,
+          "angleDeg": -90
+        },
+        {
+          "upright": true,
+          "displayRotation": 0
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "segment",
+          "a": {
+            "x": 590,
+            "y": 5
+          },
+          "b": {
+            "x": 590,
+            "y": -95
+          }
+        }
+      }
+    },
+    {
+      "name": "resolveClickPlacement/segment-up-upright-90-mid",
+      "fn": "resolveClickPlacement",
+      "args": [
+        {
+          "x": 300,
+          "y": 400
+        },
+        {
+          "length": 100,
+          "angleDeg": -90
+        },
+        {
+          "upright": true,
+          "displayRotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "segment",
+          "a": {
+            "x": 300,
+            "y": 400
+          },
+          "b": {
+            "x": 300,
+            "y": 300
+          }
+        }
+      }
+    },
+    {
+      "name": "resolveClickPlacement/segment-up-upright-90-corner",
+      "fn": "resolveClickPlacement",
+      "args": [
+        {
+          "x": 590,
+          "y": 5
+        },
+        {
+          "length": 100,
+          "angleDeg": -90
+        },
+        {
+          "upright": true,
+          "displayRotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "segment",
+          "a": {
+            "x": 590,
+            "y": 5
+          },
+          "b": {
+            "x": 590,
+            "y": -95
+          }
+        }
+      }
+    },
+    {
+      "name": "resolveClickPlacement/segment-up-upright-180-mid",
+      "fn": "resolveClickPlacement",
+      "args": [
+        {
+          "x": 300,
+          "y": 400
+        },
+        {
+          "length": 100,
+          "angleDeg": -90
+        },
+        {
+          "upright": true,
+          "displayRotation": 180,
+          "pageBox": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "segment",
+          "a": {
+            "x": 300,
+            "y": 400
+          },
+          "b": {
+            "x": 300,
+            "y": 300
+          }
+        }
+      }
+    },
+    {
+      "name": "resolveClickPlacement/segment-up-upright-180-corner",
+      "fn": "resolveClickPlacement",
+      "args": [
+        {
+          "x": 590,
+          "y": 5
+        },
+        {
+          "length": 100,
+          "angleDeg": -90
+        },
+        {
+          "upright": true,
+          "displayRotation": 180,
+          "pageBox": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "segment",
+          "a": {
+            "x": 590,
+            "y": 100
+          },
+          "b": {
+            "x": 590,
+            "y": 0
+          }
+        }
+      }
+    },
+    {
+      "name": "resolveClickPlacement/segment-up-upright-270-mid",
+      "fn": "resolveClickPlacement",
+      "args": [
+        {
+          "x": 300,
+          "y": 400
+        },
+        {
+          "length": 100,
+          "angleDeg": -90
+        },
+        {
+          "upright": true,
+          "displayRotation": 270
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "segment",
+          "a": {
+            "x": 300,
+            "y": 400
+          },
+          "b": {
+            "x": 300,
+            "y": 300
+          }
+        }
+      }
+    },
+    {
+      "name": "resolveClickPlacement/segment-up-upright-270-corner",
+      "fn": "resolveClickPlacement",
+      "args": [
+        {
+          "x": 590,
+          "y": 5
+        },
+        {
+          "length": 100,
+          "angleDeg": -90
+        },
+        {
+          "upright": true,
+          "displayRotation": 270
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "segment",
+          "a": {
+            "x": 590,
+            "y": 5
+          },
+          "b": {
+            "x": 590,
+            "y": -95
+          }
+        }
+      }
+    },
+    {
+      "name": "resolveClickPlacement/segment-up-rotation-no-upright-mid",
+      "fn": "resolveClickPlacement",
+      "args": [
+        {
+          "x": 300,
+          "y": 400
+        },
+        {
+          "length": 100,
+          "angleDeg": -90
+        },
+        {
+          "displayRotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "segment",
+          "a": {
+            "x": 300,
+            "y": 400
+          },
+          "b": {
+            "x": 300,
+            "y": 300
+          }
+        }
+      }
+    },
+    {
+      "name": "resolveClickPlacement/segment-up-rotation-no-upright-corner",
+      "fn": "resolveClickPlacement",
+      "args": [
+        {
+          "x": 590,
+          "y": 5
+        },
+        {
+          "length": 100,
+          "angleDeg": -90
+        },
+        {
+          "displayRotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "segment",
+          "a": {
+            "x": 590,
+            "y": 5
+          },
+          "b": {
+            "x": 590,
+            "y": -95
+          }
+        }
+      }
+    },
+    {
       "name": "resolveClickPlacement/segment-and-box-none-mid",
       "fn": "resolveClickPlacement",
       "args": [
@@ -5986,6 +6492,114 @@
           {
             "x": 0,
             "y": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "straightenInkStroke/offset-horizontal",
+      "fn": "straightenInkStroke",
+      "args": [
+        [
+          {
+            "x": 40,
+            "y": 30
+          },
+          {
+            "x": 90,
+            "y": 32
+          },
+          {
+            "x": 140,
+            "y": 31
+          }
+        ],
+        {
+          "deviationThreshold": 0.1,
+          "axisSnapDegrees": 10
+        }
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "x": 40,
+            "y": 31
+          },
+          {
+            "x": 140,
+            "y": 31
+          }
+        ]
+      }
+    },
+    {
+      "name": "straightenInkStroke/offset-vertical",
+      "fn": "straightenInkStroke",
+      "args": [
+        [
+          {
+            "x": 40,
+            "y": 30
+          },
+          {
+            "x": 42,
+            "y": 80
+          },
+          {
+            "x": 41,
+            "y": 130
+          }
+        ],
+        {
+          "deviationThreshold": 0.1,
+          "axisSnapDegrees": 10
+        }
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "x": 41,
+            "y": 30
+          },
+          {
+            "x": 41,
+            "y": 130
+          }
+        ]
+      }
+    },
+    {
+      "name": "straightenInkStroke/length-exactly-3",
+      "fn": "straightenInkStroke",
+      "args": [
+        [
+          {
+            "x": 10,
+            "y": 10
+          },
+          {
+            "x": 11.5,
+            "y": 10.05
+          },
+          {
+            "x": 13,
+            "y": 10
+          }
+        ],
+        {
+          "deviationThreshold": 0.1,
+          "axisSnapDegrees": 10
+        }
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "x": 10,
+            "y": 10.016666666666667
+          },
+          {
+            "x": 13,
+            "y": 10.016666666666667
           }
         ]
       }

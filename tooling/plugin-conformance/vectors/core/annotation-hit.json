@@ -974,6 +974,53 @@
               "source": "vector",
               "irt": "sq"
             },
+            "review-state": {
+              "id": "review-state",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 83075
+              },
+              "pon": 1,
+              "subtype": "text",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 120,
+                  "y": 120,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector",
+              "data": {
+                "subtype": "text",
+                "state": "accepted"
+              }
+            },
             "reply2": {
               "id": "reply2",
               "ref": {
@@ -1215,6 +1262,7 @@
             "readonly",
             "widget",
             "reply",
+            "review-state",
             "reply2",
             "child-link",
             "other-page",
@@ -2221,6 +2269,53 @@
               "source": "vector",
               "irt": "sq"
             },
+            "review-state": {
+              "id": "review-state",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 83075
+              },
+              "pon": 1,
+              "subtype": "text",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 120,
+                  "y": 120,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector",
+              "data": {
+                "subtype": "text",
+                "state": "accepted"
+              }
+            },
             "reply2": {
               "id": "reply2",
               "ref": {
@@ -2462,6 +2557,7 @@
             "readonly",
             "widget",
             "reply",
+            "review-state",
             "reply2",
             "child-link",
             "other-page",
@@ -3471,6 +3567,53 @@
               "source": "vector",
               "irt": "sq"
             },
+            "review-state": {
+              "id": "review-state",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 83075
+              },
+              "pon": 1,
+              "subtype": "text",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 120,
+                  "y": 120,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector",
+              "data": {
+                "subtype": "text",
+                "state": "accepted"
+              }
+            },
             "reply2": {
               "id": "reply2",
               "ref": {
@@ -3712,6 +3855,7 @@
             "readonly",
             "widget",
             "reply",
+            "review-state",
             "reply2",
             "child-link",
             "other-page",
@@ -4699,6 +4843,53 @@
               "source": "vector",
               "irt": "sq"
             },
+            "review-state": {
+              "id": "review-state",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 83075
+              },
+              "pon": 1,
+              "subtype": "text",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 120,
+                  "y": 120,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector",
+              "data": {
+                "subtype": "text",
+                "state": "accepted"
+              }
+            },
             "reply2": {
               "id": "reply2",
               "ref": {
@@ -4940,6 +5131,7 @@
             "readonly",
             "widget",
             "reply",
+            "review-state",
             "reply2",
             "child-link",
             "other-page",
@@ -5988,6 +6180,53 @@
               "source": "vector",
               "irt": "sq"
             },
+            "review-state": {
+              "id": "review-state",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 83075
+              },
+              "pon": 1,
+              "subtype": "text",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 120,
+                  "y": 120,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector",
+              "data": {
+                "subtype": "text",
+                "state": "accepted"
+              }
+            },
             "reply2": {
               "id": "reply2",
               "ref": {
@@ -6229,6 +6468,7 @@
             "readonly",
             "widget",
             "reply",
+            "review-state",
             "reply2",
             "child-link",
             "other-page",
@@ -7214,6 +7454,53 @@
               "source": "vector",
               "irt": "sq"
             },
+            "review-state": {
+              "id": "review-state",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 83075
+              },
+              "pon": 1,
+              "subtype": "text",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 120,
+                  "y": 120,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector",
+              "data": {
+                "subtype": "text",
+                "state": "accepted"
+              }
+            },
             "reply2": {
               "id": "reply2",
               "ref": {
@@ -7455,6 +7742,7 @@
             "readonly",
             "widget",
             "reply",
+            "review-state",
             "reply2",
             "child-link",
             "other-page",
@@ -8440,6 +8728,53 @@
               "source": "vector",
               "irt": "sq"
             },
+            "review-state": {
+              "id": "review-state",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 83075
+              },
+              "pon": 1,
+              "subtype": "text",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 120,
+                  "y": 120,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector",
+              "data": {
+                "subtype": "text",
+                "state": "accepted"
+              }
+            },
             "reply2": {
               "id": "reply2",
               "ref": {
@@ -8681,6 +9016,7 @@
             "readonly",
             "widget",
             "reply",
+            "review-state",
             "reply2",
             "child-link",
             "other-page",
@@ -8711,6 +9047,7 @@
           "readonly",
           "widget",
           "reply",
+          "review-state",
           "reply2",
           "child-link",
           "other-page",
@@ -8796,6 +9133,10 @@
           [
             false,
             false
+          ],
+          [
+            true,
+            true
           ],
           [
             true,
@@ -9803,6 +10144,53 @@
               "source": "vector",
               "irt": "sq"
             },
+            "review-state": {
+              "id": "review-state",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 83075
+              },
+              "pon": 1,
+              "subtype": "text",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 120,
+                  "y": 120,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector",
+              "data": {
+                "subtype": "text",
+                "state": "accepted"
+              }
+            },
             "reply2": {
               "id": "reply2",
               "ref": {
@@ -10044,6 +10432,7 @@
             "readonly",
             "widget",
             "reply",
+            "review-state",
             "reply2",
             "child-link",
             "other-page",
@@ -11029,6 +11418,53 @@
               "source": "vector",
               "irt": "sq"
             },
+            "review-state": {
+              "id": "review-state",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 83075
+              },
+              "pon": 1,
+              "subtype": "text",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 120,
+                  "y": 120,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector",
+              "data": {
+                "subtype": "text",
+                "state": "accepted"
+              }
+            },
             "reply2": {
               "id": "reply2",
               "ref": {
@@ -11270,6 +11706,7 @@
             "readonly",
             "widget",
             "reply",
+            "review-state",
             "reply2",
             "child-link",
             "other-page",
@@ -12263,6 +12700,53 @@
               "source": "vector",
               "irt": "sq"
             },
+            "review-state": {
+              "id": "review-state",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 83075
+              },
+              "pon": 1,
+              "subtype": "text",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 120,
+                  "y": 120,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector",
+              "data": {
+                "subtype": "text",
+                "state": "accepted"
+              }
+            },
             "reply2": {
               "id": "reply2",
               "ref": {
@@ -12504,6 +12988,7 @@
             "readonly",
             "widget",
             "reply",
+            "review-state",
             "reply2",
             "child-link",
             "other-page",
@@ -13498,6 +13983,53 @@
               "source": "vector",
               "irt": "sq"
             },
+            "review-state": {
+              "id": "review-state",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 83075
+              },
+              "pon": 1,
+              "subtype": "text",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 120,
+                  "y": 120,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector",
+              "data": {
+                "subtype": "text",
+                "state": "accepted"
+              }
+            },
             "reply2": {
               "id": "reply2",
               "ref": {
@@ -13739,6 +14271,7 @@
             "readonly",
             "widget",
             "reply",
+            "review-state",
             "reply2",
             "child-link",
             "other-page",
@@ -14732,6 +15265,53 @@
               "source": "vector",
               "irt": "sq"
             },
+            "review-state": {
+              "id": "review-state",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 83075
+              },
+              "pon": 1,
+              "subtype": "text",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 120,
+                  "y": 120,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector",
+              "data": {
+                "subtype": "text",
+                "state": "accepted"
+              }
+            },
             "reply2": {
               "id": "reply2",
               "ref": {
@@ -14973,6 +15553,7 @@
             "readonly",
             "widget",
             "reply",
+            "review-state",
             "reply2",
             "child-link",
             "other-page",
@@ -15970,6 +16551,53 @@
               "source": "vector",
               "irt": "sq"
             },
+            "review-state": {
+              "id": "review-state",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 83075
+              },
+              "pon": 1,
+              "subtype": "text",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 120,
+                  "y": 120,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector",
+              "data": {
+                "subtype": "text",
+                "state": "accepted"
+              }
+            },
             "reply2": {
               "id": "reply2",
               "ref": {
@@ -16211,6 +16839,7 @@
             "readonly",
             "widget",
             "reply",
+            "review-state",
             "reply2",
             "child-link",
             "other-page",
@@ -21959,6 +22588,53 @@
               "source": "vector",
               "irt": "sq"
             },
+            "review-state": {
+              "id": "review-state",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 83075
+              },
+              "pon": 1,
+              "subtype": "text",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 120,
+                  "y": 120,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector",
+              "data": {
+                "subtype": "text",
+                "state": "accepted"
+              }
+            },
             "reply2": {
               "id": "reply2",
               "ref": {
@@ -22200,6 +22876,7 @@
             "readonly",
             "widget",
             "reply",
+            "review-state",
             "reply2",
             "child-link",
             "other-page",
@@ -23212,6 +23889,53 @@
               "source": "vector",
               "irt": "sq"
             },
+            "review-state": {
+              "id": "review-state",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 83075
+              },
+              "pon": 1,
+              "subtype": "text",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 120,
+                  "y": 120,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector",
+              "data": {
+                "subtype": "text",
+                "state": "accepted"
+              }
+            },
             "reply2": {
               "id": "reply2",
               "ref": {
@@ -23453,6 +24177,7 @@
             "readonly",
             "widget",
             "reply",
+            "review-state",
             "reply2",
             "child-link",
             "other-page",
@@ -24450,6 +25175,53 @@
               "source": "vector",
               "irt": "sq"
             },
+            "review-state": {
+              "id": "review-state",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 83075
+              },
+              "pon": 1,
+              "subtype": "text",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 120,
+                  "y": 120,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector",
+              "data": {
+                "subtype": "text",
+                "state": "accepted"
+              }
+            },
             "reply2": {
               "id": "reply2",
               "ref": {
@@ -24691,6 +25463,7 @@
             "readonly",
             "widget",
             "reply",
+            "review-state",
             "reply2",
             "child-link",
             "other-page",
@@ -25232,6 +26005,40 @@
             "margin": 6
           },
           {
+            "label": "locked-knob",
+            "selected": [
+              "locked"
+            ],
+            "pon": 1,
+            "p": {
+              "x": 130,
+              "y": 626
+            },
+            "gm": {
+              "handleTol": 6,
+              "knobTol": 6,
+              "knobOffset": 24
+            },
+            "margin": 6
+          },
+          {
+            "label": "note-knob",
+            "selected": [
+              "note"
+            ],
+            "pon": 1,
+            "p": {
+              "x": 30,
+              "y": -4
+            },
+            "gm": {
+              "handleTol": 6,
+              "knobTol": 6,
+              "knobOffset": 24
+            },
+            "margin": 6
+          },
+          {
             "label": "knob",
             "selected": [
               "sq"
@@ -25636,6 +26443,18 @@
               }
             },
             "grab"
+          ],
+          [
+            {
+              "t": "empty"
+            },
+            null
+          ],
+          [
+            {
+              "t": "empty"
+            },
+            null
           ],
           [
             {

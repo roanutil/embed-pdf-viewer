@@ -39,8 +39,8 @@ fn exact_tie(x: f64, digits: u32) -> bool {
 
 /// `Number.prototype.toFixed(digits)`. The decimal is the exact value of the
 /// double rounded half up (away from zero, on the magnitude); Rust's `{:.N}`
-/// breaks an exact tie to even, so a tie is formatted from the next double up.
-/// Magnitudes of `1e21` and more print as `Number#toString` does.
+/// breaks an exact tie to even, so a tie is written out one digit longer
+/// (exactly, ending in 5) and rounded up by hand. Magnitudes of `1e21` and more print as `Number#toString` does.
 pub fn to_fixed(x: f64, digits: u32) -> String {
     if x.is_nan() {
         return "NaN".into();
@@ -52,11 +52,37 @@ pub fn to_fixed(x: f64, digits: u32) -> String {
     let y = x.abs();
     let precision = digits as usize;
     let body = if y != 0.0 && exact_tie(y, digits) {
-        format!("{:.*}", precision, y.next_up())
+        round_up_tie(&format!("{:.*}", precision + 1, y))
     } else {
         format!("{:.*}", precision, y)
     };
     if negative { format!("-{body}") } else { body }
+}
+
+/// Drop the trailing `5` of an exact decimal and add one in the last place
+/// kept: `0.03125` to `0.0313`, `2.5` to `3`, `9.95` to `10.0`.
+fn round_up_tie(exact: &str) -> String {
+    let mut digits: Vec<u8> = exact[..exact.len() - 1].bytes().collect();
+    if digits.last() == Some(&b'.') {
+        digits.pop();
+    }
+    let mut i = digits.len();
+    loop {
+        if i == 0 {
+            digits.insert(0, b'1');
+            break;
+        }
+        i -= 1;
+        match digits[i] {
+            b'.' => continue,
+            b'9' => digits[i] = b'0',
+            d => {
+                digits[i] = d + 1;
+                break;
+            }
+        }
+    }
+    String::from_utf8(digits).unwrap_or_default()
 }
 
 /// `Number(x.toFixed(digits))`: `x` rounded to `digits` decimals the way the
@@ -441,10 +467,42 @@ mod tests {
             (f64::NAN, 2, "NaN"),
             (0.1, 20, "0.10000000000000000555"),
             (5e-324, 4, "0.0000"),
+            (0.125, 2, "0.13"),
+            (4503599627370494.5, 0, "4503599627370495"),
+            (2251799813685247.0 + 0.25, 1, "2251799813685247.3"),
+            (1125899906842623.0 + 0.125, 2, "1125899906842623.13"),
+            (9.5, 0, "10"),
+            (99.95, 1, "100.0"),
+            (0.5, 0, "1"),
         ];
         for (x, d, want) in cases {
             assert_eq!(to_fixed(*x, *d), *want, "{x}.toFixed({d})");
         }
+    }
+
+    #[test]
+    fn record_iterates_as_object_keys() {
+        let keys = ["b", "10", "01", "1", "-1", "0", "4294967295", "4294967294"];
+        let mut r: Record<usize> = keys.iter().enumerate().map(|(i, k)| (*k, i)).collect();
+        r.insert("b", 99);
+        let order: Vec<(&str, usize)> = r.iter().map(|(k, v)| (k, *v)).collect();
+        assert_eq!(
+            order,
+            [
+                ("0", 5),
+                ("1", 3),
+                ("10", 1),
+                ("4294967294", 7),
+                ("b", 99),
+                ("01", 2),
+                ("-1", 4),
+                ("4294967295", 6)
+            ]
+        );
+        assert_eq!((r.len(), r.is_empty(), r.get("01"), r.get("zz")), (8, false, Some(&2), None));
+        assert!(Record::<u8>::new().is_empty());
+        assert_eq!(array_index(""), None);
+        assert_eq!(array_index("1a"), None);
     }
 
     #[test]

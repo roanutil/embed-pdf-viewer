@@ -2429,6 +2429,82 @@
       }
     },
     {
+      "name": "anchoredGeom/rect-zoom-zNaN-r90",
+      "fn": "anchoredGeom",
+      "args": [
+        {
+          "t": "rect",
+          "rect": {
+            "x": 100,
+            "y": 100,
+            "width": 80,
+            "height": 60
+          },
+          "ellipse": false
+        },
+        {
+          "zoom": true,
+          "upright": false
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "rect",
+          "rect": {
+            "x": 100,
+            "y": 100,
+            "width": 80,
+            "height": 60
+          },
+          "ellipse": false
+        }
+      }
+    },
+    {
+      "name": "unanchoredGeom/rect-zoom-zNaN-r90",
+      "fn": "unanchoredGeom",
+      "args": [
+        {
+          "t": "rect",
+          "rect": {
+            "x": 100,
+            "y": 100,
+            "width": 80,
+            "height": 60
+          },
+          "ellipse": false
+        },
+        {
+          "zoom": true,
+          "upright": false
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "rect",
+          "rect": {
+            "x": 100,
+            "y": 100,
+            "width": 80,
+            "height": 60
+          },
+          "ellipse": false
+        }
+      }
+    },
+    {
       "name": "anchoredGeom/rect-upright-none",
       "fn": "anchoredGeom",
       "args": [
@@ -2943,6 +3019,85 @@
       }
     },
     {
+      "name": "anchoredGeom/rect-upright-zNaN-r90",
+      "fn": "anchoredGeom",
+      "args": [
+        {
+          "t": "rect",
+          "rect": {
+            "x": 100,
+            "y": 100,
+            "width": 80,
+            "height": 60
+          },
+          "ellipse": false
+        },
+        {
+          "zoom": false,
+          "upright": true
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "rect",
+          "rect": {
+            "x": 90,
+            "y": 29.99999999999997,
+            "width": 80,
+            "height": 60
+          },
+          "ellipse": false,
+          "rot": 270
+        }
+      }
+    },
+    {
+      "name": "unanchoredGeom/rect-upright-zNaN-r90",
+      "fn": "unanchoredGeom",
+      "args": [
+        {
+          "t": "rect",
+          "rect": {
+            "x": 90,
+            "y": 29.99999999999997,
+            "width": 80,
+            "height": 60
+          },
+          "ellipse": false,
+          "rot": 270
+        },
+        {
+          "zoom": false,
+          "upright": true
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "rect",
+          "rect": {
+            "x": 100,
+            "y": 99.99999999999997,
+            "width": 80,
+            "height": 60
+          },
+          "ellipse": false,
+          "rot": 0
+        }
+      }
+    },
+    {
       "name": "anchoredGeom/rect-both-none",
       "fn": "anchoredGeom",
       "args": [
@@ -3448,6 +3603,85 @@
           "rect": {
             "x": 100.00000000000001,
             "y": 100,
+            "width": 80,
+            "height": 60
+          },
+          "ellipse": false,
+          "rot": 0
+        }
+      }
+    },
+    {
+      "name": "anchoredGeom/rect-both-zNaN-r90",
+      "fn": "anchoredGeom",
+      "args": [
+        {
+          "t": "rect",
+          "rect": {
+            "x": 100,
+            "y": 100,
+            "width": 80,
+            "height": 60
+          },
+          "ellipse": false
+        },
+        {
+          "zoom": true,
+          "upright": true
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "rect",
+          "rect": {
+            "x": 90,
+            "y": 29.99999999999997,
+            "width": 80,
+            "height": 60
+          },
+          "ellipse": false,
+          "rot": 270
+        }
+      }
+    },
+    {
+      "name": "unanchoredGeom/rect-both-zNaN-r90",
+      "fn": "unanchoredGeom",
+      "args": [
+        {
+          "t": "rect",
+          "rect": {
+            "x": 90,
+            "y": 29.99999999999997,
+            "width": 80,
+            "height": 60
+          },
+          "ellipse": false,
+          "rot": 270
+        },
+        {
+          "zoom": true,
+          "upright": true
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "rect",
+          "rect": {
+            "x": 100,
+            "y": 99.99999999999997,
             "width": 80,
             "height": 60
           },
@@ -4057,6 +4291,86 @@
       }
     },
     {
+      "name": "anchoredGeom/rect-rot30-zoom-zNaN-r90",
+      "fn": "anchoredGeom",
+      "args": [
+        {
+          "t": "rect",
+          "rect": {
+            "x": 100,
+            "y": 100,
+            "width": 80,
+            "height": 60
+          },
+          "ellipse": false,
+          "rot": 30
+        },
+        {
+          "zoom": true,
+          "upright": false
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "rect",
+          "rect": {
+            "x": 100,
+            "y": 100,
+            "width": 80,
+            "height": 60
+          },
+          "ellipse": false,
+          "rot": 30
+        }
+      }
+    },
+    {
+      "name": "unanchoredGeom/rect-rot30-zoom-zNaN-r90",
+      "fn": "unanchoredGeom",
+      "args": [
+        {
+          "t": "rect",
+          "rect": {
+            "x": 100,
+            "y": 100,
+            "width": 80,
+            "height": 60
+          },
+          "ellipse": false,
+          "rot": 30
+        },
+        {
+          "zoom": true,
+          "upright": false
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "rect",
+          "rect": {
+            "x": 100,
+            "y": 100,
+            "width": 80,
+            "height": 60
+          },
+          "ellipse": false,
+          "rot": 30
+        }
+      }
+    },
+    {
       "name": "anchoredGeom/rect-rot30-upright-none",
       "fn": "anchoredGeom",
       "args": [
@@ -4587,6 +4901,86 @@
       }
     },
     {
+      "name": "anchoredGeom/rect-rot30-upright-zNaN-r90",
+      "fn": "anchoredGeom",
+      "args": [
+        {
+          "t": "rect",
+          "rect": {
+            "x": 100,
+            "y": 100,
+            "width": 80,
+            "height": 60
+          },
+          "ellipse": false,
+          "rot": 30
+        },
+        {
+          "zoom": false,
+          "upright": true
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "rect",
+          "rect": {
+            "x": 90,
+            "y": 29.99999999999997,
+            "width": 80,
+            "height": 60
+          },
+          "ellipse": false,
+          "rot": 300
+        }
+      }
+    },
+    {
+      "name": "unanchoredGeom/rect-rot30-upright-zNaN-r90",
+      "fn": "unanchoredGeom",
+      "args": [
+        {
+          "t": "rect",
+          "rect": {
+            "x": 90,
+            "y": 29.99999999999997,
+            "width": 80,
+            "height": 60
+          },
+          "ellipse": false,
+          "rot": 300
+        },
+        {
+          "zoom": false,
+          "upright": true
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "rect",
+          "rect": {
+            "x": 100,
+            "y": 99.99999999999997,
+            "width": 80,
+            "height": 60
+          },
+          "ellipse": false,
+          "rot": 30
+        }
+      }
+    },
+    {
       "name": "anchoredGeom/rect-rot30-both-none",
       "fn": "anchoredGeom",
       "args": [
@@ -5108,6 +5502,86 @@
           "rect": {
             "x": 100.00000000000001,
             "y": 100,
+            "width": 80,
+            "height": 60
+          },
+          "ellipse": false,
+          "rot": 30
+        }
+      }
+    },
+    {
+      "name": "anchoredGeom/rect-rot30-both-zNaN-r90",
+      "fn": "anchoredGeom",
+      "args": [
+        {
+          "t": "rect",
+          "rect": {
+            "x": 100,
+            "y": 100,
+            "width": 80,
+            "height": 60
+          },
+          "ellipse": false,
+          "rot": 30
+        },
+        {
+          "zoom": true,
+          "upright": true
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "rect",
+          "rect": {
+            "x": 90,
+            "y": 29.99999999999997,
+            "width": 80,
+            "height": 60
+          },
+          "ellipse": false,
+          "rot": 300
+        }
+      }
+    },
+    {
+      "name": "unanchoredGeom/rect-rot30-both-zNaN-r90",
+      "fn": "unanchoredGeom",
+      "args": [
+        {
+          "t": "rect",
+          "rect": {
+            "x": 90,
+            "y": 29.99999999999997,
+            "width": 80,
+            "height": 60
+          },
+          "ellipse": false,
+          "rot": 300
+        },
+        {
+          "zoom": true,
+          "upright": true
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "rect",
+          "rect": {
+            "x": 100,
+            "y": 99.99999999999997,
             "width": 80,
             "height": 60
           },
@@ -5845,6 +6319,102 @@
       }
     },
     {
+      "name": "anchoredGeom/line-arrows-zoom-zNaN-r90",
+      "fn": "anchoredGeom",
+      "args": [
+        {
+          "t": "line",
+          "a": {
+            "x": 10,
+            "y": 10
+          },
+          "b": {
+            "x": 90,
+            "y": 40
+          },
+          "ends": {
+            "start": "open-arrow",
+            "end": "closed-arrow"
+          }
+        },
+        {
+          "zoom": true,
+          "upright": false
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "line",
+          "a": {
+            "x": 10,
+            "y": 10
+          },
+          "b": {
+            "x": 90,
+            "y": 40
+          },
+          "ends": {
+            "start": "open-arrow",
+            "end": "closed-arrow"
+          }
+        }
+      }
+    },
+    {
+      "name": "unanchoredGeom/line-arrows-zoom-zNaN-r90",
+      "fn": "unanchoredGeom",
+      "args": [
+        {
+          "t": "line",
+          "a": {
+            "x": 10,
+            "y": 10
+          },
+          "b": {
+            "x": 90,
+            "y": 40
+          },
+          "ends": {
+            "start": "open-arrow",
+            "end": "closed-arrow"
+          }
+        },
+        {
+          "zoom": true,
+          "upright": false
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "line",
+          "a": {
+            "x": 10,
+            "y": 10
+          },
+          "b": {
+            "x": 90,
+            "y": 40
+          },
+          "ends": {
+            "start": "open-arrow",
+            "end": "closed-arrow"
+          }
+        }
+      }
+    },
+    {
       "name": "anchoredGeom/line-arrows-upright-none",
       "fn": "anchoredGeom",
       "args": [
@@ -6499,6 +7069,105 @@
       }
     },
     {
+      "name": "anchoredGeom/line-arrows-upright-zNaN-r90",
+      "fn": "anchoredGeom",
+      "args": [
+        {
+          "t": "line",
+          "a": {
+            "x": 10,
+            "y": 10
+          },
+          "b": {
+            "x": 90,
+            "y": 40
+          },
+          "ends": {
+            "start": "open-arrow",
+            "end": "closed-arrow"
+          }
+        },
+        {
+          "zoom": false,
+          "upright": true
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "line",
+          "a": {
+            "x": 10,
+            "y": 9.999999999999998
+          },
+          "b": {
+            "x": 39.999999999999986,
+            "y": -70.00000000000001
+          },
+          "ends": {
+            "start": "open-arrow",
+            "end": "closed-arrow"
+          },
+          "rot": 270
+        }
+      }
+    },
+    {
+      "name": "unanchoredGeom/line-arrows-upright-zNaN-r90",
+      "fn": "unanchoredGeom",
+      "args": [
+        {
+          "t": "line",
+          "a": {
+            "x": 10,
+            "y": 9.999999999999998
+          },
+          "b": {
+            "x": 39.999999999999986,
+            "y": -70.00000000000001
+          },
+          "ends": {
+            "start": "open-arrow",
+            "end": "closed-arrow"
+          },
+          "rot": 270
+        },
+        {
+          "zoom": false,
+          "upright": true
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "line",
+          "a": {
+            "x": 10.000000000000002,
+            "y": 9.999999999999998
+          },
+          "b": {
+            "x": 90.00000000000001,
+            "y": 39.99999999999998
+          },
+          "ends": {
+            "start": "open-arrow",
+            "end": "closed-arrow"
+          },
+          "rot": 0
+        }
+      }
+    },
+    {
       "name": "anchoredGeom/line-arrows-both-none",
       "fn": "anchoredGeom",
       "args": [
@@ -7142,6 +7811,105 @@
           },
           "b": {
             "x": 90,
+            "y": 39.99999999999998
+          },
+          "ends": {
+            "start": "open-arrow",
+            "end": "closed-arrow"
+          },
+          "rot": 0
+        }
+      }
+    },
+    {
+      "name": "anchoredGeom/line-arrows-both-zNaN-r90",
+      "fn": "anchoredGeom",
+      "args": [
+        {
+          "t": "line",
+          "a": {
+            "x": 10,
+            "y": 10
+          },
+          "b": {
+            "x": 90,
+            "y": 40
+          },
+          "ends": {
+            "start": "open-arrow",
+            "end": "closed-arrow"
+          }
+        },
+        {
+          "zoom": true,
+          "upright": true
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "line",
+          "a": {
+            "x": 10,
+            "y": 9.999999999999998
+          },
+          "b": {
+            "x": 39.999999999999986,
+            "y": -70.00000000000001
+          },
+          "ends": {
+            "start": "open-arrow",
+            "end": "closed-arrow"
+          },
+          "rot": 270
+        }
+      }
+    },
+    {
+      "name": "unanchoredGeom/line-arrows-both-zNaN-r90",
+      "fn": "unanchoredGeom",
+      "args": [
+        {
+          "t": "line",
+          "a": {
+            "x": 10,
+            "y": 9.999999999999998
+          },
+          "b": {
+            "x": 39.999999999999986,
+            "y": -70.00000000000001
+          },
+          "ends": {
+            "start": "open-arrow",
+            "end": "closed-arrow"
+          },
+          "rot": 270
+        },
+        {
+          "zoom": true,
+          "upright": true
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "line",
+          "a": {
+            "x": 10.000000000000002,
+            "y": 9.999999999999998
+          },
+          "b": {
+            "x": 90.00000000000001,
             "y": 39.99999999999998
           },
           "ends": {
@@ -7977,6 +8745,114 @@
       }
     },
     {
+      "name": "anchoredGeom/poly-closed-zoom-zNaN-r90",
+      "fn": "anchoredGeom",
+      "args": [
+        {
+          "t": "poly",
+          "points": [
+            {
+              "x": 10,
+              "y": 10
+            },
+            {
+              "x": 90,
+              "y": 20
+            },
+            {
+              "x": 40,
+              "y": 80
+            }
+          ],
+          "closed": true
+        },
+        {
+          "zoom": true,
+          "upright": false
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "poly",
+          "points": [
+            {
+              "x": 10,
+              "y": 10
+            },
+            {
+              "x": 90,
+              "y": 20
+            },
+            {
+              "x": 40,
+              "y": 80
+            }
+          ],
+          "closed": true
+        }
+      }
+    },
+    {
+      "name": "unanchoredGeom/poly-closed-zoom-zNaN-r90",
+      "fn": "unanchoredGeom",
+      "args": [
+        {
+          "t": "poly",
+          "points": [
+            {
+              "x": 10,
+              "y": 10
+            },
+            {
+              "x": 90,
+              "y": 20
+            },
+            {
+              "x": 40,
+              "y": 80
+            }
+          ],
+          "closed": true
+        },
+        {
+          "zoom": true,
+          "upright": false
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "poly",
+          "points": [
+            {
+              "x": 10,
+              "y": 10
+            },
+            {
+              "x": 90,
+              "y": 20
+            },
+            {
+              "x": 40,
+              "y": 80
+            }
+          ],
+          "closed": true
+        }
+      }
+    },
+    {
       "name": "anchoredGeom/poly-closed-upright-none",
       "fn": "anchoredGeom",
       "args": [
@@ -8715,6 +9591,117 @@
       }
     },
     {
+      "name": "anchoredGeom/poly-closed-upright-zNaN-r90",
+      "fn": "anchoredGeom",
+      "args": [
+        {
+          "t": "poly",
+          "points": [
+            {
+              "x": 10,
+              "y": 10
+            },
+            {
+              "x": 90,
+              "y": 20
+            },
+            {
+              "x": 40,
+              "y": 80
+            }
+          ],
+          "closed": true
+        },
+        {
+          "zoom": false,
+          "upright": true
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "poly",
+          "points": [
+            {
+              "x": 10,
+              "y": 9.999999999999998
+            },
+            {
+              "x": 19.999999999999986,
+              "y": -70
+            },
+            {
+              "x": 79.99999999999999,
+              "y": -20.000000000000014
+            }
+          ],
+          "closed": true,
+          "rot": 270
+        }
+      }
+    },
+    {
+      "name": "unanchoredGeom/poly-closed-upright-zNaN-r90",
+      "fn": "unanchoredGeom",
+      "args": [
+        {
+          "t": "poly",
+          "points": [
+            {
+              "x": 10,
+              "y": 9.999999999999998
+            },
+            {
+              "x": 19.999999999999986,
+              "y": -70
+            },
+            {
+              "x": 79.99999999999999,
+              "y": -20.000000000000014
+            }
+          ],
+          "closed": true,
+          "rot": 270
+        },
+        {
+          "zoom": false,
+          "upright": true
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "poly",
+          "points": [
+            {
+              "x": 10.000000000000002,
+              "y": 9.999999999999998
+            },
+            {
+              "x": 90,
+              "y": 19.99999999999998
+            },
+            {
+              "x": 40.000000000000014,
+              "y": 79.99999999999999
+            }
+          ],
+          "closed": true,
+          "rot": 0
+        }
+      }
+    },
+    {
       "name": "anchoredGeom/poly-closed-both-none",
       "fn": "anchoredGeom",
       "args": [
@@ -9445,6 +10432,117 @@
             {
               "x": 40.000000000000014,
               "y": 80
+            }
+          ],
+          "closed": true,
+          "rot": 0
+        }
+      }
+    },
+    {
+      "name": "anchoredGeom/poly-closed-both-zNaN-r90",
+      "fn": "anchoredGeom",
+      "args": [
+        {
+          "t": "poly",
+          "points": [
+            {
+              "x": 10,
+              "y": 10
+            },
+            {
+              "x": 90,
+              "y": 20
+            },
+            {
+              "x": 40,
+              "y": 80
+            }
+          ],
+          "closed": true
+        },
+        {
+          "zoom": true,
+          "upright": true
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "poly",
+          "points": [
+            {
+              "x": 10,
+              "y": 9.999999999999998
+            },
+            {
+              "x": 19.999999999999986,
+              "y": -70
+            },
+            {
+              "x": 79.99999999999999,
+              "y": -20.000000000000014
+            }
+          ],
+          "closed": true,
+          "rot": 270
+        }
+      }
+    },
+    {
+      "name": "unanchoredGeom/poly-closed-both-zNaN-r90",
+      "fn": "unanchoredGeom",
+      "args": [
+        {
+          "t": "poly",
+          "points": [
+            {
+              "x": 10,
+              "y": 9.999999999999998
+            },
+            {
+              "x": 19.999999999999986,
+              "y": -70
+            },
+            {
+              "x": 79.99999999999999,
+              "y": -20.000000000000014
+            }
+          ],
+          "closed": true,
+          "rot": 270
+        },
+        {
+          "zoom": true,
+          "upright": true
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "poly",
+          "points": [
+            {
+              "x": 10.000000000000002,
+              "y": 9.999999999999998
+            },
+            {
+              "x": 90,
+              "y": 19.99999999999998
+            },
+            {
+              "x": 40.000000000000014,
+              "y": 79.99999999999999
             }
           ],
           "closed": true,
@@ -10629,6 +11727,158 @@
       }
     },
     {
+      "name": "anchoredGeom/ink-two-zoom-zNaN-r90",
+      "fn": "anchoredGeom",
+      "args": [
+        {
+          "t": "ink",
+          "strokes": [
+            [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 10,
+                "y": 5
+              }
+            ],
+            [
+              {
+                "x": 30,
+                "y": 30
+              },
+              {
+                "x": 40,
+                "y": 50
+              },
+              {
+                "x": 45,
+                "y": 20
+              }
+            ]
+          ]
+        },
+        {
+          "zoom": true,
+          "upright": false
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "ink",
+          "strokes": [
+            [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 10,
+                "y": 5
+              }
+            ],
+            [
+              {
+                "x": 30,
+                "y": 30
+              },
+              {
+                "x": 40,
+                "y": 50
+              },
+              {
+                "x": 45,
+                "y": 20
+              }
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "name": "unanchoredGeom/ink-two-zoom-zNaN-r90",
+      "fn": "unanchoredGeom",
+      "args": [
+        {
+          "t": "ink",
+          "strokes": [
+            [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 10,
+                "y": 5
+              }
+            ],
+            [
+              {
+                "x": 30,
+                "y": 30
+              },
+              {
+                "x": 40,
+                "y": 50
+              },
+              {
+                "x": 45,
+                "y": 20
+              }
+            ]
+          ]
+        },
+        {
+          "zoom": true,
+          "upright": false
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "ink",
+          "strokes": [
+            [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 10,
+                "y": 5
+              }
+            ],
+            [
+              {
+                "x": 30,
+                "y": 30
+              },
+              {
+                "x": 40,
+                "y": 50
+              },
+              {
+                "x": 45,
+                "y": 20
+              }
+            ]
+          ]
+        }
+      }
+    },
+    {
       "name": "anchoredGeom/ink-two-upright-none",
       "fn": "anchoredGeom",
       "args": [
@@ -11639,6 +12889,161 @@
         {
           "zoom": 1.5,
           "rotation": -90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "ink",
+          "strokes": [
+            [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 10.000000000000002,
+                "y": 4.999999999999997
+              }
+            ],
+            [
+              {
+                "x": 30.00000000000001,
+                "y": 29.99999999999999
+              },
+              {
+                "x": 40.00000000000001,
+                "y": 49.99999999999999
+              },
+              {
+                "x": 45.00000000000001,
+                "y": 19.99999999999999
+              }
+            ]
+          ],
+          "rot": 0
+        }
+      }
+    },
+    {
+      "name": "anchoredGeom/ink-two-upright-zNaN-r90",
+      "fn": "anchoredGeom",
+      "args": [
+        {
+          "t": "ink",
+          "strokes": [
+            [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 10,
+                "y": 5
+              }
+            ],
+            [
+              {
+                "x": 30,
+                "y": 30
+              },
+              {
+                "x": 40,
+                "y": 50
+              },
+              {
+                "x": 45,
+                "y": 20
+              }
+            ]
+          ]
+        },
+        {
+          "zoom": false,
+          "upright": true
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "ink",
+          "strokes": [
+            [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 4.999999999999998,
+                "y": -10.000000000000002
+              }
+            ],
+            [
+              {
+                "x": 29.999999999999993,
+                "y": -30.000000000000007
+              },
+              {
+                "x": 49.99999999999999,
+                "y": -40.00000000000001
+              },
+              {
+                "x": 19.999999999999993,
+                "y": -45.00000000000001
+              }
+            ]
+          ],
+          "rot": 270
+        }
+      }
+    },
+    {
+      "name": "unanchoredGeom/ink-two-upright-zNaN-r90",
+      "fn": "unanchoredGeom",
+      "args": [
+        {
+          "t": "ink",
+          "strokes": [
+            [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 4.999999999999998,
+                "y": -10.000000000000002
+              }
+            ],
+            [
+              {
+                "x": 29.999999999999993,
+                "y": -30.000000000000007
+              },
+              {
+                "x": 49.99999999999999,
+                "y": -40.00000000000001
+              },
+              {
+                "x": 19.999999999999993,
+                "y": -45.00000000000001
+              }
+            ]
+          ],
+          "rot": 270
+        },
+        {
+          "zoom": false,
+          "upright": true
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
         }
       ],
       "outcome": {
@@ -12721,6 +14126,161 @@
       }
     },
     {
+      "name": "anchoredGeom/ink-two-both-zNaN-r90",
+      "fn": "anchoredGeom",
+      "args": [
+        {
+          "t": "ink",
+          "strokes": [
+            [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 10,
+                "y": 5
+              }
+            ],
+            [
+              {
+                "x": 30,
+                "y": 30
+              },
+              {
+                "x": 40,
+                "y": 50
+              },
+              {
+                "x": 45,
+                "y": 20
+              }
+            ]
+          ]
+        },
+        {
+          "zoom": true,
+          "upright": true
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "ink",
+          "strokes": [
+            [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 4.999999999999998,
+                "y": -10.000000000000002
+              }
+            ],
+            [
+              {
+                "x": 29.999999999999993,
+                "y": -30.000000000000007
+              },
+              {
+                "x": 49.99999999999999,
+                "y": -40.00000000000001
+              },
+              {
+                "x": 19.999999999999993,
+                "y": -45.00000000000001
+              }
+            ]
+          ],
+          "rot": 270
+        }
+      }
+    },
+    {
+      "name": "unanchoredGeom/ink-two-both-zNaN-r90",
+      "fn": "unanchoredGeom",
+      "args": [
+        {
+          "t": "ink",
+          "strokes": [
+            [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 4.999999999999998,
+                "y": -10.000000000000002
+              }
+            ],
+            [
+              {
+                "x": 29.999999999999993,
+                "y": -30.000000000000007
+              },
+              {
+                "x": 49.99999999999999,
+                "y": -40.00000000000001
+              },
+              {
+                "x": 19.999999999999993,
+                "y": -45.00000000000001
+              }
+            ]
+          ],
+          "rot": 270
+        },
+        {
+          "zoom": true,
+          "upright": true
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "ink",
+          "strokes": [
+            [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 10.000000000000002,
+                "y": 4.999999999999997
+              }
+            ],
+            [
+              {
+                "x": 30.00000000000001,
+                "y": 29.99999999999999
+              },
+              {
+                "x": 40.00000000000001,
+                "y": 49.99999999999999
+              },
+              {
+                "x": 45.00000000000001,
+                "y": 19.99999999999999
+              }
+            ]
+          ],
+          "rot": 0
+        }
+      }
+    },
+    {
       "name": "anchoredGeom/text-none-z2-r0",
       "fn": "anchoredGeom",
       "args": [
@@ -13257,6 +14817,78 @@
       }
     },
     {
+      "name": "anchoredGeom/text-zoom-zNaN-r90",
+      "fn": "anchoredGeom",
+      "args": [
+        {
+          "t": "text",
+          "rect": {
+            "x": 50,
+            "y": 50,
+            "width": 120,
+            "height": 40
+          }
+        },
+        {
+          "zoom": true,
+          "upright": false
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "text",
+          "rect": {
+            "x": 50,
+            "y": 50,
+            "width": 120,
+            "height": 40
+          }
+        }
+      }
+    },
+    {
+      "name": "unanchoredGeom/text-zoom-zNaN-r90",
+      "fn": "unanchoredGeom",
+      "args": [
+        {
+          "t": "text",
+          "rect": {
+            "x": 50,
+            "y": 50,
+            "width": 120,
+            "height": 40
+          }
+        },
+        {
+          "zoom": true,
+          "upright": false
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "text",
+          "rect": {
+            "x": 50,
+            "y": 50,
+            "width": 120,
+            "height": 40
+          }
+        }
+      }
+    },
+    {
       "name": "anchoredGeom/text-upright-none",
       "fn": "anchoredGeom",
       "args": [
@@ -13743,6 +15375,81 @@
       }
     },
     {
+      "name": "anchoredGeom/text-upright-zNaN-r90",
+      "fn": "anchoredGeom",
+      "args": [
+        {
+          "t": "text",
+          "rect": {
+            "x": 50,
+            "y": 50,
+            "width": 120,
+            "height": 40
+          }
+        },
+        {
+          "zoom": false,
+          "upright": true
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "text",
+          "rect": {
+            "x": 10,
+            "y": -30.000000000000014,
+            "width": 120,
+            "height": 40
+          },
+          "rot": 270
+        }
+      }
+    },
+    {
+      "name": "unanchoredGeom/text-upright-zNaN-r90",
+      "fn": "unanchoredGeom",
+      "args": [
+        {
+          "t": "text",
+          "rect": {
+            "x": 10,
+            "y": -30.000000000000014,
+            "width": 120,
+            "height": 40
+          },
+          "rot": 270
+        },
+        {
+          "zoom": false,
+          "upright": true
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "text",
+          "rect": {
+            "x": 50,
+            "y": 49.999999999999986,
+            "width": 120,
+            "height": 40
+          },
+          "rot": 0
+        }
+      }
+    },
+    {
       "name": "anchoredGeom/text-both-none",
       "fn": "anchoredGeom",
       "args": [
@@ -14221,6 +15928,81 @@
           "rect": {
             "x": 50.00000000000001,
             "y": 50,
+            "width": 120,
+            "height": 40
+          },
+          "rot": 0
+        }
+      }
+    },
+    {
+      "name": "anchoredGeom/text-both-zNaN-r90",
+      "fn": "anchoredGeom",
+      "args": [
+        {
+          "t": "text",
+          "rect": {
+            "x": 50,
+            "y": 50,
+            "width": 120,
+            "height": 40
+          }
+        },
+        {
+          "zoom": true,
+          "upright": true
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "text",
+          "rect": {
+            "x": 10,
+            "y": -30.000000000000014,
+            "width": 120,
+            "height": 40
+          },
+          "rot": 270
+        }
+      }
+    },
+    {
+      "name": "unanchoredGeom/text-both-zNaN-r90",
+      "fn": "unanchoredGeom",
+      "args": [
+        {
+          "t": "text",
+          "rect": {
+            "x": 10,
+            "y": -30.000000000000014,
+            "width": 120,
+            "height": 40
+          },
+          "rot": 270
+        },
+        {
+          "zoom": true,
+          "upright": true
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "text",
+          "rect": {
+            "x": 50,
+            "y": 49.999999999999986,
             "width": 120,
             "height": 40
           },
@@ -15117,6 +16899,122 @@
       }
     },
     {
+      "name": "anchoredGeom/callout-knee-zoom-zNaN-r90",
+      "fn": "anchoredGeom",
+      "args": [
+        {
+          "t": "text",
+          "rect": {
+            "x": 100,
+            "y": 100,
+            "width": 120,
+            "height": 40
+          },
+          "callout": {
+            "tip": {
+              "x": 20,
+              "y": 20
+            },
+            "knee": {
+              "x": 60,
+              "y": 30
+            },
+            "ending": "closed-arrow"
+          }
+        },
+        {
+          "zoom": true,
+          "upright": false
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "text",
+          "rect": {
+            "x": 100,
+            "y": 100,
+            "width": 120,
+            "height": 40
+          },
+          "callout": {
+            "tip": {
+              "x": 20,
+              "y": 20
+            },
+            "knee": {
+              "x": 60,
+              "y": 30
+            },
+            "ending": "closed-arrow"
+          }
+        }
+      }
+    },
+    {
+      "name": "unanchoredGeom/callout-knee-zoom-zNaN-r90",
+      "fn": "unanchoredGeom",
+      "args": [
+        {
+          "t": "text",
+          "rect": {
+            "x": 100,
+            "y": 100,
+            "width": 120,
+            "height": 40
+          },
+          "callout": {
+            "tip": {
+              "x": 20,
+              "y": 20
+            },
+            "knee": {
+              "x": 60,
+              "y": 30
+            },
+            "ending": "closed-arrow"
+          }
+        },
+        {
+          "zoom": true,
+          "upright": false
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "text",
+          "rect": {
+            "x": 100,
+            "y": 100,
+            "width": 120,
+            "height": 40
+          },
+          "callout": {
+            "tip": {
+              "x": 20,
+              "y": 20
+            },
+            "knee": {
+              "x": 60,
+              "y": 30
+            },
+            "ending": "closed-arrow"
+          }
+        }
+      }
+    },
+    {
       "name": "anchoredGeom/callout-knee-upright-none",
       "fn": "anchoredGeom",
       "args": [
@@ -15899,6 +17797,122 @@
       }
     },
     {
+      "name": "anchoredGeom/callout-knee-upright-zNaN-r90",
+      "fn": "anchoredGeom",
+      "args": [
+        {
+          "t": "text",
+          "rect": {
+            "x": 100,
+            "y": 100,
+            "width": 120,
+            "height": 40
+          },
+          "callout": {
+            "tip": {
+              "x": 20,
+              "y": 20
+            },
+            "knee": {
+              "x": 60,
+              "y": 30
+            },
+            "ending": "closed-arrow"
+          }
+        },
+        {
+          "zoom": false,
+          "upright": true
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "text",
+          "rect": {
+            "x": 100,
+            "y": 100,
+            "width": 120,
+            "height": 40
+          },
+          "callout": {
+            "tip": {
+              "x": 20,
+              "y": 20
+            },
+            "knee": {
+              "x": 60,
+              "y": 30
+            },
+            "ending": "closed-arrow"
+          }
+        }
+      }
+    },
+    {
+      "name": "unanchoredGeom/callout-knee-upright-zNaN-r90",
+      "fn": "unanchoredGeom",
+      "args": [
+        {
+          "t": "text",
+          "rect": {
+            "x": 100,
+            "y": 100,
+            "width": 120,
+            "height": 40
+          },
+          "callout": {
+            "tip": {
+              "x": 20,
+              "y": 20
+            },
+            "knee": {
+              "x": 60,
+              "y": 30
+            },
+            "ending": "closed-arrow"
+          }
+        },
+        {
+          "zoom": false,
+          "upright": true
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "text",
+          "rect": {
+            "x": 100,
+            "y": 100,
+            "width": 120,
+            "height": 40
+          },
+          "callout": {
+            "tip": {
+              "x": 20,
+              "y": 20
+            },
+            "knee": {
+              "x": 60,
+              "y": 30
+            },
+            "ending": "closed-arrow"
+          }
+        }
+      }
+    },
+    {
       "name": "anchoredGeom/callout-knee-both-none",
       "fn": "anchoredGeom",
       "args": [
@@ -16655,6 +18669,122 @@
         {
           "zoom": 1.5,
           "rotation": -90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "text",
+          "rect": {
+            "x": 100,
+            "y": 100,
+            "width": 120,
+            "height": 40
+          },
+          "callout": {
+            "tip": {
+              "x": 20,
+              "y": 20
+            },
+            "knee": {
+              "x": 60,
+              "y": 30
+            },
+            "ending": "closed-arrow"
+          }
+        }
+      }
+    },
+    {
+      "name": "anchoredGeom/callout-knee-both-zNaN-r90",
+      "fn": "anchoredGeom",
+      "args": [
+        {
+          "t": "text",
+          "rect": {
+            "x": 100,
+            "y": 100,
+            "width": 120,
+            "height": 40
+          },
+          "callout": {
+            "tip": {
+              "x": 20,
+              "y": 20
+            },
+            "knee": {
+              "x": 60,
+              "y": 30
+            },
+            "ending": "closed-arrow"
+          }
+        },
+        {
+          "zoom": true,
+          "upright": true
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "text",
+          "rect": {
+            "x": 100,
+            "y": 100,
+            "width": 120,
+            "height": 40
+          },
+          "callout": {
+            "tip": {
+              "x": 20,
+              "y": 20
+            },
+            "knee": {
+              "x": 60,
+              "y": 30
+            },
+            "ending": "closed-arrow"
+          }
+        }
+      }
+    },
+    {
+      "name": "unanchoredGeom/callout-knee-both-zNaN-r90",
+      "fn": "unanchoredGeom",
+      "args": [
+        {
+          "t": "text",
+          "rect": {
+            "x": 100,
+            "y": 100,
+            "width": 120,
+            "height": 40
+          },
+          "callout": {
+            "tip": {
+              "x": 20,
+              "y": 20
+            },
+            "knee": {
+              "x": 60,
+              "y": 30
+            },
+            "ending": "closed-arrow"
+          }
+        },
+        {
+          "zoom": true,
+          "upright": true
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
         }
       ],
       "outcome": {
@@ -17665,6 +19795,134 @@
       }
     },
     {
+      "name": "anchoredGeom/quads-zoom-zNaN-r90",
+      "fn": "anchoredGeom",
+      "args": [
+        {
+          "t": "quads",
+          "quads": [
+            {
+              "upperStart": {
+                "x": 10,
+                "y": 10
+              },
+              "upperEnd": {
+                "x": 110,
+                "y": 10
+              },
+              "lowerStart": {
+                "x": 10,
+                "y": 22
+              },
+              "lowerEnd": {
+                "x": 110,
+                "y": 22
+              }
+            }
+          ]
+        },
+        {
+          "zoom": true,
+          "upright": false
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "quads",
+          "quads": [
+            {
+              "upperStart": {
+                "x": 10,
+                "y": 10
+              },
+              "upperEnd": {
+                "x": 110,
+                "y": 10
+              },
+              "lowerStart": {
+                "x": 10,
+                "y": 22
+              },
+              "lowerEnd": {
+                "x": 110,
+                "y": 22
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "unanchoredGeom/quads-zoom-zNaN-r90",
+      "fn": "unanchoredGeom",
+      "args": [
+        {
+          "t": "quads",
+          "quads": [
+            {
+              "upperStart": {
+                "x": 10,
+                "y": 10
+              },
+              "upperEnd": {
+                "x": 110,
+                "y": 10
+              },
+              "lowerStart": {
+                "x": 10,
+                "y": 22
+              },
+              "lowerEnd": {
+                "x": 110,
+                "y": 22
+              }
+            }
+          ]
+        },
+        {
+          "zoom": true,
+          "upright": false
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "quads",
+          "quads": [
+            {
+              "upperStart": {
+                "x": 10,
+                "y": 10
+              },
+              "upperEnd": {
+                "x": 110,
+                "y": 10
+              },
+              "lowerStart": {
+                "x": 10,
+                "y": 22
+              },
+              "lowerEnd": {
+                "x": 110,
+                "y": 22
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
       "name": "anchoredGeom/quads-upright-none",
       "fn": "anchoredGeom",
       "args": [
@@ -18502,6 +20760,134 @@
         {
           "zoom": 1.5,
           "rotation": -90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "quads",
+          "quads": [
+            {
+              "upperStart": {
+                "x": 10,
+                "y": 10
+              },
+              "upperEnd": {
+                "x": 110,
+                "y": 10
+              },
+              "lowerStart": {
+                "x": 10,
+                "y": 22
+              },
+              "lowerEnd": {
+                "x": 110,
+                "y": 22
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "anchoredGeom/quads-upright-zNaN-r90",
+      "fn": "anchoredGeom",
+      "args": [
+        {
+          "t": "quads",
+          "quads": [
+            {
+              "upperStart": {
+                "x": 10,
+                "y": 10
+              },
+              "upperEnd": {
+                "x": 110,
+                "y": 10
+              },
+              "lowerStart": {
+                "x": 10,
+                "y": 22
+              },
+              "lowerEnd": {
+                "x": 110,
+                "y": 22
+              }
+            }
+          ]
+        },
+        {
+          "zoom": false,
+          "upright": true
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "quads",
+          "quads": [
+            {
+              "upperStart": {
+                "x": 10,
+                "y": 10
+              },
+              "upperEnd": {
+                "x": 110,
+                "y": 10
+              },
+              "lowerStart": {
+                "x": 10,
+                "y": 22
+              },
+              "lowerEnd": {
+                "x": 110,
+                "y": 22
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "unanchoredGeom/quads-upright-zNaN-r90",
+      "fn": "unanchoredGeom",
+      "args": [
+        {
+          "t": "quads",
+          "quads": [
+            {
+              "upperStart": {
+                "x": 10,
+                "y": 10
+              },
+              "upperEnd": {
+                "x": 110,
+                "y": 10
+              },
+              "lowerStart": {
+                "x": 10,
+                "y": 22
+              },
+              "lowerEnd": {
+                "x": 110,
+                "y": 22
+              }
+            }
+          ]
+        },
+        {
+          "zoom": false,
+          "upright": true
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
         }
       ],
       "outcome": {
@@ -19397,6 +21783,134 @@
       }
     },
     {
+      "name": "anchoredGeom/quads-both-zNaN-r90",
+      "fn": "anchoredGeom",
+      "args": [
+        {
+          "t": "quads",
+          "quads": [
+            {
+              "upperStart": {
+                "x": 10,
+                "y": 10
+              },
+              "upperEnd": {
+                "x": 110,
+                "y": 10
+              },
+              "lowerStart": {
+                "x": 10,
+                "y": 22
+              },
+              "lowerEnd": {
+                "x": 110,
+                "y": 22
+              }
+            }
+          ]
+        },
+        {
+          "zoom": true,
+          "upright": true
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "quads",
+          "quads": [
+            {
+              "upperStart": {
+                "x": 10,
+                "y": 10
+              },
+              "upperEnd": {
+                "x": 110,
+                "y": 10
+              },
+              "lowerStart": {
+                "x": 10,
+                "y": 22
+              },
+              "lowerEnd": {
+                "x": 110,
+                "y": 22
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "unanchoredGeom/quads-both-zNaN-r90",
+      "fn": "unanchoredGeom",
+      "args": [
+        {
+          "t": "quads",
+          "quads": [
+            {
+              "upperStart": {
+                "x": 10,
+                "y": 10
+              },
+              "upperEnd": {
+                "x": 110,
+                "y": 10
+              },
+              "lowerStart": {
+                "x": 10,
+                "y": 22
+              },
+              "lowerEnd": {
+                "x": 110,
+                "y": 22
+              }
+            }
+          ]
+        },
+        {
+          "zoom": true,
+          "upright": true
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "quads",
+          "quads": [
+            {
+              "upperStart": {
+                "x": 10,
+                "y": 10
+              },
+              "upperEnd": {
+                "x": 110,
+                "y": 10
+              },
+              "lowerStart": {
+                "x": 10,
+                "y": 22
+              },
+              "lowerEnd": {
+                "x": 110,
+                "y": 22
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
       "name": "anchoredGeom/caret-none-z2-r0",
       "fn": "anchoredGeom",
       "args": [
@@ -19933,6 +22447,78 @@
       }
     },
     {
+      "name": "anchoredGeom/caret-zoom-zNaN-r90",
+      "fn": "anchoredGeom",
+      "args": [
+        {
+          "t": "caret",
+          "rect": {
+            "x": 20,
+            "y": 20,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "zoom": true,
+          "upright": false
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "caret",
+          "rect": {
+            "x": 20,
+            "y": 20,
+            "width": 6,
+            "height": 6
+          }
+        }
+      }
+    },
+    {
+      "name": "unanchoredGeom/caret-zoom-zNaN-r90",
+      "fn": "unanchoredGeom",
+      "args": [
+        {
+          "t": "caret",
+          "rect": {
+            "x": 20,
+            "y": 20,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "zoom": true,
+          "upright": false
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "caret",
+          "rect": {
+            "x": 20,
+            "y": 20,
+            "width": 6,
+            "height": 6
+          }
+        }
+      }
+    },
+    {
       "name": "anchoredGeom/caret-upright-none",
       "fn": "anchoredGeom",
       "args": [
@@ -20392,6 +22978,78 @@
         {
           "zoom": 1.5,
           "rotation": -90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "caret",
+          "rect": {
+            "x": 20,
+            "y": 20,
+            "width": 6,
+            "height": 6
+          }
+        }
+      }
+    },
+    {
+      "name": "anchoredGeom/caret-upright-zNaN-r90",
+      "fn": "anchoredGeom",
+      "args": [
+        {
+          "t": "caret",
+          "rect": {
+            "x": 20,
+            "y": 20,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "zoom": false,
+          "upright": true
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "caret",
+          "rect": {
+            "x": 20,
+            "y": 20,
+            "width": 6,
+            "height": 6
+          }
+        }
+      }
+    },
+    {
+      "name": "unanchoredGeom/caret-upright-zNaN-r90",
+      "fn": "unanchoredGeom",
+      "args": [
+        {
+          "t": "caret",
+          "rect": {
+            "x": 20,
+            "y": 20,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "zoom": false,
+          "upright": true
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
         }
       ],
       "outcome": {
@@ -20881,6 +23539,78 @@
       }
     },
     {
+      "name": "anchoredGeom/caret-both-zNaN-r90",
+      "fn": "anchoredGeom",
+      "args": [
+        {
+          "t": "caret",
+          "rect": {
+            "x": 20,
+            "y": 20,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "zoom": true,
+          "upright": true
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "caret",
+          "rect": {
+            "x": 20,
+            "y": 20,
+            "width": 6,
+            "height": 6
+          }
+        }
+      }
+    },
+    {
+      "name": "unanchoredGeom/caret-both-zNaN-r90",
+      "fn": "unanchoredGeom",
+      "args": [
+        {
+          "t": "caret",
+          "rect": {
+            "x": 20,
+            "y": 20,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "zoom": true,
+          "upright": true
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "caret",
+          "rect": {
+            "x": 20,
+            "y": 20,
+            "width": 6,
+            "height": 6
+          }
+        }
+      }
+    },
+    {
       "name": "anchoredStrokeWidth/none-none",
       "fn": "anchoredStrokeWidth",
       "args": [
@@ -21145,6 +23875,49 @@
         {
           "zoom": 1.5,
           "rotation": -90
+        }
+      ],
+      "outcome": {
+        "returned": null
+      }
+    },
+    {
+      "name": "anchoredStrokeWidth/none-zNaN-r90",
+      "fn": "anchoredStrokeWidth",
+      "args": [
+        2,
+        null,
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": 2
+      }
+    },
+    {
+      "name": "anchoredBox/none-zNaN-r90",
+      "fn": "anchoredBox",
+      "args": [
+        {
+          "x": 100,
+          "y": 100,
+          "width": 40,
+          "height": 20
+        },
+        {
+          "x": 90,
+          "y": 95
+        },
+        null,
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
         }
       ],
       "outcome": {
@@ -21489,6 +24262,55 @@
       }
     },
     {
+      "name": "anchoredStrokeWidth/zoom-zNaN-r90",
+      "fn": "anchoredStrokeWidth",
+      "args": [
+        2,
+        {
+          "zoom": true,
+          "upright": false
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": 2
+      }
+    },
+    {
+      "name": "anchoredBox/zoom-zNaN-r90",
+      "fn": "anchoredBox",
+      "args": [
+        {
+          "x": 100,
+          "y": 100,
+          "width": 40,
+          "height": 20
+        },
+        {
+          "x": 90,
+          "y": 95
+        },
+        {
+          "zoom": true,
+          "upright": false
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": null
+      }
+    },
+    {
       "name": "anchoredStrokeWidth/upright-none",
       "fn": "anchoredStrokeWidth",
       "args": [
@@ -21830,6 +24652,63 @@
             "height": 20
           },
           "rot": 90
+        }
+      }
+    },
+    {
+      "name": "anchoredStrokeWidth/upright-zNaN-r90",
+      "fn": "anchoredStrokeWidth",
+      "args": [
+        2,
+        {
+          "zoom": false,
+          "upright": true
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": 2
+      }
+    },
+    {
+      "name": "anchoredBox/upright-zNaN-r90",
+      "fn": "anchoredBox",
+      "args": [
+        {
+          "x": 100,
+          "y": 100,
+          "width": 40,
+          "height": 20
+        },
+        {
+          "x": 90,
+          "y": 95
+        },
+        {
+          "zoom": false,
+          "upright": true
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "box": {
+            "x": 84.99999999999999,
+            "y": 54.999999999999986,
+            "width": 40,
+            "height": 20
+          },
+          "rot": 270
         }
       }
     },
@@ -22183,6 +25062,63 @@
             "height": 13.333333333333334
           },
           "rot": 90
+        }
+      }
+    },
+    {
+      "name": "anchoredStrokeWidth/both-zNaN-r90",
+      "fn": "anchoredStrokeWidth",
+      "args": [
+        2,
+        {
+          "zoom": true,
+          "upright": true
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": 2
+      }
+    },
+    {
+      "name": "anchoredBox/both-zNaN-r90",
+      "fn": "anchoredBox",
+      "args": [
+        {
+          "x": 100,
+          "y": 100,
+          "width": 40,
+          "height": 20
+        },
+        {
+          "x": 90,
+          "y": 95
+        },
+        {
+          "zoom": true,
+          "upright": true
+        },
+        {
+          "zoom": {
+            "$number": "NaN"
+          },
+          "rotation": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "box": {
+            "x": 84.99999999999999,
+            "y": 54.999999999999986,
+            "width": 40,
+            "height": 20
+          },
+          "rot": 270
         }
       }
     }
