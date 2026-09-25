@@ -15,6 +15,7 @@ pub mod forms;
 pub mod geometry;
 pub mod metadata;
 pub mod pages;
+pub mod pages_write;
 pub mod redaction;
 pub mod render;
 pub mod save;

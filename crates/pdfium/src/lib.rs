@@ -30,6 +30,7 @@ mod library;
 mod metadata;
 mod page;
 mod page_list;
+mod page_write;
 mod piece_info;
 mod save;
 mod stamp;

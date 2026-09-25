@@ -225,6 +225,10 @@ jobs:
       - name: Form field vectors are current
         run: pnpm --filter @embedpdf/tooling-engine-conformance run form-field:check
 
+      # G13's page list: what a reorder, a rotation and a delete leave.
+      - name: Page mutate vectors are current
+        run: pnpm --filter @embedpdf/tooling-engine-conformance run pages-mutate:check
+
       # G8's /PieceInfo, on both holders. The catalog and page accessor
       # families differ only by a page object number, so a branch written the
       # wrong way round reads one while claiming the other.

@@ -97,6 +97,14 @@ pub enum PdfRotation {
 }
 
 impl PdfRotation {
+    /// The `/Rotate` value divided by ninety, which is what the fork's
+    /// page-rotation helper takes. The wire speaks degrees and PDFium
+    /// speaks quarter turns; the conversion lives here so the two
+    /// vocabularies meet once rather than at every call site.
+    pub fn quarter_turns(self) -> i32 {
+        i32::from(self.degrees() / 90)
+    }
+
     pub fn degrees(self) -> u16 {
         match self {
             Self::None => 0,
@@ -258,7 +266,10 @@ mod tests {
     #[test]
     fn origin_size_round_trips() {
         let r = rect(10.0, 20.0, 30.0, 45.0);
-        assert_eq!(pdf_rect_to_origin_size(r), PdfOriginSize { x: 10.0, y: 20.0, width: 20.0, height: 25.0 });
+        assert_eq!(
+            pdf_rect_to_origin_size(r),
+            PdfOriginSize { x: 10.0, y: 20.0, width: 20.0, height: 25.0 }
+        );
         assert_eq!(pdf_rect_from_origin_size(pdf_rect_to_origin_size(r)), r);
     }
 
