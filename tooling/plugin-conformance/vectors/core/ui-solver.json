@@ -4290,6 +4290,385 @@
       }
     },
     {
+      "name": "equal-position-first-considered-wins",
+      "fn": "solveSchema",
+      "args": [
+        {
+          "id": "t",
+          "sections": {
+            "start": [
+              {
+                "id": "h",
+                "collapse": "menu",
+                "items": [
+                  "a"
+                ]
+              },
+              {
+                "id": "g",
+                "collapse": "menu",
+                "items": []
+              }
+            ]
+          }
+        },
+        {
+          "variants": {
+            "icon+label": 100,
+            "icon": 40,
+            "label": 80,
+            "default": 60,
+            "wide": 120,
+            "narrow": 30,
+            "inline": 150
+          },
+          "collapsedDefault": 50,
+          "triggerDefault": 36,
+          "overflowTrigger": 40,
+          "gap": 10,
+          "separator": 20,
+          "collapsed": {
+            "g": 500
+          },
+          "units": {
+            "h:a": {
+              "icon": 200
+            }
+          }
+        },
+        100
+      ],
+      "outcome": {
+        "returned": {
+          "units": {
+            "$map": [
+              [
+                "h:a",
+                {
+                  "kind": "collapsed"
+                }
+              ]
+            ]
+          },
+          "groups": {
+            "$map": [
+              [
+                "h",
+                {
+                  "shedCount": 0,
+                  "collapsed": true,
+                  "overflowed": false
+                }
+              ],
+              [
+                "g",
+                {
+                  "shedCount": 0,
+                  "collapsed": false,
+                  "overflowed": false
+                }
+              ]
+            ]
+          },
+          "hasOverflow": false,
+          "width": 50,
+          "complete": true
+        }
+      }
+    },
+    {
+      "name": "rank-beats-order-at-equal-importance",
+      "fn": "solveSchema",
+      "args": [
+        {
+          "id": "t",
+          "sections": {
+            "start": [
+              {
+                "id": "g",
+                "items": [
+                  {
+                    "command": "a",
+                    "variants": [
+                      "icon+label",
+                      "icon"
+                    ]
+                  },
+                  "b"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "variants": {
+            "icon+label": 100,
+            "icon": 40,
+            "label": 80,
+            "default": 60,
+            "wide": 120,
+            "narrow": 30,
+            "inline": 150
+          },
+          "collapsedDefault": 50,
+          "triggerDefault": 36,
+          "overflowTrigger": 40,
+          "gap": 10,
+          "separator": 20
+        },
+        140
+      ],
+      "outcome": {
+        "returned": {
+          "units": {
+            "$map": [
+              [
+                "g:a",
+                {
+                  "kind": "variant",
+                  "variant": "icon"
+                }
+              ],
+              [
+                "g:b",
+                {
+                  "kind": "variant",
+                  "variant": "icon"
+                }
+              ]
+            ]
+          },
+          "groups": {
+            "$map": [
+              [
+                "g",
+                {
+                  "shedCount": 0,
+                  "collapsed": false,
+                  "overflowed": false
+                }
+              ]
+            ]
+          },
+          "hasOverflow": false,
+          "width": 90,
+          "complete": true
+        }
+      }
+    },
+    {
+      "name": "nan-gap-single-unit",
+      "fn": "solveSchema",
+      "args": [
+        {
+          "id": "t",
+          "sections": {
+            "start": [
+              {
+                "id": "g",
+                "items": [
+                  "a"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "variants": {
+            "icon+label": 100,
+            "icon": 40,
+            "label": 80,
+            "default": 60,
+            "wide": 120,
+            "narrow": 30,
+            "inline": 150
+          },
+          "collapsedDefault": 50,
+          "triggerDefault": 36,
+          "overflowTrigger": 40,
+          "gap": {
+            "$number": "NaN"
+          },
+          "separator": 20
+        },
+        100
+      ],
+      "outcome": {
+        "returned": {
+          "units": {
+            "$map": [
+              [
+                "g:a",
+                {
+                  "kind": "variant",
+                  "variant": "icon"
+                }
+              ]
+            ]
+          },
+          "groups": {
+            "$map": [
+              [
+                "g",
+                {
+                  "shedCount": 0,
+                  "collapsed": false,
+                  "overflowed": false
+                }
+              ]
+            ]
+          },
+          "hasOverflow": false,
+          "width": 40,
+          "complete": true
+        }
+      }
+    },
+    {
+      "name": "infinite-gap-single-unit",
+      "fn": "solveSchema",
+      "args": [
+        {
+          "id": "t",
+          "sections": {
+            "start": [
+              {
+                "id": "g",
+                "items": [
+                  "a"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "variants": {
+            "icon+label": 100,
+            "icon": 40,
+            "label": 80,
+            "default": 60,
+            "wide": 120,
+            "narrow": 30,
+            "inline": 150
+          },
+          "collapsedDefault": 50,
+          "triggerDefault": 36,
+          "overflowTrigger": 40,
+          "gap": {
+            "$number": "Infinity"
+          },
+          "separator": 20
+        },
+        100
+      ],
+      "outcome": {
+        "returned": {
+          "units": {
+            "$map": [
+              [
+                "g:a",
+                {
+                  "kind": "variant",
+                  "variant": "icon"
+                }
+              ]
+            ]
+          },
+          "groups": {
+            "$map": [
+              [
+                "g",
+                {
+                  "shedCount": 0,
+                  "collapsed": false,
+                  "overflowed": false
+                }
+              ]
+            ]
+          },
+          "hasOverflow": false,
+          "width": 40,
+          "complete": true
+        }
+      }
+    },
+    {
+      "name": "infinite-separator-single-group",
+      "fn": "solveSchema",
+      "args": [
+        {
+          "id": "t",
+          "sections": {
+            "start": [
+              {
+                "id": "g",
+                "items": [
+                  "a",
+                  "b"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "variants": {
+            "icon+label": 100,
+            "icon": 40,
+            "label": 80,
+            "default": 60,
+            "wide": 120,
+            "narrow": 30,
+            "inline": 150
+          },
+          "collapsedDefault": 50,
+          "triggerDefault": 36,
+          "overflowTrigger": 40,
+          "gap": 10,
+          "separator": {
+            "$number": "Infinity"
+          }
+        },
+        100
+      ],
+      "outcome": {
+        "returned": {
+          "units": {
+            "$map": [
+              [
+                "g:a",
+                {
+                  "kind": "variant",
+                  "variant": "icon"
+                }
+              ],
+              [
+                "g:b",
+                {
+                  "kind": "variant",
+                  "variant": "icon"
+                }
+              ]
+            ]
+          },
+          "groups": {
+            "$map": [
+              [
+                "g",
+                {
+                  "shedCount": 0,
+                  "collapsed": false,
+                  "overflowed": false
+                }
+              ]
+            ]
+          },
+          "hasOverflow": false,
+          "width": 90,
+          "complete": true
+        }
+      }
+    },
+    {
       "name": "negative-budget",
       "fn": "solveSchema",
       "args": [

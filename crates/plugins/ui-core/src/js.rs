@@ -334,3 +334,92 @@ pub fn splice_start(at: f64, len: usize) -> usize {
     let len_f = len as f64;
     if relative < 0.0 { (len_f + relative).max(0.0) as usize } else { relative.min(len_f) as usize }
 }
+
+/// The JavaScript facts below are ones the vectors cannot carry: a vector
+/// is written by `JSON.stringify`, which already prints integer-like keys
+/// first, and the harness drops `undefined` before a value reaches serde.
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    /// `Object.keys` puts array indices first, ascending; `"01"`, `"-1"`,
+    /// `"1.5"` and `"4294967295"` are not array indices.
+    #[test]
+    fn record_orders_keys_as_object_keys_does() {
+        let mut r = Record::new();
+        for k in ["b", "10", "a", "2", "0", "01", "-1", "1.5", "4294967295", "4294967294", ""] {
+            r.insert(k, 1);
+        }
+        let keys: Vec<String> = r.keys().map(str::to_string).collect();
+        assert_eq!(
+            keys,
+            ["0", "2", "10", "4294967294", "b", "a", "01", "-1", "1.5", "4294967295", ""]
+        );
+        r.insert("a", 2);
+        r.insert("2", 3);
+        assert_eq!(r.keys().collect::<Vec<_>>(), keys);
+        assert_eq!(r.get("a"), Some(&2));
+        assert_eq!(r.len(), 11);
+        assert!(!r.is_empty());
+        assert!(Record::<u8>::new().is_empty());
+    }
+
+    #[test]
+    fn record_from_entries_and_serde() {
+        let r: Record<u8> = [("z", 1), ("5", 2), ("z", 3)].into_iter().collect();
+        assert_eq!(r.iter().collect::<Vec<_>>(), [("5", &2), ("z", &3)]);
+        let parsed: Record<u8> = serde_json::from_str(r#"{"b":1,"7":2,"a":3,"3":4}"#).unwrap();
+        assert_eq!(parsed.keys().collect::<Vec<_>>(), ["3", "7", "b", "a"]);
+        assert_eq!(serde_json::to_string(&parsed).unwrap(), r#"{"3":4,"7":2,"b":1,"a":3}"#);
+        let err = serde_json::from_str::<Record<u8>>("[1]").unwrap_err().to_string();
+        assert!(err.contains("an object"), "{err}");
+    }
+
+    /// `new Map()`: insertion order, and `set` on an existing key replaces
+    /// in place.
+    #[test]
+    fn js_map_keeps_insertion_order() {
+        let mut m = JsMap::new();
+        assert!(m.is_empty());
+        m.set("b", 1);
+        m.set("1", 2);
+        m.set("b", 3);
+        assert_eq!(m.len(), 2);
+        assert!(!m.is_empty());
+        assert_eq!(m.iter().collect::<Vec<_>>(), [("b", &3), ("1", &2)]);
+        assert_eq!(serde_json::to_value(&m).unwrap(), json!({"$map": [["b", 3], ["1", 2]]}));
+        let back: JsMap<u8> =
+            serde_json::from_value(json!({"$map": [["x", 1], ["x", 2]]})).unwrap();
+        assert_eq!(back.iter().collect::<Vec<_>>(), [("x", &2)]);
+    }
+
+    #[derive(Deserialize, Serialize)]
+    struct Numbers {
+        #[serde(with = "number")]
+        n: f64,
+        #[serde(default, with = "opt_number")]
+        o: Option<f64>,
+    }
+
+    #[test]
+    fn numbers_cross_in_canonical_form() {
+        let read = |v: Value| serde_json::from_value::<Numbers>(v).map(|n| (n.n, n.o));
+        assert_eq!(read(json!({"n": 2.5, "o": 7})).unwrap(), (2.5, Some(7.0)));
+        assert!(read(json!({"n": {"$number": "NaN"}})).unwrap().0.is_nan());
+        assert_eq!(
+            read(json!({"n": {"$number": "-Infinity"}, "o": null})).unwrap(),
+            (f64::NEG_INFINITY, None)
+        );
+        assert_eq!(read(json!({"n": 1, "o": {"$undefined": true}})).unwrap(), (1.0, None));
+        assert_eq!(
+            read(json!({"n": 1, "o": {"$number": "Infinity"}})).unwrap(),
+            (1.0, Some(f64::INFINITY))
+        );
+        assert!(read(json!({"n": "1"})).is_err());
+        assert!(read(json!({"n": 1, "o": "1"})).is_err());
+        assert!(read(json!({"n": 1, "o": false})).is_err());
+        let out = serde_json::to_value(Numbers { n: f64::INFINITY, o: Some(-0.0) }).unwrap();
+        assert_eq!(out, json!({"n": {"$number": "Infinity"}, "o": 0.0}));
+    }
+}
