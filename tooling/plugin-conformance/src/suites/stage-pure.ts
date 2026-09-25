@@ -102,6 +102,8 @@ const destinationCases: FunctionCase[] = [
   c('destinationToReveal', 'fitBV', { kind: 'fitBV', pageObjectNumber: 12, left: 150 }, cropped, bbox),
   c('destinationToReveal', 'fitBV-null-bbox', { kind: 'fitBV', pageObjectNumber: 12, left: null }, letter, bbox),
   c('destinationToReveal', 'fitBV-absent-page', { kind: 'fitBV', pageObjectNumber: 12 }, letter),
+  c('destinationToReveal', 'zero-user-unit-throws', { kind: 'fit', pageObjectNumber: 12 }, layout({ userUnit: 0 })),
+  c('destinationToReveal', 'absent-user-unit', { kind: 'xyz', pageObjectNumber: 12, left: 5, top: 6 }, layout({ userUnit: { $undefined: true } })),
 ];
 
 // ── settings ──────────────────────────────────────────────────────────────────
@@ -222,7 +224,6 @@ const reducerCases: FunctionCase[] = [
   c('initialStageState', 'empty', {}),
   c('initialStageState', 'overrides', { layout: 'grid', columns: 3, zoom: { level: 0.2 }, padding: 0, gap: { px: 8 } }),
   c('initialStageState', 'strips-capability-config', { responsive: [], scheduler: 'frames', flow: 'paged' }),
-  c('initialStageState', 'undefined-override', { padding: { $undefined: true } }),
   c('stageReducer', 'camera', base, { type: 'CAMERA', camera: { x: 1, y: 2, zoom: 3 } }),
   c('stageReducer', 'camera-rest-change', base, { type: 'CAMERA_REST', resting: false }),
   c('stageReducer', 'camera-rest-same', base, { type: 'CAMERA_REST', resting: true }),

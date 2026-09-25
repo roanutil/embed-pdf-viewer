@@ -1466,6 +1466,106 @@
           }
         }
       }
+    },
+    {
+      "name": "destinationToReveal/zero-user-unit-throws",
+      "fn": "destinationToReveal",
+      "args": [
+        {
+          "kind": "fit",
+          "pageObjectNumber": 12
+        },
+        {
+          "index": 3,
+          "pageObjectNumber": 12,
+          "label": null,
+          "size": {
+            "width": 612,
+            "height": 792
+          },
+          "rotation": 0,
+          "userUnit": 0,
+          "boxes": {
+            "media": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            },
+            "crop": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            }
+          }
+        }
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "Error",
+            "message": "Mat2D.invert: non-invertible matrix (det = 0)"
+          }
+        }
+      }
+    },
+    {
+      "name": "destinationToReveal/absent-user-unit",
+      "fn": "destinationToReveal",
+      "args": [
+        {
+          "kind": "xyz",
+          "pageObjectNumber": 12,
+          "left": 5,
+          "top": 6
+        },
+        {
+          "index": 3,
+          "pageObjectNumber": 12,
+          "label": null,
+          "size": {
+            "width": 612,
+            "height": 792
+          },
+          "rotation": 0,
+          "userUnit": {
+            "$undefined": true
+          },
+          "boxes": {
+            "media": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            },
+            "crop": {
+              "left": 0,
+              "bottom": 0,
+              "right": 612,
+              "top": 792
+            }
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "pageIndex": 3,
+          "options": {
+            "rect": {
+              "x": 5,
+              "y": 786,
+              "width": 0,
+              "height": 0
+            },
+            "anchor": {
+              "x": "start",
+              "y": "start"
+            },
+            "zoom": "keep"
+          }
+        }
+      }
     }
   ]
 }
