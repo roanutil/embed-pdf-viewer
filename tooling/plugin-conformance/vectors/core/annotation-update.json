@@ -35121,56 +35121,96 @@
             ]
           },
           {
-            "name": "create-line-flags",
+            "name": "create-free-text-click-height-exactly-min",
             "over": {},
             "msgs": [
               {
                 "t": "createPointer",
                 "phase": "down",
-                "subtype": "line",
+                "subtype": "free-text",
                 "in": {
                   "pon": 1,
                   "point": {
-                    "x": 10,
-                    "y": 10
+                    "x": 100,
+                    "y": 100
                   },
                   "shift": false
-                },
-                "flags": {
-                  "noRotate": true
                 }
               },
               {
                 "t": "createPointer",
                 "phase": "move",
-                "subtype": "line",
+                "subtype": "free-text",
                 "in": {
                   "pon": 1,
                   "point": {
-                    "x": 90,
-                    "y": 40
+                    "x": 101,
+                    "y": 103
                   },
                   "shift": false
-                },
-                "flags": {
-                  "noRotate": true
                 }
               },
               {
                 "t": "createPointer",
                 "phase": "up",
-                "subtype": "line",
+                "subtype": "free-text",
                 "in": {
                   "pon": 1,
                   "point": {
-                    "x": 90,
-                    "y": 40
+                    "x": 101,
+                    "y": 103
                   },
                   "shift": false
-                },
-                "flags": {
-                  "noRotate": true
                 }
+              }
+            ]
+          },
+          {
+            "name": "create-markup-collinear-skew",
+            "over": {},
+            "msgs": [
+              {
+                "t": "createMarkup",
+                "subtype": "highlight",
+                "pon": 1,
+                "quads": [
+                  {
+                    "upperStart": {
+                      "x": 0,
+                      "y": 0
+                    },
+                    "upperEnd": {
+                      "x": 10,
+                      "y": 10
+                    },
+                    "lowerStart": {
+                      "x": 5,
+                      "y": 5
+                    },
+                    "lowerEnd": {
+                      "x": 15,
+                      "y": 15
+                    }
+                  },
+                  {
+                    "upperStart": {
+                      "x": 0,
+                      "y": 0
+                    },
+                    "upperEnd": {
+                      "x": 10,
+                      "y": 0
+                    },
+                    "lowerStart": {
+                      "x": 0,
+                      "y": 0
+                    },
+                    "lowerEnd": {
+                      "x": 10,
+                      "y": 0
+                    }
+                  }
+                ]
               }
             ]
           }
@@ -36284,6 +36324,264 @@
             "removed": []
           },
           {
+            "name": "create-free-text-click-height-exactly-min",
+            "steps": [
+              {
+                "same": false,
+                "effects": [],
+                "draft": {
+                  "g": "create-rect",
+                  "subtype": "free-text",
+                  "preset": "free-text",
+                  "pon": 1,
+                  "from": {
+                    "x": 100,
+                    "y": 100
+                  },
+                  "to": {
+                    "x": 100,
+                    "y": 100
+                  },
+                  "ellipse": false
+                },
+                "selected": []
+              },
+              {
+                "same": false,
+                "effects": [],
+                "draft": {
+                  "g": "create-rect",
+                  "subtype": "free-text",
+                  "preset": "free-text",
+                  "pon": 1,
+                  "from": {
+                    "x": 100,
+                    "y": 100
+                  },
+                  "to": {
+                    "x": 101,
+                    "y": 103
+                  },
+                  "ellipse": false
+                },
+                "selected": []
+              },
+              {
+                "same": false,
+                "effects": [
+                  {
+                    "fx": "create",
+                    "id": "tmp:1"
+                  }
+                ],
+                "draft": null,
+                "selected": [
+                  "tmp:1"
+                ]
+              }
+            ],
+            "model": {
+              "order": [
+                "tmp:1"
+              ],
+              "selected": [
+                "tmp:1"
+              ],
+              "hovered": null,
+              "draft": null,
+              "preview": null,
+              "seq": 1,
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "defaults": {},
+              "hitMargin": 6,
+              "editing": "tmp:1",
+              "snap": {
+                "guides": true,
+                "guideThreshold": 5,
+                "rotation": true,
+                "rotationAngles": [
+                  0,
+                  90,
+                  180,
+                  270
+                ],
+                "rotationThreshold": 4
+              },
+              "byId": {
+                "tmp:1": {
+                  "id": "tmp:1",
+                  "ref": null,
+                  "pon": 1,
+                  "subtype": "free-text",
+                  "geom": {
+                    "t": "text",
+                    "rect": {
+                      "x": 100,
+                      "y": 100,
+                      "width": 1,
+                      "height": 3
+                    }
+                  },
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "text": {
+                    "fontFamily": "helvetica",
+                    "fontSize": 14,
+                    "fontColor": "#000000",
+                    "textAlign": "left"
+                  },
+                  "flags": {
+                    "invisible": false,
+                    "hidden": false,
+                    "print": true,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": false
+                  },
+                  "source": "vector"
+                }
+              }
+            },
+            "removed": []
+          },
+          {
+            "name": "create-markup-collinear-skew",
+            "steps": [
+              {
+                "same": true,
+                "effects": [],
+                "draft": null,
+                "selected": []
+              }
+            ],
+            "model": {
+              "order": [],
+              "selected": [],
+              "hovered": null,
+              "draft": null,
+              "preview": null,
+              "seq": 0,
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "defaults": {},
+              "hitMargin": 6,
+              "editing": null,
+              "snap": {
+                "guides": true,
+                "guideThreshold": 5,
+                "rotation": true,
+                "rotationAngles": [
+                  0,
+                  90,
+                  180,
+                  270
+                ],
+                "rotationThreshold": 4
+              },
+              "byId": {}
+            },
+            "removed": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "runs/create-16-create-line-flags",
+      "fn": "runs",
+      "args": [
+        {
+          "byId": {},
+          "order": []
+        },
+        [
+          {
+            "name": "create-line-flags",
+            "over": {},
+            "msgs": [
+              {
+                "t": "createPointer",
+                "phase": "down",
+                "subtype": "line",
+                "in": {
+                  "pon": 1,
+                  "point": {
+                    "x": 10,
+                    "y": 10
+                  },
+                  "shift": false
+                },
+                "flags": {
+                  "noRotate": true
+                }
+              },
+              {
+                "t": "createPointer",
+                "phase": "move",
+                "subtype": "line",
+                "in": {
+                  "pon": 1,
+                  "point": {
+                    "x": 90,
+                    "y": 40
+                  },
+                  "shift": false
+                },
+                "flags": {
+                  "noRotate": true
+                }
+              },
+              {
+                "t": "createPointer",
+                "phase": "up",
+                "subtype": "line",
+                "in": {
+                  "pon": 1,
+                  "point": {
+                    "x": 90,
+                    "y": 40
+                  },
+                  "shift": false
+                },
+                "flags": {
+                  "noRotate": true
+                }
+              }
+            ]
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          {
             "name": "create-line-flags",
             "steps": [
               {
@@ -36433,7 +36731,7 @@
       }
     },
     {
-      "name": "runs/create-16-create-square-selects-and-seq",
+      "name": "runs/create-17-create-square-selects-and-seq",
       "fn": "runs",
       "args": [
         {
@@ -38703,7 +39001,7 @@
       }
     },
     {
-      "name": "runs/markup-17-markup-preview",
+      "name": "runs/markup-18-markup-preview",
       "fn": "runs",
       "args": [
         {
@@ -39117,7 +39415,7 @@
       }
     },
     {
-      "name": "runs/select-18-select",
+      "name": "runs/select-19-select",
       "fn": "runs",
       "args": [
         {
@@ -40483,7 +40781,7 @@
       }
     },
     {
-      "name": "runs/select-19-select-group",
+      "name": "runs/select-20-select-group",
       "fn": "runs",
       "args": [
         {
@@ -40860,7 +41158,7 @@
       }
     },
     {
-      "name": "runs/deselect-20-deselect-all",
+      "name": "runs/deselect-21-deselect-all",
       "fn": "runs",
       "args": [
         {
@@ -42148,7 +42446,7 @@
       }
     },
     {
-      "name": "runs/hover-21-hover",
+      "name": "runs/hover-22-hover",
       "fn": "runs",
       "args": [
         {
@@ -43338,7 +43636,7 @@
       }
     },
     {
-      "name": "runs/set-22-set-props-empty-selection",
+      "name": "runs/set-23-set-props-empty-selection",
       "fn": "runs",
       "args": [
         {
@@ -46199,7 +46497,7 @@
       }
     },
     {
-      "name": "runs/set-23-set-props-border",
+      "name": "runs/set-24-set-props-border",
       "fn": "runs",
       "args": [
         {
@@ -48119,7 +48417,7 @@
       }
     },
     {
-      "name": "runs/set-24-set-props-link-kind-null",
+      "name": "runs/set-25-set-props-link-kind-null",
       "fn": "runs",
       "args": [
         {
@@ -48250,7 +48548,7 @@
       }
     },
     {
-      "name": "runs/set-25-set-props-link-kind-unset-to-null",
+      "name": "runs/set-26-set-props-link-kind-unset-to-null",
       "fn": "runs",
       "args": [
         {
@@ -48436,7 +48734,7 @@
       }
     },
     {
-      "name": "runs/set-26-set-flags-uncommitted",
+      "name": "runs/set-27-set-flags-uncommitted",
       "fn": "runs",
       "args": [
         {
@@ -48896,7 +49194,7 @@
       }
     },
     {
-      "name": "runs/set-27-set-defaults",
+      "name": "runs/set-28-set-defaults",
       "fn": "runs",
       "args": [
         {
@@ -49228,7 +49526,7 @@
       }
     },
     {
-      "name": "runs/rotate90-28-rotate90-single",
+      "name": "runs/rotate90-29-rotate90-single",
       "fn": "runs",
       "args": [
         {
@@ -51126,7 +51424,7 @@
       }
     },
     {
-      "name": "runs/reset-29-reset-rotation",
+      "name": "runs/reset-30-reset-rotation",
       "fn": "runs",
       "args": [
         {
@@ -52617,7 +52915,7 @@
       }
     },
     {
-      "name": "runs/delete-30-delete",
+      "name": "runs/delete-31-delete",
       "fn": "runs",
       "args": [
         {
@@ -53837,7 +54135,7 @@
       }
     },
     {
-      "name": "runs/delete-31-delete-uncommitted",
+      "name": "runs/delete-32-delete-uncommitted",
       "fn": "runs",
       "args": [
         {
@@ -54219,7 +54517,7 @@
       }
     },
     {
-      "name": "runs/delete-32-delete-authority",
+      "name": "runs/delete-33-delete-authority",
       "fn": "runs",
       "args": [
         {
@@ -54410,7 +54708,7 @@
       }
     },
     {
-      "name": "runs/cancel-33-cancel",
+      "name": "runs/cancel-34-cancel",
       "fn": "runs",
       "args": [
         {
@@ -55621,7 +55919,7 @@
       }
     },
     {
-      "name": "runs/loaded-34-loaded",
+      "name": "runs/loaded-35-loaded",
       "fn": "runs",
       "args": [
         {
@@ -57010,7 +57308,7 @@
       }
     },
     {
-      "name": "runs/hydrated-35-hydrated-reaps",
+      "name": "runs/hydrated-36-hydrated-reaps",
       "fn": "runs",
       "args": [
         {
@@ -60179,6 +60477,1023 @@
                 "annots": []
               }
             ]
+          },
+          {
+            "name": "hydrated-keeps-surviving-hover",
+            "over": {
+              "hovered": "sq",
+              "editing": "ft"
+            },
+            "msgs": [
+              {
+                "t": "hydrated",
+                "annots": [
+                  {
+                    "id": "hl",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1,
+                      "annotObjectNumber": 10059
+                    },
+                    "pon": 1,
+                    "subtype": "highlight",
+                    "geom": {
+                      "t": "quads",
+                      "quads": [
+                        {
+                          "upperStart": {
+                            "x": 10,
+                            "y": 400
+                          },
+                          "upperEnd": {
+                            "x": 210,
+                            "y": 400
+                          },
+                          "lowerStart": {
+                            "x": 10,
+                            "y": 414
+                          },
+                          "lowerEnd": {
+                            "x": 210,
+                            "y": 414
+                          }
+                        }
+                      ]
+                    },
+                    "style": {
+                      "color": "#e5484d",
+                      "interiorColor": null,
+                      "strokeWidth": 2,
+                      "opacity": 1,
+                      "blendMode": "normal",
+                      "border": {
+                        "kind": "solid"
+                      }
+                    },
+                    "flags": {
+                      "invisible": false,
+                      "hidden": false,
+                      "print": true,
+                      "noZoom": false,
+                      "noRotate": false,
+                      "noView": false,
+                      "readOnly": false,
+                      "locked": false,
+                      "toggleNoView": false,
+                      "lockedContents": false
+                    },
+                    "source": "vector"
+                  },
+                  {
+                    "id": "sq",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1,
+                      "annotObjectNumber": 10405
+                    },
+                    "pon": 1,
+                    "subtype": "square",
+                    "geom": {
+                      "t": "rect",
+                      "rect": {
+                        "x": 100,
+                        "y": 100,
+                        "width": 80,
+                        "height": 60
+                      },
+                      "ellipse": false
+                    },
+                    "style": {
+                      "color": "#e5484d",
+                      "interiorColor": null,
+                      "strokeWidth": 2,
+                      "opacity": 1,
+                      "blendMode": "normal",
+                      "border": {
+                        "kind": "solid"
+                      }
+                    },
+                    "flags": {
+                      "invisible": false,
+                      "hidden": false,
+                      "print": true,
+                      "noZoom": false,
+                      "noRotate": false,
+                      "noView": false,
+                      "readOnly": false,
+                      "locked": false,
+                      "toggleNoView": false,
+                      "lockedContents": false
+                    },
+                    "source": "vector"
+                  },
+                  {
+                    "id": "sq2",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1,
+                      "annotObjectNumber": 22605
+                    },
+                    "pon": 1,
+                    "subtype": "square",
+                    "geom": {
+                      "t": "rect",
+                      "rect": {
+                        "x": 300,
+                        "y": 100,
+                        "width": 80,
+                        "height": 60
+                      },
+                      "ellipse": false
+                    },
+                    "style": {
+                      "color": "#e5484d",
+                      "interiorColor": "#ffffff",
+                      "strokeWidth": 2,
+                      "opacity": 1,
+                      "blendMode": "normal",
+                      "border": {
+                        "kind": "solid"
+                      }
+                    },
+                    "flags": {
+                      "invisible": false,
+                      "hidden": false,
+                      "print": true,
+                      "noZoom": false,
+                      "noRotate": false,
+                      "noView": false,
+                      "readOnly": false,
+                      "locked": false,
+                      "toggleNoView": false,
+                      "lockedContents": false
+                    },
+                    "source": "vector"
+                  },
+                  {
+                    "id": "ci",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1,
+                      "annotObjectNumber": 9901
+                    },
+                    "pon": 1,
+                    "subtype": "circle",
+                    "geom": {
+                      "t": "rect",
+                      "rect": {
+                        "x": 100,
+                        "y": 250,
+                        "width": 80,
+                        "height": 60
+                      },
+                      "ellipse": true
+                    },
+                    "style": {
+                      "color": "#e5484d",
+                      "interiorColor": null,
+                      "strokeWidth": 2,
+                      "opacity": 1,
+                      "blendMode": "normal",
+                      "border": {
+                        "kind": "solid"
+                      }
+                    },
+                    "flags": {
+                      "invisible": false,
+                      "hidden": false,
+                      "print": true,
+                      "noZoom": false,
+                      "noRotate": false,
+                      "noView": false,
+                      "readOnly": false,
+                      "locked": false,
+                      "toggleNoView": false,
+                      "lockedContents": false
+                    },
+                    "source": "vector"
+                  },
+                  {
+                    "id": "pg",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1,
+                      "annotObjectNumber": 10302
+                    },
+                    "pon": 1,
+                    "subtype": "polygon",
+                    "geom": {
+                      "t": "poly",
+                      "points": [
+                        {
+                          "x": 100,
+                          "y": 500
+                        },
+                        {
+                          "x": 200,
+                          "y": 500
+                        },
+                        {
+                          "x": 150,
+                          "y": 580
+                        }
+                      ],
+                      "closed": true
+                    },
+                    "style": {
+                      "color": "#e5484d",
+                      "interiorColor": null,
+                      "strokeWidth": 2,
+                      "opacity": 1,
+                      "blendMode": "normal",
+                      "border": {
+                        "kind": "solid"
+                      }
+                    },
+                    "flags": {
+                      "invisible": false,
+                      "hidden": false,
+                      "print": true,
+                      "noZoom": false,
+                      "noRotate": false,
+                      "noView": false,
+                      "readOnly": false,
+                      "locked": false,
+                      "toggleNoView": false,
+                      "lockedContents": false
+                    },
+                    "source": "vector"
+                  },
+                  {
+                    "id": "pl",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1,
+                      "annotObjectNumber": 10307
+                    },
+                    "pon": 1,
+                    "subtype": "polyline",
+                    "geom": {
+                      "t": "poly",
+                      "points": [
+                        {
+                          "x": 300,
+                          "y": 500
+                        },
+                        {
+                          "x": 350,
+                          "y": 560
+                        },
+                        {
+                          "x": 400,
+                          "y": 500
+                        }
+                      ],
+                      "closed": false,
+                      "ends": {
+                        "start": "none",
+                        "end": "none"
+                      },
+                      "rot": 20
+                    },
+                    "style": {
+                      "color": "#e5484d",
+                      "interiorColor": null,
+                      "strokeWidth": 2,
+                      "opacity": 1,
+                      "blendMode": "normal",
+                      "border": {
+                        "kind": "solid"
+                      }
+                    },
+                    "flags": {
+                      "invisible": false,
+                      "hidden": false,
+                      "print": true,
+                      "noZoom": false,
+                      "noRotate": false,
+                      "noView": false,
+                      "readOnly": false,
+                      "locked": false,
+                      "toggleNoView": false,
+                      "lockedContents": false
+                    },
+                    "source": "vector"
+                  },
+                  {
+                    "id": "ink",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1,
+                      "annotObjectNumber": 12959
+                    },
+                    "pon": 1,
+                    "subtype": "ink",
+                    "geom": {
+                      "t": "ink",
+                      "strokes": [
+                        [
+                          {
+                            "x": 450,
+                            "y": 100
+                          },
+                          {
+                            "x": 500,
+                            "y": 150
+                          },
+                          {
+                            "x": 550,
+                            "y": 100
+                          }
+                        ]
+                      ]
+                    },
+                    "style": {
+                      "color": "#e5484d",
+                      "interiorColor": null,
+                      "strokeWidth": 2,
+                      "opacity": 1,
+                      "blendMode": "normal",
+                      "border": {
+                        "kind": "solid"
+                      }
+                    },
+                    "flags": {
+                      "invisible": false,
+                      "hidden": false,
+                      "print": true,
+                      "noZoom": false,
+                      "noRotate": false,
+                      "noView": false,
+                      "readOnly": false,
+                      "locked": false,
+                      "toggleNoView": false,
+                      "lockedContents": false
+                    },
+                    "source": "vector"
+                  },
+                  {
+                    "id": "ft",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1,
+                      "annotObjectNumber": 10005
+                    },
+                    "pon": 1,
+                    "subtype": "free-text",
+                    "geom": {
+                      "t": "text",
+                      "rect": {
+                        "x": 450,
+                        "y": 250,
+                        "width": 100,
+                        "height": 40
+                      }
+                    },
+                    "style": {
+                      "color": "#e5484d",
+                      "interiorColor": null,
+                      "strokeWidth": 2,
+                      "opacity": 1,
+                      "blendMode": "normal",
+                      "border": {
+                        "kind": "solid"
+                      }
+                    },
+                    "flags": {
+                      "invisible": false,
+                      "hidden": false,
+                      "print": true,
+                      "noZoom": false,
+                      "noRotate": false,
+                      "noView": false,
+                      "readOnly": false,
+                      "locked": false,
+                      "toggleNoView": false,
+                      "lockedContents": false
+                    },
+                    "source": "vector",
+                    "text": {
+                      "fontFamily": "helvetica",
+                      "fontSize": 12,
+                      "fontColor": "#000000",
+                      "textAlign": "left"
+                    },
+                    "data": {
+                      "subtype": "free-text",
+                      "contents": "hello"
+                    }
+                  },
+                  {
+                    "id": "callout",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1,
+                      "annotObjectNumber": 58953
+                    },
+                    "pon": 1,
+                    "subtype": "free-text",
+                    "geom": {
+                      "t": "text",
+                      "rect": {
+                        "x": 200,
+                        "y": 600,
+                        "width": 100,
+                        "height": 40
+                      },
+                      "callout": {
+                        "tip": {
+                          "x": 100,
+                          "y": 550
+                        },
+                        "ending": "open-arrow"
+                      }
+                    },
+                    "style": {
+                      "color": "#e5484d",
+                      "interiorColor": null,
+                      "strokeWidth": 2,
+                      "opacity": 1,
+                      "blendMode": "normal",
+                      "border": {
+                        "kind": "solid"
+                      }
+                    },
+                    "flags": {
+                      "invisible": false,
+                      "hidden": false,
+                      "print": true,
+                      "noZoom": false,
+                      "noRotate": false,
+                      "noView": false,
+                      "readOnly": false,
+                      "locked": false,
+                      "toggleNoView": false,
+                      "lockedContents": false
+                    },
+                    "source": "vector",
+                    "text": {
+                      "fontFamily": "helvetica",
+                      "fontSize": 12,
+                      "fontColor": "#000000",
+                      "textAlign": "left"
+                    }
+                  },
+                  {
+                    "id": "stamp",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1,
+                      "annotObjectNumber": 61436
+                    },
+                    "pon": 1,
+                    "subtype": "stamp",
+                    "geom": {
+                      "t": "rect",
+                      "rect": {
+                        "x": 450,
+                        "y": 400,
+                        "width": 80,
+                        "height": 40
+                      },
+                      "ellipse": false
+                    },
+                    "style": {
+                      "color": "#e5484d",
+                      "interiorColor": null,
+                      "strokeWidth": 2,
+                      "opacity": 1,
+                      "blendMode": "normal",
+                      "border": {
+                        "kind": "solid"
+                      }
+                    },
+                    "flags": {
+                      "invisible": false,
+                      "hidden": false,
+                      "print": true,
+                      "noZoom": false,
+                      "noRotate": false,
+                      "noView": false,
+                      "readOnly": false,
+                      "locked": false,
+                      "toggleNoView": false,
+                      "lockedContents": false
+                    },
+                    "source": "baked",
+                    "apBox": {
+                      "x": 450,
+                      "y": 400,
+                      "width": 80,
+                      "height": 40
+                    }
+                  },
+                  {
+                    "id": "note",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1,
+                      "annotObjectNumber": 52025
+                    },
+                    "pon": 1,
+                    "subtype": "text",
+                    "geom": {
+                      "t": "rect",
+                      "rect": {
+                        "x": 20,
+                        "y": 20,
+                        "width": 20,
+                        "height": 20
+                      },
+                      "ellipse": false
+                    },
+                    "style": {
+                      "color": "#e5484d",
+                      "interiorColor": null,
+                      "strokeWidth": 2,
+                      "opacity": 1,
+                      "blendMode": "normal",
+                      "border": {
+                        "kind": "solid"
+                      }
+                    },
+                    "flags": {
+                      "invisible": false,
+                      "hidden": false,
+                      "print": true,
+                      "noZoom": false,
+                      "noRotate": false,
+                      "noView": false,
+                      "readOnly": false,
+                      "locked": false,
+                      "toggleNoView": false,
+                      "lockedContents": false
+                    },
+                    "source": "baked",
+                    "apBox": {
+                      "x": 20,
+                      "y": 20,
+                      "width": 20,
+                      "height": 20
+                    }
+                  },
+                  {
+                    "id": "caret",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1,
+                      "annotObjectNumber": 35164
+                    },
+                    "pon": 1,
+                    "subtype": "caret",
+                    "geom": {
+                      "t": "caret",
+                      "rect": {
+                        "x": 250,
+                        "y": 400,
+                        "width": 6,
+                        "height": 6
+                      }
+                    },
+                    "style": {
+                      "color": "#e5484d",
+                      "interiorColor": null,
+                      "strokeWidth": 2,
+                      "opacity": 1,
+                      "blendMode": "normal",
+                      "border": {
+                        "kind": "solid"
+                      }
+                    },
+                    "flags": {
+                      "invisible": false,
+                      "hidden": false,
+                      "print": true,
+                      "noZoom": false,
+                      "noRotate": false,
+                      "noView": false,
+                      "readOnly": false,
+                      "locked": false,
+                      "toggleNoView": false,
+                      "lockedContents": false
+                    },
+                    "source": "vector"
+                  },
+                  {
+                    "id": "link",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1,
+                      "annotObjectNumber": 86497
+                    },
+                    "pon": 1,
+                    "subtype": "link",
+                    "geom": {
+                      "t": "rect",
+                      "rect": {
+                        "x": 20,
+                        "y": 700,
+                        "width": 100,
+                        "height": 20
+                      },
+                      "ellipse": false
+                    },
+                    "style": {
+                      "color": "#e5484d",
+                      "interiorColor": null,
+                      "strokeWidth": 2,
+                      "opacity": 1,
+                      "blendMode": "normal",
+                      "border": {
+                        "kind": "solid"
+                      }
+                    },
+                    "flags": {
+                      "invisible": false,
+                      "hidden": false,
+                      "print": true,
+                      "noZoom": false,
+                      "noRotate": false,
+                      "noView": false,
+                      "readOnly": false,
+                      "locked": false,
+                      "toggleNoView": false,
+                      "lockedContents": false
+                    },
+                    "source": "vector",
+                    "link": {
+                      "kind": "uri",
+                      "uri": "https://example.com"
+                    }
+                  },
+                  {
+                    "id": "redact",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1,
+                      "annotObjectNumber": 104
+                    },
+                    "pon": 1,
+                    "subtype": "redact",
+                    "geom": {
+                      "t": "rect",
+                      "rect": {
+                        "x": 300,
+                        "y": 650,
+                        "width": 100,
+                        "height": 50
+                      },
+                      "ellipse": false
+                    },
+                    "style": {
+                      "color": "#e5484d",
+                      "interiorColor": null,
+                      "strokeWidth": 2,
+                      "opacity": 1,
+                      "blendMode": "normal",
+                      "border": {
+                        "kind": "solid"
+                      }
+                    },
+                    "flags": {
+                      "invisible": false,
+                      "hidden": false,
+                      "print": true,
+                      "noZoom": false,
+                      "noRotate": false,
+                      "noView": false,
+                      "readOnly": false,
+                      "locked": false,
+                      "toggleNoView": false,
+                      "lockedContents": false
+                    },
+                    "source": "vector"
+                  },
+                  {
+                    "id": "locked",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1,
+                      "annotObjectNumber": 40273
+                    },
+                    "pon": 1,
+                    "subtype": "square",
+                    "geom": {
+                      "t": "rect",
+                      "rect": {
+                        "x": 100,
+                        "y": 650,
+                        "width": 60,
+                        "height": 40
+                      },
+                      "ellipse": false
+                    },
+                    "style": {
+                      "color": "#e5484d",
+                      "interiorColor": null,
+                      "strokeWidth": 2,
+                      "opacity": 1,
+                      "blendMode": "normal",
+                      "border": {
+                        "kind": "solid"
+                      }
+                    },
+                    "flags": {
+                      "invisible": false,
+                      "hidden": false,
+                      "print": false,
+                      "noZoom": false,
+                      "noRotate": false,
+                      "noView": false,
+                      "readOnly": false,
+                      "locked": true,
+                      "toggleNoView": false,
+                      "lockedContents": false
+                    },
+                    "source": "vector"
+                  },
+                  {
+                    "id": "lockedc",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1,
+                      "annotObjectNumber": 48562
+                    },
+                    "pon": 1,
+                    "subtype": "square",
+                    "geom": {
+                      "t": "rect",
+                      "rect": {
+                        "x": 200,
+                        "y": 700,
+                        "width": 20,
+                        "height": 20
+                      },
+                      "ellipse": false
+                    },
+                    "style": {
+                      "color": "#e5484d",
+                      "interiorColor": null,
+                      "strokeWidth": 2,
+                      "opacity": 1,
+                      "blendMode": "normal",
+                      "border": {
+                        "kind": "solid"
+                      }
+                    },
+                    "flags": {
+                      "invisible": false,
+                      "hidden": false,
+                      "print": false,
+                      "noZoom": false,
+                      "noRotate": false,
+                      "noView": false,
+                      "readOnly": false,
+                      "locked": false,
+                      "toggleNoView": false,
+                      "lockedContents": true
+                    },
+                    "source": "vector"
+                  },
+                  {
+                    "id": "baked",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1,
+                      "annotObjectNumber": 4900
+                    },
+                    "pon": 1,
+                    "subtype": "square",
+                    "geom": {
+                      "t": "rect",
+                      "rect": {
+                        "x": 450,
+                        "y": 500,
+                        "width": 60,
+                        "height": 40
+                      },
+                      "ellipse": false
+                    },
+                    "style": {
+                      "color": "#e5484d",
+                      "interiorColor": null,
+                      "strokeWidth": 2,
+                      "opacity": 1,
+                      "blendMode": "normal",
+                      "border": {
+                        "kind": "solid"
+                      }
+                    },
+                    "flags": {
+                      "invisible": false,
+                      "hidden": false,
+                      "print": true,
+                      "noZoom": false,
+                      "noRotate": false,
+                      "noView": false,
+                      "readOnly": false,
+                      "locked": false,
+                      "toggleNoView": false,
+                      "lockedContents": false
+                    },
+                    "source": "baked",
+                    "apBox": {
+                      "x": 448,
+                      "y": 498,
+                      "width": 64,
+                      "height": 44
+                    }
+                  },
+                  {
+                    "id": "widget",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1,
+                      "annotObjectNumber": 45771
+                    },
+                    "pon": 1,
+                    "subtype": "widget-text",
+                    "geom": {
+                      "t": "rect",
+                      "rect": {
+                        "x": 20,
+                        "y": 550,
+                        "width": 80,
+                        "height": 20
+                      },
+                      "ellipse": false
+                    },
+                    "style": {
+                      "color": "#e5484d",
+                      "interiorColor": null,
+                      "strokeWidth": 2,
+                      "opacity": 1,
+                      "blendMode": "normal",
+                      "border": {
+                        "kind": "solid"
+                      }
+                    },
+                    "flags": {
+                      "invisible": false,
+                      "hidden": false,
+                      "print": true,
+                      "noZoom": false,
+                      "noRotate": false,
+                      "noView": false,
+                      "readOnly": false,
+                      "locked": false,
+                      "toggleNoView": false,
+                      "lockedContents": false
+                    },
+                    "source": "baked",
+                    "text": {
+                      "fontFamily": "helvetica",
+                      "fontSize": 12,
+                      "fontColor": "#000000",
+                      "textAlign": "left"
+                    }
+                  },
+                  {
+                    "id": "nozoom",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1,
+                      "annotObjectNumber": 87931
+                    },
+                    "pon": 1,
+                    "subtype": "square",
+                    "geom": {
+                      "t": "rect",
+                      "rect": {
+                        "x": 560,
+                        "y": 700,
+                        "width": 30,
+                        "height": 30
+                      },
+                      "ellipse": false
+                    },
+                    "style": {
+                      "color": "#e5484d",
+                      "interiorColor": null,
+                      "strokeWidth": 2,
+                      "opacity": 1,
+                      "blendMode": "normal",
+                      "border": {
+                        "kind": "solid"
+                      }
+                    },
+                    "flags": {
+                      "invisible": false,
+                      "hidden": false,
+                      "print": false,
+                      "noZoom": true,
+                      "noRotate": true,
+                      "noView": false,
+                      "readOnly": false,
+                      "locked": false,
+                      "toggleNoView": false,
+                      "lockedContents": false
+                    },
+                    "source": "vector"
+                  },
+                  {
+                    "id": "child",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1,
+                      "annotObjectNumber": 35253
+                    },
+                    "pon": 1,
+                    "subtype": "link",
+                    "geom": {
+                      "t": "rect",
+                      "rect": {
+                        "x": 100,
+                        "y": 100,
+                        "width": 80,
+                        "height": 60
+                      },
+                      "ellipse": false
+                    },
+                    "style": {
+                      "color": "#e5484d",
+                      "interiorColor": null,
+                      "strokeWidth": 2,
+                      "opacity": 1,
+                      "blendMode": "normal",
+                      "border": {
+                        "kind": "solid"
+                      }
+                    },
+                    "flags": {
+                      "invisible": false,
+                      "hidden": false,
+                      "print": true,
+                      "noZoom": false,
+                      "noRotate": false,
+                      "noView": false,
+                      "readOnly": false,
+                      "locked": false,
+                      "toggleNoView": false,
+                      "lockedContents": false
+                    },
+                    "source": "vector",
+                    "group": "sq",
+                    "irt": "sq",
+                    "data": {
+                      "subtype": "link",
+                      "target": {
+                        "kind": "uri",
+                        "uri": "https://example.com"
+                      }
+                    }
+                  },
+                  {
+                    "id": "other-page",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1,
+                      "annotObjectNumber": 97331
+                    },
+                    "pon": 2,
+                    "subtype": "square",
+                    "geom": {
+                      "t": "rect",
+                      "rect": {
+                        "x": 100,
+                        "y": 100,
+                        "width": 80,
+                        "height": 60
+                      },
+                      "ellipse": false
+                    },
+                    "style": {
+                      "color": "#e5484d",
+                      "interiorColor": null,
+                      "strokeWidth": 2,
+                      "opacity": 1,
+                      "blendMode": "normal",
+                      "border": {
+                        "kind": "solid"
+                      }
+                    },
+                    "flags": {
+                      "invisible": false,
+                      "hidden": false,
+                      "print": true,
+                      "noZoom": false,
+                      "noRotate": false,
+                      "noView": false,
+                      "readOnly": false,
+                      "locked": false,
+                      "toggleNoView": false,
+                      "lockedContents": false
+                    },
+                    "source": "vector"
+                  }
+                ]
+              }
+            ]
           }
         ]
       ],
@@ -62617,12 +63932,1107 @@
               "child",
               "other-page"
             ]
+          },
+          {
+            "name": "hydrated-keeps-surviving-hover",
+            "steps": [
+              {
+                "same": false,
+                "effects": [],
+                "draft": null,
+                "selected": []
+              }
+            ],
+            "model": {
+              "order": [
+                "hl",
+                "sq",
+                "sq2",
+                "ci",
+                "pg",
+                "pl",
+                "ink",
+                "ft",
+                "callout",
+                "stamp",
+                "note",
+                "caret",
+                "link",
+                "redact",
+                "locked",
+                "lockedc",
+                "baked",
+                "widget",
+                "nozoom",
+                "child",
+                "other-page"
+              ],
+              "selected": [],
+              "hovered": "sq",
+              "draft": null,
+              "preview": null,
+              "seq": 0,
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "defaults": {},
+              "hitMargin": 6,
+              "editing": "ft",
+              "snap": {
+                "guides": true,
+                "guideThreshold": 5,
+                "rotation": true,
+                "rotationAngles": [
+                  0,
+                  90,
+                  180,
+                  270
+                ],
+                "rotationThreshold": 4
+              },
+              "byId": {
+                "hl": {
+                  "id": "hl",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 10059
+                  },
+                  "pon": 1,
+                  "subtype": "highlight",
+                  "geom": {
+                    "t": "quads",
+                    "quads": [
+                      {
+                        "upperStart": {
+                          "x": 10,
+                          "y": 400
+                        },
+                        "upperEnd": {
+                          "x": 210,
+                          "y": 400
+                        },
+                        "lowerStart": {
+                          "x": 10,
+                          "y": 414
+                        },
+                        "lowerEnd": {
+                          "x": 210,
+                          "y": 414
+                        }
+                      }
+                    ]
+                  },
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "flags": {
+                    "invisible": false,
+                    "hidden": false,
+                    "print": true,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": false
+                  },
+                  "source": "vector",
+                  "apVersion": 0
+                },
+                "sq": {
+                  "id": "sq",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 10405
+                  },
+                  "pon": 1,
+                  "subtype": "square",
+                  "geom": {
+                    "t": "rect",
+                    "rect": {
+                      "x": 100,
+                      "y": 100,
+                      "width": 80,
+                      "height": 60
+                    },
+                    "ellipse": false
+                  },
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "flags": {
+                    "invisible": false,
+                    "hidden": false,
+                    "print": true,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": false
+                  },
+                  "source": "vector",
+                  "apVersion": 0
+                },
+                "sq2": {
+                  "id": "sq2",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 22605
+                  },
+                  "pon": 1,
+                  "subtype": "square",
+                  "geom": {
+                    "t": "rect",
+                    "rect": {
+                      "x": 300,
+                      "y": 100,
+                      "width": 80,
+                      "height": 60
+                    },
+                    "ellipse": false
+                  },
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": "#ffffff",
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "flags": {
+                    "invisible": false,
+                    "hidden": false,
+                    "print": true,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": false
+                  },
+                  "source": "vector",
+                  "apVersion": 0
+                },
+                "ci": {
+                  "id": "ci",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 9901
+                  },
+                  "pon": 1,
+                  "subtype": "circle",
+                  "geom": {
+                    "t": "rect",
+                    "rect": {
+                      "x": 100,
+                      "y": 250,
+                      "width": 80,
+                      "height": 60
+                    },
+                    "ellipse": true
+                  },
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "flags": {
+                    "invisible": false,
+                    "hidden": false,
+                    "print": true,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": false
+                  },
+                  "source": "vector",
+                  "apVersion": 0
+                },
+                "pg": {
+                  "id": "pg",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 10302
+                  },
+                  "pon": 1,
+                  "subtype": "polygon",
+                  "geom": {
+                    "t": "poly",
+                    "points": [
+                      {
+                        "x": 100,
+                        "y": 500
+                      },
+                      {
+                        "x": 200,
+                        "y": 500
+                      },
+                      {
+                        "x": 150,
+                        "y": 580
+                      }
+                    ],
+                    "closed": true
+                  },
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "flags": {
+                    "invisible": false,
+                    "hidden": false,
+                    "print": true,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": false
+                  },
+                  "source": "vector",
+                  "apVersion": 0
+                },
+                "pl": {
+                  "id": "pl",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 10307
+                  },
+                  "pon": 1,
+                  "subtype": "polyline",
+                  "geom": {
+                    "t": "poly",
+                    "points": [
+                      {
+                        "x": 300,
+                        "y": 500
+                      },
+                      {
+                        "x": 350,
+                        "y": 560
+                      },
+                      {
+                        "x": 400,
+                        "y": 500
+                      }
+                    ],
+                    "closed": false,
+                    "ends": {
+                      "start": "none",
+                      "end": "none"
+                    },
+                    "rot": 20
+                  },
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "flags": {
+                    "invisible": false,
+                    "hidden": false,
+                    "print": true,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": false
+                  },
+                  "source": "vector",
+                  "apVersion": 0
+                },
+                "ink": {
+                  "id": "ink",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 12959
+                  },
+                  "pon": 1,
+                  "subtype": "ink",
+                  "geom": {
+                    "t": "ink",
+                    "strokes": [
+                      [
+                        {
+                          "x": 450,
+                          "y": 100
+                        },
+                        {
+                          "x": 500,
+                          "y": 150
+                        },
+                        {
+                          "x": 550,
+                          "y": 100
+                        }
+                      ]
+                    ]
+                  },
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "flags": {
+                    "invisible": false,
+                    "hidden": false,
+                    "print": true,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": false
+                  },
+                  "source": "vector",
+                  "apVersion": 0
+                },
+                "ft": {
+                  "id": "ft",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 10005
+                  },
+                  "pon": 1,
+                  "subtype": "free-text",
+                  "geom": {
+                    "t": "text",
+                    "rect": {
+                      "x": 450,
+                      "y": 250,
+                      "width": 100,
+                      "height": 40
+                    }
+                  },
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "flags": {
+                    "invisible": false,
+                    "hidden": false,
+                    "print": true,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": false
+                  },
+                  "source": "vector",
+                  "text": {
+                    "fontFamily": "helvetica",
+                    "fontSize": 12,
+                    "fontColor": "#000000",
+                    "textAlign": "left"
+                  },
+                  "data": {
+                    "subtype": "free-text",
+                    "contents": "hello"
+                  },
+                  "apVersion": 0
+                },
+                "callout": {
+                  "id": "callout",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 58953
+                  },
+                  "pon": 1,
+                  "subtype": "free-text",
+                  "geom": {
+                    "t": "text",
+                    "rect": {
+                      "x": 200,
+                      "y": 600,
+                      "width": 100,
+                      "height": 40
+                    },
+                    "callout": {
+                      "tip": {
+                        "x": 100,
+                        "y": 550
+                      },
+                      "ending": "open-arrow"
+                    }
+                  },
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "flags": {
+                    "invisible": false,
+                    "hidden": false,
+                    "print": true,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": false
+                  },
+                  "source": "vector",
+                  "text": {
+                    "fontFamily": "helvetica",
+                    "fontSize": 12,
+                    "fontColor": "#000000",
+                    "textAlign": "left"
+                  },
+                  "apVersion": 0
+                },
+                "stamp": {
+                  "id": "stamp",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 61436
+                  },
+                  "pon": 1,
+                  "subtype": "stamp",
+                  "geom": {
+                    "t": "rect",
+                    "rect": {
+                      "x": 450,
+                      "y": 400,
+                      "width": 80,
+                      "height": 40
+                    },
+                    "ellipse": false
+                  },
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "flags": {
+                    "invisible": false,
+                    "hidden": false,
+                    "print": true,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": false
+                  },
+                  "source": "baked",
+                  "apBox": {
+                    "x": 450,
+                    "y": 400,
+                    "width": 80,
+                    "height": 40
+                  },
+                  "apVersion": 0
+                },
+                "note": {
+                  "id": "note",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 52025
+                  },
+                  "pon": 1,
+                  "subtype": "text",
+                  "geom": {
+                    "t": "rect",
+                    "rect": {
+                      "x": 20,
+                      "y": 20,
+                      "width": 20,
+                      "height": 20
+                    },
+                    "ellipse": false
+                  },
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "flags": {
+                    "invisible": false,
+                    "hidden": false,
+                    "print": true,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": false
+                  },
+                  "source": "baked",
+                  "apBox": {
+                    "x": 20,
+                    "y": 20,
+                    "width": 20,
+                    "height": 20
+                  },
+                  "apVersion": 0
+                },
+                "caret": {
+                  "id": "caret",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 35164
+                  },
+                  "pon": 1,
+                  "subtype": "caret",
+                  "geom": {
+                    "t": "caret",
+                    "rect": {
+                      "x": 250,
+                      "y": 400,
+                      "width": 6,
+                      "height": 6
+                    }
+                  },
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "flags": {
+                    "invisible": false,
+                    "hidden": false,
+                    "print": true,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": false
+                  },
+                  "source": "vector",
+                  "apVersion": 0
+                },
+                "link": {
+                  "id": "link",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 86497
+                  },
+                  "pon": 1,
+                  "subtype": "link",
+                  "geom": {
+                    "t": "rect",
+                    "rect": {
+                      "x": 20,
+                      "y": 700,
+                      "width": 100,
+                      "height": 20
+                    },
+                    "ellipse": false
+                  },
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "flags": {
+                    "invisible": false,
+                    "hidden": false,
+                    "print": true,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": false
+                  },
+                  "source": "vector",
+                  "link": {
+                    "kind": "uri",
+                    "uri": "https://example.com"
+                  },
+                  "apVersion": 0
+                },
+                "redact": {
+                  "id": "redact",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 104
+                  },
+                  "pon": 1,
+                  "subtype": "redact",
+                  "geom": {
+                    "t": "rect",
+                    "rect": {
+                      "x": 300,
+                      "y": 650,
+                      "width": 100,
+                      "height": 50
+                    },
+                    "ellipse": false
+                  },
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "flags": {
+                    "invisible": false,
+                    "hidden": false,
+                    "print": true,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": false
+                  },
+                  "source": "vector",
+                  "apVersion": 0
+                },
+                "locked": {
+                  "id": "locked",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 40273
+                  },
+                  "pon": 1,
+                  "subtype": "square",
+                  "geom": {
+                    "t": "rect",
+                    "rect": {
+                      "x": 100,
+                      "y": 650,
+                      "width": 60,
+                      "height": 40
+                    },
+                    "ellipse": false
+                  },
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "flags": {
+                    "invisible": false,
+                    "hidden": false,
+                    "print": false,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": true,
+                    "toggleNoView": false,
+                    "lockedContents": false
+                  },
+                  "source": "vector",
+                  "apVersion": 0
+                },
+                "lockedc": {
+                  "id": "lockedc",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 48562
+                  },
+                  "pon": 1,
+                  "subtype": "square",
+                  "geom": {
+                    "t": "rect",
+                    "rect": {
+                      "x": 200,
+                      "y": 700,
+                      "width": 20,
+                      "height": 20
+                    },
+                    "ellipse": false
+                  },
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "flags": {
+                    "invisible": false,
+                    "hidden": false,
+                    "print": false,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": true
+                  },
+                  "source": "vector",
+                  "apVersion": 0
+                },
+                "baked": {
+                  "id": "baked",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 4900
+                  },
+                  "pon": 1,
+                  "subtype": "square",
+                  "geom": {
+                    "t": "rect",
+                    "rect": {
+                      "x": 450,
+                      "y": 500,
+                      "width": 60,
+                      "height": 40
+                    },
+                    "ellipse": false
+                  },
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "flags": {
+                    "invisible": false,
+                    "hidden": false,
+                    "print": true,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": false
+                  },
+                  "source": "baked",
+                  "apBox": {
+                    "x": 448,
+                    "y": 498,
+                    "width": 64,
+                    "height": 44
+                  },
+                  "apVersion": 0
+                },
+                "widget": {
+                  "id": "widget",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 45771
+                  },
+                  "pon": 1,
+                  "subtype": "widget-text",
+                  "geom": {
+                    "t": "rect",
+                    "rect": {
+                      "x": 20,
+                      "y": 550,
+                      "width": 80,
+                      "height": 20
+                    },
+                    "ellipse": false
+                  },
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "flags": {
+                    "invisible": false,
+                    "hidden": false,
+                    "print": true,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": false
+                  },
+                  "source": "baked",
+                  "text": {
+                    "fontFamily": "helvetica",
+                    "fontSize": 12,
+                    "fontColor": "#000000",
+                    "textAlign": "left"
+                  },
+                  "apVersion": 0
+                },
+                "nozoom": {
+                  "id": "nozoom",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 87931
+                  },
+                  "pon": 1,
+                  "subtype": "square",
+                  "geom": {
+                    "t": "rect",
+                    "rect": {
+                      "x": 560,
+                      "y": 700,
+                      "width": 30,
+                      "height": 30
+                    },
+                    "ellipse": false
+                  },
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "flags": {
+                    "invisible": false,
+                    "hidden": false,
+                    "print": false,
+                    "noZoom": true,
+                    "noRotate": true,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": false
+                  },
+                  "source": "vector",
+                  "apVersion": 0
+                },
+                "child": {
+                  "id": "child",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 35253
+                  },
+                  "pon": 1,
+                  "subtype": "link",
+                  "geom": {
+                    "t": "rect",
+                    "rect": {
+                      "x": 100,
+                      "y": 100,
+                      "width": 80,
+                      "height": 60
+                    },
+                    "ellipse": false
+                  },
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "flags": {
+                    "invisible": false,
+                    "hidden": false,
+                    "print": true,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": false
+                  },
+                  "source": "vector",
+                  "group": "sq",
+                  "irt": "sq",
+                  "data": {
+                    "subtype": "link",
+                    "target": {
+                      "kind": "uri",
+                      "uri": "https://example.com"
+                    }
+                  },
+                  "apVersion": 0
+                },
+                "other-page": {
+                  "id": "other-page",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 97331
+                  },
+                  "pon": 2,
+                  "subtype": "square",
+                  "geom": {
+                    "t": "rect",
+                    "rect": {
+                      "x": 100,
+                      "y": 100,
+                      "width": 80,
+                      "height": 60
+                    },
+                    "ellipse": false
+                  },
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "flags": {
+                    "invisible": false,
+                    "hidden": false,
+                    "print": true,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": false
+                  },
+                  "source": "vector",
+                  "apVersion": 0
+                }
+              }
+            },
+            "removed": [
+              "ln"
+            ]
           }
         ]
       }
     },
     {
-      "name": "runs/hydrated-36-hydrated-bump",
+      "name": "runs/hydrated-37-hydrated-bump",
       "fn": "runs",
       "args": [
         {
@@ -63168,7 +65578,7 @@
       }
     },
     {
-      "name": "runs/created-37-created",
+      "name": "runs/created-38-created",
       "fn": "runs",
       "args": [
         {
@@ -63865,7 +66275,7 @@
       }
     },
     {
-      "name": "runs/create-38-create-failed",
+      "name": "runs/create-39-create-failed",
       "fn": "runs",
       "args": [
         {
@@ -64233,7 +66643,7 @@
       }
     },
     {
-      "name": "runs/upsert-39-upsert",
+      "name": "runs/upsert-40-upsert",
       "fn": "runs",
       "args": [
         {
@@ -66656,7 +69066,7 @@
       }
     },
     {
-      "name": "runs/bump-40-bump-ap",
+      "name": "runs/bump-41-bump-ap",
       "fn": "runs",
       "args": [
         {
@@ -67893,7 +70303,7 @@
       }
     },
     {
-      "name": "runs/remove-41-remove",
+      "name": "runs/remove-42-remove",
       "fn": "runs",
       "args": [
         {
@@ -69291,7 +71701,7 @@
       }
     },
     {
-      "name": "runs/text-42-text-edit",
+      "name": "runs/text-43-text-edit",
       "fn": "runs",
       "args": [
         {
@@ -71091,7 +73501,7 @@
       }
     },
     {
-      "name": "runs/draft-43-draft-create-rect-upright-nan",
+      "name": "runs/draft-44-draft-create-rect-upright-nan",
       "fn": "runs",
       "args": [
         {
@@ -72006,7 +74416,259 @@
       }
     },
     {
-      "name": "runs/baked-44-baked-handle-flips",
+      "name": "runs/edit-45-edit-move-exactly-0.01",
+      "fn": "runs",
+      "args": [
+        {
+          "byId": {
+            "edge": {
+              "id": "edge",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 72932
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 0,
+                  "y": 0,
+                  "width": 10,
+                  "height": 10
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            }
+          },
+          "order": [
+            "edge"
+          ]
+        },
+        [
+          {
+            "name": "edit-move-exactly-0.01",
+            "over": {},
+            "msgs": [
+              {
+                "t": "editPointer",
+                "phase": "down",
+                "in": {
+                  "pon": 1,
+                  "point": {
+                    "x": 0,
+                    "y": 5
+                  },
+                  "shift": false
+                }
+              },
+              {
+                "t": "editPointer",
+                "phase": "move",
+                "in": {
+                  "pon": 1,
+                  "point": {
+                    "x": 0.01,
+                    "y": 5
+                  },
+                  "shift": false
+                }
+              },
+              {
+                "t": "editPointer",
+                "phase": "up",
+                "in": {
+                  "pon": 1,
+                  "point": {
+                    "x": 0.01,
+                    "y": 5
+                  },
+                  "shift": false
+                }
+              }
+            ]
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "name": "edit-move-exactly-0.01",
+            "steps": [
+              {
+                "same": false,
+                "effects": [],
+                "draft": {
+                  "g": "move",
+                  "ids": [
+                    "edge"
+                  ],
+                  "start": {
+                    "x": 0,
+                    "y": 5
+                  },
+                  "delta": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "guides": []
+                },
+                "selected": [
+                  "edge"
+                ]
+              },
+              {
+                "same": false,
+                "effects": [],
+                "draft": {
+                  "g": "move",
+                  "ids": [
+                    "edge"
+                  ],
+                  "start": {
+                    "x": 0,
+                    "y": 5
+                  },
+                  "delta": {
+                    "x": 0.01,
+                    "y": 0
+                  },
+                  "guides": []
+                },
+                "selected": [
+                  "edge"
+                ]
+              },
+              {
+                "same": false,
+                "effects": [
+                  {
+                    "fx": "patch",
+                    "id": "edge",
+                    "scope": {
+                      "kind": "geometry"
+                    }
+                  }
+                ],
+                "draft": null,
+                "selected": [
+                  "edge"
+                ]
+              }
+            ],
+            "model": {
+              "order": [
+                "edge"
+              ],
+              "selected": [
+                "edge"
+              ],
+              "hovered": null,
+              "draft": null,
+              "preview": null,
+              "seq": 0,
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "defaults": {},
+              "hitMargin": 6,
+              "editing": null,
+              "snap": {
+                "guides": true,
+                "guideThreshold": 5,
+                "rotation": true,
+                "rotationAngles": [
+                  0,
+                  90,
+                  180,
+                  270
+                ],
+                "rotationThreshold": 4
+              },
+              "byId": {
+                "edge": {
+                  "id": "edge",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 72932
+                  },
+                  "pon": 1,
+                  "subtype": "square",
+                  "geom": {
+                    "t": "rect",
+                    "rect": {
+                      "x": 0.01,
+                      "y": 0,
+                      "width": 10,
+                      "height": 10
+                    },
+                    "ellipse": false
+                  },
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "flags": {
+                    "invisible": false,
+                    "hidden": false,
+                    "print": true,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": false
+                  },
+                  "source": "vector"
+                }
+              }
+            },
+            "removed": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "runs/baked-46-baked-handle-flips",
       "fn": "runs",
       "args": [
         {
@@ -73633,7 +76295,7 @@
       }
     },
     {
-      "name": "runs/baked-45-baked-weird-opaque",
+      "name": "runs/baked-47-baked-weird-opaque",
       "fn": "runs",
       "args": [
         {
@@ -73835,7 +76497,7 @@
       }
     },
     {
-      "name": "runs/draft-46-draft-move-missing-member",
+      "name": "runs/draft-48-draft-move-missing-member",
       "fn": "runs",
       "args": [
         {
@@ -76210,7 +78872,7 @@
       }
     },
     {
-      "name": "runs/created-47-created-relationships",
+      "name": "runs/created-49-created-relationships",
       "fn": "runs",
       "args": [
         {
