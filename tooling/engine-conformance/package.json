@@ -61,7 +61,9 @@
     "pages-mutate": "tsx --conditions=development src/generate-pages-mutate-vectors.ts",
     "pages-mutate:check": "tsx --conditions=development src/generate-pages-mutate-vectors.ts --check",
     "redaction": "tsx --conditions=development src/generate-redaction-vectors.ts",
-    "redaction:check": "tsx --conditions=development src/generate-redaction-vectors.ts --check"
+    "redaction:check": "tsx --conditions=development src/generate-redaction-vectors.ts --check",
+    "metadata-write": "tsx --conditions=development src/generate-metadata-write-vectors.ts",
+    "metadata-write:check": "tsx --conditions=development src/generate-metadata-write-vectors.ts --check"
   },
   "devDependencies": {
     "@embedpdf/engine": "workspace:*",

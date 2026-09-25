@@ -14,6 +14,7 @@ pub mod fonts;
 pub mod forms;
 pub mod geometry;
 pub mod metadata;
+pub mod metadata_write;
 pub mod pages;
 pub mod pages_write;
 pub mod redaction;

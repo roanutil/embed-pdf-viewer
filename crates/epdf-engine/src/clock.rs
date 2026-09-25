@@ -203,6 +203,47 @@ pub fn iso_8601(epoch_millis: i64) -> String {
     )
 }
 
+/// Turns a validated ISO 8601 UTC string back into an instant.
+///
+/// The inverse of [`iso_8601`], and only for strings [`is_iso_8601_utc`] has
+/// accepted: the wire carries dates in that form and a patch writing one to
+/// `/CreationDate` has to convert it. `None` for anything else, which by the
+/// time this is reached means the validator and this function disagree.
+pub fn iso_8601_to_timestamp(value: &str) -> Option<Timestamp> {
+    if !is_iso_8601_utc(value) {
+        return None;
+    }
+    let bytes = value.as_bytes();
+    let number = |from: usize, to: usize| -> Option<i64> {
+        std::str::from_utf8(&bytes[from..to]).ok()?.parse().ok()
+    };
+    let year = number(0, 4)?;
+    let month = number(5, 7)? as u32;
+    let day = number(8, 10)? as u32;
+    let hour = number(11, 13)?;
+    let minute = number(14, 16)?;
+    let second = number(17, 19)?;
+    // The fraction is optional and is whatever sits between the seconds and
+    // the `Z`. Only the first three digits are milliseconds; a longer one is
+    // truncated rather than rounded, which is what a millisecond clock can
+    // represent.
+    let milli = if bytes.get(19) == Some(&b'.') {
+        let end = value.len() - 1;
+        let digits = &value[20..end];
+        let mut millis = 0i64;
+        for (index, digit) in digits.bytes().take(3).enumerate() {
+            millis += i64::from(digit - b'0') * 10i64.pow(2 - index as u32);
+        }
+        millis
+    } else {
+        0
+    };
+    let days = days_from_civil(year, month, day);
+    Some(Timestamp::utc(
+        days * 86_400_000 + hour * 3_600_000 + minute * 60_000 + second * 1_000 + milli,
+    ))
+}
+
 /// Formats an instant as a PDF date string.
 ///
 /// Emits the offset in PDF's `OHH'mm'` form, where the apostrophe after the

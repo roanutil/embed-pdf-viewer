@@ -21,6 +21,22 @@ pub enum Trapped {
     Unknown,
 }
 
+impl Trapped {
+    /// The `FPDF_TRAPPED_STATUS` this is.
+    ///
+    /// Zero is `NotSet` and is deliberately unreachable from here: the wire
+    /// vocabulary has three states and none of them is absence, so a caller
+    /// that wants the entry left alone omits it rather than naming a
+    /// fourth.
+    pub fn code(self) -> i32 {
+        match self {
+            Self::True => 1,
+            Self::False => 2,
+            Self::Unknown => 3,
+        }
+    }
+}
+
 impl Document {
     /// One Info-dictionary value.
     ///

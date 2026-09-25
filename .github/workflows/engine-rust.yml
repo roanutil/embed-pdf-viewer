@@ -233,6 +233,10 @@ jobs:
       - name: Redaction vectors are current
         run: pnpm --filter @embedpdf/tooling-engine-conformance run redaction:check
 
+      # G14's metadata writes: the three-state patch over /Info.
+      - name: Metadata write vectors are current
+        run: pnpm --filter @embedpdf/tooling-engine-conformance run metadata-write:check
+
       # G8's /PieceInfo, on both holders. The catalog and page accessor
       # families differ only by a page object number, so a branch written the
       # wrong way round reads one while claiming the other.

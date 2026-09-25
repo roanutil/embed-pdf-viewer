@@ -46,6 +46,7 @@ live under `tooling/engine-conformance/vectors/`, and every generator has a
 | G12 | `forms.createField`, `updateField`, `deleteField`, `attachWidget`, `detachWidget` | `vectors/forms/field.json`, `tests/form_field.rs` |
 | G13 | `pages.move`, `rotate`, `delete`, `insertBlank`, `insert`, `flatten` | `vectors/pages/mutate.json`, `tests/pages_mutate.rs` |
 | G13 | `redaction.apply`, both scopes | `vectors/redaction/apply.json`, `tests/redaction_apply.rs` |
+| G14 | `metadata.update`, three-state over `/Info` | `vectors/metadata/update.json`, `tests/metadata_write.rs` |
 
 ## Done, tested against fixtures rather than vectors
 
@@ -86,6 +87,14 @@ G12 has everything but `forms.applyEffects`, which is the form-JavaScript
 effect applier and depends on a capability rather than on a port: web keeps
 `packages/core/js-sandbox` and mobile reports unsupported.
 
+`metadata.update` cannot say "the title is deliberately blank". The wire has
+three states and `Clear` is one of them, but `EPDF_SetMetaText` removes the
+entry for an empty string as readily as for a null, so both leave a document
+with no `/Title`. The TypeScript's `writeMetaText` claims it dropped "v2's
+empty-string removes quirk"; it did not, because the quirk is in the fork,
+below both engines. `a_clear_and_an_empty_value_are_the_same_edit` records it
+against the dictionary.
+
 `pages.flatten` does not distinguish its two usages on this corpus, and the
 corpus tried. `annotation_appearances.pdf` carries a square with `/F 36`,
 which prints and never shows on screen, and that is the one annotation the
@@ -118,8 +127,11 @@ to outlive every future save of the destination. The TypeScript parks it on
 the session and releases it at close; here it is a borrow, which makes the
 requirement the caller's to satisfy and the compiler's to check.
 
-G14 and G15: the remaining mutators and the server surfaces. None of it is
-blocked by anything outside the repository.
+G14 has `metadata.update`. `pieceInfo.update`, `pieceInfo.clear`,
+`attachments.create` and `attachments.delete` are not started.
+
+G15, the server and file surfaces, is not started. None of it is blocked by
+anything outside the repository.
 
 ## Known gaps inside what is done
 
