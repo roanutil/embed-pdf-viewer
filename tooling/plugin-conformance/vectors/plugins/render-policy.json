@@ -1,0 +1,5984 @@
+{
+  "schemaVersion": 1,
+  "kind": "function",
+  "describes": "engine-core render-policy snaps (DocumentRenderService.ts), ported into epdf-plugin-render.",
+  "cases": [
+    {
+      "name": "CONTINUOUS_RENDER_POLICY/kind",
+      "fn": "CONTINUOUS_RENDER_POLICY",
+      "args": [],
+      "outcome": {
+        "returned": {
+          "kind": "continuous"
+        }
+      }
+    },
+    {
+      "name": "snapFullPageViewport/continuous/width-300",
+      "fn": "snapFullPageViewport",
+      "args": [
+        {
+          "kind": "continuous"
+        },
+        {
+          "kind": "width",
+          "width": 300
+        },
+        {
+          "$undefined": true
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "width",
+          "width": 300
+        }
+      }
+    },
+    {
+      "name": "snapFullPageViewport/continuous/width-exact-rung",
+      "fn": "snapFullPageViewport",
+      "args": [
+        {
+          "kind": "continuous"
+        },
+        {
+          "kind": "width",
+          "width": 640
+        },
+        {
+          "$undefined": true
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "width",
+          "width": 640
+        }
+      }
+    },
+    {
+      "name": "snapFullPageViewport/continuous/width-720",
+      "fn": "snapFullPageViewport",
+      "args": [
+        {
+          "kind": "continuous"
+        },
+        {
+          "kind": "width",
+          "width": 720
+        },
+        {
+          "$undefined": true
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "width",
+          "width": 720
+        }
+      }
+    },
+    {
+      "name": "snapFullPageViewport/continuous/width-huge",
+      "fn": "snapFullPageViewport",
+      "args": [
+        {
+          "kind": "continuous"
+        },
+        {
+          "kind": "width",
+          "width": 100000
+        },
+        {
+          "$undefined": true
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "width",
+          "width": 100000
+        }
+      }
+    },
+    {
+      "name": "snapFullPageViewport/continuous/width-zero",
+      "fn": "snapFullPageViewport",
+      "args": [
+        {
+          "kind": "continuous"
+        },
+        {
+          "kind": "width",
+          "width": 0
+        },
+        {
+          "$undefined": true
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "width",
+          "width": 0
+        }
+      }
+    },
+    {
+      "name": "snapFullPageViewport/continuous/width-nan",
+      "fn": "snapFullPageViewport",
+      "args": [
+        {
+          "kind": "continuous"
+        },
+        {
+          "kind": "width",
+          "width": {
+            "$number": "NaN"
+          }
+        },
+        {
+          "$undefined": true
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "width",
+          "width": {
+            "$number": "NaN"
+          }
+        }
+      }
+    },
+    {
+      "name": "snapFullPageViewport/continuous/scale-1",
+      "fn": "snapFullPageViewport",
+      "args": [
+        {
+          "kind": "continuous"
+        },
+        {
+          "kind": "scale",
+          "scale": 1
+        },
+        {
+          "pageWidth": 612
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "scale",
+          "scale": 1
+        }
+      }
+    },
+    {
+      "name": "snapFullPageViewport/continuous/scale-2",
+      "fn": "snapFullPageViewport",
+      "args": [
+        {
+          "kind": "continuous"
+        },
+        {
+          "kind": "scale",
+          "scale": 2
+        },
+        {
+          "pageWidth": 612
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "scale",
+          "scale": 2
+        }
+      }
+    },
+    {
+      "name": "snapFullPageViewport/continuous/scale-poster",
+      "fn": "snapFullPageViewport",
+      "args": [
+        {
+          "kind": "continuous"
+        },
+        {
+          "kind": "scale",
+          "scale": 1
+        },
+        {
+          "pageWidth": 1000000
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "scale",
+          "scale": 1
+        }
+      }
+    },
+    {
+      "name": "snapFullPageViewport/continuous/scale-default-1",
+      "fn": "snapFullPageViewport",
+      "args": [
+        {
+          "kind": "continuous"
+        },
+        {
+          "kind": "scale"
+        },
+        {
+          "pageWidth": 612
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "scale"
+        }
+      }
+    },
+    {
+      "name": "snapFullPageViewport/continuous/scale-no-page-width",
+      "fn": "snapFullPageViewport",
+      "args": [
+        {
+          "kind": "continuous"
+        },
+        {
+          "kind": "scale",
+          "scale": 1
+        },
+        {
+          "$undefined": true
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "scale",
+          "scale": 1
+        }
+      }
+    },
+    {
+      "name": "snapFullPageViewport/continuous/scale-empty-opts",
+      "fn": "snapFullPageViewport",
+      "args": [
+        {
+          "kind": "continuous"
+        },
+        {
+          "kind": "scale",
+          "scale": 1
+        },
+        {}
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "scale",
+          "scale": 1
+        }
+      }
+    },
+    {
+      "name": "snapFullPageViewport/continuous/scale-zero-page-width",
+      "fn": "snapFullPageViewport",
+      "args": [
+        {
+          "kind": "continuous"
+        },
+        {
+          "kind": "scale",
+          "scale": 1
+        },
+        {
+          "pageWidth": 0
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "scale",
+          "scale": 1
+        }
+      }
+    },
+    {
+      "name": "snapFullPageViewport/continuous/scale-negative-page-width",
+      "fn": "snapFullPageViewport",
+      "args": [
+        {
+          "kind": "continuous"
+        },
+        {
+          "kind": "scale",
+          "scale": 1
+        },
+        {
+          "pageWidth": -3
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "scale",
+          "scale": 1
+        }
+      }
+    },
+    {
+      "name": "snapFullPageViewport/continuous/scale-half",
+      "fn": "snapFullPageViewport",
+      "args": [
+        {
+          "kind": "continuous"
+        },
+        {
+          "kind": "scale",
+          "scale": 0.5
+        },
+        {
+          "pageWidth": 612
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "scale",
+          "scale": 0.5
+        }
+      }
+    },
+    {
+      "name": "snapFullPageViewport/lattice/width-300",
+      "fn": "snapFullPageViewport",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        {
+          "kind": "width",
+          "width": 300
+        },
+        {
+          "$undefined": true
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "width",
+          "width": 320
+        }
+      }
+    },
+    {
+      "name": "snapFullPageViewport/lattice/width-exact-rung",
+      "fn": "snapFullPageViewport",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        {
+          "kind": "width",
+          "width": 640
+        },
+        {
+          "$undefined": true
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "width",
+          "width": 640
+        }
+      }
+    },
+    {
+      "name": "snapFullPageViewport/lattice/width-720",
+      "fn": "snapFullPageViewport",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        {
+          "kind": "width",
+          "width": 720
+        },
+        {
+          "$undefined": true
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "width",
+          "width": 1280
+        }
+      }
+    },
+    {
+      "name": "snapFullPageViewport/lattice/width-huge",
+      "fn": "snapFullPageViewport",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        {
+          "kind": "width",
+          "width": 100000
+        },
+        {
+          "$undefined": true
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "width",
+          "width": 2560
+        }
+      }
+    },
+    {
+      "name": "snapFullPageViewport/lattice/width-zero",
+      "fn": "snapFullPageViewport",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        {
+          "kind": "width",
+          "width": 0
+        },
+        {
+          "$undefined": true
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "width",
+          "width": 320
+        }
+      }
+    },
+    {
+      "name": "snapFullPageViewport/lattice/width-nan",
+      "fn": "snapFullPageViewport",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        {
+          "kind": "width",
+          "width": {
+            "$number": "NaN"
+          }
+        },
+        {
+          "$undefined": true
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "width",
+          "width": 2560
+        }
+      }
+    },
+    {
+      "name": "snapFullPageViewport/lattice/scale-1",
+      "fn": "snapFullPageViewport",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        {
+          "kind": "scale",
+          "scale": 1
+        },
+        {
+          "pageWidth": 612
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "width",
+          "width": 640
+        }
+      }
+    },
+    {
+      "name": "snapFullPageViewport/lattice/scale-2",
+      "fn": "snapFullPageViewport",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        {
+          "kind": "scale",
+          "scale": 2
+        },
+        {
+          "pageWidth": 612
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "width",
+          "width": 1280
+        }
+      }
+    },
+    {
+      "name": "snapFullPageViewport/lattice/scale-poster",
+      "fn": "snapFullPageViewport",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        {
+          "kind": "scale",
+          "scale": 1
+        },
+        {
+          "pageWidth": 1000000
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "width",
+          "width": 2560
+        }
+      }
+    },
+    {
+      "name": "snapFullPageViewport/lattice/scale-default-1",
+      "fn": "snapFullPageViewport",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        {
+          "kind": "scale"
+        },
+        {
+          "pageWidth": 612
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "width",
+          "width": 640
+        }
+      }
+    },
+    {
+      "name": "snapFullPageViewport/lattice/scale-no-page-width",
+      "fn": "snapFullPageViewport",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        {
+          "kind": "scale",
+          "scale": 1
+        },
+        {
+          "$undefined": true
+        }
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "EngineError",
+            "message": "snapping a scale viewport to a width lattice requires opts.pageWidth",
+            "code": "InvalidArg"
+          }
+        }
+      }
+    },
+    {
+      "name": "snapFullPageViewport/lattice/scale-empty-opts",
+      "fn": "snapFullPageViewport",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        {
+          "kind": "scale",
+          "scale": 1
+        },
+        {}
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "EngineError",
+            "message": "snapping a scale viewport to a width lattice requires opts.pageWidth",
+            "code": "InvalidArg"
+          }
+        }
+      }
+    },
+    {
+      "name": "snapFullPageViewport/lattice/scale-zero-page-width",
+      "fn": "snapFullPageViewport",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        {
+          "kind": "scale",
+          "scale": 1
+        },
+        {
+          "pageWidth": 0
+        }
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "EngineError",
+            "message": "snapping a scale viewport to a width lattice requires opts.pageWidth",
+            "code": "InvalidArg"
+          }
+        }
+      }
+    },
+    {
+      "name": "snapFullPageViewport/lattice/scale-negative-page-width",
+      "fn": "snapFullPageViewport",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        {
+          "kind": "scale",
+          "scale": 1
+        },
+        {
+          "pageWidth": -3
+        }
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "EngineError",
+            "message": "snapping a scale viewport to a width lattice requires opts.pageWidth",
+            "code": "InvalidArg"
+          }
+        }
+      }
+    },
+    {
+      "name": "snapFullPageViewport/lattice/scale-half",
+      "fn": "snapFullPageViewport",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        {
+          "kind": "scale",
+          "scale": 0.5
+        },
+        {
+          "pageWidth": 612
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "width",
+          "width": 320
+        }
+      }
+    },
+    {
+      "name": "snapFullPageViewport/lattice-unsorted/width-300",
+      "fn": "snapFullPageViewport",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              2560,
+              320,
+              1280,
+              640
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        {
+          "kind": "width",
+          "width": 300
+        },
+        {
+          "$undefined": true
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "width",
+          "width": 320
+        }
+      }
+    },
+    {
+      "name": "snapFullPageViewport/lattice-unsorted/width-exact-rung",
+      "fn": "snapFullPageViewport",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              2560,
+              320,
+              1280,
+              640
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        {
+          "kind": "width",
+          "width": 640
+        },
+        {
+          "$undefined": true
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "width",
+          "width": 640
+        }
+      }
+    },
+    {
+      "name": "snapFullPageViewport/lattice-unsorted/width-720",
+      "fn": "snapFullPageViewport",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              2560,
+              320,
+              1280,
+              640
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        {
+          "kind": "width",
+          "width": 720
+        },
+        {
+          "$undefined": true
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "width",
+          "width": 1280
+        }
+      }
+    },
+    {
+      "name": "snapFullPageViewport/lattice-unsorted/width-huge",
+      "fn": "snapFullPageViewport",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              2560,
+              320,
+              1280,
+              640
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        {
+          "kind": "width",
+          "width": 100000
+        },
+        {
+          "$undefined": true
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "width",
+          "width": 2560
+        }
+      }
+    },
+    {
+      "name": "snapFullPageViewport/lattice-unsorted/width-zero",
+      "fn": "snapFullPageViewport",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              2560,
+              320,
+              1280,
+              640
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        {
+          "kind": "width",
+          "width": 0
+        },
+        {
+          "$undefined": true
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "width",
+          "width": 320
+        }
+      }
+    },
+    {
+      "name": "snapFullPageViewport/lattice-unsorted/width-nan",
+      "fn": "snapFullPageViewport",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              2560,
+              320,
+              1280,
+              640
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        {
+          "kind": "width",
+          "width": {
+            "$number": "NaN"
+          }
+        },
+        {
+          "$undefined": true
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "width",
+          "width": 2560
+        }
+      }
+    },
+    {
+      "name": "snapFullPageViewport/lattice-unsorted/scale-1",
+      "fn": "snapFullPageViewport",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              2560,
+              320,
+              1280,
+              640
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        {
+          "kind": "scale",
+          "scale": 1
+        },
+        {
+          "pageWidth": 612
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "width",
+          "width": 640
+        }
+      }
+    },
+    {
+      "name": "snapFullPageViewport/lattice-unsorted/scale-2",
+      "fn": "snapFullPageViewport",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              2560,
+              320,
+              1280,
+              640
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        {
+          "kind": "scale",
+          "scale": 2
+        },
+        {
+          "pageWidth": 612
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "width",
+          "width": 1280
+        }
+      }
+    },
+    {
+      "name": "snapFullPageViewport/lattice-unsorted/scale-poster",
+      "fn": "snapFullPageViewport",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              2560,
+              320,
+              1280,
+              640
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        {
+          "kind": "scale",
+          "scale": 1
+        },
+        {
+          "pageWidth": 1000000
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "width",
+          "width": 2560
+        }
+      }
+    },
+    {
+      "name": "snapFullPageViewport/lattice-unsorted/scale-default-1",
+      "fn": "snapFullPageViewport",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              2560,
+              320,
+              1280,
+              640
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        {
+          "kind": "scale"
+        },
+        {
+          "pageWidth": 612
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "width",
+          "width": 640
+        }
+      }
+    },
+    {
+      "name": "snapFullPageViewport/lattice-unsorted/scale-no-page-width",
+      "fn": "snapFullPageViewport",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              2560,
+              320,
+              1280,
+              640
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        {
+          "kind": "scale",
+          "scale": 1
+        },
+        {
+          "$undefined": true
+        }
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "EngineError",
+            "message": "snapping a scale viewport to a width lattice requires opts.pageWidth",
+            "code": "InvalidArg"
+          }
+        }
+      }
+    },
+    {
+      "name": "snapFullPageViewport/lattice-unsorted/scale-empty-opts",
+      "fn": "snapFullPageViewport",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              2560,
+              320,
+              1280,
+              640
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        {
+          "kind": "scale",
+          "scale": 1
+        },
+        {}
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "EngineError",
+            "message": "snapping a scale viewport to a width lattice requires opts.pageWidth",
+            "code": "InvalidArg"
+          }
+        }
+      }
+    },
+    {
+      "name": "snapFullPageViewport/lattice-unsorted/scale-zero-page-width",
+      "fn": "snapFullPageViewport",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              2560,
+              320,
+              1280,
+              640
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        {
+          "kind": "scale",
+          "scale": 1
+        },
+        {
+          "pageWidth": 0
+        }
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "EngineError",
+            "message": "snapping a scale viewport to a width lattice requires opts.pageWidth",
+            "code": "InvalidArg"
+          }
+        }
+      }
+    },
+    {
+      "name": "snapFullPageViewport/lattice-unsorted/scale-negative-page-width",
+      "fn": "snapFullPageViewport",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              2560,
+              320,
+              1280,
+              640
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        {
+          "kind": "scale",
+          "scale": 1
+        },
+        {
+          "pageWidth": -3
+        }
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "EngineError",
+            "message": "snapping a scale viewport to a width lattice requires opts.pageWidth",
+            "code": "InvalidArg"
+          }
+        }
+      }
+    },
+    {
+      "name": "snapFullPageViewport/lattice-unsorted/scale-half",
+      "fn": "snapFullPageViewport",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              2560,
+              320,
+              1280,
+              640
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        {
+          "kind": "scale",
+          "scale": 0.5
+        },
+        {
+          "pageWidth": 612
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "width",
+          "width": 320
+        }
+      }
+    },
+    {
+      "name": "snapFullPageViewport/empty-ladder",
+      "fn": "snapFullPageViewport",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": []
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        {
+          "kind": "width",
+          "width": 5
+        }
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "EngineError",
+            "message": "render policy has an empty width ladder",
+            "code": "InvalidArg"
+          }
+        }
+      }
+    },
+    {
+      "name": "snapFullPageViewport/single-rung",
+      "fn": "snapFullPageViewport",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              900
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        {
+          "kind": "width",
+          "width": 5
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "width",
+          "width": 900
+        }
+      }
+    },
+    {
+      "name": "snapAppearanceScale/continuous/0",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "continuous"
+        },
+        0
+      ],
+      "outcome": {
+        "returned": 0
+      }
+    },
+    {
+      "name": "snapTileScale/continuous/0",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "continuous"
+        },
+        0
+      ],
+      "outcome": {
+        "returned": 0
+      }
+    },
+    {
+      "name": "snapAppearanceScale/continuous/0.5",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "continuous"
+        },
+        0.5
+      ],
+      "outcome": {
+        "returned": 0.5
+      }
+    },
+    {
+      "name": "snapTileScale/continuous/0.5",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "continuous"
+        },
+        0.5
+      ],
+      "outcome": {
+        "returned": 0.5
+      }
+    },
+    {
+      "name": "snapAppearanceScale/continuous/1",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "continuous"
+        },
+        1
+      ],
+      "outcome": {
+        "returned": 1
+      }
+    },
+    {
+      "name": "snapTileScale/continuous/1",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "continuous"
+        },
+        1
+      ],
+      "outcome": {
+        "returned": 1
+      }
+    },
+    {
+      "name": "snapAppearanceScale/continuous/1.5",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "continuous"
+        },
+        1.5
+      ],
+      "outcome": {
+        "returned": 1.5
+      }
+    },
+    {
+      "name": "snapTileScale/continuous/1.5",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "continuous"
+        },
+        1.5
+      ],
+      "outcome": {
+        "returned": 1.5
+      }
+    },
+    {
+      "name": "snapAppearanceScale/continuous/2",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "continuous"
+        },
+        2
+      ],
+      "outcome": {
+        "returned": 2
+      }
+    },
+    {
+      "name": "snapTileScale/continuous/2",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "continuous"
+        },
+        2
+      ],
+      "outcome": {
+        "returned": 2
+      }
+    },
+    {
+      "name": "snapAppearanceScale/continuous/3.99",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "continuous"
+        },
+        3.99
+      ],
+      "outcome": {
+        "returned": 3.99
+      }
+    },
+    {
+      "name": "snapTileScale/continuous/3.99",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "continuous"
+        },
+        3.99
+      ],
+      "outcome": {
+        "returned": 3.99
+      }
+    },
+    {
+      "name": "snapAppearanceScale/continuous/4",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "continuous"
+        },
+        4
+      ],
+      "outcome": {
+        "returned": 4
+      }
+    },
+    {
+      "name": "snapTileScale/continuous/4",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "continuous"
+        },
+        4
+      ],
+      "outcome": {
+        "returned": 4
+      }
+    },
+    {
+      "name": "snapAppearanceScale/continuous/4.01",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "continuous"
+        },
+        4.01
+      ],
+      "outcome": {
+        "returned": 4.01
+      }
+    },
+    {
+      "name": "snapTileScale/continuous/4.01",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "continuous"
+        },
+        4.01
+      ],
+      "outcome": {
+        "returned": 4.01
+      }
+    },
+    {
+      "name": "snapAppearanceScale/continuous/100",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "continuous"
+        },
+        100
+      ],
+      "outcome": {
+        "returned": 100
+      }
+    },
+    {
+      "name": "snapTileScale/continuous/100",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "continuous"
+        },
+        100
+      ],
+      "outcome": {
+        "returned": 100
+      }
+    },
+    {
+      "name": "snapAppearanceScale/continuous/-1",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "continuous"
+        },
+        -1
+      ],
+      "outcome": {
+        "returned": -1
+      }
+    },
+    {
+      "name": "snapTileScale/continuous/-1",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "continuous"
+        },
+        -1
+      ],
+      "outcome": {
+        "returned": -1
+      }
+    },
+    {
+      "name": "snapAppearanceScale/continuous/NaN",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "continuous"
+        },
+        {
+          "$number": "NaN"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "$number": "NaN"
+        }
+      }
+    },
+    {
+      "name": "snapTileScale/continuous/NaN",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "continuous"
+        },
+        {
+          "$number": "NaN"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "$number": "NaN"
+        }
+      }
+    },
+    {
+      "name": "snapAppearanceScale/lattice/0",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        0
+      ],
+      "outcome": {
+        "returned": 1
+      }
+    },
+    {
+      "name": "snapTileScale/lattice/0",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        0
+      ],
+      "outcome": {
+        "returned": 0
+      }
+    },
+    {
+      "name": "snapAppearanceScale/lattice/0.5",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        0.5
+      ],
+      "outcome": {
+        "returned": 1
+      }
+    },
+    {
+      "name": "snapTileScale/lattice/0.5",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        0.5
+      ],
+      "outcome": {
+        "returned": 0.5
+      }
+    },
+    {
+      "name": "snapAppearanceScale/lattice/1",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        1
+      ],
+      "outcome": {
+        "returned": 1
+      }
+    },
+    {
+      "name": "snapTileScale/lattice/1",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        1
+      ],
+      "outcome": {
+        "returned": 1
+      }
+    },
+    {
+      "name": "snapAppearanceScale/lattice/1.5",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        1.5
+      ],
+      "outcome": {
+        "returned": 2
+      }
+    },
+    {
+      "name": "snapTileScale/lattice/1.5",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        1.5
+      ],
+      "outcome": {
+        "returned": 1.5
+      }
+    },
+    {
+      "name": "snapAppearanceScale/lattice/2",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        2
+      ],
+      "outcome": {
+        "returned": 2
+      }
+    },
+    {
+      "name": "snapTileScale/lattice/2",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        2
+      ],
+      "outcome": {
+        "returned": 2
+      }
+    },
+    {
+      "name": "snapAppearanceScale/lattice/3.99",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        3.99
+      ],
+      "outcome": {
+        "returned": 4
+      }
+    },
+    {
+      "name": "snapTileScale/lattice/3.99",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        3.99
+      ],
+      "outcome": {
+        "returned": 3.99
+      }
+    },
+    {
+      "name": "snapAppearanceScale/lattice/4",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        4
+      ],
+      "outcome": {
+        "returned": 4
+      }
+    },
+    {
+      "name": "snapTileScale/lattice/4",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        4
+      ],
+      "outcome": {
+        "returned": 4
+      }
+    },
+    {
+      "name": "snapAppearanceScale/lattice/4.01",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        4.01
+      ],
+      "outcome": {
+        "returned": 4
+      }
+    },
+    {
+      "name": "snapTileScale/lattice/4.01",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        4.01
+      ],
+      "outcome": {
+        "returned": 4.01
+      }
+    },
+    {
+      "name": "snapAppearanceScale/lattice/100",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        100
+      ],
+      "outcome": {
+        "returned": 4
+      }
+    },
+    {
+      "name": "snapTileScale/lattice/100",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        100
+      ],
+      "outcome": {
+        "returned": 100
+      }
+    },
+    {
+      "name": "snapAppearanceScale/lattice/-1",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        -1
+      ],
+      "outcome": {
+        "returned": 1
+      }
+    },
+    {
+      "name": "snapTileScale/lattice/-1",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        -1
+      ],
+      "outcome": {
+        "returned": -1
+      }
+    },
+    {
+      "name": "snapAppearanceScale/lattice/NaN",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        {
+          "$number": "NaN"
+        }
+      ],
+      "outcome": {
+        "returned": 4
+      }
+    },
+    {
+      "name": "snapTileScale/lattice/NaN",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        {
+          "$number": "NaN"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "$number": "NaN"
+        }
+      }
+    },
+    {
+      "name": "snapAppearanceScale/lattice-tiles/0",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp",
+            "png"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              256,
+              1024
+            ],
+            "scales": [
+              16,
+              1,
+              4,
+              2,
+              8
+            ]
+          }
+        },
+        0
+      ],
+      "outcome": {
+        "returned": 1
+      }
+    },
+    {
+      "name": "snapTileScale/lattice-tiles/0",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp",
+            "png"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              256,
+              1024
+            ],
+            "scales": [
+              16,
+              1,
+              4,
+              2,
+              8
+            ]
+          }
+        },
+        0
+      ],
+      "outcome": {
+        "returned": 1
+      }
+    },
+    {
+      "name": "snapAppearanceScale/lattice-tiles/0.5",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp",
+            "png"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              256,
+              1024
+            ],
+            "scales": [
+              16,
+              1,
+              4,
+              2,
+              8
+            ]
+          }
+        },
+        0.5
+      ],
+      "outcome": {
+        "returned": 1
+      }
+    },
+    {
+      "name": "snapTileScale/lattice-tiles/0.5",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp",
+            "png"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              256,
+              1024
+            ],
+            "scales": [
+              16,
+              1,
+              4,
+              2,
+              8
+            ]
+          }
+        },
+        0.5
+      ],
+      "outcome": {
+        "returned": 1
+      }
+    },
+    {
+      "name": "snapAppearanceScale/lattice-tiles/1",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp",
+            "png"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              256,
+              1024
+            ],
+            "scales": [
+              16,
+              1,
+              4,
+              2,
+              8
+            ]
+          }
+        },
+        1
+      ],
+      "outcome": {
+        "returned": 1
+      }
+    },
+    {
+      "name": "snapTileScale/lattice-tiles/1",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp",
+            "png"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              256,
+              1024
+            ],
+            "scales": [
+              16,
+              1,
+              4,
+              2,
+              8
+            ]
+          }
+        },
+        1
+      ],
+      "outcome": {
+        "returned": 1
+      }
+    },
+    {
+      "name": "snapAppearanceScale/lattice-tiles/1.5",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp",
+            "png"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              256,
+              1024
+            ],
+            "scales": [
+              16,
+              1,
+              4,
+              2,
+              8
+            ]
+          }
+        },
+        1.5
+      ],
+      "outcome": {
+        "returned": 2
+      }
+    },
+    {
+      "name": "snapTileScale/lattice-tiles/1.5",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp",
+            "png"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              256,
+              1024
+            ],
+            "scales": [
+              16,
+              1,
+              4,
+              2,
+              8
+            ]
+          }
+        },
+        1.5
+      ],
+      "outcome": {
+        "returned": 2
+      }
+    },
+    {
+      "name": "snapAppearanceScale/lattice-tiles/2",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp",
+            "png"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              256,
+              1024
+            ],
+            "scales": [
+              16,
+              1,
+              4,
+              2,
+              8
+            ]
+          }
+        },
+        2
+      ],
+      "outcome": {
+        "returned": 2
+      }
+    },
+    {
+      "name": "snapTileScale/lattice-tiles/2",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp",
+            "png"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              256,
+              1024
+            ],
+            "scales": [
+              16,
+              1,
+              4,
+              2,
+              8
+            ]
+          }
+        },
+        2
+      ],
+      "outcome": {
+        "returned": 2
+      }
+    },
+    {
+      "name": "snapAppearanceScale/lattice-tiles/3.99",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp",
+            "png"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              256,
+              1024
+            ],
+            "scales": [
+              16,
+              1,
+              4,
+              2,
+              8
+            ]
+          }
+        },
+        3.99
+      ],
+      "outcome": {
+        "returned": 4
+      }
+    },
+    {
+      "name": "snapTileScale/lattice-tiles/3.99",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp",
+            "png"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              256,
+              1024
+            ],
+            "scales": [
+              16,
+              1,
+              4,
+              2,
+              8
+            ]
+          }
+        },
+        3.99
+      ],
+      "outcome": {
+        "returned": 4
+      }
+    },
+    {
+      "name": "snapAppearanceScale/lattice-tiles/4",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp",
+            "png"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              256,
+              1024
+            ],
+            "scales": [
+              16,
+              1,
+              4,
+              2,
+              8
+            ]
+          }
+        },
+        4
+      ],
+      "outcome": {
+        "returned": 4
+      }
+    },
+    {
+      "name": "snapTileScale/lattice-tiles/4",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp",
+            "png"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              256,
+              1024
+            ],
+            "scales": [
+              16,
+              1,
+              4,
+              2,
+              8
+            ]
+          }
+        },
+        4
+      ],
+      "outcome": {
+        "returned": 4
+      }
+    },
+    {
+      "name": "snapAppearanceScale/lattice-tiles/4.01",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp",
+            "png"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              256,
+              1024
+            ],
+            "scales": [
+              16,
+              1,
+              4,
+              2,
+              8
+            ]
+          }
+        },
+        4.01
+      ],
+      "outcome": {
+        "returned": 4
+      }
+    },
+    {
+      "name": "snapTileScale/lattice-tiles/4.01",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp",
+            "png"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              256,
+              1024
+            ],
+            "scales": [
+              16,
+              1,
+              4,
+              2,
+              8
+            ]
+          }
+        },
+        4.01
+      ],
+      "outcome": {
+        "returned": 8
+      }
+    },
+    {
+      "name": "snapAppearanceScale/lattice-tiles/100",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp",
+            "png"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              256,
+              1024
+            ],
+            "scales": [
+              16,
+              1,
+              4,
+              2,
+              8
+            ]
+          }
+        },
+        100
+      ],
+      "outcome": {
+        "returned": 4
+      }
+    },
+    {
+      "name": "snapTileScale/lattice-tiles/100",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp",
+            "png"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              256,
+              1024
+            ],
+            "scales": [
+              16,
+              1,
+              4,
+              2,
+              8
+            ]
+          }
+        },
+        100
+      ],
+      "outcome": {
+        "returned": 16
+      }
+    },
+    {
+      "name": "snapAppearanceScale/lattice-tiles/-1",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp",
+            "png"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              256,
+              1024
+            ],
+            "scales": [
+              16,
+              1,
+              4,
+              2,
+              8
+            ]
+          }
+        },
+        -1
+      ],
+      "outcome": {
+        "returned": 1
+      }
+    },
+    {
+      "name": "snapTileScale/lattice-tiles/-1",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp",
+            "png"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              256,
+              1024
+            ],
+            "scales": [
+              16,
+              1,
+              4,
+              2,
+              8
+            ]
+          }
+        },
+        -1
+      ],
+      "outcome": {
+        "returned": 1
+      }
+    },
+    {
+      "name": "snapAppearanceScale/lattice-tiles/NaN",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp",
+            "png"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              256,
+              1024
+            ],
+            "scales": [
+              16,
+              1,
+              4,
+              2,
+              8
+            ]
+          }
+        },
+        {
+          "$number": "NaN"
+        }
+      ],
+      "outcome": {
+        "returned": 4
+      }
+    },
+    {
+      "name": "snapTileScale/lattice-tiles/NaN",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp",
+            "png"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              256,
+              1024
+            ],
+            "scales": [
+              16,
+              1,
+              4,
+              2,
+              8
+            ]
+          }
+        },
+        {
+          "$number": "NaN"
+        }
+      ],
+      "outcome": {
+        "returned": 16
+      }
+    },
+    {
+      "name": "snapAppearanceScale/no-appearances/0",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        0
+      ],
+      "outcome": {
+        "returned": 0
+      }
+    },
+    {
+      "name": "snapTileScale/no-appearances/0",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        0
+      ],
+      "outcome": {
+        "returned": 0
+      }
+    },
+    {
+      "name": "snapAppearanceScale/no-appearances/0.5",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        0.5
+      ],
+      "outcome": {
+        "returned": 0.5
+      }
+    },
+    {
+      "name": "snapTileScale/no-appearances/0.5",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        0.5
+      ],
+      "outcome": {
+        "returned": 0.5
+      }
+    },
+    {
+      "name": "snapAppearanceScale/no-appearances/1",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        1
+      ],
+      "outcome": {
+        "returned": 1
+      }
+    },
+    {
+      "name": "snapTileScale/no-appearances/1",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        1
+      ],
+      "outcome": {
+        "returned": 1
+      }
+    },
+    {
+      "name": "snapAppearanceScale/no-appearances/1.5",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        1.5
+      ],
+      "outcome": {
+        "returned": 1.5
+      }
+    },
+    {
+      "name": "snapTileScale/no-appearances/1.5",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        1.5
+      ],
+      "outcome": {
+        "returned": 1.5
+      }
+    },
+    {
+      "name": "snapAppearanceScale/no-appearances/2",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        2
+      ],
+      "outcome": {
+        "returned": 2
+      }
+    },
+    {
+      "name": "snapTileScale/no-appearances/2",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        2
+      ],
+      "outcome": {
+        "returned": 2
+      }
+    },
+    {
+      "name": "snapAppearanceScale/no-appearances/3.99",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        3.99
+      ],
+      "outcome": {
+        "returned": 3.99
+      }
+    },
+    {
+      "name": "snapTileScale/no-appearances/3.99",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        3.99
+      ],
+      "outcome": {
+        "returned": 3.99
+      }
+    },
+    {
+      "name": "snapAppearanceScale/no-appearances/4",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        4
+      ],
+      "outcome": {
+        "returned": 4
+      }
+    },
+    {
+      "name": "snapTileScale/no-appearances/4",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        4
+      ],
+      "outcome": {
+        "returned": 4
+      }
+    },
+    {
+      "name": "snapAppearanceScale/no-appearances/4.01",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        4.01
+      ],
+      "outcome": {
+        "returned": 4.01
+      }
+    },
+    {
+      "name": "snapTileScale/no-appearances/4.01",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        4.01
+      ],
+      "outcome": {
+        "returned": 4.01
+      }
+    },
+    {
+      "name": "snapAppearanceScale/no-appearances/100",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        100
+      ],
+      "outcome": {
+        "returned": 100
+      }
+    },
+    {
+      "name": "snapTileScale/no-appearances/100",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        100
+      ],
+      "outcome": {
+        "returned": 100
+      }
+    },
+    {
+      "name": "snapAppearanceScale/no-appearances/-1",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        -1
+      ],
+      "outcome": {
+        "returned": -1
+      }
+    },
+    {
+      "name": "snapTileScale/no-appearances/-1",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        -1
+      ],
+      "outcome": {
+        "returned": -1
+      }
+    },
+    {
+      "name": "snapAppearanceScale/no-appearances/NaN",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        {
+          "$number": "NaN"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "$number": "NaN"
+        }
+      }
+    },
+    {
+      "name": "snapTileScale/no-appearances/NaN",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        {
+          "$number": "NaN"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "$number": "NaN"
+        }
+      }
+    },
+    {
+      "name": "snapAppearanceScale/empty-appearances/0",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": []
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        0
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "EngineError",
+            "message": "render policy has an empty appearance-scale lattice",
+            "code": "InvalidArg"
+          }
+        }
+      }
+    },
+    {
+      "name": "snapTileScale/empty-appearances/0",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": []
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        0
+      ],
+      "outcome": {
+        "returned": 0
+      }
+    },
+    {
+      "name": "snapAppearanceScale/empty-appearances/0.5",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": []
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        0.5
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "EngineError",
+            "message": "render policy has an empty appearance-scale lattice",
+            "code": "InvalidArg"
+          }
+        }
+      }
+    },
+    {
+      "name": "snapTileScale/empty-appearances/0.5",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": []
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        0.5
+      ],
+      "outcome": {
+        "returned": 0.5
+      }
+    },
+    {
+      "name": "snapAppearanceScale/empty-appearances/1",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": []
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        1
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "EngineError",
+            "message": "render policy has an empty appearance-scale lattice",
+            "code": "InvalidArg"
+          }
+        }
+      }
+    },
+    {
+      "name": "snapTileScale/empty-appearances/1",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": []
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        1
+      ],
+      "outcome": {
+        "returned": 1
+      }
+    },
+    {
+      "name": "snapAppearanceScale/empty-appearances/1.5",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": []
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        1.5
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "EngineError",
+            "message": "render policy has an empty appearance-scale lattice",
+            "code": "InvalidArg"
+          }
+        }
+      }
+    },
+    {
+      "name": "snapTileScale/empty-appearances/1.5",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": []
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        1.5
+      ],
+      "outcome": {
+        "returned": 1.5
+      }
+    },
+    {
+      "name": "snapAppearanceScale/empty-appearances/2",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": []
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        2
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "EngineError",
+            "message": "render policy has an empty appearance-scale lattice",
+            "code": "InvalidArg"
+          }
+        }
+      }
+    },
+    {
+      "name": "snapTileScale/empty-appearances/2",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": []
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        2
+      ],
+      "outcome": {
+        "returned": 2
+      }
+    },
+    {
+      "name": "snapAppearanceScale/empty-appearances/3.99",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": []
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        3.99
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "EngineError",
+            "message": "render policy has an empty appearance-scale lattice",
+            "code": "InvalidArg"
+          }
+        }
+      }
+    },
+    {
+      "name": "snapTileScale/empty-appearances/3.99",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": []
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        3.99
+      ],
+      "outcome": {
+        "returned": 3.99
+      }
+    },
+    {
+      "name": "snapAppearanceScale/empty-appearances/4",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": []
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        4
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "EngineError",
+            "message": "render policy has an empty appearance-scale lattice",
+            "code": "InvalidArg"
+          }
+        }
+      }
+    },
+    {
+      "name": "snapTileScale/empty-appearances/4",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": []
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        4
+      ],
+      "outcome": {
+        "returned": 4
+      }
+    },
+    {
+      "name": "snapAppearanceScale/empty-appearances/4.01",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": []
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        4.01
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "EngineError",
+            "message": "render policy has an empty appearance-scale lattice",
+            "code": "InvalidArg"
+          }
+        }
+      }
+    },
+    {
+      "name": "snapTileScale/empty-appearances/4.01",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": []
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        4.01
+      ],
+      "outcome": {
+        "returned": 4.01
+      }
+    },
+    {
+      "name": "snapAppearanceScale/empty-appearances/100",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": []
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        100
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "EngineError",
+            "message": "render policy has an empty appearance-scale lattice",
+            "code": "InvalidArg"
+          }
+        }
+      }
+    },
+    {
+      "name": "snapTileScale/empty-appearances/100",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": []
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        100
+      ],
+      "outcome": {
+        "returned": 100
+      }
+    },
+    {
+      "name": "snapAppearanceScale/empty-appearances/-1",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": []
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        -1
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "EngineError",
+            "message": "render policy has an empty appearance-scale lattice",
+            "code": "InvalidArg"
+          }
+        }
+      }
+    },
+    {
+      "name": "snapTileScale/empty-appearances/-1",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": []
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        -1
+      ],
+      "outcome": {
+        "returned": -1
+      }
+    },
+    {
+      "name": "snapAppearanceScale/empty-appearances/NaN",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": []
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        {
+          "$number": "NaN"
+        }
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "EngineError",
+            "message": "render policy has an empty appearance-scale lattice",
+            "code": "InvalidArg"
+          }
+        }
+      }
+    },
+    {
+      "name": "snapTileScale/empty-appearances/NaN",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": []
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        {
+          "$number": "NaN"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "$number": "NaN"
+        }
+      }
+    },
+    {
+      "name": "snapAppearanceScale/empty-tile-scales/0",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              512
+            ],
+            "scales": []
+          }
+        },
+        0
+      ],
+      "outcome": {
+        "returned": 1
+      }
+    },
+    {
+      "name": "snapTileScale/empty-tile-scales/0",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              512
+            ],
+            "scales": []
+          }
+        },
+        0
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "EngineError",
+            "message": "render policy has an empty tile-scale lattice",
+            "code": "InvalidArg"
+          }
+        }
+      }
+    },
+    {
+      "name": "snapAppearanceScale/empty-tile-scales/0.5",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              512
+            ],
+            "scales": []
+          }
+        },
+        0.5
+      ],
+      "outcome": {
+        "returned": 1
+      }
+    },
+    {
+      "name": "snapTileScale/empty-tile-scales/0.5",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              512
+            ],
+            "scales": []
+          }
+        },
+        0.5
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "EngineError",
+            "message": "render policy has an empty tile-scale lattice",
+            "code": "InvalidArg"
+          }
+        }
+      }
+    },
+    {
+      "name": "snapAppearanceScale/empty-tile-scales/1",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              512
+            ],
+            "scales": []
+          }
+        },
+        1
+      ],
+      "outcome": {
+        "returned": 1
+      }
+    },
+    {
+      "name": "snapTileScale/empty-tile-scales/1",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              512
+            ],
+            "scales": []
+          }
+        },
+        1
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "EngineError",
+            "message": "render policy has an empty tile-scale lattice",
+            "code": "InvalidArg"
+          }
+        }
+      }
+    },
+    {
+      "name": "snapAppearanceScale/empty-tile-scales/1.5",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              512
+            ],
+            "scales": []
+          }
+        },
+        1.5
+      ],
+      "outcome": {
+        "returned": 2
+      }
+    },
+    {
+      "name": "snapTileScale/empty-tile-scales/1.5",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              512
+            ],
+            "scales": []
+          }
+        },
+        1.5
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "EngineError",
+            "message": "render policy has an empty tile-scale lattice",
+            "code": "InvalidArg"
+          }
+        }
+      }
+    },
+    {
+      "name": "snapAppearanceScale/empty-tile-scales/2",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              512
+            ],
+            "scales": []
+          }
+        },
+        2
+      ],
+      "outcome": {
+        "returned": 2
+      }
+    },
+    {
+      "name": "snapTileScale/empty-tile-scales/2",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              512
+            ],
+            "scales": []
+          }
+        },
+        2
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "EngineError",
+            "message": "render policy has an empty tile-scale lattice",
+            "code": "InvalidArg"
+          }
+        }
+      }
+    },
+    {
+      "name": "snapAppearanceScale/empty-tile-scales/3.99",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              512
+            ],
+            "scales": []
+          }
+        },
+        3.99
+      ],
+      "outcome": {
+        "returned": 4
+      }
+    },
+    {
+      "name": "snapTileScale/empty-tile-scales/3.99",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              512
+            ],
+            "scales": []
+          }
+        },
+        3.99
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "EngineError",
+            "message": "render policy has an empty tile-scale lattice",
+            "code": "InvalidArg"
+          }
+        }
+      }
+    },
+    {
+      "name": "snapAppearanceScale/empty-tile-scales/4",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              512
+            ],
+            "scales": []
+          }
+        },
+        4
+      ],
+      "outcome": {
+        "returned": 4
+      }
+    },
+    {
+      "name": "snapTileScale/empty-tile-scales/4",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              512
+            ],
+            "scales": []
+          }
+        },
+        4
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "EngineError",
+            "message": "render policy has an empty tile-scale lattice",
+            "code": "InvalidArg"
+          }
+        }
+      }
+    },
+    {
+      "name": "snapAppearanceScale/empty-tile-scales/4.01",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              512
+            ],
+            "scales": []
+          }
+        },
+        4.01
+      ],
+      "outcome": {
+        "returned": 4
+      }
+    },
+    {
+      "name": "snapTileScale/empty-tile-scales/4.01",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              512
+            ],
+            "scales": []
+          }
+        },
+        4.01
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "EngineError",
+            "message": "render policy has an empty tile-scale lattice",
+            "code": "InvalidArg"
+          }
+        }
+      }
+    },
+    {
+      "name": "snapAppearanceScale/empty-tile-scales/100",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              512
+            ],
+            "scales": []
+          }
+        },
+        100
+      ],
+      "outcome": {
+        "returned": 4
+      }
+    },
+    {
+      "name": "snapTileScale/empty-tile-scales/100",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              512
+            ],
+            "scales": []
+          }
+        },
+        100
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "EngineError",
+            "message": "render policy has an empty tile-scale lattice",
+            "code": "InvalidArg"
+          }
+        }
+      }
+    },
+    {
+      "name": "snapAppearanceScale/empty-tile-scales/-1",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              512
+            ],
+            "scales": []
+          }
+        },
+        -1
+      ],
+      "outcome": {
+        "returned": 1
+      }
+    },
+    {
+      "name": "snapTileScale/empty-tile-scales/-1",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              512
+            ],
+            "scales": []
+          }
+        },
+        -1
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "EngineError",
+            "message": "render policy has an empty tile-scale lattice",
+            "code": "InvalidArg"
+          }
+        }
+      }
+    },
+    {
+      "name": "snapAppearanceScale/empty-tile-scales/NaN",
+      "fn": "snapAppearanceScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              512
+            ],
+            "scales": []
+          }
+        },
+        {
+          "$number": "NaN"
+        }
+      ],
+      "outcome": {
+        "returned": 4
+      }
+    },
+    {
+      "name": "snapTileScale/empty-tile-scales/NaN",
+      "fn": "snapTileScale",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              512
+            ],
+            "scales": []
+          }
+        },
+        {
+          "$number": "NaN"
+        }
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "EngineError",
+            "message": "render policy has an empty tile-scale lattice",
+            "code": "InvalidArg"
+          }
+        }
+      }
+    }
+  ]
+}
