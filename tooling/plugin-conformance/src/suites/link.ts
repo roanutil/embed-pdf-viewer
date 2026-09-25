@@ -388,6 +388,14 @@ const cases: ScenarioCase[] = [
     ],
   },
   {
+    name: 'activate-reveals-smoothly',
+    covers: 'The reveal is smooth whatever the stage scrollBehavior setting: with frames the camera tweens to the destination.',
+    plugins: [INTERACTION, { factory: 'stage', config: { ...STAGE.config, frames: true } }, LOGGED],
+    engine: { documents: { a: doc([]) } },
+    snapshot: 'none',
+    steps: [...boot, viewport, lk('activate', [goto(xyz(2, 60, 300, 2))]), st('cameraInMotion'), { op: 'advance', ms: 400 }, st('cameraInMotion'), st('camera')],
+  },
+  {
     name: 'activate-destination-that-cannot-invert',
     covers:
       'A goto to a page whose userUnit is 0 throws the geometry error out of activate before onActivate runs.',

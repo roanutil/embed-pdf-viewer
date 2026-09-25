@@ -15273,6 +15273,615 @@
       ]
     },
     {
+      "name": "activate-reveals-smoothly",
+      "covers": "The reveal is smooth whatever the stage scrollBehavior setting: with frames the camera tweens to the destination.",
+      "plugins": [
+        {
+          "factory": "interaction"
+        },
+        {
+          "factory": "stage",
+          "config": {
+            "viewUnitsPerPoint": 1,
+            "scrollBehavior": "instant",
+            "frames": true
+          }
+        },
+        {
+          "factory": "link",
+          "config": {
+            "onActivate": {
+              "$fn": "onActivate"
+            }
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "pageObjectNumber": 2,
+                "label": null,
+                "size": {
+                  "width": 400,
+                  "height": 500
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 410,
+                    "top": 520
+                  },
+                  "crop": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 410,
+                    "top": 520
+                  }
+                }
+              }
+            ],
+            "security": {
+              "allows": "*"
+            },
+            "responses": []
+          }
+        }
+      },
+      "snapshot": "none",
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stage",
+            "doc": "a"
+          },
+          "method": "setViewport",
+          "args": [
+            {
+              "width": 1000,
+              "height": 700
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "link",
+            "doc": "a"
+          },
+          "method": "activate",
+          "args": [
+            {
+              "kind": "goto",
+              "destination": {
+                "kind": "xyz",
+                "pageObjectNumber": 2,
+                "left": 60,
+                "top": 300,
+                "zoom": 2
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stage",
+            "doc": "a"
+          },
+          "method": "cameraInMotion",
+          "args": []
+        },
+        {
+          "op": "advance",
+          "ms": 400
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stage",
+            "doc": "a"
+          },
+          "method": "cameraInMotion",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stage",
+            "doc": "a"
+          },
+          "method": "camera",
+          "args": []
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 1
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "stage::a",
+              "action": {
+                "type": "VP",
+                "vp": {
+                  "width": 1000,
+                  "height": 700
+                }
+              }
+            },
+            {
+              "slice": "stage::a",
+              "action": {
+                "type": "MOTION_CAUSE",
+                "cause": "programmatic"
+              }
+            },
+            {
+              "slice": "stage::a",
+              "action": {
+                "type": "CAMERA",
+                "camera": {
+                  "zoom": 1,
+                  "x": -200,
+                  "y": -24
+                }
+              }
+            },
+            {
+              "slice": "stage::a",
+              "action": {
+                "type": "PLACED"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "stage::a",
+              "action": {
+                "type": "CURSOR",
+                "cursor": 1
+              }
+            },
+            {
+              "slice": "stage::a",
+              "action": {
+                "type": "PATCH",
+                "patch": {
+                  "zoom": {
+                    "level": 2
+                  }
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "onActivate",
+              "args": [
+                {
+                  "target": {
+                    "kind": "goto",
+                    "destination": {
+                      "kind": "xyz",
+                      "pageObjectNumber": 2,
+                      "left": 60,
+                      "top": 300,
+                      "zoom": 2
+                    }
+                  },
+                  "activation": {
+                    "outcome": "revealed"
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "outcome": "revealed"
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": true
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "stage::a",
+              "action": {
+                "type": "CAMERA",
+                "camera": {
+                  "zoom": 1,
+                  "x": -200,
+                  "y": -24
+                }
+              }
+            },
+            {
+              "slice": "stage::a",
+              "action": {
+                "type": "CAMERA_REST",
+                "resting": false
+              }
+            },
+            {
+              "slice": "stage::a",
+              "action": {
+                "type": "CAMERA",
+                "camera": {
+                  "zoom": 1.186962962962963,
+                  "x": -121.2431352970544,
+                  "y": 171.93718518518511
+                }
+              }
+            },
+            {
+              "slice": "stage::a",
+              "action": {
+                "type": "CAMERA",
+                "camera": {
+                  "zoom": 1.349037037037037,
+                  "x": -70.63474632110696,
+                  "y": 341.7908148148147
+                }
+              }
+            },
+            {
+              "slice": "stage::a",
+              "action": {
+                "type": "CAMERA",
+                "camera": {
+                  "zoom": 1.488,
+                  "x": -36.02150537634407,
+                  "y": 487.42399999999986
+                }
+              }
+            },
+            {
+              "slice": "stage::a",
+              "action": {
+                "type": "CAMERA",
+                "camera": {
+                  "zoom": 1.6056296296296295,
+                  "x": -7.86122900904229,
+                  "y": 610.6998518518517
+                }
+              }
+            },
+            {
+              "slice": "stage::a",
+              "action": {
+                "type": "CAMERA",
+                "camera": {
+                  "zoom": 1.7037037037037037,
+                  "x": 27.130434782608745,
+                  "y": 713.4814814814814
+                }
+              }
+            },
+            {
+              "slice": "stage::a",
+              "action": {
+                "type": "CAMERA",
+                "camera": {
+                  "zoom": 1.784,
+                  "x": 52.91479820627808,
+                  "y": 797.6320000000001
+                }
+              }
+            },
+            {
+              "slice": "stage::a",
+              "action": {
+                "type": "CAMERA",
+                "camera": {
+                  "zoom": 1.8482962962962963,
+                  "x": 71.94613658223795,
+                  "y": 865.0145185185186
+                }
+              }
+            },
+            {
+              "slice": "stage::a",
+              "action": {
+                "type": "CAMERA",
+                "camera": {
+                  "zoom": 1.8983703703703703,
+                  "x": 85.87482441080067,
+                  "y": 917.4921481481482
+                }
+              }
+            },
+            {
+              "slice": "stage::a",
+              "action": {
+                "type": "CAMERA",
+                "camera": {
+                  "zoom": 1.936,
+                  "x": 95.8677685950413,
+                  "y": 956.9279999999999
+                }
+              }
+            },
+            {
+              "slice": "stage::a",
+              "action": {
+                "type": "CAMERA",
+                "camera": {
+                  "zoom": 1.9629629629629628,
+                  "x": 102.79245283018867,
+                  "y": 971.622641509434
+                }
+              }
+            },
+            {
+              "slice": "stage::a",
+              "action": {
+                "type": "CAMERA",
+                "camera": {
+                  "zoom": 1.9810370370370372,
+                  "x": 107.32874663475923,
+                  "y": 974.7645827101405
+                }
+              }
+            },
+            {
+              "slice": "stage::a",
+              "action": {
+                "type": "CAMERA",
+                "camera": {
+                  "zoom": 1.992,
+                  "x": 110.0401606425703,
+                  "y": 976.6425702811246
+                }
+              }
+            },
+            {
+              "slice": "stage::a",
+              "action": {
+                "type": "CAMERA",
+                "camera": {
+                  "zoom": 1.9976296296296296,
+                  "x": 111.42094334025512,
+                  "y": 977.5989320676357
+                }
+              }
+            },
+            {
+              "slice": "stage::a",
+              "action": {
+                "type": "CAMERA",
+                "camera": {
+                  "zoom": 1.9997037037037035,
+                  "x": 111.92769299155424,
+                  "y": 977.9499185064453
+                }
+              }
+            },
+            {
+              "slice": "stage::a",
+              "action": {
+                "type": "CAMERA",
+                "camera": {
+                  "zoom": 2,
+                  "x": 112,
+                  "y": 978
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": false
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "zoom": 2,
+              "x": 112,
+              "y": 978
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "activate-destination-that-cannot-invert",
       "covers": "A goto to a page whose userUnit is 0 throws the geometry error out of activate before onActivate runs.",
       "plugins": [
