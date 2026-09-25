@@ -1,0 +1,1914 @@
+{
+  "schemaVersion": 1,
+  "kind": "function",
+  "describes": "packages/plugin/commands: commandsReducer and initialCommandsState (`same` is reference identity), resolvedCommandsEqual, registerCommand, and what commandsPlugin(config) builds.",
+  "cases": [
+    {
+      "name": "initial-state",
+      "fn": "initialCommandsState",
+      "args": [],
+      "outcome": {
+        "returned": {
+          "disabledCategories": []
+        }
+      }
+    },
+    {
+      "name": "disable-new",
+      "fn": "commandsReducer",
+      "args": [
+        {
+          "disabledCategories": [
+            "a"
+          ]
+        },
+        {
+          "type": "COMMANDS/DISABLE_CATEGORY",
+          "category": "b"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "disabledCategories": [
+              "a",
+              "b"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "disable-into-empty",
+      "fn": "commandsReducer",
+      "args": [
+        {
+          "disabledCategories": []
+        },
+        {
+          "type": "COMMANDS/DISABLE_CATEGORY",
+          "category": "a"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "disabledCategories": [
+              "a"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "disable-existing-is-ignored",
+      "fn": "commandsReducer",
+      "args": [
+        {
+          "disabledCategories": [
+            "a",
+            "b"
+          ]
+        },
+        {
+          "type": "COMMANDS/DISABLE_CATEGORY",
+          "category": "b"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": true,
+          "next": {
+            "disabledCategories": [
+              "a",
+              "b"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "enable-removes-every-copy",
+      "fn": "commandsReducer",
+      "args": [
+        {
+          "disabledCategories": [
+            "a",
+            "b",
+            "a"
+          ]
+        },
+        {
+          "type": "COMMANDS/ENABLE_CATEGORY",
+          "category": "a"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "disabledCategories": [
+              "b"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "enable-missing-is-ignored",
+      "fn": "commandsReducer",
+      "args": [
+        {
+          "disabledCategories": [
+            "a"
+          ]
+        },
+        {
+          "type": "COMMANDS/ENABLE_CATEGORY",
+          "category": "z"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": true,
+          "next": {
+            "disabledCategories": [
+              "a"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "enable-last",
+      "fn": "commandsReducer",
+      "args": [
+        {
+          "disabledCategories": [
+            "a"
+          ]
+        },
+        {
+          "type": "COMMANDS/ENABLE_CATEGORY",
+          "category": "a"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "disabledCategories": []
+          }
+        }
+      }
+    },
+    {
+      "name": "set-replaces",
+      "fn": "commandsReducer",
+      "args": [
+        {
+          "disabledCategories": [
+            "a"
+          ]
+        },
+        {
+          "type": "COMMANDS/SET_DISABLED_CATEGORIES",
+          "categories": [
+            "b",
+            "b",
+            "c"
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "disabledCategories": [
+              "b",
+              "b",
+              "c"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "set-equal-is-a-new-state",
+      "fn": "commandsReducer",
+      "args": [
+        {
+          "disabledCategories": [
+            "a"
+          ]
+        },
+        {
+          "type": "COMMANDS/SET_DISABLED_CATEGORIES",
+          "categories": [
+            "a"
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "disabledCategories": [
+              "a"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "set-empty",
+      "fn": "commandsReducer",
+      "args": [
+        {
+          "disabledCategories": [
+            "a"
+          ]
+        },
+        {
+          "type": "COMMANDS/SET_DISABLED_CATEGORIES",
+          "categories": []
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "disabledCategories": []
+          }
+        }
+      }
+    },
+    {
+      "name": "unknown-action-is-ignored",
+      "fn": "commandsReducer",
+      "args": [
+        {
+          "disabledCategories": [
+            "a"
+          ]
+        },
+        {
+          "type": "COMMANDS/NOPE",
+          "category": "a"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": true,
+          "next": {
+            "disabledCategories": [
+              "a"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "both-null",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        null,
+        null
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "null-left",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        null,
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "null-right",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        },
+        null
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "equal-values",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        },
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "same-object",
+      "fn": "resolvedCommandsEqualSelf",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "id-differs",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        },
+        {
+          "id": "zoom:out",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "label-differs",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        },
+        {
+          "id": "zoom:in",
+          "label": "Zoom in",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "icon-differs",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        },
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomOut",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "icon-absent-on-one-side",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        },
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "icon-absent-on-both",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        },
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "accent-primary-differs",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        },
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#111",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "accent-secondary-differs",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        },
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#eee"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "accent-absent-on-one-side",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        },
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "accent-absent-vs-empty",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        },
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {},
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "accent-primary-only-both",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        },
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "menu-differs",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        },
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "other",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "menu-absent-on-one-side",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        },
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "enabled-differs",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        },
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": false,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "active-differs",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        },
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": true,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "visible-differs",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        },
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": false,
+          "categories": [
+            "zoom"
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "shortcut-count-differs",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        },
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+="
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "shortcut-differs",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        },
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Add"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "shortcut-order-differs",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        },
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+Plus",
+            "Mod+="
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "no-shortcuts-both",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        },
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "categories-are-not-compared",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        },
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "other",
+            "more"
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "none",
+      "fn": "registerCommand",
+      "args": [
+        []
+      ],
+      "outcome": {
+        "returned": {
+          "entries": []
+        }
+      }
+    },
+    {
+      "name": "no-shortcut",
+      "fn": "registerCommand",
+      "args": [
+        [
+          {
+            "id": "a",
+            "labelKey": "a"
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "entries": [
+            {
+              "id": "a",
+              "shortcuts": [],
+              "parsed": []
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "one-shortcut",
+      "fn": "registerCommand",
+      "args": [
+        [
+          {
+            "id": "a",
+            "labelKey": "a",
+            "shortcut": "Mod+K"
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "entries": [
+            {
+              "id": "a",
+              "shortcuts": [
+                "Mod+K"
+              ],
+              "parsed": [
+                {
+                  "key": "k",
+                  "mod": true,
+                  "ctrl": false,
+                  "meta": false,
+                  "alt": false,
+                  "shift": false
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "many-shortcuts",
+      "fn": "registerCommand",
+      "args": [
+        [
+          {
+            "id": "a",
+            "labelKey": "a",
+            "shortcut": [
+              "Ctrl+=",
+              "Shift+Alt+D",
+              "Meta+NumpadAdd",
+              "Ctrl++",
+              "Escape"
+            ]
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "entries": [
+            {
+              "id": "a",
+              "shortcuts": [
+                "Ctrl+=",
+                "Shift+Alt+D",
+                "Meta+NumpadAdd",
+                "Ctrl++",
+                "Escape"
+              ],
+              "parsed": [
+                {
+                  "key": "=",
+                  "mod": false,
+                  "ctrl": true,
+                  "meta": false,
+                  "alt": false,
+                  "shift": false
+                },
+                {
+                  "key": "d",
+                  "mod": false,
+                  "ctrl": false,
+                  "meta": false,
+                  "alt": true,
+                  "shift": true
+                },
+                {
+                  "key": "numpadadd",
+                  "mod": false,
+                  "ctrl": false,
+                  "meta": true,
+                  "alt": false,
+                  "shift": false
+                },
+                {
+                  "key": "+",
+                  "mod": false,
+                  "ctrl": true,
+                  "meta": false,
+                  "alt": false,
+                  "shift": false
+                },
+                {
+                  "key": "escape",
+                  "mod": false,
+                  "ctrl": false,
+                  "meta": false,
+                  "alt": false,
+                  "shift": false
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "empty-shortcut-list",
+      "fn": "registerCommand",
+      "args": [
+        [
+          {
+            "id": "a",
+            "labelKey": "a",
+            "shortcut": []
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "entries": [
+            {
+              "id": "a",
+              "shortcuts": [],
+              "parsed": []
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "empty-shortcut-is-plus",
+      "fn": "registerCommand",
+      "args": [
+        [
+          {
+            "id": "a",
+            "labelKey": "a",
+            "shortcut": ""
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "entries": [
+            {
+              "id": "a",
+              "shortcuts": [
+                ""
+              ],
+              "parsed": [
+                {
+                  "key": "+",
+                  "mod": false,
+                  "ctrl": false,
+                  "meta": false,
+                  "alt": false,
+                  "shift": false
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "insertion-order",
+      "fn": "registerCommand",
+      "args": [
+        [
+          {
+            "id": "z",
+            "labelKey": "z"
+          },
+          {
+            "id": "m",
+            "labelKey": "m",
+            "shortcut": "M"
+          },
+          {
+            "id": "a",
+            "labelKey": "a"
+          },
+          {
+            "id": "10",
+            "labelKey": "10"
+          },
+          {
+            "id": "2",
+            "labelKey": "2"
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "entries": [
+            {
+              "id": "z",
+              "shortcuts": [],
+              "parsed": []
+            },
+            {
+              "id": "m",
+              "shortcuts": [
+                "M"
+              ],
+              "parsed": [
+                {
+                  "key": "m",
+                  "mod": false,
+                  "ctrl": false,
+                  "meta": false,
+                  "alt": false,
+                  "shift": false
+                }
+              ]
+            },
+            {
+              "id": "a",
+              "shortcuts": [],
+              "parsed": []
+            },
+            {
+              "id": "10",
+              "shortcuts": [],
+              "parsed": []
+            },
+            {
+              "id": "2",
+              "shortcuts": [],
+              "parsed": []
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "duplicate-throws-and-keeps-the-first",
+      "fn": "registerCommand",
+      "args": [
+        [
+          {
+            "id": "a",
+            "labelKey": "a",
+            "shortcut": "A"
+          },
+          {
+            "id": "b",
+            "labelKey": "b"
+          },
+          {
+            "id": "a",
+            "labelKey": "a",
+            "shortcut": "B"
+          },
+          {
+            "id": "c",
+            "labelKey": "c"
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "entries": [
+            {
+              "id": "a",
+              "shortcuts": [
+                "A"
+              ],
+              "parsed": [
+                {
+                  "key": "a",
+                  "mod": false,
+                  "ctrl": false,
+                  "meta": false,
+                  "alt": false,
+                  "shift": false
+                }
+              ]
+            },
+            {
+              "id": "b",
+              "shortcuts": [],
+              "parsed": []
+            }
+          ],
+          "error": {
+            "$error": {
+              "name": "Error",
+              "message": "[commands] duplicate command: a"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "bad-modifier-throws-and-registers-nothing",
+      "fn": "registerCommand",
+      "args": [
+        [
+          {
+            "id": "a",
+            "labelKey": "a"
+          },
+          {
+            "id": "b",
+            "labelKey": "b",
+            "shortcut": [
+              "Ctrl+B",
+              "Hyper+B"
+            ]
+          },
+          {
+            "id": "c",
+            "labelKey": "c"
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "entries": [
+            {
+              "id": "a",
+              "shortcuts": [],
+              "parsed": []
+            }
+          ],
+          "error": {
+            "$error": {
+              "name": "Error",
+              "message": "[ui-core] unknown modifier \"Hyper\" in \"Hyper+B\""
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "bad-modifier-in-a-string",
+      "fn": "registerCommand",
+      "args": [
+        [
+          {
+            "id": "a",
+            "labelKey": "a",
+            "shortcut": "Mod+Hyper+K"
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "entries": [],
+          "error": {
+            "$error": {
+              "name": "Error",
+              "message": "[ui-core] unknown modifier \"Hyper\" in \"Mod+Hyper+K\""
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "plugin-no-config",
+      "fn": "commandsPlugin",
+      "args": [],
+      "outcome": {
+        "returned": {
+          "id": "commands",
+          "scope": "workspace",
+          "initialState": {
+            "disabledCategories": []
+          }
+        }
+      }
+    },
+    {
+      "name": "plugin-empty-config",
+      "fn": "commandsPlugin",
+      "args": [
+        {}
+      ],
+      "outcome": {
+        "returned": {
+          "id": "commands",
+          "scope": "workspace",
+          "initialState": {
+            "disabledCategories": []
+          }
+        }
+      }
+    },
+    {
+      "name": "plugin-disabled-categories",
+      "fn": "commandsPlugin",
+      "args": [
+        {
+          "disabledCategories": [
+            "pro",
+            "beta",
+            "pro"
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "id": "commands",
+          "scope": "workspace",
+          "initialState": {
+            "disabledCategories": [
+              "pro",
+              "beta",
+              "pro"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "plugin-commands",
+      "fn": "commandsPlugin",
+      "args": [
+        {
+          "commands": [
+            {
+              "id": "a",
+              "labelKey": "a",
+              "shortcut": "Mod+A"
+            },
+            {
+              "id": "b",
+              "labelKey": "b"
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "id": "commands",
+          "scope": "workspace",
+          "initialState": {
+            "disabledCategories": []
+          }
+        }
+      }
+    },
+    {
+      "name": "plugin-duplicate-command-throws",
+      "fn": "commandsPlugin",
+      "args": [
+        {
+          "commands": [
+            {
+              "id": "a",
+              "labelKey": "a"
+            },
+            {
+              "id": "a",
+              "labelKey": "a"
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "Error",
+            "message": "[commands] duplicate command: a"
+          }
+        }
+      }
+    },
+    {
+      "name": "plugin-bad-shortcut-throws",
+      "fn": "commandsPlugin",
+      "args": [
+        {
+          "commands": [
+            {
+              "id": "a",
+              "labelKey": "a",
+              "shortcut": "Super+A"
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "Error",
+            "message": "[ui-core] unknown modifier \"Super\" in \"Super+A\""
+          }
+        }
+      }
+    }
+  ]
+}

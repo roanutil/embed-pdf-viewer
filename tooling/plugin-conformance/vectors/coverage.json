@@ -1,7 +1,7 @@
 {
   "total": {
-    "statements": "9161/9175",
-    "branches": "2128/2174"
+    "statements": "9586/9600",
+    "branches": "2259/2305"
   },
   "files": {
     "packages/core/acrojs/src/actions.ts": {
@@ -257,6 +257,42 @@
       "uncoveredLines": [],
       "uncoveredBranches": []
     },
+    "packages/plugin/commands/src/capability.ts": {
+      "statements": "191/191",
+      "branches": "91/91",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/commands/src/commands.plugin.ts": {
+      "statements": "29/29",
+      "branches": "8/8",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/commands/src/contract.ts": {
+      "statements": "12/12",
+      "branches": "0/0",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/commands/src/index.ts": {
+      "statements": "3/3",
+      "branches": "0/0",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/commands/src/reducer.ts": {
+      "statements": "22/22",
+      "branches": "11/11",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/commands/src/types.ts": {
+      "statements": "168/168",
+      "branches": "21/21",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
     "packages/plugin/i18n/src/capability.ts": {
       "statements": "68/68",
       "branches": "26/26",
@@ -398,7 +434,7 @@
     },
     "packages/plugin/shell/src/capability.ts": {
       "statements": "45/45",
-      "branches": "24/24",
+      "branches": "25/25",
       "uncoveredLines": [],
       "uncoveredBranches": []
     },
@@ -416,7 +452,7 @@
     },
     "packages/plugin/shell/src/reducer.ts": {
       "statements": "63/63",
-      "branches": "31/31",
+      "branches": "30/30",
       "uncoveredLines": [],
       "uncoveredBranches": []
     },

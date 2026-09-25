@@ -322,6 +322,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "epdf-plugin-commands"
+version = "0.0.0"
+dependencies = [
+ "epdf-kernel",
+ "epdf-plugin-i18n",
+ "epdf-plugin-shell",
+ "epdf-ui-core",
+ "plugin-conformance",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "epdf-plugin-i18n"
 version = "0.0.0"
 dependencies = [
