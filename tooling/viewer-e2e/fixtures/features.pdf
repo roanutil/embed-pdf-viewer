@@ -1,0 +1,100 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [12 0 R 15 0 R 16 0 R] /DA (/F1 12 Tf 0 g) /DR << /Font << /F1 3 0 R /ZaDb 4 0 R >> >> /NeedAppearances true >> >>
+endobj
+2 0 obj
+<< /Type /Pages /Count 3 /Kids [5 0 R 6 0 R 7 0 R] >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /ZapfDingbats >>
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 600 400] /Resources << /Font << /F1 3 0 R /ZaDb 4 0 R >> >> /Contents 17 0 R /Annots [8 0 R 9 0 R] >>
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 600 400] /Resources << /Font << /F1 3 0 R /ZaDb 4 0 R >> >> /Contents 18 0 R /Annots [10 0 R 11 0 R] >>
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 600 400] /Resources << /Font << /F1 3 0 R /ZaDb 4 0 R >> >> /Contents 19 0 R /Annots [12 0 R 15 0 R 16 0 R] >>
+endobj
+8 0 obj
+<< /Type /Annot /Subtype /Link /NM (link-internal) /Rect [40 300 320 330] /Border [0 0 0] /A << /S /GoTo /D [7 0 R /XYZ 0 400 0] >> >>
+endobj
+9 0 obj
+<< /Type /Annot /Subtype /Link /NM (link-external) /Rect [40 240 360 270] /Border [0 0 0] /A << /S /URI /URI (https://example.invalid/target) >> >>
+endobj
+10 0 obj
+<< /Type /Annot /Subtype /Square /NM (annot-square) /Rect [60 240 260 340] /C [1 0 0] /IC [1 1 0] /CA 1 /F 4 /T (E2E) /Contents (square annotation) >>
+endobj
+11 0 obj
+<< /Type /Annot /Subtype /Highlight /NM (annot-highlight) /Rect [40 140 400 180] /QuadPoints [40 180 400 180 40 140 400 140] /C [1 1 0] /CA 1 /F 4 /T (E2E) /Contents (highlight annotation) >>
+endobj
+12 0 obj
+<< /Type /Annot /Subtype /Widget /NM (field-text) /FT /Tx /T (fullName) /V (Ada Lovelace) /DV (Ada Lovelace) /Rect [40 300 360 330] /F 4 /DA (/F1 12 Tf 0 g) /MK << /BC [0 0 0] >> >>
+endobj
+13 0 obj
+<< /Type /XObject /Subtype /Form /BBox [0 0 20 20] /Length 0 >>
+stream
+
+endstream
+endobj
+14 0 obj
+<< /Type /XObject /Subtype /Form /BBox [0 0 20 20] /Length 0 >>
+stream
+
+endstream
+endobj
+15 0 obj
+<< /Type /Annot /Subtype /Widget /NM (field-checkbox) /FT /Btn /T (subscribe) /V /Yes /DV /Yes /AS /Yes /Rect [40 240 60 260] /F 4 /DA (/ZaDb 0 Tf 0 g) /MK << /BC [0 0 0] /CA (4) >> /AP << /N << /Yes 13 0 R /Off 14 0 R >> >> >>
+endobj
+16 0 obj
+<< /Type /Annot /Subtype /Widget /NM (field-listbox) /FT /Ch /Ff 0 /T (language) /Opt [[(en) (English)] [(fr) (French)] [(ja) (Japanese)]] /V (fr) /DV (fr) /Rect [40 140 260 200] /F 4 /DA (/F1 12 Tf 0 g) /MK << /BC [0 0 0] >> >>
+endobj
+17 0 obj
+<< /Length 100 >>
+stream
+BT /F1 18 Tf 40 360 Td (Links page) Tj 0 -50 Td (Go to page three) Tj 0 -60 Td (Open example) Tj ET
+endstream
+endobj
+18 0 obj
+<< /Length 48 >>
+stream
+BT /F1 18 Tf 40 360 Td (Annotations page) Tj ET
+endstream
+endobj
+19 0 obj
+<< /Length 41 >>
+stream
+BT /F1 18 Tf 40 360 Td (Form page) Tj ET
+endstream
+endobj
+xref
+0 20
+0000000000 65535 f 
+0000000009 00000 n 
+0000000191 00000 n 
+0000000260 00000 n 
+0000000328 00000 n 
+0000000401 00000 n 
+0000000562 00000 n 
+0000000725 00000 n 
+0000000895 00000 n 
+0000001045 00000 n 
+0000001208 00000 n 
+0000001375 00000 n 
+0000001583 00000 n 
+0000001781 00000 n 
+0000001879 00000 n 
+0000001977 00000 n 
+0000002221 00000 n 
+0000002466 00000 n 
+0000002617 00000 n 
+0000002715 00000 n 
+trailer
+<< /Size 20 /Root 1 0 R >>
+startxref
+2806
+%%EOF

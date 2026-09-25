@@ -42,6 +42,14 @@ export interface EngineWorkerInit {
   fallbackWasmUrl?: string;
   /** Pre-fetched `embedpdf.wasm` bytes (transferred) — wins over `wasmUrl`. */
   wasmBinary?: ArrayBuffer;
+  /**
+   * Which parts of the engine the Rust core serves, when the payload has it.
+   *
+   * Internal and unstable: it exists so the port's gates can run the same
+   * viewer against both backends. Every flag is ignored on a payload built
+   * without the core, so setting one never changes what a stock build does.
+   */
+  rustRouting?: { rustReads?: boolean; rustSession?: boolean };
 }
 
 /**
@@ -69,9 +77,13 @@ function boot(scope: DedicatedWorkerGlobalScope, init: EngineWorkerInit): void {
     // transfer manifest the producing handler declared. We forward both
     // straight to `postMessage`'s second argument so any declared buffers
     // move zero-copy back to the main thread.
-    const host = new WorkerHost(runtime, (pack: WirePack<WorkerResponse>) => {
-      scope.postMessage(pack.payload, pack.transfer as Transferable[]);
-    });
+    const host = new WorkerHost(
+      runtime,
+      (pack: WirePack<WorkerResponse>) => {
+        scope.postMessage(pack.payload, pack.transfer as Transferable[]);
+      },
+      init.rustRouting ?? {},
+    );
 
     scope.onmessage = (event: MessageEvent<WorkerRequest>) => {
       host.receive(event.data);

@@ -3,9 +3,25 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+/**
+ * Which engine backend each project drives.
+ *
+ * `typescript` is the shipping one and the default. `rust` routes the same
+ * viewer through the Rust engine core, which only exists in a runtime payload
+ * built with it: `pnpm --filter @embedpdf/engine-runtime build:target wasm32`
+ * links it, and a payload built with `EMBEDPDF_RUST_CORE=0` does not. On a
+ * payload without it the viewer falls back and the run proves nothing, so the
+ * Rust projects assert the core is present before they start.
+ *
+ * The flows are written ONCE and run under both. That is the whole point of
+ * the plan's differential rule: two implementations of one contract are only
+ * worth having if the same assertions run against each.
+ */
 const backends = (process.env.VIEWER_E2E_BACKENDS ?? 'typescript').split(',');
 for (const backend of backends) {
-  if (backend !== 'typescript') throw new Error(`Unsupported viewer test backend: ${backend}`);
+  if (backend !== 'typescript' && backend !== 'rust') {
+    throw new Error(`Unsupported viewer test backend: ${backend}`);
+  }
 }
 const performanceEnabled = process.env.VIEWER_E2E_PERF === '1';
 const packed = process.env.VIEWER_E2E_PACKED_DIR;

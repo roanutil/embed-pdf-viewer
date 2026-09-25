@@ -160,6 +160,7 @@ export function createLocalEngineWithWorker(opts: CreateLocalEngineWithWorkerOpt
 function workerBoot(
   source: WorkerSource | undefined,
   wasmOptions: WasmSourceOptions,
+  rustRouting?: EngineWorkerInit['rustRouting'],
 ): {
   spawn: () => Promise<Transport>;
   lazyOptions: LazyTransportOptions;
@@ -169,7 +170,7 @@ function workerBoot(
   // A live Worker is the only object-typed delivery (duck-typed rather than
   // `instanceof Worker` so non-DOM environments and test doubles work).
   if (typeof delivery === 'object' && delivery !== null) {
-    postWorkerInit(delivery, resolveWasmSource(wasmOptions));
+    postWorkerInit(delivery, resolveWasmSource(wasmOptions), rustRouting);
     const ready = watchWorkerReady(delivery);
     // A dormant engine must not surface an unhandled rejection if the worker
     // init-errors before anything boots; spawn() re-awaits the original.
@@ -189,7 +190,7 @@ function workerBoot(
           ? await resolveInlineWasmSource(wasmOptions)
           : resolveWasmSource(wasmOptions);
       const spawned = await createEngineWorker(delivery as Exclude<WorkerSource, Worker>);
-      postWorkerInit(spawned.worker, wasm);
+      postWorkerInit(spawned.worker, wasm, rustRouting);
       try {
         const transport = await BrowserWorkerTransport.spawn(spawned.worker);
         spawned.dispose();
@@ -204,10 +205,15 @@ function workerBoot(
   };
 }
 
-function postWorkerInit(worker: Worker, wasm: ResolvedWasmSource): void {
+function postWorkerInit(
+  worker: Worker,
+  wasm: ResolvedWasmSource,
+  rustRouting?: EngineWorkerInit['rustRouting'],
+): void {
   const init: EngineWorkerInit = { kind: 'init', wasmUrl: wasm.wasmUrl };
   if (wasm.fallbackWasmUrl) init.fallbackWasmUrl = wasm.fallbackWasmUrl;
   if (wasm.wasmBinary) init.wasmBinary = wasm.wasmBinary;
+  if (rustRouting) init.rustRouting = rustRouting;
   worker.postMessage(init, wasm.wasmBinary ? [wasm.wasmBinary] : []);
 }
 
@@ -317,6 +323,15 @@ export interface LocalEngineRecipeOptions extends WasmSourceOptions {
    * {@link LocalEngineOptions.renderPolicy}. Default: `continuous`.
    */
   renderPolicy?: EngineRenderPolicy;
+  /**
+   * Which parts of the engine the Rust core serves.
+   *
+   * INTERNAL and unstable, and not part of the supported surface: it exists
+   * so the port's own gates can run one viewer against both backends. Every
+   * flag is ignored on a runtime payload built without the core, so setting
+   * one never changes what a stock build does.
+   */
+  rustRouting?: { rustReads?: boolean; rustSession?: boolean };
 }
 
 /**
@@ -347,7 +362,7 @@ export interface LocalEngineRecipeOptions extends WasmSourceOptions {
  * ```
  */
 export function localEngine(options: LocalEngineRecipeOptions = {}): LocalEngine {
-  const boot = workerBoot(options.worker, options);
+  const boot = workerBoot(options.worker, options, options.rustRouting);
   const transport = new LazyTransport(async () => {
     // Spawn and font fetches run in parallel; nothing queued by the caller can
     // reach the worker until this factory resolves.

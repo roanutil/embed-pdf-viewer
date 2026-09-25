@@ -251,8 +251,16 @@ test.afterEach(async ({ page, browser }, info) => {
   expect(errors.get(page), 'uncaught browser errors').toEqual([]);
 });
 
-test('F1 opens the fixture, reports its page count and paints known pixels', async ({ page }) => {
-  expect((await snapshot(page)).backend).toBe('typescript');
+test('F1 opens the fixture, reports its page count and paints known pixels', async ({
+  page,
+}, info) => {
+  // The backend this project asked for, which is what the page was told to
+  // use. Whether the Rust core was actually THERE to honour it is checked by
+  // `packages/engine/runtime/scripts/verify-rust-core.mjs` before the suite
+  // runs: a payload built without it falls back silently, and a fallback the
+  // flows could not see would make the Rust projects a slower copy of the
+  // TypeScript ones.
+  expect((await snapshot(page)).backend).toBe(info.project.metadata.backend);
   expect((await snapshot(page)).documents).toEqual(['ready']);
   // Pixel content, not just successful image decode: a blank/white raster
   // must fail. The fixed red square's interior is independent of font AA.

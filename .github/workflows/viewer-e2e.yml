@@ -37,6 +37,22 @@ jobs:
         run: pnpm exec turbo run build --filter=@embedpdf/viewer-react...
       - name: Typecheck harness
         run: pnpm --filter @embedpdf/tooling-viewer-e2e typecheck
+
+      # The fixtures are the oracle: every expected value in the flows is
+      # read out of `generate.mjs` rather than computed by anything under
+      # test. A fixture that drifted from its generator would quietly make
+      # the flows assert something nobody wrote down.
+      - name: Fixtures are reproducible
+        run: |
+          node tooling/viewer-e2e/fixtures/generate.mjs
+          git diff --exit-code -- tooling/viewer-e2e/fixtures
+
+      # The Rust projects are not here. This job fetches a PINNED runtime
+      # payload, and the Rust core reaches a payload only when one is built
+      # after `scripts/build-target.sh` started linking it. Once a payload
+      # carrying the core is pinned, add
+      # `--project=chromium-rust --project=firefox-rust` to the step below:
+      # the flows are written once and already run under both.
       - name: Install PR browsers
         if: github.event_name != 'schedule'
         run: pnpm --filter @embedpdf/tooling-viewer-e2e exec playwright install --with-deps chromium firefox
