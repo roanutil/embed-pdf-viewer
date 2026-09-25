@@ -1,0 +1,1992 @@
+{
+  "schemaVersion": 1,
+  "kind": "function",
+  "describes": "packages/core/geometry: rect bounds and intersection, quarter-turn rotations, device rounding.",
+  "cases": [
+    {
+      "name": "NO_FRAME/zero-on-every-side",
+      "fn": "NO_FRAME",
+      "args": [],
+      "outcome": {
+        "returned": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      }
+    },
+    {
+      "name": "boundsOfRects/empty-is-null",
+      "fn": "boundsOfRects",
+      "args": [
+        []
+      ],
+      "outcome": {
+        "returned": null
+      }
+    },
+    {
+      "name": "boundsOfRects/one-rect-by-value",
+      "fn": "boundsOfRects",
+      "args": [
+        [
+          {
+            "x": 5,
+            "y": 10,
+            "width": 20,
+            "height": 30
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "x": 5,
+          "y": 10,
+          "width": 20,
+          "height": 30
+        }
+      }
+    },
+    {
+      "name": "boundsOfRects/disjoint",
+      "fn": "boundsOfRects",
+      "args": [
+        [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 10,
+            "height": 10
+          },
+          {
+            "x": 30,
+            "y": 40,
+            "width": 10,
+            "height": 10
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "x": 0,
+          "y": 0,
+          "width": 40,
+          "height": 50
+        }
+      }
+    },
+    {
+      "name": "boundsOfRects/containment-and-negative",
+      "fn": "boundsOfRects",
+      "args": [
+        [
+          {
+            "x": -10,
+            "y": -5,
+            "width": 100,
+            "height": 50
+          },
+          {
+            "x": 0,
+            "y": 0,
+            "width": 10,
+            "height": 10
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "x": -10,
+          "y": -5,
+          "width": 100,
+          "height": 50
+        }
+      }
+    },
+    {
+      "name": "boundsOfRects/multi-line-hits",
+      "fn": "boundsOfRects",
+      "args": [
+        [
+          {
+            "x": 200,
+            "y": 100,
+            "width": 150,
+            "height": 12
+          },
+          {
+            "x": 40,
+            "y": 114,
+            "width": 90,
+            "height": 12
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "x": 40,
+          "y": 100,
+          "width": 310,
+          "height": 26
+        }
+      }
+    },
+    {
+      "name": "boundsOfRects/second-rect-extends-min-only",
+      "fn": "boundsOfRects",
+      "args": [
+        [
+          {
+            "x": 10,
+            "y": 10,
+            "width": 10,
+            "height": 10
+          },
+          {
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "x": 0,
+          "y": 0,
+          "width": 20,
+          "height": 20
+        }
+      }
+    },
+    {
+      "name": "boundsOfRects/second-rect-extends-max-only",
+      "fn": "boundsOfRects",
+      "args": [
+        [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          },
+          {
+            "x": 0,
+            "y": 0,
+            "width": 50,
+            "height": 60
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "x": 0,
+          "y": 0,
+          "width": 50,
+          "height": 60
+        }
+      }
+    },
+    {
+      "name": "boundsOfRects/zero-size-rects",
+      "fn": "boundsOfRects",
+      "args": [
+        [
+          {
+            "x": 3,
+            "y": 4,
+            "width": 0,
+            "height": 0
+          },
+          {
+            "x": 7,
+            "y": 9,
+            "width": 0,
+            "height": 0
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "x": 3,
+          "y": 4,
+          "width": 4,
+          "height": 5
+        }
+      }
+    },
+    {
+      "name": "boundsOfRects/inverted-rect",
+      "fn": "boundsOfRects",
+      "args": [
+        [
+          {
+            "x": 10,
+            "y": 10,
+            "width": -5,
+            "height": -5
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "x": 10,
+          "y": 10,
+          "width": -5,
+          "height": -5
+        }
+      }
+    },
+    {
+      "name": "boundsOfRects/inverted-and-normal",
+      "fn": "boundsOfRects",
+      "args": [
+        [
+          {
+            "x": 10,
+            "y": 10,
+            "width": -5,
+            "height": -5
+          },
+          {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "x": 0,
+          "y": 0,
+          "width": 5,
+          "height": 5
+        }
+      }
+    },
+    {
+      "name": "boundsOfRects/nan-x-poisons-x",
+      "fn": "boundsOfRects",
+      "args": [
+        [
+          {
+            "x": {
+              "$number": "NaN"
+            },
+            "y": 0,
+            "width": 1,
+            "height": 1
+          },
+          {
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "x": {
+            "$number": "NaN"
+          },
+          "y": 0,
+          "width": {
+            "$number": "NaN"
+          },
+          "height": 1
+        }
+      }
+    },
+    {
+      "name": "boundsOfRects/nan-height-poisons-height",
+      "fn": "boundsOfRects",
+      "args": [
+        [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          },
+          {
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": {
+              "$number": "NaN"
+            }
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "x": 0,
+          "y": 0,
+          "width": 1,
+          "height": {
+            "$number": "NaN"
+          }
+        }
+      }
+    },
+    {
+      "name": "boundsOfRects/nan-width-late",
+      "fn": "boundsOfRects",
+      "args": [
+        [
+          {
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          },
+          {
+            "x": 5,
+            "y": 5,
+            "width": {
+              "$number": "NaN"
+            },
+            "height": 1
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "x": 0,
+          "y": 0,
+          "width": {
+            "$number": "NaN"
+          },
+          "height": 6
+        }
+      }
+    },
+    {
+      "name": "boundsOfRects/infinite-extent",
+      "fn": "boundsOfRects",
+      "args": [
+        [
+          {
+            "x": 0,
+            "y": 0,
+            "width": {
+              "$number": "Infinity"
+            },
+            "height": 1
+          },
+          {
+            "x": {
+              "$number": "-Infinity"
+            },
+            "y": 0,
+            "width": 1,
+            "height": 1
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "x": {
+            "$number": "-Infinity"
+          },
+          "y": 0,
+          "width": {
+            "$number": "Infinity"
+          },
+          "height": 1
+        }
+      }
+    },
+    {
+      "name": "boundsOfRects/huge-and-tiny",
+      "fn": "boundsOfRects",
+      "args": [
+        [
+          {
+            "x": 1e+300,
+            "y": 1e-300,
+            "width": 1e+300,
+            "height": 5e-324
+          },
+          {
+            "x": -1e+300,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "x": -1e+300,
+          "y": 0,
+          "width": 3e+300,
+          "height": 1
+        }
+      }
+    },
+    {
+      "name": "boundsOfRects/three-rects",
+      "fn": "boundsOfRects",
+      "args": [
+        [
+          {
+            "x": 1,
+            "y": 2,
+            "width": 3,
+            "height": 4
+          },
+          {
+            "x": -1,
+            "y": 5,
+            "width": 2,
+            "height": 2
+          },
+          {
+            "x": 0,
+            "y": -3,
+            "width": 10,
+            "height": 1
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "x": -1,
+          "y": -3,
+          "width": 11,
+          "height": 10
+        }
+      }
+    },
+    {
+      "name": "intersectRects/overlap",
+      "fn": "intersectRects",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        },
+        {
+          "x": 5,
+          "y": 5,
+          "width": 10,
+          "height": 10
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 5,
+          "y": 5,
+          "width": 5,
+          "height": 5
+        }
+      }
+    },
+    {
+      "name": "intersectRects/disjoint-is-zero-sized",
+      "fn": "intersectRects",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        },
+        {
+          "x": 20,
+          "y": 20,
+          "width": 5,
+          "height": 5
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 20,
+          "y": 20,
+          "width": 0,
+          "height": 0
+        }
+      }
+    },
+    {
+      "name": "intersectRects/contained",
+      "fn": "intersectRects",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        },
+        {
+          "x": -5,
+          "y": -5,
+          "width": 30,
+          "height": 30
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        }
+      }
+    },
+    {
+      "name": "intersectRects/touching-edges",
+      "fn": "intersectRects",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        },
+        {
+          "x": 10,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 10,
+          "y": 0,
+          "width": 0,
+          "height": 10
+        }
+      }
+    },
+    {
+      "name": "intersectRects/disjoint-before",
+      "fn": "intersectRects",
+      "args": [
+        {
+          "x": 20,
+          "y": 20,
+          "width": 5,
+          "height": 5
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 20,
+          "y": 20,
+          "width": 0,
+          "height": 0
+        }
+      }
+    },
+    {
+      "name": "intersectRects/disjoint-in-x-only",
+      "fn": "intersectRects",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        },
+        {
+          "x": 20,
+          "y": 2,
+          "width": 5,
+          "height": 5
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 20,
+          "y": 2,
+          "width": 0,
+          "height": 5
+        }
+      }
+    },
+    {
+      "name": "intersectRects/disjoint-in-y-only",
+      "fn": "intersectRects",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        },
+        {
+          "x": 2,
+          "y": 20,
+          "width": 5,
+          "height": 5
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 2,
+          "y": 20,
+          "width": 5,
+          "height": 0
+        }
+      }
+    },
+    {
+      "name": "intersectRects/identical",
+      "fn": "intersectRects",
+      "args": [
+        {
+          "x": 1.5,
+          "y": 2.5,
+          "width": 3.25,
+          "height": 4.75
+        },
+        {
+          "x": 1.5,
+          "y": 2.5,
+          "width": 3.25,
+          "height": 4.75
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 1.5,
+          "y": 2.5,
+          "width": 3.25,
+          "height": 4.75
+        }
+      }
+    },
+    {
+      "name": "intersectRects/zero-size",
+      "fn": "intersectRects",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        }
+      }
+    },
+    {
+      "name": "intersectRects/inverted",
+      "fn": "intersectRects",
+      "args": [
+        {
+          "x": 10,
+          "y": 10,
+          "width": -5,
+          "height": -5
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 20,
+          "height": 20
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 10,
+          "y": 10,
+          "width": 0,
+          "height": 0
+        }
+      }
+    },
+    {
+      "name": "intersectRects/negative-coordinates",
+      "fn": "intersectRects",
+      "args": [
+        {
+          "x": -30,
+          "y": -20,
+          "width": 25,
+          "height": 25
+        },
+        {
+          "x": -10,
+          "y": -10,
+          "width": 100,
+          "height": 100
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": -10,
+          "y": -10,
+          "width": 5,
+          "height": 15
+        }
+      }
+    },
+    {
+      "name": "intersectRects/nan-in-a",
+      "fn": "intersectRects",
+      "args": [
+        {
+          "x": {
+            "$number": "NaN"
+          },
+          "y": 0,
+          "width": 10,
+          "height": 10
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": {
+            "$number": "NaN"
+          },
+          "y": 0,
+          "width": {
+            "$number": "NaN"
+          },
+          "height": 10
+        }
+      }
+    },
+    {
+      "name": "intersectRects/nan-in-b",
+      "fn": "intersectRects",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": {
+            "$number": "NaN"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": {
+            "$number": "NaN"
+          }
+        }
+      }
+    },
+    {
+      "name": "intersectRects/nan-width-in-a",
+      "fn": "intersectRects",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": {
+            "$number": "NaN"
+          },
+          "height": 10
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 0,
+          "y": 0,
+          "width": {
+            "$number": "NaN"
+          },
+          "height": 10
+        }
+      }
+    },
+    {
+      "name": "intersectRects/nan-y-in-b",
+      "fn": "intersectRects",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        },
+        {
+          "x": 0,
+          "y": {
+            "$number": "NaN"
+          },
+          "width": 10,
+          "height": 10
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 0,
+          "y": {
+            "$number": "NaN"
+          },
+          "width": 10,
+          "height": {
+            "$number": "NaN"
+          }
+        }
+      }
+    },
+    {
+      "name": "intersectRects/infinite",
+      "fn": "intersectRects",
+      "args": [
+        {
+          "x": {
+            "$number": "-Infinity"
+          },
+          "y": {
+            "$number": "-Infinity"
+          },
+          "width": {
+            "$number": "Infinity"
+          },
+          "height": {
+            "$number": "Infinity"
+          }
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 0,
+          "y": 0,
+          "width": {
+            "$number": "NaN"
+          },
+          "height": {
+            "$number": "NaN"
+          }
+        }
+      }
+    },
+    {
+      "name": "intersectRects/infinite-extent",
+      "fn": "intersectRects",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": {
+            "$number": "Infinity"
+          },
+          "height": {
+            "$number": "Infinity"
+          }
+        },
+        {
+          "x": 5,
+          "y": 5,
+          "width": 10,
+          "height": 10
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 5,
+          "y": 5,
+          "width": 10,
+          "height": 10
+        }
+      }
+    },
+    {
+      "name": "isQuarterTurn/r0",
+      "fn": "isQuarterTurn",
+      "args": [
+        0
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "isQuarterTurn/r90",
+      "fn": "isQuarterTurn",
+      "args": [
+        90
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "isQuarterTurn/r180",
+      "fn": "isQuarterTurn",
+      "args": [
+        180
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "isQuarterTurn/r270",
+      "fn": "isQuarterTurn",
+      "args": [
+        270
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "isQuarterTurn/r45",
+      "fn": "isQuarterTurn",
+      "args": [
+        45
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "isQuarterTurn/r-90",
+      "fn": "isQuarterTurn",
+      "args": [
+        -90
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "isQuarterTurn/r360",
+      "fn": "isQuarterTurn",
+      "args": [
+        360
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "isQuarterTurn/r450",
+      "fn": "isQuarterTurn",
+      "args": [
+        450
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "isQuarterTurn/r90.5",
+      "fn": "isQuarterTurn",
+      "args": [
+        90.5
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "isQuarterTurn/rNaN",
+      "fn": "isQuarterTurn",
+      "args": [
+        {
+          "$number": "NaN"
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "isQuarterTurn/rInfinity",
+      "fn": "isQuarterTurn",
+      "args": [
+        {
+          "$number": "Infinity"
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "addRotations/0+0",
+      "fn": "addRotations",
+      "args": [
+        0,
+        0
+      ],
+      "outcome": {
+        "returned": 0
+      }
+    },
+    {
+      "name": "addRotations/0+90",
+      "fn": "addRotations",
+      "args": [
+        0,
+        90
+      ],
+      "outcome": {
+        "returned": 90
+      }
+    },
+    {
+      "name": "addRotations/0+180",
+      "fn": "addRotations",
+      "args": [
+        0,
+        180
+      ],
+      "outcome": {
+        "returned": 180
+      }
+    },
+    {
+      "name": "addRotations/0+270",
+      "fn": "addRotations",
+      "args": [
+        0,
+        270
+      ],
+      "outcome": {
+        "returned": 270
+      }
+    },
+    {
+      "name": "addRotations/90+0",
+      "fn": "addRotations",
+      "args": [
+        90,
+        0
+      ],
+      "outcome": {
+        "returned": 90
+      }
+    },
+    {
+      "name": "addRotations/90+90",
+      "fn": "addRotations",
+      "args": [
+        90,
+        90
+      ],
+      "outcome": {
+        "returned": 180
+      }
+    },
+    {
+      "name": "addRotations/90+180",
+      "fn": "addRotations",
+      "args": [
+        90,
+        180
+      ],
+      "outcome": {
+        "returned": 270
+      }
+    },
+    {
+      "name": "addRotations/90+270",
+      "fn": "addRotations",
+      "args": [
+        90,
+        270
+      ],
+      "outcome": {
+        "returned": 0
+      }
+    },
+    {
+      "name": "addRotations/180+0",
+      "fn": "addRotations",
+      "args": [
+        180,
+        0
+      ],
+      "outcome": {
+        "returned": 180
+      }
+    },
+    {
+      "name": "addRotations/180+90",
+      "fn": "addRotations",
+      "args": [
+        180,
+        90
+      ],
+      "outcome": {
+        "returned": 270
+      }
+    },
+    {
+      "name": "addRotations/180+180",
+      "fn": "addRotations",
+      "args": [
+        180,
+        180
+      ],
+      "outcome": {
+        "returned": 0
+      }
+    },
+    {
+      "name": "addRotations/180+270",
+      "fn": "addRotations",
+      "args": [
+        180,
+        270
+      ],
+      "outcome": {
+        "returned": 90
+      }
+    },
+    {
+      "name": "addRotations/270+0",
+      "fn": "addRotations",
+      "args": [
+        270,
+        0
+      ],
+      "outcome": {
+        "returned": 270
+      }
+    },
+    {
+      "name": "addRotations/270+90",
+      "fn": "addRotations",
+      "args": [
+        270,
+        90
+      ],
+      "outcome": {
+        "returned": 0
+      }
+    },
+    {
+      "name": "addRotations/270+180",
+      "fn": "addRotations",
+      "args": [
+        270,
+        180
+      ],
+      "outcome": {
+        "returned": 90
+      }
+    },
+    {
+      "name": "addRotations/270+270",
+      "fn": "addRotations",
+      "args": [
+        270,
+        270
+      ],
+      "outcome": {
+        "returned": 180
+      }
+    },
+    {
+      "name": "addRotations/negative-keeps-sign",
+      "fn": "addRotations",
+      "args": [
+        -90,
+        0
+      ],
+      "outcome": {
+        "returned": -90
+      }
+    },
+    {
+      "name": "addRotations/negative-sum",
+      "fn": "addRotations",
+      "args": [
+        -270,
+        90
+      ],
+      "outcome": {
+        "returned": -180
+      }
+    },
+    {
+      "name": "addRotations/out-of-range-45",
+      "fn": "addRotations",
+      "args": [
+        90,
+        45
+      ],
+      "outcome": {
+        "returned": 135
+      }
+    },
+    {
+      "name": "addRotations/fraction",
+      "fn": "addRotations",
+      "args": [
+        90.5,
+        270
+      ],
+      "outcome": {
+        "returned": 0.5
+      }
+    },
+    {
+      "name": "addRotations/large",
+      "fn": "addRotations",
+      "args": [
+        720,
+        450
+      ],
+      "outcome": {
+        "returned": 90
+      }
+    },
+    {
+      "name": "addRotations/nan",
+      "fn": "addRotations",
+      "args": [
+        {
+          "$number": "NaN"
+        },
+        90
+      ],
+      "outcome": {
+        "returned": {
+          "$number": "NaN"
+        }
+      }
+    },
+    {
+      "name": "addRotations/infinity",
+      "fn": "addRotations",
+      "args": [
+        {
+          "$number": "Infinity"
+        },
+        90
+      ],
+      "outcome": {
+        "returned": {
+          "$number": "NaN"
+        }
+      }
+    },
+    {
+      "name": "snapToDevice/integer",
+      "fn": "snapToDevice",
+      "args": [
+        10,
+        1
+      ],
+      "outcome": {
+        "returned": 10
+      }
+    },
+    {
+      "name": "snapToDevice/dpr-2-half",
+      "fn": "snapToDevice",
+      "args": [
+        10.25,
+        2
+      ],
+      "outcome": {
+        "returned": 10.5
+      }
+    },
+    {
+      "name": "snapToDevice/dpr-2-tie-up",
+      "fn": "snapToDevice",
+      "args": [
+        10.75,
+        2
+      ],
+      "outcome": {
+        "returned": 11
+      }
+    },
+    {
+      "name": "snapToDevice/tie-rounds-up",
+      "fn": "snapToDevice",
+      "args": [
+        2.5,
+        1
+      ],
+      "outcome": {
+        "returned": 3
+      }
+    },
+    {
+      "name": "snapToDevice/negative-tie-rounds-toward-plus-infinity",
+      "fn": "snapToDevice",
+      "args": [
+        -2.5,
+        1
+      ],
+      "outcome": {
+        "returned": -2
+      }
+    },
+    {
+      "name": "snapToDevice/negative-tie-small",
+      "fn": "snapToDevice",
+      "args": [
+        -0.5,
+        1
+      ],
+      "outcome": {
+        "returned": 0
+      }
+    },
+    {
+      "name": "snapToDevice/negative-tie-odd",
+      "fn": "snapToDevice",
+      "args": [
+        -1.5,
+        1
+      ],
+      "outcome": {
+        "returned": -1
+      }
+    },
+    {
+      "name": "snapToDevice/just-under-half",
+      "fn": "snapToDevice",
+      "args": [
+        0.49999999999999994,
+        1
+      ],
+      "outcome": {
+        "returned": 0
+      }
+    },
+    {
+      "name": "snapToDevice/just-under-half-negative",
+      "fn": "snapToDevice",
+      "args": [
+        -0.49999999999999994,
+        1
+      ],
+      "outcome": {
+        "returned": 0
+      }
+    },
+    {
+      "name": "snapToDevice/beyond-2^52",
+      "fn": "snapToDevice",
+      "args": [
+        4503599627370497,
+        1
+      ],
+      "outcome": {
+        "returned": 4503599627370497
+      }
+    },
+    {
+      "name": "snapToDevice/huge",
+      "fn": "snapToDevice",
+      "args": [
+        1e+300,
+        1
+      ],
+      "outcome": {
+        "returned": 1e+300
+      }
+    },
+    {
+      "name": "snapToDevice/fractional-dpr",
+      "fn": "snapToDevice",
+      "args": [
+        13.37,
+        1.5
+      ],
+      "outcome": {
+        "returned": 13.333333333333334
+      }
+    },
+    {
+      "name": "snapToDevice/dpr-3",
+      "fn": "snapToDevice",
+      "args": [
+        33.333333333333336,
+        3
+      ],
+      "outcome": {
+        "returned": 33.333333333333336
+      }
+    },
+    {
+      "name": "snapToDevice/dpr-0",
+      "fn": "snapToDevice",
+      "args": [
+        5,
+        0
+      ],
+      "outcome": {
+        "returned": {
+          "$number": "NaN"
+        }
+      }
+    },
+    {
+      "name": "snapToDevice/negative-dpr",
+      "fn": "snapToDevice",
+      "args": [
+        5.3,
+        -2
+      ],
+      "outcome": {
+        "returned": 5.5
+      }
+    },
+    {
+      "name": "snapToDevice/nan-value",
+      "fn": "snapToDevice",
+      "args": [
+        {
+          "$number": "NaN"
+        },
+        1
+      ],
+      "outcome": {
+        "returned": {
+          "$number": "NaN"
+        }
+      }
+    },
+    {
+      "name": "snapToDevice/infinite-value",
+      "fn": "snapToDevice",
+      "args": [
+        {
+          "$number": "Infinity"
+        },
+        2
+      ],
+      "outcome": {
+        "returned": {
+          "$number": "Infinity"
+        }
+      }
+    },
+    {
+      "name": "snapToDevice/infinite-dpr",
+      "fn": "snapToDevice",
+      "args": [
+        1,
+        {
+          "$number": "Infinity"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "$number": "NaN"
+        }
+      }
+    },
+    {
+      "name": "snapToDevice/zero",
+      "fn": "snapToDevice",
+      "args": [
+        0,
+        1
+      ],
+      "outcome": {
+        "returned": 0
+      }
+    },
+    {
+      "name": "snapToDevice/negative",
+      "fn": "snapToDevice",
+      "args": [
+        -7.3,
+        2
+      ],
+      "outcome": {
+        "returned": -7.5
+      }
+    },
+    {
+      "name": "displaySize/r0",
+      "fn": "displaySize",
+      "args": [
+        {
+          "width": 600,
+          "height": 800
+        },
+        0
+      ],
+      "outcome": {
+        "returned": {
+          "width": 600,
+          "height": 800
+        }
+      }
+    },
+    {
+      "name": "displaySize/r90",
+      "fn": "displaySize",
+      "args": [
+        {
+          "width": 600,
+          "height": 800
+        },
+        90
+      ],
+      "outcome": {
+        "returned": {
+          "width": 800,
+          "height": 600
+        }
+      }
+    },
+    {
+      "name": "displaySize/r180",
+      "fn": "displaySize",
+      "args": [
+        {
+          "width": 600,
+          "height": 800
+        },
+        180
+      ],
+      "outcome": {
+        "returned": {
+          "width": 600,
+          "height": 800
+        }
+      }
+    },
+    {
+      "name": "displaySize/r270",
+      "fn": "displaySize",
+      "args": [
+        {
+          "width": 600,
+          "height": 800
+        },
+        270
+      ],
+      "outcome": {
+        "returned": {
+          "width": 800,
+          "height": 600
+        }
+      }
+    },
+    {
+      "name": "displaySize/r45",
+      "fn": "displaySize",
+      "args": [
+        {
+          "width": 600,
+          "height": 800
+        },
+        45
+      ],
+      "outcome": {
+        "returned": {
+          "width": 600,
+          "height": 800
+        }
+      }
+    },
+    {
+      "name": "displaySize/r-90",
+      "fn": "displaySize",
+      "args": [
+        {
+          "width": 600,
+          "height": 800
+        },
+        -90
+      ],
+      "outcome": {
+        "returned": {
+          "width": 600,
+          "height": 800
+        }
+      }
+    },
+    {
+      "name": "displaySize/r360",
+      "fn": "displaySize",
+      "args": [
+        {
+          "width": 600,
+          "height": 800
+        },
+        360
+      ],
+      "outcome": {
+        "returned": {
+          "width": 600,
+          "height": 800
+        }
+      }
+    },
+    {
+      "name": "displaySize/r450",
+      "fn": "displaySize",
+      "args": [
+        {
+          "width": 600,
+          "height": 800
+        },
+        450
+      ],
+      "outcome": {
+        "returned": {
+          "width": 600,
+          "height": 800
+        }
+      }
+    },
+    {
+      "name": "displaySize/r90.5",
+      "fn": "displaySize",
+      "args": [
+        {
+          "width": 600,
+          "height": 800
+        },
+        90.5
+      ],
+      "outcome": {
+        "returned": {
+          "width": 600,
+          "height": 800
+        }
+      }
+    },
+    {
+      "name": "displaySize/rNaN",
+      "fn": "displaySize",
+      "args": [
+        {
+          "width": 600,
+          "height": 800
+        },
+        {
+          "$number": "NaN"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "width": 600,
+          "height": 800
+        }
+      }
+    },
+    {
+      "name": "displaySize/rInfinity",
+      "fn": "displaySize",
+      "args": [
+        {
+          "width": 600,
+          "height": 800
+        },
+        {
+          "$number": "Infinity"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "width": 600,
+          "height": 800
+        }
+      }
+    },
+    {
+      "name": "displaySize/zero-size-quarter-turn",
+      "fn": "displaySize",
+      "args": [
+        {
+          "width": 0,
+          "height": 5
+        },
+        90
+      ],
+      "outcome": {
+        "returned": {
+          "width": 5,
+          "height": 0
+        }
+      }
+    },
+    {
+      "name": "displaySize/nan-size",
+      "fn": "displaySize",
+      "args": [
+        {
+          "width": {
+            "$number": "NaN"
+          },
+          "height": 5
+        },
+        270
+      ],
+      "outcome": {
+        "returned": {
+          "width": 5,
+          "height": {
+            "$number": "NaN"
+          }
+        }
+      }
+    },
+    {
+      "name": "deviceHeightForWidth/letter-739",
+      "fn": "deviceHeightForWidth",
+      "args": [
+        {
+          "width": 612,
+          "height": 792
+        },
+        739
+      ],
+      "outcome": {
+        "returned": 956
+      }
+    },
+    {
+      "name": "deviceHeightForWidth/exact",
+      "fn": "deviceHeightForWidth",
+      "args": [
+        {
+          "width": 100,
+          "height": 200
+        },
+        100
+      ],
+      "outcome": {
+        "returned": 200
+      }
+    },
+    {
+      "name": "deviceHeightForWidth/tie-rounds-up",
+      "fn": "deviceHeightForWidth",
+      "args": [
+        {
+          "width": 2,
+          "height": 1
+        },
+        1
+      ],
+      "outcome": {
+        "returned": 1
+      }
+    },
+    {
+      "name": "deviceHeightForWidth/tie-rounds-up-3",
+      "fn": "deviceHeightForWidth",
+      "args": [
+        {
+          "width": 2,
+          "height": 5
+        },
+        1
+      ],
+      "outcome": {
+        "returned": 3
+      }
+    },
+    {
+      "name": "deviceHeightForWidth/clamped-to-one",
+      "fn": "deviceHeightForWidth",
+      "args": [
+        {
+          "width": 1000,
+          "height": 1
+        },
+        10
+      ],
+      "outcome": {
+        "returned": 1
+      }
+    },
+    {
+      "name": "deviceHeightForWidth/clamp-boundary",
+      "fn": "deviceHeightForWidth",
+      "args": [
+        {
+          "width": 2,
+          "height": 1
+        },
+        3
+      ],
+      "outcome": {
+        "returned": 2
+      }
+    },
+    {
+      "name": "deviceHeightForWidth/zero-width-device",
+      "fn": "deviceHeightForWidth",
+      "args": [
+        {
+          "width": 100,
+          "height": 100
+        },
+        0
+      ],
+      "outcome": {
+        "returned": 1
+      }
+    },
+    {
+      "name": "deviceHeightForWidth/negative-device",
+      "fn": "deviceHeightForWidth",
+      "args": [
+        {
+          "width": 100,
+          "height": 100
+        },
+        -50
+      ],
+      "outcome": {
+        "returned": 1
+      }
+    },
+    {
+      "name": "deviceHeightForWidth/zero-page-width",
+      "fn": "deviceHeightForWidth",
+      "args": [
+        {
+          "width": 0,
+          "height": 100
+        },
+        10
+      ],
+      "outcome": {
+        "returned": {
+          "$number": "Infinity"
+        }
+      }
+    },
+    {
+      "name": "deviceHeightForWidth/zero-by-zero",
+      "fn": "deviceHeightForWidth",
+      "args": [
+        {
+          "width": 0,
+          "height": 0
+        },
+        10
+      ],
+      "outcome": {
+        "returned": {
+          "$number": "NaN"
+        }
+      }
+    },
+    {
+      "name": "deviceHeightForWidth/nan-height",
+      "fn": "deviceHeightForWidth",
+      "args": [
+        {
+          "width": 10,
+          "height": {
+            "$number": "NaN"
+          }
+        },
+        10
+      ],
+      "outcome": {
+        "returned": {
+          "$number": "NaN"
+        }
+      }
+    },
+    {
+      "name": "deviceHeightForWidth/infinite-height",
+      "fn": "deviceHeightForWidth",
+      "args": [
+        {
+          "width": 10,
+          "height": {
+            "$number": "Infinity"
+          }
+        },
+        10
+      ],
+      "outcome": {
+        "returned": {
+          "$number": "Infinity"
+        }
+      }
+    },
+    {
+      "name": "deviceHeightForWidth/huge",
+      "fn": "deviceHeightForWidth",
+      "args": [
+        {
+          "width": 1,
+          "height": 1e+300
+        },
+        10000000000
+      ],
+      "outcome": {
+        "returned": {
+          "$number": "Infinity"
+        }
+      }
+    },
+    {
+      "name": "deviceHeightForWidth/landscape",
+      "fn": "deviceHeightForWidth",
+      "args": [
+        {
+          "width": 792,
+          "height": 612
+        },
+        1000
+      ],
+      "outcome": {
+        "returned": 773
+      }
+    }
+  ]
+}

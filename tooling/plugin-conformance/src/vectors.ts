@@ -69,15 +69,19 @@ async function renderSuite(suite: Suite): Promise<unknown> {
     for (const entry of suite.cases) {
       const fn = suite.functions[entry.fn];
       if (!fn) throw new Error(`[${suite.file}] no function "${entry.fn}"`);
+      // Encode the arguments first and call with their decoding, so the
+      // function sees exactly what the file records: a raw `NaN` would
+      // otherwise reach the TypeScript and print as `null` for the Rust side.
+      const args = canonical(entry.args) as unknown[];
       let outcome: unknown;
       try {
-        const result = (fn as (...args: unknown[]) => unknown)(...entry.args.map(decodePlain));
+        const result = (fn as (...args: unknown[]) => unknown)(...args.map(decodePlain));
         if (isThenable(result)) throw new Error(`[${suite.file}] ${entry.name}: function cases must be synchronous`);
         outcome = { returned: canonical(result, snapshotHooks) };
       } catch (error) {
         outcome = { threw: canonicalError(error, snapshotHooks) };
       }
-      cases.push({ ...entry, outcome });
+      cases.push({ ...entry, args, outcome });
     }
     return { schemaVersion: SCHEMA_VERSION, kind: 'function', describes: suite.describes, cases };
   }

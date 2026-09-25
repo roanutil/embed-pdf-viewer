@@ -1,0 +1,4703 @@
+{
+  "schemaVersion": 1,
+  "kind": "function",
+  "describes": "packages/core/stage: projection, camera operations, travel and clamp, scroll metrics, placement, reveal, zoom intent.",
+  "cases": [
+    {
+      "name": "constants/values",
+      "fn": "constants",
+      "args": [],
+      "outcome": {
+        "returned": {
+          "ZOOM_MIN": 0.05,
+          "ZOOM_MAX": 64,
+          "ZoomMode": {
+            "Automatic": "automatic",
+            "FitPage": "fit-page",
+            "FitWidth": "fit-width",
+            "FitAll": "fit-all"
+          }
+        }
+      }
+    },
+    {
+      "name": "toScreen/basic",
+      "fn": "toScreen",
+      "args": [
+        {
+          "x": 100,
+          "y": 50,
+          "zoom": 2
+        },
+        {
+          "x": 300,
+          "y": 200
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 400,
+          "y": 300
+        }
+      }
+    },
+    {
+      "name": "toScreen/zoom-zero",
+      "fn": "toScreen",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "zoom": 0
+        },
+        {
+          "x": 5,
+          "y": 5
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 0,
+          "y": 0
+        }
+      }
+    },
+    {
+      "name": "toScreen/nan",
+      "fn": "toScreen",
+      "args": [
+        {
+          "x": {
+            "$number": "NaN"
+          },
+          "y": 0,
+          "zoom": 1
+        },
+        {
+          "x": 1,
+          "y": 1
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": {
+            "$number": "NaN"
+          },
+          "y": 1
+        }
+      }
+    },
+    {
+      "name": "toWorld/basic",
+      "fn": "toWorld",
+      "args": [
+        {
+          "x": 100,
+          "y": 50,
+          "zoom": 2
+        },
+        {
+          "x": 300,
+          "y": 200
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 250,
+          "y": 150
+        }
+      }
+    },
+    {
+      "name": "toWorld/zoom-zero",
+      "fn": "toWorld",
+      "args": [
+        {
+          "x": 1,
+          "y": 2,
+          "zoom": 0
+        },
+        {
+          "x": 5,
+          "y": -5
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": {
+            "$number": "Infinity"
+          },
+          "y": {
+            "$number": "-Infinity"
+          }
+        }
+      }
+    },
+    {
+      "name": "toWorld/zoom-zero-origin",
+      "fn": "toWorld",
+      "args": [
+        {
+          "x": 1,
+          "y": 2,
+          "zoom": 0
+        },
+        {
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": {
+            "$number": "NaN"
+          },
+          "y": {
+            "$number": "NaN"
+          }
+        }
+      }
+    },
+    {
+      "name": "cameraWorldRect/basic",
+      "fn": "cameraWorldRect",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "zoom": 2
+        },
+        {
+          "width": 1000,
+          "height": 700
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 10,
+          "y": 20,
+          "width": 500,
+          "height": 350
+        }
+      }
+    },
+    {
+      "name": "cameraWorldRect/zoom-zero",
+      "fn": "cameraWorldRect",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "zoom": 0
+        },
+        {
+          "width": 1000,
+          "height": 700
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 10,
+          "y": 20,
+          "width": {
+            "$number": "Infinity"
+          },
+          "height": {
+            "$number": "Infinity"
+          }
+        }
+      }
+    },
+    {
+      "name": "cameraWorldRect/negative-zoom",
+      "fn": "cameraWorldRect",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "zoom": -1
+        },
+        {
+          "width": 1000,
+          "height": 700
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 10,
+          "y": 20,
+          "width": -1000,
+          "height": -700
+        }
+      }
+    },
+    {
+      "name": "zoomAround/keeps-cursor",
+      "fn": "zoomAround",
+      "args": [
+        {
+          "x": 100,
+          "y": 50,
+          "zoom": 1
+        },
+        {
+          "x": 300,
+          "y": 200
+        },
+        2.3
+      ],
+      "outcome": {
+        "returned": {
+          "x": 269.5652173913044,
+          "y": 163.04347826086956,
+          "zoom": 2.3
+        }
+      }
+    },
+    {
+      "name": "zoomAround/clamps-max",
+      "fn": "zoomAround",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "zoom": 10
+        },
+        {
+          "x": 500,
+          "y": 350
+        },
+        100
+      ],
+      "outcome": {
+        "returned": {
+          "x": 42.1875,
+          "y": 29.53125,
+          "zoom": 64
+        }
+      }
+    },
+    {
+      "name": "zoomAround/clamps-min",
+      "fn": "zoomAround",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "zoom": 1
+        },
+        {
+          "x": 500,
+          "y": 350
+        },
+        0.001
+      ],
+      "outcome": {
+        "returned": {
+          "x": -9500,
+          "y": -6650,
+          "zoom": 0.05
+        }
+      }
+    },
+    {
+      "name": "zoomAround/at-max",
+      "fn": "zoomAround",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "zoom": 64
+        },
+        {
+          "x": 1,
+          "y": 1
+        },
+        1
+      ],
+      "outcome": {
+        "returned": {
+          "x": 0,
+          "y": 0,
+          "zoom": 64
+        }
+      }
+    },
+    {
+      "name": "zoomAround/at-min",
+      "fn": "zoomAround",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "zoom": 0.05
+        },
+        {
+          "x": 1,
+          "y": 1
+        },
+        1
+      ],
+      "outcome": {
+        "returned": {
+          "x": 0,
+          "y": 0,
+          "zoom": 0.05
+        }
+      }
+    },
+    {
+      "name": "zoomAround/factor-nan",
+      "fn": "zoomAround",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "zoom": 1
+        },
+        {
+          "x": 1,
+          "y": 1
+        },
+        {
+          "$number": "NaN"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": {
+            "$number": "NaN"
+          },
+          "y": {
+            "$number": "NaN"
+          },
+          "zoom": {
+            "$number": "NaN"
+          }
+        }
+      }
+    },
+    {
+      "name": "zoomAround/factor-infinite",
+      "fn": "zoomAround",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "zoom": 1
+        },
+        {
+          "x": 1,
+          "y": 1
+        },
+        {
+          "$number": "Infinity"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 0.984375,
+          "y": 0.984375,
+          "zoom": 64
+        }
+      }
+    },
+    {
+      "name": "zoomAround/factor-negative",
+      "fn": "zoomAround",
+      "args": [
+        {
+          "x": 3,
+          "y": 4,
+          "zoom": 2
+        },
+        {
+          "x": 10,
+          "y": 10
+        },
+        -1
+      ],
+      "outcome": {
+        "returned": {
+          "x": -192,
+          "y": -191,
+          "zoom": 0.05
+        }
+      }
+    },
+    {
+      "name": "zoomAround/zoom-zero",
+      "fn": "zoomAround",
+      "args": [
+        {
+          "x": 3,
+          "y": 4,
+          "zoom": 0
+        },
+        {
+          "x": 10,
+          "y": 10
+        },
+        2
+      ],
+      "outcome": {
+        "returned": {
+          "x": {
+            "$number": "Infinity"
+          },
+          "y": {
+            "$number": "Infinity"
+          },
+          "zoom": 0.05
+        }
+      }
+    },
+    {
+      "name": "panByScreen/basic",
+      "fn": "panByScreen",
+      "args": [
+        {
+          "x": 100,
+          "y": 50,
+          "zoom": 2
+        },
+        30,
+        -40
+      ],
+      "outcome": {
+        "returned": {
+          "x": 85,
+          "y": 70,
+          "zoom": 2
+        }
+      }
+    },
+    {
+      "name": "panByScreen/zoom-zero",
+      "fn": "panByScreen",
+      "args": [
+        {
+          "x": 100,
+          "y": 50,
+          "zoom": 0
+        },
+        30,
+        0
+      ],
+      "outcome": {
+        "returned": {
+          "x": {
+            "$number": "-Infinity"
+          },
+          "y": {
+            "$number": "NaN"
+          },
+          "zoom": 0
+        }
+      }
+    },
+    {
+      "name": "centerOnWorld/basic",
+      "fn": "centerOnWorld",
+      "args": [
+        {
+          "x": 500,
+          "y": 1000
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        2
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 2,
+          "x": 250,
+          "y": 825
+        }
+      }
+    },
+    {
+      "name": "centerOnWorld/zoom-zero",
+      "fn": "centerOnWorld",
+      "args": [
+        {
+          "x": 500,
+          "y": 1000
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        0
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 0,
+          "x": {
+            "$number": "-Infinity"
+          },
+          "y": {
+            "$number": "-Infinity"
+          }
+        }
+      }
+    },
+    {
+      "name": "centerOnWorld/odd-viewport",
+      "fn": "centerOnWorld",
+      "args": [
+        {
+          "x": -3,
+          "y": 7
+        },
+        {
+          "width": 333,
+          "height": 1
+        },
+        0.3
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 0.3,
+          "x": -558,
+          "y": 5.333333333333333
+        }
+      }
+    },
+    {
+      "name": "travelRange/overflow",
+      "fn": "travelRange",
+      "args": [
+        0,
+        5000,
+        700,
+        1,
+        24
+      ],
+      "outcome": {
+        "returned": {
+          "near": -24,
+          "far": 4324,
+          "fits": false
+        }
+      }
+    },
+    {
+      "name": "travelRange/fits",
+      "fn": "travelRange",
+      "args": [
+        0,
+        300,
+        700,
+        1,
+        24
+      ],
+      "outcome": {
+        "returned": {
+          "near": -24,
+          "far": -376,
+          "fits": true
+        }
+      }
+    },
+    {
+      "name": "travelRange/exact-fit-boundary",
+      "fn": "travelRange",
+      "args": [
+        0,
+        652,
+        700,
+        1,
+        24
+      ],
+      "outcome": {
+        "returned": {
+          "near": -24,
+          "far": -24,
+          "fits": true
+        }
+      }
+    },
+    {
+      "name": "travelRange/just-over-boundary",
+      "fn": "travelRange",
+      "args": [
+        0,
+        652.0001,
+        700,
+        1,
+        24
+      ],
+      "outcome": {
+        "returned": {
+          "near": -24,
+          "far": -23.999900000000025,
+          "fits": false
+        }
+      }
+    },
+    {
+      "name": "travelRange/zoom-2",
+      "fn": "travelRange",
+      "args": [
+        100,
+        400,
+        700,
+        2,
+        10
+      ],
+      "outcome": {
+        "returned": {
+          "near": 95,
+          "far": 155,
+          "fits": false
+        }
+      }
+    },
+    {
+      "name": "travelRange/zoom-zero",
+      "fn": "travelRange",
+      "args": [
+        0,
+        400,
+        700,
+        0,
+        10
+      ],
+      "outcome": {
+        "returned": {
+          "near": {
+            "$number": "-Infinity"
+          },
+          "far": {
+            "$number": "-Infinity"
+          },
+          "fits": true
+        }
+      }
+    },
+    {
+      "name": "travelRange/zero-padding",
+      "fn": "travelRange",
+      "args": [
+        50,
+        100,
+        100,
+        1,
+        0
+      ],
+      "outcome": {
+        "returned": {
+          "near": 50,
+          "far": 50,
+          "fits": true
+        }
+      }
+    },
+    {
+      "name": "travelRange/negative-padding",
+      "fn": "travelRange",
+      "args": [
+        0,
+        100,
+        700,
+        1,
+        -30
+      ],
+      "outcome": {
+        "returned": {
+          "near": 30,
+          "far": -630,
+          "fits": true
+        }
+      }
+    },
+    {
+      "name": "travelRange/nan-content",
+      "fn": "travelRange",
+      "args": [
+        0,
+        {
+          "$number": "NaN"
+        },
+        700,
+        1,
+        0
+      ],
+      "outcome": {
+        "returned": {
+          "near": 0,
+          "far": {
+            "$number": "NaN"
+          },
+          "fits": false
+        }
+      }
+    },
+    {
+      "name": "clampCamera/unbounded-passthrough",
+      "fn": "clampCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 99999,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        {
+          "bounded": false,
+          "padding": 0
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 0,
+          "y": 99999,
+          "zoom": 1
+        }
+      }
+    },
+    {
+      "name": "clampCamera/bounded-bottom",
+      "fn": "clampCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 99999,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 1000,
+          "height": 5000
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        {
+          "bounded": true,
+          "padding": 0
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": 0,
+          "y": 4300
+        }
+      }
+    },
+    {
+      "name": "clampCamera/bounded-top-padded",
+      "fn": "clampCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": -99999,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 1000,
+          "height": 5000
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        {
+          "bounded": true,
+          "padding": 24
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": 0,
+          "y": -24
+        }
+      }
+    },
+    {
+      "name": "clampCamera/bounded-bottom-padded",
+      "fn": "clampCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 99999,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 1000,
+          "height": 5000
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        {
+          "bounded": true,
+          "padding": 24
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": 0,
+          "y": 4324
+        }
+      }
+    },
+    {
+      "name": "clampCamera/within-range-untouched",
+      "fn": "clampCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 1234,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 800,
+          "height": 5000
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        {
+          "bounded": true,
+          "padding": 24
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": -100,
+          "y": 1234
+        }
+      }
+    },
+    {
+      "name": "clampCamera/non-zero-origin-top",
+      "fn": "clampCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": -99999,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 4000,
+          "width": 1000,
+          "height": 800
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        {
+          "bounded": true,
+          "padding": 0
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": 0,
+          "y": 4000
+        }
+      }
+    },
+    {
+      "name": "clampCamera/non-zero-origin-bottom",
+      "fn": "clampCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 99999,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 4000,
+          "width": 1000,
+          "height": 800
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        {
+          "bounded": true,
+          "padding": 0
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": 0,
+          "y": 4100
+        }
+      }
+    },
+    {
+      "name": "clampCamera/small-item-centered",
+      "fn": "clampCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 4000,
+          "width": 300,
+          "height": 300
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        {
+          "bounded": true,
+          "padding": 0
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": -350,
+          "y": 3800
+        }
+      }
+    },
+    {
+      "name": "clampCamera/fit-width-zoom",
+      "fn": "clampCamera",
+      "args": [
+        {
+          "x": -99999,
+          "y": 0,
+          "zoom": 0.952
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 1000,
+          "height": 5000
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        {
+          "bounded": true,
+          "padding": 24
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 0.952,
+          "x": -25.210084033613416,
+          "y": 0
+        }
+      }
+    },
+    {
+      "name": "clampCamera/fit-start-start-ltr",
+      "fn": "clampCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 300,
+          "height": 300
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        {
+          "bounded": true,
+          "padding": 24,
+          "fitAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "direction": "ltr"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": -24,
+          "y": -24
+        }
+      }
+    },
+    {
+      "name": "clampCamera/fit-start-start-rtl",
+      "fn": "clampCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 300,
+          "height": 300
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        {
+          "bounded": true,
+          "padding": 24,
+          "fitAlign": {
+            "x": "start",
+            "y": "start"
+          },
+          "direction": "rtl"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": -676,
+          "y": -24
+        }
+      }
+    },
+    {
+      "name": "clampCamera/fit-start-start-default",
+      "fn": "clampCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 300,
+          "height": 300
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        {
+          "bounded": true,
+          "padding": 24,
+          "fitAlign": {
+            "x": "start",
+            "y": "start"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": -24,
+          "y": -24
+        }
+      }
+    },
+    {
+      "name": "clampCamera/fit-start-center-ltr",
+      "fn": "clampCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 300,
+          "height": 300
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        {
+          "bounded": true,
+          "padding": 24,
+          "fitAlign": {
+            "x": "start",
+            "y": "center"
+          },
+          "direction": "ltr"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": -24,
+          "y": -200
+        }
+      }
+    },
+    {
+      "name": "clampCamera/fit-start-center-rtl",
+      "fn": "clampCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 300,
+          "height": 300
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        {
+          "bounded": true,
+          "padding": 24,
+          "fitAlign": {
+            "x": "start",
+            "y": "center"
+          },
+          "direction": "rtl"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": -676,
+          "y": -200
+        }
+      }
+    },
+    {
+      "name": "clampCamera/fit-start-center-default",
+      "fn": "clampCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 300,
+          "height": 300
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        {
+          "bounded": true,
+          "padding": 24,
+          "fitAlign": {
+            "x": "start",
+            "y": "center"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": -24,
+          "y": -200
+        }
+      }
+    },
+    {
+      "name": "clampCamera/fit-start-end-ltr",
+      "fn": "clampCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 300,
+          "height": 300
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        {
+          "bounded": true,
+          "padding": 24,
+          "fitAlign": {
+            "x": "start",
+            "y": "end"
+          },
+          "direction": "ltr"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": -24,
+          "y": -376
+        }
+      }
+    },
+    {
+      "name": "clampCamera/fit-start-end-rtl",
+      "fn": "clampCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 300,
+          "height": 300
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        {
+          "bounded": true,
+          "padding": 24,
+          "fitAlign": {
+            "x": "start",
+            "y": "end"
+          },
+          "direction": "rtl"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": -676,
+          "y": -376
+        }
+      }
+    },
+    {
+      "name": "clampCamera/fit-start-end-default",
+      "fn": "clampCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 300,
+          "height": 300
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        {
+          "bounded": true,
+          "padding": 24,
+          "fitAlign": {
+            "x": "start",
+            "y": "end"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": -24,
+          "y": -376
+        }
+      }
+    },
+    {
+      "name": "clampCamera/fit-center-start-ltr",
+      "fn": "clampCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 300,
+          "height": 300
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        {
+          "bounded": true,
+          "padding": 24,
+          "fitAlign": {
+            "x": "center",
+            "y": "start"
+          },
+          "direction": "ltr"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": -350,
+          "y": -24
+        }
+      }
+    },
+    {
+      "name": "clampCamera/fit-center-start-rtl",
+      "fn": "clampCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 300,
+          "height": 300
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        {
+          "bounded": true,
+          "padding": 24,
+          "fitAlign": {
+            "x": "center",
+            "y": "start"
+          },
+          "direction": "rtl"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": -350,
+          "y": -24
+        }
+      }
+    },
+    {
+      "name": "clampCamera/fit-center-start-default",
+      "fn": "clampCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 300,
+          "height": 300
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        {
+          "bounded": true,
+          "padding": 24,
+          "fitAlign": {
+            "x": "center",
+            "y": "start"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": -350,
+          "y": -24
+        }
+      }
+    },
+    {
+      "name": "clampCamera/fit-center-center-ltr",
+      "fn": "clampCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 300,
+          "height": 300
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        {
+          "bounded": true,
+          "padding": 24,
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "direction": "ltr"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": -350,
+          "y": -200
+        }
+      }
+    },
+    {
+      "name": "clampCamera/fit-center-center-rtl",
+      "fn": "clampCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 300,
+          "height": 300
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        {
+          "bounded": true,
+          "padding": 24,
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          },
+          "direction": "rtl"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": -350,
+          "y": -200
+        }
+      }
+    },
+    {
+      "name": "clampCamera/fit-center-center-default",
+      "fn": "clampCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 300,
+          "height": 300
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        {
+          "bounded": true,
+          "padding": 24,
+          "fitAlign": {
+            "x": "center",
+            "y": "center"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": -350,
+          "y": -200
+        }
+      }
+    },
+    {
+      "name": "clampCamera/fit-center-end-ltr",
+      "fn": "clampCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 300,
+          "height": 300
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        {
+          "bounded": true,
+          "padding": 24,
+          "fitAlign": {
+            "x": "center",
+            "y": "end"
+          },
+          "direction": "ltr"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": -350,
+          "y": -376
+        }
+      }
+    },
+    {
+      "name": "clampCamera/fit-center-end-rtl",
+      "fn": "clampCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 300,
+          "height": 300
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        {
+          "bounded": true,
+          "padding": 24,
+          "fitAlign": {
+            "x": "center",
+            "y": "end"
+          },
+          "direction": "rtl"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": -350,
+          "y": -376
+        }
+      }
+    },
+    {
+      "name": "clampCamera/fit-center-end-default",
+      "fn": "clampCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 300,
+          "height": 300
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        {
+          "bounded": true,
+          "padding": 24,
+          "fitAlign": {
+            "x": "center",
+            "y": "end"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": -350,
+          "y": -376
+        }
+      }
+    },
+    {
+      "name": "clampCamera/fit-end-start-ltr",
+      "fn": "clampCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 300,
+          "height": 300
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        {
+          "bounded": true,
+          "padding": 24,
+          "fitAlign": {
+            "x": "end",
+            "y": "start"
+          },
+          "direction": "ltr"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": -676,
+          "y": -24
+        }
+      }
+    },
+    {
+      "name": "clampCamera/fit-end-start-rtl",
+      "fn": "clampCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 300,
+          "height": 300
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        {
+          "bounded": true,
+          "padding": 24,
+          "fitAlign": {
+            "x": "end",
+            "y": "start"
+          },
+          "direction": "rtl"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": -24,
+          "y": -24
+        }
+      }
+    },
+    {
+      "name": "clampCamera/fit-end-start-default",
+      "fn": "clampCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 300,
+          "height": 300
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        {
+          "bounded": true,
+          "padding": 24,
+          "fitAlign": {
+            "x": "end",
+            "y": "start"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": -676,
+          "y": -24
+        }
+      }
+    },
+    {
+      "name": "clampCamera/fit-end-center-ltr",
+      "fn": "clampCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 300,
+          "height": 300
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        {
+          "bounded": true,
+          "padding": 24,
+          "fitAlign": {
+            "x": "end",
+            "y": "center"
+          },
+          "direction": "ltr"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": -676,
+          "y": -200
+        }
+      }
+    },
+    {
+      "name": "clampCamera/fit-end-center-rtl",
+      "fn": "clampCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 300,
+          "height": 300
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        {
+          "bounded": true,
+          "padding": 24,
+          "fitAlign": {
+            "x": "end",
+            "y": "center"
+          },
+          "direction": "rtl"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": -24,
+          "y": -200
+        }
+      }
+    },
+    {
+      "name": "clampCamera/fit-end-center-default",
+      "fn": "clampCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 300,
+          "height": 300
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        {
+          "bounded": true,
+          "padding": 24,
+          "fitAlign": {
+            "x": "end",
+            "y": "center"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": -676,
+          "y": -200
+        }
+      }
+    },
+    {
+      "name": "clampCamera/fit-end-end-ltr",
+      "fn": "clampCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 300,
+          "height": 300
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        {
+          "bounded": true,
+          "padding": 24,
+          "fitAlign": {
+            "x": "end",
+            "y": "end"
+          },
+          "direction": "ltr"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": -676,
+          "y": -376
+        }
+      }
+    },
+    {
+      "name": "clampCamera/fit-end-end-rtl",
+      "fn": "clampCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 300,
+          "height": 300
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        {
+          "bounded": true,
+          "padding": 24,
+          "fitAlign": {
+            "x": "end",
+            "y": "end"
+          },
+          "direction": "rtl"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": -24,
+          "y": -376
+        }
+      }
+    },
+    {
+      "name": "clampCamera/fit-end-end-default",
+      "fn": "clampCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 300,
+          "height": 300
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        {
+          "bounded": true,
+          "padding": 24,
+          "fitAlign": {
+            "x": "end",
+            "y": "end"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": -676,
+          "y": -376
+        }
+      }
+    },
+    {
+      "name": "clampCamera/rtl-default-fit-align",
+      "fn": "clampCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 300,
+          "height": 300
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        {
+          "bounded": true,
+          "padding": 24,
+          "direction": "rtl"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": -350,
+          "y": -200
+        }
+      }
+    },
+    {
+      "name": "clampCamera/zoom-zero",
+      "fn": "clampCamera",
+      "args": [
+        {
+          "x": 5,
+          "y": 5,
+          "zoom": 0
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 300,
+          "height": 300
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        {
+          "bounded": true,
+          "padding": 24
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 0,
+          "x": {
+            "$number": "-Infinity"
+          },
+          "y": {
+            "$number": "-Infinity"
+          }
+        }
+      }
+    },
+    {
+      "name": "clampCamera/nan-position",
+      "fn": "clampCamera",
+      "args": [
+        {
+          "x": {
+            "$number": "NaN"
+          },
+          "y": {
+            "$number": "NaN"
+          },
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 800,
+          "height": 5000
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        {
+          "bounded": true,
+          "padding": 24
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": -100,
+          "y": {
+            "$number": "NaN"
+          }
+        }
+      }
+    },
+    {
+      "name": "clampCamera/overflow-x-only",
+      "fn": "clampCamera",
+      "args": [
+        {
+          "x": -500,
+          "y": 0,
+          "zoom": 2
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 800,
+          "height": 200
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        {
+          "bounded": true,
+          "padding": 24
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 2,
+          "x": -12,
+          "y": -75
+        }
+      }
+    },
+    {
+      "name": "scrollMetrics/bounded-top",
+      "fn": "scrollMetrics",
+      "args": [
+        {
+          "x": 88,
+          "y": -24,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 800,
+          "height": 5000
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        24
+      ],
+      "outcome": {
+        "returned": {
+          "scrollLeft": 112,
+          "scrollTop": 0,
+          "scrollWidth": 1112,
+          "scrollHeight": 5048,
+          "clientWidth": 1000,
+          "clientHeight": 700,
+          "scrollableX": true,
+          "scrollableY": true
+        }
+      }
+    },
+    {
+      "name": "scrollMetrics/bounded-bottom",
+      "fn": "scrollMetrics",
+      "args": [
+        {
+          "x": 88,
+          "y": 4324,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 800,
+          "height": 5000
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        24
+      ],
+      "outcome": {
+        "returned": {
+          "scrollLeft": 112,
+          "scrollTop": 4348,
+          "scrollWidth": 1112,
+          "scrollHeight": 5048,
+          "clientWidth": 1000,
+          "clientHeight": 700,
+          "scrollableX": true,
+          "scrollableY": true
+        }
+      }
+    },
+    {
+      "name": "scrollMetrics/zoom-2",
+      "fn": "scrollMetrics",
+      "args": [
+        {
+          "x": -24,
+          "y": 100,
+          "zoom": 2
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 800,
+          "height": 5000
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        24
+      ],
+      "outcome": {
+        "returned": {
+          "scrollLeft": 0,
+          "scrollTop": 224,
+          "scrollWidth": 1672,
+          "scrollHeight": 10048,
+          "clientWidth": 1000,
+          "clientHeight": 700,
+          "scrollableX": true,
+          "scrollableY": true
+        }
+      }
+    },
+    {
+      "name": "scrollMetrics/unbounded-west",
+      "fn": "scrollMetrics",
+      "args": [
+        {
+          "x": -3000,
+          "y": 0,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 800,
+          "height": 5000
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        24
+      ],
+      "outcome": {
+        "returned": {
+          "scrollLeft": 0,
+          "scrollTop": 24,
+          "scrollWidth": 3824,
+          "scrollHeight": 5048,
+          "clientWidth": 1000,
+          "clientHeight": 700,
+          "scrollableX": true,
+          "scrollableY": true
+        }
+      }
+    },
+    {
+      "name": "scrollMetrics/unbounded-east",
+      "fn": "scrollMetrics",
+      "args": [
+        {
+          "x": 4000,
+          "y": 0,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 800,
+          "height": 5000
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        24
+      ],
+      "outcome": {
+        "returned": {
+          "scrollLeft": 4024,
+          "scrollTop": 24,
+          "scrollWidth": 5024,
+          "scrollHeight": 5048,
+          "clientWidth": 1000,
+          "clientHeight": 700,
+          "scrollableX": true,
+          "scrollableY": true
+        }
+      }
+    },
+    {
+      "name": "scrollMetrics/everything-in-view",
+      "fn": "scrollMetrics",
+      "args": [
+        {
+          "x": -300,
+          "y": -300,
+          "zoom": 0.1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 800,
+          "height": 5000
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        24
+      ],
+      "outcome": {
+        "returned": {
+          "scrollLeft": 0,
+          "scrollTop": 0,
+          "scrollWidth": 1000,
+          "scrollHeight": 700,
+          "clientWidth": 1000,
+          "clientHeight": 700,
+          "scrollableX": false,
+          "scrollableY": false
+        }
+      }
+    },
+    {
+      "name": "scrollMetrics/half-pixel-slack-in",
+      "fn": "scrollMetrics",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 1000.5,
+          "height": 700.25
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        0
+      ],
+      "outcome": {
+        "returned": {
+          "scrollLeft": 0,
+          "scrollTop": 0,
+          "scrollWidth": 1000.5,
+          "scrollHeight": 700.25,
+          "clientWidth": 1000,
+          "clientHeight": 700,
+          "scrollableX": false,
+          "scrollableY": false
+        }
+      }
+    },
+    {
+      "name": "scrollMetrics/half-pixel-slack-out",
+      "fn": "scrollMetrics",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 1000.75,
+          "height": 700.5001
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        0
+      ],
+      "outcome": {
+        "returned": {
+          "scrollLeft": 0,
+          "scrollTop": 0,
+          "scrollWidth": 1000.75,
+          "scrollHeight": 700.5001,
+          "clientWidth": 1000,
+          "clientHeight": 700,
+          "scrollableX": true,
+          "scrollableY": true
+        }
+      }
+    },
+    {
+      "name": "scrollMetrics/zoom-zero",
+      "fn": "scrollMetrics",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "zoom": 0
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 800,
+          "height": 5000
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        24
+      ],
+      "outcome": {
+        "returned": {
+          "scrollLeft": {
+            "$number": "NaN"
+          },
+          "scrollTop": {
+            "$number": "NaN"
+          },
+          "scrollWidth": {
+            "$number": "NaN"
+          },
+          "scrollHeight": {
+            "$number": "NaN"
+          },
+          "clientWidth": 1000,
+          "clientHeight": 700,
+          "scrollableX": false,
+          "scrollableY": false
+        }
+      }
+    },
+    {
+      "name": "scrollMetrics/nan-camera",
+      "fn": "scrollMetrics",
+      "args": [
+        {
+          "x": {
+            "$number": "NaN"
+          },
+          "y": 0,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 800,
+          "height": 5000
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        24
+      ],
+      "outcome": {
+        "returned": {
+          "scrollLeft": {
+            "$number": "NaN"
+          },
+          "scrollTop": 24,
+          "scrollWidth": {
+            "$number": "NaN"
+          },
+          "scrollHeight": 5048,
+          "clientWidth": 1000,
+          "clientHeight": 700,
+          "scrollableX": false,
+          "scrollableY": true
+        }
+      }
+    },
+    {
+      "name": "cameraFromScroll/identity",
+      "fn": "cameraFromScroll",
+      "args": [
+        {
+          "x": 88,
+          "y": 1000,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 800,
+          "height": 5000
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        24,
+        {
+          "left": 0,
+          "top": 1024
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": -24,
+          "y": 1000
+        }
+      }
+    },
+    {
+      "name": "cameraFromScroll/top-only",
+      "fn": "cameraFromScroll",
+      "args": [
+        {
+          "x": 88,
+          "y": 1000,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 800,
+          "height": 5000
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        24,
+        {
+          "top": 2000
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": 88,
+          "y": 1976
+        }
+      }
+    },
+    {
+      "name": "cameraFromScroll/left-only",
+      "fn": "cameraFromScroll",
+      "args": [
+        {
+          "x": 88,
+          "y": 1000,
+          "zoom": 2
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 800,
+          "height": 5000
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        24,
+        {
+          "left": 150
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 2,
+          "x": 63,
+          "y": 1000
+        }
+      }
+    },
+    {
+      "name": "cameraFromScroll/neither",
+      "fn": "cameraFromScroll",
+      "args": [
+        {
+          "x": 88,
+          "y": 1000,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 800,
+          "height": 5000
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        24,
+        {}
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": 88,
+          "y": 1000
+        }
+      }
+    },
+    {
+      "name": "cameraFromScroll/beyond-end",
+      "fn": "cameraFromScroll",
+      "args": [
+        {
+          "x": 88,
+          "y": 1000,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 800,
+          "height": 5000
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        24,
+        {
+          "top": 1000000000
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": 88,
+          "y": 4324
+        }
+      }
+    },
+    {
+      "name": "cameraFromScroll/negative",
+      "fn": "cameraFromScroll",
+      "args": [
+        {
+          "x": 88,
+          "y": 1000,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 800,
+          "height": 5000
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        24,
+        {
+          "left": -50,
+          "top": -50
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": -24,
+          "y": -24
+        }
+      }
+    },
+    {
+      "name": "cameraFromScroll/unbounded-east-beyond-end",
+      "fn": "cameraFromScroll",
+      "args": [
+        {
+          "x": 4000,
+          "y": 0,
+          "zoom": 2
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 800,
+          "height": 5000
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        24,
+        {
+          "left": 1000000000
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 2,
+          "x": 4000,
+          "y": 0
+        }
+      }
+    },
+    {
+      "name": "cameraFromScroll/zoom-2-beyond-end",
+      "fn": "cameraFromScroll",
+      "args": [
+        {
+          "x": -24,
+          "y": 100,
+          "zoom": 2
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 800,
+          "height": 5000
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        24,
+        {
+          "top": 1000000000
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 2,
+          "x": -24,
+          "y": 4662
+        }
+      }
+    },
+    {
+      "name": "cameraFromScroll/no-range",
+      "fn": "cameraFromScroll",
+      "args": [
+        {
+          "x": -300,
+          "y": -300,
+          "zoom": 0.1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 800,
+          "height": 5000
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        24,
+        {
+          "left": 20,
+          "top": 20
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 0.1,
+          "x": -300,
+          "y": -300
+        }
+      }
+    },
+    {
+      "name": "cameraFromScroll/nan-target",
+      "fn": "cameraFromScroll",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 800,
+          "height": 5000
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        24,
+        {
+          "left": {
+            "$number": "NaN"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": {
+            "$number": "NaN"
+          },
+          "y": 0
+        }
+      }
+    },
+    {
+      "name": "cameraFromScroll/explicit-undefined",
+      "fn": "cameraFromScroll",
+      "args": [
+        {
+          "x": 7,
+          "y": 9,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 800,
+          "height": 5000
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        24,
+        {
+          "top": 10
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": 7,
+          "y": -14
+        }
+      }
+    },
+    {
+      "name": "placeCamera/start-start-ltr",
+      "fn": "placeCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 816,
+          "width": 600,
+          "height": 800
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        0.5,
+        24,
+        {
+          "x": "start",
+          "y": "start"
+        },
+        "ltr"
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 0.5,
+          "x": -48,
+          "y": 768
+        }
+      }
+    },
+    {
+      "name": "placeCamera/start-start-rtl",
+      "fn": "placeCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 816,
+          "width": 600,
+          "height": 800
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        0.5,
+        24,
+        {
+          "x": "start",
+          "y": "start"
+        },
+        "rtl"
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 0.5,
+          "x": -1352,
+          "y": 768
+        }
+      }
+    },
+    {
+      "name": "placeCamera/start-center-ltr",
+      "fn": "placeCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 816,
+          "width": 600,
+          "height": 800
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        0.5,
+        24,
+        {
+          "x": "start",
+          "y": "center"
+        },
+        "ltr"
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 0.5,
+          "x": -48,
+          "y": 516
+        }
+      }
+    },
+    {
+      "name": "placeCamera/start-center-rtl",
+      "fn": "placeCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 816,
+          "width": 600,
+          "height": 800
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        0.5,
+        24,
+        {
+          "x": "start",
+          "y": "center"
+        },
+        "rtl"
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 0.5,
+          "x": -1352,
+          "y": 516
+        }
+      }
+    },
+    {
+      "name": "placeCamera/start-end-ltr",
+      "fn": "placeCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 816,
+          "width": 600,
+          "height": 800
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        0.5,
+        24,
+        {
+          "x": "start",
+          "y": "end"
+        },
+        "ltr"
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 0.5,
+          "x": -48,
+          "y": 264
+        }
+      }
+    },
+    {
+      "name": "placeCamera/start-end-rtl",
+      "fn": "placeCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 816,
+          "width": 600,
+          "height": 800
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        0.5,
+        24,
+        {
+          "x": "start",
+          "y": "end"
+        },
+        "rtl"
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 0.5,
+          "x": -1352,
+          "y": 264
+        }
+      }
+    },
+    {
+      "name": "placeCamera/center-start-ltr",
+      "fn": "placeCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 816,
+          "width": 600,
+          "height": 800
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        0.5,
+        24,
+        {
+          "x": "center",
+          "y": "start"
+        },
+        "ltr"
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 0.5,
+          "x": -700,
+          "y": 768
+        }
+      }
+    },
+    {
+      "name": "placeCamera/center-start-rtl",
+      "fn": "placeCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 816,
+          "width": 600,
+          "height": 800
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        0.5,
+        24,
+        {
+          "x": "center",
+          "y": "start"
+        },
+        "rtl"
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 0.5,
+          "x": -700,
+          "y": 768
+        }
+      }
+    },
+    {
+      "name": "placeCamera/center-center-ltr",
+      "fn": "placeCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 816,
+          "width": 600,
+          "height": 800
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        0.5,
+        24,
+        {
+          "x": "center",
+          "y": "center"
+        },
+        "ltr"
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 0.5,
+          "x": -700,
+          "y": 516
+        }
+      }
+    },
+    {
+      "name": "placeCamera/center-center-rtl",
+      "fn": "placeCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 816,
+          "width": 600,
+          "height": 800
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        0.5,
+        24,
+        {
+          "x": "center",
+          "y": "center"
+        },
+        "rtl"
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 0.5,
+          "x": -700,
+          "y": 516
+        }
+      }
+    },
+    {
+      "name": "placeCamera/center-end-ltr",
+      "fn": "placeCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 816,
+          "width": 600,
+          "height": 800
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        0.5,
+        24,
+        {
+          "x": "center",
+          "y": "end"
+        },
+        "ltr"
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 0.5,
+          "x": -700,
+          "y": 264
+        }
+      }
+    },
+    {
+      "name": "placeCamera/center-end-rtl",
+      "fn": "placeCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 816,
+          "width": 600,
+          "height": 800
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        0.5,
+        24,
+        {
+          "x": "center",
+          "y": "end"
+        },
+        "rtl"
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 0.5,
+          "x": -700,
+          "y": 264
+        }
+      }
+    },
+    {
+      "name": "placeCamera/end-start-ltr",
+      "fn": "placeCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 816,
+          "width": 600,
+          "height": 800
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        0.5,
+        24,
+        {
+          "x": "end",
+          "y": "start"
+        },
+        "ltr"
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 0.5,
+          "x": -1352,
+          "y": 768
+        }
+      }
+    },
+    {
+      "name": "placeCamera/end-start-rtl",
+      "fn": "placeCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 816,
+          "width": 600,
+          "height": 800
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        0.5,
+        24,
+        {
+          "x": "end",
+          "y": "start"
+        },
+        "rtl"
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 0.5,
+          "x": -48,
+          "y": 768
+        }
+      }
+    },
+    {
+      "name": "placeCamera/end-center-ltr",
+      "fn": "placeCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 816,
+          "width": 600,
+          "height": 800
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        0.5,
+        24,
+        {
+          "x": "end",
+          "y": "center"
+        },
+        "ltr"
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 0.5,
+          "x": -1352,
+          "y": 516
+        }
+      }
+    },
+    {
+      "name": "placeCamera/end-center-rtl",
+      "fn": "placeCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 816,
+          "width": 600,
+          "height": 800
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        0.5,
+        24,
+        {
+          "x": "end",
+          "y": "center"
+        },
+        "rtl"
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 0.5,
+          "x": -48,
+          "y": 516
+        }
+      }
+    },
+    {
+      "name": "placeCamera/end-end-ltr",
+      "fn": "placeCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 816,
+          "width": 600,
+          "height": 800
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        0.5,
+        24,
+        {
+          "x": "end",
+          "y": "end"
+        },
+        "ltr"
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 0.5,
+          "x": -1352,
+          "y": 264
+        }
+      }
+    },
+    {
+      "name": "placeCamera/end-end-rtl",
+      "fn": "placeCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 816,
+          "width": 600,
+          "height": 800
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        0.5,
+        24,
+        {
+          "x": "end",
+          "y": "end"
+        },
+        "rtl"
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 0.5,
+          "x": -48,
+          "y": 264
+        }
+      }
+    },
+    {
+      "name": "placeCamera/defaults",
+      "fn": "placeCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 816,
+          "width": 600,
+          "height": 800
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        1
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": 0,
+          "y": 816
+        }
+      }
+    },
+    {
+      "name": "placeCamera/default-align",
+      "fn": "placeCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 816,
+          "width": 600,
+          "height": 800
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        2,
+        24
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 2,
+          "x": -12,
+          "y": 804
+        }
+      }
+    },
+    {
+      "name": "placeCamera/fraction-0.35",
+      "fn": "placeCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 816,
+          "width": 600,
+          "height": 800
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        1,
+        24,
+        {
+          "x": "center",
+          "y": 0.35
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": -200,
+          "y": 971
+        }
+      }
+    },
+    {
+      "name": "placeCamera/fraction-half",
+      "fn": "placeCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 816,
+          "width": 600,
+          "height": 800
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        1,
+        24,
+        {
+          "x": 0.5,
+          "y": 0.5
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": -200,
+          "y": 866
+        }
+      }
+    },
+    {
+      "name": "placeCamera/fraction-clamped-high",
+      "fn": "placeCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 816,
+          "width": 600,
+          "height": 800
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        1,
+        24,
+        {
+          "x": 7,
+          "y": -3
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": -700,
+          "y": 1216
+        }
+      }
+    },
+    {
+      "name": "placeCamera/fraction-rtl-physical",
+      "fn": "placeCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 1200,
+          "height": 1600
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        1,
+        24,
+        {
+          "x": 0.2,
+          "y": "start"
+        },
+        "rtl"
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": 400,
+          "y": -24
+        }
+      }
+    },
+    {
+      "name": "placeCamera/fraction-nan",
+      "fn": "placeCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        1,
+        0,
+        {
+          "x": {
+            "$number": "NaN"
+          },
+          "y": 0
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": {
+            "$number": "NaN"
+          },
+          "y": 5
+        }
+      }
+    },
+    {
+      "name": "placeCamera/rtl-start-overflowing",
+      "fn": "placeCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 1200,
+          "height": 1600
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        1,
+        24,
+        {
+          "x": "start",
+          "y": "start"
+        },
+        "rtl"
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": 224,
+          "y": -24
+        }
+      }
+    },
+    {
+      "name": "placeCamera/zoom-zero",
+      "fn": "placeCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        0,
+        24
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 0,
+          "x": {
+            "$number": "-Infinity"
+          },
+          "y": {
+            "$number": "-Infinity"
+          }
+        }
+      }
+    },
+    {
+      "name": "placeCamera/undefined-padding",
+      "fn": "placeCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        2,
+        {
+          "$undefined": true
+        },
+        {
+          "x": "end",
+          "y": "end"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 2,
+          "x": -490,
+          "y": -340
+        }
+      }
+    },
+    {
+      "name": "revealCamera/already-visible",
+      "fn": "revealCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 1900,
+          "zoom": 1
+        },
+        {
+          "x": 100,
+          "y": 2000,
+          "width": 300,
+          "height": 400
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        24
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": 0,
+          "y": 1900
+        }
+      }
+    },
+    {
+      "name": "revealCamera/below",
+      "fn": "revealCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "zoom": 1
+        },
+        {
+          "x": 100,
+          "y": 2000,
+          "width": 300,
+          "height": 400
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        24
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": 0,
+          "y": 1724
+        }
+      }
+    },
+    {
+      "name": "revealCamera/above",
+      "fn": "revealCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 5000,
+          "zoom": 1
+        },
+        {
+          "x": 100,
+          "y": 2000,
+          "width": 300,
+          "height": 400
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        24
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": 0,
+          "y": 1976
+        }
+      }
+    },
+    {
+      "name": "revealCamera/oversized",
+      "fn": "revealCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 2000,
+          "width": 300,
+          "height": 5000
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        24
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": -24,
+          "y": 1976
+        }
+      }
+    },
+    {
+      "name": "revealCamera/exactly-fits",
+      "fn": "revealCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 1000,
+          "height": 700
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        0
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": 0,
+          "y": 0
+        }
+      }
+    },
+    {
+      "name": "revealCamera/oversized-by-a-hair",
+      "fn": "revealCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 1000.000001,
+          "height": 700
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        0
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": 0,
+          "y": 0
+        }
+      }
+    },
+    {
+      "name": "revealCamera/default-padding",
+      "fn": "revealCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "zoom": 2
+        },
+        {
+          "x": 900,
+          "y": 900,
+          "width": 50,
+          "height": 50
+        },
+        {
+          "width": 1000,
+          "height": 700
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 2,
+          "x": 450,
+          "y": 600
+        }
+      }
+    },
+    {
+      "name": "revealCamera/left-of-window",
+      "fn": "revealCamera",
+      "args": [
+        {
+          "x": 5000,
+          "y": 0,
+          "zoom": 1
+        },
+        {
+          "x": 100,
+          "y": 10,
+          "width": 50,
+          "height": 50
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        10
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": 90,
+          "y": 0
+        }
+      }
+    },
+    {
+      "name": "revealCamera/zoom-zero",
+      "fn": "revealCamera",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "zoom": 0
+        },
+        {
+          "x": 1,
+          "y": 1,
+          "width": 1,
+          "height": 1
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        0
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 0,
+          "x": {
+            "$number": "NaN"
+          },
+          "y": {
+            "$number": "NaN"
+          }
+        }
+      }
+    },
+    {
+      "name": "revealCamera/oversized-nan-camera",
+      "fn": "revealCamera",
+      "args": [
+        {
+          "x": {
+            "$number": "NaN"
+          },
+          "y": {
+            "$number": "NaN"
+          },
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 3000,
+          "height": 3000
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        0
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": 0,
+          "y": 0
+        }
+      }
+    },
+    {
+      "name": "revealCamera/exactly-fits-nan-camera",
+      "fn": "revealCamera",
+      "args": [
+        {
+          "x": {
+            "$number": "NaN"
+          },
+          "y": {
+            "$number": "NaN"
+          },
+          "zoom": 1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 1000,
+          "height": 700
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        0
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": {
+            "$number": "NaN"
+          },
+          "y": {
+            "$number": "NaN"
+          }
+        }
+      }
+    },
+    {
+      "name": "revealCamera/nan-camera",
+      "fn": "revealCamera",
+      "args": [
+        {
+          "x": {
+            "$number": "NaN"
+          },
+          "y": 0,
+          "zoom": 1
+        },
+        {
+          "x": 1,
+          "y": 1,
+          "width": 1,
+          "height": 1
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        0
+      ],
+      "outcome": {
+        "returned": {
+          "zoom": 1,
+          "x": {
+            "$number": "NaN"
+          },
+          "y": 0
+        }
+      }
+    },
+    {
+      "name": "resolveZoom/fit-width",
+      "fn": "resolveZoom",
+      "args": [
+        {
+          "mode": "fit-width"
+        },
+        {
+          "width": 2000,
+          "height": 800
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        16
+      ],
+      "outcome": {
+        "returned": 0.484
+      }
+    },
+    {
+      "name": "resolveZoom/fit-page",
+      "fn": "resolveZoom",
+      "args": [
+        {
+          "mode": "fit-page"
+        },
+        {
+          "width": 2000,
+          "height": 3000
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        16
+      ],
+      "outcome": {
+        "returned": 0.22266666666666668
+      }
+    },
+    {
+      "name": "resolveZoom/fit-page-width-bound",
+      "fn": "resolveZoom",
+      "args": [
+        {
+          "mode": "fit-page"
+        },
+        {
+          "width": 3000,
+          "height": 100
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        16
+      ],
+      "outcome": {
+        "returned": 0.32266666666666666
+      }
+    },
+    {
+      "name": "resolveZoom/fit-all",
+      "fn": "resolveZoom",
+      "args": [
+        {
+          "mode": "fit-all"
+        },
+        {
+          "width": 3000,
+          "height": 2400
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        16
+      ],
+      "outcome": {
+        "returned": 0.2783333333333333
+      }
+    },
+    {
+      "name": "resolveZoom/automatic-capped",
+      "fn": "resolveZoom",
+      "args": [
+        {
+          "mode": "automatic"
+        },
+        {
+          "width": 400,
+          "height": 800
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        16
+      ],
+      "outcome": {
+        "returned": 1
+      }
+    },
+    {
+      "name": "resolveZoom/automatic-below",
+      "fn": "resolveZoom",
+      "args": [
+        {
+          "mode": "automatic"
+        },
+        {
+          "width": 2000,
+          "height": 800
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        16
+      ],
+      "outcome": {
+        "returned": 0.484
+      }
+    },
+    {
+      "name": "resolveZoom/automatic-tall",
+      "fn": "resolveZoom",
+      "args": [
+        {
+          "mode": "automatic"
+        },
+        {
+          "width": 400,
+          "height": 5000
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        16
+      ],
+      "outcome": {
+        "returned": 1
+      }
+    },
+    {
+      "name": "resolveZoom/fit-width-clamped-max",
+      "fn": "resolveZoom",
+      "args": [
+        {
+          "mode": "fit-width"
+        },
+        {
+          "width": 1,
+          "height": 1
+        },
+        {
+          "width": 1000,
+          "height": 700
+        }
+      ],
+      "outcome": {
+        "returned": 64
+      }
+    },
+    {
+      "name": "resolveZoom/fit-width-clamped-min",
+      "fn": "resolveZoom",
+      "args": [
+        {
+          "mode": "fit-width"
+        },
+        {
+          "width": 1000000000,
+          "height": 1
+        },
+        {
+          "width": 1000,
+          "height": 700
+        }
+      ],
+      "outcome": {
+        "returned": 0.05
+      }
+    },
+    {
+      "name": "resolveZoom/fit-page-clamped-min",
+      "fn": "resolveZoom",
+      "args": [
+        {
+          "mode": "fit-page"
+        },
+        {
+          "width": 1,
+          "height": 1000000000
+        },
+        {
+          "width": 1000,
+          "height": 700
+        }
+      ],
+      "outcome": {
+        "returned": 0.05
+      }
+    },
+    {
+      "name": "resolveZoom/fit-page-clamped-max",
+      "fn": "resolveZoom",
+      "args": [
+        {
+          "mode": "fit-page"
+        },
+        {
+          "width": 1,
+          "height": 1
+        },
+        {
+          "width": 1000,
+          "height": 700
+        }
+      ],
+      "outcome": {
+        "returned": 64
+      }
+    },
+    {
+      "name": "resolveZoom/automatic-clamped-min",
+      "fn": "resolveZoom",
+      "args": [
+        {
+          "mode": "automatic"
+        },
+        {
+          "width": 1000000000,
+          "height": 1
+        },
+        {
+          "width": 1000,
+          "height": 700
+        }
+      ],
+      "outcome": {
+        "returned": 0.05
+      }
+    },
+    {
+      "name": "resolveZoom/padding-eats-viewport",
+      "fn": "resolveZoom",
+      "args": [
+        {
+          "mode": "fit-width"
+        },
+        {
+          "width": 100,
+          "height": 100
+        },
+        {
+          "width": 1000,
+          "height": 700
+        },
+        600
+      ],
+      "outcome": {
+        "returned": 0.05
+      }
+    },
+    {
+      "name": "resolveZoom/padding-leaves-exactly-one",
+      "fn": "resolveZoom",
+      "args": [
+        {
+          "mode": "fit-page"
+        },
+        {
+          "width": 1,
+          "height": 1
+        },
+        {
+          "width": 3,
+          "height": 3
+        },
+        1
+      ],
+      "outcome": {
+        "returned": 1
+      }
+    },
+    {
+      "name": "resolveZoom/zero-box",
+      "fn": "resolveZoom",
+      "args": [
+        {
+          "mode": "fit-width"
+        },
+        {
+          "width": 0,
+          "height": 0
+        },
+        {
+          "width": 1000,
+          "height": 700
+        }
+      ],
+      "outcome": {
+        "returned": 64
+      }
+    },
+    {
+      "name": "resolveZoom/zero-box-page",
+      "fn": "resolveZoom",
+      "args": [
+        {
+          "mode": "fit-page"
+        },
+        {
+          "width": 0,
+          "height": 0
+        },
+        {
+          "width": 1000,
+          "height": 700
+        }
+      ],
+      "outcome": {
+        "returned": 64
+      }
+    },
+    {
+      "name": "resolveZoom/default-padding",
+      "fn": "resolveZoom",
+      "args": [
+        {
+          "mode": "fit-page"
+        },
+        {
+          "width": 500,
+          "height": 500
+        },
+        {
+          "width": 1000,
+          "height": 700
+        }
+      ],
+      "outcome": {
+        "returned": 1.4
+      }
+    },
+    {
+      "name": "resolveZoom/level",
+      "fn": "resolveZoom",
+      "args": [
+        {
+          "level": 2.5
+        },
+        {
+          "width": 1,
+          "height": 1
+        },
+        {
+          "width": 1000,
+          "height": 700
+        }
+      ],
+      "outcome": {
+        "returned": 2.5
+      }
+    },
+    {
+      "name": "resolveZoom/level-max",
+      "fn": "resolveZoom",
+      "args": [
+        {
+          "level": 999
+        },
+        {
+          "width": 1,
+          "height": 1
+        },
+        {
+          "width": 1000,
+          "height": 700
+        }
+      ],
+      "outcome": {
+        "returned": 64
+      }
+    },
+    {
+      "name": "resolveZoom/level-min",
+      "fn": "resolveZoom",
+      "args": [
+        {
+          "level": 0
+        },
+        {
+          "width": 1,
+          "height": 1
+        },
+        {
+          "width": 1000,
+          "height": 700
+        }
+      ],
+      "outcome": {
+        "returned": 0.05
+      }
+    },
+    {
+      "name": "resolveZoom/level-boundary",
+      "fn": "resolveZoom",
+      "args": [
+        {
+          "level": 64
+        },
+        {
+          "width": 1,
+          "height": 1
+        },
+        {
+          "width": 1000,
+          "height": 700
+        }
+      ],
+      "outcome": {
+        "returned": 64
+      }
+    },
+    {
+      "name": "resolveZoom/level-nan",
+      "fn": "resolveZoom",
+      "args": [
+        {
+          "level": {
+            "$number": "NaN"
+          }
+        },
+        {
+          "width": 1,
+          "height": 1
+        },
+        {
+          "width": 1000,
+          "height": 700
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "$number": "NaN"
+        }
+      }
+    },
+    {
+      "name": "resolveZoom/level-wins-over-mode",
+      "fn": "resolveZoom",
+      "args": [
+        {
+          "level": 3,
+          "mode": "fit-width"
+        },
+        {
+          "width": 1,
+          "height": 1
+        },
+        {
+          "width": 1000,
+          "height": 700
+        }
+      ],
+      "outcome": {
+        "returned": 3
+      }
+    },
+    {
+      "name": "resolveZoom/page-width",
+      "fn": "resolveZoom",
+      "args": [
+        {
+          "pageWidth": 200
+        },
+        {
+          "width": 612,
+          "height": 792
+        },
+        {
+          "width": 1000,
+          "height": 700
+        }
+      ],
+      "outcome": {
+        "returned": 0.32679738562091504
+      }
+    },
+    {
+      "name": "resolveZoom/page-width-min",
+      "fn": "resolveZoom",
+      "args": [
+        {
+          "pageWidth": 1
+        },
+        {
+          "width": 1000000000,
+          "height": 1
+        },
+        {
+          "width": 1000,
+          "height": 700
+        }
+      ],
+      "outcome": {
+        "returned": 0.05
+      }
+    },
+    {
+      "name": "resolveZoom/page-width-max",
+      "fn": "resolveZoom",
+      "args": [
+        {
+          "pageWidth": 1000000
+        },
+        {
+          "width": 1,
+          "height": 1
+        },
+        {
+          "width": 1000,
+          "height": 700
+        }
+      ],
+      "outcome": {
+        "returned": 64
+      }
+    },
+    {
+      "name": "resolveZoom/page-width-zero-box",
+      "fn": "resolveZoom",
+      "args": [
+        {
+          "pageWidth": 200
+        },
+        {
+          "width": 0,
+          "height": 1
+        },
+        {
+          "width": 1000,
+          "height": 700
+        }
+      ],
+      "outcome": {
+        "returned": 64
+      }
+    },
+    {
+      "name": "resolveZoom/page-width-wins-over-height",
+      "fn": "resolveZoom",
+      "args": [
+        {
+          "pageWidth": 200,
+          "pageHeight": 10
+        },
+        {
+          "width": 612,
+          "height": 792
+        },
+        {
+          "width": 1000,
+          "height": 700
+        }
+      ],
+      "outcome": {
+        "returned": 0.32679738562091504
+      }
+    },
+    {
+      "name": "resolveZoom/page-height",
+      "fn": "resolveZoom",
+      "args": [
+        {
+          "pageHeight": 150
+        },
+        {
+          "width": 612,
+          "height": 792
+        },
+        {
+          "width": 1000,
+          "height": 700
+        }
+      ],
+      "outcome": {
+        "returned": 0.1893939393939394
+      }
+    },
+    {
+      "name": "resolveZoom/page-height-min",
+      "fn": "resolveZoom",
+      "args": [
+        {
+          "pageHeight": 1
+        },
+        {
+          "width": 1,
+          "height": 1000000000
+        },
+        {
+          "width": 1000,
+          "height": 700
+        }
+      ],
+      "outcome": {
+        "returned": 0.05
+      }
+    },
+    {
+      "name": "resolveZoom/page-height-nan",
+      "fn": "resolveZoom",
+      "args": [
+        {
+          "pageHeight": {
+            "$number": "NaN"
+          }
+        },
+        {
+          "width": 1,
+          "height": 1
+        },
+        {
+          "width": 1000,
+          "height": 700
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "$number": "NaN"
+        }
+      }
+    }
+  ]
+}

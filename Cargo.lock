@@ -270,6 +270,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "epdf-geometry"
+version = "0.0.0"
+dependencies = [
+ "epdf-kernel",
+ "plugin-conformance",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "epdf-kernel"
 version = "0.0.0"
 dependencies = [
@@ -294,6 +304,17 @@ dependencies = [
 name = "epdf-plugin-metadata"
 version = "0.0.0"
 dependencies = [
+ "epdf-kernel",
+ "plugin-conformance",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "epdf-stage-core"
+version = "0.0.0"
+dependencies = [
+ "epdf-geometry",
  "epdf-kernel",
  "plugin-conformance",
  "serde",
