@@ -1,7 +1,23 @@
 //! `vectors/plugins/annotation-*.json`, generated from `packages/plugin/annotation`.
 
-use epdf_plugin_annotation::harness;
+use epdf_plugin_actions::harness::Actions;
+use epdf_plugin_annotation::harness::{self, Annotation};
+use epdf_plugin_interaction::harness::Interaction;
+use epdf_plugin_selection::harness::Selection;
 use plugin_conformance::{Registry, assert_suite};
+
+fn registry() -> Registry {
+    Registry::new().with(Interaction).with(Selection).with(Actions).with(Annotation)
+}
+
+fn scenarios(file: &str) {
+    assert_suite(file, &registry(), &Vec::new());
+}
+
+#[test]
+fn hydration_matches_the_typescript() {
+    scenarios("plugins/annotation-hydration.json");
+}
 
 #[test]
 fn repository_matches_the_typescript() {
