@@ -20,6 +20,11 @@ fn hydration_matches_the_typescript() {
 }
 
 #[test]
+fn crud_matches_the_typescript() {
+    scenarios("plugins/annotation-crud.json");
+}
+
+#[test]
 fn repository_matches_the_typescript() {
     assert_suite(
         "plugins/annotation-repository.json",
