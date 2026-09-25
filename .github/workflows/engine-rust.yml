@@ -220,6 +220,13 @@ jobs:
       - name: Form write vectors are current
         run: pnpm --filter @embedpdf/tooling-engine-conformance run form-write:check
 
+      # G12's effects batch. The interesting output is a vocabulary rather
+      # than a document: `unchanged` against `applied` decides whether a
+      # version bump happens at all, and `rejected` against `failed` decides
+      # whether the caller shows a user their mistake or refetches.
+      - name: Form effects vectors are current
+        run: pnpm --filter @embedpdf/tooling-engine-conformance run form-effects:check
+
       # G12's structural writes: creating a field, its widgets, and the
       # joins between them.
       - name: Form field vectors are current
@@ -259,6 +266,13 @@ jobs:
       # rewrites the file, and the two have to mean the same thing.
       - name: Save vectors are current
         run: pnpm --filter @embedpdf/tooling-engine-conformance run save:check
+
+      # Every request kind the worker protocol accepts, read off the
+      # TypeScript union by the compiler. The bindings route one JSON
+      # envelope rather than exporting sixty-five functions, so nothing in
+      # their signatures says which kinds exist: a missing arm compiles.
+      - name: Wire request vectors are current
+        run: pnpm --filter @embedpdf/tooling-engine-conformance run wire:check
 
       # G11's two pure decisions, pinned before the mutators that use them.
       # A wrong appearance verdict destroys a stream that cannot be

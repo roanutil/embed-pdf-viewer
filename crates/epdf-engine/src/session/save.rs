@@ -170,6 +170,38 @@ pub enum DocumentEventInit {
 }
 
 impl DocumentEventInit {
+    /// The operation's result, unchanged.
+    ///
+    /// Every variant carries one and they all carry it the same way, which
+    /// is the invariant the event stream rests on: a consumer that acted on
+    /// the operation's return value and one that acted on its event acted on
+    /// the same thing.
+    pub fn result(&self) -> &serde_json::Value {
+        match self {
+            Self::AnnotationCreated(v)
+            | Self::AnnotationUpdated(v)
+            | Self::AnnotationDeleted(v)
+            | Self::AnnotationMoved(v)
+            | Self::PagesMoved(v)
+            | Self::PagesRotated(v)
+            | Self::PagesDeleted(v)
+            | Self::PagesInserted(v)
+            | Self::PagesFlattened(v)
+            | Self::RedactionApplied(v)
+            | Self::MetadataUpdated(v)
+            | Self::AttachmentCreated(v)
+            | Self::AttachmentDeleted(v)
+            | Self::FormValueChanged(v)
+            | Self::FormImported(v)
+            | Self::FormRepaired(v)
+            | Self::FormFieldCreated(v)
+            | Self::FormFieldUpdated(v)
+            | Self::FormFieldDeleted(v)
+            | Self::FormWidgetAttached(v)
+            | Self::FormWidgetDetached(v) => v,
+        }
+    }
+
     /// The wire `type`, which is also the tag a consumer switches on.
     pub fn type_name(&self) -> &'static str {
         match self {

@@ -42,6 +42,7 @@
 //! that it changes shipping web behaviour for a path with no callers yet.
 
 use pdfium::{Document, Library, PdfiumError};
+use serde::{Deserialize, Serialize};
 use std::rc::Rc;
 
 use super::state::{
@@ -63,9 +64,15 @@ session therefore reports itself restricted. Reproduced from \
 SecurityReader.readLiveSecurityInfo for parity; see the module docs.";
 
 /// Which unlock a password check will accept.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+///
+/// The wire spellings are `"any"` and `"owner"`, and `any` is the default: a
+/// prompt asking whether a password helps means any password that opens the
+/// document unless the caller says otherwise.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum PasswordMode {
     /// Any password that opens the document.
+    #[default]
     Any,
     /// Only the owner password.
     Owner,

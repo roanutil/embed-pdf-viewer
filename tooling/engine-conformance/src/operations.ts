@@ -68,15 +68,29 @@ export interface OperationRow {
   /** The phase that moves it, from `multiplatform-plan.md` Section 12. */
   readonly phase: number;
   readonly cancellation: CancellationCase;
-  /** Set when the Rust reader exists and a conformance gate covers it. */
-  readonly rustStatus: 'ported' | 'planned';
+  /**
+   * How far the Rust engine has this kind.
+   *
+   * - `ported`: it reaches an implementation AND a vector under
+   *   `vectors/` pins that implementation against this TypeScript.
+   * - `routed`: it reaches an implementation, and the only gate on it is
+   *   `vectors/wire/requests.json` by way of
+   *   `crates/epdf-engine/tests/wire_contract.rs`, which proves the arm
+   *   exists and says nothing about what it does.
+   * - `planned`: neither.
+   *
+   * The distinction is worth keeping because `routed` is a real but weak
+   * guarantee: the kind answers, and whether it answers CORRECTLY rests on
+   * unit tests rather than on the oracle.
+   */
+  readonly rustStatus: 'ported' | 'routed' | 'planned';
   /** Anything a reader of the matrix alone would otherwise get wrong. */
   readonly note?: string;
 }
 
 export const OPERATIONS: readonly OperationRow[] = [
-  // --- G2. Page geometry. The first operation ported, and the only one whose
-  // Rust reader exists today.
+  // --- G2. Page geometry. The first operation ported, and the one the rest
+  // of the order was planned around.
   {
     kind: 'pages.geometry',
     group: 'G2',
@@ -95,7 +109,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'A',
     phase: 1,
     cancellation: 'queued-only',
-    rustStatus: 'planned',
+    rustStatus: 'routed',
     note: 'No throwIfAborted reaches PdfDocumentOpener: once an open starts it runs to completion.',
   },
   {
@@ -104,7 +118,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'A',
     phase: 1,
     cancellation: 'queued-only',
-    rustStatus: 'planned',
+    rustStatus: 'routed',
   },
   {
     kind: 'open.layerFileBase',
@@ -112,7 +126,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'A',
     phase: 1,
     cancellation: 'queued-only',
-    rustStatus: 'planned',
+    rustStatus: 'routed',
   },
   {
     kind: 'document.checkPasswordPermissions',
@@ -120,7 +134,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'A',
     phase: 1,
     cancellation: 'queued-only',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
   },
   {
     kind: 'document.probeSecurityFile',
@@ -128,7 +142,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'A',
     phase: 1,
     cancellation: 'queued-only',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
   },
   {
     kind: 'close',
@@ -136,7 +150,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'control',
     phase: 1,
     cancellation: 'control',
-    rustStatus: 'planned',
+    rustStatus: 'routed',
     note: 'Idempotent: rejects new work, invalidates handles, releases on the owner thread. Closing an engine closes its documents.',
   },
   {
@@ -145,7 +159,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'control',
     phase: 1,
     cancellation: 'control',
-    rustStatus: 'planned',
+    rustStatus: 'routed',
   },
   {
     kind: 'abort',
@@ -153,7 +167,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'control',
     phase: 1,
     cancellation: 'control',
-    rustStatus: 'planned',
+    rustStatus: 'routed',
     note: 'Handled before the WorkerHost switch (WorkerHost.ts:199), which is why that switch has 64 arms and the protocol has 65 kinds.',
   },
   {
@@ -162,7 +176,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'control',
     phase: 1,
     cancellation: 'control',
-    rustStatus: 'planned',
+    rustStatus: 'routed',
   },
 
   // --- G4. Render and fonts. Fonts are engine-level and move as one unit,
@@ -173,7 +187,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'A',
     phase: 1,
     cancellation: 'non-preemptible',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
     note: 'Cooperative up to FPDF_RenderPageBitmapWithMatrix (PageRenderReader.ts:51), which cannot be interrupted.',
   },
   {
@@ -182,7 +196,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'A',
     phase: 1,
     cancellation: 'queued-only',
-    rustStatus: 'planned',
+    rustStatus: 'routed',
     note: 'Engine-level, not per document. One Rust FontRegistry per combined worker owns the key-to-ID map and the retained handles.',
   },
   {
@@ -191,7 +205,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'A',
     phase: 1,
     cancellation: 'queued-only',
-    rustStatus: 'planned',
+    rustStatus: 'routed',
   },
   {
     kind: 'fonts.clearFallbacks',
@@ -199,7 +213,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'A',
     phase: 1,
     cancellation: 'queued-only',
-    rustStatus: 'planned',
+    rustStatus: 'routed',
   },
   {
     kind: 'fonts.clear',
@@ -207,7 +221,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'A',
     phase: 1,
     cancellation: 'queued-only',
-    rustStatus: 'planned',
+    rustStatus: 'routed',
   },
 
   // --- G5. Text and search.
@@ -217,7 +231,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'A',
     phase: 2,
     cancellation: 'cooperative',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
     note: 'Already coarse (PageTextReader.ts:93). Gate on correctness, not on the boundary.',
   },
   {
@@ -226,7 +240,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'A',
     phase: 2,
     cancellation: 'cooperative',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
     note: 'Entry gate: a dialect vector file for regex.ts and fold.ts semantics before any porting starts.',
   },
 
@@ -237,7 +251,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'A',
     phase: 2,
     cancellation: 'cooperative',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
   },
   {
     kind: 'pages.list',
@@ -245,7 +259,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'A',
     phase: 2,
     cancellation: 'cooperative',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
     note: 'Page identity must agree between lazy per-page lookup and full enumeration (DocumentSession.ts:41-44).',
   },
   {
@@ -254,7 +268,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'A',
     phase: 2,
     cancellation: 'cooperative',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
   },
 
   // --- G7. Annotation reads. Rust never creates or retains the form model;
@@ -265,7 +279,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'A',
     phase: 2,
     cancellation: 'cooperative',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
   },
   {
     kind: 'annotations.listRawPage',
@@ -273,7 +287,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'A',
     phase: 2,
     cancellation: 'cooperative',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
   },
   {
     kind: 'annotations.listFullPage',
@@ -281,7 +295,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'A',
     phase: 2,
     cancellation: 'cooperative',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
     note: 'Reaches the cached form model through joinWidgetField.ts:23, so it carries a repeated-read benchmark against that cache.',
   },
   {
@@ -290,7 +304,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'A',
     phase: 2,
     cancellation: 'non-preemptible',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
   },
 
   // --- G8. Files, forms reads, piece info.
@@ -300,7 +314,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'A',
     phase: 2,
     cancellation: 'cooperative',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
   },
   {
     kind: 'attachments.readFile',
@@ -308,7 +322,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'A',
     phase: 2,
     cancellation: 'cooperative',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
   },
   {
     kind: 'annotations.readFile',
@@ -316,7 +330,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'A',
     phase: 2,
     cancellation: 'cooperative',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
     note: 'Byte equality with the TypeScript path, not a semantic comparison.',
   },
   {
@@ -325,7 +339,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'A',
     phase: 2,
     cancellation: 'cooperative',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
   },
   {
     kind: 'pieceInfo.applications',
@@ -333,7 +347,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'A',
     phase: 2,
     cancellation: 'cooperative',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
   },
   {
     kind: 'forms.list',
@@ -341,7 +355,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'A',
     phase: 2,
     cancellation: 'cooperative',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
     note: 'Filed by behaviour: a read despite the forms. prefix.',
   },
   {
@@ -350,7 +364,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'A',
     phase: 2,
     cancellation: 'cooperative',
-    rustStatus: 'planned',
+    rustStatus: 'routed',
   },
 
   // --- G9. Page extract. Rust owns a scratch document end to end and closes
@@ -361,7 +375,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'A',
     phase: 2,
     cancellation: 'cooperative',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
     note: 'Creates and closes its own FPDF_CreateNewDocument scratch document (PagesExtractor.ts:56-89), a named exception to Stage A "retains nothing, closes nothing".',
   },
 
@@ -372,7 +386,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'B',
     phase: 4,
     cancellation: 'after-first-write',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
   },
   {
     kind: 'document.saveFile',
@@ -380,7 +394,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'B',
     phase: 4,
     cancellation: 'after-first-write',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
   },
   {
     kind: 'document.saveLayerBuffer',
@@ -388,7 +402,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'B',
     phase: 4,
     cancellation: 'after-first-write',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
   },
 
   // --- G11. Annotation writes.
@@ -398,7 +412,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'C',
     phase: 4,
     cancellation: 'after-first-write',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
     note: 'The Phase 0 Stage B bridge spike runs over this operation, then is thrown away.',
   },
   {
@@ -407,7 +421,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'C',
     phase: 4,
     cancellation: 'after-first-write',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
   },
   {
     kind: 'annotations.delete',
@@ -415,7 +429,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'C',
     phase: 4,
     cancellation: 'after-first-write',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
   },
   {
     kind: 'annotations.move',
@@ -423,7 +437,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'C',
     phase: 4,
     cancellation: 'after-first-write',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
   },
 
   // --- G12. Forms writes.
@@ -433,7 +447,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'C',
     phase: 4,
     cancellation: 'after-first-write',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
   },
   {
     kind: 'forms.reset',
@@ -441,7 +455,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'C',
     phase: 4,
     cancellation: 'after-first-write',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
   },
   {
     kind: 'forms.applyEffects',
@@ -449,7 +463,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'C',
     phase: 4,
     cancellation: 'after-first-write',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
   },
   {
     kind: 'forms.import',
@@ -457,7 +471,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'C',
     phase: 4,
     cancellation: 'after-first-write',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
   },
   {
     kind: 'forms.repair',
@@ -465,7 +479,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'C',
     phase: 4,
     cancellation: 'after-first-write',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
   },
   {
     kind: 'forms.createField',
@@ -473,7 +487,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'C',
     phase: 4,
     cancellation: 'after-first-write',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
   },
   {
     kind: 'forms.updateField',
@@ -481,7 +495,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'C',
     phase: 4,
     cancellation: 'after-first-write',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
   },
   {
     kind: 'forms.deleteField',
@@ -489,7 +503,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'C',
     phase: 4,
     cancellation: 'after-first-write',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
   },
   {
     kind: 'forms.attachWidget',
@@ -497,7 +511,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'C',
     phase: 4,
     cancellation: 'after-first-write',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
   },
   {
     kind: 'forms.detachWidget',
@@ -505,7 +519,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'C',
     phase: 4,
     cancellation: 'after-first-write',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
   },
 
   // --- G13. Page assembly and redaction.
@@ -515,7 +529,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'C',
     phase: 4,
     cancellation: 'after-first-write',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
   },
   {
     kind: 'pages.move',
@@ -523,7 +537,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'C',
     phase: 4,
     cancellation: 'after-first-write',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
     note: 'Page identity must survive reorder within the same live document.',
   },
   {
@@ -532,7 +546,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'C',
     phase: 4,
     cancellation: 'after-first-write',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
   },
   {
     kind: 'pages.insertBlank',
@@ -540,7 +554,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'C',
     phase: 4,
     cancellation: 'after-first-write',
-    rustStatus: 'planned',
+    rustStatus: 'routed',
   },
   {
     kind: 'pages.insert',
@@ -548,7 +562,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'C',
     phase: 4,
     cancellation: 'after-first-write',
-    rustStatus: 'planned',
+    rustStatus: 'routed',
     note: 'Source retention lives on one owner (PagesInserter.ts:77, session.retainUntilClose). A source document handle never crosses owners.',
   },
   {
@@ -557,7 +571,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'C',
     phase: 4,
     cancellation: 'after-first-write',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
   },
   {
     kind: 'redaction.apply',
@@ -565,7 +579,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'C',
     phase: 4,
     cancellation: 'after-first-write',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
   },
 
   // --- G14. Remaining mutators.
@@ -575,7 +589,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'C',
     phase: 4,
     cancellation: 'after-first-write',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
     note: 'MetadataPatch is the Phase 0 DTO codegen proof: three-state Keep | Clear | Set(T). Operation parity lands here.',
   },
   {
@@ -584,7 +598,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'C',
     phase: 4,
     cancellation: 'after-first-write',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
   },
   {
     kind: 'pieceInfo.clear',
@@ -592,7 +606,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'C',
     phase: 4,
     cancellation: 'after-first-write',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
   },
   {
     kind: 'attachments.create',
@@ -600,7 +614,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'C',
     phase: 4,
     cancellation: 'after-first-write',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
   },
   {
     kind: 'attachments.delete',
@@ -608,7 +622,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'C',
     phase: 4,
     cancellation: 'after-first-write',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
   },
 
   // --- G15. Server and file surfaces. Browser and local workers keep
@@ -619,7 +633,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'C',
     phase: 5,
     cancellation: 'non-preemptible',
-    rustStatus: 'planned',
+    rustStatus: 'routed',
     note: 'Sole owner of the wire kind; the raster step comes from G4 internal entry point. Encoding stays host-injected.',
   },
   {
@@ -628,7 +642,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'C',
     phase: 5,
     cancellation: 'non-preemptible',
-    rustStatus: 'planned',
+    rustStatus: 'routed',
   },
   {
     kind: 'document.renderPageFile',
@@ -636,7 +650,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'C',
     phase: 5,
     cancellation: 'non-preemptible',
-    rustStatus: 'planned',
+    rustStatus: 'routed',
   },
   {
     kind: 'document.renderPageFileEncoded',
@@ -644,6 +658,6 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'C',
     phase: 5,
     cancellation: 'non-preemptible',
-    rustStatus: 'planned',
+    rustStatus: 'routed',
   },
 ];

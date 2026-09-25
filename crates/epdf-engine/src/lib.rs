@@ -40,6 +40,7 @@ pub mod auth;
 pub mod access;
 pub mod buffer;
 pub mod dispatch;
+pub mod host;
 
 pub mod features;
 pub mod session;
