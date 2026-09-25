@@ -15,6 +15,12 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { emit, type Suite } from './vectors';
 
+// The oracle's wall clock is faked per case, but its time zone is the host's
+// unless pinned: `getTimezoneOffset` (the actions plugin's UTC offset, date
+// formatting) would otherwise write a different vector on every machine. The
+// Rust side takes the offset as an input and replays with zero.
+process.env.TZ = 'UTC';
+
 const suitesDir = join(dirname(fileURLToPath(import.meta.url)), 'suites');
 
 const argv = process.argv.slice(2);
