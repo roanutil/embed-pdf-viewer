@@ -1,0 +1,23 @@
+{
+  "name": "@embedpdf/tooling-plugin-conformance",
+  "private": true,
+  "type": "module",
+  "description": "Generates the frozen cross-language conformance vectors for the kernel and plugin layer. The shipping TypeScript is the oracle; the Rust crates replay the vectors.",
+  "scripts": {
+    "vectors": "tsx --conditions=development src/generate.ts",
+    "vectors:check": "tsx --conditions=development src/generate.ts --check",
+    "coverage": "tsx --conditions=development src/coverage.ts",
+    "coverage:check": "tsx --conditions=development src/coverage.ts --check",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@embedpdf/core": "workspace:*",
+    "@embedpdf/engine-core": "workspace:*",
+    "@sinonjs/fake-timers": "^15.4.0",
+    "@types/node": "^22.19.0",
+    "@types/sinonjs__fake-timers": "^15.0.1",
+    "c8": "^10.1.3",
+    "tsx": "^4.19.0",
+    "typescript": "^5.9.3"
+  }
+}
