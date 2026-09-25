@@ -291,6 +291,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "epdf-plugin-metadata"
+version = "0.0.0"
+dependencies = [
+ "epdf-kernel",
+ "plugin-conformance",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "epdf-uniffi"
 version = "0.0.0"
 dependencies = [

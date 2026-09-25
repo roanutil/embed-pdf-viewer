@@ -32,3 +32,4 @@ og-preview/
 
 # Rust
 /target
+mutants.out*/

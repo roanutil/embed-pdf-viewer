@@ -24,6 +24,10 @@ members = [
   # conformance harness answers it from a table.
   "crates/epdf-kernel",
   "crates/plugin-conformance",
+  # One crate per ported package: core libraries as `crates/plugins/<name>`
+  # (epdf-geometry, ...), plugins as `crates/plugins/<id>` (epdf-plugin-<id>).
+  # A glob so parallel ports never edit this list.
+  "crates/plugins/*",
 ]
 
 [workspace.package]

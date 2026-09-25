@@ -1,0 +1,9 @@
+# cargo-mutants configuration for the plugin-layer crates
+# (multiplatform-plugins-plan.md section 3.1).
+#
+#   cargo mutants -p epdf-plugin-<id> --test-package epdf-plugin-<id>
+#
+# The conformance adapters are test scaffolding that translates a vector's
+# JSON into calls; a mutant there changes what is being asked, not what the
+# port does.
+exclude_globs = ["**/src/harness.rs", "**/src/harness/**"]

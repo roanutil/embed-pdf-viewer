@@ -1,7 +1,7 @@
 {
   "total": {
-    "statements": "1619/1674",
-    "branches": "347/372"
+    "statements": "1782/1833",
+    "branches": "368/397"
   },
   "files": {
     "packages/core/main/src/context.ts": {
@@ -48,14 +48,9 @@
       "uncoveredBranches": []
     },
     "packages/core/main/src/index.ts": {
-      "statements": "46/50",
-      "branches": "3/3",
-      "uncoveredLines": [
-        47,
-        48,
-        49,
-        50
-      ],
+      "statements": "50/50",
+      "branches": "4/4",
+      "uncoveredLines": [],
       "uncoveredBranches": []
     },
     "packages/core/main/src/kernel.ts": {
@@ -147,6 +142,55 @@
         249,
         252
       ],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/metadata/src/capability.ts": {
+      "statements": "50/50",
+      "branches": "9/11",
+      "uncoveredLines": [],
+      "uncoveredBranches": [
+        "23:14#0",
+        "33:64#0"
+      ]
+    },
+    "packages/plugin/metadata/src/contract.ts": {
+      "statements": "3/3",
+      "branches": "0/0",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/metadata/src/effects.ts": {
+      "statements": "32/32",
+      "branches": "6/7",
+      "uncoveredLines": [],
+      "uncoveredBranches": [
+        "17:12#0"
+      ]
+    },
+    "packages/plugin/metadata/src/index.ts": {
+      "statements": "7/7",
+      "branches": "0/0",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/metadata/src/metadata.plugin.ts": {
+      "statements": "22/22",
+      "branches": "2/2",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/metadata/src/reducer.ts": {
+      "statements": "8/8",
+      "branches": "3/4",
+      "uncoveredLines": [],
+      "uncoveredBranches": [
+        "8:54#0"
+      ]
+    },
+    "packages/plugin/metadata/src/types.ts": {
+      "statements": "37/37",
+      "branches": "0/0",
+      "uncoveredLines": [],
       "uncoveredBranches": []
     }
   }
