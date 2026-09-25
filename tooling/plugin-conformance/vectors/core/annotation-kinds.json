@@ -1,0 +1,4030 @@
+{
+  "schemaVersion": 1,
+  "kind": "function",
+  "describes": "packages/core/annotation kinds.ts and props.ts sharedProps/kindTakesLink: the kind table, caps and prop specs per subtype.",
+  "cases": [
+    {
+      "name": "KINDS/table",
+      "fn": "KINDS",
+      "args": [],
+      "outcome": {
+        "returned": {
+          "widget-text": {
+            "subtype": "widget-text",
+            "variant": "rect",
+            "caps": {
+              "selectable": true,
+              "movable": true,
+              "resizable": true,
+              "vertexEditable": false,
+              "rotatable": false,
+              "groupMovable": true,
+              "groupResizable": false,
+              "groupRotatable": false,
+              "textEditable": false,
+              "commentable": false,
+              "hasPopup": false,
+              "anchored": false,
+              "hasFill": true,
+              "hasEndings": false,
+              "hasCloudy": false,
+              "opaqueBody": true,
+              "ignoresReadOnly": true,
+              "noZoom": false,
+              "noRotate": false
+            },
+            "props": [
+              {
+                "key": "color",
+                "label": "Border color"
+              },
+              {
+                "key": "interiorColor",
+                "label": "Background"
+              },
+              {
+                "key": "strokeWidth",
+                "label": "Border width",
+                "min": 0,
+                "max": 12,
+                "step": 0.5
+              },
+              {
+                "key": "border",
+                "label": "Border style",
+                "cloudy": false
+              },
+              {
+                "key": "fontFamily",
+                "label": "Font"
+              },
+              {
+                "key": "fontSize",
+                "label": "Font size",
+                "min": 0,
+                "max": 96,
+                "step": 1
+              },
+              {
+                "key": "fontColor",
+                "label": "Text color"
+              },
+              {
+                "key": "textAlign",
+                "label": "Alignment"
+              }
+            ]
+          },
+          "widget-choice": {
+            "subtype": "widget-choice",
+            "variant": "rect",
+            "caps": {
+              "selectable": true,
+              "movable": true,
+              "resizable": true,
+              "vertexEditable": false,
+              "rotatable": false,
+              "groupMovable": true,
+              "groupResizable": false,
+              "groupRotatable": false,
+              "textEditable": false,
+              "commentable": false,
+              "hasPopup": false,
+              "anchored": false,
+              "hasFill": true,
+              "hasEndings": false,
+              "hasCloudy": false,
+              "opaqueBody": true,
+              "ignoresReadOnly": true,
+              "noZoom": false,
+              "noRotate": false
+            },
+            "props": [
+              {
+                "key": "color",
+                "label": "Border color"
+              },
+              {
+                "key": "interiorColor",
+                "label": "Background"
+              },
+              {
+                "key": "strokeWidth",
+                "label": "Border width",
+                "min": 0,
+                "max": 12,
+                "step": 0.5
+              },
+              {
+                "key": "border",
+                "label": "Border style",
+                "cloudy": false
+              },
+              {
+                "key": "fontFamily",
+                "label": "Font"
+              },
+              {
+                "key": "fontSize",
+                "label": "Font size",
+                "min": 0,
+                "max": 96,
+                "step": 1
+              },
+              {
+                "key": "fontColor",
+                "label": "Text color"
+              },
+              {
+                "key": "textAlign",
+                "label": "Alignment"
+              }
+            ]
+          },
+          "widget-button": {
+            "subtype": "widget-button",
+            "variant": "rect",
+            "caps": {
+              "selectable": true,
+              "movable": true,
+              "resizable": true,
+              "vertexEditable": false,
+              "rotatable": false,
+              "groupMovable": true,
+              "groupResizable": false,
+              "groupRotatable": false,
+              "textEditable": false,
+              "commentable": false,
+              "hasPopup": false,
+              "anchored": false,
+              "hasFill": true,
+              "hasEndings": false,
+              "hasCloudy": false,
+              "opaqueBody": true,
+              "ignoresReadOnly": true,
+              "noZoom": false,
+              "noRotate": false
+            },
+            "props": [
+              {
+                "key": "color",
+                "label": "Border color"
+              },
+              {
+                "key": "interiorColor",
+                "label": "Background"
+              },
+              {
+                "key": "strokeWidth",
+                "label": "Border width",
+                "min": 0,
+                "max": 12,
+                "step": 0.5
+              },
+              {
+                "key": "border",
+                "label": "Border style",
+                "cloudy": false
+              },
+              {
+                "key": "fontFamily",
+                "label": "Font"
+              },
+              {
+                "key": "fontSize",
+                "label": "Font size",
+                "min": 0,
+                "max": 96,
+                "step": 1
+              },
+              {
+                "key": "fontColor",
+                "label": "Text color"
+              },
+              {
+                "key": "textAlign",
+                "label": "Alignment"
+              }
+            ]
+          },
+          "widget-toggle": {
+            "subtype": "widget-toggle",
+            "variant": "rect",
+            "caps": {
+              "selectable": true,
+              "movable": true,
+              "resizable": true,
+              "vertexEditable": false,
+              "rotatable": false,
+              "groupMovable": true,
+              "groupResizable": false,
+              "groupRotatable": false,
+              "textEditable": false,
+              "commentable": false,
+              "hasPopup": false,
+              "anchored": false,
+              "hasFill": true,
+              "hasEndings": false,
+              "hasCloudy": false,
+              "opaqueBody": true,
+              "ignoresReadOnly": true,
+              "noZoom": false,
+              "noRotate": false
+            },
+            "props": [
+              {
+                "key": "color",
+                "label": "Border color"
+              },
+              {
+                "key": "interiorColor",
+                "label": "Background"
+              },
+              {
+                "key": "strokeWidth",
+                "label": "Border width",
+                "min": 0,
+                "max": 12,
+                "step": 0.5
+              },
+              {
+                "key": "border",
+                "label": "Border style",
+                "cloudy": false
+              }
+            ]
+          },
+          "widget-box": {
+            "subtype": "widget-box",
+            "variant": "rect",
+            "caps": {
+              "selectable": true,
+              "movable": true,
+              "resizable": true,
+              "vertexEditable": false,
+              "rotatable": false,
+              "groupMovable": true,
+              "groupResizable": false,
+              "groupRotatable": false,
+              "textEditable": false,
+              "commentable": false,
+              "hasPopup": false,
+              "anchored": false,
+              "hasFill": true,
+              "hasEndings": false,
+              "hasCloudy": false,
+              "opaqueBody": true,
+              "ignoresReadOnly": true,
+              "noZoom": false,
+              "noRotate": false
+            },
+            "props": [
+              {
+                "key": "color",
+                "label": "Border color"
+              },
+              {
+                "key": "interiorColor",
+                "label": "Background"
+              },
+              {
+                "key": "strokeWidth",
+                "label": "Border width",
+                "min": 0,
+                "max": 12,
+                "step": 0.5
+              },
+              {
+                "key": "border",
+                "label": "Border style",
+                "cloudy": false
+              }
+            ]
+          },
+          "free-text": {
+            "subtype": "free-text",
+            "variant": "text",
+            "caps": {
+              "selectable": true,
+              "movable": true,
+              "resizable": true,
+              "vertexEditable": false,
+              "rotatable": true,
+              "groupMovable": true,
+              "groupResizable": true,
+              "groupRotatable": true,
+              "textEditable": true,
+              "commentable": true,
+              "hasPopup": false,
+              "anchored": false,
+              "hasFill": true,
+              "hasEndings": false,
+              "hasCloudy": false,
+              "opaqueBody": false,
+              "ignoresReadOnly": false,
+              "noZoom": false,
+              "noRotate": false
+            },
+            "props": [
+              {
+                "key": "fontFamily",
+                "label": "Font"
+              },
+              {
+                "key": "fontSize",
+                "label": "Font size",
+                "min": 4,
+                "max": 96,
+                "step": 1
+              },
+              {
+                "key": "fontColor",
+                "label": "Text color"
+              },
+              {
+                "key": "textAlign",
+                "label": "Align"
+              },
+              {
+                "key": "opacity",
+                "label": "Opacity",
+                "min": 0.1,
+                "max": 1,
+                "step": 0.05
+              },
+              {
+                "key": "interiorColor",
+                "label": "Background"
+              },
+              {
+                "key": "color",
+                "label": "Border"
+              },
+              {
+                "key": "strokeWidth",
+                "label": "Border width",
+                "min": 0,
+                "max": 12,
+                "step": 0.5
+              },
+              {
+                "key": "link",
+                "label": "Link"
+              }
+            ]
+          },
+          "square": {
+            "subtype": "square",
+            "variant": "rect",
+            "caps": {
+              "selectable": true,
+              "movable": true,
+              "resizable": true,
+              "vertexEditable": false,
+              "rotatable": true,
+              "groupMovable": true,
+              "groupResizable": true,
+              "groupRotatable": true,
+              "textEditable": false,
+              "commentable": true,
+              "hasPopup": false,
+              "anchored": false,
+              "hasFill": true,
+              "hasEndings": false,
+              "hasCloudy": true,
+              "opaqueBody": false,
+              "ignoresReadOnly": false,
+              "noZoom": false,
+              "noRotate": false
+            },
+            "props": [
+              {
+                "key": "color",
+                "label": "Stroke"
+              },
+              {
+                "key": "interiorColor",
+                "label": "Fill"
+              },
+              {
+                "key": "opacity",
+                "label": "Opacity",
+                "min": 0.1,
+                "max": 1,
+                "step": 0.05
+              },
+              {
+                "key": "strokeWidth",
+                "label": "Stroke width",
+                "min": 0.5,
+                "max": 30,
+                "step": 0.5
+              },
+              {
+                "key": "border",
+                "label": "Border",
+                "cloudy": true
+              },
+              {
+                "key": "link",
+                "label": "Link"
+              }
+            ]
+          },
+          "circle": {
+            "subtype": "circle",
+            "variant": "rect",
+            "caps": {
+              "selectable": true,
+              "movable": true,
+              "resizable": true,
+              "vertexEditable": false,
+              "rotatable": true,
+              "groupMovable": true,
+              "groupResizable": true,
+              "groupRotatable": true,
+              "textEditable": false,
+              "commentable": true,
+              "hasPopup": false,
+              "anchored": false,
+              "hasFill": true,
+              "hasEndings": false,
+              "hasCloudy": true,
+              "opaqueBody": false,
+              "ignoresReadOnly": false,
+              "noZoom": false,
+              "noRotate": false
+            },
+            "props": [
+              {
+                "key": "color",
+                "label": "Stroke"
+              },
+              {
+                "key": "interiorColor",
+                "label": "Fill"
+              },
+              {
+                "key": "opacity",
+                "label": "Opacity",
+                "min": 0.1,
+                "max": 1,
+                "step": 0.05
+              },
+              {
+                "key": "strokeWidth",
+                "label": "Stroke width",
+                "min": 0.5,
+                "max": 30,
+                "step": 0.5
+              },
+              {
+                "key": "border",
+                "label": "Border",
+                "cloudy": true
+              },
+              {
+                "key": "link",
+                "label": "Link"
+              }
+            ]
+          },
+          "line": {
+            "subtype": "line",
+            "variant": "line",
+            "caps": {
+              "selectable": true,
+              "movable": true,
+              "resizable": false,
+              "vertexEditable": true,
+              "rotatable": true,
+              "groupMovable": true,
+              "groupResizable": true,
+              "groupRotatable": true,
+              "textEditable": false,
+              "commentable": true,
+              "hasPopup": false,
+              "anchored": false,
+              "hasFill": false,
+              "hasEndings": true,
+              "hasCloudy": false,
+              "opaqueBody": false,
+              "ignoresReadOnly": false,
+              "noZoom": false,
+              "noRotate": false
+            },
+            "props": [
+              {
+                "key": "color",
+                "label": "Stroke"
+              },
+              {
+                "key": "interiorColor",
+                "label": "Fill"
+              },
+              {
+                "key": "opacity",
+                "label": "Opacity",
+                "min": 0.1,
+                "max": 1,
+                "step": 0.05
+              },
+              {
+                "key": "strokeWidth",
+                "label": "Stroke width",
+                "min": 0.5,
+                "max": 30,
+                "step": 0.5
+              },
+              {
+                "key": "border",
+                "label": "Border",
+                "cloudy": false
+              },
+              {
+                "key": "lineEndings",
+                "label": "Line endings"
+              },
+              {
+                "key": "link",
+                "label": "Link"
+              }
+            ]
+          },
+          "polygon": {
+            "subtype": "polygon",
+            "variant": "poly",
+            "caps": {
+              "selectable": true,
+              "movable": true,
+              "resizable": false,
+              "vertexEditable": true,
+              "rotatable": true,
+              "groupMovable": true,
+              "groupResizable": true,
+              "groupRotatable": true,
+              "textEditable": false,
+              "commentable": true,
+              "hasPopup": false,
+              "anchored": false,
+              "hasFill": true,
+              "hasEndings": false,
+              "hasCloudy": true,
+              "opaqueBody": false,
+              "ignoresReadOnly": false,
+              "noZoom": false,
+              "noRotate": false
+            },
+            "props": [
+              {
+                "key": "color",
+                "label": "Stroke"
+              },
+              {
+                "key": "interiorColor",
+                "label": "Fill"
+              },
+              {
+                "key": "opacity",
+                "label": "Opacity",
+                "min": 0.1,
+                "max": 1,
+                "step": 0.05
+              },
+              {
+                "key": "strokeWidth",
+                "label": "Stroke width",
+                "min": 0.5,
+                "max": 30,
+                "step": 0.5
+              },
+              {
+                "key": "border",
+                "label": "Border",
+                "cloudy": true
+              },
+              {
+                "key": "link",
+                "label": "Link"
+              }
+            ]
+          },
+          "polyline": {
+            "subtype": "polyline",
+            "variant": "poly",
+            "caps": {
+              "selectable": true,
+              "movable": true,
+              "resizable": false,
+              "vertexEditable": true,
+              "rotatable": true,
+              "groupMovable": true,
+              "groupResizable": true,
+              "groupRotatable": true,
+              "textEditable": false,
+              "commentable": true,
+              "hasPopup": false,
+              "anchored": false,
+              "hasFill": false,
+              "hasEndings": true,
+              "hasCloudy": false,
+              "opaqueBody": false,
+              "ignoresReadOnly": false,
+              "noZoom": false,
+              "noRotate": false
+            },
+            "props": [
+              {
+                "key": "color",
+                "label": "Stroke"
+              },
+              {
+                "key": "interiorColor",
+                "label": "Fill"
+              },
+              {
+                "key": "opacity",
+                "label": "Opacity",
+                "min": 0.1,
+                "max": 1,
+                "step": 0.05
+              },
+              {
+                "key": "strokeWidth",
+                "label": "Stroke width",
+                "min": 0.5,
+                "max": 30,
+                "step": 0.5
+              },
+              {
+                "key": "border",
+                "label": "Border",
+                "cloudy": false
+              },
+              {
+                "key": "lineEndings",
+                "label": "Line endings"
+              },
+              {
+                "key": "link",
+                "label": "Link"
+              }
+            ]
+          },
+          "ink": {
+            "subtype": "ink",
+            "variant": "ink",
+            "caps": {
+              "selectable": true,
+              "movable": true,
+              "resizable": false,
+              "vertexEditable": false,
+              "rotatable": true,
+              "groupMovable": true,
+              "groupResizable": true,
+              "groupRotatable": true,
+              "textEditable": false,
+              "commentable": true,
+              "hasPopup": false,
+              "anchored": false,
+              "hasFill": false,
+              "hasEndings": false,
+              "hasCloudy": false,
+              "opaqueBody": false,
+              "ignoresReadOnly": false,
+              "noZoom": false,
+              "noRotate": false
+            },
+            "props": [
+              {
+                "key": "color",
+                "label": "Color"
+              },
+              {
+                "key": "opacity",
+                "label": "Opacity",
+                "min": 0.1,
+                "max": 1,
+                "step": 0.05
+              },
+              {
+                "key": "strokeWidth",
+                "label": "Stroke width",
+                "min": 0.5,
+                "max": 30,
+                "step": 0.5
+              },
+              {
+                "key": "blendMode",
+                "label": "Blend mode"
+              },
+              {
+                "key": "link",
+                "label": "Link"
+              }
+            ]
+          },
+          "highlight": {
+            "subtype": "highlight",
+            "variant": "quads",
+            "caps": {
+              "selectable": true,
+              "movable": false,
+              "resizable": false,
+              "vertexEditable": false,
+              "rotatable": false,
+              "groupMovable": false,
+              "groupResizable": false,
+              "groupRotatable": false,
+              "textEditable": false,
+              "commentable": true,
+              "hasPopup": false,
+              "anchored": true,
+              "hasFill": false,
+              "hasEndings": false,
+              "hasCloudy": false,
+              "opaqueBody": false,
+              "ignoresReadOnly": false,
+              "noZoom": false,
+              "noRotate": false
+            },
+            "props": [
+              {
+                "key": "color",
+                "label": "Color"
+              },
+              {
+                "key": "opacity",
+                "label": "Opacity",
+                "min": 0.1,
+                "max": 1,
+                "step": 0.05
+              },
+              {
+                "key": "blendMode",
+                "label": "Blend mode"
+              },
+              {
+                "key": "link",
+                "label": "Link"
+              }
+            ]
+          },
+          "underline": {
+            "subtype": "underline",
+            "variant": "quads",
+            "caps": {
+              "selectable": true,
+              "movable": false,
+              "resizable": false,
+              "vertexEditable": false,
+              "rotatable": false,
+              "groupMovable": false,
+              "groupResizable": false,
+              "groupRotatable": false,
+              "textEditable": false,
+              "commentable": true,
+              "hasPopup": false,
+              "anchored": true,
+              "hasFill": false,
+              "hasEndings": false,
+              "hasCloudy": false,
+              "opaqueBody": false,
+              "ignoresReadOnly": false,
+              "noZoom": false,
+              "noRotate": false
+            },
+            "props": [
+              {
+                "key": "color",
+                "label": "Color"
+              },
+              {
+                "key": "opacity",
+                "label": "Opacity",
+                "min": 0.1,
+                "max": 1,
+                "step": 0.05
+              },
+              {
+                "key": "blendMode",
+                "label": "Blend mode"
+              },
+              {
+                "key": "link",
+                "label": "Link"
+              }
+            ]
+          },
+          "squiggly": {
+            "subtype": "squiggly",
+            "variant": "quads",
+            "caps": {
+              "selectable": true,
+              "movable": false,
+              "resizable": false,
+              "vertexEditable": false,
+              "rotatable": false,
+              "groupMovable": false,
+              "groupResizable": false,
+              "groupRotatable": false,
+              "textEditable": false,
+              "commentable": true,
+              "hasPopup": false,
+              "anchored": true,
+              "hasFill": false,
+              "hasEndings": false,
+              "hasCloudy": false,
+              "opaqueBody": false,
+              "ignoresReadOnly": false,
+              "noZoom": false,
+              "noRotate": false
+            },
+            "props": [
+              {
+                "key": "color",
+                "label": "Color"
+              },
+              {
+                "key": "opacity",
+                "label": "Opacity",
+                "min": 0.1,
+                "max": 1,
+                "step": 0.05
+              },
+              {
+                "key": "blendMode",
+                "label": "Blend mode"
+              },
+              {
+                "key": "link",
+                "label": "Link"
+              }
+            ]
+          },
+          "strikeout": {
+            "subtype": "strikeout",
+            "variant": "quads",
+            "caps": {
+              "selectable": true,
+              "movable": false,
+              "resizable": false,
+              "vertexEditable": false,
+              "rotatable": false,
+              "groupMovable": false,
+              "groupResizable": false,
+              "groupRotatable": false,
+              "textEditable": false,
+              "commentable": true,
+              "hasPopup": false,
+              "anchored": true,
+              "hasFill": false,
+              "hasEndings": false,
+              "hasCloudy": false,
+              "opaqueBody": false,
+              "ignoresReadOnly": false,
+              "noZoom": false,
+              "noRotate": false
+            },
+            "props": [
+              {
+                "key": "color",
+                "label": "Color"
+              },
+              {
+                "key": "opacity",
+                "label": "Opacity",
+                "min": 0.1,
+                "max": 1,
+                "step": 0.05
+              },
+              {
+                "key": "blendMode",
+                "label": "Blend mode"
+              },
+              {
+                "key": "link",
+                "label": "Link"
+              }
+            ]
+          },
+          "redact": {
+            "subtype": "redact",
+            "variant": "quads",
+            "caps": {
+              "selectable": true,
+              "movable": true,
+              "resizable": true,
+              "vertexEditable": false,
+              "rotatable": false,
+              "groupMovable": false,
+              "groupResizable": false,
+              "groupRotatable": false,
+              "textEditable": false,
+              "commentable": true,
+              "hasPopup": false,
+              "anchored": true,
+              "hasFill": true,
+              "hasEndings": false,
+              "hasCloudy": false,
+              "opaqueBody": false,
+              "ignoresReadOnly": false,
+              "noZoom": false,
+              "noRotate": false
+            },
+            "props": [
+              {
+                "key": "color",
+                "label": "Outline"
+              },
+              {
+                "key": "interiorColor",
+                "label": "Fill"
+              },
+              {
+                "key": "opacity",
+                "label": "Opacity",
+                "min": 0.1,
+                "max": 1,
+                "step": 0.05
+              },
+              {
+                "key": "fontFamily",
+                "label": "Label font"
+              },
+              {
+                "key": "fontSize",
+                "label": "Label size",
+                "min": 0,
+                "max": 96,
+                "step": 1
+              },
+              {
+                "key": "fontColor",
+                "label": "Label color"
+              },
+              {
+                "key": "textAlign",
+                "label": "Align"
+              }
+            ]
+          },
+          "caret": {
+            "subtype": "caret",
+            "variant": "caret",
+            "caps": {
+              "selectable": true,
+              "movable": false,
+              "resizable": false,
+              "vertexEditable": false,
+              "rotatable": false,
+              "groupMovable": false,
+              "groupResizable": false,
+              "groupRotatable": false,
+              "textEditable": false,
+              "commentable": true,
+              "hasPopup": false,
+              "anchored": true,
+              "hasFill": false,
+              "hasEndings": false,
+              "hasCloudy": false,
+              "opaqueBody": false,
+              "ignoresReadOnly": false,
+              "noZoom": false,
+              "noRotate": false
+            },
+            "props": [
+              {
+                "key": "color",
+                "label": "Color"
+              },
+              {
+                "key": "opacity",
+                "label": "Opacity",
+                "min": 0.1,
+                "max": 1,
+                "step": 0.05
+              }
+            ]
+          },
+          "text": {
+            "subtype": "text",
+            "variant": "rect",
+            "caps": {
+              "selectable": true,
+              "movable": true,
+              "resizable": false,
+              "vertexEditable": false,
+              "rotatable": false,
+              "groupMovable": true,
+              "groupResizable": false,
+              "groupRotatable": false,
+              "textEditable": false,
+              "commentable": true,
+              "hasPopup": true,
+              "anchored": false,
+              "hasFill": false,
+              "hasEndings": false,
+              "hasCloudy": false,
+              "opaqueBody": true,
+              "ignoresReadOnly": false,
+              "noZoom": true,
+              "noRotate": true
+            },
+            "props": [
+              {
+                "key": "icon",
+                "label": "Icon",
+                "options": [
+                  "comment",
+                  "key",
+                  "note",
+                  "help",
+                  "new-paragraph",
+                  "paragraph",
+                  "insert"
+                ]
+              },
+              {
+                "key": "color",
+                "label": "Color"
+              },
+              {
+                "key": "opacity",
+                "label": "Opacity",
+                "min": 0.1,
+                "max": 1,
+                "step": 0.05
+              },
+              {
+                "key": "link",
+                "label": "Link"
+              }
+            ]
+          },
+          "file-attachment": {
+            "subtype": "file-attachment",
+            "variant": "rect",
+            "caps": {
+              "selectable": true,
+              "movable": true,
+              "resizable": false,
+              "vertexEditable": false,
+              "rotatable": false,
+              "groupMovable": true,
+              "groupResizable": false,
+              "groupRotatable": false,
+              "textEditable": false,
+              "commentable": true,
+              "hasPopup": false,
+              "anchored": false,
+              "hasFill": false,
+              "hasEndings": false,
+              "hasCloudy": false,
+              "opaqueBody": true,
+              "ignoresReadOnly": false,
+              "noZoom": true,
+              "noRotate": true
+            },
+            "props": [
+              {
+                "key": "icon",
+                "label": "Icon",
+                "options": [
+                  "push-pin",
+                  "paperclip",
+                  "graph",
+                  "tag"
+                ]
+              },
+              {
+                "key": "color",
+                "label": "Color"
+              },
+              {
+                "key": "opacity",
+                "label": "Opacity",
+                "min": 0.1,
+                "max": 1,
+                "step": 0.05
+              }
+            ]
+          },
+          "stamp": {
+            "subtype": "stamp",
+            "variant": "rect",
+            "caps": {
+              "selectable": true,
+              "movable": true,
+              "resizable": true,
+              "vertexEditable": false,
+              "rotatable": true,
+              "groupMovable": true,
+              "groupResizable": true,
+              "groupRotatable": true,
+              "textEditable": false,
+              "commentable": true,
+              "hasPopup": false,
+              "anchored": false,
+              "hasFill": false,
+              "hasEndings": false,
+              "hasCloudy": false,
+              "opaqueBody": true,
+              "ignoresReadOnly": false,
+              "noZoom": false,
+              "noRotate": false
+            },
+            "props": [
+              {
+                "key": "link",
+                "label": "Link"
+              }
+            ]
+          },
+          "link": {
+            "subtype": "link",
+            "variant": "rect",
+            "caps": {
+              "selectable": true,
+              "movable": true,
+              "resizable": true,
+              "vertexEditable": false,
+              "rotatable": false,
+              "groupMovable": true,
+              "groupResizable": false,
+              "groupRotatable": false,
+              "textEditable": false,
+              "commentable": false,
+              "hasPopup": false,
+              "anchored": false,
+              "hasFill": false,
+              "hasEndings": false,
+              "hasCloudy": false,
+              "opaqueBody": true,
+              "ignoresReadOnly": false,
+              "noZoom": false,
+              "noRotate": false
+            },
+            "props": [
+              {
+                "key": "link",
+                "label": "Link"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "capsFor/widget-text",
+      "fn": "capsFor",
+      "args": [
+        "widget-text"
+      ],
+      "outcome": {
+        "returned": {
+          "selectable": true,
+          "movable": true,
+          "resizable": true,
+          "vertexEditable": false,
+          "rotatable": false,
+          "groupMovable": true,
+          "groupResizable": false,
+          "groupRotatable": false,
+          "textEditable": false,
+          "commentable": false,
+          "hasPopup": false,
+          "anchored": false,
+          "hasFill": true,
+          "hasEndings": false,
+          "hasCloudy": false,
+          "opaqueBody": true,
+          "ignoresReadOnly": true,
+          "noZoom": false,
+          "noRotate": false
+        }
+      }
+    },
+    {
+      "name": "propsFor/widget-text",
+      "fn": "propsFor",
+      "args": [
+        "widget-text"
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "key": "color",
+            "label": "Border color"
+          },
+          {
+            "key": "interiorColor",
+            "label": "Background"
+          },
+          {
+            "key": "strokeWidth",
+            "label": "Border width",
+            "min": 0,
+            "max": 12,
+            "step": 0.5
+          },
+          {
+            "key": "border",
+            "label": "Border style",
+            "cloudy": false
+          },
+          {
+            "key": "fontFamily",
+            "label": "Font"
+          },
+          {
+            "key": "fontSize",
+            "label": "Font size",
+            "min": 0,
+            "max": 96,
+            "step": 1
+          },
+          {
+            "key": "fontColor",
+            "label": "Text color"
+          },
+          {
+            "key": "textAlign",
+            "label": "Alignment"
+          }
+        ]
+      }
+    },
+    {
+      "name": "isMarkup/widget-text",
+      "fn": "isMarkup",
+      "args": [
+        "widget-text"
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "kindTakesLink/widget-text",
+      "fn": "kindTakesLink",
+      "args": [
+        "widget-text"
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "capsFor/widget-choice",
+      "fn": "capsFor",
+      "args": [
+        "widget-choice"
+      ],
+      "outcome": {
+        "returned": {
+          "selectable": true,
+          "movable": true,
+          "resizable": true,
+          "vertexEditable": false,
+          "rotatable": false,
+          "groupMovable": true,
+          "groupResizable": false,
+          "groupRotatable": false,
+          "textEditable": false,
+          "commentable": false,
+          "hasPopup": false,
+          "anchored": false,
+          "hasFill": true,
+          "hasEndings": false,
+          "hasCloudy": false,
+          "opaqueBody": true,
+          "ignoresReadOnly": true,
+          "noZoom": false,
+          "noRotate": false
+        }
+      }
+    },
+    {
+      "name": "propsFor/widget-choice",
+      "fn": "propsFor",
+      "args": [
+        "widget-choice"
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "key": "color",
+            "label": "Border color"
+          },
+          {
+            "key": "interiorColor",
+            "label": "Background"
+          },
+          {
+            "key": "strokeWidth",
+            "label": "Border width",
+            "min": 0,
+            "max": 12,
+            "step": 0.5
+          },
+          {
+            "key": "border",
+            "label": "Border style",
+            "cloudy": false
+          },
+          {
+            "key": "fontFamily",
+            "label": "Font"
+          },
+          {
+            "key": "fontSize",
+            "label": "Font size",
+            "min": 0,
+            "max": 96,
+            "step": 1
+          },
+          {
+            "key": "fontColor",
+            "label": "Text color"
+          },
+          {
+            "key": "textAlign",
+            "label": "Alignment"
+          }
+        ]
+      }
+    },
+    {
+      "name": "isMarkup/widget-choice",
+      "fn": "isMarkup",
+      "args": [
+        "widget-choice"
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "kindTakesLink/widget-choice",
+      "fn": "kindTakesLink",
+      "args": [
+        "widget-choice"
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "capsFor/widget-button",
+      "fn": "capsFor",
+      "args": [
+        "widget-button"
+      ],
+      "outcome": {
+        "returned": {
+          "selectable": true,
+          "movable": true,
+          "resizable": true,
+          "vertexEditable": false,
+          "rotatable": false,
+          "groupMovable": true,
+          "groupResizable": false,
+          "groupRotatable": false,
+          "textEditable": false,
+          "commentable": false,
+          "hasPopup": false,
+          "anchored": false,
+          "hasFill": true,
+          "hasEndings": false,
+          "hasCloudy": false,
+          "opaqueBody": true,
+          "ignoresReadOnly": true,
+          "noZoom": false,
+          "noRotate": false
+        }
+      }
+    },
+    {
+      "name": "propsFor/widget-button",
+      "fn": "propsFor",
+      "args": [
+        "widget-button"
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "key": "color",
+            "label": "Border color"
+          },
+          {
+            "key": "interiorColor",
+            "label": "Background"
+          },
+          {
+            "key": "strokeWidth",
+            "label": "Border width",
+            "min": 0,
+            "max": 12,
+            "step": 0.5
+          },
+          {
+            "key": "border",
+            "label": "Border style",
+            "cloudy": false
+          },
+          {
+            "key": "fontFamily",
+            "label": "Font"
+          },
+          {
+            "key": "fontSize",
+            "label": "Font size",
+            "min": 0,
+            "max": 96,
+            "step": 1
+          },
+          {
+            "key": "fontColor",
+            "label": "Text color"
+          },
+          {
+            "key": "textAlign",
+            "label": "Alignment"
+          }
+        ]
+      }
+    },
+    {
+      "name": "isMarkup/widget-button",
+      "fn": "isMarkup",
+      "args": [
+        "widget-button"
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "kindTakesLink/widget-button",
+      "fn": "kindTakesLink",
+      "args": [
+        "widget-button"
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "capsFor/widget-toggle",
+      "fn": "capsFor",
+      "args": [
+        "widget-toggle"
+      ],
+      "outcome": {
+        "returned": {
+          "selectable": true,
+          "movable": true,
+          "resizable": true,
+          "vertexEditable": false,
+          "rotatable": false,
+          "groupMovable": true,
+          "groupResizable": false,
+          "groupRotatable": false,
+          "textEditable": false,
+          "commentable": false,
+          "hasPopup": false,
+          "anchored": false,
+          "hasFill": true,
+          "hasEndings": false,
+          "hasCloudy": false,
+          "opaqueBody": true,
+          "ignoresReadOnly": true,
+          "noZoom": false,
+          "noRotate": false
+        }
+      }
+    },
+    {
+      "name": "propsFor/widget-toggle",
+      "fn": "propsFor",
+      "args": [
+        "widget-toggle"
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "key": "color",
+            "label": "Border color"
+          },
+          {
+            "key": "interiorColor",
+            "label": "Background"
+          },
+          {
+            "key": "strokeWidth",
+            "label": "Border width",
+            "min": 0,
+            "max": 12,
+            "step": 0.5
+          },
+          {
+            "key": "border",
+            "label": "Border style",
+            "cloudy": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "isMarkup/widget-toggle",
+      "fn": "isMarkup",
+      "args": [
+        "widget-toggle"
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "kindTakesLink/widget-toggle",
+      "fn": "kindTakesLink",
+      "args": [
+        "widget-toggle"
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "capsFor/widget-box",
+      "fn": "capsFor",
+      "args": [
+        "widget-box"
+      ],
+      "outcome": {
+        "returned": {
+          "selectable": true,
+          "movable": true,
+          "resizable": true,
+          "vertexEditable": false,
+          "rotatable": false,
+          "groupMovable": true,
+          "groupResizable": false,
+          "groupRotatable": false,
+          "textEditable": false,
+          "commentable": false,
+          "hasPopup": false,
+          "anchored": false,
+          "hasFill": true,
+          "hasEndings": false,
+          "hasCloudy": false,
+          "opaqueBody": true,
+          "ignoresReadOnly": true,
+          "noZoom": false,
+          "noRotate": false
+        }
+      }
+    },
+    {
+      "name": "propsFor/widget-box",
+      "fn": "propsFor",
+      "args": [
+        "widget-box"
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "key": "color",
+            "label": "Border color"
+          },
+          {
+            "key": "interiorColor",
+            "label": "Background"
+          },
+          {
+            "key": "strokeWidth",
+            "label": "Border width",
+            "min": 0,
+            "max": 12,
+            "step": 0.5
+          },
+          {
+            "key": "border",
+            "label": "Border style",
+            "cloudy": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "isMarkup/widget-box",
+      "fn": "isMarkup",
+      "args": [
+        "widget-box"
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "kindTakesLink/widget-box",
+      "fn": "kindTakesLink",
+      "args": [
+        "widget-box"
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "capsFor/free-text",
+      "fn": "capsFor",
+      "args": [
+        "free-text"
+      ],
+      "outcome": {
+        "returned": {
+          "selectable": true,
+          "movable": true,
+          "resizable": true,
+          "vertexEditable": false,
+          "rotatable": true,
+          "groupMovable": true,
+          "groupResizable": true,
+          "groupRotatable": true,
+          "textEditable": true,
+          "commentable": true,
+          "hasPopup": false,
+          "anchored": false,
+          "hasFill": true,
+          "hasEndings": false,
+          "hasCloudy": false,
+          "opaqueBody": false,
+          "ignoresReadOnly": false,
+          "noZoom": false,
+          "noRotate": false
+        }
+      }
+    },
+    {
+      "name": "propsFor/free-text",
+      "fn": "propsFor",
+      "args": [
+        "free-text"
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "key": "fontFamily",
+            "label": "Font"
+          },
+          {
+            "key": "fontSize",
+            "label": "Font size",
+            "min": 4,
+            "max": 96,
+            "step": 1
+          },
+          {
+            "key": "fontColor",
+            "label": "Text color"
+          },
+          {
+            "key": "textAlign",
+            "label": "Align"
+          },
+          {
+            "key": "opacity",
+            "label": "Opacity",
+            "min": 0.1,
+            "max": 1,
+            "step": 0.05
+          },
+          {
+            "key": "interiorColor",
+            "label": "Background"
+          },
+          {
+            "key": "color",
+            "label": "Border"
+          },
+          {
+            "key": "strokeWidth",
+            "label": "Border width",
+            "min": 0,
+            "max": 12,
+            "step": 0.5
+          },
+          {
+            "key": "link",
+            "label": "Link"
+          }
+        ]
+      }
+    },
+    {
+      "name": "isMarkup/free-text",
+      "fn": "isMarkup",
+      "args": [
+        "free-text"
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "kindTakesLink/free-text",
+      "fn": "kindTakesLink",
+      "args": [
+        "free-text"
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "capsFor/square",
+      "fn": "capsFor",
+      "args": [
+        "square"
+      ],
+      "outcome": {
+        "returned": {
+          "selectable": true,
+          "movable": true,
+          "resizable": true,
+          "vertexEditable": false,
+          "rotatable": true,
+          "groupMovable": true,
+          "groupResizable": true,
+          "groupRotatable": true,
+          "textEditable": false,
+          "commentable": true,
+          "hasPopup": false,
+          "anchored": false,
+          "hasFill": true,
+          "hasEndings": false,
+          "hasCloudy": true,
+          "opaqueBody": false,
+          "ignoresReadOnly": false,
+          "noZoom": false,
+          "noRotate": false
+        }
+      }
+    },
+    {
+      "name": "propsFor/square",
+      "fn": "propsFor",
+      "args": [
+        "square"
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "key": "color",
+            "label": "Stroke"
+          },
+          {
+            "key": "interiorColor",
+            "label": "Fill"
+          },
+          {
+            "key": "opacity",
+            "label": "Opacity",
+            "min": 0.1,
+            "max": 1,
+            "step": 0.05
+          },
+          {
+            "key": "strokeWidth",
+            "label": "Stroke width",
+            "min": 0.5,
+            "max": 30,
+            "step": 0.5
+          },
+          {
+            "key": "border",
+            "label": "Border",
+            "cloudy": true
+          },
+          {
+            "key": "link",
+            "label": "Link"
+          }
+        ]
+      }
+    },
+    {
+      "name": "isMarkup/square",
+      "fn": "isMarkup",
+      "args": [
+        "square"
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "kindTakesLink/square",
+      "fn": "kindTakesLink",
+      "args": [
+        "square"
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "capsFor/circle",
+      "fn": "capsFor",
+      "args": [
+        "circle"
+      ],
+      "outcome": {
+        "returned": {
+          "selectable": true,
+          "movable": true,
+          "resizable": true,
+          "vertexEditable": false,
+          "rotatable": true,
+          "groupMovable": true,
+          "groupResizable": true,
+          "groupRotatable": true,
+          "textEditable": false,
+          "commentable": true,
+          "hasPopup": false,
+          "anchored": false,
+          "hasFill": true,
+          "hasEndings": false,
+          "hasCloudy": true,
+          "opaqueBody": false,
+          "ignoresReadOnly": false,
+          "noZoom": false,
+          "noRotate": false
+        }
+      }
+    },
+    {
+      "name": "propsFor/circle",
+      "fn": "propsFor",
+      "args": [
+        "circle"
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "key": "color",
+            "label": "Stroke"
+          },
+          {
+            "key": "interiorColor",
+            "label": "Fill"
+          },
+          {
+            "key": "opacity",
+            "label": "Opacity",
+            "min": 0.1,
+            "max": 1,
+            "step": 0.05
+          },
+          {
+            "key": "strokeWidth",
+            "label": "Stroke width",
+            "min": 0.5,
+            "max": 30,
+            "step": 0.5
+          },
+          {
+            "key": "border",
+            "label": "Border",
+            "cloudy": true
+          },
+          {
+            "key": "link",
+            "label": "Link"
+          }
+        ]
+      }
+    },
+    {
+      "name": "isMarkup/circle",
+      "fn": "isMarkup",
+      "args": [
+        "circle"
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "kindTakesLink/circle",
+      "fn": "kindTakesLink",
+      "args": [
+        "circle"
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "capsFor/line",
+      "fn": "capsFor",
+      "args": [
+        "line"
+      ],
+      "outcome": {
+        "returned": {
+          "selectable": true,
+          "movable": true,
+          "resizable": false,
+          "vertexEditable": true,
+          "rotatable": true,
+          "groupMovable": true,
+          "groupResizable": true,
+          "groupRotatable": true,
+          "textEditable": false,
+          "commentable": true,
+          "hasPopup": false,
+          "anchored": false,
+          "hasFill": false,
+          "hasEndings": true,
+          "hasCloudy": false,
+          "opaqueBody": false,
+          "ignoresReadOnly": false,
+          "noZoom": false,
+          "noRotate": false
+        }
+      }
+    },
+    {
+      "name": "propsFor/line",
+      "fn": "propsFor",
+      "args": [
+        "line"
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "key": "color",
+            "label": "Stroke"
+          },
+          {
+            "key": "interiorColor",
+            "label": "Fill"
+          },
+          {
+            "key": "opacity",
+            "label": "Opacity",
+            "min": 0.1,
+            "max": 1,
+            "step": 0.05
+          },
+          {
+            "key": "strokeWidth",
+            "label": "Stroke width",
+            "min": 0.5,
+            "max": 30,
+            "step": 0.5
+          },
+          {
+            "key": "border",
+            "label": "Border",
+            "cloudy": false
+          },
+          {
+            "key": "lineEndings",
+            "label": "Line endings"
+          },
+          {
+            "key": "link",
+            "label": "Link"
+          }
+        ]
+      }
+    },
+    {
+      "name": "isMarkup/line",
+      "fn": "isMarkup",
+      "args": [
+        "line"
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "kindTakesLink/line",
+      "fn": "kindTakesLink",
+      "args": [
+        "line"
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "capsFor/polygon",
+      "fn": "capsFor",
+      "args": [
+        "polygon"
+      ],
+      "outcome": {
+        "returned": {
+          "selectable": true,
+          "movable": true,
+          "resizable": false,
+          "vertexEditable": true,
+          "rotatable": true,
+          "groupMovable": true,
+          "groupResizable": true,
+          "groupRotatable": true,
+          "textEditable": false,
+          "commentable": true,
+          "hasPopup": false,
+          "anchored": false,
+          "hasFill": true,
+          "hasEndings": false,
+          "hasCloudy": true,
+          "opaqueBody": false,
+          "ignoresReadOnly": false,
+          "noZoom": false,
+          "noRotate": false
+        }
+      }
+    },
+    {
+      "name": "propsFor/polygon",
+      "fn": "propsFor",
+      "args": [
+        "polygon"
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "key": "color",
+            "label": "Stroke"
+          },
+          {
+            "key": "interiorColor",
+            "label": "Fill"
+          },
+          {
+            "key": "opacity",
+            "label": "Opacity",
+            "min": 0.1,
+            "max": 1,
+            "step": 0.05
+          },
+          {
+            "key": "strokeWidth",
+            "label": "Stroke width",
+            "min": 0.5,
+            "max": 30,
+            "step": 0.5
+          },
+          {
+            "key": "border",
+            "label": "Border",
+            "cloudy": true
+          },
+          {
+            "key": "link",
+            "label": "Link"
+          }
+        ]
+      }
+    },
+    {
+      "name": "isMarkup/polygon",
+      "fn": "isMarkup",
+      "args": [
+        "polygon"
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "kindTakesLink/polygon",
+      "fn": "kindTakesLink",
+      "args": [
+        "polygon"
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "capsFor/polyline",
+      "fn": "capsFor",
+      "args": [
+        "polyline"
+      ],
+      "outcome": {
+        "returned": {
+          "selectable": true,
+          "movable": true,
+          "resizable": false,
+          "vertexEditable": true,
+          "rotatable": true,
+          "groupMovable": true,
+          "groupResizable": true,
+          "groupRotatable": true,
+          "textEditable": false,
+          "commentable": true,
+          "hasPopup": false,
+          "anchored": false,
+          "hasFill": false,
+          "hasEndings": true,
+          "hasCloudy": false,
+          "opaqueBody": false,
+          "ignoresReadOnly": false,
+          "noZoom": false,
+          "noRotate": false
+        }
+      }
+    },
+    {
+      "name": "propsFor/polyline",
+      "fn": "propsFor",
+      "args": [
+        "polyline"
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "key": "color",
+            "label": "Stroke"
+          },
+          {
+            "key": "interiorColor",
+            "label": "Fill"
+          },
+          {
+            "key": "opacity",
+            "label": "Opacity",
+            "min": 0.1,
+            "max": 1,
+            "step": 0.05
+          },
+          {
+            "key": "strokeWidth",
+            "label": "Stroke width",
+            "min": 0.5,
+            "max": 30,
+            "step": 0.5
+          },
+          {
+            "key": "border",
+            "label": "Border",
+            "cloudy": false
+          },
+          {
+            "key": "lineEndings",
+            "label": "Line endings"
+          },
+          {
+            "key": "link",
+            "label": "Link"
+          }
+        ]
+      }
+    },
+    {
+      "name": "isMarkup/polyline",
+      "fn": "isMarkup",
+      "args": [
+        "polyline"
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "kindTakesLink/polyline",
+      "fn": "kindTakesLink",
+      "args": [
+        "polyline"
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "capsFor/ink",
+      "fn": "capsFor",
+      "args": [
+        "ink"
+      ],
+      "outcome": {
+        "returned": {
+          "selectable": true,
+          "movable": true,
+          "resizable": false,
+          "vertexEditable": false,
+          "rotatable": true,
+          "groupMovable": true,
+          "groupResizable": true,
+          "groupRotatable": true,
+          "textEditable": false,
+          "commentable": true,
+          "hasPopup": false,
+          "anchored": false,
+          "hasFill": false,
+          "hasEndings": false,
+          "hasCloudy": false,
+          "opaqueBody": false,
+          "ignoresReadOnly": false,
+          "noZoom": false,
+          "noRotate": false
+        }
+      }
+    },
+    {
+      "name": "propsFor/ink",
+      "fn": "propsFor",
+      "args": [
+        "ink"
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "key": "color",
+            "label": "Color"
+          },
+          {
+            "key": "opacity",
+            "label": "Opacity",
+            "min": 0.1,
+            "max": 1,
+            "step": 0.05
+          },
+          {
+            "key": "strokeWidth",
+            "label": "Stroke width",
+            "min": 0.5,
+            "max": 30,
+            "step": 0.5
+          },
+          {
+            "key": "blendMode",
+            "label": "Blend mode"
+          },
+          {
+            "key": "link",
+            "label": "Link"
+          }
+        ]
+      }
+    },
+    {
+      "name": "isMarkup/ink",
+      "fn": "isMarkup",
+      "args": [
+        "ink"
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "kindTakesLink/ink",
+      "fn": "kindTakesLink",
+      "args": [
+        "ink"
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "capsFor/highlight",
+      "fn": "capsFor",
+      "args": [
+        "highlight"
+      ],
+      "outcome": {
+        "returned": {
+          "selectable": true,
+          "movable": false,
+          "resizable": false,
+          "vertexEditable": false,
+          "rotatable": false,
+          "groupMovable": false,
+          "groupResizable": false,
+          "groupRotatable": false,
+          "textEditable": false,
+          "commentable": true,
+          "hasPopup": false,
+          "anchored": true,
+          "hasFill": false,
+          "hasEndings": false,
+          "hasCloudy": false,
+          "opaqueBody": false,
+          "ignoresReadOnly": false,
+          "noZoom": false,
+          "noRotate": false
+        }
+      }
+    },
+    {
+      "name": "propsFor/highlight",
+      "fn": "propsFor",
+      "args": [
+        "highlight"
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "key": "color",
+            "label": "Color"
+          },
+          {
+            "key": "opacity",
+            "label": "Opacity",
+            "min": 0.1,
+            "max": 1,
+            "step": 0.05
+          },
+          {
+            "key": "blendMode",
+            "label": "Blend mode"
+          },
+          {
+            "key": "link",
+            "label": "Link"
+          }
+        ]
+      }
+    },
+    {
+      "name": "isMarkup/highlight",
+      "fn": "isMarkup",
+      "args": [
+        "highlight"
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "kindTakesLink/highlight",
+      "fn": "kindTakesLink",
+      "args": [
+        "highlight"
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "capsFor/underline",
+      "fn": "capsFor",
+      "args": [
+        "underline"
+      ],
+      "outcome": {
+        "returned": {
+          "selectable": true,
+          "movable": false,
+          "resizable": false,
+          "vertexEditable": false,
+          "rotatable": false,
+          "groupMovable": false,
+          "groupResizable": false,
+          "groupRotatable": false,
+          "textEditable": false,
+          "commentable": true,
+          "hasPopup": false,
+          "anchored": true,
+          "hasFill": false,
+          "hasEndings": false,
+          "hasCloudy": false,
+          "opaqueBody": false,
+          "ignoresReadOnly": false,
+          "noZoom": false,
+          "noRotate": false
+        }
+      }
+    },
+    {
+      "name": "propsFor/underline",
+      "fn": "propsFor",
+      "args": [
+        "underline"
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "key": "color",
+            "label": "Color"
+          },
+          {
+            "key": "opacity",
+            "label": "Opacity",
+            "min": 0.1,
+            "max": 1,
+            "step": 0.05
+          },
+          {
+            "key": "blendMode",
+            "label": "Blend mode"
+          },
+          {
+            "key": "link",
+            "label": "Link"
+          }
+        ]
+      }
+    },
+    {
+      "name": "isMarkup/underline",
+      "fn": "isMarkup",
+      "args": [
+        "underline"
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "kindTakesLink/underline",
+      "fn": "kindTakesLink",
+      "args": [
+        "underline"
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "capsFor/squiggly",
+      "fn": "capsFor",
+      "args": [
+        "squiggly"
+      ],
+      "outcome": {
+        "returned": {
+          "selectable": true,
+          "movable": false,
+          "resizable": false,
+          "vertexEditable": false,
+          "rotatable": false,
+          "groupMovable": false,
+          "groupResizable": false,
+          "groupRotatable": false,
+          "textEditable": false,
+          "commentable": true,
+          "hasPopup": false,
+          "anchored": true,
+          "hasFill": false,
+          "hasEndings": false,
+          "hasCloudy": false,
+          "opaqueBody": false,
+          "ignoresReadOnly": false,
+          "noZoom": false,
+          "noRotate": false
+        }
+      }
+    },
+    {
+      "name": "propsFor/squiggly",
+      "fn": "propsFor",
+      "args": [
+        "squiggly"
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "key": "color",
+            "label": "Color"
+          },
+          {
+            "key": "opacity",
+            "label": "Opacity",
+            "min": 0.1,
+            "max": 1,
+            "step": 0.05
+          },
+          {
+            "key": "blendMode",
+            "label": "Blend mode"
+          },
+          {
+            "key": "link",
+            "label": "Link"
+          }
+        ]
+      }
+    },
+    {
+      "name": "isMarkup/squiggly",
+      "fn": "isMarkup",
+      "args": [
+        "squiggly"
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "kindTakesLink/squiggly",
+      "fn": "kindTakesLink",
+      "args": [
+        "squiggly"
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "capsFor/strikeout",
+      "fn": "capsFor",
+      "args": [
+        "strikeout"
+      ],
+      "outcome": {
+        "returned": {
+          "selectable": true,
+          "movable": false,
+          "resizable": false,
+          "vertexEditable": false,
+          "rotatable": false,
+          "groupMovable": false,
+          "groupResizable": false,
+          "groupRotatable": false,
+          "textEditable": false,
+          "commentable": true,
+          "hasPopup": false,
+          "anchored": true,
+          "hasFill": false,
+          "hasEndings": false,
+          "hasCloudy": false,
+          "opaqueBody": false,
+          "ignoresReadOnly": false,
+          "noZoom": false,
+          "noRotate": false
+        }
+      }
+    },
+    {
+      "name": "propsFor/strikeout",
+      "fn": "propsFor",
+      "args": [
+        "strikeout"
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "key": "color",
+            "label": "Color"
+          },
+          {
+            "key": "opacity",
+            "label": "Opacity",
+            "min": 0.1,
+            "max": 1,
+            "step": 0.05
+          },
+          {
+            "key": "blendMode",
+            "label": "Blend mode"
+          },
+          {
+            "key": "link",
+            "label": "Link"
+          }
+        ]
+      }
+    },
+    {
+      "name": "isMarkup/strikeout",
+      "fn": "isMarkup",
+      "args": [
+        "strikeout"
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "kindTakesLink/strikeout",
+      "fn": "kindTakesLink",
+      "args": [
+        "strikeout"
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "capsFor/redact",
+      "fn": "capsFor",
+      "args": [
+        "redact"
+      ],
+      "outcome": {
+        "returned": {
+          "selectable": true,
+          "movable": true,
+          "resizable": true,
+          "vertexEditable": false,
+          "rotatable": false,
+          "groupMovable": false,
+          "groupResizable": false,
+          "groupRotatable": false,
+          "textEditable": false,
+          "commentable": true,
+          "hasPopup": false,
+          "anchored": true,
+          "hasFill": true,
+          "hasEndings": false,
+          "hasCloudy": false,
+          "opaqueBody": false,
+          "ignoresReadOnly": false,
+          "noZoom": false,
+          "noRotate": false
+        }
+      }
+    },
+    {
+      "name": "propsFor/redact",
+      "fn": "propsFor",
+      "args": [
+        "redact"
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "key": "color",
+            "label": "Outline"
+          },
+          {
+            "key": "interiorColor",
+            "label": "Fill"
+          },
+          {
+            "key": "opacity",
+            "label": "Opacity",
+            "min": 0.1,
+            "max": 1,
+            "step": 0.05
+          },
+          {
+            "key": "fontFamily",
+            "label": "Label font"
+          },
+          {
+            "key": "fontSize",
+            "label": "Label size",
+            "min": 0,
+            "max": 96,
+            "step": 1
+          },
+          {
+            "key": "fontColor",
+            "label": "Label color"
+          },
+          {
+            "key": "textAlign",
+            "label": "Align"
+          }
+        ]
+      }
+    },
+    {
+      "name": "isMarkup/redact",
+      "fn": "isMarkup",
+      "args": [
+        "redact"
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "kindTakesLink/redact",
+      "fn": "kindTakesLink",
+      "args": [
+        "redact"
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "capsFor/caret",
+      "fn": "capsFor",
+      "args": [
+        "caret"
+      ],
+      "outcome": {
+        "returned": {
+          "selectable": true,
+          "movable": false,
+          "resizable": false,
+          "vertexEditable": false,
+          "rotatable": false,
+          "groupMovable": false,
+          "groupResizable": false,
+          "groupRotatable": false,
+          "textEditable": false,
+          "commentable": true,
+          "hasPopup": false,
+          "anchored": true,
+          "hasFill": false,
+          "hasEndings": false,
+          "hasCloudy": false,
+          "opaqueBody": false,
+          "ignoresReadOnly": false,
+          "noZoom": false,
+          "noRotate": false
+        }
+      }
+    },
+    {
+      "name": "propsFor/caret",
+      "fn": "propsFor",
+      "args": [
+        "caret"
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "key": "color",
+            "label": "Color"
+          },
+          {
+            "key": "opacity",
+            "label": "Opacity",
+            "min": 0.1,
+            "max": 1,
+            "step": 0.05
+          }
+        ]
+      }
+    },
+    {
+      "name": "isMarkup/caret",
+      "fn": "isMarkup",
+      "args": [
+        "caret"
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "kindTakesLink/caret",
+      "fn": "kindTakesLink",
+      "args": [
+        "caret"
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "capsFor/text",
+      "fn": "capsFor",
+      "args": [
+        "text"
+      ],
+      "outcome": {
+        "returned": {
+          "selectable": true,
+          "movable": true,
+          "resizable": false,
+          "vertexEditable": false,
+          "rotatable": false,
+          "groupMovable": true,
+          "groupResizable": false,
+          "groupRotatable": false,
+          "textEditable": false,
+          "commentable": true,
+          "hasPopup": true,
+          "anchored": false,
+          "hasFill": false,
+          "hasEndings": false,
+          "hasCloudy": false,
+          "opaqueBody": true,
+          "ignoresReadOnly": false,
+          "noZoom": true,
+          "noRotate": true
+        }
+      }
+    },
+    {
+      "name": "propsFor/text",
+      "fn": "propsFor",
+      "args": [
+        "text"
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "key": "icon",
+            "label": "Icon",
+            "options": [
+              "comment",
+              "key",
+              "note",
+              "help",
+              "new-paragraph",
+              "paragraph",
+              "insert"
+            ]
+          },
+          {
+            "key": "color",
+            "label": "Color"
+          },
+          {
+            "key": "opacity",
+            "label": "Opacity",
+            "min": 0.1,
+            "max": 1,
+            "step": 0.05
+          },
+          {
+            "key": "link",
+            "label": "Link"
+          }
+        ]
+      }
+    },
+    {
+      "name": "isMarkup/text",
+      "fn": "isMarkup",
+      "args": [
+        "text"
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "kindTakesLink/text",
+      "fn": "kindTakesLink",
+      "args": [
+        "text"
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "capsFor/file-attachment",
+      "fn": "capsFor",
+      "args": [
+        "file-attachment"
+      ],
+      "outcome": {
+        "returned": {
+          "selectable": true,
+          "movable": true,
+          "resizable": false,
+          "vertexEditable": false,
+          "rotatable": false,
+          "groupMovable": true,
+          "groupResizable": false,
+          "groupRotatable": false,
+          "textEditable": false,
+          "commentable": true,
+          "hasPopup": false,
+          "anchored": false,
+          "hasFill": false,
+          "hasEndings": false,
+          "hasCloudy": false,
+          "opaqueBody": true,
+          "ignoresReadOnly": false,
+          "noZoom": true,
+          "noRotate": true
+        }
+      }
+    },
+    {
+      "name": "propsFor/file-attachment",
+      "fn": "propsFor",
+      "args": [
+        "file-attachment"
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "key": "icon",
+            "label": "Icon",
+            "options": [
+              "push-pin",
+              "paperclip",
+              "graph",
+              "tag"
+            ]
+          },
+          {
+            "key": "color",
+            "label": "Color"
+          },
+          {
+            "key": "opacity",
+            "label": "Opacity",
+            "min": 0.1,
+            "max": 1,
+            "step": 0.05
+          }
+        ]
+      }
+    },
+    {
+      "name": "isMarkup/file-attachment",
+      "fn": "isMarkup",
+      "args": [
+        "file-attachment"
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "kindTakesLink/file-attachment",
+      "fn": "kindTakesLink",
+      "args": [
+        "file-attachment"
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "capsFor/stamp",
+      "fn": "capsFor",
+      "args": [
+        "stamp"
+      ],
+      "outcome": {
+        "returned": {
+          "selectable": true,
+          "movable": true,
+          "resizable": true,
+          "vertexEditable": false,
+          "rotatable": true,
+          "groupMovable": true,
+          "groupResizable": true,
+          "groupRotatable": true,
+          "textEditable": false,
+          "commentable": true,
+          "hasPopup": false,
+          "anchored": false,
+          "hasFill": false,
+          "hasEndings": false,
+          "hasCloudy": false,
+          "opaqueBody": true,
+          "ignoresReadOnly": false,
+          "noZoom": false,
+          "noRotate": false
+        }
+      }
+    },
+    {
+      "name": "propsFor/stamp",
+      "fn": "propsFor",
+      "args": [
+        "stamp"
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "key": "link",
+            "label": "Link"
+          }
+        ]
+      }
+    },
+    {
+      "name": "isMarkup/stamp",
+      "fn": "isMarkup",
+      "args": [
+        "stamp"
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "kindTakesLink/stamp",
+      "fn": "kindTakesLink",
+      "args": [
+        "stamp"
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "capsFor/link",
+      "fn": "capsFor",
+      "args": [
+        "link"
+      ],
+      "outcome": {
+        "returned": {
+          "selectable": true,
+          "movable": true,
+          "resizable": true,
+          "vertexEditable": false,
+          "rotatable": false,
+          "groupMovable": true,
+          "groupResizable": false,
+          "groupRotatable": false,
+          "textEditable": false,
+          "commentable": false,
+          "hasPopup": false,
+          "anchored": false,
+          "hasFill": false,
+          "hasEndings": false,
+          "hasCloudy": false,
+          "opaqueBody": true,
+          "ignoresReadOnly": false,
+          "noZoom": false,
+          "noRotate": false
+        }
+      }
+    },
+    {
+      "name": "propsFor/link",
+      "fn": "propsFor",
+      "args": [
+        "link"
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "key": "link",
+            "label": "Link"
+          }
+        ]
+      }
+    },
+    {
+      "name": "isMarkup/link",
+      "fn": "isMarkup",
+      "args": [
+        "link"
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "kindTakesLink/link",
+      "fn": "kindTakesLink",
+      "args": [
+        "link"
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "capsFor/popup",
+      "fn": "capsFor",
+      "args": [
+        "popup"
+      ],
+      "outcome": {
+        "returned": {
+          "selectable": false,
+          "movable": false,
+          "resizable": false,
+          "vertexEditable": false,
+          "rotatable": false,
+          "groupMovable": false,
+          "groupResizable": false,
+          "groupRotatable": false,
+          "textEditable": false,
+          "commentable": false,
+          "hasPopup": false,
+          "anchored": false,
+          "hasFill": false,
+          "hasEndings": false,
+          "hasCloudy": false,
+          "opaqueBody": false,
+          "ignoresReadOnly": false,
+          "noZoom": false,
+          "noRotate": false
+        }
+      }
+    },
+    {
+      "name": "propsFor/popup",
+      "fn": "propsFor",
+      "args": [
+        "popup"
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "isMarkup/popup",
+      "fn": "isMarkup",
+      "args": [
+        "popup"
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "kindTakesLink/popup",
+      "fn": "kindTakesLink",
+      "args": [
+        "popup"
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "capsFor/widget",
+      "fn": "capsFor",
+      "args": [
+        "widget"
+      ],
+      "outcome": {
+        "returned": {
+          "selectable": false,
+          "movable": false,
+          "resizable": false,
+          "vertexEditable": false,
+          "rotatable": false,
+          "groupMovable": false,
+          "groupResizable": false,
+          "groupRotatable": false,
+          "textEditable": false,
+          "commentable": false,
+          "hasPopup": false,
+          "anchored": false,
+          "hasFill": false,
+          "hasEndings": false,
+          "hasCloudy": false,
+          "opaqueBody": false,
+          "ignoresReadOnly": false,
+          "noZoom": false,
+          "noRotate": false
+        }
+      }
+    },
+    {
+      "name": "propsFor/widget",
+      "fn": "propsFor",
+      "args": [
+        "widget"
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "isMarkup/widget",
+      "fn": "isMarkup",
+      "args": [
+        "widget"
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "kindTakesLink/widget",
+      "fn": "kindTakesLink",
+      "args": [
+        "widget"
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "capsFor/free-text-callout",
+      "fn": "capsFor",
+      "args": [
+        "free-text-callout"
+      ],
+      "outcome": {
+        "returned": {
+          "selectable": false,
+          "movable": false,
+          "resizable": false,
+          "vertexEditable": false,
+          "rotatable": false,
+          "groupMovable": false,
+          "groupResizable": false,
+          "groupRotatable": false,
+          "textEditable": false,
+          "commentable": false,
+          "hasPopup": false,
+          "anchored": false,
+          "hasFill": false,
+          "hasEndings": false,
+          "hasCloudy": false,
+          "opaqueBody": false,
+          "ignoresReadOnly": false,
+          "noZoom": false,
+          "noRotate": false
+        }
+      }
+    },
+    {
+      "name": "propsFor/free-text-callout",
+      "fn": "propsFor",
+      "args": [
+        "free-text-callout"
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "isMarkup/free-text-callout",
+      "fn": "isMarkup",
+      "args": [
+        "free-text-callout"
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "kindTakesLink/free-text-callout",
+      "fn": "kindTakesLink",
+      "args": [
+        "free-text-callout"
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "capsFor/unknown",
+      "fn": "capsFor",
+      "args": [
+        "unknown"
+      ],
+      "outcome": {
+        "returned": {
+          "selectable": false,
+          "movable": false,
+          "resizable": false,
+          "vertexEditable": false,
+          "rotatable": false,
+          "groupMovable": false,
+          "groupResizable": false,
+          "groupRotatable": false,
+          "textEditable": false,
+          "commentable": false,
+          "hasPopup": false,
+          "anchored": false,
+          "hasFill": false,
+          "hasEndings": false,
+          "hasCloudy": false,
+          "opaqueBody": false,
+          "ignoresReadOnly": false,
+          "noZoom": false,
+          "noRotate": false
+        }
+      }
+    },
+    {
+      "name": "propsFor/unknown",
+      "fn": "propsFor",
+      "args": [
+        "unknown"
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "isMarkup/unknown",
+      "fn": "isMarkup",
+      "args": [
+        "unknown"
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "kindTakesLink/unknown",
+      "fn": "kindTakesLink",
+      "args": [
+        "unknown"
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "capsFor/empty",
+      "fn": "capsFor",
+      "args": [
+        ""
+      ],
+      "outcome": {
+        "returned": {
+          "selectable": false,
+          "movable": false,
+          "resizable": false,
+          "vertexEditable": false,
+          "rotatable": false,
+          "groupMovable": false,
+          "groupResizable": false,
+          "groupRotatable": false,
+          "textEditable": false,
+          "commentable": false,
+          "hasPopup": false,
+          "anchored": false,
+          "hasFill": false,
+          "hasEndings": false,
+          "hasCloudy": false,
+          "opaqueBody": false,
+          "ignoresReadOnly": false,
+          "noZoom": false,
+          "noRotate": false
+        }
+      }
+    },
+    {
+      "name": "propsFor/empty",
+      "fn": "propsFor",
+      "args": [
+        ""
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "isMarkup/empty",
+      "fn": "isMarkup",
+      "args": [
+        ""
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "kindTakesLink/empty",
+      "fn": "kindTakesLink",
+      "args": [
+        ""
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "capsFor/constructor",
+      "fn": "capsFor",
+      "args": [
+        "constructor"
+      ],
+      "outcome": {
+        "returned": {
+          "selectable": false,
+          "movable": false,
+          "resizable": false,
+          "vertexEditable": false,
+          "rotatable": false,
+          "groupMovable": false,
+          "groupResizable": false,
+          "groupRotatable": false,
+          "textEditable": false,
+          "commentable": false,
+          "hasPopup": false,
+          "anchored": false,
+          "hasFill": false,
+          "hasEndings": false,
+          "hasCloudy": false,
+          "opaqueBody": false,
+          "ignoresReadOnly": false,
+          "noZoom": false,
+          "noRotate": false
+        }
+      }
+    },
+    {
+      "name": "propsFor/constructor",
+      "fn": "propsFor",
+      "args": [
+        "constructor"
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "isMarkup/constructor",
+      "fn": "isMarkup",
+      "args": [
+        "constructor"
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "kindTakesLink/constructor",
+      "fn": "kindTakesLink",
+      "args": [
+        "constructor"
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "capsFor/toString",
+      "fn": "capsFor",
+      "args": [
+        "toString"
+      ],
+      "outcome": {
+        "returned": {
+          "selectable": false,
+          "movable": false,
+          "resizable": false,
+          "vertexEditable": false,
+          "rotatable": false,
+          "groupMovable": false,
+          "groupResizable": false,
+          "groupRotatable": false,
+          "textEditable": false,
+          "commentable": false,
+          "hasPopup": false,
+          "anchored": false,
+          "hasFill": false,
+          "hasEndings": false,
+          "hasCloudy": false,
+          "opaqueBody": false,
+          "ignoresReadOnly": false,
+          "noZoom": false,
+          "noRotate": false
+        }
+      }
+    },
+    {
+      "name": "propsFor/toString",
+      "fn": "propsFor",
+      "args": [
+        "toString"
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "isMarkup/toString",
+      "fn": "isMarkup",
+      "args": [
+        "toString"
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "kindTakesLink/toString",
+      "fn": "kindTakesLink",
+      "args": [
+        "toString"
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "capsFor/__proto__",
+      "fn": "capsFor",
+      "args": [
+        "__proto__"
+      ],
+      "outcome": {
+        "returned": {
+          "selectable": false,
+          "movable": false,
+          "resizable": false,
+          "vertexEditable": false,
+          "rotatable": false,
+          "groupMovable": false,
+          "groupResizable": false,
+          "groupRotatable": false,
+          "textEditable": false,
+          "commentable": false,
+          "hasPopup": false,
+          "anchored": false,
+          "hasFill": false,
+          "hasEndings": false,
+          "hasCloudy": false,
+          "opaqueBody": false,
+          "ignoresReadOnly": false,
+          "noZoom": false,
+          "noRotate": false
+        }
+      }
+    },
+    {
+      "name": "propsFor/__proto__",
+      "fn": "propsFor",
+      "args": [
+        "__proto__"
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "isMarkup/__proto__",
+      "fn": "isMarkup",
+      "args": [
+        "__proto__"
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "kindTakesLink/__proto__",
+      "fn": "kindTakesLink",
+      "args": [
+        "__proto__"
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "capsFor/hasOwnProperty",
+      "fn": "capsFor",
+      "args": [
+        "hasOwnProperty"
+      ],
+      "outcome": {
+        "returned": {
+          "selectable": false,
+          "movable": false,
+          "resizable": false,
+          "vertexEditable": false,
+          "rotatable": false,
+          "groupMovable": false,
+          "groupResizable": false,
+          "groupRotatable": false,
+          "textEditable": false,
+          "commentable": false,
+          "hasPopup": false,
+          "anchored": false,
+          "hasFill": false,
+          "hasEndings": false,
+          "hasCloudy": false,
+          "opaqueBody": false,
+          "ignoresReadOnly": false,
+          "noZoom": false,
+          "noRotate": false
+        }
+      }
+    },
+    {
+      "name": "propsFor/hasOwnProperty",
+      "fn": "propsFor",
+      "args": [
+        "hasOwnProperty"
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "isMarkup/hasOwnProperty",
+      "fn": "isMarkup",
+      "args": [
+        "hasOwnProperty"
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "kindTakesLink/hasOwnProperty",
+      "fn": "kindTakesLink",
+      "args": [
+        "hasOwnProperty"
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "sharedProps/none",
+      "fn": "sharedProps",
+      "args": [
+        []
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "sharedProps/one",
+      "fn": "sharedProps",
+      "args": [
+        [
+          "square"
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "key": "color",
+            "label": "Stroke"
+          },
+          {
+            "key": "interiorColor",
+            "label": "Fill"
+          },
+          {
+            "key": "opacity",
+            "label": "Opacity",
+            "min": 0.1,
+            "max": 1,
+            "step": 0.05
+          },
+          {
+            "key": "strokeWidth",
+            "label": "Stroke width",
+            "min": 0.5,
+            "max": 30,
+            "step": 0.5
+          },
+          {
+            "key": "border",
+            "label": "Border",
+            "cloudy": true
+          },
+          {
+            "key": "link",
+            "label": "Link"
+          }
+        ]
+      }
+    },
+    {
+      "name": "sharedProps/duplicates",
+      "fn": "sharedProps",
+      "args": [
+        [
+          "square",
+          "square",
+          "circle"
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "key": "color",
+            "label": "Stroke"
+          },
+          {
+            "key": "interiorColor",
+            "label": "Fill"
+          },
+          {
+            "key": "opacity",
+            "label": "Opacity",
+            "min": 0.1,
+            "max": 1,
+            "step": 0.05
+          },
+          {
+            "key": "strokeWidth",
+            "label": "Stroke width",
+            "min": 0.5,
+            "max": 30,
+            "step": 0.5
+          },
+          {
+            "key": "border",
+            "label": "Border",
+            "cloudy": true
+          },
+          {
+            "key": "link",
+            "label": "Link"
+          }
+        ]
+      }
+    },
+    {
+      "name": "sharedProps/shape-line",
+      "fn": "sharedProps",
+      "args": [
+        [
+          "square",
+          "line"
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "key": "color",
+            "label": "Stroke"
+          },
+          {
+            "key": "interiorColor",
+            "label": "Fill"
+          },
+          {
+            "key": "opacity",
+            "label": "Opacity",
+            "min": 0.1,
+            "max": 1,
+            "step": 0.05
+          },
+          {
+            "key": "strokeWidth",
+            "label": "Stroke width",
+            "min": 0.5,
+            "max": 30,
+            "step": 0.5
+          },
+          {
+            "key": "border",
+            "label": "Border",
+            "cloudy": true
+          },
+          {
+            "key": "link",
+            "label": "Link"
+          }
+        ]
+      }
+    },
+    {
+      "name": "sharedProps/line-shape",
+      "fn": "sharedProps",
+      "args": [
+        [
+          "line",
+          "square"
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "key": "color",
+            "label": "Stroke"
+          },
+          {
+            "key": "interiorColor",
+            "label": "Fill"
+          },
+          {
+            "key": "opacity",
+            "label": "Opacity",
+            "min": 0.1,
+            "max": 1,
+            "step": 0.05
+          },
+          {
+            "key": "strokeWidth",
+            "label": "Stroke width",
+            "min": 0.5,
+            "max": 30,
+            "step": 0.5
+          },
+          {
+            "key": "border",
+            "label": "Border",
+            "cloudy": false
+          },
+          {
+            "key": "link",
+            "label": "Link"
+          }
+        ]
+      }
+    },
+    {
+      "name": "sharedProps/mixed-markup",
+      "fn": "sharedProps",
+      "args": [
+        [
+          "highlight",
+          "ink",
+          "free-text"
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "key": "color",
+            "label": "Color"
+          },
+          {
+            "key": "opacity",
+            "label": "Opacity",
+            "min": 0.1,
+            "max": 1,
+            "step": 0.05
+          },
+          {
+            "key": "link",
+            "label": "Link"
+          }
+        ]
+      }
+    },
+    {
+      "name": "sharedProps/with-unknown",
+      "fn": "sharedProps",
+      "args": [
+        [
+          "square",
+          "unknown"
+        ]
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "sharedProps/unknown-first",
+      "fn": "sharedProps",
+      "args": [
+        [
+          "unknown",
+          "square"
+        ]
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "sharedProps/widgets",
+      "fn": "sharedProps",
+      "args": [
+        [
+          "widget-text",
+          "widget-toggle",
+          "widget-box"
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "key": "color",
+            "label": "Border color"
+          },
+          {
+            "key": "interiorColor",
+            "label": "Background"
+          },
+          {
+            "key": "strokeWidth",
+            "label": "Border width",
+            "min": 0,
+            "max": 12,
+            "step": 0.5
+          },
+          {
+            "key": "border",
+            "label": "Border style",
+            "cloudy": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "sharedProps/note-attachment",
+      "fn": "sharedProps",
+      "args": [
+        [
+          "text",
+          "file-attachment"
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "key": "icon",
+            "label": "Icon",
+            "options": [
+              "comment",
+              "key",
+              "note",
+              "help",
+              "new-paragraph",
+              "paragraph",
+              "insert"
+            ]
+          },
+          {
+            "key": "color",
+            "label": "Color"
+          },
+          {
+            "key": "opacity",
+            "label": "Opacity",
+            "min": 0.1,
+            "max": 1,
+            "step": 0.05
+          }
+        ]
+      }
+    },
+    {
+      "name": "sharedProps/redact-free-text",
+      "fn": "sharedProps",
+      "args": [
+        [
+          "redact",
+          "free-text"
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "key": "color",
+            "label": "Outline"
+          },
+          {
+            "key": "interiorColor",
+            "label": "Fill"
+          },
+          {
+            "key": "opacity",
+            "label": "Opacity",
+            "min": 0.1,
+            "max": 1,
+            "step": 0.05
+          },
+          {
+            "key": "fontFamily",
+            "label": "Label font"
+          },
+          {
+            "key": "fontSize",
+            "label": "Label size",
+            "min": 0,
+            "max": 96,
+            "step": 1
+          },
+          {
+            "key": "fontColor",
+            "label": "Label color"
+          },
+          {
+            "key": "textAlign",
+            "label": "Align"
+          }
+        ]
+      }
+    },
+    {
+      "name": "sharedProps/everything",
+      "fn": "sharedProps",
+      "args": [
+        [
+          "widget-text",
+          "widget-choice",
+          "widget-button",
+          "widget-toggle",
+          "widget-box",
+          "free-text",
+          "square",
+          "circle",
+          "line",
+          "polygon",
+          "polyline",
+          "ink",
+          "highlight",
+          "underline",
+          "squiggly",
+          "strikeout",
+          "redact",
+          "caret",
+          "text",
+          "file-attachment",
+          "stamp",
+          "link"
+        ]
+      ],
+      "outcome": {
+        "returned": []
+      }
+    }
+  ]
+}
