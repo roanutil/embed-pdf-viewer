@@ -423,6 +423,55 @@ impl Document {
         })
     }
 
+    /// `Field.display` on every widget of a terminal field.
+    ///
+    /// Acrobat's four-valued property rather than the PDF flags underneath
+    /// it: the fork changes only the Invisible, Hidden, Print and NoView
+    /// bits and leaves every unrelated flag alone, which is what makes this
+    /// safe to drive from a form script that knows nothing about `/F`.
+    pub fn set_field_display(
+        &self,
+        field_object_number: u32,
+        display: FieldDisplay,
+    ) -> Option<ChangedWidgets> {
+        // SAFETY: the handle is live.
+        self.with_changed_widgets(|buffer, capacity, count| unsafe {
+            pdfium_sys::EPDFForm_SetFieldDisplay(
+                self.as_raw(),
+                field_object_number,
+                display as i32,
+                buffer,
+                capacity,
+                count,
+            )
+        })
+    }
+
+    /// Regenerate every text and combo widget's `/AP` from this text.
+    ///
+    /// The field's `/V` is UNCHANGED. This is the sink for an `/AA /F`
+    /// format script, whose whole job is to make a value look different
+    /// without making it a different value: a number stored as `1234.5` and
+    /// displayed as `$1,234.50` is one field, not two.
+    pub fn set_field_appearance_text(
+        &self,
+        field_object_number: u32,
+        text: &str,
+    ) -> Option<ChangedWidgets> {
+        let text: Vec<u16> = text.encode_utf16().chain(std::iter::once(0)).collect();
+        // SAFETY: the handle is live and the string outlives the call.
+        self.with_changed_widgets(|buffer, capacity, count| unsafe {
+            pdfium_sys::EPDFForm_SetFieldAppearanceText(
+                self.as_raw(),
+                field_object_number,
+                text.as_ptr(),
+                buffer,
+                capacity,
+                count,
+            )
+        })
+    }
+
     /// Put a field back to its `/DV`.
     ///
     /// Not the same as writing an empty value: a field with a default goes
@@ -466,4 +515,17 @@ impl Document {
             total,
         })
     }
+}
+
+/// Acrobat's `Field.display`.
+///
+/// Four values rather than the two annotation flag bits they touch, because
+/// that is the vocabulary a form script speaks: `EPDF_FORM_DISPLAY_*` in
+/// `epdf_form.h`, and `FormFieldDisplay` in `core/src/forms/effects.ts`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FieldDisplay {
+    Visible = 0,
+    Hidden = 1,
+    NoPrint = 2,
+    NoView = 3,
 }

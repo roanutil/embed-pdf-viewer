@@ -58,6 +58,7 @@ pub use fonts::{
 };
 pub use form::{FieldActionEvent, FormDataFormat, FormField, FormModel};
 pub use form_write::{
+    FieldDisplay,
     ChangedWidgets, CreatableFieldFamily, DetachedWidgets, FormImportCounts, FormRepairReport,
 };
 pub use geom::{MatrixF, PointF, QuadF, RectF};

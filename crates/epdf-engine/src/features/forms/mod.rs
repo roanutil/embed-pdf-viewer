@@ -19,6 +19,7 @@
 //! [`snapshot`], the read: the detached field tree, its values and its
 //! widgets. The export and the writes are not ported.
 
+pub mod effects;
 pub mod field;
 pub mod snapshot;
 pub mod write;

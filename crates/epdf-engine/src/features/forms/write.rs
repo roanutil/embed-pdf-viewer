@@ -65,7 +65,7 @@ impl FormFieldValue {
         }
     }
 
-    fn name(&self) -> &'static str {
+    pub(super) fn name(&self) -> &'static str {
         match self {
             Self::Text { .. } => "text",
             Self::Toggle { .. } => "toggle",
@@ -395,4 +395,41 @@ pub fn repair(
         appearances_baked: report.appearances_baked,
         need_appearances_cleared: report.need_appearances_cleared,
     })
+}
+
+/// Which serialization a form import or export speaks.
+///
+/// A wire enum over [`pdfium::FormDataFormat`], on the same terms as
+/// [`crate::features::save::SaveMode`]: the `pdfium` crate is the FFI
+/// boundary and carries no serde, so the spellings that cross the wire live
+/// here. They are `FormDataFormat` in `core/src/forms/value.ts`, lower case,
+/// and a caller that asked for one gets the same string back beside the
+/// bytes so it knows which extension to write.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum FormDataFormat {
+    Fdf,
+    Xfdf,
+}
+
+impl FormDataFormat {
+    pub fn native(self) -> pdfium::FormDataFormat {
+        match self {
+            Self::Fdf => pdfium::FormDataFormat::Fdf,
+            Self::Xfdf => pdfium::FormDataFormat::Xfdf,
+        }
+    }
+}
+
+#[cfg(test)]
+mod format_tests {
+    use super::*;
+
+    #[test]
+    fn the_wire_names_are_the_typescript_ones() {
+        // Two strings that cross the wire, so a rename here is a protocol
+        // change rather than a refactor.
+        assert_eq!(serde_json::to_value(FormDataFormat::Fdf).unwrap(), "fdf");
+        assert_eq!(serde_json::to_value(FormDataFormat::Xfdf).unwrap(), "xfdf");
+    }
 }

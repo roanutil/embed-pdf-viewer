@@ -65,7 +65,11 @@
     "metadata-write": "tsx --conditions=development src/generate-metadata-write-vectors.ts",
     "metadata-write:check": "tsx --conditions=development src/generate-metadata-write-vectors.ts --check",
     "files-write": "tsx --conditions=development src/generate-files-write-vectors.ts",
-    "files-write:check": "tsx --conditions=development src/generate-files-write-vectors.ts --check"
+    "files-write:check": "tsx --conditions=development src/generate-files-write-vectors.ts --check",
+    "wire": "tsx --conditions=development src/generate-wire-vectors.ts",
+    "wire:check": "tsx --conditions=development src/generate-wire-vectors.ts --check",
+    "form-effects": "tsx --conditions=development src/generate-form-effects-vectors.ts",
+    "form-effects:check": "tsx --conditions=development src/generate-form-effects-vectors.ts --check"
   },
   "devDependencies": {
     "@embedpdf/engine": "workspace:*",
