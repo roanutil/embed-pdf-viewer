@@ -4,7 +4,7 @@
 //! value and objects by identity.
 
 use epdf_kernel::{is_undefined, undefined};
-use serde_json::{Map, Value};
+use serde_json::Value;
 
 /// `v[key]`, with a JSON `undefined` marker read as absent.
 pub fn get<'a>(v: &'a Value, key: &str) -> Option<&'a Value> {
@@ -65,16 +65,6 @@ pub fn strict_eq(a: Option<&Value>, b: Option<&Value>) -> bool {
     }
 }
 
-/// An object from `(key, value)` members, dropping `undefined` ones as a
-/// JavaScript object literal read back through JSON would.
-pub fn object<const N: usize>(members: [(&str, Value); N]) -> Value {
-    let mut out = Map::new();
-    for (key, value) in members {
-        out.insert(key.to_string(), value);
-    }
-    Value::Object(out)
-}
-
 /// `JSON.stringify(value)` for a value with no `undefined` in it: numbers
 /// print as `Number#toString` does, strings escape as JSON does.
 pub fn json_stringify(value: &Value) -> String {
@@ -87,10 +77,10 @@ fn write_json(value: &Value, out: &mut String) {
     match value {
         Value::Null => out.push_str("null"),
         Value::Bool(b) => out.push_str(if *b { "true" } else { "false" }),
-        Value::Number(n) => match n.as_f64() {
-            Some(x) if x.is_finite() => out.push_str(&epdf_geometry::js::number_to_string(x)),
-            _ => out.push_str("null"),
-        },
+        // A JSON number is always finite.
+        Value::Number(n) => {
+            out.push_str(&epdf_geometry::js::number_to_string(n.as_f64().unwrap_or_default()))
+        }
         Value::String(s) => out.push_str(&serde_json::to_string(s).unwrap_or_default()),
         Value::Array(items) => {
             out.push('[');
@@ -180,5 +170,10 @@ mod tests {
         assert!(!strict_eq(Some(&json!([1])), Some(&json!([1]))));
         assert!(!strict_eq(Some(&json!(null)), None));
         assert!(strict_eq(None, Some(&undefined())));
+        assert!(strict_eq(Some(&json!(true)), Some(&json!(true))));
+        assert!(!strict_eq(Some(&json!(true)), Some(&json!(false))));
+        assert!(strict_eq(Some(&undefined()), Some(&undefined())));
+        assert!(!strict_eq(Some(&undefined()), Some(&json!("x"))));
+        assert!(!strict_eq(Some(&json!("x")), Some(&undefined())));
     }
 }
