@@ -32,3 +32,14 @@ og-preview/
 
 # Rust
 /target
+
+tmp/
+
+# bundler matrix: build outputs and results
+tooling/bundler-matrix/apps/*/dist
+tooling/bundler-matrix/apps/*/out
+tooling/bundler-matrix/apps/*/.next
+tooling/bundler-matrix/apps/*/.angular
+tooling/bundler-matrix/apps/*/.parcel-cache
+tooling/bundler-matrix/apps/*/out-tsc
+tooling/bundler-matrix/results.json

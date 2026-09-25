@@ -4,7 +4,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-import { createKernel } from '@embedpdf/core';
+import { createKernel, toPageRef } from '@embedpdf/core';
 import { createQuickJsSandbox } from '@embedpdf/core-js-sandbox';
 import { createLocalEngine } from '@embedpdf/engine';
 import { actionsPlugin } from '@embedpdf/plugin-actions';
@@ -14,8 +14,8 @@ import { AnnotationToken as AnnotationHostToken } from '@embedpdf/plugin-annotat
 import { interactionPlugin } from '@embedpdf/plugin-interaction';
 
 import { formPlugin } from '../src/form.plugin';
-import { FormToken } from '../src/types';
-import type { FormUiEffect } from '../src/types';
+import { FormToken } from '../src/host-contract';
+import type { FormUiEffect } from '../src/host-contract';
 
 /**
  * SUPPLEMENTARY real-world acceptance over the local `JS tests/` corpus —
@@ -78,17 +78,17 @@ describe('corpus acceptance (skips without the local JS tests folder)', () => {
         await actions.dispatch({
           scope: 'annotation',
           event: 'cursorEnter',
-          ref: { kind: 'objectNumber', pageObjectNumber: 999, annotObjectNumber: 1 },
-          pon: 999,
+          ref: { kind: 'objectNumber', page: toPageRef(999), annotObjectNumber: 1 },
+          page: toPageRef(999),
         });
         await settle();
         await form.refresh();
-        const docStatus = form.snapshot()?.fields.find((f) => f.name === 'docStatus');
+        const docStatus = form.getSnapshot()?.fields.find((f) => f.name === 'docStatus');
         // The script wrote through the ScriptHost executor + the form
         // commit sink (lifecycle origin).
-        expect(
-          docStatus?.valueEntry.kind === 'scalar' ? docStatus.valueEntry.value : '',
-        ).toContain('OpenAction');
+        expect(docStatus?.valueEntry.kind === 'scalar' ? docStatus.valueEntry.value : '').toContain(
+          'OpenAction',
+        );
         // Its app.alert carries the origin axis — the provider's default
         // matrix suppresses it; embedder handlers (like this one) see it.
         const alert = uiEffects.find((e) => e.kind === 'alert');
@@ -101,7 +101,7 @@ describe('corpus acceptance (skips without the local JS tests folder)', () => {
   );
 
   it.skipIf(!existsSync(DOC_02))(
-    "02: hover colors — THE Phase-3 gate on the real corpus document",
+    '02: hover colors — THE Phase-3 gate on the real corpus document',
     async () => {
       const engine = await createLocalEngine({ runtime: { prefer: 'wasm' } });
       const kernel = createKernel({
@@ -129,26 +129,26 @@ describe('corpus acceptance (skips without the local JS tests folder)', () => {
         const annotation = kernel.capability(AnnotationHostToken);
         const actions = kernel.capability(ActionsHostToken);
         await form.refresh();
-        const trigger = form.snapshot()?.fields.find((f) => f.widgets.length > 0);
+        const trigger = form.getSnapshot()?.fields.find((f) => f.widgets.length > 0);
         if (!trigger) throw new Error('no widget field in 02');
-        const pon = trigger.widgets[0]!.pageObjectNumber;
-        await annotation.reloadPage(pon);
+        const page = trigger.widgets[0]!.page!;
+        await annotation.reloadPage(page);
         const hoverSquare = () =>
-          annotation.pageItems(pon).find((item) => item.subtype === 'square');
+          annotation.listPageItems(page).find((item) => item.subtype === 'square');
         const before = hoverSquare()?.style.color;
         const drain = () =>
           actions.dispatch({
             scope: 'annotation',
             event: 'cursorEnter',
-            ref: { kind: 'objectNumber', pageObjectNumber: 999, annotObjectNumber: 1 },
-            pon: 999,
+            ref: { kind: 'objectNumber', page: toPageRef(999), annotObjectNumber: 1 },
+            page: toPageRef(999),
           });
         // The first field in 02 is `hoverTarget`'s trigger (obj:5, /AA E/X JS).
         form.notifyWidgetEvent(
-          `obj:${trigger.fieldObjectNumber}`,
+          trigger.ref,
           {
             kind: 'objectNumber',
-            pageObjectNumber: pon,
+            page,
             annotObjectNumber: trigger.widgets[0]!.annotObjectNumber,
           },
           'cursorEnter',
@@ -165,7 +165,7 @@ describe('corpus acceptance (skips without the local JS tests folder)', () => {
   );
 
   it.skipIf(!existsSync(DOC_03))(
-    "03: the native tooltip works with scripting OFF (the corpus actions-≠-JS proof)",
+    '03: the native tooltip works with scripting OFF (the corpus actions-≠-JS proof)',
     async () => {
       const engine = await createLocalEngine({ runtime: { prefer: 'wasm' } });
       const kernel = createKernel({
@@ -185,29 +185,29 @@ describe('corpus acceptance (skips without the local JS tests folder)', () => {
         const actions = kernel.capability(ActionsHostToken);
         await form.refresh();
         const field = (name: string) => {
-          const f = form.snapshot()?.fields.find((c) => c.name === name);
+          const f = form.getSnapshot()?.fields.find((c) => c.name === name);
           if (!f) throw new Error(`missing field ${name}`);
           return f;
         };
         const trigger = field('nativeTrigger');
         const target = field('nativeTarget');
-        const pon = trigger.widgets[0]!.pageObjectNumber;
-        await annotation.reloadPage(pon);
+        const page = trigger.widgets[0]!.page!;
+        await annotation.reloadPage(page);
         const targetId = `obj:${target.widgets[0]!.annotObjectNumber}`;
-        const painted = () => annotation.pageItems(pon).map((i) => i.id);
+        const painted = () => annotation.listPageItems(page).map((i) => i.id);
         const drain = () =>
           actions.dispatch({
             scope: 'annotation',
             event: 'cursorEnter',
-            ref: { kind: 'objectNumber', pageObjectNumber: 999, annotObjectNumber: 1 },
-            pon: 999,
+            ref: { kind: 'objectNumber', page: toPageRef(999), annotObjectNumber: 1 },
+            page: toPageRef(999),
           });
         const notify = (event: 'cursorEnter' | 'cursorExit') =>
           form.notifyWidgetEvent(
-            `obj:${trigger.fieldObjectNumber}`,
+            trigger.ref,
             {
               kind: 'objectNumber',
-              pageObjectNumber: pon,
+              page,
               annotObjectNumber: trigger.widgets[0]!.annotObjectNumber,
             },
             event,

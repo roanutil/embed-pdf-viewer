@@ -3,72 +3,56 @@
   "concurrency": "4",
   "tasks": {
     "build": {
-      "dependsOn": [
-        "^build"
-      ],
-      "outputs": [
-        "dist/**"
-      ]
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"]
     },
     "@embedpdf/engine#build": {
-      "dependsOn": [
-        "^build"
-      ],
-      "outputs": [
-        "dist/**",
-        "workers/**",
-        "src/generated/**"
-      ]
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/packages/engine/runtime/npm/wasm32/lib/embedpdf.browser.js"],
+      "outputs": ["dist/**", "workers/**", "src/generated/**"]
+    },
+    "@embedpdf/engine-runtime#build": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", "npm/wasm32/lib/embedpdf.wasm"],
+      "outputs": ["dist/**", "npm/wasm32/lib/wasm-inline.js"]
     },
     "@embedpdf/website#build:demos": {
-      "dependsOn": [
-        "^build"
-      ],
-      "outputs": [
-        "public/demos/**"
-      ]
+      "dependsOn": ["^build"],
+      "outputs": ["public/demos/**"]
     },
     "@embedpdf/website#build": {
-      "dependsOn": [
-        "build:demos",
-        "^build"
-      ],
-      "outputs": [
-        ".next/**",
-        "!.next/cache/**"
-      ]
+      "dependsOn": ["build:demos", "^build"],
+      "outputs": [".next/**", "!.next/cache/**"]
     },
     "@cloudpdf/website#build:demos": {
-      "dependsOn": [
-        "^build"
-      ],
-      "outputs": [
-        "public/demos/**"
-      ]
+      "dependsOn": ["^build"],
+      "outputs": ["public/demos/**"]
     },
     "@cloudpdf/website#build": {
-      "dependsOn": [
-        "build:demos",
-        "^build"
-      ],
-      "outputs": [
-        ".next/**",
-        "!.next/cache/**"
-      ]
+      "dependsOn": ["build:demos", "^build"],
+      "outputs": [".next/**", "!.next/cache/**"]
     },
     "check-types": {
-      "dependsOn": [
-        "^check-types"
-      ]
+      "dependsOn": ["^check-types"]
     },
-    "typecheck": {},
-    "test": {},
+    "typecheck": {
+      "dependsOn": ["^build"]
+    },
+    "test": {
+      "dependsOn": ["^build"]
+    },
     "dev": {
       "persistent": true,
       "cache": false
     },
     "clean": {
       "cache": false
+    },
+    "@embedpdf/default-stamps#build": {
+      "outputs": ["locales/**"]
+    },
+    "@embedpdf/viewer#test": {
+      "dependsOn": ["build"]
     }
   }
 }

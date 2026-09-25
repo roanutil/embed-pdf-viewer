@@ -6,11 +6,17 @@
  * UI effects are tagged so embedders can suppress doc-open nags.
  */
 import { describe, expect, it, vi } from 'vitest';
-import type { DocumentHandle, FormEffect, FormSnapshot } from '@embedpdf/engine-core/runtime';
+import {
+  toPageRef,
+  type DocumentHandle,
+  type FormEffect,
+  type FormSnapshot,
+} from '@embedpdf/engine-core/runtime';
 import type { ScriptSandbox } from '@embedpdf/core-js-sandbox';
 import type { ScriptInput, ScriptOutput } from '@embedpdf/core-acrojs';
 
-import { createFormScriptingController } from '../src/scripting';
+import { createFormScriptingController } from '../src/scripting/controller';
+import { standaloneRealm } from './helpers/standalone-realm';
 
 const okEvent = (value: unknown = '') => ({
   rc: true,
@@ -53,7 +59,7 @@ function textField(objnum: number, name: string) {
     flags: { readOnly: false, required: false, noExport: false, raw: 0 },
     alternateName: null,
     mappingName: null,
-    widgets: [{ annotObjectNumber: objnum + 100, pageObjectNumber: 3 }],
+    widgets: [{ annotObjectNumber: objnum + 100, page: toPageRef(3) }],
     value: '',
     defaultValue: '',
     valueEntry: { kind: 'none' as const },
@@ -108,10 +114,15 @@ const snapshot = (): FormSnapshot =>
 describe('FormScriptingController — boot failures degrade, never brick', () => {
   it('a throwing boot script still lets the user commit (and again after)', async () => {
     const applied: FormEffect[][] = [];
+    const doc = makeDoc(applied);
+    const realm = standaloneRealm(doc, () => null, {
+      sandboxFactory: async () => failingBootSandbox(),
+    });
     const controller = createFormScriptingController({
-      doc: makeDoc(applied),
+      doc,
       document: () => null,
-      config: { sandboxFactory: async () => failingBootSandbox() },
+      transaction: realm.transaction,
+      budget: realm.budget,
     });
 
     const first = await controller.commit(
@@ -147,10 +158,14 @@ describe('FormScriptingController — boot failures degrade, never brick', () =>
     (doc.actions as { read: () => Promise<never> }).read = async () => {
       throw new Error('actions unavailable');
     };
+    const realm = standaloneRealm(doc, () => null, {
+      sandboxFactory: async () => failingBootSandbox(),
+    });
     const controller = createFormScriptingController({
       doc,
       document: () => null,
-      config: { sandboxFactory: async () => failingBootSandbox() },
+      transaction: realm.transaction,
+      budget: realm.budget,
     });
     const result = await controller.commit(
       { kind: 'objectNumber', fieldObjectNumber: 7 },

@@ -1,5 +1,37 @@
 # @embedpdf/engine-services
 
+## 3.0.0-next.14
+
+### Minor Changes
+
+- [#827](https://github.com/embedpdf/embed-pdf-viewer/pull/827) by [@bobsingor](https://github.com/bobsingor) – Read and write PDF measurement dictionaries and viewports, derive labels on geometry or scale edits, and preserve imported labels on style edits. Move manual shape captions with rigid geometry transforms and validate measurement input before native writes.
+
+  Avoid an additional full-document buffer copy when exporting a saved PDF.
+
+- [#800](https://github.com/embedpdf/embed-pdf-viewer/pull/800) by [@LazyCompiler](https://github.com/LazyCompiler) – Local engines honour the `ignoreWhitespace` search flag: a query carrying it re-folds the cached page text with whitespace dropped, so `invoice` finds a letter-spaced `i n v o i c e`, and search cursors key on the flag so a resumed search never mixes hits from the two folds. Combining the flag with `regex` is rejected with `InvalidArg`.
+
+## 3.0.0-next.13
+
+### Minor Changes
+
+- [#817](https://github.com/embedpdf/embed-pdf-viewer/pull/817) by [@bobsingor](https://github.com/bobsingor) – Read and write FreeText rich-text documents through the shared annotation services, preserve registered font keys on readback, and reject mismatched plain and rich text before applying a mutation. Default-style changes preserve explicit run overrides, while plain-text replacement resets run formatting.
+
+  Carry font identity, editing authorization, and document font settings through the worker protocol.
+
+- [#812](https://github.com/embedpdf/embed-pdf-viewer/pull/812) by [@bobsingor](https://github.com/bobsingor) – Add signature readers, revision and working-copy analysis, two-phase signing, and session-independent candidate finalization. Support signature-field creation and visual appearances, enforce declared document and field restrictions, and install completed signatures as new immutable bases.
+
+  Preserve loaded bytes for unchanged or reverted edits. Use file-backed candidates, layer artifacts, overlays, and streamed downloads for native file sessions to reduce memory use, while retaining buffer-based support for WASM sessions.
+
+## 3.0.0-next.12
+
+### Minor Changes
+
+- [#803](https://github.com/embedpdf/embed-pdf-viewer/pull/803) by [@bobsingor](https://github.com/bobsingor) – New `annotations.flatten` and `annotations.exportAppearance` worker jobs over the runtime's set-based flatten: resolve refs on the page, hand the set to one candidate plan, and either paint in place (bumping that page's revision and weak-annotation state like a page flatten) or into a scratch document returned as PDF bytes.
+
+  Every page list now includes the catalog's named-page registrations (`namedPages`), read from the runtime with each value classified as page, template, or dangling. New `pages.setName` and `pages.removeName` worker jobs register, rename, or remove `/Names /Pages` entries and return the fresh layout; page deletion drops the registrations that pointed at the page.
+
+  Annotation `/Name` is written and read as text: note and file-attachment icons map their ids to PDF names, stamps accept any non-empty name (standard or custom) and report custom names verbatim instead of collapsing them, and a stamp patch with `name: null` removes the entry without touching the appearance.
+
 ## 3.0.0-next.11
 
 ### Minor Changes

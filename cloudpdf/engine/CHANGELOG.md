@@ -1,5 +1,29 @@
 # @cloudpdf/engine
 
+## 3.0.0-next.14
+
+### Minor Changes
+
+- [#827](https://github.com/embedpdf/embed-pdf-viewer/pull/827) by [@bobsingor](https://github.com/bobsingor) – Expose page measurement calibration and viewport reads in the cloud engine, and deliver viewport change events with document version coherence.
+
+- [#800](https://github.com/embedpdf/embed-pdf-viewer/pull/800) by [@LazyCompiler](https://github.com/LazyCompiler) – Cloud-backed search honours the `ignoreWhitespace` query flag, which travels inside the search token, and search cursors are pinned to it: replaying a cursor minted with the flag against a query without it (or vice versa) is rejected with `InvalidArg`, matching the local engine.
+
+## 3.0.0-next.13
+
+### Minor Changes
+
+- [#812](https://github.com/embedpdf/embed-pdf-viewer/pull/812) by [@bobsingor](https://github.com/bobsingor) – Add `doc.signatures` for cloud-backed signature inspection, revision analysis, and two-phase signing. Read signed bytes from immutable document versions and refresh the manifest after preparing or completing a signature.
+
+  Support visual appearances on unsigned signature fields and publish their form update events.
+
+## 3.0.0-next.12
+
+### Minor Changes
+
+- [#803](https://github.com/embedpdf/embed-pdf-viewer/pull/803) by [@bobsingor](https://github.com/bobsingor) – The cloud engine implements `page(pon).annotations.flatten` over `POST …/annotations/pages/{pon}/items/flatten` (content and annotation planes patched in place, `annotations.flattened` published) and `page(pon).annotations.exportAppearance` over `POST …/items/appearance` (PDF bytes; a read).
+
+  It also implements `pages.setName` and `pages.removeName` over `POST …/pages/names` and `POST …/pages/names/delete`. Both advance only `docVersion` and `layoutVersion`, so the cached manifest is patched in place, per-page render/text/annotation leaves stay valid, and the result carries the fresh layout including `namedPages`.
+
 ## 3.0.0-next.11
 
 ### Minor Changes

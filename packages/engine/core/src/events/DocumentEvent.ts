@@ -1,6 +1,7 @@
+import type { PageScaleResult } from '../mutation/PageScaleResult';
 import type { FormEffectsResult } from '../forms/effects';
 import type { PdfRotation } from '../geometry/primitives';
-import type { PageObjectNumber } from '../identity/PageObjectNumber';
+import type { PageRef } from '../identity/PageRef';
 import type {
   AnnotationCreateResult,
   AnnotationDeleteResult,
@@ -21,12 +22,16 @@ import type {
   FormWidgetLinkResult,
 } from '../mutation/FormMutationResults';
 import type { MetadataUpdateResult } from '../mutation/MetadataUpdateResult';
+import type { AnnotationFlattenResult } from '../mutation/AnnotationFlattenResult';
 import type { PageDeleteResult } from '../mutation/PageDeleteResult';
 import type { PageFlattenResult, PageFlattenUsage } from '../mutation/PageFlattenResult';
 import type { RedactionApplyResult } from '../mutation/RedactionApplyResult';
 import type { PageInsertResult } from '../mutation/PageInsertResult';
 import type { PageMoveResult } from '../mutation/PageMoveResult';
+import type { PageNameResult } from '../mutation/PageNameResult';
 import type { PageRotateResult } from '../mutation/PageRotateResult';
+import type { FormFieldRef } from '../identity/FormFieldRef';
+import type { BaseVersionInfo, SignatureCompleteResult } from '../signature/types';
 
 /**
  * Provenance of a `DocumentEvent` — WHOSE HAND caused the mutation, never
@@ -76,46 +81,51 @@ export interface EventOrigin {
  * provenance-aware features (undo, attribution toasts, camera etiquette).
  */
 export type DocumentEvent =
+  | ({ type: 'page.viewportsChanged'; origin: EventOrigin } & PageScaleResult)
   | ({
       type: 'annotation.created';
-      pageObjectNumber: PageObjectNumber;
+      page: PageRef;
       origin: EventOrigin;
     } & AnnotationCreateResult)
   | ({
       type: 'annotation.updated';
-      pageObjectNumber: PageObjectNumber;
+      page: PageRef;
       origin: EventOrigin;
     } & AnnotationUpdateResult)
   | ({
       type: 'annotation.deleted';
-      pageObjectNumber: PageObjectNumber;
+      page: PageRef;
       origin: EventOrigin;
     } & AnnotationDeleteResult)
   | ({
       type: 'annotation.moved';
-      pageObjectNumber: PageObjectNumber;
+      page: PageRef;
       origin: EventOrigin;
     } & AnnotationMoveResult)
+  | ({
+      type: 'annotations.flattened';
+      origin: EventOrigin;
+    } & AnnotationFlattenResult)
   | ({
       type: 'pages.moved';
       /** Locally: the moved block. Remotely the audit row only records the
        *  outcome, so this is the full new order — consumers should read
        *  `layout` for positions, never reconstruct the gesture. */
-      pageObjectNumbers: PageObjectNumber[];
+      pages: PageRef[];
       /** The originator's insertion point; absent on remote events. */
       destIndex?: number;
       origin: EventOrigin;
     } & PageMoveResult)
   | ({
       type: 'pages.rotated';
-      pageObjectNumbers: PageObjectNumber[];
+      pages: PageRef[];
       rotation: PdfRotation;
       origin: EventOrigin;
     } & PageRotateResult)
   | ({
       type: 'pages.deleted';
-      /** The RETIRED pons — not derivable from the surviving `layout`. */
-      pageObjectNumbers: PageObjectNumber[];
+      /** The RETIRED pages — not derivable from the surviving `layout`. */
+      pages: PageRef[];
       origin: EventOrigin;
     } & PageDeleteResult)
   | ({
@@ -124,6 +134,14 @@ export type DocumentEvent =
       destIndex?: number;
       origin: EventOrigin;
     } & PageInsertResult)
+  | ({
+      type: 'pages.named';
+      /** The decoded key that was registered, renamed, or removed. */
+      name: string;
+      /** The page it now points at; `null` when the registration was removed. */
+      page: PageRef | null;
+      origin: EventOrigin;
+    } & PageNameResult)
   | ({ type: 'attachment.created'; origin: EventOrigin } & AttachmentCreateResult)
   | ({ type: 'attachment.deleted'; origin: EventOrigin } & AttachmentDeleteResult)
   | ({ type: 'metadata.updated'; origin: EventOrigin } & MetadataUpdateResult)
@@ -138,7 +156,7 @@ export type DocumentEvent =
   | ({ type: 'form.effectsApplied'; origin: EventOrigin } & FormEffectsResult)
   | ({
       type: 'pages.flattened';
-      pageObjectNumbers: PageObjectNumber[];
+      pages: PageRef[];
       usage: PageFlattenUsage;
       origin: EventOrigin;
     } & PageFlattenResult)
@@ -146,6 +164,34 @@ export type DocumentEvent =
       type: 'redaction.applied';
       origin: EventOrigin;
     } & RedactionApplyResult)
+  | {
+      /** A signing candidate was parked: the document is read-only until it completes or aborts. */
+      type: 'signature.prepared';
+      signingId: string;
+      field: FormFieldRef;
+      origin: EventOrigin;
+    }
+  | ({
+      /** The sealed bytes are installed; `version` is what they became. */
+      type: 'signature.completed';
+      signingId: string;
+      origin: EventOrigin;
+    } & SignatureCompleteResult)
+  | {
+      type: 'signature.aborted';
+      signingId: string;
+      origin: EventOrigin;
+    }
+  | {
+      /**
+       * The session moved to a new saved version (a completed signature,
+       * here or in another session). Byte-level facts — revisions,
+       * coverage, digests, verdicts — must be re-read.
+       */
+      type: 'document.versioned';
+      version: BaseVersionInfo;
+      origin: EventOrigin;
+    }
   | {
       /**
        * Cloud only: the live event stream fell too far behind to replay

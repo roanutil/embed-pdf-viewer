@@ -9,16 +9,14 @@
 # Triggers are deliberately narrow: the rewrite is a function of the
 # manifest and the build preset, never of source code, so only changes to
 # a package.json, the tooling, or the lockfile (which can move tooling
-# dependencies) can introduce drift. Source-only PRs never run this.
+# dependencies) can introduce drift. Source-only PRs never run this —
+# ci.yml's `changes` job decides.
 name: build-hygiene
 
 on:
-  pull_request:
-    paths:
-      - '**/package.json'
-      - 'tooling/**'
-      - 'pnpm-lock.yaml'
-      - '.github/workflows/build-hygiene.yml'
+  # Called from ci.yml when a package.json, the tooling or the lockfile
+  # changed (the umbrella owns the path decision), or run by hand.
+  workflow_call: {}
   workflow_dispatch: {}
 
 permissions:
@@ -34,7 +32,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup PNPM
         uses: pnpm/action-setup@v5
@@ -42,9 +40,9 @@ jobs:
           run_install: false
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: 24
+          node-version: 22
           cache: pnpm
 
       - name: Install deps
@@ -67,17 +65,14 @@ jobs:
       - name: Build packages
         run: pnpm run build:release
 
-      # Same as release.yml: build-workers.mjs regenerates this tracked
-      # source pin before compiling it into dist. The generated source is
-      # not part of the package, so restore it and judge the rest.
-      - name: Restore build-time WASM version source
-        run: git restore --source=HEAD -- packages/engine/main/src/generated/wasm32-version.ts
-
       - name: Verify build left the worktree clean
         run: |
           status="$(git status --short --untracked-files=all)"
           if [ -n "$status" ]; then
             echo "::error::Building rewrote tracked files — commit the build-normalized form or fix the package's epdf configuration:"
             echo "$status"
+            echo "::group::What changed"
+            git --no-pager diff
+            echo "::endgroup::"
             exit 1
           fi

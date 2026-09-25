@@ -10,16 +10,18 @@ import {
   type ScriptOutput,
 } from '@embedpdf/core-acrojs';
 import type { ScriptSandbox } from '@embedpdf/core-js-sandbox';
-import type {
-  DocumentHandle,
-  FormEffect,
-  FormFieldDTO,
-  FormSnapshot,
-  PdfActionTree,
+import {
+  toPageRef,
+  type DocumentHandle,
+  type FormEffect,
+  type FormFieldDTO,
+  type FormSnapshot,
+  type PdfActionTree,
 } from '@embedpdf/engine-core/runtime';
 
 import { createSerialMutationQueue } from '../src/mutationQueue';
-import { createFormScriptingController } from '../src/scripting';
+import { createFormScriptingController } from '../src/scripting/controller';
+import { standaloneRealm } from './helpers/standalone-realm';
 
 const ref = (fieldObjectNumber: number) => ({ kind: 'objectNumber' as const, fieldObjectNumber });
 
@@ -52,7 +54,7 @@ const text = (
   multiline: false,
   password: false,
   comb: false,
-  widgets: [{ annotObjectNumber: fieldObjectNumber, pageObjectNumber: 10 }],
+  widgets: [{ annotObjectNumber: fieldObjectNumber, page: toPageRef(10) }],
   ...(actions ? { actions } : {}),
 });
 
@@ -67,7 +69,7 @@ const pushbutton = (fieldObjectNumber: number, name: string): FormFieldDTO => ({
   mappingName: null,
   valueEntry: { kind: 'none' },
   defaultValueEntry: { kind: 'none' },
-  widgets: [{ annotObjectNumber: fieldObjectNumber, pageObjectNumber: 10 }],
+  widgets: [{ annotObjectNumber: fieldObjectNumber, page: toPageRef(10) }],
 });
 
 class NodeSandbox implements ScriptSandbox {
@@ -102,7 +104,7 @@ const documentMeta = (): DocumentMeta =>
     id: 'form-doc',
     name: 'proposal.pdf',
     pageCount: 1,
-    pages: [{ pageObjectNumber: 10 }],
+    pages: [{ ref: toPageRef(10) }],
     revision: 0,
   }) as DocumentMeta;
 
@@ -135,15 +137,17 @@ function harness(snapshot: FormSnapshot, nameTreeScript?: string) {
   } as unknown as DocumentHandle;
   const sandbox = new NodeSandbox();
   const factory = vi.fn(async () => sandbox);
+  const realm = standaloneRealm(doc, documentMeta, {
+    now: () => Date.UTC(2026, 6, 15, 9, 30, 0),
+    utcOffsetMinutes: () => 180,
+    randomSeed: () => 7,
+    sandboxFactory: factory,
+  });
   const controller = createFormScriptingController({
     doc,
     document: documentMeta,
-    config: {
-      now: () => Date.UTC(2026, 6, 15, 9, 30, 0),
-      utcOffsetMinutes: () => 180,
-      randomSeed: () => 7,
-      sandboxFactory: factory,
-    },
+    transaction: realm.transaction,
+    budget: realm.budget,
   });
   return { controller, batches, applyEffects, readActions, factory, sandbox, snapshot };
 }
@@ -238,7 +242,8 @@ describe('form scripting transaction', () => {
     };
     const fx = harness(snapshot);
 
-    const result = await fx.controller.activate(ref(2),
+    const result = await fx.controller.activate(
+      ref(2),
       action(`
         getField('status').value = event.name + ':' + event.type;
         app.alert('Summary ready');
