@@ -31,22 +31,20 @@ pub const APPLY_CAPABILITIES: [&str; 3] = ["doc.redact", "doc.pages.modify", "do
 
 // ── pure helpers ──────────────────────────────────────────────────────────────
 
-/// `String(value)` for the members a ref carries.
+/// `String(value)` for the members a ref carries. Canonical JSON never
+/// carries an `undefined` member (it omits it), so absence is the one
+/// spelling of `undefined` here.
 fn js_string(value: Option<&Value>) -> String {
     match value {
         None => "undefined".into(),
-        Some(v) if is_undefined(v) => "undefined".into(),
         Some(Value::Null) => "null".into(),
         Some(Value::Bool(b)) => b.to_string(),
         Some(Value::Number(n)) => num::number_to_string(n.as_f64().unwrap_or(f64::NAN)),
         Some(Value::String(s)) => s.clone(),
+        // `Array.prototype.join`: `null` elements print empty.
         Some(Value::Array(items)) => items
             .iter()
-            .map(|item| match item {
-                Value::Null => String::new(),
-                v if is_undefined(v) => String::new(),
-                v => js_string(Some(v)),
-            })
+            .map(|item| if item.is_null() { String::new() } else { js_string(Some(item)) })
             .collect::<Vec<_>>()
             .join(","),
         Some(Value::Object(o)) => match o.get("$number").and_then(Value::as_str) {
@@ -560,4 +558,84 @@ impl RedactionCapability {
 async fn adopt<T: Clone + 'static>(promise: Promise<T>) -> Result<T, Error> {
     rt::tick().await;
     promise.await
+}
+
+#[cfg(test)]
+mod tests {
+    //! The listener set's `for...of` rules under re-entry. No vector reaches
+    //! them: a scripted `$fn` callback can't call an unsubscribe or
+    //! `onApplied` while `fireApplied` is running.
+
+    use super::*;
+
+    fn logger(log: &Rc<RefCell<Vec<&'static str>>>, name: &'static str) -> AppliedCallback {
+        let log = log.clone();
+        Rc::new(move |_| {
+            log.borrow_mut().push(name);
+            Ok(())
+        })
+    }
+
+    fn live(set: &AppliedCallbacks) -> usize {
+        set.0.entries.borrow().len()
+    }
+
+    fn fire(set: &AppliedCallbacks) {
+        set.for_each(|cb| cb(&Value::Null).unwrap());
+    }
+
+    #[test]
+    fn adding_twice_keeps_one_entry_and_delete_compacts() {
+        let set = AppliedCallbacks::default();
+        let log = Rc::new(RefCell::new(Vec::new()));
+        let a = logger(&log, "a");
+        set.add(a.clone());
+        set.add(a.clone());
+        assert_eq!(live(&set), 1);
+        assert!(set.delete(&a));
+        assert_eq!(live(&set), 0);
+        assert!(!set.delete(&a));
+    }
+
+    #[test]
+    fn a_listener_deleting_itself_mid_pass_does_not_skip_the_next() {
+        let set = AppliedCallbacks::default();
+        let log = Rc::new(RefCell::new(Vec::new()));
+        let slot: Rc<RefCell<Option<AppliedCallback>>> = Rc::default();
+        let (s, l, me) = (set.clone(), log.clone(), slot.clone());
+        let a: AppliedCallback = Rc::new(move |_| {
+            l.borrow_mut().push("a");
+            let own = me.borrow().clone().expect("own callback");
+            assert!(s.delete(&own));
+            Ok(())
+        });
+        *slot.borrow_mut() = Some(a.clone());
+        set.add(a);
+        set.add(logger(&log, "b"));
+        fire(&set);
+        assert_eq!(*log.borrow(), ["a", "b"]);
+        assert_eq!(live(&set), 1);
+        fire(&set);
+        assert_eq!(*log.borrow(), ["a", "b", "b"]);
+    }
+
+    #[test]
+    fn deleted_before_its_turn_is_skipped_and_added_mid_pass_runs() {
+        let set = AppliedCallbacks::default();
+        let log = Rc::new(RefCell::new(Vec::new()));
+        let b = logger(&log, "b");
+        let c = logger(&log, "c");
+        let (s, l, b2, c2) = (set.clone(), log.clone(), b.clone(), c.clone());
+        set.add(Rc::new(move |_| {
+            l.borrow_mut().push("a");
+            s.delete(&b2);
+            s.add(c2.clone());
+            Ok(())
+        }));
+        set.add(b);
+        fire(&set);
+        assert_eq!(*log.borrow(), ["a", "c"]);
+        assert_eq!(live(&set), 2);
+        assert_eq!(set.0.walking.get(), 0);
+    }
 }

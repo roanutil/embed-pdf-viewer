@@ -4789,6 +4789,77 @@
                 "b": 255
               },
               "textAlign": "center"
+            },
+            {
+              "ref": {
+                "kind": "other",
+                "pageObjectNumber": true,
+                "index": [
+                  1,
+                  null,
+                  "a",
+                  [
+                    2,
+                    null
+                  ],
+                  {
+                    "x": 1
+                  }
+                ]
+              },
+              "pageObjectNumber": 1,
+              "index": 3,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 100,
+                "bottom": 600,
+                "right": 200,
+                "top": 700
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "redact",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "opacity": 1,
+              "quadPoints": [],
+              "overlayText": null,
+              "repeat": false,
+              "fontFamily": "helvetica",
+              "fontSize": 0,
+              "fontColor": {
+                "r": 255,
+                "g": 255,
+                "b": 255
+              },
+              "textAlign": "center"
             }
           ]
         }
@@ -4812,6 +4883,29 @@
               "kind": "other",
               "pageObjectNumber": 1,
               "index": "z"
+            },
+            "pageObjectNumber": 1,
+            "pageIndex": 0,
+            "kind": "area",
+            "overlayText": null
+          },
+          {
+            "id": "idx:true:1,,a,2,,[object Object]",
+            "ref": {
+              "kind": "other",
+              "pageObjectNumber": true,
+              "index": [
+                1,
+                null,
+                "a",
+                [
+                  2,
+                  null
+                ],
+                {
+                  "x": 1
+                }
+              ]
             },
             "pageObjectNumber": 1,
             "pageIndex": 0,

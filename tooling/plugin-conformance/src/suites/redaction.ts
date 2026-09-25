@@ -596,7 +596,7 @@ const functionCases: FunctionCase[] = [
     name: 'pending-unknown-ref-kind',
     fn: 'getPending',
     covers: 'A ref of any other kind takes the index spelling, with whatever members it has.',
-    args: [[page(0, 1)], { 1: [mark(1, { ref: { kind: 'other', pageObjectNumber: 1 } }), mark(2, { ref: { kind: 'other', pageObjectNumber: 1, index: 'z' } })] }],
+    args: [[page(0, 1)], { 1: [mark(1, { ref: { kind: 'other', pageObjectNumber: 1 } }), mark(2, { ref: { kind: 'other', pageObjectNumber: 1, index: 'z' } }), mark(3, { ref: { kind: 'other', pageObjectNumber: true, index: [1, null, 'a', [2, null], { x: 1 }] } })] }],
   },
 ];
 
