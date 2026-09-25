@@ -98,8 +98,32 @@ fall to the unsupported kind.
 
 ## Coverage
 
-COVERAGE
+The generators reach 6,255 of the package's 6,272 statements and 1,409 of its 1,471 branches
+(`vectors/coverage.json`). The 17 statements left:
+
+- `capability.ts` 2182 to 2189, `commitScriptEffects` with no `ctx.doc`. The plugin is
+  document-scoped, so its context always has a handle.
+- `capability.ts` 1395 to 1397, a `createGroup` effect whose members are missing or on different
+  pages. The core's group message only ever names members of one page.
+- `capability.ts` 1648 and 1649, an engine page service without `downloadFile`. This one is a
+  harness limit, not unreachable code: the fake engine answers every page member, so no vector can
+  describe an engine that lacks one.
+- `handler.ts` 454 to 456, a pointer cancel while an ink group is still inside its grouping
+  window. Reachable, and not yet covered: a case would cancel between two quick ink strokes.
+- `reducer.ts` 69, the `default` arm for an action outside the union, which a Rust enum can't
+  express.
+
+The 62 unreached branches are mostly the `??` and optional-chaining arms of the same guards;
+`coverage.json` lists each by line and column.
 
 ## Mutation testing
 
-MUTANTS
+Incomplete. The run went file by file (`scripts/mutants.sh --file`) and stopped partway:
+
+| Files | Caught | Missed | Unviable |
+|---|---|---|---|
+| 9 complete: `effects`, `hover_feed`, `markup`, `placement`, `promise`, `reducer`, `text_item`, `threads`, `value` | 139 | 15 | 27 |
+| `binary`, `capability`, `handler`, `repository/*`, `tools`, `types` | not run | | |
+
+The 15 misses have not been triaged, and `capability.rs` and `handler.rs`, the two largest files,
+are the next runs to do.

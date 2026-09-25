@@ -1,7 +1,7 @@
 {
   "total": {
-    "statements": "23590/23634",
-    "branches": "5930/6066"
+    "statements": "30026/30087",
+    "branches": "7345/7543"
   },
   "files": {
     "packages/core/acrojs/src/actions.ts": {
@@ -12,7 +12,7 @@
     },
     "packages/core/acrojs/src/color.ts": {
       "statements": "76/76",
-      "branches": "28/28",
+      "branches": "27/27",
       "uncoveredLines": [],
       "uncoveredBranches": []
     },
@@ -110,6 +110,12 @@
       "uncoveredLines": [],
       "uncoveredBranches": []
     },
+    "packages/core/annotation/src/index.ts": {
+      "statements": "181/181",
+      "branches": "0/0",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
     "packages/core/annotation/src/ink.ts": {
       "statements": "39/39",
       "branches": "14/14",
@@ -130,7 +136,7 @@
     },
     "packages/core/annotation/src/placement.ts": {
       "statements": "122/122",
-      "branches": "32/32",
+      "branches": "31/31",
       "uncoveredLines": [],
       "uncoveredBranches": []
     },
@@ -142,7 +148,7 @@
     },
     "packages/core/annotation/src/props.ts": {
       "statements": "193/193",
-      "branches": "77/77",
+      "branches": "81/81",
       "uncoveredLines": [],
       "uncoveredBranches": []
     },
@@ -160,7 +166,7 @@
     },
     "packages/core/annotation/src/update.ts": {
       "statements": "1572/1572",
-      "branches": "590/592",
+      "branches": "593/595",
       "uncoveredLines": [],
       "uncoveredBranches": [
         "1195:63#0",
@@ -397,6 +403,241 @@
       "uncoveredLines": [],
       "uncoveredBranches": []
     },
+    "packages/plugin/annotation/src/annotation.plugin.ts": {
+      "statements": "99/99",
+      "branches": "16/16",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/annotation/src/authoring.ts": {
+      "statements": "3/3",
+      "branches": "0/0",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/annotation/src/capability.ts": {
+      "statements": "2251/2264",
+      "branches": "727/774",
+      "uncoveredLines": [
+        1395,
+        1396,
+        1397,
+        1648,
+        1649,
+        2182,
+        2183,
+        2184,
+        2185,
+        2186,
+        2187,
+        2188,
+        2189
+      ],
+      "uncoveredBranches": [
+        "118:36#0",
+        "154:72#0",
+        "372:66#0",
+        "375:20#0",
+        "384:24#0",
+        "655:52#0",
+        "656:58#0",
+        "698:52#0",
+        "745:36#0",
+        "804:52#0",
+        "842:14#0",
+        "891:77#0",
+        "895:14#0",
+        "1031:21#0",
+        "1046:34#0",
+        "1055:18#0",
+        "1099:14#0",
+        "1107:14#0",
+        "1133:79#0",
+        "1150:14#0",
+        "1164:74#0",
+        "1320:15#0",
+        "1331:18#0",
+        "1374:35#0",
+        "1389:14#0",
+        "1394:71#0",
+        "1458:53#0",
+        "1459:24#0",
+        "1485:35#0",
+        "1499:72#0",
+        "1500:34#0",
+        "1400:54#0",
+        "1611:16#0",
+        "1643:16#0",
+        "1647:37#0",
+        "1660:21#0",
+        "1690:16#0",
+        "1838:57#0",
+        "1858:30#0",
+        "1866:42#0",
+        "1869:16#0",
+        "1962:35#0",
+        "2026:23#0",
+        "2023:81#0",
+        "2047:24#0",
+        "2181:16#0",
+        "2247:50#0"
+      ]
+    },
+    "packages/plugin/annotation/src/contract.ts": {
+      "statements": "57/57",
+      "branches": "0/0",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/annotation/src/effects.ts": {
+      "statements": "114/114",
+      "branches": "32/33",
+      "uncoveredLines": [],
+      "uncoveredBranches": [
+        "29:12#0"
+      ]
+    },
+    "packages/plugin/annotation/src/handler.ts": {
+      "statements": "469/472",
+      "branches": "107/112",
+      "uncoveredLines": [
+        454,
+        455,
+        456
+      ],
+      "uncoveredBranches": [
+        "165:19#0",
+        "200:19#0",
+        "272:19#0",
+        "421:55#0",
+        "453:22#0"
+      ]
+    },
+    "packages/plugin/annotation/src/hover-feed.ts": {
+      "statements": "47/47",
+      "branches": "17/18",
+      "uncoveredLines": [],
+      "uncoveredBranches": [
+        "36:21#0"
+      ]
+    },
+    "packages/plugin/annotation/src/index.ts": {
+      "statements": "41/41",
+      "branches": "0/0",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/annotation/src/markup.ts": {
+      "statements": "100/100",
+      "branches": "32/33",
+      "uncoveredLines": [],
+      "uncoveredBranches": [
+        "75:19#0"
+      ]
+    },
+    "packages/plugin/annotation/src/placement.ts": {
+      "statements": "67/67",
+      "branches": "10/10",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/annotation/src/reducer.ts": {
+      "statements": "70/71",
+      "branches": "11/12",
+      "uncoveredLines": [
+        69
+      ],
+      "uncoveredBranches": [
+        "68:4#0"
+      ]
+    },
+    "packages/plugin/annotation/src/repository/index.ts": {
+      "statements": "204/204",
+      "branches": "51/54",
+      "uncoveredLines": [],
+      "uncoveredBranches": [
+        "87:56#0",
+        "165:58#0",
+        "197:13#0"
+      ]
+    },
+    "packages/plugin/annotation/src/repository/kinds/freeText.ts": {
+      "statements": "152/152",
+      "branches": "44/44",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/annotation/src/repository/kinds/misc.ts": {
+      "statements": "120/120",
+      "branches": "27/27",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/annotation/src/repository/kinds/quads.ts": {
+      "statements": "159/159",
+      "branches": "52/52",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/annotation/src/repository/kinds/shape.ts": {
+      "statements": "50/50",
+      "branches": "12/12",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/annotation/src/repository/kinds/stroke.ts": {
+      "statements": "147/147",
+      "branches": "51/51",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/annotation/src/repository/links.ts": {
+      "statements": "43/43",
+      "branches": "4/4",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/annotation/src/repository/projection.ts": {
+      "statements": "55/55",
+      "branches": "2/2",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/annotation/src/repository/props.ts": {
+      "statements": "42/42",
+      "branches": "24/24",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/annotation/src/repository/seam.ts": {
+      "statements": "279/279",
+      "branches": "91/91",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/annotation/src/text-item.ts": {
+      "statements": "57/57",
+      "branches": "12/14",
+      "uncoveredLines": [],
+      "uncoveredBranches": [
+        "37:24#0",
+        "41:14#0"
+      ]
+    },
+    "packages/plugin/annotation/src/tools.ts": {
+      "statements": "645/645",
+      "branches": "87/88",
+      "uncoveredLines": [],
+      "uncoveredBranches": [
+        "629:45#0"
+      ]
+    },
+    "packages/plugin/annotation/src/types.ts": {
+      "statements": "984/984",
+      "branches": "0/0",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
     "packages/plugin/commands/src/capability.ts": {
       "statements": "191/191",
       "branches": "91/91",
@@ -491,7 +732,7 @@
     },
     "packages/plugin/interaction/src/capability.ts": {
       "statements": "173/173",
-      "branches": "74/74",
+      "branches": "75/75",
       "uncoveredLines": [],
       "uncoveredBranches": []
     },
