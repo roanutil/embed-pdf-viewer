@@ -268,23 +268,24 @@ pub struct AnnotationConfig {
 
 // ── projections ───────────────────────────────────────────────────────────────
 
-/// `LinkNavItem`: one clickable link area on a page.
-#[derive(Clone, Debug, PartialEq, Serialize)]
+/// `LinkNavItem`: one clickable link area on a page. It deserializes too:
+/// the link plugin's engine-backed page cache keeps items in its slice.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LinkNavItem {
     pub id: String,
     pub rect: Rect,
     pub target: Value,
     pub attached: bool,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub activate: Option<Value>,
-    #[serde(rename = "ref", skip_serializing_if = "Option::is_none")]
+    #[serde(default, rename = "ref", skip_serializing_if = "Option::is_none")]
     pub ref_: Option<AnnotationRef>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub hover_events: Option<HoverFlags>,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct HoverFlags {
     pub enter: bool,
     pub exit: bool,
