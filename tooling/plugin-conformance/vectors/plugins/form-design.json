@@ -13260,6 +13260,2943 @@
       ]
     },
     {
+      "name": "queued-verbs-interleave-with-page-reloads",
+      "covers": "The annotation reloads a delete nudges run unawaited beside the next queued verb: their page reads and model updates interleave with the update, turn for turn.",
+      "plugins": [
+        {
+          "factory": "interaction"
+        },
+        {
+          "factory": "annotation"
+        },
+        {
+          "factory": "form"
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "pageObjectNumber": 2,
+                "label": null,
+                "size": {
+                  "width": 400,
+                  "height": 500
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 410,
+                    "top": 520
+                  },
+                  "crop": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 410,
+                    "top": 520
+                  }
+                }
+              }
+            ],
+            "security": {
+              "allows": "*"
+            },
+            "responses": [
+              {
+                "path": "forms.list",
+                "value": {
+                  "formKind": "acroform",
+                  "needsAppearances": false,
+                  "fields": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 7
+                      },
+                      "fieldObjectNumber": 7,
+                      "name": "spread",
+                      "family": "text",
+                      "origin": "acroform",
+                      "flags": {
+                        "readOnly": false,
+                        "required": false,
+                        "noExport": false,
+                        "raw": 0
+                      },
+                      "alternateName": null,
+                      "mappingName": null,
+                      "widgets": [
+                        {
+                          "annotObjectNumber": 107,
+                          "pageObjectNumber": 1
+                        },
+                        {
+                          "annotObjectNumber": 108,
+                          "pageObjectNumber": 2
+                        }
+                      ],
+                      "valueEntry": {
+                        "kind": "scalar",
+                        "value": "v"
+                      },
+                      "defaultValueEntry": {
+                        "kind": "none"
+                      },
+                      "value": "v",
+                      "defaultValue": "",
+                      "maxLength": null,
+                      "multiline": false,
+                      "password": false,
+                      "comb": false
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 8
+                      },
+                      "fieldObjectNumber": 8,
+                      "name": "other",
+                      "family": "text",
+                      "origin": "acroform",
+                      "flags": {
+                        "readOnly": false,
+                        "required": false,
+                        "noExport": false,
+                        "raw": 0
+                      },
+                      "alternateName": null,
+                      "mappingName": null,
+                      "widgets": [
+                        {
+                          "annotObjectNumber": 108,
+                          "pageObjectNumber": 1
+                        }
+                      ],
+                      "valueEntry": {
+                        "kind": "scalar",
+                        "value": "o"
+                      },
+                      "defaultValueEntry": {
+                        "kind": "none"
+                      },
+                      "value": "o",
+                      "defaultValue": "",
+                      "maxLength": null,
+                      "multiline": false,
+                      "password": false,
+                      "comb": false
+                    }
+                  ],
+                  "calculationOrder": []
+                }
+              },
+              {
+                "path": "annotations.listRawAll",
+                "value": {
+                  "pages": []
+                }
+              },
+              {
+                "path": "page.annotations.list",
+                "pon": 1,
+                "value": {
+                  "annotations": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1,
+                        "annotObjectNumber": 107
+                      },
+                      "pageObjectNumber": 1,
+                      "index": 107,
+                      "identityQuality": "durable",
+                      "nm": null,
+                      "flags": {
+                        "invisible": false,
+                        "hidden": false,
+                        "print": true,
+                        "noZoom": false,
+                        "noRotate": false,
+                        "noView": false,
+                        "readOnly": false,
+                        "locked": false,
+                        "toggleNoView": false,
+                        "lockedContents": false
+                      },
+                      "rect": {
+                        "left": 100,
+                        "bottom": 600,
+                        "right": 260,
+                        "top": 624
+                      },
+                      "contents": null,
+                      "subject": null,
+                      "author": null,
+                      "created": null,
+                      "modified": null,
+                      "blendMode": "normal",
+                      "inReplyTo": null,
+                      "replyType": null,
+                      "subtype": "widget",
+                      "fieldFamily": "text",
+                      "color": null,
+                      "interiorColor": null,
+                      "strokeWidth": 1,
+                      "borderStyle": "solid",
+                      "textAlign": "left"
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "page.annotations.list",
+                "pon": 2,
+                "value": {
+                  "annotations": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 2,
+                        "annotObjectNumber": 108
+                      },
+                      "pageObjectNumber": 2,
+                      "index": 108,
+                      "identityQuality": "durable",
+                      "nm": null,
+                      "flags": {
+                        "invisible": false,
+                        "hidden": false,
+                        "print": true,
+                        "noZoom": false,
+                        "noRotate": false,
+                        "noView": false,
+                        "readOnly": false,
+                        "locked": false,
+                        "toggleNoView": false,
+                        "lockedContents": false
+                      },
+                      "rect": {
+                        "left": 100,
+                        "bottom": 600,
+                        "right": 260,
+                        "top": 624
+                      },
+                      "contents": null,
+                      "subject": null,
+                      "author": null,
+                      "created": null,
+                      "modified": null,
+                      "blendMode": "normal",
+                      "inReplyTo": null,
+                      "replyType": null,
+                      "subtype": "widget",
+                      "fieldFamily": "text",
+                      "color": null,
+                      "interiorColor": null,
+                      "strokeWidth": 1,
+                      "borderStyle": "solid",
+                      "textAlign": "left"
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "forms.deleteField",
+                "defer": "delete"
+              },
+              {
+                "path": "forms.updateField",
+                "value": {
+                  "field": {
+                    "ref": {
+                      "kind": "objectNumber",
+                      "fieldObjectNumber": 8
+                    },
+                    "fieldObjectNumber": 8,
+                    "name": "renamed",
+                    "family": "text",
+                    "origin": "acroform",
+                    "flags": {
+                      "readOnly": false,
+                      "required": false,
+                      "noExport": false,
+                      "raw": 0
+                    },
+                    "alternateName": null,
+                    "mappingName": null,
+                    "widgets": [
+                      {
+                        "annotObjectNumber": 108,
+                        "pageObjectNumber": 1
+                      }
+                    ],
+                    "valueEntry": {
+                      "kind": "scalar",
+                      "value": "o"
+                    },
+                    "defaultValueEntry": {
+                      "kind": "none"
+                    },
+                    "value": "o",
+                    "defaultValue": "",
+                    "maxLength": null,
+                    "multiline": false,
+                    "password": false,
+                    "comb": false
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "snapshot": "none",
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form",
+            "doc": "a"
+          },
+          "method": "deleteField",
+          "args": [
+            "obj:7"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form",
+            "doc": "a"
+          },
+          "method": "updateField",
+          "args": [
+            "obj:8",
+            {
+              "family": "text",
+              "name": "renamed"
+            }
+          ]
+        },
+        {
+          "op": "settle",
+          "label": "delete",
+          "value": {
+            "deleted": true
+          }
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "form-text": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1,
+                      "fontSize": 12
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "form-text": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1,
+                      "fontSize": 12
+                    },
+                    "form-checkbox": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "form-text": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1,
+                      "fontSize": 12
+                    },
+                    "form-checkbox": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1
+                    },
+                    "form-radio": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "form-text": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1,
+                      "fontSize": 12
+                    },
+                    "form-checkbox": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1
+                    },
+                    "form-radio": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1
+                    },
+                    "form-combobox": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1,
+                      "fontSize": 12
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "form-text": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1,
+                      "fontSize": 12
+                    },
+                    "form-checkbox": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1
+                    },
+                    "form-radio": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1
+                    },
+                    "form-combobox": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1,
+                      "fontSize": 12
+                    },
+                    "form-listbox": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1,
+                      "fontSize": 12
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "form::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "snapshot": {
+                    "formKind": "acroform",
+                    "needsAppearances": false,
+                    "fields": [
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 7
+                        },
+                        "fieldObjectNumber": 7,
+                        "name": "spread",
+                        "family": "text",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "annotObjectNumber": 107,
+                            "pageObjectNumber": 1
+                          },
+                          {
+                            "annotObjectNumber": 108,
+                            "pageObjectNumber": 2
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "scalar",
+                          "value": "v"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "v",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 8
+                        },
+                        "fieldObjectNumber": 8,
+                        "name": "other",
+                        "family": "text",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "annotObjectNumber": 108,
+                            "pageObjectNumber": 1
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "scalar",
+                          "value": "o"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "o",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false
+                      }
+                    ],
+                    "calculationOrder": []
+                  },
+                  "byKey": {
+                    "obj:7": 0,
+                    "obj:8": 1
+                  },
+                  "byWidget": {
+                    "107": 0,
+                    "108": 1
+                  },
+                  "writing": {},
+                  "geom": {},
+                  "seq": 1
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_HYDRATION",
+                "hydration": {
+                  "status": "loading"
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "form-text": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1,
+                      "fontSize": 12
+                    },
+                    "form-checkbox": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1
+                    },
+                    "form-radio": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1
+                    },
+                    "form-combobox": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1,
+                      "fontSize": 12
+                    },
+                    "form-listbox": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1,
+                      "fontSize": 12
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_HYDRATION",
+                "hydration": {
+                  "status": "complete"
+                }
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "forms.list",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "annotations.listRawAll",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 1
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "forms.deleteField",
+              "args": [
+                {
+                  "kind": "objectNumber",
+                  "fieldObjectNumber": 7
+                }
+              ]
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 2
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 3
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": {
+                "$undefined": true
+              }
+            },
+            {
+              "promise": 3,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "form::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "snapshot": {
+                    "formKind": "acroform",
+                    "needsAppearances": false,
+                    "fields": [
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 7
+                        },
+                        "fieldObjectNumber": 7,
+                        "name": "spread",
+                        "family": "text",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "annotObjectNumber": 107,
+                            "pageObjectNumber": 1
+                          },
+                          {
+                            "annotObjectNumber": 108,
+                            "pageObjectNumber": 2
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "scalar",
+                          "value": "v"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "v",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 8
+                        },
+                        "fieldObjectNumber": 8,
+                        "name": "other",
+                        "family": "text",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "annotObjectNumber": 108,
+                            "pageObjectNumber": 1
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "scalar",
+                          "value": "o"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "o",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false
+                      }
+                    ],
+                    "calculationOrder": []
+                  },
+                  "byKey": {
+                    "obj:7": 0,
+                    "obj:8": 1
+                  },
+                  "byWidget": {
+                    "107": 0,
+                    "108": 1
+                  },
+                  "writing": {},
+                  "geom": {},
+                  "seq": 2
+                }
+              }
+            },
+            {
+              "slice": "form::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "snapshot": {
+                    "formKind": "acroform",
+                    "needsAppearances": false,
+                    "fields": [
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 7
+                        },
+                        "fieldObjectNumber": 7,
+                        "name": "spread",
+                        "family": "text",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "annotObjectNumber": 107,
+                            "pageObjectNumber": 1
+                          },
+                          {
+                            "annotObjectNumber": 108,
+                            "pageObjectNumber": 2
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "scalar",
+                          "value": "v"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "v",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 8
+                        },
+                        "fieldObjectNumber": 8,
+                        "name": "other",
+                        "family": "text",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "annotObjectNumber": 108,
+                            "pageObjectNumber": 1
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "scalar",
+                          "value": "o"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "o",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false
+                      }
+                    ],
+                    "calculationOrder": []
+                  },
+                  "byKey": {
+                    "obj:7": 0,
+                    "obj:8": 1
+                  },
+                  "byWidget": {
+                    "107": 0,
+                    "108": 1
+                  },
+                  "writing": {},
+                  "geom": {},
+                  "seq": 3
+                }
+              }
+            },
+            {
+              "slice": "form::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "snapshot": {
+                    "formKind": "acroform",
+                    "needsAppearances": false,
+                    "fields": [
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 7
+                        },
+                        "fieldObjectNumber": 7,
+                        "name": "spread",
+                        "family": "text",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "annotObjectNumber": 107,
+                            "pageObjectNumber": 1
+                          },
+                          {
+                            "annotObjectNumber": 108,
+                            "pageObjectNumber": 2
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "scalar",
+                          "value": "v"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "v",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 8
+                        },
+                        "fieldObjectNumber": 8,
+                        "name": "other",
+                        "family": "text",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "annotObjectNumber": 108,
+                            "pageObjectNumber": 1
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "scalar",
+                          "value": "o"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "o",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false
+                      }
+                    ],
+                    "calculationOrder": []
+                  },
+                  "byKey": {
+                    "obj:7": 0,
+                    "obj:8": 1
+                  },
+                  "byWidget": {
+                    "107": 0,
+                    "108": 1
+                  },
+                  "writing": {},
+                  "geom": {},
+                  "seq": 4
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {
+                    "obj:107": {
+                      "id": "obj:107",
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1,
+                        "annotObjectNumber": 107
+                      },
+                      "pon": 1,
+                      "subtype": "widget-text",
+                      "flags": {
+                        "invisible": false,
+                        "hidden": false,
+                        "print": true,
+                        "noZoom": false,
+                        "noRotate": false,
+                        "noView": false,
+                        "readOnly": false,
+                        "locked": false,
+                        "toggleNoView": false,
+                        "lockedContents": false
+                      },
+                      "source": "baked",
+                      "data": {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1,
+                          "annotObjectNumber": 107
+                        },
+                        "pageObjectNumber": 1,
+                        "index": 107,
+                        "identityQuality": "durable",
+                        "nm": null,
+                        "flags": {
+                          "invisible": false,
+                          "hidden": false,
+                          "print": true,
+                          "noZoom": false,
+                          "noRotate": false,
+                          "noView": false,
+                          "readOnly": false,
+                          "locked": false,
+                          "toggleNoView": false,
+                          "lockedContents": false
+                        },
+                        "rect": {
+                          "left": 100,
+                          "bottom": 600,
+                          "right": 260,
+                          "top": 624
+                        },
+                        "contents": null,
+                        "subject": null,
+                        "author": null,
+                        "created": null,
+                        "modified": null,
+                        "blendMode": "normal",
+                        "inReplyTo": null,
+                        "replyType": null,
+                        "subtype": "widget",
+                        "fieldFamily": "text",
+                        "color": null,
+                        "interiorColor": null,
+                        "strokeWidth": 1,
+                        "borderStyle": "solid",
+                        "textAlign": "left"
+                      },
+                      "style": {
+                        "color": "#1a1a1a",
+                        "interiorColor": null,
+                        "strokeWidth": 1,
+                        "opacity": 1,
+                        "blendMode": "normal",
+                        "border": {
+                          "kind": "solid"
+                        }
+                      },
+                      "geom": {
+                        "t": "rect",
+                        "rect": {
+                          "x": 100,
+                          "y": 176,
+                          "width": 160,
+                          "height": 24
+                        },
+                        "ellipse": false
+                      },
+                      "text": {
+                        "fontFamily": "helvetica",
+                        "fontSize": 0,
+                        "fontColor": "#000000",
+                        "textAlign": "left"
+                      },
+                      "apBox": {
+                        "x": 100,
+                        "y": 176,
+                        "width": 160,
+                        "height": 24
+                      },
+                      "authority": {
+                        "update": true,
+                        "delete": true
+                      }
+                    }
+                  },
+                  "order": [
+                    "obj:107"
+                  ],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "form-text": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1,
+                      "fontSize": 12
+                    },
+                    "form-checkbox": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1
+                    },
+                    "form-radio": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1
+                    },
+                    "form-combobox": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1,
+                      "fontSize": 12
+                    },
+                    "form-listbox": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1,
+                      "fontSize": 12
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {
+                    "obj:107": {
+                      "id": "obj:107",
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1,
+                        "annotObjectNumber": 107
+                      },
+                      "pon": 1,
+                      "subtype": "widget-text",
+                      "flags": {
+                        "invisible": false,
+                        "hidden": false,
+                        "print": true,
+                        "noZoom": false,
+                        "noRotate": false,
+                        "noView": false,
+                        "readOnly": false,
+                        "locked": false,
+                        "toggleNoView": false,
+                        "lockedContents": false
+                      },
+                      "source": "baked",
+                      "data": {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1,
+                          "annotObjectNumber": 107
+                        },
+                        "pageObjectNumber": 1,
+                        "index": 107,
+                        "identityQuality": "durable",
+                        "nm": null,
+                        "flags": {
+                          "invisible": false,
+                          "hidden": false,
+                          "print": true,
+                          "noZoom": false,
+                          "noRotate": false,
+                          "noView": false,
+                          "readOnly": false,
+                          "locked": false,
+                          "toggleNoView": false,
+                          "lockedContents": false
+                        },
+                        "rect": {
+                          "left": 100,
+                          "bottom": 600,
+                          "right": 260,
+                          "top": 624
+                        },
+                        "contents": null,
+                        "subject": null,
+                        "author": null,
+                        "created": null,
+                        "modified": null,
+                        "blendMode": "normal",
+                        "inReplyTo": null,
+                        "replyType": null,
+                        "subtype": "widget",
+                        "fieldFamily": "text",
+                        "color": null,
+                        "interiorColor": null,
+                        "strokeWidth": 1,
+                        "borderStyle": "solid",
+                        "textAlign": "left"
+                      },
+                      "style": {
+                        "color": "#1a1a1a",
+                        "interiorColor": null,
+                        "strokeWidth": 1,
+                        "opacity": 1,
+                        "blendMode": "normal",
+                        "border": {
+                          "kind": "solid"
+                        }
+                      },
+                      "geom": {
+                        "t": "rect",
+                        "rect": {
+                          "x": 100,
+                          "y": 176,
+                          "width": 160,
+                          "height": 24
+                        },
+                        "ellipse": false
+                      },
+                      "text": {
+                        "fontFamily": "helvetica",
+                        "fontSize": 0,
+                        "fontColor": "#000000",
+                        "textAlign": "left"
+                      },
+                      "apBox": {
+                        "x": 100,
+                        "y": 176,
+                        "width": 160,
+                        "height": 24
+                      },
+                      "authority": {
+                        "update": true,
+                        "delete": true
+                      }
+                    },
+                    "obj:108": {
+                      "id": "obj:108",
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 2,
+                        "annotObjectNumber": 108
+                      },
+                      "pon": 2,
+                      "subtype": "widget-text",
+                      "flags": {
+                        "invisible": false,
+                        "hidden": false,
+                        "print": true,
+                        "noZoom": false,
+                        "noRotate": false,
+                        "noView": false,
+                        "readOnly": false,
+                        "locked": false,
+                        "toggleNoView": false,
+                        "lockedContents": false
+                      },
+                      "source": "baked",
+                      "data": {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 2,
+                          "annotObjectNumber": 108
+                        },
+                        "pageObjectNumber": 2,
+                        "index": 108,
+                        "identityQuality": "durable",
+                        "nm": null,
+                        "flags": {
+                          "invisible": false,
+                          "hidden": false,
+                          "print": true,
+                          "noZoom": false,
+                          "noRotate": false,
+                          "noView": false,
+                          "readOnly": false,
+                          "locked": false,
+                          "toggleNoView": false,
+                          "lockedContents": false
+                        },
+                        "rect": {
+                          "left": 100,
+                          "bottom": 600,
+                          "right": 260,
+                          "top": 624
+                        },
+                        "contents": null,
+                        "subject": null,
+                        "author": null,
+                        "created": null,
+                        "modified": null,
+                        "blendMode": "normal",
+                        "inReplyTo": null,
+                        "replyType": null,
+                        "subtype": "widget",
+                        "fieldFamily": "text",
+                        "color": null,
+                        "interiorColor": null,
+                        "strokeWidth": 1,
+                        "borderStyle": "solid",
+                        "textAlign": "left"
+                      },
+                      "style": {
+                        "color": "#1a1a1a",
+                        "interiorColor": null,
+                        "strokeWidth": 1,
+                        "opacity": 1,
+                        "blendMode": "normal",
+                        "border": {
+                          "kind": "solid"
+                        }
+                      },
+                      "geom": {
+                        "t": "rect",
+                        "rect": {
+                          "x": 90,
+                          "y": -104,
+                          "width": 160,
+                          "height": 24
+                        },
+                        "ellipse": false
+                      },
+                      "text": {
+                        "fontFamily": "helvetica",
+                        "fontSize": 0,
+                        "fontColor": "#000000",
+                        "textAlign": "left"
+                      },
+                      "apBox": {
+                        "x": 90,
+                        "y": -104,
+                        "width": 160,
+                        "height": 24
+                      },
+                      "authority": {
+                        "update": true,
+                        "delete": true
+                      }
+                    }
+                  },
+                  "order": [
+                    "obj:107",
+                    "obj:108"
+                  ],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "form-text": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1,
+                      "fontSize": 12
+                    },
+                    "form-checkbox": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1
+                    },
+                    "form-radio": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1
+                    },
+                    "form-combobox": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1,
+                      "fontSize": 12
+                    },
+                    "form-listbox": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1,
+                      "fontSize": 12
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "form::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "snapshot": {
+                    "formKind": "acroform",
+                    "needsAppearances": false,
+                    "fields": [
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 7
+                        },
+                        "fieldObjectNumber": 7,
+                        "name": "spread",
+                        "family": "text",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "annotObjectNumber": 107,
+                            "pageObjectNumber": 1
+                          },
+                          {
+                            "annotObjectNumber": 108,
+                            "pageObjectNumber": 2
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "scalar",
+                          "value": "v"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "v",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 8
+                        },
+                        "fieldObjectNumber": 8,
+                        "name": "other",
+                        "family": "text",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "annotObjectNumber": 108,
+                            "pageObjectNumber": 1
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "scalar",
+                          "value": "o"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "o",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false
+                      }
+                    ],
+                    "calculationOrder": []
+                  },
+                  "byKey": {
+                    "obj:7": 0,
+                    "obj:8": 1
+                  },
+                  "byWidget": {
+                    "107": 0,
+                    "108": 1
+                  },
+                  "writing": {},
+                  "geom": {},
+                  "seq": 5
+                }
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "forms.list",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "page.annotations.list",
+              "pon": 1,
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "page.annotations.list",
+              "pon": 2,
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "forms.updateField",
+              "args": [
+                {
+                  "kind": "objectNumber",
+                  "fieldObjectNumber": 8
+                },
+                {
+                  "family": "text",
+                  "name": "renamed"
+                }
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "forms.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "delete-field-without-annotation",
       "covers": "Without the annotation plugin there is no plane to nudge; a refusal rejects.",
       "plugins": [

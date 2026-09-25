@@ -245,6 +245,26 @@ const designCases: ScenarioCase[] = [
     steps: [...boot, call('ensureGeom', [1]), call('ensureGeom', [2]), call('deleteField', ['obj:7']), call('deleteField', ['obj:404'])],
   },
   {
+    name: 'queued-verbs-interleave-with-page-reloads',
+    covers:
+      'The annotation reloads a delete nudges run unawaited beside the next queued verb: their page reads and model updates interleave with the update, turn for turn.',
+    plugins: WITH_ANNOTATION,
+    engine: {
+      documents: {
+        a: doc([
+          list([text(7, 'spread', 'v', {}, [[107, 1], [108, 2]]), text(8, 'other', 'o')]),
+          HYDRATE,
+          annotations(1, [widgetAnnot(1, 107)]),
+          annotations(2, [widgetAnnot(2, 108)]),
+          { path: 'forms.deleteField', defer: 'delete' },
+          { path: 'forms.updateField', value: { field: text(8, 'renamed', 'o') } },
+        ]),
+      },
+    },
+    snapshot: 'none',
+    steps: [...boot, call('deleteField', ['obj:7']), call('updateField', ['obj:8', { family: 'text', name: 'renamed' }]), settle('delete', { deleted: true })],
+  },
+  {
     name: 'delete-field-without-annotation',
     covers: 'Without the annotation plugin there is no plane to nudge; a refusal rejects.',
     plugins: FORM_ONLY,
