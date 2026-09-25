@@ -1,7 +1,7 @@
 {
   "total": {
     "statements": "13495/13521",
-    "branches": "3042/3123"
+    "branches": "3046/3127"
   },
   "files": {
     "packages/core/acrojs/src/actions.ts": {
@@ -44,7 +44,7 @@
     },
     "packages/core/geometry/src/index.ts": {
       "statements": "801/801",
-      "branches": "93/93",
+      "branches": "94/94",
       "uncoveredLines": [],
       "uncoveredBranches": []
     },
@@ -70,7 +70,7 @@
     },
     "packages/core/main/src/kernel.ts": {
       "statements": "844/844",
-      "branches": "269/275",
+      "branches": "270/276",
       "uncoveredLines": [],
       "uncoveredBranches": [
         "179:22#0",
@@ -592,7 +592,7 @@
     },
     "packages/plugin/selection/src/capability.ts": {
       "statements": "540/540",
-      "branches": "180/196",
+      "branches": "181/197",
       "uncoveredLines": [],
       "uncoveredBranches": [
         "455:37#0",
@@ -633,7 +633,7 @@
     },
     "packages/plugin/selection/src/handles.ts": {
       "statements": "160/160",
-      "branches": "22/22",
+      "branches": "23/23",
       "uncoveredLines": [],
       "uncoveredBranches": []
     },

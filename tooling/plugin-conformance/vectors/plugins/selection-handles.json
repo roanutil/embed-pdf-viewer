@@ -1840,6 +1840,130 @@
       }
     },
     {
+      "name": "selectionHandleGeom/no-advance-start",
+      "fn": "selectionHandleGeom",
+      "args": [
+        {
+          "matrices": {
+            "1": [
+              2,
+              0,
+              0,
+              2,
+              100,
+              50
+            ]
+          }
+        },
+        {
+          "pon": 1,
+          "glyphQuad": {
+            "upperStart": {
+              "x": 10,
+              "y": 20
+            },
+            "upperEnd": {
+              "x": 16,
+              "y": 20
+            },
+            "lowerStart": {
+              "x": 10,
+              "y": 32
+            },
+            "lowerEnd": {
+              "x": 16,
+              "y": 32
+            }
+          },
+          "advance": 0
+        },
+        "start"
+      ],
+      "outcome": {
+        "returned": {
+          "bar": {
+            "from": {
+              "x": 132,
+              "y": 90
+            },
+            "to": {
+              "x": 132,
+              "y": 114
+            }
+          },
+          "length": 24,
+          "rotation": 0,
+          "upright": true,
+          "head": {
+            "x": 132,
+            "y": 84
+          }
+        }
+      }
+    },
+    {
+      "name": "selectionHandleGeom/no-advance-end",
+      "fn": "selectionHandleGeom",
+      "args": [
+        {
+          "matrices": {
+            "1": [
+              2,
+              0,
+              0,
+              2,
+              100,
+              50
+            ]
+          }
+        },
+        {
+          "pon": 1,
+          "glyphQuad": {
+            "upperStart": {
+              "x": 10,
+              "y": 20
+            },
+            "upperEnd": {
+              "x": 16,
+              "y": 20
+            },
+            "lowerStart": {
+              "x": 10,
+              "y": 32
+            },
+            "lowerEnd": {
+              "x": 16,
+              "y": 32
+            }
+          },
+          "advance": 0
+        },
+        "end"
+      ],
+      "outcome": {
+        "returned": {
+          "bar": {
+            "from": {
+              "x": 132,
+              "y": 90
+            },
+            "to": {
+              "x": 132,
+              "y": 114
+            }
+          },
+          "length": 24,
+          "rotation": 0,
+          "upright": true,
+          "head": {
+            "x": 132,
+            "y": 120
+          }
+        }
+      }
+    },
+    {
       "name": "selectionHandleGeom/half-projected",
       "fn": "selectionHandleGeom",
       "args": [

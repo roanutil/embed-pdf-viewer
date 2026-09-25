@@ -101,6 +101,11 @@ const text5: PageTextSnapshot = { text: 'Page two text', charCount: 13 };
 const geo9: PageGeometrySnapshot = { runs: [run(0, glyphs('AxB', 100, 600))] };
 const text9: PageTextSnapshot = { text: 'A😀B', charCount: 3, charMap: [[2, 3]] };
 
+/** Page 13: a left-to-right line over a right-to-left one. */
+const geo13: PageGeometrySnapshot = {
+  runs: [run(0, glyphs('abc', 50, 750)), run(3, glyphs('fed', 50, 730).reverse())],
+};
+
 const box = { left: 0, bottom: 0, right: 600, top: 800 };
 const offset = { left: 10, bottom: 20, right: 610, top: 820 };
 const layout = (index: number, pon: number, over: Record<string, unknown> = {}) => ({
@@ -457,6 +462,7 @@ const cases: ScenarioCase[] = [
       sel('select', { start: { pon: 1, index: 0 }, end: { pon: 5, index: 0 } }),
       sel('select', { start: { pon: 5, index: 0 }, end: { pon: 9, index: 0 } }),
       sel('select', { pon: 77, start: 0, count: 1 }),
+      sel('select', { start: { pon: 76, index: 0 }, end: { pon: 1, index: 1 } }),
       sel('select', { start: { pon: 1, index: 0 }, end: { pon: 78, index: 1 } }),
       sel('selectAll'),
       sel('snapshot'),
@@ -560,6 +566,64 @@ const cases: ScenarioCase[] = [
       sel('menuAnchor'),
       settle('geo-5', geo5),
       sel('menuAnchor'),
+    ],
+  },
+  {
+    name: 'endpoints-follow-their-segment',
+    covers: 'The start endpoint takes the first segment\'s reading direction and the end the last\'s: a selection from a left-to-right line into a right-to-left one.',
+    plugins,
+    engine: {
+      documents: {
+        a: doc({ pages: [...pages, layout(3, 13)], responses: [...geometryReads, { path: 'page.geometry.read', pon: 13, value: geo13 }, ...textReads] }),
+      },
+    },
+    snapshot: slice,
+    steps: [...opened, sel('ensurePage', 13), sel('select', { pon: 13, start: 1, count: 4 }), sel('snapshot')],
+  },
+  {
+    name: 'backward-drag-on-one-page',
+    covers: 'A drag that ends before its anchor on the same page orders the ends backward.',
+    plugins,
+    engine: { documents: { a: doc() } },
+    snapshot: slice,
+    steps: [...opened, ...loadAll, ptr('down', 1, W1.x, W1.y), ptr('move', 1, H1.x, H1.y), ptr('up', 1, H1.x, H1.y), sel('snapshot'), sel('readText')],
+  },
+  {
+    name: 'drag-threshold',
+    covers: 'The drag threshold is 4 viewport px, measured from the down: 3.9 is still a click, exactly 4 begins the drag.',
+    plugins,
+    engine: { documents: { a: doc() } },
+    snapshot: slice,
+    steps: [
+      ...opened,
+      ...loadAll,
+      hub('dispatch', { ...at('down', 1, H1.x, H1.y), viewport: { x: 1, y: 0 } }),
+      hub('dispatch', { ...at('move', 1, W1.x, W1.y), viewport: { x: 4.9, y: 0 } }),
+      sel('hasSelection'),
+      hub('dispatch', { ...at('move', 1, W1.x, W1.y), viewport: { x: 5, y: 0 } }),
+      sel('hasSelection'),
+    ],
+  },
+  {
+    name: 'handler-priority',
+    covers: 'The text handler sits at priority 60: a capturing handler at 59 only gets the downs it declines.',
+    plugins,
+    engine: { documents: { a: doc() } },
+    snapshot: slice,
+    steps: [
+      ...opened,
+      ...loadAll,
+      hub('registerHandler', {
+        id: 'below',
+        priority: 59,
+        enabledFor: { $fn: 'below.enabledFor', returns: true },
+        onDown: { $fn: 'below.onDown', returns: true },
+        onUp: { $fn: 'below.onUp' },
+      }),
+      ptr('down', 1, H1.x, H1.y),
+      ptr('up', 1, H1.x, H1.y),
+      ptr('down', 1, BLANK.x, BLANK.y),
+      ptr('up', 1, BLANK.x, BLANK.y),
     ],
   },
   {
@@ -733,6 +797,149 @@ const varied: PageGeometrySnapshot = {
 };
 const empty: PageGeometrySnapshot = { runs: [] };
 
+/** A run rotated by `angle` (radians CCW): glyph cells 8 along the baseline,
+ *  10 up the ascent, starting at `origin`; spaces where `spaces` says. */
+const tiltedRun = (charStart: number, angle: number, origin: { x: number; y: number }, count: number, spaces: number[] = []) => {
+  const b = { x: Math.cos(angle), y: Math.sin(angle) };
+  const a = { x: -Math.sin(angle), y: Math.cos(angle) };
+  const at = (u: number, v: number) => ({ x: origin.x + b.x * u + a.x * v, y: origin.y + b.y * u + a.y * v });
+  const glyphs = Array.from({ length: count }, (_, i) => ({
+    looseQuad: { p1: at(i * 8, 10), p2: at(i * 8 + 8, 10), p3: at(i * 8, 0), p4: at(i * 8 + 8, 0) },
+    flags: spaces.includes(i) ? 1 : 0,
+    ...(spaces.includes(i) ? {} : { tightQuad: { p1: at(i * 8 + 1, 9), p2: at(i * 8 + 7, 9), p3: at(i * 8 + 1, 1), p4: at(i * 8 + 7, 1) } }),
+  }));
+  const pts = glyphs.flatMap((g) => [g.looseQuad.p1, g.looseQuad.p2, g.looseQuad.p3, g.looseQuad.p4]);
+  return {
+    rect: {
+      left: Math.min(...pts.map((p) => p.x)),
+      bottom: Math.min(...pts.map((p) => p.y)),
+      right: Math.max(...pts.map((p) => p.x)),
+      top: Math.max(...pts.map((p) => p.y)),
+    },
+    charStart,
+    rotation: angle,
+    ascentFlip: false,
+    glyphs,
+  };
+};
+/** Text at 30 degrees: a word, a space, a word; then a far run in the same
+ *  frame; then a run at 120 degrees, a frame of its own. */
+const tilted: PageGeometrySnapshot = {
+  runs: [
+    tiltedRun(0, Math.PI / 6, { x: 100, y: 100 }, 5, [2]),
+    tiltedRun(5, Math.PI / 6 + 0.001, { x: 300, y: 215 }, 2),
+    tiltedRun(7, (2 * Math.PI) / 3, { x: 50, y: 300 }, 3),
+  ],
+};
+/** Upright lines for the line-expansion walk: overlapping, stacked, a
+ *  zero-width run, and an empty-rect run between them. */
+const lines: PageGeometrySnapshot = {
+  runs: [
+    run(0, glyphs('ab', 0, 100)),
+    { rect: { left: 13, bottom: 88, right: 13, top: 100 }, charStart: 2, glyphs: [{ looseBox: { left: 13, bottom: 88, right: 13, top: 100 }, flags: 0 }] },
+    run(3, glyphs('cd', 20, 97)),
+    { rect: ZERO, charStart: 5, glyphs: [{ looseBox: ZERO, flags: 2 }] },
+    run(6, glyphs('ef', 40, 94)),
+    run(8, glyphs('gh', 60, 80)),
+    run(10, glyphs('ij', 0, 60)),
+  ],
+};
+/** One upright run whose glyph gaps straddle the split threshold (2.5
+ *  average widths, 15 here): 13, 15 and 16. */
+const gaps: PageGeometrySnapshot = {
+  runs: [
+    run(0, [0, 19, 40, 62].map((left) => ({ looseBox: { left, bottom: 88, right: left + 6, top: 100 }, flags: 0 }))),
+  ],
+};
+/** A zero-width run first, so a line walk ends on it. */
+const zeroFirst: PageGeometrySnapshot = {
+  runs: [
+    { rect: { left: 13, bottom: 88, right: 13, top: 100 }, charStart: 0, glyphs: [{ looseBox: { left: 13, bottom: 88, right: 13, top: 100 }, flags: 0 }] },
+    run(1, glyphs('cd', 20, 97)),
+  ],
+};
+const sweepFixtures: Record<string, PageGeometrySnapshot> = { geo1, tilted, lines, gaps, zeroFirst };
+
+/** Two upright runs, the second shifted by `dx` past the first's end,
+ *  raised by `dy`, `h2` tall, `n2` glyphs, at font size `fs2`: the merge
+ *  and line-overlap thresholds. */
+const pair = (dx: number, dy: number, h2: number, n2: number, fs2: number | undefined, fs1 = 12): PageGeometrySnapshot => {
+  const a = run(0, glyphs('ab', 0, 100), fs1);
+  const g2 = Array.from({ length: n2 }, (_, i) => {
+    const left = 12 + dx + i * 6;
+    return { looseBox: { left, bottom: 100 + dy - h2, right: left + 6, top: 100 + dy }, flags: 0 };
+  });
+  const b: Record<string, unknown> = { ...run(2, g2 as Glyph[]), fontSize: fs2 };
+  if (fs2 === undefined) delete b.fontSize;
+  return { runs: [a, b as never] };
+};
+const pairs: [string, PageGeometrySnapshot][] = [];
+const addPair = (dx: number, dy: number, h2: number, n2: number, fs2: number | undefined, fs1 = 12) =>
+  pairs.push([`dx${dx}-dy${dy}-h${h2}-n${n2}-fs${fs2}${fs1 === 12 ? '' : `-first${fs1}`}`, pair(dx, dy, h2, n2, fs2, fs1)]);
+// Offset against overlap: where lines merge and where a triple-click stops.
+for (const dx of [0, 5, 9, 11, 12, 13, 30])
+  for (const [dy, h2] of [[0, 12], [2, 12], [2.4, 12], [3, 12], [6, 12], [0, 9], [-1, 14], [-6, 24], [0, 0]]) addPair(dx, dy, h2, 1, 12);
+// Font size ratio, either side of 1.5, and the sizes that skip the test.
+for (const dx of [0, 13]) for (const fs2 of [18, 18.5, 7.9, 8.1, 0, undefined]) addPair(dx, 0, 12, 1, fs2);
+// The second run left of the first (a reversed line), either side of the
+// padded adjacency edge, and a first run with no usable font size.
+for (const dx of [-31, -30, -29, -20]) for (const n2 of [1, 3]) addPair(dx, 0, 12, n2, 12);
+addPair(0, 0, 12, 1, 12, 0);
+// Vertical overlap exactly at the 0.8 merge threshold (10 / 12.5).
+addPair(0, 0.5, 10.5, 1, 12);
+// Glyph count, which sets the per-character width the adjacency test pads by.
+for (const dx of [9, 11, 12, 13, 18, 19]) addPair(dx, 0, 12, 3, 12);
+
+/** Text snapshots with several char-map anchors: supplementary characters
+ *  and dropped ones. */
+const maps: Record<string, PageTextSnapshot> = {
+  emoji: { text: 'a😀b😀c😀d', charCount: 7, charMap: [[2, 3], [4, 6], [6, 9]] },
+  dropped: { text: 'abcd', charCount: 7, charMap: [[2, 1], [4, 2], [6, 3]] },
+  mixed: { text: 'x😀yz', charCount: 6, charMap: [[1, 1], [2, 3], [3, 3], [5, 4]] },
+};
+
+/** `textSegmentsForRange` from every start in [-1, n] for a spread of
+ *  counts (short, long, to the end, past it), plus word, line and quad per
+ *  glyph. */
+const layoutSweep = (snap: PageGeometrySnapshot) => {
+  const layout = buildPageTextLayout(snap);
+  const n = layout.glyphs.length;
+  const segments: unknown[] = [];
+  for (let from = -1; from <= n; from++)
+    for (const count of new Set([0, 1, 2, 3, 5, 8, n - from, n + 1 - from])) segments.push(textSegmentsForRange(layout, from, count));
+  const glyphsIn = Array.from({ length: n + 2 }, (_, i) => i - 1);
+  return {
+    segments,
+    words: glyphsIn.map((g) => expandTextRangeToWord(layout, g)),
+    lines: glyphsIn.map((g) => expandTextRangeToLine(layout, g)),
+    quads: glyphsIn.map((g) => textGlyphQuad(layout, g)),
+  };
+};
+
+/** `textGlyphAt` on a grid, row-major. */
+const glyphAtGrid = (snap: PageGeometrySnapshot, grid: { x0: number; x1: number; y0: number; y1: number; step: number }, tolerance?: number) => {
+  const layout = buildPageTextLayout(snap);
+  const out: (number | null)[] = [];
+  for (let y = grid.y0; y <= grid.y1; y += grid.step)
+    for (let x = grid.x0; x <= grid.x1; x += grid.step) out.push(textGlyphAt(layout, { x, y }, tolerance));
+  return out;
+};
+
+/** The two runs of a pair, whole: segments, and the line around each end. */
+const pairProbe = (snap: PageGeometrySnapshot) => {
+  const layout = buildPageTextLayout(snap);
+  const n = layout.glyphs.length;
+  return { segments: textSegmentsForRange(layout, 0, n), first: expandTextRangeToLine(layout, 0), last: expandTextRangeToLine(layout, n - 1) };
+};
+
+/** `sliceTextByChars` over every (from, to) in [-1, charCount + 1]. */
+const sliceSweep = (snap: PageTextSnapshot) => {
+  const out: string[] = [];
+  for (let from = -1; from <= snap.charCount + 1; from++)
+    for (let to = from; to <= snap.charCount + 1; to++) out.push(sliceTextByChars(snap, from, to));
+  return out;
+};
+
 const geomOf = (spec: { snapshot: PageGeometrySnapshot; crop: PdfRect; rotation: 0 | 90 | 180 | 270; userUnit: number }) =>
   buildSelectionPageGeometry(spec.snapshot, spec.crop, spec.rotation, spec.userUnit);
 type GeomSpec = Parameters<typeof geomOf>[0];
@@ -755,6 +962,10 @@ const geometryFns = {
   textGlyphQuad: (snap: PageGeometrySnapshot, glyph: number) => textGlyphQuad(buildPageTextLayout(snap), glyph),
   textSegmentsForRange: (snap: PageGeometrySnapshot, from: number, count: number) => textSegmentsForRange(buildPageTextLayout(snap), from, count),
   sliceTextByChars,
+  layoutSweep,
+  glyphAtGrid,
+  pairProbe,
+  sliceSweep,
   initialSelectionState: () => initialSelectionState,
   selectionReducer,
 };
@@ -871,6 +1082,14 @@ const geometryCases: FunctionCase[] = [
   fc('selectionReducer', 'hide-again', state({ highlightHidden: true }), { type: 'SET_HIGHLIGHT_HIDDEN', hidden: true }),
   fc('selectionReducer', 'selecting', state(), { type: 'SET_SELECTING', selecting: true }),
   fc('selectionReducer', 'selecting-again', state(), { type: 'SET_SELECTING', selecting: false }),
+  ...Object.entries({ ...sweepFixtures, varied, mixed }).map(([name, snap]) => fc('layoutSweep', name, snap)),
+  fc('glyphAtGrid', 'varied', varied, { x0: 0, x1: 170, y0: 10, y1: 110, step: 2.5 }),
+  fc('glyphAtGrid', 'varied-tight-tolerance', varied, { x0: 0, x1: 170, y0: 10, y1: 110, step: 2.5 }, 0.4),
+  fc('glyphAtGrid', 'tilted', tilted, { x0: 30, x1: 330, y0: 90, y1: 330, step: 4 }),
+  fc('glyphAtGrid', 'tilted-wide', tilted, { x0: 30, x1: 330, y0: 90, y1: 330, step: 4 }, 3),
+  fc('glyphAtGrid', 'lines', lines, { x0: -10, x1: 80, y0: 40, y1: 110, step: 1.5 }),
+  ...pairs.map(([name, snap]) => fc('pairProbe', name, snap)),
+  ...Object.entries({ ...maps, page1: text1, page9: text9 }).map(([name, snap]) => fc('sliceSweep', name, snap)),
 ];
 
 // ── handles ──────────────────────────────────────────────────────────────────
@@ -959,6 +1178,8 @@ const handleCases: FunctionCase[] = [
     ),
   ),
   fc('selectionHandleGeom', 'degenerate-cell', views.scaled, ep(degenerate, 1), 'start'),
+  fc('selectionHandleGeom', 'no-advance-start', views.scaled, ep(upright, 0 as never), 'start'),
+  fc('selectionHandleGeom', 'no-advance-end', views.scaled, ep(upright, 0 as never), 'end'),
   fc('selectionHandleGeom', 'half-projected', { matrices: { 1: id2 } }, ep(upright, 1, 2), 'end'),
   fc('handleDrag', 'untouched-press-settles-nothing', { pages: [{ pon: 1, rect: { x: 0, y: 0, width: 100, height: 100 } }] }, ep(upright, 1), 1, [true], ['end']),
   fc('handleDrag', 'moves-extend-and-end-commits', { pages: [{ pon: 1, rect: { x: 0, y: 0, width: 100, height: 100 } }, { pon: 2, rect: { x: 0, y: 110, width: 100, height: 100 } }] }, ep(turned, -1), 1, [true], [{ x: 40, y: 30 }, { x: 50, y: 120 }, { x: 50, y: 105 }, 'end']),
