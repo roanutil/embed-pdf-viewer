@@ -802,6 +802,29 @@ impl std::fmt::Display for AttachmentExtractError {
 }
 
 impl Document {
+    /// Add an embedded file to the catalog's `/EmbeddedFiles` name tree.
+    ///
+    /// The name becomes the tree KEY, which is the entry's identity. PDFium
+    /// refuses a duplicate, and the attachment is empty until
+    /// [`Attachment::set_file`] writes bytes into it.
+    pub fn add_attachment(&self, name: &str) -> Option<Attachment<'_>> {
+        let name: Vec<u16> = name.encode_utf16().chain(std::iter::once(0)).collect();
+        // SAFETY: the handle is live and the name outlives the call.
+        let handle = unsafe { pdfium_sys::FPDFDoc_AddAttachment(self.as_raw(), name.as_ptr()) };
+        // SAFETY: the handle is PDFium's and is not owned by this wrapper.
+        unsafe { Attachment::from_raw(handle) }
+    }
+
+    /// Remove one, by its position in the tree.
+    ///
+    /// By INDEX, because that is what PDFium takes. The tree is sorted by
+    /// key, so a removal shifts the entries after it: a caller holding
+    /// several indices has to resolve each against a fresh read.
+    pub fn delete_attachment(&self, index: u32) -> bool {
+        // SAFETY: the handle is live.
+        unsafe { pdfium_sys::FPDFDoc_DeleteAttachment(self.as_raw(), index as i32) != 0 }
+    }
+
     /// How many entries the catalog's `/EmbeddedFiles` name tree holds.
     pub fn attachment_count(&self) -> u32 {
         // SAFETY: the handle is live.

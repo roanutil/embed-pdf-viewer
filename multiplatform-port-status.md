@@ -47,6 +47,7 @@ live under `tooling/engine-conformance/vectors/`, and every generator has a
 | G13 | `pages.move`, `rotate`, `delete`, `insertBlank`, `insert`, `flatten` | `vectors/pages/mutate.json`, `tests/pages_mutate.rs` |
 | G13 | `redaction.apply`, both scopes | `vectors/redaction/apply.json`, `tests/redaction_apply.rs` |
 | G14 | `metadata.update`, three-state over `/Info` | `vectors/metadata/update.json`, `tests/metadata_write.rs` |
+| G14 | `pieceInfo.update`, `clear`, `attachments.create`, `delete` | `vectors/files/write.json`, `tests/files_write.rs` |
 
 ## Done, tested against fixtures rather than vectors
 
@@ -127,8 +128,7 @@ to outlive every future save of the destination. The TypeScript parks it on
 the session and releases it at close; here it is a borrow, which makes the
 requirement the caller's to satisfy and the compiler's to check.
 
-G14 has `metadata.update`. `pieceInfo.update`, `pieceInfo.clear`,
-`attachments.create` and `attachments.delete` are not started.
+G14 is done: all five of its operations.
 
 G15, the server and file surfaces, is not started. None of it is blocked by
 anything outside the repository.

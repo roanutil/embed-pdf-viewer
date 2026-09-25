@@ -237,6 +237,11 @@ jobs:
       - name: Metadata write vectors are current
         run: pnpm --filter @embedpdf/tooling-engine-conformance run metadata-write:check
 
+      # G14's other writes: /PieceInfo on both holders, and the catalog's
+      # embedded-file name tree.
+      - name: Files write vectors are current
+        run: pnpm --filter @embedpdf/tooling-engine-conformance run files-write:check
+
       # G8's /PieceInfo, on both holders. The catalog and page accessor
       # families differ only by a page object number, so a branch written the
       # wrong way round reads one while claiming the other.

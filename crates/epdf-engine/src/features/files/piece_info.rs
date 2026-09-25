@@ -196,3 +196,152 @@ fn ffi<T>(result: Result<T, pdfium::PdfiumError>) -> Result<T, EngineError> {
         EngineError::with_message(code, format!("reading /PieceInfo failed: {e}"))
     })
 }
+
+/// What a patch sets one key to.
+///
+/// Six states, and `Clear` is one of them. Removing a key and setting it to
+/// an empty string are different edits here, unlike in `/Info`: the fork's
+/// piece-info setters and its clear are separate calls.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum PieceInfoPatchValue {
+    /// `null` removes the key.
+    Clear,
+    Boolean(bool),
+    Number(f64),
+    String(String),
+    StringArray(Vec<String>),
+    /// A PDF name, which is not a string: `{ "name": "Draft" }` on the
+    /// wire, because a reader that took it for text would quote it.
+    Name {
+        name: String,
+    },
+}
+
+/// A set of keys to write, under one application.
+pub type PieceInfoPatch = std::collections::BTreeMap<String, PieceInfoPatchValue>;
+
+/// Write a patch.
+///
+/// # This is not a transaction
+///
+/// A native setter that refuses on the fourth key leaves the first three
+/// written. Everything a caller can get wrong is checked first, so what is
+/// left below the apply boundary is PDFium refusing something that passed;
+/// unwinding would mean restoring values this layer never read.
+pub fn update_piece_info(
+    document: &Document,
+    holder: PieceInfoHolder,
+    application: &str,
+    patch: &PieceInfoPatch,
+    clock: &dyn crate::clock::Clock,
+    cancel: &CancelToken,
+) -> Result<(), EngineError> {
+    cancel.check()?;
+    if application.is_empty() {
+        return Err(EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            "a piece-info application needs a name",
+        ));
+    }
+    if patch.is_empty() {
+        return Ok(());
+    }
+    for (key, value) in patch {
+        validate(key, value)?;
+    }
+
+    // The apply boundary. Nothing below it is the caller's mistake.
+    cancel.check()?;
+    // ONE date for the whole patch, however many keys it touches. §14.5
+    // lets a consumer discard an application's data when the document has
+    // changed since it last wrote, and that check compares this date with
+    // the document's; a batch stamped across two seconds would look like
+    // two edits.
+    let last_modified = crate::clock::format_pdf_date(clock.now()).ok_or_else(|| {
+        EngineError::with_message(EngineErrorCode::Unknown, "the clock produced no PDF date")
+    })?;
+
+    for (key, value) in patch {
+        let native = match value {
+            PieceInfoPatchValue::Clear => pdfium::PieceInfoValue::Clear,
+            PieceInfoPatchValue::Boolean(flag) => pdfium::PieceInfoValue::Boolean(*flag),
+            PieceInfoPatchValue::Number(number) => pdfium::PieceInfoValue::Number(*number as f32),
+            PieceInfoPatchValue::String(text) => pdfium::PieceInfoValue::String(text.clone()),
+            PieceInfoPatchValue::StringArray(values) => {
+                pdfium::PieceInfoValue::StringArray(values.clone())
+            }
+            PieceInfoPatchValue::Name { name } => pdfium::PieceInfoValue::Name(name.clone()),
+        };
+        let written = document
+            .set_piece_info(holder, application, key, &native, &last_modified)
+            .map_err(|e| {
+                EngineError::with_message(
+                    EngineErrorCode::InvalidArg,
+                    format!("a piece-info string is not one a PDF can hold: {e}"),
+                )
+            })?;
+        if !written {
+            return Err(EngineError::with_message(
+                EngineErrorCode::Unknown,
+                format!("PDFium refused the piece-info key '{key}' after it validated"),
+            ));
+        }
+    }
+    Ok(())
+}
+
+/// Remove an application's data entirely.
+pub fn clear_piece_info(
+    document: &Document,
+    holder: PieceInfoHolder,
+    application: &str,
+    cancel: &CancelToken,
+) -> Result<(), EngineError> {
+    cancel.check()?;
+    if application.is_empty() {
+        return Err(EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            "a piece-info application needs a name",
+        ));
+    }
+    let cleared = document.clear_piece_info(holder, application).map_err(|e| {
+        EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            format!("the application name is not one a PDF can hold: {e}"),
+        )
+    })?;
+    if !cleared {
+        return Err(EngineError::with_message(
+            EngineErrorCode::Unknown,
+            format!("PDFium refused to clear the piece-info application '{application}'"),
+        ));
+    }
+    Ok(())
+}
+
+/// Everything a patch entry can be wrong about.
+fn validate(key: &str, value: &PieceInfoPatchValue) -> Result<(), EngineError> {
+    if key.is_empty() {
+        return Err(EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            "a piece-info key cannot be empty",
+        ));
+    }
+    match value {
+        // A non-finite number has no PDF spelling, and PDFium would write
+        // whatever the cast produced.
+        PieceInfoPatchValue::Number(number) if !number.is_finite() => {
+            Err(EngineError::with_message(
+                EngineErrorCode::InvalidArg,
+                format!("the piece-info number for '{key}' is not finite"),
+            ))
+        }
+        // An empty name is not a name: `/` alone is not valid syntax.
+        PieceInfoPatchValue::Name { name } if name.is_empty() => Err(EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            format!("the piece-info name for '{key}' cannot be empty"),
+        )),
+        _ => Ok(()),
+    }
+}

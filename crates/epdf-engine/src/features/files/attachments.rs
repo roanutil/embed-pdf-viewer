@@ -194,3 +194,125 @@ fn extract_error(error: AttachmentExtractError) -> EngineError {
     };
     EngineError::with_message(code, error.to_string())
 }
+
+/// What creating an embedded file produced.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AttachmentCreateResult {
+    /// The entry, read back. The size, the checksum and the creation date
+    /// are PDFium's, derived from the bytes, so the read is the only way to
+    /// know them.
+    pub created: EmbeddedFileItem,
+}
+
+/// Add an embedded file to the catalog's name tree.
+///
+/// The name becomes the tree KEY, which is the entry's identity. A duplicate
+/// is refused rather than replacing: two files with one key would leave the
+/// document with an address that names two things.
+pub fn create_attachment(
+    document: &Document,
+    name: &str,
+    bytes: &[u8],
+    mime_type: Option<&str>,
+    description: Option<&str>,
+    cancel: &CancelToken,
+) -> Result<AttachmentCreateResult, EngineError> {
+    cancel.check()?;
+    if name.is_empty() {
+        return Err(EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            "an embedded file needs a name: the name is its key",
+        ));
+    }
+    // Probed rather than left to PDFium, which refuses a duplicate too but
+    // with a failure that says nothing about which name collided.
+    if document.attachment_index_by_key(name).is_some() {
+        return Err(EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            format!("an embedded file with the key '{name}' already exists: keys are unique"),
+        ));
+    }
+
+    cancel.check()?;
+    let attachment = document.add_attachment(name).ok_or_else(|| {
+        EngineError::with_message(
+            EngineErrorCode::Unknown,
+            "FPDFDoc_AddAttachment returned nothing",
+        )
+    })?;
+    // Made whatever the length: a zero-byte attachment is a real one, and
+    // skipping this would leave a tree entry naming a stream that does not
+    // exist.
+    if !attachment.set_file(document, bytes) {
+        return Err(EngineError::with_message(
+            EngineErrorCode::Unknown,
+            "FPDFAttachment_SetFile refused the bytes",
+        ));
+    }
+    let mime = mime_type.unwrap_or("application/octet-stream");
+    match attachment.set_mime_type(mime) {
+        Ok(true) => {}
+        _ => {
+            return Err(EngineError::with_message(
+                EngineErrorCode::Unknown,
+                format!("EPDFAttachment_SetSubtype refused '{mime}'"),
+            ));
+        }
+    }
+    if let Some(description) = description
+        && !attachment.set_description(description)
+    {
+        return Err(EngineError::with_message(
+            EngineErrorCode::Unknown,
+            "EPDFAttachment_SetDescription refused the description",
+        ));
+    }
+
+    // Read back through a fresh lookup: the tree is key-sorted, so the new
+    // entry's INDEX depends on what was already there and cannot be known
+    // before the insert.
+    cancel.check()?;
+    let index = document.attachment_index_by_key(name).ok_or_else(|| {
+        EngineError::with_message(
+            EngineErrorCode::Unknown,
+            "the embedded file vanished after it was added",
+        )
+    })?;
+    let entry = document.attachment(index).ok_or_else(|| {
+        EngineError::with_message(EngineErrorCode::Unknown, "the embedded file cannot be read back")
+    })?;
+    Ok(AttachmentCreateResult {
+        created: EmbeddedFileItem {
+            file: read_attachment_info(&entry)?,
+            key: name.to_owned(),
+            index,
+        },
+    })
+}
+
+/// Remove an embedded file by key.
+///
+/// Unlinks the tree entry. The stream it named goes when the document is
+/// next written whole; an incremental save leaves it in the file and
+/// unreachable, which is the format's behaviour rather than this layer's.
+pub fn delete_attachment(
+    document: &Document,
+    key: &str,
+    cancel: &CancelToken,
+) -> Result<(), EngineError> {
+    cancel.check()?;
+    let index = document.attachment_index_by_key(key).ok_or_else(|| {
+        EngineError::with_message(
+            EngineErrorCode::NotFound,
+            format!("no embedded file with the key '{key}'"),
+        )
+    })?;
+    if !document.delete_attachment(index) {
+        return Err(EngineError::with_message(
+            EngineErrorCode::Unknown,
+            format!("PDFium refused to delete the embedded file '{key}'"),
+        ));
+    }
+    Ok(())
+}
