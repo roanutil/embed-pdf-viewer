@@ -1,0 +1,4825 @@
+{
+  "schemaVersion": 1,
+  "kind": "function",
+  "describes": "packages/plugin/redaction: the reducer, and estimateCollateral and getPending over a stub context.",
+  "cases": [
+    {
+      "name": "initial-state",
+      "fn": "initialRedactionState",
+      "args": [],
+      "outcome": {
+        "returned": {
+          "applying": false,
+          "lastResult": null
+        }
+      }
+    },
+    {
+      "name": "started-from-idle",
+      "fn": "redactionReducer",
+      "args": [
+        {
+          "applying": false,
+          "lastResult": null
+        },
+        {
+          "type": "APPLY_STARTED"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "changed": true,
+          "state": {
+            "applying": true,
+            "lastResult": null
+          }
+        }
+      }
+    },
+    {
+      "name": "started-keeps-the-last-result",
+      "fn": "redactionReducer",
+      "args": [
+        {
+          "applying": false,
+          "lastResult": {
+            "scope": {
+              "kind": "pages",
+              "pageObjectNumbers": [
+                1,
+                2
+              ]
+            },
+            "results": [
+              {
+                "pageObjectNumber": 1,
+                "status": "applied",
+                "removedAnnotationCount": 2
+              },
+              {
+                "pageObjectNumber": 2,
+                "status": "unchanged",
+                "removedAnnotationCount": 0
+              }
+            ],
+            "removedAnnotationCount": 2,
+            "meta": {
+              "revision": 3
+            }
+          }
+        },
+        {
+          "type": "APPLY_STARTED"
+        }
+      ],
+      "covers": "APPLY_STARTED sets applying and keeps lastResult.",
+      "outcome": {
+        "returned": {
+          "changed": true,
+          "state": {
+            "applying": true,
+            "lastResult": {
+              "scope": {
+                "kind": "pages",
+                "pageObjectNumbers": [
+                  1,
+                  2
+                ]
+              },
+              "results": [
+                {
+                  "pageObjectNumber": 1,
+                  "status": "applied",
+                  "removedAnnotationCount": 2
+                },
+                {
+                  "pageObjectNumber": 2,
+                  "status": "unchanged",
+                  "removedAnnotationCount": 0
+                }
+              ],
+              "removedAnnotationCount": 2,
+              "meta": {
+                "revision": 3
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "finished-with-a-result",
+      "fn": "redactionReducer",
+      "args": [
+        {
+          "applying": true,
+          "lastResult": null
+        },
+        {
+          "type": "APPLY_FINISHED",
+          "result": {
+            "scope": {
+              "kind": "pages",
+              "pageObjectNumbers": [
+                1,
+                2
+              ]
+            },
+            "results": [
+              {
+                "pageObjectNumber": 1,
+                "status": "applied",
+                "removedAnnotationCount": 2
+              },
+              {
+                "pageObjectNumber": 2,
+                "status": "unchanged",
+                "removedAnnotationCount": 0
+              }
+            ],
+            "removedAnnotationCount": 2,
+            "meta": {
+              "revision": 3
+            }
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "changed": true,
+          "state": {
+            "applying": false,
+            "lastResult": {
+              "scope": {
+                "kind": "pages",
+                "pageObjectNumbers": [
+                  1,
+                  2
+                ]
+              },
+              "results": [
+                {
+                  "pageObjectNumber": 1,
+                  "status": "applied",
+                  "removedAnnotationCount": 2
+                },
+                {
+                  "pageObjectNumber": 2,
+                  "status": "unchanged",
+                  "removedAnnotationCount": 0
+                }
+              ],
+              "removedAnnotationCount": 2,
+              "meta": {
+                "revision": 3
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "finished-replaces-the-result",
+      "fn": "redactionReducer",
+      "args": [
+        {
+          "applying": true,
+          "lastResult": {
+            "scope": {
+              "kind": "pages",
+              "pageObjectNumbers": [
+                1,
+                2
+              ]
+            },
+            "results": [
+              {
+                "pageObjectNumber": 1,
+                "status": "applied",
+                "removedAnnotationCount": 2
+              },
+              {
+                "pageObjectNumber": 2,
+                "status": "unchanged",
+                "removedAnnotationCount": 0
+              }
+            ],
+            "removedAnnotationCount": 2,
+            "meta": {
+              "revision": 3
+            }
+          }
+        },
+        {
+          "type": "APPLY_FINISHED",
+          "result": {
+            "scope": {
+              "kind": "pages",
+              "pageObjectNumbers": [
+                1,
+                2
+              ]
+            },
+            "results": [
+              {
+                "pageObjectNumber": 1,
+                "status": "applied",
+                "removedAnnotationCount": 9
+              },
+              {
+                "pageObjectNumber": 2,
+                "status": "unchanged",
+                "removedAnnotationCount": 0
+              }
+            ],
+            "removedAnnotationCount": 9,
+            "meta": {
+              "revision": 3
+            }
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "changed": true,
+          "state": {
+            "applying": false,
+            "lastResult": {
+              "scope": {
+                "kind": "pages",
+                "pageObjectNumbers": [
+                  1,
+                  2
+                ]
+              },
+              "results": [
+                {
+                  "pageObjectNumber": 1,
+                  "status": "applied",
+                  "removedAnnotationCount": 9
+                },
+                {
+                  "pageObjectNumber": 2,
+                  "status": "unchanged",
+                  "removedAnnotationCount": 0
+                }
+              ],
+              "removedAnnotationCount": 9,
+              "meta": {
+                "revision": 3
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "finished-with-null-keeps-the-result",
+      "fn": "redactionReducer",
+      "args": [
+        {
+          "applying": true,
+          "lastResult": {
+            "scope": {
+              "kind": "pages",
+              "pageObjectNumbers": [
+                1,
+                2
+              ]
+            },
+            "results": [
+              {
+                "pageObjectNumber": 1,
+                "status": "applied",
+                "removedAnnotationCount": 2
+              },
+              {
+                "pageObjectNumber": 2,
+                "status": "unchanged",
+                "removedAnnotationCount": 0
+              }
+            ],
+            "removedAnnotationCount": 2,
+            "meta": {
+              "revision": 3
+            }
+          }
+        },
+        {
+          "type": "APPLY_FINISHED",
+          "result": null
+        }
+      ],
+      "covers": "A failed apply (result null) clears applying and keeps the previous result.",
+      "outcome": {
+        "returned": {
+          "changed": true,
+          "state": {
+            "applying": false,
+            "lastResult": {
+              "scope": {
+                "kind": "pages",
+                "pageObjectNumbers": [
+                  1,
+                  2
+                ]
+              },
+              "results": [
+                {
+                  "pageObjectNumber": 1,
+                  "status": "applied",
+                  "removedAnnotationCount": 2
+                },
+                {
+                  "pageObjectNumber": 2,
+                  "status": "unchanged",
+                  "removedAnnotationCount": 0
+                }
+              ],
+              "removedAnnotationCount": 2,
+              "meta": {
+                "revision": 3
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "finished-without-a-result-member",
+      "fn": "redactionReducer",
+      "args": [
+        {
+          "applying": true,
+          "lastResult": {
+            "scope": {
+              "kind": "pages",
+              "pageObjectNumbers": [
+                1,
+                2
+              ]
+            },
+            "results": [
+              {
+                "pageObjectNumber": 1,
+                "status": "applied",
+                "removedAnnotationCount": 2
+              },
+              {
+                "pageObjectNumber": 2,
+                "status": "unchanged",
+                "removedAnnotationCount": 0
+              }
+            ],
+            "removedAnnotationCount": 2,
+            "meta": {
+              "revision": 3
+            }
+          }
+        },
+        {
+          "type": "APPLY_FINISHED"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "changed": true,
+          "state": {
+            "applying": false,
+            "lastResult": {
+              "scope": {
+                "kind": "pages",
+                "pageObjectNumbers": [
+                  1,
+                  2
+                ]
+              },
+              "results": [
+                {
+                  "pageObjectNumber": 1,
+                  "status": "applied",
+                  "removedAnnotationCount": 2
+                },
+                {
+                  "pageObjectNumber": 2,
+                  "status": "unchanged",
+                  "removedAnnotationCount": 0
+                }
+              ],
+              "removedAnnotationCount": 2,
+              "meta": {
+                "revision": 3
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "finished-when-idle",
+      "fn": "redactionReducer",
+      "args": [
+        {
+          "applying": false,
+          "lastResult": null
+        },
+        {
+          "type": "APPLY_FINISHED",
+          "result": null
+        }
+      ],
+      "covers": "APPLY_FINISHED always makes a new state, even when nothing changes.",
+      "outcome": {
+        "returned": {
+          "changed": true,
+          "state": {
+            "applying": false,
+            "lastResult": null
+          }
+        }
+      }
+    },
+    {
+      "name": "unknown-action",
+      "fn": "redactionReducer",
+      "args": [
+        {
+          "applying": false,
+          "lastResult": {
+            "scope": {
+              "kind": "pages",
+              "pageObjectNumbers": [
+                1,
+                2
+              ]
+            },
+            "results": [
+              {
+                "pageObjectNumber": 1,
+                "status": "applied",
+                "removedAnnotationCount": 2
+              },
+              {
+                "pageObjectNumber": 2,
+                "status": "unchanged",
+                "removedAnnotationCount": 0
+              }
+            ],
+            "removedAnnotationCount": 2,
+            "meta": {
+              "revision": 3
+            }
+          }
+        },
+        {
+          "type": "OTHER"
+        }
+      ],
+      "covers": "An action outside the union returns the same state.",
+      "outcome": {
+        "returned": {
+          "changed": false,
+          "state": {
+            "applying": false,
+            "lastResult": {
+              "scope": {
+                "kind": "pages",
+                "pageObjectNumbers": [
+                  1,
+                  2
+                ]
+              },
+              "results": [
+                {
+                  "pageObjectNumber": 1,
+                  "status": "applied",
+                  "removedAnnotationCount": 2
+                },
+                {
+                  "pageObjectNumber": 2,
+                  "status": "unchanged",
+                  "removedAnnotationCount": 0
+                }
+              ],
+              "removedAnnotationCount": 2,
+              "meta": {
+                "revision": 3
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "no-document",
+      "fn": "estimateCollateral",
+      "args": [
+        null,
+        {
+          "1": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 1
+              },
+              "pageObjectNumber": 1,
+              "index": 1,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 100,
+                "bottom": 600,
+                "right": 200,
+                "top": 700
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "redact",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "opacity": 1,
+              "quadPoints": [],
+              "overlayText": null,
+              "repeat": false,
+              "fontFamily": "helvetica",
+              "fontSize": 0,
+              "fontColor": {
+                "r": 255,
+                "g": 255,
+                "b": 255
+              },
+              "textAlign": "center"
+            },
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 2
+              },
+              "pageObjectNumber": 1,
+              "index": 2,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 100,
+                "bottom": 600,
+                "right": 200,
+                "top": 700
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "square",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": null,
+              "opacity": 1,
+              "strokeWidth": 2,
+              "borderStyle": "solid",
+              "cloudyIntensity": null,
+              "rectDifferences": null
+            }
+          ]
+        }
+      ],
+      "covers": "Without a document there are no pages, so nothing is counted.",
+      "outcome": {
+        "returned": 0
+      }
+    },
+    {
+      "name": "no-pages",
+      "fn": "estimateCollateral",
+      "args": [
+        [],
+        {
+          "1": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 1
+              },
+              "pageObjectNumber": 1,
+              "index": 1,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 100,
+                "bottom": 600,
+                "right": 200,
+                "top": 700
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "redact",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "opacity": 1,
+              "quadPoints": [],
+              "overlayText": null,
+              "repeat": false,
+              "fontFamily": "helvetica",
+              "fontSize": 0,
+              "fontColor": {
+                "r": 255,
+                "g": 255,
+                "b": 255
+              },
+              "textAlign": "center"
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": 0
+      }
+    },
+    {
+      "name": "no-marks",
+      "fn": "estimateCollateral",
+      "args": [
+        [
+          {
+            "index": 0,
+            "pageObjectNumber": 1
+          }
+        ],
+        {
+          "1": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 1
+              },
+              "pageObjectNumber": 1,
+              "index": 1,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 0,
+                "bottom": 0,
+                "right": 10,
+                "top": 10
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "square",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": null,
+              "opacity": 1,
+              "strokeWidth": 2,
+              "borderStyle": "solid",
+              "cloudyIntensity": null,
+              "rectDifferences": null
+            },
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 2
+              },
+              "pageObjectNumber": 1,
+              "index": 2,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 0,
+                "bottom": 0,
+                "right": 10,
+                "top": 10
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "square",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": null,
+              "opacity": 1,
+              "strokeWidth": 2,
+              "borderStyle": "solid",
+              "cloudyIntensity": null,
+              "rectDifferences": null
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": 0
+      }
+    },
+    {
+      "name": "rect-mark-overlaps",
+      "fn": "estimateCollateral",
+      "args": [
+        [
+          {
+            "index": 0,
+            "pageObjectNumber": 1
+          }
+        ],
+        {
+          "1": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 1
+              },
+              "pageObjectNumber": 1,
+              "index": 1,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 100,
+                "bottom": 600,
+                "right": 200,
+                "top": 700
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "redact",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "opacity": 1,
+              "quadPoints": [],
+              "overlayText": null,
+              "repeat": false,
+              "fontFamily": "helvetica",
+              "fontSize": 0,
+              "fontColor": {
+                "r": 255,
+                "g": 255,
+                "b": 255
+              },
+              "textAlign": "center"
+            },
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 2
+              },
+              "pageObjectNumber": 1,
+              "index": 2,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 150,
+                "bottom": 650,
+                "right": 250,
+                "top": 750
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "square",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": null,
+              "opacity": 1,
+              "strokeWidth": 2,
+              "borderStyle": "solid",
+              "cloudyIntensity": null,
+              "rectDifferences": null
+            },
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 3
+              },
+              "pageObjectNumber": 1,
+              "index": 3,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 300,
+                "bottom": 300,
+                "right": 400,
+                "top": 400
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "square",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": null,
+              "opacity": 1,
+              "strokeWidth": 2,
+              "borderStyle": "solid",
+              "cloudyIntensity": null,
+              "rectDifferences": null
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": 1
+      }
+    },
+    {
+      "name": "touching-edges-do-not-count",
+      "fn": "estimateCollateral",
+      "args": [
+        [
+          {
+            "index": 0,
+            "pageObjectNumber": 1
+          }
+        ],
+        {
+          "1": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 1
+              },
+              "pageObjectNumber": 1,
+              "index": 1,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 100,
+                "bottom": 600,
+                "right": 200,
+                "top": 700
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "redact",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "opacity": 1,
+              "quadPoints": [],
+              "overlayText": null,
+              "repeat": false,
+              "fontFamily": "helvetica",
+              "fontSize": 0,
+              "fontColor": {
+                "r": 255,
+                "g": 255,
+                "b": 255
+              },
+              "textAlign": "center"
+            },
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 2
+              },
+              "pageObjectNumber": 1,
+              "index": 2,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 200,
+                "bottom": 600,
+                "right": 300,
+                "top": 700
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "square",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": null,
+              "opacity": 1,
+              "strokeWidth": 2,
+              "borderStyle": "solid",
+              "cloudyIntensity": null,
+              "rectDifferences": null
+            },
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 3
+              },
+              "pageObjectNumber": 1,
+              "index": 3,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 100,
+                "bottom": 700,
+                "right": 200,
+                "top": 800
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "square",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": null,
+              "opacity": 1,
+              "strokeWidth": 2,
+              "borderStyle": "solid",
+              "cloudyIntensity": null,
+              "rectDifferences": null
+            },
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 4
+              },
+              "pageObjectNumber": 1,
+              "index": 4,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 0,
+                "bottom": 500,
+                "right": 100,
+                "top": 600
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "square",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": null,
+              "opacity": 1,
+              "strokeWidth": 2,
+              "borderStyle": "solid",
+              "cloudyIntensity": null,
+              "rectDifferences": null
+            }
+          ]
+        }
+      ],
+      "covers": "Intersection needs positive area: shared edges and corners are not collateral.",
+      "outcome": {
+        "returned": 0
+      }
+    },
+    {
+      "name": "contained-and-containing",
+      "fn": "estimateCollateral",
+      "args": [
+        [
+          {
+            "index": 0,
+            "pageObjectNumber": 1
+          }
+        ],
+        {
+          "1": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 1
+              },
+              "pageObjectNumber": 1,
+              "index": 1,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 100,
+                "bottom": 600,
+                "right": 200,
+                "top": 700
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "redact",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "opacity": 1,
+              "quadPoints": [],
+              "overlayText": null,
+              "repeat": false,
+              "fontFamily": "helvetica",
+              "fontSize": 0,
+              "fontColor": {
+                "r": 255,
+                "g": 255,
+                "b": 255
+              },
+              "textAlign": "center"
+            },
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 2
+              },
+              "pageObjectNumber": 1,
+              "index": 2,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 120,
+                "bottom": 620,
+                "right": 130,
+                "top": 630
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "square",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": null,
+              "opacity": 1,
+              "strokeWidth": 2,
+              "borderStyle": "solid",
+              "cloudyIntensity": null,
+              "rectDifferences": null
+            },
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 3
+              },
+              "pageObjectNumber": 1,
+              "index": 3,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 0,
+                "bottom": 0,
+                "right": 600,
+                "top": 800
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "square",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": null,
+              "opacity": 1,
+              "strokeWidth": 2,
+              "borderStyle": "solid",
+              "cloudyIntensity": null,
+              "rectDifferences": null
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": 2
+      }
+    },
+    {
+      "name": "sliver-overlap",
+      "fn": "estimateCollateral",
+      "args": [
+        [
+          {
+            "index": 0,
+            "pageObjectNumber": 1
+          }
+        ],
+        {
+          "1": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 1
+              },
+              "pageObjectNumber": 1,
+              "index": 1,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 100,
+                "bottom": 600,
+                "right": 200,
+                "top": 700
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "redact",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "opacity": 1,
+              "quadPoints": [],
+              "overlayText": null,
+              "repeat": false,
+              "fontFamily": "helvetica",
+              "fontSize": 0,
+              "fontColor": {
+                "r": 255,
+                "g": 255,
+                "b": 255
+              },
+              "textAlign": "center"
+            },
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 2
+              },
+              "pageObjectNumber": 1,
+              "index": 2,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 199.999,
+                "bottom": 600,
+                "right": 300,
+                "top": 700
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "square",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": null,
+              "opacity": 1,
+              "strokeWidth": 2,
+              "borderStyle": "solid",
+              "cloudyIntensity": null,
+              "rectDifferences": null
+            },
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 3
+              },
+              "pageObjectNumber": 1,
+              "index": 3,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 100,
+                "bottom": 699.5,
+                "right": 200,
+                "top": 701
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "square",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": null,
+              "opacity": 1,
+              "strokeWidth": 2,
+              "borderStyle": "solid",
+              "cloudyIntensity": null,
+              "rectDifferences": null
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": 2
+      }
+    },
+    {
+      "name": "quads-replace-the-rect",
+      "fn": "estimateCollateral",
+      "args": [
+        [
+          {
+            "index": 0,
+            "pageObjectNumber": 1
+          }
+        ],
+        {
+          "1": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 1
+              },
+              "pageObjectNumber": 1,
+              "index": 1,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 0,
+                "bottom": 0,
+                "right": 600,
+                "top": 800
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "redact",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "opacity": 1,
+              "quadPoints": [
+                {
+                  "p1": {
+                    "x": 100,
+                    "y": 110
+                  },
+                  "p2": {
+                    "x": 150,
+                    "y": 110
+                  },
+                  "p3": {
+                    "x": 100,
+                    "y": 100
+                  },
+                  "p4": {
+                    "x": 150,
+                    "y": 100
+                  }
+                },
+                {
+                  "p1": {
+                    "x": 300,
+                    "y": 110
+                  },
+                  "p2": {
+                    "x": 350,
+                    "y": 110
+                  },
+                  "p3": {
+                    "x": 300,
+                    "y": 100
+                  },
+                  "p4": {
+                    "x": 350,
+                    "y": 100
+                  }
+                }
+              ],
+              "overlayText": null,
+              "repeat": false,
+              "fontFamily": "helvetica",
+              "fontSize": 0,
+              "fontColor": {
+                "r": 255,
+                "g": 255,
+                "b": 255
+              },
+              "textAlign": "center"
+            },
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 2
+              },
+              "pageObjectNumber": 1,
+              "index": 2,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 120,
+                "bottom": 105,
+                "right": 130,
+                "top": 108
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "square",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": null,
+              "opacity": 1,
+              "strokeWidth": 2,
+              "borderStyle": "solid",
+              "cloudyIntensity": null,
+              "rectDifferences": null
+            },
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 3
+              },
+              "pageObjectNumber": 1,
+              "index": 3,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 200,
+                "bottom": 100,
+                "right": 250,
+                "top": 110
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "square",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": null,
+              "opacity": 1,
+              "strokeWidth": 2,
+              "borderStyle": "solid",
+              "cloudyIntensity": null,
+              "rectDifferences": null
+            },
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 4
+              },
+              "pageObjectNumber": 1,
+              "index": 4,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 340,
+                "bottom": 90,
+                "right": 360,
+                "top": 120
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "square",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": null,
+              "opacity": 1,
+              "strokeWidth": 2,
+              "borderStyle": "solid",
+              "cloudyIntensity": null,
+              "rectDifferences": null
+            }
+          ]
+        }
+      ],
+      "covers": "A mark with quads targets the quads’ boxes only, not its /Rect.",
+      "outcome": {
+        "returned": 2
+      }
+    },
+    {
+      "name": "tilted-quad-box",
+      "fn": "estimateCollateral",
+      "args": [
+        [
+          {
+            "index": 0,
+            "pageObjectNumber": 1
+          }
+        ],
+        {
+          "1": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 1
+              },
+              "pageObjectNumber": 1,
+              "index": 1,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 100,
+                "bottom": 600,
+                "right": 200,
+                "top": 700
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "redact",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "opacity": 1,
+              "quadPoints": [
+                {
+                  "p1": {
+                    "x": 150,
+                    "y": 100
+                  },
+                  "p2": {
+                    "x": 200,
+                    "y": 150
+                  },
+                  "p3": {
+                    "x": 100,
+                    "y": 150
+                  },
+                  "p4": {
+                    "x": 150,
+                    "y": 200
+                  }
+                }
+              ],
+              "overlayText": null,
+              "repeat": false,
+              "fontFamily": "helvetica",
+              "fontSize": 0,
+              "fontColor": {
+                "r": 255,
+                "g": 255,
+                "b": 255
+              },
+              "textAlign": "center"
+            },
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 2
+              },
+              "pageObjectNumber": 1,
+              "index": 2,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 195,
+                "bottom": 195,
+                "right": 210,
+                "top": 210
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "square",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": null,
+              "opacity": 1,
+              "strokeWidth": 2,
+              "borderStyle": "solid",
+              "cloudyIntensity": null,
+              "rectDifferences": null
+            },
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 3
+              },
+              "pageObjectNumber": 1,
+              "index": 3,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 100,
+                "bottom": 100,
+                "right": 101,
+                "top": 101
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "square",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": null,
+              "opacity": 1,
+              "strokeWidth": 2,
+              "borderStyle": "solid",
+              "cloudyIntensity": null,
+              "rectDifferences": null
+            },
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 4
+              },
+              "pageObjectNumber": 1,
+              "index": 4,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 201,
+                "bottom": 150,
+                "right": 210,
+                "top": 160
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "square",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": null,
+              "opacity": 1,
+              "strokeWidth": 2,
+              "borderStyle": "solid",
+              "cloudyIntensity": null,
+              "rectDifferences": null
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": 2
+      }
+    },
+    {
+      "name": "one-annotation-counts-once",
+      "fn": "estimateCollateral",
+      "args": [
+        [
+          {
+            "index": 0,
+            "pageObjectNumber": 1
+          }
+        ],
+        {
+          "1": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 1
+              },
+              "pageObjectNumber": 1,
+              "index": 1,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 100,
+                "bottom": 600,
+                "right": 200,
+                "top": 700
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "redact",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "opacity": 1,
+              "quadPoints": [],
+              "overlayText": null,
+              "repeat": false,
+              "fontFamily": "helvetica",
+              "fontSize": 0,
+              "fontColor": {
+                "r": 255,
+                "g": 255,
+                "b": 255
+              },
+              "textAlign": "center"
+            },
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 2
+              },
+              "pageObjectNumber": 1,
+              "index": 2,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 150,
+                "bottom": 650,
+                "right": 160,
+                "top": 660
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "redact",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "opacity": 1,
+              "quadPoints": [],
+              "overlayText": null,
+              "repeat": false,
+              "fontFamily": "helvetica",
+              "fontSize": 0,
+              "fontColor": {
+                "r": 255,
+                "g": 255,
+                "b": 255
+              },
+              "textAlign": "center"
+            },
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 3
+              },
+              "pageObjectNumber": 1,
+              "index": 3,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 140,
+                "bottom": 640,
+                "right": 170,
+                "top": 670
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "square",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": null,
+              "opacity": 1,
+              "strokeWidth": 2,
+              "borderStyle": "solid",
+              "cloudyIntensity": null,
+              "rectDifferences": null
+            }
+          ]
+        }
+      ],
+      "covers": "An annotation under several marks is one piece of collateral.",
+      "outcome": {
+        "returned": 1
+      }
+    },
+    {
+      "name": "marks-are-never-collateral",
+      "fn": "estimateCollateral",
+      "args": [
+        [
+          {
+            "index": 0,
+            "pageObjectNumber": 1
+          }
+        ],
+        {
+          "1": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 1
+              },
+              "pageObjectNumber": 1,
+              "index": 1,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 100,
+                "bottom": 600,
+                "right": 200,
+                "top": 700
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "redact",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "opacity": 1,
+              "quadPoints": [],
+              "overlayText": null,
+              "repeat": false,
+              "fontFamily": "helvetica",
+              "fontSize": 0,
+              "fontColor": {
+                "r": 255,
+                "g": 255,
+                "b": 255
+              },
+              "textAlign": "center"
+            },
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 2
+              },
+              "pageObjectNumber": 1,
+              "index": 2,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 150,
+                "bottom": 650,
+                "right": 250,
+                "top": 750
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "redact",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "opacity": 1,
+              "quadPoints": [],
+              "overlayText": null,
+              "repeat": false,
+              "fontFamily": "helvetica",
+              "fontSize": 0,
+              "fontColor": {
+                "r": 255,
+                "g": 255,
+                "b": 255
+              },
+              "textAlign": "center"
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": 0
+      }
+    },
+    {
+      "name": "filter-by-id",
+      "fn": "estimateCollateral",
+      "args": [
+        [
+          {
+            "index": 0,
+            "pageObjectNumber": 1
+          }
+        ],
+        {
+          "1": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 1
+              },
+              "pageObjectNumber": 1,
+              "index": 1,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 100,
+                "bottom": 600,
+                "right": 200,
+                "top": 700
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "redact",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "opacity": 1,
+              "quadPoints": [],
+              "overlayText": null,
+              "repeat": false,
+              "fontFamily": "helvetica",
+              "fontSize": 0,
+              "fontColor": {
+                "r": 255,
+                "g": 255,
+                "b": 255
+              },
+              "textAlign": "center"
+            },
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 2
+              },
+              "pageObjectNumber": 1,
+              "index": 2,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 300,
+                "bottom": 300,
+                "right": 400,
+                "top": 400
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "redact",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "opacity": 1,
+              "quadPoints": [],
+              "overlayText": null,
+              "repeat": false,
+              "fontFamily": "helvetica",
+              "fontSize": 0,
+              "fontColor": {
+                "r": 255,
+                "g": 255,
+                "b": 255
+              },
+              "textAlign": "center"
+            },
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 3
+              },
+              "pageObjectNumber": 1,
+              "index": 3,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 150,
+                "bottom": 650,
+                "right": 160,
+                "top": 660
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "square",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": null,
+              "opacity": 1,
+              "strokeWidth": 2,
+              "borderStyle": "solid",
+              "cloudyIntensity": null,
+              "rectDifferences": null
+            },
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 4
+              },
+              "pageObjectNumber": 1,
+              "index": 4,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 350,
+                "bottom": 350,
+                "right": 360,
+                "top": 360
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "square",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": null,
+              "opacity": 1,
+              "strokeWidth": 2,
+              "borderStyle": "solid",
+              "cloudyIntensity": null,
+              "rectDifferences": null
+            }
+          ]
+        },
+        [
+          "obj:2"
+        ]
+      ],
+      "outcome": {
+        "returned": 1
+      }
+    },
+    {
+      "name": "filter-matches-nothing",
+      "fn": "estimateCollateral",
+      "args": [
+        [
+          {
+            "index": 0,
+            "pageObjectNumber": 1
+          }
+        ],
+        {
+          "1": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 1
+              },
+              "pageObjectNumber": 1,
+              "index": 1,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 100,
+                "bottom": 600,
+                "right": 200,
+                "top": 700
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "redact",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "opacity": 1,
+              "quadPoints": [],
+              "overlayText": null,
+              "repeat": false,
+              "fontFamily": "helvetica",
+              "fontSize": 0,
+              "fontColor": {
+                "r": 255,
+                "g": 255,
+                "b": 255
+              },
+              "textAlign": "center"
+            },
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 3
+              },
+              "pageObjectNumber": 1,
+              "index": 3,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 150,
+                "bottom": 650,
+                "right": 160,
+                "top": 660
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "square",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": null,
+              "opacity": 1,
+              "strokeWidth": 2,
+              "borderStyle": "solid",
+              "cloudyIntensity": null,
+              "rectDifferences": null
+            }
+          ]
+        },
+        [
+          "obj:3",
+          "nm:x"
+        ]
+      ],
+      "outcome": {
+        "returned": 0
+      }
+    },
+    {
+      "name": "empty-filter",
+      "fn": "estimateCollateral",
+      "args": [
+        [
+          {
+            "index": 0,
+            "pageObjectNumber": 1
+          }
+        ],
+        {
+          "1": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 1
+              },
+              "pageObjectNumber": 1,
+              "index": 1,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 100,
+                "bottom": 600,
+                "right": 200,
+                "top": 700
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "redact",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "opacity": 1,
+              "quadPoints": [],
+              "overlayText": null,
+              "repeat": false,
+              "fontFamily": "helvetica",
+              "fontSize": 0,
+              "fontColor": {
+                "r": 255,
+                "g": 255,
+                "b": 255
+              },
+              "textAlign": "center"
+            },
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 3
+              },
+              "pageObjectNumber": 1,
+              "index": 3,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 150,
+                "bottom": 650,
+                "right": 160,
+                "top": 660
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "square",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": null,
+              "opacity": 1,
+              "strokeWidth": 2,
+              "borderStyle": "solid",
+              "cloudyIntensity": null,
+              "rectDifferences": null
+            }
+          ]
+        },
+        []
+      ],
+      "outcome": {
+        "returned": 0
+      }
+    },
+    {
+      "name": "null-filter-is-all",
+      "fn": "estimateCollateral",
+      "args": [
+        [
+          {
+            "index": 0,
+            "pageObjectNumber": 1
+          }
+        ],
+        {
+          "1": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 1
+              },
+              "pageObjectNumber": 1,
+              "index": 1,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 100,
+                "bottom": 600,
+                "right": 200,
+                "top": 700
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "redact",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "opacity": 1,
+              "quadPoints": [],
+              "overlayText": null,
+              "repeat": false,
+              "fontFamily": "helvetica",
+              "fontSize": 0,
+              "fontColor": {
+                "r": 255,
+                "g": 255,
+                "b": 255
+              },
+              "textAlign": "center"
+            },
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 3
+              },
+              "pageObjectNumber": 1,
+              "index": 3,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 150,
+                "bottom": 650,
+                "right": 160,
+                "top": 660
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "square",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": null,
+              "opacity": 1,
+              "strokeWidth": 2,
+              "borderStyle": "solid",
+              "cloudyIntensity": null,
+              "rectDifferences": null
+            }
+          ]
+        },
+        null
+      ],
+      "outcome": {
+        "returned": 1
+      }
+    },
+    {
+      "name": "filter-by-nm-and-index",
+      "fn": "estimateCollateral",
+      "args": [
+        [
+          {
+            "index": 0,
+            "pageObjectNumber": 1
+          }
+        ],
+        {
+          "1": [
+            {
+              "ref": {
+                "kind": "nm",
+                "pageObjectNumber": 1,
+                "nm": "n1"
+              },
+              "pageObjectNumber": 1,
+              "index": 1,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 100,
+                "bottom": 600,
+                "right": 200,
+                "top": 700
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "redact",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "opacity": 1,
+              "quadPoints": [],
+              "overlayText": null,
+              "repeat": false,
+              "fontFamily": "helvetica",
+              "fontSize": 0,
+              "fontColor": {
+                "r": 255,
+                "g": 255,
+                "b": 255
+              },
+              "textAlign": "center"
+            },
+            {
+              "ref": {
+                "kind": "index",
+                "pageObjectNumber": 1,
+                "index": 4,
+                "revision": {
+                  "docSessionId": "s",
+                  "pageObjectNumber": 1,
+                  "generation": 2
+                }
+              },
+              "pageObjectNumber": 1,
+              "index": 2,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 300,
+                "bottom": 300,
+                "right": 400,
+                "top": 400
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "redact",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "opacity": 1,
+              "quadPoints": [],
+              "overlayText": null,
+              "repeat": false,
+              "fontFamily": "helvetica",
+              "fontSize": 0,
+              "fontColor": {
+                "r": 255,
+                "g": 255,
+                "b": 255
+              },
+              "textAlign": "center"
+            },
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 3
+              },
+              "pageObjectNumber": 1,
+              "index": 3,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 150,
+                "bottom": 650,
+                "right": 160,
+                "top": 660
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "square",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": null,
+              "opacity": 1,
+              "strokeWidth": 2,
+              "borderStyle": "solid",
+              "cloudyIntensity": null,
+              "rectDifferences": null
+            },
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 4
+              },
+              "pageObjectNumber": 1,
+              "index": 4,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 350,
+                "bottom": 350,
+                "right": 360,
+                "top": 360
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "square",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": null,
+              "opacity": 1,
+              "strokeWidth": 2,
+              "borderStyle": "solid",
+              "cloudyIntensity": null,
+              "rectDifferences": null
+            }
+          ]
+        },
+        [
+          "idx:1:4"
+        ]
+      ],
+      "outcome": {
+        "returned": 1
+      }
+    },
+    {
+      "name": "pages-in-document-order",
+      "fn": "estimateCollateral",
+      "args": [
+        [
+          {
+            "index": 0,
+            "pageObjectNumber": 2
+          },
+          {
+            "index": 1,
+            "pageObjectNumber": 1
+          }
+        ],
+        {
+          "1": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 1
+              },
+              "pageObjectNumber": 1,
+              "index": 1,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 100,
+                "bottom": 600,
+                "right": 200,
+                "top": 700
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "redact",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "opacity": 1,
+              "quadPoints": [],
+              "overlayText": null,
+              "repeat": false,
+              "fontFamily": "helvetica",
+              "fontSize": 0,
+              "fontColor": {
+                "r": 255,
+                "g": 255,
+                "b": 255
+              },
+              "textAlign": "center"
+            },
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 2
+              },
+              "pageObjectNumber": 1,
+              "index": 2,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 150,
+                "bottom": 650,
+                "right": 160,
+                "top": 660
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "square",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": null,
+              "opacity": 1,
+              "strokeWidth": 2,
+              "borderStyle": "solid",
+              "cloudyIntensity": null,
+              "rectDifferences": null
+            }
+          ],
+          "2": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 2,
+                "annotObjectNumber": 3
+              },
+              "pageObjectNumber": 2,
+              "index": 3,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 100,
+                "bottom": 600,
+                "right": 200,
+                "top": 700
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "redact",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "opacity": 1,
+              "quadPoints": [],
+              "overlayText": null,
+              "repeat": false,
+              "fontFamily": "helvetica",
+              "fontSize": 0,
+              "fontColor": {
+                "r": 255,
+                "g": 255,
+                "b": 255
+              },
+              "textAlign": "center"
+            },
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 2,
+                "annotObjectNumber": 4
+              },
+              "pageObjectNumber": 2,
+              "index": 4,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 150,
+                "bottom": 650,
+                "right": 160,
+                "top": 660
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "square",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": null,
+              "opacity": 1,
+              "strokeWidth": 2,
+              "borderStyle": "solid",
+              "cloudyIntensity": null,
+              "rectDifferences": null
+            },
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 2,
+                "annotObjectNumber": 5
+              },
+              "pageObjectNumber": 2,
+              "index": 5,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 0,
+                "bottom": 0,
+                "right": 1,
+                "top": 1
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "square",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": null,
+              "opacity": 1,
+              "strokeWidth": 2,
+              "borderStyle": "solid",
+              "cloudyIntensity": null,
+              "rectDifferences": null
+            }
+          ],
+          "3": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 3,
+                "annotObjectNumber": 6
+              },
+              "pageObjectNumber": 3,
+              "index": 6,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 100,
+                "bottom": 600,
+                "right": 200,
+                "top": 700
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "redact",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "opacity": 1,
+              "quadPoints": [],
+              "overlayText": null,
+              "repeat": false,
+              "fontFamily": "helvetica",
+              "fontSize": 0,
+              "fontColor": {
+                "r": 255,
+                "g": 255,
+                "b": 255
+              },
+              "textAlign": "center"
+            },
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 3,
+                "annotObjectNumber": 7
+              },
+              "pageObjectNumber": 3,
+              "index": 7,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 150,
+                "bottom": 650,
+                "right": 160,
+                "top": 660
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "square",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": null,
+              "opacity": 1,
+              "strokeWidth": 2,
+              "borderStyle": "solid",
+              "cloudyIntensity": null,
+              "rectDifferences": null
+            }
+          ]
+        }
+      ],
+      "covers": "Only pages in the document are counted, each against its own marks.",
+      "outcome": {
+        "returned": 2
+      }
+    },
+    {
+      "name": "nan-geometry-never-intersects",
+      "fn": "estimateCollateral",
+      "args": [
+        [
+          {
+            "index": 0,
+            "pageObjectNumber": 1
+          }
+        ],
+        {
+          "1": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 1
+              },
+              "pageObjectNumber": 1,
+              "index": 1,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 100,
+                "bottom": 600,
+                "right": 200,
+                "top": 700
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "redact",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "opacity": 1,
+              "quadPoints": [],
+              "overlayText": null,
+              "repeat": false,
+              "fontFamily": "helvetica",
+              "fontSize": 0,
+              "fontColor": {
+                "r": 255,
+                "g": 255,
+                "b": 255
+              },
+              "textAlign": "center"
+            },
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 2
+              },
+              "pageObjectNumber": 1,
+              "index": 2,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": {
+                  "$number": "NaN"
+                },
+                "bottom": 600,
+                "right": 200,
+                "top": 700
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "square",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": null,
+              "opacity": 1,
+              "strokeWidth": 2,
+              "borderStyle": "solid",
+              "cloudyIntensity": null,
+              "rectDifferences": null
+            },
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 3
+              },
+              "pageObjectNumber": 1,
+              "index": 3,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 100,
+                "bottom": 600,
+                "right": 200,
+                "top": 700
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "redact",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "opacity": 1,
+              "quadPoints": [
+                {
+                  "p1": {
+                    "x": {
+                      "$number": "NaN"
+                    },
+                    "y": 610
+                  },
+                  "p2": {
+                    "x": 110,
+                    "y": 610
+                  },
+                  "p3": {
+                    "x": 100,
+                    "y": 600
+                  },
+                  "p4": {
+                    "x": 110,
+                    "y": 600
+                  }
+                }
+              ],
+              "overlayText": null,
+              "repeat": false,
+              "fontFamily": "helvetica",
+              "fontSize": 0,
+              "fontColor": {
+                "r": 255,
+                "g": 255,
+                "b": 255
+              },
+              "textAlign": "center"
+            },
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 4
+              },
+              "pageObjectNumber": 1,
+              "index": 4,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 100,
+                "bottom": 600,
+                "right": 105,
+                "top": 605
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "square",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": null,
+              "opacity": 1,
+              "strokeWidth": 2,
+              "borderStyle": "solid",
+              "cloudyIntensity": null,
+              "rectDifferences": null
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": 1
+      }
+    },
+    {
+      "name": "negative-and-fractional",
+      "fn": "estimateCollateral",
+      "args": [
+        [
+          {
+            "index": 0,
+            "pageObjectNumber": 1
+          }
+        ],
+        {
+          "1": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 1
+              },
+              "pageObjectNumber": 1,
+              "index": 1,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": -50.5,
+                "bottom": -50.5,
+                "right": -10.25,
+                "top": -10.25
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "redact",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "opacity": 1,
+              "quadPoints": [],
+              "overlayText": null,
+              "repeat": false,
+              "fontFamily": "helvetica",
+              "fontSize": 0,
+              "fontColor": {
+                "r": 255,
+                "g": 255,
+                "b": 255
+              },
+              "textAlign": "center"
+            },
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 2
+              },
+              "pageObjectNumber": 1,
+              "index": 2,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": -20,
+                "bottom": -20,
+                "right": 0,
+                "top": 0
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "square",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": null,
+              "opacity": 1,
+              "strokeWidth": 2,
+              "borderStyle": "solid",
+              "cloudyIntensity": null,
+              "rectDifferences": null
+            },
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 3
+              },
+              "pageObjectNumber": 1,
+              "index": 3,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": -10.25,
+                "bottom": -60,
+                "right": 0,
+                "top": 0
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "square",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": null,
+              "opacity": 1,
+              "strokeWidth": 2,
+              "borderStyle": "solid",
+              "cloudyIntensity": null,
+              "rectDifferences": null
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": 1
+      }
+    },
+    {
+      "name": "pending-no-document",
+      "fn": "getPending",
+      "args": [
+        null,
+        {
+          "1": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 1
+              },
+              "pageObjectNumber": 1,
+              "index": 1,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 100,
+                "bottom": 600,
+                "right": 200,
+                "top": 700
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "redact",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "opacity": 1,
+              "quadPoints": [],
+              "overlayText": null,
+              "repeat": false,
+              "fontFamily": "helvetica",
+              "fontSize": 0,
+              "fontColor": {
+                "r": 255,
+                "g": 255,
+                "b": 255
+              },
+              "textAlign": "center"
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "pending-kinds-ids-and-labels",
+      "fn": "getPending",
+      "covers": "Each redact annotation becomes a pending item: id from its ref (obj:, nm:, idx:), text kind with quads else area, its overlay label, and the page’s display index (-1 when the page has none).",
+      "args": [
+        [
+          {
+            "index": 0,
+            "pageObjectNumber": 1
+          },
+          {
+            "pageObjectNumber": 2
+          },
+          {
+            "index": 5,
+            "pageObjectNumber": 3
+          }
+        ],
+        {
+          "1": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 1
+              },
+              "pageObjectNumber": 1,
+              "index": 1,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 100,
+                "bottom": 600,
+                "right": 200,
+                "top": 700
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "redact",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "opacity": 1,
+              "quadPoints": [],
+              "overlayText": "A",
+              "repeat": false,
+              "fontFamily": "helvetica",
+              "fontSize": 0,
+              "fontColor": {
+                "r": 255,
+                "g": 255,
+                "b": 255
+              },
+              "textAlign": "center"
+            },
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 9
+              },
+              "pageObjectNumber": 1,
+              "index": 9,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 0,
+                "bottom": 0,
+                "right": 1,
+                "top": 1
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "square",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": null,
+              "opacity": 1,
+              "strokeWidth": 2,
+              "borderStyle": "solid",
+              "cloudyIntensity": null,
+              "rectDifferences": null
+            },
+            {
+              "ref": {
+                "kind": "nm",
+                "pageObjectNumber": 1,
+                "nm": "x y"
+              },
+              "pageObjectNumber": 1,
+              "index": 2,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 100,
+                "bottom": 600,
+                "right": 200,
+                "top": 700
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "redact",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "opacity": 1,
+              "quadPoints": [
+                {
+                  "p1": {
+                    "x": 0,
+                    "y": 1
+                  },
+                  "p2": {
+                    "x": 1,
+                    "y": 1
+                  },
+                  "p3": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "p4": {
+                    "x": 1,
+                    "y": 0
+                  }
+                }
+              ],
+              "overlayText": null,
+              "repeat": false,
+              "fontFamily": "helvetica",
+              "fontSize": 0,
+              "fontColor": {
+                "r": 255,
+                "g": 255,
+                "b": 255
+              },
+              "textAlign": "center"
+            }
+          ],
+          "2": [
+            {
+              "ref": {
+                "kind": "index",
+                "pageObjectNumber": 2,
+                "index": 0,
+                "revision": {
+                  "docSessionId": "s",
+                  "pageObjectNumber": 2,
+                  "generation": 1
+                }
+              },
+              "pageObjectNumber": 2,
+              "index": 3,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 100,
+                "bottom": 600,
+                "right": 200,
+                "top": 700
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "redact",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "opacity": 1,
+              "quadPoints": [],
+              "overlayText": null,
+              "repeat": false,
+              "fontFamily": "helvetica",
+              "fontSize": 0,
+              "fontColor": {
+                "r": 255,
+                "g": 255,
+                "b": 255
+              },
+              "textAlign": "center"
+            }
+          ],
+          "3": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 3,
+                "annotObjectNumber": 1.5
+              },
+              "pageObjectNumber": 3,
+              "index": 4,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 100,
+                "bottom": 600,
+                "right": 200,
+                "top": 700
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "redact",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "opacity": 1,
+              "quadPoints": [],
+              "overlayText": null,
+              "repeat": false,
+              "fontFamily": "helvetica",
+              "fontSize": 0,
+              "fontColor": {
+                "r": 255,
+                "g": 255,
+                "b": 255
+              },
+              "textAlign": "center"
+            },
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 3,
+                "annotObjectNumber": 5
+              },
+              "pageObjectNumber": 3,
+              "index": 5,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 100,
+                "bottom": 600,
+                "right": 200,
+                "top": 700
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "redact",
+              "quadPoints": []
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "id": "obj:1",
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 1
+            },
+            "pageObjectNumber": 1,
+            "pageIndex": 0,
+            "kind": "area",
+            "overlayText": "A"
+          },
+          {
+            "id": "nm:x y",
+            "ref": {
+              "kind": "nm",
+              "pageObjectNumber": 1,
+              "nm": "x y"
+            },
+            "pageObjectNumber": 1,
+            "pageIndex": 0,
+            "kind": "text",
+            "overlayText": null
+          },
+          {
+            "id": "idx:2:0",
+            "ref": {
+              "kind": "index",
+              "pageObjectNumber": 2,
+              "index": 0,
+              "revision": {
+                "docSessionId": "s",
+                "pageObjectNumber": 2,
+                "generation": 1
+              }
+            },
+            "pageObjectNumber": 2,
+            "pageIndex": -1,
+            "kind": "area",
+            "overlayText": null
+          },
+          {
+            "id": "obj:1.5",
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 3,
+              "annotObjectNumber": 1.5
+            },
+            "pageObjectNumber": 3,
+            "pageIndex": 5,
+            "kind": "area",
+            "overlayText": null
+          },
+          {
+            "id": "obj:5",
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 3,
+              "annotObjectNumber": 5
+            },
+            "pageObjectNumber": 3,
+            "pageIndex": 5,
+            "kind": "area"
+          }
+        ]
+      }
+    },
+    {
+      "name": "pending-unknown-ref-kind",
+      "fn": "getPending",
+      "covers": "A ref of any other kind takes the index spelling, with whatever members it has.",
+      "args": [
+        [
+          {
+            "index": 0,
+            "pageObjectNumber": 1
+          }
+        ],
+        {
+          "1": [
+            {
+              "ref": {
+                "kind": "other",
+                "pageObjectNumber": 1
+              },
+              "pageObjectNumber": 1,
+              "index": 1,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 100,
+                "bottom": 600,
+                "right": 200,
+                "top": 700
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "redact",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "opacity": 1,
+              "quadPoints": [],
+              "overlayText": null,
+              "repeat": false,
+              "fontFamily": "helvetica",
+              "fontSize": 0,
+              "fontColor": {
+                "r": 255,
+                "g": 255,
+                "b": 255
+              },
+              "textAlign": "center"
+            },
+            {
+              "ref": {
+                "kind": "other",
+                "pageObjectNumber": 1,
+                "index": "z"
+              },
+              "pageObjectNumber": 1,
+              "index": 2,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 100,
+                "bottom": 600,
+                "right": 200,
+                "top": 700
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "redact",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+              },
+              "opacity": 1,
+              "quadPoints": [],
+              "overlayText": null,
+              "repeat": false,
+              "fontFamily": "helvetica",
+              "fontSize": 0,
+              "fontColor": {
+                "r": 255,
+                "g": 255,
+                "b": 255
+              },
+              "textAlign": "center"
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "id": "idx:1:undefined",
+            "ref": {
+              "kind": "other",
+              "pageObjectNumber": 1
+            },
+            "pageObjectNumber": 1,
+            "pageIndex": 0,
+            "kind": "area",
+            "overlayText": null
+          },
+          {
+            "id": "idx:1:z",
+            "ref": {
+              "kind": "other",
+              "pageObjectNumber": 1,
+              "index": "z"
+            },
+            "pageObjectNumber": 1,
+            "pageIndex": 0,
+            "kind": "area",
+            "overlayText": null
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -404,6 +404,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "epdf-plugin-redaction"
+version = "0.0.0"
+dependencies = [
+ "epdf-annotation-core",
+ "epdf-geometry",
+ "epdf-kernel",
+ "epdf-plugin-annotation",
+ "epdf-plugin-interaction",
+ "epdf-plugin-selection",
+ "plugin-conformance",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "epdf-plugin-render"
 version = "0.0.0"
 dependencies = [
