@@ -1,0 +1,3673 @@
+{
+  "schemaVersion": 1,
+  "kind": "function",
+  "describes": "packages/core/ui/src/schema.ts: authoring sugar, normalizeBar, filterBar, defineChrome, validateChrome.",
+  "cases": [
+    {
+      "name": "constants",
+      "fn": "constants",
+      "args": [],
+      "outcome": {
+        "returned": {
+          "PINNED": 5,
+          "DEFAULT_IMPORTANCE": 3
+        }
+      }
+    },
+    {
+      "name": "item-bare",
+      "fn": "item",
+      "args": [
+        "doc:print"
+      ],
+      "outcome": {
+        "returned": {
+          "command": "doc:print"
+        }
+      }
+    },
+    {
+      "name": "item-opts",
+      "fn": "item",
+      "args": [
+        "doc:print",
+        {
+          "variants": [
+            "icon+label",
+            "label"
+          ],
+          "importance": 2
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "command": "doc:print",
+          "variants": [
+            "icon+label",
+            "label"
+          ],
+          "importance": 2
+        }
+      }
+    },
+    {
+      "name": "item-empty-opts",
+      "fn": "item",
+      "args": [
+        "doc:print",
+        {}
+      ],
+      "outcome": {
+        "returned": {
+          "command": "doc:print"
+        }
+      }
+    },
+    {
+      "name": "item-undefined-member",
+      "fn": "item",
+      "args": [
+        "x",
+        {
+          "variants": {
+            "$undefined": true
+          },
+          "importance": 5
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "command": "x",
+          "importance": 5
+        }
+      }
+    },
+    {
+      "name": "item-unicode",
+      "fn": "item",
+      "args": [
+        "ünïcødé:命令"
+      ],
+      "outcome": {
+        "returned": {
+          "command": "ünïcødé:命令"
+        }
+      }
+    },
+    {
+      "name": "custom-minimal",
+      "fn": "custom",
+      "args": [
+        "zoom",
+        {
+          "terminal": "zoom:menu"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "slot": "zoom",
+          "terminal": "zoom:menu"
+        }
+      }
+    },
+    {
+      "name": "custom-full",
+      "fn": "custom",
+      "args": [
+        "zoom",
+        {
+          "variants": [
+            "inline",
+            "compact"
+          ],
+          "terminal": "zoom:menu",
+          "importance": 1
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "slot": "zoom",
+          "variants": [
+            "inline",
+            "compact"
+          ],
+          "terminal": "zoom:menu",
+          "importance": 1
+        }
+      }
+    },
+    {
+      "name": "group-items",
+      "fn": "group",
+      "args": [
+        "g",
+        [
+          "a",
+          {
+            "command": "b"
+          },
+          {
+            "slot": "s",
+            "terminal": "t"
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "id": "g",
+          "items": [
+            "a",
+            {
+              "command": "b"
+            },
+            {
+              "slot": "s",
+              "terminal": "t"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "group-items-empty",
+      "fn": "group",
+      "args": [
+        "g",
+        []
+      ],
+      "outcome": {
+        "returned": {
+          "id": "g",
+          "items": []
+        }
+      }
+    },
+    {
+      "name": "group-items-ignores-third",
+      "fn": "group",
+      "args": [
+        "g",
+        [
+          "a"
+        ],
+        [
+          "b"
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "id": "g",
+          "items": [
+            "a"
+          ]
+        }
+      }
+    },
+    {
+      "name": "group-opts-and-items",
+      "fn": "group",
+      "args": [
+        "g",
+        {
+          "role": "tabs",
+          "shed": true,
+          "labelKey": "k"
+        },
+        [
+          "a"
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "id": "g",
+          "role": "tabs",
+          "shed": true,
+          "labelKey": "k",
+          "items": [
+            "a"
+          ]
+        }
+      }
+    },
+    {
+      "name": "group-opts-items-member",
+      "fn": "group",
+      "args": [
+        "g",
+        {
+          "collapse": "menu",
+          "items": [
+            "from-opts"
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "id": "g",
+          "collapse": "menu",
+          "items": [
+            "from-opts"
+          ]
+        }
+      }
+    },
+    {
+      "name": "group-third-beats-opts-items",
+      "fn": "group",
+      "args": [
+        "g",
+        {
+          "items": [
+            "from-opts"
+          ]
+        },
+        [
+          "from-arg"
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "id": "g",
+          "items": [
+            "from-arg"
+          ]
+        }
+      }
+    },
+    {
+      "name": "group-opts-no-items",
+      "fn": "group",
+      "args": [
+        "g",
+        {
+          "importance": 4,
+          "collapse": "select"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "id": "g",
+          "importance": 4,
+          "collapse": "select",
+          "items": []
+        }
+      }
+    },
+    {
+      "name": "group-opts-empty",
+      "fn": "group",
+      "args": [
+        "g",
+        {}
+      ],
+      "outcome": {
+        "returned": {
+          "id": "g",
+          "items": []
+        }
+      }
+    },
+    {
+      "name": "group-opts-undefined-third",
+      "fn": "group",
+      "args": [
+        "g",
+        {
+          "items": [
+            "x"
+          ]
+        },
+        {
+          "$undefined": true
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "id": "g",
+          "items": [
+            "x"
+          ]
+        }
+      }
+    },
+    {
+      "name": "normalize-empty-sections",
+      "fn": "normalizeBar",
+      "args": [
+        {
+          "id": "b",
+          "sections": {}
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "id": "b",
+          "sections": []
+        }
+      }
+    },
+    {
+      "name": "normalize-empty-arrays-drop",
+      "fn": "normalizeBar",
+      "args": [
+        {
+          "id": "b",
+          "sections": {
+            "start": [],
+            "center": [],
+            "end": []
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "id": "b",
+          "sections": []
+        }
+      }
+    },
+    {
+      "name": "normalize-section-order",
+      "fn": "normalizeBar",
+      "args": [
+        {
+          "id": "b",
+          "sections": {
+            "end": [
+              {
+                "id": "e",
+                "items": [
+                  "x"
+                ]
+              }
+            ],
+            "start": [
+              {
+                "id": "s",
+                "items": [
+                  "y"
+                ]
+              }
+            ],
+            "center": [
+              {
+                "id": "c",
+                "items": [
+                  "z"
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "id": "b",
+          "sections": [
+            {
+              "name": "start",
+              "groups": [
+                {
+                  "id": "s",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "s:y",
+                      "command": "y",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "center",
+              "groups": [
+                {
+                  "id": "c",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "c:z",
+                      "command": "z",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "end",
+              "groups": [
+                {
+                  "id": "e",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "e:x",
+                      "command": "x",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "normalize-defaults",
+      "fn": "normalizeBar",
+      "args": [
+        {
+          "id": "b",
+          "sections": {
+            "start": [
+              {
+                "id": "g",
+                "items": [
+                  "a",
+                  {
+                    "command": "b"
+                  },
+                  {
+                    "slot": "s",
+                    "terminal": "t"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "id": "b",
+          "sections": [
+            {
+              "name": "start",
+              "groups": [
+                {
+                  "id": "g",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "g:a",
+                      "command": "a",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "g:b",
+                      "command": "b",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "custom",
+                      "key": "g:s",
+                      "slot": "s",
+                      "variants": [
+                        "default"
+                      ],
+                      "terminal": "t",
+                      "importance": 3
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "normalize-everything",
+      "fn": "normalizeBar",
+      "args": [
+        {
+          "id": "b",
+          "sections": {
+            "start": [
+              {
+                "id": "g",
+                "labelKey": "lbl",
+                "role": "tabs",
+                "shed": true,
+                "collapse": "select",
+                "importance": 1,
+                "items": [
+                  {
+                    "command": "a",
+                    "variants": [
+                      "label"
+                    ],
+                    "importance": 5
+                  },
+                  {
+                    "slot": "s",
+                    "variants": [
+                      "x",
+                      "y"
+                    ],
+                    "terminal": "t",
+                    "importance": 2
+                  }
+                ]
+              }
+            ],
+            "center": [
+              {
+                "id": "h",
+                "role": "buttons",
+                "shed": false,
+                "collapse": "menu",
+                "items": []
+              }
+            ]
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "id": "b",
+          "sections": [
+            {
+              "name": "start",
+              "groups": [
+                {
+                  "id": "g",
+                  "labelKey": "lbl",
+                  "role": "tabs",
+                  "shed": true,
+                  "collapse": "select",
+                  "importance": 1,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "g:a",
+                      "command": "a",
+                      "variants": [
+                        "label"
+                      ],
+                      "importance": 5
+                    },
+                    {
+                      "kind": "custom",
+                      "key": "g:s",
+                      "slot": "s",
+                      "variants": [
+                        "x",
+                        "y"
+                      ],
+                      "terminal": "t",
+                      "importance": 2
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "center",
+              "groups": [
+                {
+                  "id": "h",
+                  "role": "buttons",
+                  "shed": false,
+                  "collapse": "menu",
+                  "importance": 3,
+                  "units": []
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "normalize-plain-bar",
+      "fn": "normalizeBar",
+      "args": [
+        {
+          "id": "plain",
+          "sections": {
+            "start": [
+              {
+                "id": "a",
+                "items": [
+                  {
+                    "command": "a1",
+                    "variants": [
+                      "icon+label",
+                      "icon"
+                    ]
+                  },
+                  {
+                    "command": "a2",
+                    "variants": [
+                      "icon+label",
+                      "label",
+                      "icon"
+                    ],
+                    "importance": 2
+                  },
+                  "a3"
+                ]
+              },
+              {
+                "id": "b",
+                "importance": 4,
+                "items": [
+                  {
+                    "command": "b1",
+                    "variants": [
+                      "icon+label",
+                      "icon"
+                    ],
+                    "importance": 4
+                  },
+                  {
+                    "command": "b2",
+                    "importance": 1
+                  }
+                ]
+              }
+            ],
+            "end": [
+              {
+                "id": "c",
+                "items": [
+                  {
+                    "command": "c1",
+                    "variants": [
+                      "icon+label",
+                      "icon"
+                    ],
+                    "importance": 5
+                  },
+                  {
+                    "command": "c2",
+                    "variants": [
+                      "icon+label",
+                      "icon"
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "id": "plain",
+          "sections": [
+            {
+              "name": "start",
+              "groups": [
+                {
+                  "id": "a",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "a:a1",
+                      "command": "a1",
+                      "variants": [
+                        "icon+label",
+                        "icon"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "a:a2",
+                      "command": "a2",
+                      "variants": [
+                        "icon+label",
+                        "label",
+                        "icon"
+                      ],
+                      "importance": 2
+                    },
+                    {
+                      "kind": "command",
+                      "key": "a:a3",
+                      "command": "a3",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                },
+                {
+                  "id": "b",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 4,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "b:b1",
+                      "command": "b1",
+                      "variants": [
+                        "icon+label",
+                        "icon"
+                      ],
+                      "importance": 4
+                    },
+                    {
+                      "kind": "command",
+                      "key": "b:b2",
+                      "command": "b2",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 1
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "end",
+              "groups": [
+                {
+                  "id": "c",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "c:c1",
+                      "command": "c1",
+                      "variants": [
+                        "icon+label",
+                        "icon"
+                      ],
+                      "importance": 5
+                    },
+                    {
+                      "kind": "command",
+                      "key": "c:c2",
+                      "command": "c2",
+                      "variants": [
+                        "icon+label",
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "normalize-collapse-bar",
+      "fn": "normalizeBar",
+      "args": [
+        {
+          "id": "collapse",
+          "sections": {
+            "start": [
+              {
+                "id": "zoom",
+                "collapse": "menu",
+                "importance": 2,
+                "labelKey": "zoom",
+                "items": [
+                  {
+                    "slot": "zoom-strip",
+                    "variants": [
+                      "inline",
+                      "narrow"
+                    ],
+                    "terminal": "zoom:menu"
+                  },
+                  {
+                    "command": "zoom:in",
+                    "variants": [
+                      "icon+label",
+                      "icon"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "center": [
+              {
+                "id": "tabs",
+                "role": "tabs",
+                "shed": true,
+                "collapse": "select",
+                "items": [
+                  {
+                    "command": "tab:1",
+                    "variants": [
+                      "label"
+                    ]
+                  },
+                  {
+                    "command": "tab:2",
+                    "variants": [
+                      "label"
+                    ]
+                  },
+                  {
+                    "command": "tab:3",
+                    "variants": [
+                      "label"
+                    ],
+                    "importance": 1
+                  }
+                ]
+              }
+            ],
+            "end": [
+              {
+                "id": "tools",
+                "collapse": "menu",
+                "importance": 4,
+                "items": [
+                  "tool:a",
+                  "tool:b"
+                ]
+              },
+              {
+                "id": "pinned",
+                "importance": 5,
+                "collapse": "menu",
+                "items": [
+                  {
+                    "command": "pin:a",
+                    "importance": 5
+                  },
+                  "pin:b"
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "id": "collapse",
+          "sections": [
+            {
+              "name": "start",
+              "groups": [
+                {
+                  "id": "zoom",
+                  "labelKey": "zoom",
+                  "role": "buttons",
+                  "shed": false,
+                  "collapse": "menu",
+                  "importance": 2,
+                  "units": [
+                    {
+                      "kind": "custom",
+                      "key": "zoom:zoom-strip",
+                      "slot": "zoom-strip",
+                      "variants": [
+                        "inline",
+                        "narrow"
+                      ],
+                      "terminal": "zoom:menu",
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "zoom:zoom:in",
+                      "command": "zoom:in",
+                      "variants": [
+                        "icon+label",
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "center",
+              "groups": [
+                {
+                  "id": "tabs",
+                  "role": "tabs",
+                  "shed": true,
+                  "collapse": "select",
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "tabs:tab:1",
+                      "command": "tab:1",
+                      "variants": [
+                        "label"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "tabs:tab:2",
+                      "command": "tab:2",
+                      "variants": [
+                        "label"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "tabs:tab:3",
+                      "command": "tab:3",
+                      "variants": [
+                        "label"
+                      ],
+                      "importance": 1
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "end",
+              "groups": [
+                {
+                  "id": "tools",
+                  "role": "buttons",
+                  "shed": false,
+                  "collapse": "menu",
+                  "importance": 4,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "tools:tool:a",
+                      "command": "tool:a",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "tools:tool:b",
+                      "command": "tool:b",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                },
+                {
+                  "id": "pinned",
+                  "role": "buttons",
+                  "shed": false,
+                  "collapse": "menu",
+                  "importance": 5,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "pinned:pin:a",
+                      "command": "pin:a",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 5
+                    },
+                    {
+                      "kind": "command",
+                      "key": "pinned:pin:b",
+                      "command": "pin:b",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "normalize-same-command-two-groups",
+      "fn": "normalizeBar",
+      "args": [
+        {
+          "id": "b",
+          "sections": {
+            "start": [
+              {
+                "id": "g",
+                "items": [
+                  "a"
+                ]
+              }
+            ],
+            "end": [
+              {
+                "id": "h",
+                "items": [
+                  "a"
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "id": "b",
+          "sections": [
+            {
+              "name": "start",
+              "groups": [
+                {
+                  "id": "g",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "g:a",
+                      "command": "a",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "end",
+              "groups": [
+                {
+                  "id": "h",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "h:a",
+                      "command": "a",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "normalize-slot-and-command-same-name",
+      "fn": "normalizeBar",
+      "args": [
+        {
+          "id": "b",
+          "sections": {
+            "start": [
+              {
+                "id": "g",
+                "items": [
+                  "a",
+                  {
+                    "slot": "b",
+                    "terminal": "a"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "id": "b",
+          "sections": [
+            {
+              "name": "start",
+              "groups": [
+                {
+                  "id": "g",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "g:a",
+                      "command": "a",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "custom",
+                      "key": "g:b",
+                      "slot": "b",
+                      "variants": [
+                        "default"
+                      ],
+                      "terminal": "a",
+                      "importance": 3
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "normalize-slot-wins-over-command",
+      "fn": "normalizeBar",
+      "args": [
+        {
+          "id": "b",
+          "sections": {
+            "start": [
+              {
+                "id": "g",
+                "items": [
+                  {
+                    "slot": "s",
+                    "command": "c",
+                    "terminal": "t"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "id": "b",
+          "sections": [
+            {
+              "name": "start",
+              "groups": [
+                {
+                  "id": "g",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "custom",
+                      "key": "g:s",
+                      "slot": "s",
+                      "variants": [
+                        "default"
+                      ],
+                      "terminal": "t",
+                      "importance": 3
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "reject-duplicate-unit",
+      "fn": "normalizeBar",
+      "args": [
+        {
+          "id": "b",
+          "sections": {
+            "start": [
+              {
+                "id": "g",
+                "items": [
+                  "a",
+                  {
+                    "command": "a",
+                    "variants": [
+                      "label"
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "Error",
+            "message": "[ui-core] duplicate unit in bar: g:a"
+          }
+        }
+      }
+    },
+    {
+      "name": "reject-duplicate-unit-slot-vs-command",
+      "fn": "normalizeBar",
+      "args": [
+        {
+          "id": "b",
+          "sections": {
+            "start": [
+              {
+                "id": "g",
+                "items": [
+                  "zoom",
+                  {
+                    "slot": "zoom",
+                    "terminal": "z"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "Error",
+            "message": "[ui-core] duplicate unit in bar: g:zoom"
+          }
+        }
+      }
+    },
+    {
+      "name": "reject-duplicate-group-same-section",
+      "fn": "normalizeBar",
+      "args": [
+        {
+          "id": "b",
+          "sections": {
+            "start": [
+              {
+                "id": "g",
+                "items": [
+                  "a"
+                ]
+              },
+              {
+                "id": "g",
+                "items": [
+                  "b"
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "Error",
+            "message": "[ui-core] duplicate group in bar: g"
+          }
+        }
+      }
+    },
+    {
+      "name": "reject-duplicate-group-across-sections",
+      "fn": "normalizeBar",
+      "args": [
+        {
+          "id": "b",
+          "sections": {
+            "start": [
+              {
+                "id": "g",
+                "items": [
+                  "a"
+                ]
+              }
+            ],
+            "end": [
+              {
+                "id": "g",
+                "items": [
+                  "b"
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "Error",
+            "message": "[ui-core] duplicate group in bar: g"
+          }
+        }
+      }
+    },
+    {
+      "name": "reject-empty-command-ladder",
+      "fn": "normalizeBar",
+      "args": [
+        {
+          "id": "b",
+          "sections": {
+            "start": [
+              {
+                "id": "g",
+                "items": [
+                  {
+                    "command": "a",
+                    "variants": []
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "Error",
+            "message": "[ui-core] empty variant ladder: g:a"
+          }
+        }
+      }
+    },
+    {
+      "name": "reject-empty-custom-ladder",
+      "fn": "normalizeBar",
+      "args": [
+        {
+          "id": "b",
+          "sections": {
+            "center": [
+              {
+                "id": "g",
+                "items": [
+                  {
+                    "slot": "s",
+                    "variants": [],
+                    "terminal": "t"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "Error",
+            "message": "[ui-core] empty variant ladder: g:s"
+          }
+        }
+      }
+    },
+    {
+      "name": "reject-empty-ladder-before-duplicate",
+      "fn": "normalizeBar",
+      "args": [
+        {
+          "id": "b",
+          "sections": {
+            "start": [
+              {
+                "id": "g",
+                "items": [
+                  "a",
+                  {
+                    "command": "a",
+                    "variants": []
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "Error",
+            "message": "[ui-core] empty variant ladder: g:a"
+          }
+        }
+      }
+    },
+    {
+      "name": "reject-first-problem-in-order",
+      "fn": "normalizeBar",
+      "args": [
+        {
+          "id": "b",
+          "sections": {
+            "start": [
+              {
+                "id": "g",
+                "items": [
+                  "a",
+                  "a"
+                ]
+              }
+            ],
+            "center": [
+              {
+                "id": "g",
+                "items": [
+                  "b"
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "Error",
+            "message": "[ui-core] duplicate unit in bar: g:a"
+          }
+        }
+      }
+    },
+    {
+      "name": "reject-group-before-its-units",
+      "fn": "normalizeBar",
+      "args": [
+        {
+          "id": "b",
+          "sections": {
+            "start": [
+              {
+                "id": "g",
+                "items": [
+                  "a"
+                ]
+              }
+            ],
+            "end": [
+              {
+                "id": "g",
+                "items": [
+                  "a",
+                  "a"
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "Error",
+            "message": "[ui-core] duplicate group in bar: g"
+          }
+        }
+      }
+    },
+    {
+      "name": "normalize-unicode-keys",
+      "fn": "normalizeBar",
+      "args": [
+        {
+          "id": "b",
+          "sections": {
+            "start": [
+              {
+                "id": "grüppe",
+                "items": [
+                  "命令",
+                  {
+                    "slot": "🔍",
+                    "terminal": "søk"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "id": "b",
+          "sections": [
+            {
+              "name": "start",
+              "groups": [
+                {
+                  "id": "grüppe",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "grüppe:命令",
+                      "command": "命令",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "custom",
+                      "key": "grüppe:🔍",
+                      "slot": "🔍",
+                      "variants": [
+                        "default"
+                      ],
+                      "terminal": "søk",
+                      "importance": 3
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "filter-keeps-listed",
+      "fn": "filterBar",
+      "args": [
+        {
+          "id": "plain",
+          "sections": [
+            {
+              "name": "start",
+              "groups": [
+                {
+                  "id": "a",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "a:a1",
+                      "command": "a1",
+                      "variants": [
+                        "icon+label",
+                        "icon"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "a:a2",
+                      "command": "a2",
+                      "variants": [
+                        "icon+label",
+                        "label",
+                        "icon"
+                      ],
+                      "importance": 2
+                    },
+                    {
+                      "kind": "command",
+                      "key": "a:a3",
+                      "command": "a3",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                },
+                {
+                  "id": "b",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 4,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "b:b1",
+                      "command": "b1",
+                      "variants": [
+                        "icon+label",
+                        "icon"
+                      ],
+                      "importance": 4
+                    },
+                    {
+                      "kind": "command",
+                      "key": "b:b2",
+                      "command": "b2",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 1
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "end",
+              "groups": [
+                {
+                  "id": "c",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "c:c1",
+                      "command": "c1",
+                      "variants": [
+                        "icon+label",
+                        "icon"
+                      ],
+                      "importance": 5
+                    },
+                    {
+                      "kind": "command",
+                      "key": "c:c2",
+                      "command": "c2",
+                      "variants": [
+                        "icon+label",
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        [
+          "a:a1",
+          "a:a3",
+          "c:c2"
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "id": "plain",
+          "sections": [
+            {
+              "name": "start",
+              "groups": [
+                {
+                  "id": "a",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "a:a1",
+                      "command": "a1",
+                      "variants": [
+                        "icon+label",
+                        "icon"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "a:a3",
+                      "command": "a3",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                },
+                {
+                  "id": "b",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 4,
+                  "units": []
+                }
+              ]
+            },
+            {
+              "name": "end",
+              "groups": [
+                {
+                  "id": "c",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "c:c2",
+                      "command": "c2",
+                      "variants": [
+                        "icon+label",
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "filter-keeps-none",
+      "fn": "filterBar",
+      "args": [
+        {
+          "id": "collapse",
+          "sections": [
+            {
+              "name": "start",
+              "groups": [
+                {
+                  "id": "zoom",
+                  "labelKey": "zoom",
+                  "role": "buttons",
+                  "shed": false,
+                  "collapse": "menu",
+                  "importance": 2,
+                  "units": [
+                    {
+                      "kind": "custom",
+                      "key": "zoom:zoom-strip",
+                      "slot": "zoom-strip",
+                      "variants": [
+                        "inline",
+                        "narrow"
+                      ],
+                      "terminal": "zoom:menu",
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "zoom:zoom:in",
+                      "command": "zoom:in",
+                      "variants": [
+                        "icon+label",
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "center",
+              "groups": [
+                {
+                  "id": "tabs",
+                  "role": "tabs",
+                  "shed": true,
+                  "collapse": "select",
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "tabs:tab:1",
+                      "command": "tab:1",
+                      "variants": [
+                        "label"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "tabs:tab:2",
+                      "command": "tab:2",
+                      "variants": [
+                        "label"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "tabs:tab:3",
+                      "command": "tab:3",
+                      "variants": [
+                        "label"
+                      ],
+                      "importance": 1
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "end",
+              "groups": [
+                {
+                  "id": "tools",
+                  "role": "buttons",
+                  "shed": false,
+                  "collapse": "menu",
+                  "importance": 4,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "tools:tool:a",
+                      "command": "tool:a",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "tools:tool:b",
+                      "command": "tool:b",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                },
+                {
+                  "id": "pinned",
+                  "role": "buttons",
+                  "shed": false,
+                  "collapse": "menu",
+                  "importance": 5,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "pinned:pin:a",
+                      "command": "pin:a",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 5
+                    },
+                    {
+                      "kind": "command",
+                      "key": "pinned:pin:b",
+                      "command": "pin:b",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        []
+      ],
+      "outcome": {
+        "returned": {
+          "id": "collapse",
+          "sections": [
+            {
+              "name": "start",
+              "groups": [
+                {
+                  "id": "zoom",
+                  "labelKey": "zoom",
+                  "role": "buttons",
+                  "shed": false,
+                  "collapse": "menu",
+                  "importance": 2,
+                  "units": []
+                }
+              ]
+            },
+            {
+              "name": "center",
+              "groups": [
+                {
+                  "id": "tabs",
+                  "role": "tabs",
+                  "shed": true,
+                  "collapse": "select",
+                  "importance": 3,
+                  "units": []
+                }
+              ]
+            },
+            {
+              "name": "end",
+              "groups": [
+                {
+                  "id": "tools",
+                  "role": "buttons",
+                  "shed": false,
+                  "collapse": "menu",
+                  "importance": 4,
+                  "units": []
+                },
+                {
+                  "id": "pinned",
+                  "role": "buttons",
+                  "shed": false,
+                  "collapse": "menu",
+                  "importance": 5,
+                  "units": []
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "filter-keeps-all",
+      "fn": "filterBar",
+      "args": [
+        {
+          "id": "shed",
+          "sections": [
+            {
+              "name": "start",
+              "groups": [
+                {
+                  "id": "nav",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "nav:nav:back",
+                      "command": "nav:back",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 5
+                    },
+                    {
+                      "kind": "command",
+                      "key": "nav:nav:fwd",
+                      "command": "nav:fwd",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "center",
+              "groups": [
+                {
+                  "id": "modes",
+                  "labelKey": "modes",
+                  "role": "tabs",
+                  "shed": true,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "modes:mode:view",
+                      "command": "mode:view",
+                      "variants": [
+                        "label"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "modes:mode:annotate",
+                      "command": "mode:annotate",
+                      "variants": [
+                        "label"
+                      ],
+                      "importance": 4
+                    },
+                    {
+                      "kind": "command",
+                      "key": "modes:mode:shapes",
+                      "command": "mode:shapes",
+                      "variants": [
+                        "label"
+                      ],
+                      "importance": 2
+                    },
+                    {
+                      "kind": "command",
+                      "key": "modes:mode:form",
+                      "command": "mode:form",
+                      "variants": [
+                        "label"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "end",
+              "groups": [
+                {
+                  "id": "tail",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "tail:t1",
+                      "command": "t1",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "tail:t2",
+                      "command": "t2",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 2
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        [
+          "nav:nav:back",
+          "nav:nav:fwd",
+          "modes:mode:view",
+          "modes:mode:annotate",
+          "modes:mode:shapes",
+          "modes:mode:form",
+          "tail:t1",
+          "tail:t2"
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "id": "shed",
+          "sections": [
+            {
+              "name": "start",
+              "groups": [
+                {
+                  "id": "nav",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "nav:nav:back",
+                      "command": "nav:back",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 5
+                    },
+                    {
+                      "kind": "command",
+                      "key": "nav:nav:fwd",
+                      "command": "nav:fwd",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "center",
+              "groups": [
+                {
+                  "id": "modes",
+                  "labelKey": "modes",
+                  "role": "tabs",
+                  "shed": true,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "modes:mode:view",
+                      "command": "mode:view",
+                      "variants": [
+                        "label"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "modes:mode:annotate",
+                      "command": "mode:annotate",
+                      "variants": [
+                        "label"
+                      ],
+                      "importance": 4
+                    },
+                    {
+                      "kind": "command",
+                      "key": "modes:mode:shapes",
+                      "command": "mode:shapes",
+                      "variants": [
+                        "label"
+                      ],
+                      "importance": 2
+                    },
+                    {
+                      "kind": "command",
+                      "key": "modes:mode:form",
+                      "command": "mode:form",
+                      "variants": [
+                        "label"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "end",
+              "groups": [
+                {
+                  "id": "tail",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "tail:t1",
+                      "command": "t1",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "tail:t2",
+                      "command": "t2",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 2
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "filter-empty-bar",
+      "fn": "filterBar",
+      "args": [
+        {
+          "id": "x",
+          "sections": []
+        },
+        [
+          "a"
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "id": "x",
+          "sections": []
+        }
+      }
+    },
+    {
+      "name": "define-returns-input",
+      "fn": "defineChrome",
+      "args": [
+        {
+          "bars": {
+            "main": {
+              "id": "main",
+              "sections": {
+                "start": [
+                  {
+                    "id": "zoom",
+                    "items": [
+                      {
+                        "slot": "zoom-controls",
+                        "terminal": "zoom:menu"
+                      }
+                    ]
+                  }
+                ],
+                "center": [
+                  {
+                    "id": "modes",
+                    "role": "tabs",
+                    "items": [
+                      {
+                        "command": "mode:view",
+                        "variants": [
+                          "label"
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "end": [
+                  {
+                    "id": "panels",
+                    "items": [
+                      "panel:search",
+                      "panel:comment"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "modeBars": {
+            "mode:annotate": {
+              "id": "annotate",
+              "sections": {
+                "center": [
+                  {
+                    "id": "markup",
+                    "items": [
+                      "annotation:add-highlight",
+                      "annotation:add-ink"
+                    ]
+                  }
+                ]
+              }
+            },
+            "mode:shapes": {
+              "id": "shapes",
+              "sections": {
+                "start": [
+                  {
+                    "id": "shape",
+                    "items": [
+                      {
+                        "command": "shape:square",
+                        "variants": [
+                          "icon+label",
+                          "icon"
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "end": []
+              }
+            }
+          },
+          "menus": {
+            "document": {
+              "id": "document",
+              "sections": [
+                {
+                  "items": [
+                    "document:download",
+                    "document:print"
+                  ]
+                },
+                {
+                  "labelKey": "more",
+                  "items": [
+                    "document:close"
+                  ]
+                }
+              ]
+            },
+            "empty": {
+              "id": "empty",
+              "sections": []
+            }
+          },
+          "strips": {
+            "annotation": {
+              "id": "annotation-strip",
+              "sections": {
+                "center": [
+                  {
+                    "id": "actions",
+                    "items": [
+                      "annotation:delete",
+                      {
+                        "slot": "color",
+                        "terminal": "annotation:color"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "frame": {
+            "toolbar": "bottom",
+            "tabs": "multiple",
+            "header": false
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "bars": {
+            "main": {
+              "id": "main",
+              "sections": {
+                "start": [
+                  {
+                    "id": "zoom",
+                    "items": [
+                      {
+                        "slot": "zoom-controls",
+                        "terminal": "zoom:menu"
+                      }
+                    ]
+                  }
+                ],
+                "center": [
+                  {
+                    "id": "modes",
+                    "role": "tabs",
+                    "items": [
+                      {
+                        "command": "mode:view",
+                        "variants": [
+                          "label"
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "end": [
+                  {
+                    "id": "panels",
+                    "items": [
+                      "panel:search",
+                      "panel:comment"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "modeBars": {
+            "mode:annotate": {
+              "id": "annotate",
+              "sections": {
+                "center": [
+                  {
+                    "id": "markup",
+                    "items": [
+                      "annotation:add-highlight",
+                      "annotation:add-ink"
+                    ]
+                  }
+                ]
+              }
+            },
+            "mode:shapes": {
+              "id": "shapes",
+              "sections": {
+                "start": [
+                  {
+                    "id": "shape",
+                    "items": [
+                      {
+                        "command": "shape:square",
+                        "variants": [
+                          "icon+label",
+                          "icon"
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "end": []
+              }
+            }
+          },
+          "menus": {
+            "document": {
+              "id": "document",
+              "sections": [
+                {
+                  "items": [
+                    "document:download",
+                    "document:print"
+                  ]
+                },
+                {
+                  "labelKey": "more",
+                  "items": [
+                    "document:close"
+                  ]
+                }
+              ]
+            },
+            "empty": {
+              "id": "empty",
+              "sections": []
+            }
+          },
+          "strips": {
+            "annotation": {
+              "id": "annotation-strip",
+              "sections": {
+                "center": [
+                  {
+                    "id": "actions",
+                    "items": [
+                      "annotation:delete",
+                      {
+                        "slot": "color",
+                        "terminal": "annotation:color"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "frame": {
+            "toolbar": "bottom",
+            "tabs": "multiple",
+            "header": false
+          }
+        }
+      }
+    },
+    {
+      "name": "define-bars-only",
+      "fn": "defineChrome",
+      "args": [
+        {
+          "bars": {}
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "bars": {}
+        }
+      }
+    },
+    {
+      "name": "define-rejects-bar",
+      "fn": "defineChrome",
+      "args": [
+        {
+          "bars": {
+            "main": {
+              "id": "main",
+              "sections": {
+                "start": [
+                  {
+                    "id": "g",
+                    "items": [
+                      "a",
+                      "a"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "Error",
+            "message": "[ui-core] duplicate unit in bar: g:a"
+          }
+        }
+      }
+    },
+    {
+      "name": "define-rejects-mode-bar",
+      "fn": "defineChrome",
+      "args": [
+        {
+          "bars": {},
+          "modeBars": {
+            "mode:x": {
+              "id": "x",
+              "sections": {
+                "end": [
+                  {
+                    "id": "g",
+                    "items": [
+                      "a"
+                    ]
+                  },
+                  {
+                    "id": "g",
+                    "items": [
+                      "b"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "Error",
+            "message": "[ui-core] duplicate group in bar: g"
+          }
+        }
+      }
+    },
+    {
+      "name": "define-rejects-strip",
+      "fn": "defineChrome",
+      "args": [
+        {
+          "bars": {},
+          "strips": {
+            "s": {
+              "id": "s",
+              "sections": {
+                "center": [
+                  {
+                    "id": "g",
+                    "items": [
+                      {
+                        "command": "a",
+                        "variants": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "Error",
+            "message": "[ui-core] empty variant ladder: g:a"
+          }
+        }
+      }
+    },
+    {
+      "name": "define-ignores-menus",
+      "fn": "defineChrome",
+      "args": [
+        {
+          "bars": {},
+          "menus": {
+            "m": {
+              "id": "m",
+              "sections": [
+                {
+                  "items": [
+                    "a",
+                    "a"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "bars": {},
+          "menus": {
+            "m": {
+              "id": "m",
+              "sections": [
+                {
+                  "items": [
+                    "a",
+                    "a"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "define-first-bad-bar-in-key-order",
+      "fn": "defineChrome",
+      "args": [
+        {
+          "bars": {
+            "zeta": {
+              "id": "z",
+              "sections": {
+                "start": [
+                  {
+                    "id": "g",
+                    "items": [
+                      "z",
+                      "z"
+                    ]
+                  }
+                ]
+              }
+            },
+            "alpha": {
+              "id": "a",
+              "sections": {
+                "start": [
+                  {
+                    "id": "g",
+                    "items": [
+                      "a",
+                      "a"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "Error",
+            "message": "[ui-core] duplicate unit in bar: g:z"
+          }
+        }
+      }
+    },
+    {
+      "name": "define-integer-keys-first",
+      "fn": "defineChrome",
+      "args": [
+        {
+          "bars": {
+            "9": {
+              "id": "nine",
+              "sections": {
+                "start": [
+                  {
+                    "id": "g",
+                    "items": [
+                      "n",
+                      "n"
+                    ]
+                  }
+                ]
+              }
+            },
+            "10": {
+              "id": "ten",
+              "sections": {
+                "start": [
+                  {
+                    "id": "g",
+                    "items": [
+                      "t",
+                      "t"
+                    ]
+                  }
+                ]
+              }
+            },
+            "zeta": {
+              "id": "z",
+              "sections": {
+                "start": [
+                  {
+                    "id": "g",
+                    "items": [
+                      "z",
+                      "z"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "Error",
+            "message": "[ui-core] duplicate unit in bar: g:n"
+          }
+        }
+      }
+    },
+    {
+      "name": "define-bars-before-mode-bars",
+      "fn": "defineChrome",
+      "args": [
+        {
+          "strips": {
+            "s": {
+              "id": "s",
+              "sections": {
+                "start": [
+                  {
+                    "id": "g",
+                    "items": [
+                      "s",
+                      "s"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "modeBars": {
+            "m": {
+              "id": "m",
+              "sections": {
+                "start": [
+                  {
+                    "id": "g",
+                    "items": [
+                      "m",
+                      "m"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "bars": {
+            "b": {
+              "id": "b",
+              "sections": {
+                "start": [
+                  {
+                    "id": "g",
+                    "items": [
+                      "b",
+                      "b"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "Error",
+            "message": "[ui-core] duplicate unit in bar: g:b"
+          }
+        }
+      }
+    },
+    {
+      "name": "validate-all-known",
+      "fn": "validateChrome",
+      "args": [
+        {
+          "bars": {
+            "main": {
+              "id": "main",
+              "sections": {
+                "start": [
+                  {
+                    "id": "zoom",
+                    "items": [
+                      {
+                        "slot": "zoom-controls",
+                        "terminal": "zoom:menu"
+                      }
+                    ]
+                  }
+                ],
+                "center": [
+                  {
+                    "id": "modes",
+                    "role": "tabs",
+                    "items": [
+                      {
+                        "command": "mode:view",
+                        "variants": [
+                          "label"
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "end": [
+                  {
+                    "id": "panels",
+                    "items": [
+                      "panel:search",
+                      "panel:comment"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "modeBars": {
+            "mode:annotate": {
+              "id": "annotate",
+              "sections": {
+                "center": [
+                  {
+                    "id": "markup",
+                    "items": [
+                      "annotation:add-highlight",
+                      "annotation:add-ink"
+                    ]
+                  }
+                ]
+              }
+            },
+            "mode:shapes": {
+              "id": "shapes",
+              "sections": {
+                "start": [
+                  {
+                    "id": "shape",
+                    "items": [
+                      {
+                        "command": "shape:square",
+                        "variants": [
+                          "icon+label",
+                          "icon"
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "end": []
+              }
+            }
+          },
+          "menus": {
+            "document": {
+              "id": "document",
+              "sections": [
+                {
+                  "items": [
+                    "document:download",
+                    "document:print"
+                  ]
+                },
+                {
+                  "labelKey": "more",
+                  "items": [
+                    "document:close"
+                  ]
+                }
+              ]
+            },
+            "empty": {
+              "id": "empty",
+              "sections": []
+            }
+          },
+          "strips": {
+            "annotation": {
+              "id": "annotation-strip",
+              "sections": {
+                "center": [
+                  {
+                    "id": "actions",
+                    "items": [
+                      "annotation:delete",
+                      {
+                        "slot": "color",
+                        "terminal": "annotation:color"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "frame": {
+            "toolbar": "bottom",
+            "tabs": "multiple",
+            "header": false
+          }
+        },
+        {
+          "$set": [
+            "zoom:menu",
+            "mode:view",
+            "panel:search",
+            "panel:comment",
+            "annotation:add-highlight",
+            "annotation:add-ink",
+            "shape:square",
+            "document:download",
+            "document:print",
+            "document:close",
+            "annotation:delete",
+            "annotation:color"
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "validate-nothing-known",
+      "fn": "validateChrome",
+      "args": [
+        {
+          "bars": {
+            "main": {
+              "id": "main",
+              "sections": {
+                "start": [
+                  {
+                    "id": "zoom",
+                    "items": [
+                      {
+                        "slot": "zoom-controls",
+                        "terminal": "zoom:menu"
+                      }
+                    ]
+                  }
+                ],
+                "center": [
+                  {
+                    "id": "modes",
+                    "role": "tabs",
+                    "items": [
+                      {
+                        "command": "mode:view",
+                        "variants": [
+                          "label"
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "end": [
+                  {
+                    "id": "panels",
+                    "items": [
+                      "panel:search",
+                      "panel:comment"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "modeBars": {
+            "mode:annotate": {
+              "id": "annotate",
+              "sections": {
+                "center": [
+                  {
+                    "id": "markup",
+                    "items": [
+                      "annotation:add-highlight",
+                      "annotation:add-ink"
+                    ]
+                  }
+                ]
+              }
+            },
+            "mode:shapes": {
+              "id": "shapes",
+              "sections": {
+                "start": [
+                  {
+                    "id": "shape",
+                    "items": [
+                      {
+                        "command": "shape:square",
+                        "variants": [
+                          "icon+label",
+                          "icon"
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "end": []
+              }
+            }
+          },
+          "menus": {
+            "document": {
+              "id": "document",
+              "sections": [
+                {
+                  "items": [
+                    "document:download",
+                    "document:print"
+                  ]
+                },
+                {
+                  "labelKey": "more",
+                  "items": [
+                    "document:close"
+                  ]
+                }
+              ]
+            },
+            "empty": {
+              "id": "empty",
+              "sections": []
+            }
+          },
+          "strips": {
+            "annotation": {
+              "id": "annotation-strip",
+              "sections": {
+                "center": [
+                  {
+                    "id": "actions",
+                    "items": [
+                      "annotation:delete",
+                      {
+                        "slot": "color",
+                        "terminal": "annotation:color"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "frame": {
+            "toolbar": "bottom",
+            "tabs": "multiple",
+            "header": false
+          }
+        },
+        {
+          "$set": []
+        }
+      ],
+      "outcome": {
+        "returned": [
+          "bars.main: unknown command \"zoom:menu\"",
+          "bars.main: unknown command \"mode:view\"",
+          "bars.main: unknown command \"panel:search\"",
+          "bars.main: unknown command \"panel:comment\"",
+          "modeBars.mode:annotate: unknown command \"annotation:add-highlight\"",
+          "modeBars.mode:annotate: unknown command \"annotation:add-ink\"",
+          "modeBars.mode:shapes: unknown command \"shape:square\"",
+          "strips.annotation: unknown command \"annotation:delete\"",
+          "strips.annotation: unknown command \"annotation:color\"",
+          "menus.document: unknown command \"document:download\"",
+          "menus.document: unknown command \"document:print\"",
+          "menus.document: unknown command \"document:close\""
+        ]
+      }
+    },
+    {
+      "name": "validate-slots-are-not-commands",
+      "fn": "validateChrome",
+      "args": [
+        {
+          "bars": {
+            "main": {
+              "id": "main",
+              "sections": {
+                "start": [
+                  {
+                    "id": "zoom",
+                    "items": [
+                      {
+                        "slot": "zoom-controls",
+                        "terminal": "zoom:menu"
+                      }
+                    ]
+                  }
+                ],
+                "center": [
+                  {
+                    "id": "modes",
+                    "role": "tabs",
+                    "items": [
+                      {
+                        "command": "mode:view",
+                        "variants": [
+                          "label"
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "end": [
+                  {
+                    "id": "panels",
+                    "items": [
+                      "panel:search",
+                      "panel:comment"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "modeBars": {
+            "mode:annotate": {
+              "id": "annotate",
+              "sections": {
+                "center": [
+                  {
+                    "id": "markup",
+                    "items": [
+                      "annotation:add-highlight",
+                      "annotation:add-ink"
+                    ]
+                  }
+                ]
+              }
+            },
+            "mode:shapes": {
+              "id": "shapes",
+              "sections": {
+                "start": [
+                  {
+                    "id": "shape",
+                    "items": [
+                      {
+                        "command": "shape:square",
+                        "variants": [
+                          "icon+label",
+                          "icon"
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "end": []
+              }
+            }
+          },
+          "menus": {
+            "document": {
+              "id": "document",
+              "sections": [
+                {
+                  "items": [
+                    "document:download",
+                    "document:print"
+                  ]
+                },
+                {
+                  "labelKey": "more",
+                  "items": [
+                    "document:close"
+                  ]
+                }
+              ]
+            },
+            "empty": {
+              "id": "empty",
+              "sections": []
+            }
+          },
+          "strips": {
+            "annotation": {
+              "id": "annotation-strip",
+              "sections": {
+                "center": [
+                  {
+                    "id": "actions",
+                    "items": [
+                      "annotation:delete",
+                      {
+                        "slot": "color",
+                        "terminal": "annotation:color"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "frame": {
+            "toolbar": "bottom",
+            "tabs": "multiple",
+            "header": false
+          }
+        },
+        {
+          "$set": [
+            "zoom-controls",
+            "color",
+            "mode:view"
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": [
+          "bars.main: unknown command \"zoom:menu\"",
+          "bars.main: unknown command \"panel:search\"",
+          "bars.main: unknown command \"panel:comment\"",
+          "modeBars.mode:annotate: unknown command \"annotation:add-highlight\"",
+          "modeBars.mode:annotate: unknown command \"annotation:add-ink\"",
+          "modeBars.mode:shapes: unknown command \"shape:square\"",
+          "strips.annotation: unknown command \"annotation:delete\"",
+          "strips.annotation: unknown command \"annotation:color\"",
+          "menus.document: unknown command \"document:download\"",
+          "menus.document: unknown command \"document:print\"",
+          "menus.document: unknown command \"document:close\""
+        ]
+      }
+    },
+    {
+      "name": "validate-bars-only",
+      "fn": "validateChrome",
+      "args": [
+        {
+          "bars": {
+            "main": {
+              "id": "main",
+              "sections": {
+                "start": [
+                  {
+                    "id": "g",
+                    "items": [
+                      "a",
+                      "b"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "$set": [
+            "b"
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": [
+          "bars.main: unknown command \"a\""
+        ]
+      }
+    },
+    {
+      "name": "validate-empty-chrome",
+      "fn": "validateChrome",
+      "args": [
+        {
+          "bars": {}
+        },
+        {
+          "$set": []
+        }
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "validate-duplicates-report-each",
+      "fn": "validateChrome",
+      "args": [
+        {
+          "bars": {
+            "x": {
+              "id": "x",
+              "sections": {
+                "start": [
+                  {
+                    "id": "g",
+                    "items": [
+                      "a"
+                    ]
+                  }
+                ],
+                "end": [
+                  {
+                    "id": "h",
+                    "items": [
+                      "a"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "menus": {
+            "m": {
+              "id": "m",
+              "sections": [
+                {
+                  "items": [
+                    "a",
+                    "a"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "$set": []
+        }
+      ],
+      "outcome": {
+        "returned": [
+          "bars.x: unknown command \"a\"",
+          "bars.x: unknown command \"a\"",
+          "menus.m: unknown command \"a\"",
+          "menus.m: unknown command \"a\""
+        ]
+      }
+    },
+    {
+      "name": "validate-key-order",
+      "fn": "validateChrome",
+      "args": [
+        {
+          "bars": {
+            "1": {
+              "id": "one",
+              "sections": {
+                "start": [
+                  {
+                    "id": "g",
+                    "items": [
+                      "one"
+                    ]
+                  }
+                ]
+              }
+            },
+            "2": {
+              "id": "two",
+              "sections": {
+                "start": [
+                  {
+                    "id": "g",
+                    "items": [
+                      "two"
+                    ]
+                  }
+                ]
+              }
+            },
+            "zeta": {
+              "id": "z",
+              "sections": {
+                "start": [
+                  {
+                    "id": "g",
+                    "items": [
+                      "z"
+                    ]
+                  }
+                ]
+              }
+            },
+            "alpha": {
+              "id": "a",
+              "sections": {
+                "start": [
+                  {
+                    "id": "g",
+                    "items": [
+                      "a"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "$set": []
+        }
+      ],
+      "outcome": {
+        "returned": [
+          "bars.1: unknown command \"one\"",
+          "bars.2: unknown command \"two\"",
+          "bars.zeta: unknown command \"z\"",
+          "bars.alpha: unknown command \"a\""
+        ]
+      }
+    },
+    {
+      "name": "validate-throws-on-bad-bar",
+      "fn": "validateChrome",
+      "args": [
+        {
+          "bars": {
+            "ok": {
+              "id": "ok",
+              "sections": {
+                "start": [
+                  {
+                    "id": "g",
+                    "items": [
+                      "a"
+                    ]
+                  }
+                ]
+              }
+            },
+            "bad": {
+              "id": "bad",
+              "sections": {
+                "start": [
+                  {
+                    "id": "g",
+                    "items": [
+                      "b",
+                      "b"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "$set": []
+        }
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "Error",
+            "message": "[ui-core] duplicate unit in bar: g:b"
+          }
+        }
+      }
+    },
+    {
+      "name": "validate-throws-on-bad-strip",
+      "fn": "validateChrome",
+      "args": [
+        {
+          "bars": {},
+          "strips": {
+            "s": {
+              "id": "s",
+              "sections": {
+                "start": [
+                  {
+                    "id": "g",
+                    "items": [
+                      {
+                        "slot": "c",
+                        "variants": [],
+                        "terminal": "t"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "$set": []
+        }
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "Error",
+            "message": "[ui-core] empty variant ladder: g:c"
+          }
+        }
+      }
+    },
+    {
+      "name": "validate-unicode",
+      "fn": "validateChrome",
+      "args": [
+        {
+          "bars": {
+            "бар": {
+              "id": "b",
+              "sections": {
+                "start": [
+                  {
+                    "id": "g",
+                    "items": [
+                      "命令",
+                      "known"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "menus": {
+            "мен": {
+              "id": "m",
+              "sections": [
+                {
+                  "items": [
+                    "🔍"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "$set": [
+            "known"
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": [
+          "bars.бар: unknown command \"命令\"",
+          "menus.мен: unknown command \"🔍\""
+        ]
+      }
+    },
+    {
+      "name": "validate-case-sensitive",
+      "fn": "validateChrome",
+      "args": [
+        {
+          "bars": {
+            "b": {
+              "id": "b",
+              "sections": {
+                "start": [
+                  {
+                    "id": "g",
+                    "items": [
+                      "Doc:Print"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "$set": [
+            "doc:print"
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": [
+          "bars.b: unknown command \"Doc:Print\""
+        ]
+      }
+    }
+  ]
+}

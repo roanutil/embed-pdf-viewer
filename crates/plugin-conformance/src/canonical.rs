@@ -96,8 +96,13 @@ pub fn key(value: &Value) -> String {
                 }
             }
             Value::Array(items) => Value::Array(items.iter().map(norm).collect()),
+            // Sorted: with `preserve_order` a map prints in insertion order,
+            // and two argument objects that differ only in member order are
+            // the same arguments.
             Value::Object(map) => {
-                Value::Object(map.iter().map(|(k, v)| (k.clone(), norm(v))).collect())
+                let mut entries: Vec<_> = map.iter().map(|(k, v)| (k.clone(), norm(v))).collect();
+                entries.sort_by(|a, b| a.0.cmp(&b.0));
+                Value::Object(entries.into_iter().collect())
             }
             other => other.clone(),
         }

@@ -1,0 +1,1202 @@
+{
+  "schemaVersion": 1,
+  "kind": "function",
+  "describes": "packages/core/ui/src/helpers.ts: the chromeHelpers bundle.",
+  "cases": [
+    {
+      "name": "keys",
+      "fn": "keys",
+      "args": [],
+      "outcome": {
+        "returned": [
+          "addItem",
+          "removeItems",
+          "replaceItem",
+          "item",
+          "group",
+          "custom",
+          "defineChrome"
+        ]
+      }
+    },
+    {
+      "name": "identity",
+      "fn": "identity",
+      "args": [],
+      "outcome": {
+        "returned": {
+          "addItem": true,
+          "removeItems": true,
+          "replaceItem": true,
+          "item": true,
+          "group": true,
+          "custom": true,
+          "defineChrome": true
+        }
+      }
+    },
+    {
+      "name": "call-item",
+      "fn": "call",
+      "args": [
+        "item",
+        "x",
+        {
+          "importance": 1
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "command": "x",
+          "importance": 1
+        }
+      }
+    },
+    {
+      "name": "call-group",
+      "fn": "call",
+      "args": [
+        "group",
+        "g",
+        [
+          "x"
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "id": "g",
+          "items": [
+            "x"
+          ]
+        }
+      }
+    },
+    {
+      "name": "call-group-opts",
+      "fn": "call",
+      "args": [
+        "group",
+        "g",
+        {
+          "shed": true
+        },
+        [
+          "x"
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "id": "g",
+          "shed": true,
+          "items": [
+            "x"
+          ]
+        }
+      }
+    },
+    {
+      "name": "call-custom",
+      "fn": "call",
+      "args": [
+        "custom",
+        "s",
+        {
+          "terminal": "t"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "slot": "s",
+          "terminal": "t"
+        }
+      }
+    },
+    {
+      "name": "call-define",
+      "fn": "call",
+      "args": [
+        "defineChrome",
+        {
+          "bars": {
+            "main": {
+              "id": "main",
+              "sections": {
+                "start": [
+                  {
+                    "id": "zoom",
+                    "items": [
+                      {
+                        "slot": "zoom-controls",
+                        "terminal": "zoom:menu"
+                      }
+                    ]
+                  }
+                ],
+                "center": [
+                  {
+                    "id": "modes",
+                    "role": "tabs",
+                    "items": [
+                      {
+                        "command": "mode:view",
+                        "variants": [
+                          "label"
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "end": [
+                  {
+                    "id": "panels",
+                    "items": [
+                      "panel:search",
+                      "panel:comment"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "modeBars": {
+            "mode:annotate": {
+              "id": "annotate",
+              "sections": {
+                "center": [
+                  {
+                    "id": "markup",
+                    "items": [
+                      "annotation:add-highlight",
+                      "annotation:add-ink"
+                    ]
+                  }
+                ]
+              }
+            },
+            "mode:shapes": {
+              "id": "shapes",
+              "sections": {
+                "start": [
+                  {
+                    "id": "shape",
+                    "items": [
+                      {
+                        "command": "shape:square",
+                        "variants": [
+                          "icon+label",
+                          "icon"
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "end": []
+              }
+            }
+          },
+          "menus": {
+            "document": {
+              "id": "document",
+              "sections": [
+                {
+                  "items": [
+                    "document:download",
+                    "document:print"
+                  ]
+                },
+                {
+                  "labelKey": "more",
+                  "items": [
+                    "document:close"
+                  ]
+                }
+              ]
+            },
+            "empty": {
+              "id": "empty",
+              "sections": []
+            }
+          },
+          "strips": {
+            "annotation": {
+              "id": "annotation-strip",
+              "sections": {
+                "center": [
+                  {
+                    "id": "actions",
+                    "items": [
+                      "annotation:delete",
+                      {
+                        "slot": "color",
+                        "terminal": "annotation:color"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "frame": {
+            "toolbar": "bottom",
+            "tabs": "multiple",
+            "header": false
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "bars": {
+            "main": {
+              "id": "main",
+              "sections": {
+                "start": [
+                  {
+                    "id": "zoom",
+                    "items": [
+                      {
+                        "slot": "zoom-controls",
+                        "terminal": "zoom:menu"
+                      }
+                    ]
+                  }
+                ],
+                "center": [
+                  {
+                    "id": "modes",
+                    "role": "tabs",
+                    "items": [
+                      {
+                        "command": "mode:view",
+                        "variants": [
+                          "label"
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "end": [
+                  {
+                    "id": "panels",
+                    "items": [
+                      "panel:search",
+                      "panel:comment"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "modeBars": {
+            "mode:annotate": {
+              "id": "annotate",
+              "sections": {
+                "center": [
+                  {
+                    "id": "markup",
+                    "items": [
+                      "annotation:add-highlight",
+                      "annotation:add-ink"
+                    ]
+                  }
+                ]
+              }
+            },
+            "mode:shapes": {
+              "id": "shapes",
+              "sections": {
+                "start": [
+                  {
+                    "id": "shape",
+                    "items": [
+                      {
+                        "command": "shape:square",
+                        "variants": [
+                          "icon+label",
+                          "icon"
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "end": []
+              }
+            }
+          },
+          "menus": {
+            "document": {
+              "id": "document",
+              "sections": [
+                {
+                  "items": [
+                    "document:download",
+                    "document:print"
+                  ]
+                },
+                {
+                  "labelKey": "more",
+                  "items": [
+                    "document:close"
+                  ]
+                }
+              ]
+            },
+            "empty": {
+              "id": "empty",
+              "sections": []
+            }
+          },
+          "strips": {
+            "annotation": {
+              "id": "annotation-strip",
+              "sections": {
+                "center": [
+                  {
+                    "id": "actions",
+                    "items": [
+                      "annotation:delete",
+                      {
+                        "slot": "color",
+                        "terminal": "annotation:color"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "frame": {
+            "toolbar": "bottom",
+            "tabs": "multiple",
+            "header": false
+          }
+        }
+      }
+    },
+    {
+      "name": "call-define-rejects",
+      "fn": "call",
+      "args": [
+        "defineChrome",
+        {
+          "bars": {
+            "b": {
+              "id": "b",
+              "sections": {
+                "start": [
+                  {
+                    "id": "g",
+                    "items": [
+                      "a",
+                      "a"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "Error",
+            "message": "[ui-core] duplicate unit in bar: g:a"
+          }
+        }
+      }
+    },
+    {
+      "name": "call-add",
+      "fn": "call",
+      "args": [
+        "addItem",
+        {
+          "bars": {
+            "main": {
+              "id": "main",
+              "sections": {
+                "start": [
+                  {
+                    "id": "zoom",
+                    "items": [
+                      {
+                        "slot": "zoom-controls",
+                        "terminal": "zoom:menu"
+                      }
+                    ]
+                  }
+                ],
+                "center": [
+                  {
+                    "id": "modes",
+                    "role": "tabs",
+                    "items": [
+                      {
+                        "command": "mode:view",
+                        "variants": [
+                          "label"
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "end": [
+                  {
+                    "id": "panels",
+                    "items": [
+                      "panel:search",
+                      "panel:comment"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "modeBars": {
+            "mode:annotate": {
+              "id": "annotate",
+              "sections": {
+                "center": [
+                  {
+                    "id": "markup",
+                    "items": [
+                      "annotation:add-highlight",
+                      "annotation:add-ink"
+                    ]
+                  }
+                ]
+              }
+            },
+            "mode:shapes": {
+              "id": "shapes",
+              "sections": {
+                "start": [
+                  {
+                    "id": "shape",
+                    "items": [
+                      {
+                        "command": "shape:square",
+                        "variants": [
+                          "icon+label",
+                          "icon"
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "end": []
+              }
+            }
+          },
+          "menus": {
+            "document": {
+              "id": "document",
+              "sections": [
+                {
+                  "items": [
+                    "document:download",
+                    "document:print"
+                  ]
+                },
+                {
+                  "labelKey": "more",
+                  "items": [
+                    "document:close"
+                  ]
+                }
+              ]
+            },
+            "empty": {
+              "id": "empty",
+              "sections": []
+            }
+          },
+          "strips": {
+            "annotation": {
+              "id": "annotation-strip",
+              "sections": {
+                "center": [
+                  {
+                    "id": "actions",
+                    "items": [
+                      "annotation:delete",
+                      {
+                        "slot": "color",
+                        "terminal": "annotation:color"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "frame": {
+            "toolbar": "bottom",
+            "tabs": "multiple",
+            "header": false
+          }
+        },
+        {
+          "bar": "main",
+          "section": "end",
+          "group": "panels",
+          "item": "acme:send"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "bars": {
+            "main": {
+              "id": "main",
+              "sections": {
+                "start": [
+                  {
+                    "id": "zoom",
+                    "items": [
+                      {
+                        "slot": "zoom-controls",
+                        "terminal": "zoom:menu"
+                      }
+                    ]
+                  }
+                ],
+                "center": [
+                  {
+                    "id": "modes",
+                    "role": "tabs",
+                    "items": [
+                      {
+                        "command": "mode:view",
+                        "variants": [
+                          "label"
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "end": [
+                  {
+                    "id": "panels",
+                    "items": [
+                      "panel:search",
+                      "panel:comment",
+                      "acme:send"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "modeBars": {
+            "mode:annotate": {
+              "id": "annotate",
+              "sections": {
+                "center": [
+                  {
+                    "id": "markup",
+                    "items": [
+                      "annotation:add-highlight",
+                      "annotation:add-ink"
+                    ]
+                  }
+                ]
+              }
+            },
+            "mode:shapes": {
+              "id": "shapes",
+              "sections": {
+                "start": [
+                  {
+                    "id": "shape",
+                    "items": [
+                      {
+                        "command": "shape:square",
+                        "variants": [
+                          "icon+label",
+                          "icon"
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "end": []
+              }
+            }
+          },
+          "menus": {
+            "document": {
+              "id": "document",
+              "sections": [
+                {
+                  "items": [
+                    "document:download",
+                    "document:print"
+                  ]
+                },
+                {
+                  "labelKey": "more",
+                  "items": [
+                    "document:close"
+                  ]
+                }
+              ]
+            },
+            "empty": {
+              "id": "empty",
+              "sections": []
+            }
+          },
+          "strips": {
+            "annotation": {
+              "id": "annotation-strip",
+              "sections": {
+                "center": [
+                  {
+                    "id": "actions",
+                    "items": [
+                      "annotation:delete",
+                      {
+                        "slot": "color",
+                        "terminal": "annotation:color"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "frame": {
+            "toolbar": "bottom",
+            "tabs": "multiple",
+            "header": false
+          }
+        }
+      }
+    },
+    {
+      "name": "call-remove",
+      "fn": "call",
+      "args": [
+        "removeItems",
+        {
+          "bars": {
+            "main": {
+              "id": "main",
+              "sections": {
+                "start": [
+                  {
+                    "id": "zoom",
+                    "items": [
+                      {
+                        "slot": "zoom-controls",
+                        "terminal": "zoom:menu"
+                      }
+                    ]
+                  }
+                ],
+                "center": [
+                  {
+                    "id": "modes",
+                    "role": "tabs",
+                    "items": [
+                      {
+                        "command": "mode:view",
+                        "variants": [
+                          "label"
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "end": [
+                  {
+                    "id": "panels",
+                    "items": [
+                      "panel:search",
+                      "panel:comment"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "modeBars": {
+            "mode:annotate": {
+              "id": "annotate",
+              "sections": {
+                "center": [
+                  {
+                    "id": "markup",
+                    "items": [
+                      "annotation:add-highlight",
+                      "annotation:add-ink"
+                    ]
+                  }
+                ]
+              }
+            },
+            "mode:shapes": {
+              "id": "shapes",
+              "sections": {
+                "start": [
+                  {
+                    "id": "shape",
+                    "items": [
+                      {
+                        "command": "shape:square",
+                        "variants": [
+                          "icon+label",
+                          "icon"
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "end": []
+              }
+            }
+          },
+          "menus": {
+            "document": {
+              "id": "document",
+              "sections": [
+                {
+                  "items": [
+                    "document:download",
+                    "document:print"
+                  ]
+                },
+                {
+                  "labelKey": "more",
+                  "items": [
+                    "document:close"
+                  ]
+                }
+              ]
+            },
+            "empty": {
+              "id": "empty",
+              "sections": []
+            }
+          },
+          "strips": {
+            "annotation": {
+              "id": "annotation-strip",
+              "sections": {
+                "center": [
+                  {
+                    "id": "actions",
+                    "items": [
+                      "annotation:delete",
+                      {
+                        "slot": "color",
+                        "terminal": "annotation:color"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "frame": {
+            "toolbar": "bottom",
+            "tabs": "multiple",
+            "header": false
+          }
+        },
+        [
+          "panel:search"
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "bars": {
+            "main": {
+              "id": "main",
+              "sections": {
+                "start": [
+                  {
+                    "id": "zoom",
+                    "items": [
+                      {
+                        "slot": "zoom-controls",
+                        "terminal": "zoom:menu"
+                      }
+                    ]
+                  }
+                ],
+                "center": [
+                  {
+                    "id": "modes",
+                    "role": "tabs",
+                    "items": [
+                      {
+                        "command": "mode:view",
+                        "variants": [
+                          "label"
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "end": [
+                  {
+                    "id": "panels",
+                    "items": [
+                      "panel:comment"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "modeBars": {
+            "mode:annotate": {
+              "id": "annotate",
+              "sections": {
+                "center": [
+                  {
+                    "id": "markup",
+                    "items": [
+                      "annotation:add-highlight",
+                      "annotation:add-ink"
+                    ]
+                  }
+                ]
+              }
+            },
+            "mode:shapes": {
+              "id": "shapes",
+              "sections": {
+                "start": [
+                  {
+                    "id": "shape",
+                    "items": [
+                      {
+                        "command": "shape:square",
+                        "variants": [
+                          "icon+label",
+                          "icon"
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "menus": {
+            "document": {
+              "id": "document",
+              "sections": [
+                {
+                  "items": [
+                    "document:download",
+                    "document:print"
+                  ]
+                },
+                {
+                  "labelKey": "more",
+                  "items": [
+                    "document:close"
+                  ]
+                }
+              ]
+            },
+            "empty": {
+              "id": "empty",
+              "sections": []
+            }
+          },
+          "strips": {
+            "annotation": {
+              "id": "annotation-strip",
+              "sections": {
+                "center": [
+                  {
+                    "id": "actions",
+                    "items": [
+                      "annotation:delete",
+                      {
+                        "slot": "color",
+                        "terminal": "annotation:color"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "frame": {
+            "toolbar": "bottom",
+            "tabs": "multiple",
+            "header": false
+          }
+        }
+      }
+    },
+    {
+      "name": "call-replace",
+      "fn": "call",
+      "args": [
+        "replaceItem",
+        {
+          "bars": {
+            "main": {
+              "id": "main",
+              "sections": {
+                "start": [
+                  {
+                    "id": "zoom",
+                    "items": [
+                      {
+                        "slot": "zoom-controls",
+                        "terminal": "zoom:menu"
+                      }
+                    ]
+                  }
+                ],
+                "center": [
+                  {
+                    "id": "modes",
+                    "role": "tabs",
+                    "items": [
+                      {
+                        "command": "mode:view",
+                        "variants": [
+                          "label"
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "end": [
+                  {
+                    "id": "panels",
+                    "items": [
+                      "panel:search",
+                      "panel:comment"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "modeBars": {
+            "mode:annotate": {
+              "id": "annotate",
+              "sections": {
+                "center": [
+                  {
+                    "id": "markup",
+                    "items": [
+                      "annotation:add-highlight",
+                      "annotation:add-ink"
+                    ]
+                  }
+                ]
+              }
+            },
+            "mode:shapes": {
+              "id": "shapes",
+              "sections": {
+                "start": [
+                  {
+                    "id": "shape",
+                    "items": [
+                      {
+                        "command": "shape:square",
+                        "variants": [
+                          "icon+label",
+                          "icon"
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "end": []
+              }
+            }
+          },
+          "menus": {
+            "document": {
+              "id": "document",
+              "sections": [
+                {
+                  "items": [
+                    "document:download",
+                    "document:print"
+                  ]
+                },
+                {
+                  "labelKey": "more",
+                  "items": [
+                    "document:close"
+                  ]
+                }
+              ]
+            },
+            "empty": {
+              "id": "empty",
+              "sections": []
+            }
+          },
+          "strips": {
+            "annotation": {
+              "id": "annotation-strip",
+              "sections": {
+                "center": [
+                  {
+                    "id": "actions",
+                    "items": [
+                      "annotation:delete",
+                      {
+                        "slot": "color",
+                        "terminal": "annotation:color"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "frame": {
+            "toolbar": "bottom",
+            "tabs": "multiple",
+            "header": false
+          }
+        },
+        "panel:search",
+        "acme:search"
+      ],
+      "outcome": {
+        "returned": {
+          "bars": {
+            "main": {
+              "id": "main",
+              "sections": {
+                "start": [
+                  {
+                    "id": "zoom",
+                    "items": [
+                      {
+                        "slot": "zoom-controls",
+                        "terminal": "zoom:menu"
+                      }
+                    ]
+                  }
+                ],
+                "center": [
+                  {
+                    "id": "modes",
+                    "role": "tabs",
+                    "items": [
+                      {
+                        "command": "mode:view",
+                        "variants": [
+                          "label"
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "end": [
+                  {
+                    "id": "panels",
+                    "items": [
+                      "acme:search",
+                      "panel:comment"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "modeBars": {
+            "mode:annotate": {
+              "id": "annotate",
+              "sections": {
+                "center": [
+                  {
+                    "id": "markup",
+                    "items": [
+                      "annotation:add-highlight",
+                      "annotation:add-ink"
+                    ]
+                  }
+                ]
+              }
+            },
+            "mode:shapes": {
+              "id": "shapes",
+              "sections": {
+                "start": [
+                  {
+                    "id": "shape",
+                    "items": [
+                      {
+                        "command": "shape:square",
+                        "variants": [
+                          "icon+label",
+                          "icon"
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "end": []
+              }
+            }
+          },
+          "menus": {
+            "document": {
+              "id": "document",
+              "sections": [
+                {
+                  "items": [
+                    "document:download",
+                    "document:print"
+                  ]
+                },
+                {
+                  "labelKey": "more",
+                  "items": [
+                    "document:close"
+                  ]
+                }
+              ]
+            },
+            "empty": {
+              "id": "empty",
+              "sections": []
+            }
+          },
+          "strips": {
+            "annotation": {
+              "id": "annotation-strip",
+              "sections": {
+                "center": [
+                  {
+                    "id": "actions",
+                    "items": [
+                      "annotation:delete",
+                      {
+                        "slot": "color",
+                        "terminal": "annotation:color"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "frame": {
+            "toolbar": "bottom",
+            "tabs": "multiple",
+            "header": false
+          }
+        }
+      }
+    }
+  ]
+}

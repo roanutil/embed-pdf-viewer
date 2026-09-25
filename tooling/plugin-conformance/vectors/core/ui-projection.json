@@ -1,0 +1,5114 @@
+{
+  "schemaVersion": 1,
+  "kind": "function",
+  "describes": "packages/core/ui/src/projection.ts: overflow, shed and strip projections over table-driven resolvers.",
+  "cases": [
+    {
+      "name": "overflow-everything",
+      "fn": "projectOverflow",
+      "args": [
+        {
+          "id": "main",
+          "sections": [
+            {
+              "name": "start",
+              "groups": [
+                {
+                  "id": "workspace",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "workspace:panel:sidebar",
+                      "command": "panel:sidebar",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 5
+                    },
+                    {
+                      "kind": "command",
+                      "key": "workspace:page:settings",
+                      "command": "page:settings",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "center",
+              "groups": [
+                {
+                  "id": "zoom",
+                  "labelKey": "zoom.title",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "custom",
+                      "key": "zoom:zoom-controls",
+                      "slot": "zoom-controls",
+                      "variants": [
+                        "inline"
+                      ],
+                      "terminal": "zoom:menu",
+                      "importance": 3
+                    }
+                  ]
+                },
+                {
+                  "id": "tools",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "tools:pan:toggle",
+                      "command": "pan:toggle",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "tools:pointer:toggle",
+                      "command": "pointer:toggle",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                },
+                {
+                  "id": "modes",
+                  "labelKey": "modes",
+                  "role": "tabs",
+                  "shed": true,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "modes:mode:view",
+                      "command": "mode:view",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "modes:mode:annotate",
+                      "command": "mode:annotate",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "modes:mode:shapes",
+                      "command": "mode:shapes",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "end",
+              "groups": [
+                {
+                  "id": "empty",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "units": {
+            "$map": [
+              [
+                "workspace:panel:sidebar",
+                {
+                  "kind": "overflow"
+                }
+              ],
+              [
+                "workspace:page:settings",
+                {
+                  "kind": "overflow"
+                }
+              ],
+              [
+                "zoom:zoom-controls",
+                {
+                  "kind": "overflow"
+                }
+              ],
+              [
+                "tools:pan:toggle",
+                {
+                  "kind": "overflow"
+                }
+              ],
+              [
+                "tools:pointer:toggle",
+                {
+                  "kind": "overflow"
+                }
+              ],
+              [
+                "modes:mode:view",
+                {
+                  "kind": "overflow"
+                }
+              ],
+              [
+                "modes:mode:annotate",
+                {
+                  "kind": "overflow"
+                }
+              ],
+              [
+                "modes:mode:shapes",
+                {
+                  "kind": "overflow"
+                }
+              ]
+            ]
+          },
+          "groups": {
+            "$map": []
+          },
+          "hasOverflow": true,
+          "width": 0,
+          "complete": true
+        },
+        {
+          "page:settings": {
+            "menu": "page-settings"
+          },
+          "zoom:menu": {
+            "menu": "zoom"
+          },
+          "pan:toggle": {},
+          "pointer:toggle": null,
+          "mode:shapes": {
+            "menu": ""
+          },
+          "mode:annotate": {
+            "menu": "annotate-menu"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "rows": [
+              {
+                "type": "command",
+                "command": "panel:sidebar"
+              },
+              {
+                "type": "submenu",
+                "command": "page:settings",
+                "menu": "page-settings"
+              }
+            ]
+          },
+          {
+            "labelKey": "zoom.title",
+            "rows": [
+              {
+                "type": "submenu",
+                "command": "zoom:menu",
+                "menu": "zoom"
+              }
+            ]
+          },
+          {
+            "rows": [
+              {
+                "type": "command",
+                "command": "pan:toggle"
+              },
+              {
+                "type": "command",
+                "command": "pointer:toggle"
+              }
+            ]
+          },
+          {
+            "labelKey": "modes",
+            "role": "radio",
+            "rows": [
+              {
+                "type": "command",
+                "command": "mode:view"
+              },
+              {
+                "type": "submenu",
+                "command": "mode:annotate",
+                "menu": "annotate-menu"
+              },
+              {
+                "type": "command",
+                "command": "mode:shapes"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "overflow-nothing-resolves",
+      "fn": "projectOverflow",
+      "args": [
+        {
+          "id": "main",
+          "sections": [
+            {
+              "name": "start",
+              "groups": [
+                {
+                  "id": "workspace",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "workspace:panel:sidebar",
+                      "command": "panel:sidebar",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 5
+                    },
+                    {
+                      "kind": "command",
+                      "key": "workspace:page:settings",
+                      "command": "page:settings",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "center",
+              "groups": [
+                {
+                  "id": "zoom",
+                  "labelKey": "zoom.title",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "custom",
+                      "key": "zoom:zoom-controls",
+                      "slot": "zoom-controls",
+                      "variants": [
+                        "inline"
+                      ],
+                      "terminal": "zoom:menu",
+                      "importance": 3
+                    }
+                  ]
+                },
+                {
+                  "id": "tools",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "tools:pan:toggle",
+                      "command": "pan:toggle",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "tools:pointer:toggle",
+                      "command": "pointer:toggle",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                },
+                {
+                  "id": "modes",
+                  "labelKey": "modes",
+                  "role": "tabs",
+                  "shed": true,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "modes:mode:view",
+                      "command": "mode:view",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "modes:mode:annotate",
+                      "command": "mode:annotate",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "modes:mode:shapes",
+                      "command": "mode:shapes",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "end",
+              "groups": [
+                {
+                  "id": "empty",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "units": {
+            "$map": [
+              [
+                "workspace:panel:sidebar",
+                {
+                  "kind": "overflow"
+                }
+              ],
+              [
+                "workspace:page:settings",
+                {
+                  "kind": "overflow"
+                }
+              ],
+              [
+                "zoom:zoom-controls",
+                {
+                  "kind": "overflow"
+                }
+              ],
+              [
+                "tools:pan:toggle",
+                {
+                  "kind": "overflow"
+                }
+              ],
+              [
+                "tools:pointer:toggle",
+                {
+                  "kind": "overflow"
+                }
+              ],
+              [
+                "modes:mode:view",
+                {
+                  "kind": "overflow"
+                }
+              ],
+              [
+                "modes:mode:annotate",
+                {
+                  "kind": "overflow"
+                }
+              ],
+              [
+                "modes:mode:shapes",
+                {
+                  "kind": "overflow"
+                }
+              ]
+            ]
+          },
+          "groups": {
+            "$map": []
+          },
+          "hasOverflow": true,
+          "width": 0,
+          "complete": true
+        },
+        {}
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "rows": [
+              {
+                "type": "command",
+                "command": "panel:sidebar"
+              },
+              {
+                "type": "command",
+                "command": "page:settings"
+              }
+            ]
+          },
+          {
+            "labelKey": "zoom.title",
+            "rows": [
+              {
+                "type": "command",
+                "command": "zoom:menu"
+              }
+            ]
+          },
+          {
+            "rows": [
+              {
+                "type": "command",
+                "command": "pan:toggle"
+              },
+              {
+                "type": "command",
+                "command": "pointer:toggle"
+              }
+            ]
+          },
+          {
+            "labelKey": "modes",
+            "role": "radio",
+            "rows": [
+              {
+                "type": "command",
+                "command": "mode:view"
+              },
+              {
+                "type": "command",
+                "command": "mode:annotate"
+              },
+              {
+                "type": "command",
+                "command": "mode:shapes"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "overflow-empty-fit",
+      "fn": "projectOverflow",
+      "args": [
+        {
+          "id": "main",
+          "sections": [
+            {
+              "name": "start",
+              "groups": [
+                {
+                  "id": "workspace",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "workspace:panel:sidebar",
+                      "command": "panel:sidebar",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 5
+                    },
+                    {
+                      "kind": "command",
+                      "key": "workspace:page:settings",
+                      "command": "page:settings",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "center",
+              "groups": [
+                {
+                  "id": "zoom",
+                  "labelKey": "zoom.title",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "custom",
+                      "key": "zoom:zoom-controls",
+                      "slot": "zoom-controls",
+                      "variants": [
+                        "inline"
+                      ],
+                      "terminal": "zoom:menu",
+                      "importance": 3
+                    }
+                  ]
+                },
+                {
+                  "id": "tools",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "tools:pan:toggle",
+                      "command": "pan:toggle",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "tools:pointer:toggle",
+                      "command": "pointer:toggle",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                },
+                {
+                  "id": "modes",
+                  "labelKey": "modes",
+                  "role": "tabs",
+                  "shed": true,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "modes:mode:view",
+                      "command": "mode:view",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "modes:mode:annotate",
+                      "command": "mode:annotate",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "modes:mode:shapes",
+                      "command": "mode:shapes",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "end",
+              "groups": [
+                {
+                  "id": "empty",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "units": {
+            "$map": []
+          },
+          "groups": {
+            "$map": []
+          },
+          "hasOverflow": true,
+          "width": 0,
+          "complete": true
+        },
+        {
+          "page:settings": {
+            "menu": "page-settings"
+          },
+          "zoom:menu": {
+            "menu": "zoom"
+          },
+          "pan:toggle": {},
+          "pointer:toggle": null,
+          "mode:shapes": {
+            "menu": ""
+          },
+          "mode:annotate": {
+            "menu": "annotate-menu"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "overflow-ignores-shed",
+      "fn": "projectOverflow",
+      "args": [
+        {
+          "id": "main",
+          "sections": [
+            {
+              "name": "start",
+              "groups": [
+                {
+                  "id": "workspace",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "workspace:panel:sidebar",
+                      "command": "panel:sidebar",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 5
+                    },
+                    {
+                      "kind": "command",
+                      "key": "workspace:page:settings",
+                      "command": "page:settings",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "center",
+              "groups": [
+                {
+                  "id": "zoom",
+                  "labelKey": "zoom.title",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "custom",
+                      "key": "zoom:zoom-controls",
+                      "slot": "zoom-controls",
+                      "variants": [
+                        "inline"
+                      ],
+                      "terminal": "zoom:menu",
+                      "importance": 3
+                    }
+                  ]
+                },
+                {
+                  "id": "tools",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "tools:pan:toggle",
+                      "command": "pan:toggle",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "tools:pointer:toggle",
+                      "command": "pointer:toggle",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                },
+                {
+                  "id": "modes",
+                  "labelKey": "modes",
+                  "role": "tabs",
+                  "shed": true,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "modes:mode:view",
+                      "command": "mode:view",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "modes:mode:annotate",
+                      "command": "mode:annotate",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "modes:mode:shapes",
+                      "command": "mode:shapes",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "end",
+              "groups": [
+                {
+                  "id": "empty",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "units": {
+            "$map": [
+              [
+                "workspace:panel:sidebar",
+                {
+                  "kind": "shed"
+                }
+              ],
+              [
+                "workspace:page:settings",
+                {
+                  "kind": "shed"
+                }
+              ],
+              [
+                "zoom:zoom-controls",
+                {
+                  "kind": "shed"
+                }
+              ],
+              [
+                "tools:pan:toggle",
+                {
+                  "kind": "shed"
+                }
+              ],
+              [
+                "tools:pointer:toggle",
+                {
+                  "kind": "shed"
+                }
+              ],
+              [
+                "modes:mode:view",
+                {
+                  "kind": "shed"
+                }
+              ],
+              [
+                "modes:mode:annotate",
+                {
+                  "kind": "shed"
+                }
+              ],
+              [
+                "modes:mode:shapes",
+                {
+                  "kind": "shed"
+                }
+              ]
+            ]
+          },
+          "groups": {
+            "$map": []
+          },
+          "hasOverflow": true,
+          "width": 0,
+          "complete": true
+        },
+        {
+          "page:settings": {
+            "menu": "page-settings"
+          },
+          "zoom:menu": {
+            "menu": "zoom"
+          },
+          "pan:toggle": {},
+          "pointer:toggle": null,
+          "mode:shapes": {
+            "menu": ""
+          },
+          "mode:annotate": {
+            "menu": "annotate-menu"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "overflow-partial-groups",
+      "fn": "projectOverflow",
+      "args": [
+        {
+          "id": "main",
+          "sections": [
+            {
+              "name": "start",
+              "groups": [
+                {
+                  "id": "workspace",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "workspace:panel:sidebar",
+                      "command": "panel:sidebar",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 5
+                    },
+                    {
+                      "kind": "command",
+                      "key": "workspace:page:settings",
+                      "command": "page:settings",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "center",
+              "groups": [
+                {
+                  "id": "zoom",
+                  "labelKey": "zoom.title",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "custom",
+                      "key": "zoom:zoom-controls",
+                      "slot": "zoom-controls",
+                      "variants": [
+                        "inline"
+                      ],
+                      "terminal": "zoom:menu",
+                      "importance": 3
+                    }
+                  ]
+                },
+                {
+                  "id": "tools",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "tools:pan:toggle",
+                      "command": "pan:toggle",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "tools:pointer:toggle",
+                      "command": "pointer:toggle",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                },
+                {
+                  "id": "modes",
+                  "labelKey": "modes",
+                  "role": "tabs",
+                  "shed": true,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "modes:mode:view",
+                      "command": "mode:view",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "modes:mode:annotate",
+                      "command": "mode:annotate",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "modes:mode:shapes",
+                      "command": "mode:shapes",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "end",
+              "groups": [
+                {
+                  "id": "empty",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "units": {
+            "$map": [
+              [
+                "workspace:panel:sidebar",
+                {
+                  "kind": "variant",
+                  "variant": "icon"
+                }
+              ],
+              [
+                "workspace:page:settings",
+                {
+                  "kind": "overflow"
+                }
+              ],
+              [
+                "zoom:zoom-controls",
+                {
+                  "kind": "collapsed"
+                }
+              ],
+              [
+                "tools:pan:toggle",
+                {
+                  "kind": "variant",
+                  "variant": "icon"
+                }
+              ],
+              [
+                "tools:pointer:toggle",
+                {
+                  "kind": "overflow"
+                }
+              ],
+              [
+                "modes:mode:view",
+                {
+                  "kind": "shed"
+                }
+              ],
+              [
+                "modes:mode:annotate",
+                {
+                  "kind": "overflow"
+                }
+              ],
+              [
+                "modes:mode:shapes",
+                {
+                  "kind": "overflow"
+                }
+              ]
+            ]
+          },
+          "groups": {
+            "$map": []
+          },
+          "hasOverflow": true,
+          "width": 0,
+          "complete": true
+        },
+        {
+          "page:settings": {
+            "menu": "page-settings"
+          },
+          "zoom:menu": {
+            "menu": "zoom"
+          },
+          "pan:toggle": {},
+          "pointer:toggle": null,
+          "mode:shapes": {
+            "menu": ""
+          },
+          "mode:annotate": {
+            "menu": "annotate-menu"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "rows": [
+              {
+                "type": "submenu",
+                "command": "page:settings",
+                "menu": "page-settings"
+              }
+            ]
+          },
+          {
+            "rows": [
+              {
+                "type": "command",
+                "command": "pointer:toggle"
+              }
+            ]
+          },
+          {
+            "labelKey": "modes",
+            "role": "radio",
+            "rows": [
+              {
+                "type": "submenu",
+                "command": "mode:annotate",
+                "menu": "annotate-menu"
+              },
+              {
+                "type": "command",
+                "command": "mode:shapes"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "overflow-empty-bar",
+      "fn": "projectOverflow",
+      "args": [
+        {
+          "id": "x",
+          "sections": []
+        },
+        {
+          "units": {
+            "$map": []
+          },
+          "groups": {
+            "$map": []
+          },
+          "hasOverflow": true,
+          "width": 0,
+          "complete": true
+        },
+        {
+          "page:settings": {
+            "menu": "page-settings"
+          },
+          "zoom:menu": {
+            "menu": "zoom"
+          },
+          "pan:toggle": {},
+          "pointer:toggle": null,
+          "mode:shapes": {
+            "menu": ""
+          },
+          "mode:annotate": {
+            "menu": "annotate-menu"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "overflow-custom-by-terminal",
+      "fn": "projectOverflow",
+      "args": [
+        {
+          "id": "main",
+          "sections": [
+            {
+              "name": "start",
+              "groups": [
+                {
+                  "id": "workspace",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "workspace:panel:sidebar",
+                      "command": "panel:sidebar",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 5
+                    },
+                    {
+                      "kind": "command",
+                      "key": "workspace:page:settings",
+                      "command": "page:settings",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "center",
+              "groups": [
+                {
+                  "id": "zoom",
+                  "labelKey": "zoom.title",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "custom",
+                      "key": "zoom:zoom-controls",
+                      "slot": "zoom-controls",
+                      "variants": [
+                        "inline"
+                      ],
+                      "terminal": "zoom:menu",
+                      "importance": 3
+                    }
+                  ]
+                },
+                {
+                  "id": "tools",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "tools:pan:toggle",
+                      "command": "pan:toggle",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "tools:pointer:toggle",
+                      "command": "pointer:toggle",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                },
+                {
+                  "id": "modes",
+                  "labelKey": "modes",
+                  "role": "tabs",
+                  "shed": true,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "modes:mode:view",
+                      "command": "mode:view",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "modes:mode:annotate",
+                      "command": "mode:annotate",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "modes:mode:shapes",
+                      "command": "mode:shapes",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "end",
+              "groups": [
+                {
+                  "id": "empty",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "units": {
+            "$map": [
+              [
+                "zoom:zoom-controls",
+                {
+                  "kind": "overflow"
+                }
+              ]
+            ]
+          },
+          "groups": {
+            "$map": []
+          },
+          "hasOverflow": true,
+          "width": 0,
+          "complete": true
+        },
+        {
+          "zoom-controls": {
+            "menu": "not-this"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "labelKey": "zoom.title",
+            "rows": [
+              {
+                "type": "command",
+                "command": "zoom:menu"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "shed-rows",
+      "fn": "projectShed",
+      "args": [
+        {
+          "id": "modes",
+          "labelKey": "modes",
+          "role": "tabs",
+          "shed": true,
+          "importance": 3,
+          "units": [
+            {
+              "kind": "command",
+              "key": "modes:mode:view",
+              "command": "mode:view",
+              "variants": [
+                "icon"
+              ],
+              "importance": 3
+            },
+            {
+              "kind": "command",
+              "key": "modes:mode:annotate",
+              "command": "mode:annotate",
+              "variants": [
+                "icon"
+              ],
+              "importance": 3
+            },
+            {
+              "kind": "command",
+              "key": "modes:mode:shapes",
+              "command": "mode:shapes",
+              "variants": [
+                "icon"
+              ],
+              "importance": 3
+            }
+          ]
+        },
+        {
+          "units": {
+            "$map": [
+              [
+                "workspace:panel:sidebar",
+                {
+                  "kind": "shed"
+                }
+              ],
+              [
+                "workspace:page:settings",
+                {
+                  "kind": "shed"
+                }
+              ],
+              [
+                "zoom:zoom-controls",
+                {
+                  "kind": "shed"
+                }
+              ],
+              [
+                "tools:pan:toggle",
+                {
+                  "kind": "shed"
+                }
+              ],
+              [
+                "tools:pointer:toggle",
+                {
+                  "kind": "shed"
+                }
+              ],
+              [
+                "modes:mode:view",
+                {
+                  "kind": "shed"
+                }
+              ],
+              [
+                "modes:mode:annotate",
+                {
+                  "kind": "shed"
+                }
+              ],
+              [
+                "modes:mode:shapes",
+                {
+                  "kind": "shed"
+                }
+              ]
+            ]
+          },
+          "groups": {
+            "$map": []
+          },
+          "hasOverflow": true,
+          "width": 0,
+          "complete": true
+        },
+        {
+          "page:settings": {
+            "menu": "page-settings"
+          },
+          "zoom:menu": {
+            "menu": "zoom"
+          },
+          "pan:toggle": {},
+          "pointer:toggle": null,
+          "mode:shapes": {
+            "menu": ""
+          },
+          "mode:annotate": {
+            "menu": "annotate-menu"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "type": "command",
+            "command": "mode:view"
+          },
+          {
+            "type": "submenu",
+            "command": "mode:annotate",
+            "menu": "annotate-menu"
+          },
+          {
+            "type": "command",
+            "command": "mode:shapes"
+          }
+        ]
+      }
+    },
+    {
+      "name": "shed-ignores-overflow",
+      "fn": "projectShed",
+      "args": [
+        {
+          "id": "modes",
+          "labelKey": "modes",
+          "role": "tabs",
+          "shed": true,
+          "importance": 3,
+          "units": [
+            {
+              "kind": "command",
+              "key": "modes:mode:view",
+              "command": "mode:view",
+              "variants": [
+                "icon"
+              ],
+              "importance": 3
+            },
+            {
+              "kind": "command",
+              "key": "modes:mode:annotate",
+              "command": "mode:annotate",
+              "variants": [
+                "icon"
+              ],
+              "importance": 3
+            },
+            {
+              "kind": "command",
+              "key": "modes:mode:shapes",
+              "command": "mode:shapes",
+              "variants": [
+                "icon"
+              ],
+              "importance": 3
+            }
+          ]
+        },
+        {
+          "units": {
+            "$map": [
+              [
+                "workspace:panel:sidebar",
+                {
+                  "kind": "overflow"
+                }
+              ],
+              [
+                "workspace:page:settings",
+                {
+                  "kind": "overflow"
+                }
+              ],
+              [
+                "zoom:zoom-controls",
+                {
+                  "kind": "overflow"
+                }
+              ],
+              [
+                "tools:pan:toggle",
+                {
+                  "kind": "overflow"
+                }
+              ],
+              [
+                "tools:pointer:toggle",
+                {
+                  "kind": "overflow"
+                }
+              ],
+              [
+                "modes:mode:view",
+                {
+                  "kind": "overflow"
+                }
+              ],
+              [
+                "modes:mode:annotate",
+                {
+                  "kind": "overflow"
+                }
+              ],
+              [
+                "modes:mode:shapes",
+                {
+                  "kind": "overflow"
+                }
+              ]
+            ]
+          },
+          "groups": {
+            "$map": []
+          },
+          "hasOverflow": true,
+          "width": 0,
+          "complete": true
+        },
+        {
+          "page:settings": {
+            "menu": "page-settings"
+          },
+          "zoom:menu": {
+            "menu": "zoom"
+          },
+          "pan:toggle": {},
+          "pointer:toggle": null,
+          "mode:shapes": {
+            "menu": ""
+          },
+          "mode:annotate": {
+            "menu": "annotate-menu"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "shed-partial",
+      "fn": "projectShed",
+      "args": [
+        {
+          "id": "modes",
+          "labelKey": "modes",
+          "role": "tabs",
+          "shed": true,
+          "importance": 3,
+          "units": [
+            {
+              "kind": "command",
+              "key": "modes:mode:view",
+              "command": "mode:view",
+              "variants": [
+                "icon"
+              ],
+              "importance": 3
+            },
+            {
+              "kind": "command",
+              "key": "modes:mode:annotate",
+              "command": "mode:annotate",
+              "variants": [
+                "icon"
+              ],
+              "importance": 3
+            },
+            {
+              "kind": "command",
+              "key": "modes:mode:shapes",
+              "command": "mode:shapes",
+              "variants": [
+                "icon"
+              ],
+              "importance": 3
+            }
+          ]
+        },
+        {
+          "units": {
+            "$map": [
+              [
+                "modes:mode:shapes",
+                {
+                  "kind": "shed"
+                }
+              ],
+              [
+                "modes:mode:view",
+                {
+                  "kind": "variant",
+                  "variant": "icon"
+                }
+              ],
+              [
+                "modes:mode:annotate",
+                {
+                  "kind": "shed"
+                }
+              ]
+            ]
+          },
+          "groups": {
+            "$map": []
+          },
+          "hasOverflow": true,
+          "width": 0,
+          "complete": true
+        },
+        {
+          "page:settings": {
+            "menu": "page-settings"
+          },
+          "zoom:menu": {
+            "menu": "zoom"
+          },
+          "pan:toggle": {},
+          "pointer:toggle": null,
+          "mode:shapes": {
+            "menu": ""
+          },
+          "mode:annotate": {
+            "menu": "annotate-menu"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "type": "submenu",
+            "command": "mode:annotate",
+            "menu": "annotate-menu"
+          },
+          {
+            "type": "command",
+            "command": "mode:shapes"
+          }
+        ]
+      }
+    },
+    {
+      "name": "shed-empty-group",
+      "fn": "projectShed",
+      "args": [
+        {
+          "id": "empty",
+          "role": "buttons",
+          "shed": false,
+          "importance": 3,
+          "units": []
+        },
+        {
+          "units": {
+            "$map": [
+              [
+                "workspace:panel:sidebar",
+                {
+                  "kind": "shed"
+                }
+              ],
+              [
+                "workspace:page:settings",
+                {
+                  "kind": "shed"
+                }
+              ],
+              [
+                "zoom:zoom-controls",
+                {
+                  "kind": "shed"
+                }
+              ],
+              [
+                "tools:pan:toggle",
+                {
+                  "kind": "shed"
+                }
+              ],
+              [
+                "tools:pointer:toggle",
+                {
+                  "kind": "shed"
+                }
+              ],
+              [
+                "modes:mode:view",
+                {
+                  "kind": "shed"
+                }
+              ],
+              [
+                "modes:mode:annotate",
+                {
+                  "kind": "shed"
+                }
+              ],
+              [
+                "modes:mode:shapes",
+                {
+                  "kind": "shed"
+                }
+              ]
+            ]
+          },
+          "groups": {
+            "$map": []
+          },
+          "hasOverflow": true,
+          "width": 0,
+          "complete": true
+        },
+        {
+          "page:settings": {
+            "menu": "page-settings"
+          },
+          "zoom:menu": {
+            "menu": "zoom"
+          },
+          "pan:toggle": {},
+          "pointer:toggle": null,
+          "mode:shapes": {
+            "menu": ""
+          },
+          "mode:annotate": {
+            "menu": "annotate-menu"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "shed-custom-terminal",
+      "fn": "projectShed",
+      "args": [
+        {
+          "id": "zoom",
+          "labelKey": "zoom.title",
+          "role": "buttons",
+          "shed": false,
+          "importance": 3,
+          "units": [
+            {
+              "kind": "custom",
+              "key": "zoom:zoom-controls",
+              "slot": "zoom-controls",
+              "variants": [
+                "inline"
+              ],
+              "terminal": "zoom:menu",
+              "importance": 3
+            }
+          ]
+        },
+        {
+          "units": {
+            "$map": [
+              [
+                "workspace:panel:sidebar",
+                {
+                  "kind": "shed"
+                }
+              ],
+              [
+                "workspace:page:settings",
+                {
+                  "kind": "shed"
+                }
+              ],
+              [
+                "zoom:zoom-controls",
+                {
+                  "kind": "shed"
+                }
+              ],
+              [
+                "tools:pan:toggle",
+                {
+                  "kind": "shed"
+                }
+              ],
+              [
+                "tools:pointer:toggle",
+                {
+                  "kind": "shed"
+                }
+              ],
+              [
+                "modes:mode:view",
+                {
+                  "kind": "shed"
+                }
+              ],
+              [
+                "modes:mode:annotate",
+                {
+                  "kind": "shed"
+                }
+              ],
+              [
+                "modes:mode:shapes",
+                {
+                  "kind": "shed"
+                }
+              ]
+            ]
+          },
+          "groups": {
+            "$map": []
+          },
+          "hasOverflow": true,
+          "width": 0,
+          "complete": true
+        },
+        {
+          "page:settings": {
+            "menu": "page-settings"
+          },
+          "zoom:menu": {
+            "menu": "zoom"
+          },
+          "pan:toggle": {},
+          "pointer:toggle": null,
+          "mode:shapes": {
+            "menu": ""
+          },
+          "mode:annotate": {
+            "menu": "annotate-menu"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "type": "submenu",
+            "command": "zoom:menu",
+            "menu": "zoom"
+          }
+        ]
+      }
+    },
+    {
+      "name": "strip-all-visible",
+      "fn": "projectStrip",
+      "args": [
+        {
+          "id": "main",
+          "sections": [
+            {
+              "name": "start",
+              "groups": [
+                {
+                  "id": "workspace",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "workspace:panel:sidebar",
+                      "command": "panel:sidebar",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 5
+                    },
+                    {
+                      "kind": "command",
+                      "key": "workspace:page:settings",
+                      "command": "page:settings",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "center",
+              "groups": [
+                {
+                  "id": "zoom",
+                  "labelKey": "zoom.title",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "custom",
+                      "key": "zoom:zoom-controls",
+                      "slot": "zoom-controls",
+                      "variants": [
+                        "inline"
+                      ],
+                      "terminal": "zoom:menu",
+                      "importance": 3
+                    }
+                  ]
+                },
+                {
+                  "id": "tools",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "tools:pan:toggle",
+                      "command": "pan:toggle",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "tools:pointer:toggle",
+                      "command": "pointer:toggle",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                },
+                {
+                  "id": "modes",
+                  "labelKey": "modes",
+                  "role": "tabs",
+                  "shed": true,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "modes:mode:view",
+                      "command": "mode:view",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "modes:mode:annotate",
+                      "command": "mode:annotate",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "modes:mode:shapes",
+                      "command": "mode:shapes",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "end",
+              "groups": [
+                {
+                  "id": "empty",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": []
+                }
+              ]
+            }
+          ]
+        },
+        [
+          "panel:sidebar",
+          "page:settings",
+          "zoom:menu",
+          "pan:toggle",
+          "pointer:toggle",
+          "mode:view",
+          "mode:annotate",
+          "mode:shapes"
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "id": "workspace",
+            "commands": [
+              "panel:sidebar",
+              "page:settings"
+            ]
+          },
+          {
+            "id": "zoom",
+            "labelKey": "zoom.title",
+            "commands": [
+              "zoom:menu"
+            ]
+          },
+          {
+            "id": "tools",
+            "commands": [
+              "pan:toggle",
+              "pointer:toggle"
+            ]
+          },
+          {
+            "id": "modes",
+            "labelKey": "modes",
+            "commands": [
+              "mode:view",
+              "mode:annotate",
+              "mode:shapes"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "strip-none-visible",
+      "fn": "projectStrip",
+      "args": [
+        {
+          "id": "main",
+          "sections": [
+            {
+              "name": "start",
+              "groups": [
+                {
+                  "id": "workspace",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "workspace:panel:sidebar",
+                      "command": "panel:sidebar",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 5
+                    },
+                    {
+                      "kind": "command",
+                      "key": "workspace:page:settings",
+                      "command": "page:settings",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "center",
+              "groups": [
+                {
+                  "id": "zoom",
+                  "labelKey": "zoom.title",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "custom",
+                      "key": "zoom:zoom-controls",
+                      "slot": "zoom-controls",
+                      "variants": [
+                        "inline"
+                      ],
+                      "terminal": "zoom:menu",
+                      "importance": 3
+                    }
+                  ]
+                },
+                {
+                  "id": "tools",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "tools:pan:toggle",
+                      "command": "pan:toggle",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "tools:pointer:toggle",
+                      "command": "pointer:toggle",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                },
+                {
+                  "id": "modes",
+                  "labelKey": "modes",
+                  "role": "tabs",
+                  "shed": true,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "modes:mode:view",
+                      "command": "mode:view",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "modes:mode:annotate",
+                      "command": "mode:annotate",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "modes:mode:shapes",
+                      "command": "mode:shapes",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "end",
+              "groups": [
+                {
+                  "id": "empty",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": []
+                }
+              ]
+            }
+          ]
+        },
+        []
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "strip-some-visible",
+      "fn": "projectStrip",
+      "args": [
+        {
+          "id": "main",
+          "sections": [
+            {
+              "name": "start",
+              "groups": [
+                {
+                  "id": "workspace",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "workspace:panel:sidebar",
+                      "command": "panel:sidebar",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 5
+                    },
+                    {
+                      "kind": "command",
+                      "key": "workspace:page:settings",
+                      "command": "page:settings",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "center",
+              "groups": [
+                {
+                  "id": "zoom",
+                  "labelKey": "zoom.title",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "custom",
+                      "key": "zoom:zoom-controls",
+                      "slot": "zoom-controls",
+                      "variants": [
+                        "inline"
+                      ],
+                      "terminal": "zoom:menu",
+                      "importance": 3
+                    }
+                  ]
+                },
+                {
+                  "id": "tools",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "tools:pan:toggle",
+                      "command": "pan:toggle",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "tools:pointer:toggle",
+                      "command": "pointer:toggle",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                },
+                {
+                  "id": "modes",
+                  "labelKey": "modes",
+                  "role": "tabs",
+                  "shed": true,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "modes:mode:view",
+                      "command": "mode:view",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "modes:mode:annotate",
+                      "command": "mode:annotate",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "modes:mode:shapes",
+                      "command": "mode:shapes",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "end",
+              "groups": [
+                {
+                  "id": "empty",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": []
+                }
+              ]
+            }
+          ]
+        },
+        [
+          "page:settings",
+          "mode:shapes",
+          "mode:view"
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "id": "workspace",
+            "commands": [
+              "page:settings"
+            ]
+          },
+          {
+            "id": "modes",
+            "labelKey": "modes",
+            "commands": [
+              "mode:view",
+              "mode:shapes"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "strip-custom-slot-is-not-its-command",
+      "fn": "projectStrip",
+      "args": [
+        {
+          "id": "main",
+          "sections": [
+            {
+              "name": "start",
+              "groups": [
+                {
+                  "id": "workspace",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "workspace:panel:sidebar",
+                      "command": "panel:sidebar",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 5
+                    },
+                    {
+                      "kind": "command",
+                      "key": "workspace:page:settings",
+                      "command": "page:settings",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "center",
+              "groups": [
+                {
+                  "id": "zoom",
+                  "labelKey": "zoom.title",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "custom",
+                      "key": "zoom:zoom-controls",
+                      "slot": "zoom-controls",
+                      "variants": [
+                        "inline"
+                      ],
+                      "terminal": "zoom:menu",
+                      "importance": 3
+                    }
+                  ]
+                },
+                {
+                  "id": "tools",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "tools:pan:toggle",
+                      "command": "pan:toggle",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "tools:pointer:toggle",
+                      "command": "pointer:toggle",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                },
+                {
+                  "id": "modes",
+                  "labelKey": "modes",
+                  "role": "tabs",
+                  "shed": true,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "modes:mode:view",
+                      "command": "mode:view",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "modes:mode:annotate",
+                      "command": "mode:annotate",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "modes:mode:shapes",
+                      "command": "mode:shapes",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "end",
+              "groups": [
+                {
+                  "id": "empty",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": []
+                }
+              ]
+            }
+          ]
+        },
+        [
+          "zoom-controls"
+        ]
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "strip-custom-terminal",
+      "fn": "projectStrip",
+      "args": [
+        {
+          "id": "main",
+          "sections": [
+            {
+              "name": "start",
+              "groups": [
+                {
+                  "id": "workspace",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "workspace:panel:sidebar",
+                      "command": "panel:sidebar",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 5
+                    },
+                    {
+                      "kind": "command",
+                      "key": "workspace:page:settings",
+                      "command": "page:settings",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "center",
+              "groups": [
+                {
+                  "id": "zoom",
+                  "labelKey": "zoom.title",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "custom",
+                      "key": "zoom:zoom-controls",
+                      "slot": "zoom-controls",
+                      "variants": [
+                        "inline"
+                      ],
+                      "terminal": "zoom:menu",
+                      "importance": 3
+                    }
+                  ]
+                },
+                {
+                  "id": "tools",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "tools:pan:toggle",
+                      "command": "pan:toggle",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "tools:pointer:toggle",
+                      "command": "pointer:toggle",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                },
+                {
+                  "id": "modes",
+                  "labelKey": "modes",
+                  "role": "tabs",
+                  "shed": true,
+                  "importance": 3,
+                  "units": [
+                    {
+                      "kind": "command",
+                      "key": "modes:mode:view",
+                      "command": "mode:view",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "modes:mode:annotate",
+                      "command": "mode:annotate",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    },
+                    {
+                      "kind": "command",
+                      "key": "modes:mode:shapes",
+                      "command": "mode:shapes",
+                      "variants": [
+                        "icon"
+                      ],
+                      "importance": 3
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "end",
+              "groups": [
+                {
+                  "id": "empty",
+                  "role": "buttons",
+                  "shed": false,
+                  "importance": 3,
+                  "units": []
+                }
+              ]
+            }
+          ]
+        },
+        [
+          "zoom:menu"
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "id": "zoom",
+            "labelKey": "zoom.title",
+            "commands": [
+              "zoom:menu"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "strip-empty-bar",
+      "fn": "projectStrip",
+      "args": [
+        {
+          "id": "x",
+          "sections": []
+        },
+        [
+          "a"
+        ]
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "pipeline@0",
+      "fn": "solveAndProject",
+      "args": [
+        {
+          "id": "main",
+          "sections": {
+            "start": [
+              {
+                "id": "workspace",
+                "items": [
+                  {
+                    "command": "panel:sidebar",
+                    "importance": 5
+                  },
+                  "page:settings"
+                ]
+              }
+            ],
+            "center": [
+              {
+                "id": "zoom",
+                "labelKey": "zoom.title",
+                "collapse": "menu",
+                "importance": 2,
+                "items": [
+                  {
+                    "slot": "zoom-controls",
+                    "variants": [
+                      "inline",
+                      "narrow"
+                    ],
+                    "terminal": "zoom:menu"
+                  }
+                ]
+              },
+              {
+                "id": "tools",
+                "items": [
+                  "pan:toggle",
+                  "pointer:toggle"
+                ]
+              },
+              {
+                "id": "modes",
+                "role": "tabs",
+                "shed": true,
+                "labelKey": "modes",
+                "items": [
+                  "mode:view",
+                  "mode:annotate",
+                  {
+                    "command": "mode:shapes",
+                    "importance": 2
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "variants": {
+            "icon+label": 100,
+            "icon": 40,
+            "label": 80,
+            "default": 60,
+            "wide": 120,
+            "narrow": 30,
+            "inline": 150
+          },
+          "collapsedDefault": 50,
+          "triggerDefault": 36,
+          "overflowTrigger": 40,
+          "gap": 10,
+          "separator": 20
+        },
+        0,
+        {
+          "page:settings": {
+            "menu": "page-settings"
+          },
+          "zoom:menu": {
+            "menu": "zoom"
+          },
+          "pan:toggle": {},
+          "pointer:toggle": null,
+          "mode:shapes": {
+            "menu": ""
+          },
+          "mode:annotate": {
+            "menu": "annotate-menu"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "fit": {
+            "units": {
+              "$map": [
+                [
+                  "workspace:panel:sidebar",
+                  {
+                    "kind": "variant",
+                    "variant": "icon"
+                  }
+                ],
+                [
+                  "workspace:page:settings",
+                  {
+                    "kind": "overflow"
+                  }
+                ],
+                [
+                  "zoom:zoom-controls",
+                  {
+                    "kind": "overflow"
+                  }
+                ],
+                [
+                  "tools:pan:toggle",
+                  {
+                    "kind": "overflow"
+                  }
+                ],
+                [
+                  "tools:pointer:toggle",
+                  {
+                    "kind": "overflow"
+                  }
+                ],
+                [
+                  "modes:mode:view",
+                  {
+                    "kind": "overflow"
+                  }
+                ],
+                [
+                  "modes:mode:annotate",
+                  {
+                    "kind": "overflow"
+                  }
+                ],
+                [
+                  "modes:mode:shapes",
+                  {
+                    "kind": "overflow"
+                  }
+                ]
+              ]
+            },
+            "groups": {
+              "$map": [
+                [
+                  "workspace",
+                  {
+                    "shedCount": 0,
+                    "collapsed": false,
+                    "overflowed": false
+                  }
+                ],
+                [
+                  "zoom",
+                  {
+                    "shedCount": 0,
+                    "collapsed": true,
+                    "overflowed": true
+                  }
+                ],
+                [
+                  "tools",
+                  {
+                    "shedCount": 0,
+                    "collapsed": false,
+                    "overflowed": true
+                  }
+                ],
+                [
+                  "modes",
+                  {
+                    "shedCount": 0,
+                    "collapsed": false,
+                    "overflowed": true
+                  }
+                ]
+              ]
+            },
+            "hasOverflow": true,
+            "width": 90,
+            "complete": true
+          },
+          "overflow": [
+            {
+              "rows": [
+                {
+                  "type": "submenu",
+                  "command": "page:settings",
+                  "menu": "page-settings"
+                }
+              ]
+            },
+            {
+              "labelKey": "zoom.title",
+              "rows": [
+                {
+                  "type": "submenu",
+                  "command": "zoom:menu",
+                  "menu": "zoom"
+                }
+              ]
+            },
+            {
+              "rows": [
+                {
+                  "type": "command",
+                  "command": "pan:toggle"
+                },
+                {
+                  "type": "command",
+                  "command": "pointer:toggle"
+                }
+              ]
+            },
+            {
+              "labelKey": "modes",
+              "role": "radio",
+              "rows": [
+                {
+                  "type": "command",
+                  "command": "mode:view"
+                },
+                {
+                  "type": "submenu",
+                  "command": "mode:annotate",
+                  "menu": "annotate-menu"
+                },
+                {
+                  "type": "command",
+                  "command": "mode:shapes"
+                }
+              ]
+            }
+          ],
+          "shed": {}
+        }
+      }
+    },
+    {
+      "name": "pipeline@40",
+      "fn": "solveAndProject",
+      "args": [
+        {
+          "id": "main",
+          "sections": {
+            "start": [
+              {
+                "id": "workspace",
+                "items": [
+                  {
+                    "command": "panel:sidebar",
+                    "importance": 5
+                  },
+                  "page:settings"
+                ]
+              }
+            ],
+            "center": [
+              {
+                "id": "zoom",
+                "labelKey": "zoom.title",
+                "collapse": "menu",
+                "importance": 2,
+                "items": [
+                  {
+                    "slot": "zoom-controls",
+                    "variants": [
+                      "inline",
+                      "narrow"
+                    ],
+                    "terminal": "zoom:menu"
+                  }
+                ]
+              },
+              {
+                "id": "tools",
+                "items": [
+                  "pan:toggle",
+                  "pointer:toggle"
+                ]
+              },
+              {
+                "id": "modes",
+                "role": "tabs",
+                "shed": true,
+                "labelKey": "modes",
+                "items": [
+                  "mode:view",
+                  "mode:annotate",
+                  {
+                    "command": "mode:shapes",
+                    "importance": 2
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "variants": {
+            "icon+label": 100,
+            "icon": 40,
+            "label": 80,
+            "default": 60,
+            "wide": 120,
+            "narrow": 30,
+            "inline": 150
+          },
+          "collapsedDefault": 50,
+          "triggerDefault": 36,
+          "overflowTrigger": 40,
+          "gap": 10,
+          "separator": 20
+        },
+        40,
+        {
+          "page:settings": {
+            "menu": "page-settings"
+          },
+          "zoom:menu": {
+            "menu": "zoom"
+          },
+          "pan:toggle": {},
+          "pointer:toggle": null,
+          "mode:shapes": {
+            "menu": ""
+          },
+          "mode:annotate": {
+            "menu": "annotate-menu"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "fit": {
+            "units": {
+              "$map": [
+                [
+                  "workspace:panel:sidebar",
+                  {
+                    "kind": "variant",
+                    "variant": "icon"
+                  }
+                ],
+                [
+                  "workspace:page:settings",
+                  {
+                    "kind": "overflow"
+                  }
+                ],
+                [
+                  "zoom:zoom-controls",
+                  {
+                    "kind": "overflow"
+                  }
+                ],
+                [
+                  "tools:pan:toggle",
+                  {
+                    "kind": "overflow"
+                  }
+                ],
+                [
+                  "tools:pointer:toggle",
+                  {
+                    "kind": "overflow"
+                  }
+                ],
+                [
+                  "modes:mode:view",
+                  {
+                    "kind": "overflow"
+                  }
+                ],
+                [
+                  "modes:mode:annotate",
+                  {
+                    "kind": "overflow"
+                  }
+                ],
+                [
+                  "modes:mode:shapes",
+                  {
+                    "kind": "overflow"
+                  }
+                ]
+              ]
+            },
+            "groups": {
+              "$map": [
+                [
+                  "workspace",
+                  {
+                    "shedCount": 0,
+                    "collapsed": false,
+                    "overflowed": false
+                  }
+                ],
+                [
+                  "zoom",
+                  {
+                    "shedCount": 0,
+                    "collapsed": true,
+                    "overflowed": true
+                  }
+                ],
+                [
+                  "tools",
+                  {
+                    "shedCount": 0,
+                    "collapsed": false,
+                    "overflowed": true
+                  }
+                ],
+                [
+                  "modes",
+                  {
+                    "shedCount": 0,
+                    "collapsed": false,
+                    "overflowed": true
+                  }
+                ]
+              ]
+            },
+            "hasOverflow": true,
+            "width": 90,
+            "complete": true
+          },
+          "overflow": [
+            {
+              "rows": [
+                {
+                  "type": "submenu",
+                  "command": "page:settings",
+                  "menu": "page-settings"
+                }
+              ]
+            },
+            {
+              "labelKey": "zoom.title",
+              "rows": [
+                {
+                  "type": "submenu",
+                  "command": "zoom:menu",
+                  "menu": "zoom"
+                }
+              ]
+            },
+            {
+              "rows": [
+                {
+                  "type": "command",
+                  "command": "pan:toggle"
+                },
+                {
+                  "type": "command",
+                  "command": "pointer:toggle"
+                }
+              ]
+            },
+            {
+              "labelKey": "modes",
+              "role": "radio",
+              "rows": [
+                {
+                  "type": "command",
+                  "command": "mode:view"
+                },
+                {
+                  "type": "submenu",
+                  "command": "mode:annotate",
+                  "menu": "annotate-menu"
+                },
+                {
+                  "type": "command",
+                  "command": "mode:shapes"
+                }
+              ]
+            }
+          ],
+          "shed": {}
+        }
+      }
+    },
+    {
+      "name": "pipeline@90",
+      "fn": "solveAndProject",
+      "args": [
+        {
+          "id": "main",
+          "sections": {
+            "start": [
+              {
+                "id": "workspace",
+                "items": [
+                  {
+                    "command": "panel:sidebar",
+                    "importance": 5
+                  },
+                  "page:settings"
+                ]
+              }
+            ],
+            "center": [
+              {
+                "id": "zoom",
+                "labelKey": "zoom.title",
+                "collapse": "menu",
+                "importance": 2,
+                "items": [
+                  {
+                    "slot": "zoom-controls",
+                    "variants": [
+                      "inline",
+                      "narrow"
+                    ],
+                    "terminal": "zoom:menu"
+                  }
+                ]
+              },
+              {
+                "id": "tools",
+                "items": [
+                  "pan:toggle",
+                  "pointer:toggle"
+                ]
+              },
+              {
+                "id": "modes",
+                "role": "tabs",
+                "shed": true,
+                "labelKey": "modes",
+                "items": [
+                  "mode:view",
+                  "mode:annotate",
+                  {
+                    "command": "mode:shapes",
+                    "importance": 2
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "variants": {
+            "icon+label": 100,
+            "icon": 40,
+            "label": 80,
+            "default": 60,
+            "wide": 120,
+            "narrow": 30,
+            "inline": 150
+          },
+          "collapsedDefault": 50,
+          "triggerDefault": 36,
+          "overflowTrigger": 40,
+          "gap": 10,
+          "separator": 20
+        },
+        90,
+        {
+          "page:settings": {
+            "menu": "page-settings"
+          },
+          "zoom:menu": {
+            "menu": "zoom"
+          },
+          "pan:toggle": {},
+          "pointer:toggle": null,
+          "mode:shapes": {
+            "menu": ""
+          },
+          "mode:annotate": {
+            "menu": "annotate-menu"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "fit": {
+            "units": {
+              "$map": [
+                [
+                  "workspace:panel:sidebar",
+                  {
+                    "kind": "variant",
+                    "variant": "icon"
+                  }
+                ],
+                [
+                  "workspace:page:settings",
+                  {
+                    "kind": "overflow"
+                  }
+                ],
+                [
+                  "zoom:zoom-controls",
+                  {
+                    "kind": "overflow"
+                  }
+                ],
+                [
+                  "tools:pan:toggle",
+                  {
+                    "kind": "overflow"
+                  }
+                ],
+                [
+                  "tools:pointer:toggle",
+                  {
+                    "kind": "overflow"
+                  }
+                ],
+                [
+                  "modes:mode:view",
+                  {
+                    "kind": "overflow"
+                  }
+                ],
+                [
+                  "modes:mode:annotate",
+                  {
+                    "kind": "overflow"
+                  }
+                ],
+                [
+                  "modes:mode:shapes",
+                  {
+                    "kind": "overflow"
+                  }
+                ]
+              ]
+            },
+            "groups": {
+              "$map": [
+                [
+                  "workspace",
+                  {
+                    "shedCount": 0,
+                    "collapsed": false,
+                    "overflowed": false
+                  }
+                ],
+                [
+                  "zoom",
+                  {
+                    "shedCount": 0,
+                    "collapsed": true,
+                    "overflowed": true
+                  }
+                ],
+                [
+                  "tools",
+                  {
+                    "shedCount": 0,
+                    "collapsed": false,
+                    "overflowed": true
+                  }
+                ],
+                [
+                  "modes",
+                  {
+                    "shedCount": 0,
+                    "collapsed": false,
+                    "overflowed": true
+                  }
+                ]
+              ]
+            },
+            "hasOverflow": true,
+            "width": 90,
+            "complete": true
+          },
+          "overflow": [
+            {
+              "rows": [
+                {
+                  "type": "submenu",
+                  "command": "page:settings",
+                  "menu": "page-settings"
+                }
+              ]
+            },
+            {
+              "labelKey": "zoom.title",
+              "rows": [
+                {
+                  "type": "submenu",
+                  "command": "zoom:menu",
+                  "menu": "zoom"
+                }
+              ]
+            },
+            {
+              "rows": [
+                {
+                  "type": "command",
+                  "command": "pan:toggle"
+                },
+                {
+                  "type": "command",
+                  "command": "pointer:toggle"
+                }
+              ]
+            },
+            {
+              "labelKey": "modes",
+              "role": "radio",
+              "rows": [
+                {
+                  "type": "command",
+                  "command": "mode:view"
+                },
+                {
+                  "type": "submenu",
+                  "command": "mode:annotate",
+                  "menu": "annotate-menu"
+                },
+                {
+                  "type": "command",
+                  "command": "mode:shapes"
+                }
+              ]
+            }
+          ],
+          "shed": {}
+        }
+      }
+    },
+    {
+      "name": "pipeline@100",
+      "fn": "solveAndProject",
+      "args": [
+        {
+          "id": "main",
+          "sections": {
+            "start": [
+              {
+                "id": "workspace",
+                "items": [
+                  {
+                    "command": "panel:sidebar",
+                    "importance": 5
+                  },
+                  "page:settings"
+                ]
+              }
+            ],
+            "center": [
+              {
+                "id": "zoom",
+                "labelKey": "zoom.title",
+                "collapse": "menu",
+                "importance": 2,
+                "items": [
+                  {
+                    "slot": "zoom-controls",
+                    "variants": [
+                      "inline",
+                      "narrow"
+                    ],
+                    "terminal": "zoom:menu"
+                  }
+                ]
+              },
+              {
+                "id": "tools",
+                "items": [
+                  "pan:toggle",
+                  "pointer:toggle"
+                ]
+              },
+              {
+                "id": "modes",
+                "role": "tabs",
+                "shed": true,
+                "labelKey": "modes",
+                "items": [
+                  "mode:view",
+                  "mode:annotate",
+                  {
+                    "command": "mode:shapes",
+                    "importance": 2
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "variants": {
+            "icon+label": 100,
+            "icon": 40,
+            "label": 80,
+            "default": 60,
+            "wide": 120,
+            "narrow": 30,
+            "inline": 150
+          },
+          "collapsedDefault": 50,
+          "triggerDefault": 36,
+          "overflowTrigger": 40,
+          "gap": 10,
+          "separator": 20
+        },
+        100,
+        {
+          "page:settings": {
+            "menu": "page-settings"
+          },
+          "zoom:menu": {
+            "menu": "zoom"
+          },
+          "pan:toggle": {},
+          "pointer:toggle": null,
+          "mode:shapes": {
+            "menu": ""
+          },
+          "mode:annotate": {
+            "menu": "annotate-menu"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "fit": {
+            "units": {
+              "$map": [
+                [
+                  "workspace:panel:sidebar",
+                  {
+                    "kind": "variant",
+                    "variant": "icon"
+                  }
+                ],
+                [
+                  "workspace:page:settings",
+                  {
+                    "kind": "overflow"
+                  }
+                ],
+                [
+                  "zoom:zoom-controls",
+                  {
+                    "kind": "overflow"
+                  }
+                ],
+                [
+                  "tools:pan:toggle",
+                  {
+                    "kind": "overflow"
+                  }
+                ],
+                [
+                  "tools:pointer:toggle",
+                  {
+                    "kind": "overflow"
+                  }
+                ],
+                [
+                  "modes:mode:view",
+                  {
+                    "kind": "overflow"
+                  }
+                ],
+                [
+                  "modes:mode:annotate",
+                  {
+                    "kind": "overflow"
+                  }
+                ],
+                [
+                  "modes:mode:shapes",
+                  {
+                    "kind": "overflow"
+                  }
+                ]
+              ]
+            },
+            "groups": {
+              "$map": [
+                [
+                  "workspace",
+                  {
+                    "shedCount": 0,
+                    "collapsed": false,
+                    "overflowed": false
+                  }
+                ],
+                [
+                  "zoom",
+                  {
+                    "shedCount": 0,
+                    "collapsed": true,
+                    "overflowed": true
+                  }
+                ],
+                [
+                  "tools",
+                  {
+                    "shedCount": 0,
+                    "collapsed": false,
+                    "overflowed": true
+                  }
+                ],
+                [
+                  "modes",
+                  {
+                    "shedCount": 0,
+                    "collapsed": false,
+                    "overflowed": true
+                  }
+                ]
+              ]
+            },
+            "hasOverflow": true,
+            "width": 90,
+            "complete": true
+          },
+          "overflow": [
+            {
+              "rows": [
+                {
+                  "type": "submenu",
+                  "command": "page:settings",
+                  "menu": "page-settings"
+                }
+              ]
+            },
+            {
+              "labelKey": "zoom.title",
+              "rows": [
+                {
+                  "type": "submenu",
+                  "command": "zoom:menu",
+                  "menu": "zoom"
+                }
+              ]
+            },
+            {
+              "rows": [
+                {
+                  "type": "command",
+                  "command": "pan:toggle"
+                },
+                {
+                  "type": "command",
+                  "command": "pointer:toggle"
+                }
+              ]
+            },
+            {
+              "labelKey": "modes",
+              "role": "radio",
+              "rows": [
+                {
+                  "type": "command",
+                  "command": "mode:view"
+                },
+                {
+                  "type": "submenu",
+                  "command": "mode:annotate",
+                  "menu": "annotate-menu"
+                },
+                {
+                  "type": "command",
+                  "command": "mode:shapes"
+                }
+              ]
+            }
+          ],
+          "shed": {}
+        }
+      }
+    },
+    {
+      "name": "pipeline@130",
+      "fn": "solveAndProject",
+      "args": [
+        {
+          "id": "main",
+          "sections": {
+            "start": [
+              {
+                "id": "workspace",
+                "items": [
+                  {
+                    "command": "panel:sidebar",
+                    "importance": 5
+                  },
+                  "page:settings"
+                ]
+              }
+            ],
+            "center": [
+              {
+                "id": "zoom",
+                "labelKey": "zoom.title",
+                "collapse": "menu",
+                "importance": 2,
+                "items": [
+                  {
+                    "slot": "zoom-controls",
+                    "variants": [
+                      "inline",
+                      "narrow"
+                    ],
+                    "terminal": "zoom:menu"
+                  }
+                ]
+              },
+              {
+                "id": "tools",
+                "items": [
+                  "pan:toggle",
+                  "pointer:toggle"
+                ]
+              },
+              {
+                "id": "modes",
+                "role": "tabs",
+                "shed": true,
+                "labelKey": "modes",
+                "items": [
+                  "mode:view",
+                  "mode:annotate",
+                  {
+                    "command": "mode:shapes",
+                    "importance": 2
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "variants": {
+            "icon+label": 100,
+            "icon": 40,
+            "label": 80,
+            "default": 60,
+            "wide": 120,
+            "narrow": 30,
+            "inline": 150
+          },
+          "collapsedDefault": 50,
+          "triggerDefault": 36,
+          "overflowTrigger": 40,
+          "gap": 10,
+          "separator": 20
+        },
+        130,
+        {
+          "page:settings": {
+            "menu": "page-settings"
+          },
+          "zoom:menu": {
+            "menu": "zoom"
+          },
+          "pan:toggle": {},
+          "pointer:toggle": null,
+          "mode:shapes": {
+            "menu": ""
+          },
+          "mode:annotate": {
+            "menu": "annotate-menu"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "fit": {
+            "units": {
+              "$map": [
+                [
+                  "workspace:panel:sidebar",
+                  {
+                    "kind": "variant",
+                    "variant": "icon"
+                  }
+                ],
+                [
+                  "workspace:page:settings",
+                  {
+                    "kind": "overflow"
+                  }
+                ],
+                [
+                  "zoom:zoom-controls",
+                  {
+                    "kind": "overflow"
+                  }
+                ],
+                [
+                  "tools:pan:toggle",
+                  {
+                    "kind": "overflow"
+                  }
+                ],
+                [
+                  "tools:pointer:toggle",
+                  {
+                    "kind": "overflow"
+                  }
+                ],
+                [
+                  "modes:mode:view",
+                  {
+                    "kind": "overflow"
+                  }
+                ],
+                [
+                  "modes:mode:annotate",
+                  {
+                    "kind": "overflow"
+                  }
+                ],
+                [
+                  "modes:mode:shapes",
+                  {
+                    "kind": "overflow"
+                  }
+                ]
+              ]
+            },
+            "groups": {
+              "$map": [
+                [
+                  "workspace",
+                  {
+                    "shedCount": 0,
+                    "collapsed": false,
+                    "overflowed": false
+                  }
+                ],
+                [
+                  "zoom",
+                  {
+                    "shedCount": 0,
+                    "collapsed": true,
+                    "overflowed": true
+                  }
+                ],
+                [
+                  "tools",
+                  {
+                    "shedCount": 0,
+                    "collapsed": false,
+                    "overflowed": true
+                  }
+                ],
+                [
+                  "modes",
+                  {
+                    "shedCount": 0,
+                    "collapsed": false,
+                    "overflowed": true
+                  }
+                ]
+              ]
+            },
+            "hasOverflow": true,
+            "width": 90,
+            "complete": true
+          },
+          "overflow": [
+            {
+              "rows": [
+                {
+                  "type": "submenu",
+                  "command": "page:settings",
+                  "menu": "page-settings"
+                }
+              ]
+            },
+            {
+              "labelKey": "zoom.title",
+              "rows": [
+                {
+                  "type": "submenu",
+                  "command": "zoom:menu",
+                  "menu": "zoom"
+                }
+              ]
+            },
+            {
+              "rows": [
+                {
+                  "type": "command",
+                  "command": "pan:toggle"
+                },
+                {
+                  "type": "command",
+                  "command": "pointer:toggle"
+                }
+              ]
+            },
+            {
+              "labelKey": "modes",
+              "role": "radio",
+              "rows": [
+                {
+                  "type": "command",
+                  "command": "mode:view"
+                },
+                {
+                  "type": "submenu",
+                  "command": "mode:annotate",
+                  "menu": "annotate-menu"
+                },
+                {
+                  "type": "command",
+                  "command": "mode:shapes"
+                }
+              ]
+            }
+          ],
+          "shed": {}
+        }
+      }
+    },
+    {
+      "name": "pipeline@200",
+      "fn": "solveAndProject",
+      "args": [
+        {
+          "id": "main",
+          "sections": {
+            "start": [
+              {
+                "id": "workspace",
+                "items": [
+                  {
+                    "command": "panel:sidebar",
+                    "importance": 5
+                  },
+                  "page:settings"
+                ]
+              }
+            ],
+            "center": [
+              {
+                "id": "zoom",
+                "labelKey": "zoom.title",
+                "collapse": "menu",
+                "importance": 2,
+                "items": [
+                  {
+                    "slot": "zoom-controls",
+                    "variants": [
+                      "inline",
+                      "narrow"
+                    ],
+                    "terminal": "zoom:menu"
+                  }
+                ]
+              },
+              {
+                "id": "tools",
+                "items": [
+                  "pan:toggle",
+                  "pointer:toggle"
+                ]
+              },
+              {
+                "id": "modes",
+                "role": "tabs",
+                "shed": true,
+                "labelKey": "modes",
+                "items": [
+                  "mode:view",
+                  "mode:annotate",
+                  {
+                    "command": "mode:shapes",
+                    "importance": 2
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "variants": {
+            "icon+label": 100,
+            "icon": 40,
+            "label": 80,
+            "default": 60,
+            "wide": 120,
+            "narrow": 30,
+            "inline": 150
+          },
+          "collapsedDefault": 50,
+          "triggerDefault": 36,
+          "overflowTrigger": 40,
+          "gap": 10,
+          "separator": 20
+        },
+        200,
+        {
+          "page:settings": {
+            "menu": "page-settings"
+          },
+          "zoom:menu": {
+            "menu": "zoom"
+          },
+          "pan:toggle": {},
+          "pointer:toggle": null,
+          "mode:shapes": {
+            "menu": ""
+          },
+          "mode:annotate": {
+            "menu": "annotate-menu"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "fit": {
+            "units": {
+              "$map": [
+                [
+                  "workspace:panel:sidebar",
+                  {
+                    "kind": "variant",
+                    "variant": "icon"
+                  }
+                ],
+                [
+                  "workspace:page:settings",
+                  {
+                    "kind": "variant",
+                    "variant": "icon"
+                  }
+                ],
+                [
+                  "zoom:zoom-controls",
+                  {
+                    "kind": "overflow"
+                  }
+                ],
+                [
+                  "tools:pan:toggle",
+                  {
+                    "kind": "variant",
+                    "variant": "icon"
+                  }
+                ],
+                [
+                  "tools:pointer:toggle",
+                  {
+                    "kind": "overflow"
+                  }
+                ],
+                [
+                  "modes:mode:view",
+                  {
+                    "kind": "overflow"
+                  }
+                ],
+                [
+                  "modes:mode:annotate",
+                  {
+                    "kind": "overflow"
+                  }
+                ],
+                [
+                  "modes:mode:shapes",
+                  {
+                    "kind": "overflow"
+                  }
+                ]
+              ]
+            },
+            "groups": {
+              "$map": [
+                [
+                  "workspace",
+                  {
+                    "shedCount": 0,
+                    "collapsed": false,
+                    "overflowed": false
+                  }
+                ],
+                [
+                  "zoom",
+                  {
+                    "shedCount": 0,
+                    "collapsed": true,
+                    "overflowed": true
+                  }
+                ],
+                [
+                  "tools",
+                  {
+                    "shedCount": 0,
+                    "collapsed": false,
+                    "overflowed": false
+                  }
+                ],
+                [
+                  "modes",
+                  {
+                    "shedCount": 0,
+                    "collapsed": false,
+                    "overflowed": true
+                  }
+                ]
+              ]
+            },
+            "hasOverflow": true,
+            "width": 190,
+            "complete": true
+          },
+          "overflow": [
+            {
+              "labelKey": "zoom.title",
+              "rows": [
+                {
+                  "type": "submenu",
+                  "command": "zoom:menu",
+                  "menu": "zoom"
+                }
+              ]
+            },
+            {
+              "rows": [
+                {
+                  "type": "command",
+                  "command": "pointer:toggle"
+                }
+              ]
+            },
+            {
+              "labelKey": "modes",
+              "role": "radio",
+              "rows": [
+                {
+                  "type": "command",
+                  "command": "mode:view"
+                },
+                {
+                  "type": "submenu",
+                  "command": "mode:annotate",
+                  "menu": "annotate-menu"
+                },
+                {
+                  "type": "command",
+                  "command": "mode:shapes"
+                }
+              ]
+            }
+          ],
+          "shed": {}
+        }
+      }
+    },
+    {
+      "name": "pipeline@260",
+      "fn": "solveAndProject",
+      "args": [
+        {
+          "id": "main",
+          "sections": {
+            "start": [
+              {
+                "id": "workspace",
+                "items": [
+                  {
+                    "command": "panel:sidebar",
+                    "importance": 5
+                  },
+                  "page:settings"
+                ]
+              }
+            ],
+            "center": [
+              {
+                "id": "zoom",
+                "labelKey": "zoom.title",
+                "collapse": "menu",
+                "importance": 2,
+                "items": [
+                  {
+                    "slot": "zoom-controls",
+                    "variants": [
+                      "inline",
+                      "narrow"
+                    ],
+                    "terminal": "zoom:menu"
+                  }
+                ]
+              },
+              {
+                "id": "tools",
+                "items": [
+                  "pan:toggle",
+                  "pointer:toggle"
+                ]
+              },
+              {
+                "id": "modes",
+                "role": "tabs",
+                "shed": true,
+                "labelKey": "modes",
+                "items": [
+                  "mode:view",
+                  "mode:annotate",
+                  {
+                    "command": "mode:shapes",
+                    "importance": 2
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "variants": {
+            "icon+label": 100,
+            "icon": 40,
+            "label": 80,
+            "default": 60,
+            "wide": 120,
+            "narrow": 30,
+            "inline": 150
+          },
+          "collapsedDefault": 50,
+          "triggerDefault": 36,
+          "overflowTrigger": 40,
+          "gap": 10,
+          "separator": 20
+        },
+        260,
+        {
+          "page:settings": {
+            "menu": "page-settings"
+          },
+          "zoom:menu": {
+            "menu": "zoom"
+          },
+          "pan:toggle": {},
+          "pointer:toggle": null,
+          "mode:shapes": {
+            "menu": ""
+          },
+          "mode:annotate": {
+            "menu": "annotate-menu"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "fit": {
+            "units": {
+              "$map": [
+                [
+                  "workspace:panel:sidebar",
+                  {
+                    "kind": "variant",
+                    "variant": "icon"
+                  }
+                ],
+                [
+                  "workspace:page:settings",
+                  {
+                    "kind": "variant",
+                    "variant": "icon"
+                  }
+                ],
+                [
+                  "zoom:zoom-controls",
+                  {
+                    "kind": "overflow"
+                  }
+                ],
+                [
+                  "tools:pan:toggle",
+                  {
+                    "kind": "variant",
+                    "variant": "icon"
+                  }
+                ],
+                [
+                  "tools:pointer:toggle",
+                  {
+                    "kind": "variant",
+                    "variant": "icon"
+                  }
+                ],
+                [
+                  "modes:mode:view",
+                  {
+                    "kind": "overflow"
+                  }
+                ],
+                [
+                  "modes:mode:annotate",
+                  {
+                    "kind": "overflow"
+                  }
+                ],
+                [
+                  "modes:mode:shapes",
+                  {
+                    "kind": "overflow"
+                  }
+                ]
+              ]
+            },
+            "groups": {
+              "$map": [
+                [
+                  "workspace",
+                  {
+                    "shedCount": 0,
+                    "collapsed": false,
+                    "overflowed": false
+                  }
+                ],
+                [
+                  "zoom",
+                  {
+                    "shedCount": 0,
+                    "collapsed": true,
+                    "overflowed": true
+                  }
+                ],
+                [
+                  "tools",
+                  {
+                    "shedCount": 0,
+                    "collapsed": false,
+                    "overflowed": false
+                  }
+                ],
+                [
+                  "modes",
+                  {
+                    "shedCount": 0,
+                    "collapsed": false,
+                    "overflowed": true
+                  }
+                ]
+              ]
+            },
+            "hasOverflow": true,
+            "width": 240,
+            "complete": true
+          },
+          "overflow": [
+            {
+              "labelKey": "zoom.title",
+              "rows": [
+                {
+                  "type": "submenu",
+                  "command": "zoom:menu",
+                  "menu": "zoom"
+                }
+              ]
+            },
+            {
+              "labelKey": "modes",
+              "role": "radio",
+              "rows": [
+                {
+                  "type": "command",
+                  "command": "mode:view"
+                },
+                {
+                  "type": "submenu",
+                  "command": "mode:annotate",
+                  "menu": "annotate-menu"
+                },
+                {
+                  "type": "command",
+                  "command": "mode:shapes"
+                }
+              ]
+            }
+          ],
+          "shed": {}
+        }
+      }
+    },
+    {
+      "name": "pipeline@300",
+      "fn": "solveAndProject",
+      "args": [
+        {
+          "id": "main",
+          "sections": {
+            "start": [
+              {
+                "id": "workspace",
+                "items": [
+                  {
+                    "command": "panel:sidebar",
+                    "importance": 5
+                  },
+                  "page:settings"
+                ]
+              }
+            ],
+            "center": [
+              {
+                "id": "zoom",
+                "labelKey": "zoom.title",
+                "collapse": "menu",
+                "importance": 2,
+                "items": [
+                  {
+                    "slot": "zoom-controls",
+                    "variants": [
+                      "inline",
+                      "narrow"
+                    ],
+                    "terminal": "zoom:menu"
+                  }
+                ]
+              },
+              {
+                "id": "tools",
+                "items": [
+                  "pan:toggle",
+                  "pointer:toggle"
+                ]
+              },
+              {
+                "id": "modes",
+                "role": "tabs",
+                "shed": true,
+                "labelKey": "modes",
+                "items": [
+                  "mode:view",
+                  "mode:annotate",
+                  {
+                    "command": "mode:shapes",
+                    "importance": 2
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "variants": {
+            "icon+label": 100,
+            "icon": 40,
+            "label": 80,
+            "default": 60,
+            "wide": 120,
+            "narrow": 30,
+            "inline": 150
+          },
+          "collapsedDefault": 50,
+          "triggerDefault": 36,
+          "overflowTrigger": 40,
+          "gap": 10,
+          "separator": 20
+        },
+        300,
+        {
+          "page:settings": {
+            "menu": "page-settings"
+          },
+          "zoom:menu": {
+            "menu": "zoom"
+          },
+          "pan:toggle": {},
+          "pointer:toggle": null,
+          "mode:shapes": {
+            "menu": ""
+          },
+          "mode:annotate": {
+            "menu": "annotate-menu"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "fit": {
+            "units": {
+              "$map": [
+                [
+                  "workspace:panel:sidebar",
+                  {
+                    "kind": "variant",
+                    "variant": "icon"
+                  }
+                ],
+                [
+                  "workspace:page:settings",
+                  {
+                    "kind": "variant",
+                    "variant": "icon"
+                  }
+                ],
+                [
+                  "zoom:zoom-controls",
+                  {
+                    "kind": "overflow"
+                  }
+                ],
+                [
+                  "tools:pan:toggle",
+                  {
+                    "kind": "variant",
+                    "variant": "icon"
+                  }
+                ],
+                [
+                  "tools:pointer:toggle",
+                  {
+                    "kind": "variant",
+                    "variant": "icon"
+                  }
+                ],
+                [
+                  "modes:mode:view",
+                  {
+                    "kind": "overflow"
+                  }
+                ],
+                [
+                  "modes:mode:annotate",
+                  {
+                    "kind": "overflow"
+                  }
+                ],
+                [
+                  "modes:mode:shapes",
+                  {
+                    "kind": "overflow"
+                  }
+                ]
+              ]
+            },
+            "groups": {
+              "$map": [
+                [
+                  "workspace",
+                  {
+                    "shedCount": 0,
+                    "collapsed": false,
+                    "overflowed": false
+                  }
+                ],
+                [
+                  "zoom",
+                  {
+                    "shedCount": 0,
+                    "collapsed": true,
+                    "overflowed": true
+                  }
+                ],
+                [
+                  "tools",
+                  {
+                    "shedCount": 0,
+                    "collapsed": false,
+                    "overflowed": false
+                  }
+                ],
+                [
+                  "modes",
+                  {
+                    "shedCount": 0,
+                    "collapsed": false,
+                    "overflowed": true
+                  }
+                ]
+              ]
+            },
+            "hasOverflow": true,
+            "width": 240,
+            "complete": true
+          },
+          "overflow": [
+            {
+              "labelKey": "zoom.title",
+              "rows": [
+                {
+                  "type": "submenu",
+                  "command": "zoom:menu",
+                  "menu": "zoom"
+                }
+              ]
+            },
+            {
+              "labelKey": "modes",
+              "role": "radio",
+              "rows": [
+                {
+                  "type": "command",
+                  "command": "mode:view"
+                },
+                {
+                  "type": "submenu",
+                  "command": "mode:annotate",
+                  "menu": "annotate-menu"
+                },
+                {
+                  "type": "command",
+                  "command": "mode:shapes"
+                }
+              ]
+            }
+          ],
+          "shed": {}
+        }
+      }
+    },
+    {
+      "name": "pipeline@400",
+      "fn": "solveAndProject",
+      "args": [
+        {
+          "id": "main",
+          "sections": {
+            "start": [
+              {
+                "id": "workspace",
+                "items": [
+                  {
+                    "command": "panel:sidebar",
+                    "importance": 5
+                  },
+                  "page:settings"
+                ]
+              }
+            ],
+            "center": [
+              {
+                "id": "zoom",
+                "labelKey": "zoom.title",
+                "collapse": "menu",
+                "importance": 2,
+                "items": [
+                  {
+                    "slot": "zoom-controls",
+                    "variants": [
+                      "inline",
+                      "narrow"
+                    ],
+                    "terminal": "zoom:menu"
+                  }
+                ]
+              },
+              {
+                "id": "tools",
+                "items": [
+                  "pan:toggle",
+                  "pointer:toggle"
+                ]
+              },
+              {
+                "id": "modes",
+                "role": "tabs",
+                "shed": true,
+                "labelKey": "modes",
+                "items": [
+                  "mode:view",
+                  "mode:annotate",
+                  {
+                    "command": "mode:shapes",
+                    "importance": 2
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "variants": {
+            "icon+label": 100,
+            "icon": 40,
+            "label": 80,
+            "default": 60,
+            "wide": 120,
+            "narrow": 30,
+            "inline": 150
+          },
+          "collapsedDefault": 50,
+          "triggerDefault": 36,
+          "overflowTrigger": 40,
+          "gap": 10,
+          "separator": 20
+        },
+        400,
+        {
+          "page:settings": {
+            "menu": "page-settings"
+          },
+          "zoom:menu": {
+            "menu": "zoom"
+          },
+          "pan:toggle": {},
+          "pointer:toggle": null,
+          "mode:shapes": {
+            "menu": ""
+          },
+          "mode:annotate": {
+            "menu": "annotate-menu"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "fit": {
+            "units": {
+              "$map": [
+                [
+                  "workspace:panel:sidebar",
+                  {
+                    "kind": "variant",
+                    "variant": "icon"
+                  }
+                ],
+                [
+                  "workspace:page:settings",
+                  {
+                    "kind": "variant",
+                    "variant": "icon"
+                  }
+                ],
+                [
+                  "zoom:zoom-controls",
+                  {
+                    "kind": "overflow"
+                  }
+                ],
+                [
+                  "tools:pan:toggle",
+                  {
+                    "kind": "variant",
+                    "variant": "icon"
+                  }
+                ],
+                [
+                  "tools:pointer:toggle",
+                  {
+                    "kind": "variant",
+                    "variant": "icon"
+                  }
+                ],
+                [
+                  "modes:mode:view",
+                  {
+                    "kind": "variant",
+                    "variant": "icon"
+                  }
+                ],
+                [
+                  "modes:mode:annotate",
+                  {
+                    "kind": "shed"
+                  }
+                ],
+                [
+                  "modes:mode:shapes",
+                  {
+                    "kind": "shed"
+                  }
+                ]
+              ]
+            },
+            "groups": {
+              "$map": [
+                [
+                  "workspace",
+                  {
+                    "shedCount": 0,
+                    "collapsed": false,
+                    "overflowed": false
+                  }
+                ],
+                [
+                  "zoom",
+                  {
+                    "shedCount": 0,
+                    "collapsed": true,
+                    "overflowed": true
+                  }
+                ],
+                [
+                  "tools",
+                  {
+                    "shedCount": 0,
+                    "collapsed": false,
+                    "overflowed": false
+                  }
+                ],
+                [
+                  "modes",
+                  {
+                    "shedCount": 2,
+                    "collapsed": false,
+                    "overflowed": false
+                  }
+                ]
+              ]
+            },
+            "hasOverflow": true,
+            "width": 356,
+            "complete": true
+          },
+          "overflow": [
+            {
+              "labelKey": "zoom.title",
+              "rows": [
+                {
+                  "type": "submenu",
+                  "command": "zoom:menu",
+                  "menu": "zoom"
+                }
+              ]
+            }
+          ],
+          "shed": {
+            "modes": [
+              {
+                "type": "submenu",
+                "command": "mode:annotate",
+                "menu": "annotate-menu"
+              },
+              {
+                "type": "command",
+                "command": "mode:shapes"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "pipeline@500",
+      "fn": "solveAndProject",
+      "args": [
+        {
+          "id": "main",
+          "sections": {
+            "start": [
+              {
+                "id": "workspace",
+                "items": [
+                  {
+                    "command": "panel:sidebar",
+                    "importance": 5
+                  },
+                  "page:settings"
+                ]
+              }
+            ],
+            "center": [
+              {
+                "id": "zoom",
+                "labelKey": "zoom.title",
+                "collapse": "menu",
+                "importance": 2,
+                "items": [
+                  {
+                    "slot": "zoom-controls",
+                    "variants": [
+                      "inline",
+                      "narrow"
+                    ],
+                    "terminal": "zoom:menu"
+                  }
+                ]
+              },
+              {
+                "id": "tools",
+                "items": [
+                  "pan:toggle",
+                  "pointer:toggle"
+                ]
+              },
+              {
+                "id": "modes",
+                "role": "tabs",
+                "shed": true,
+                "labelKey": "modes",
+                "items": [
+                  "mode:view",
+                  "mode:annotate",
+                  {
+                    "command": "mode:shapes",
+                    "importance": 2
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "variants": {
+            "icon+label": 100,
+            "icon": 40,
+            "label": 80,
+            "default": 60,
+            "wide": 120,
+            "narrow": 30,
+            "inline": 150
+          },
+          "collapsedDefault": 50,
+          "triggerDefault": 36,
+          "overflowTrigger": 40,
+          "gap": 10,
+          "separator": 20
+        },
+        500,
+        {
+          "page:settings": {
+            "menu": "page-settings"
+          },
+          "zoom:menu": {
+            "menu": "zoom"
+          },
+          "pan:toggle": {},
+          "pointer:toggle": null,
+          "mode:shapes": {
+            "menu": ""
+          },
+          "mode:annotate": {
+            "menu": "annotate-menu"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "fit": {
+            "units": {
+              "$map": [
+                [
+                  "workspace:panel:sidebar",
+                  {
+                    "kind": "variant",
+                    "variant": "icon"
+                  }
+                ],
+                [
+                  "workspace:page:settings",
+                  {
+                    "kind": "variant",
+                    "variant": "icon"
+                  }
+                ],
+                [
+                  "zoom:zoom-controls",
+                  {
+                    "kind": "variant",
+                    "variant": "narrow"
+                  }
+                ],
+                [
+                  "tools:pan:toggle",
+                  {
+                    "kind": "variant",
+                    "variant": "icon"
+                  }
+                ],
+                [
+                  "tools:pointer:toggle",
+                  {
+                    "kind": "variant",
+                    "variant": "icon"
+                  }
+                ],
+                [
+                  "modes:mode:view",
+                  {
+                    "kind": "variant",
+                    "variant": "icon"
+                  }
+                ],
+                [
+                  "modes:mode:annotate",
+                  {
+                    "kind": "variant",
+                    "variant": "icon"
+                  }
+                ],
+                [
+                  "modes:mode:shapes",
+                  {
+                    "kind": "shed"
+                  }
+                ]
+              ]
+            },
+            "groups": {
+              "$map": [
+                [
+                  "workspace",
+                  {
+                    "shedCount": 0,
+                    "collapsed": false,
+                    "overflowed": false
+                  }
+                ],
+                [
+                  "zoom",
+                  {
+                    "shedCount": 0,
+                    "collapsed": false,
+                    "overflowed": false
+                  }
+                ],
+                [
+                  "tools",
+                  {
+                    "shedCount": 0,
+                    "collapsed": false,
+                    "overflowed": false
+                  }
+                ],
+                [
+                  "modes",
+                  {
+                    "shedCount": 1,
+                    "collapsed": false,
+                    "overflowed": false
+                  }
+                ]
+              ]
+            },
+            "hasOverflow": false,
+            "width": 416,
+            "complete": true
+          },
+          "overflow": [],
+          "shed": {
+            "modes": [
+              {
+                "type": "command",
+                "command": "mode:shapes"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

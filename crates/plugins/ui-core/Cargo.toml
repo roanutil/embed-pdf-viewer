@@ -1,0 +1,22 @@
+[package]
+name = "epdf-ui-core"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+description = "packages/core/ui in Rust: the chrome schema vocabulary, the toolbar fit solver, the overflow projection, the schema transforms and the shortcut parser."
+
+[lib]
+crate-type = ["rlib"]
+
+[features]
+# The conformance adapter (`harness` module). On by default so `cargo test`
+# replays the vectors with no flags; a host that ships the crate turns it
+# off with `default-features = false`.
+default = ["harness"]
+harness = ["dep:plugin-conformance"]
+
+[dependencies]
+epdf-kernel = { path = "../../epdf-kernel" }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["float_roundtrip"] }
+plugin-conformance = { path = "../../plugin-conformance", optional = true }
