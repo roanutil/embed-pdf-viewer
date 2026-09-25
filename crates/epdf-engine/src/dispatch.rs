@@ -99,6 +99,22 @@ impl<S: 'static> OwnerThread<S> {
         })
     }
 
+    /// Queues `job` on the owner thread and returns without waiting for it.
+    ///
+    /// For a host whose own boundary is already asynchronous and hands the
+    /// result on from inside the job, which is what a Crux effect middleware
+    /// does: it is called from `process_event` and must not block it, and it
+    /// is also called from the owner thread itself when a resolved effect
+    /// asks for the next one, where [`OwnerThread::run`] would deadlock.
+    ///
+    /// The job owns its own reporting. A job that panics reports nothing and
+    /// ends the thread, so a caller that promised someone an answer has to
+    /// catch the unwind inside the job.
+    pub fn submit(&self, job: impl FnOnce(&mut S) + Send + 'static) -> Result<(), EngineError> {
+        let jobs = self.jobs.as_ref().ok_or_else(Self::closed)?;
+        jobs.send(Box::new(job)).map_err(|_| Self::closed())
+    }
+
     /// Stops accepting work and waits for the thread to finish what it has.
     ///
     /// Idempotent. Dropping the sender is what ends the loop, so jobs already
@@ -186,6 +202,29 @@ mod tests {
         }
         owner.close();
         assert_eq!(counter.load(Ordering::SeqCst), 50);
+    }
+
+    #[test]
+    fn a_submitted_job_runs_on_the_owner_thread_in_order_and_may_submit_another() {
+        // The follow-up submits from INSIDE a job, which is what a Crux
+        // middleware does when a resolved effect asks for the next one. With
+        // `run` that would wait on the thread it is running on.
+        let owner = Arc::new(OwnerThread::<Vec<u32>>::start(Vec::new));
+        let (done, finished) = std::sync::mpsc::channel();
+        let again = Arc::clone(&owner);
+        owner.submit(|seen| seen.push(1)).expect("first");
+        owner
+            .submit(move |seen| {
+                seen.push(2);
+                again.submit(move |seen| {
+                    seen.push(3);
+                    let _ = done.send(());
+                })
+                .expect("follow-up");
+            })
+            .expect("second");
+        finished.recv_timeout(std::time::Duration::from_secs(5)).expect("the follow-up ran");
+        assert_eq!(owner.run(|seen| seen.clone()).expect("read"), vec![1, 2, 3]);
     }
 
     #[test]

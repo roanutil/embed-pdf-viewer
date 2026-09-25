@@ -1,0 +1,6 @@
+.build/
+Sources/Serde/
+Sources/EmbedPdfCrux/
+Sources/epdf_cruxFFI/
+Sources/EpdfCruxCore/
+*.png
