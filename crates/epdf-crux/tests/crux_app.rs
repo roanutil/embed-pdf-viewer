@@ -176,6 +176,7 @@ fn a_shell_opens_lists_and_renders_through_the_engine_middleware() {
     assert!(page.width > 0.0 && page.height > 0.0);
 
     let now = shell.send(Event::Render {
+        request: 7,
         doc_id: "d".into(),
         page_object_number: page.page_object_number,
         scale: 0.5,
@@ -186,6 +187,7 @@ fn a_shell_opens_lists_and_renders_through_the_engine_middleware() {
         unreachable!()
     };
     let bitmap = bitmap.operation;
+    assert_eq!(bitmap.request, 7);
     assert_eq!(bitmap.width, (page.width * 0.5).round() as u32);
     assert!(bitmap.stride >= bitmap.width * 4);
     let rgba = shell.blobs.take(bitmap.rgba).expect("the raster's bytes are in the store");
@@ -208,7 +210,7 @@ fn a_blob_that_was_never_put_is_a_refusal_not_a_hang() {
 }
 
 #[test]
-fn every_other_wire_kind_is_reachable_untyped_and_answers_by_job() {
+fn every_other_wire_kind_is_reachable_untyped_and_answers_by_request() {
     let shell = Shell::new();
     shell.send(Event::Open {
         doc_id: "d".into(),
@@ -218,11 +220,11 @@ fn every_other_wire_kind_is_reachable_untyped_and_answers_by_job() {
     shell.redraw();
 
     let json = serde_json::json!({ "kind": "metadata.read", "docId": "d" }).to_string();
-    shell.send(Event::Call { job: 41, json, payloads: Vec::new() });
+    shell.send(Event::Call { request: 41, json, payloads: Vec::new() });
     let ShellEffect::Reply(reply) = shell.wait_for(|e| matches!(e, ShellEffect::Reply(_))) else {
         unreachable!()
     };
-    assert_eq!(reply.operation.job, 41);
+    assert_eq!(reply.operation.request, 41);
     let envelope: serde_json::Value = serde_json::from_str(&reply.operation.json).unwrap();
     assert!(envelope["result"].is_object(), "{envelope}");
 }
@@ -249,4 +251,66 @@ fn an_encrypted_document_parks_as_needing_a_password() {
     shell.redraw();
     let view = shell.view();
     assert_eq!(view.documents[0].state, DocumentState::Ready, "{view:?}");
+}
+
+/// Opens `PLAIN` and returns its first page's object number.
+fn opened(shell: &Shell) -> u32 {
+    shell.send(Event::Open {
+        doc_id: "d".into(),
+        document: shell.blobs.put(bytes(PLAIN)),
+        password: None,
+    });
+    shell.redraw();
+    shell.view().documents[0].pages[0].page_object_number
+}
+
+#[test]
+fn two_renders_in_flight_are_told_apart_by_their_request() {
+    // What an SDK facade needs and an app shell does not: an app redraws
+    // from whichever bitmap arrived, a facade has to resume the right caller.
+    let shell = Shell::new();
+    let page = opened(&shell);
+    for (request, scale) in [(1, 0.25), (2, 0.5)] {
+        shell.send(Event::Render { request, doc_id: "d".into(), page_object_number: page, scale });
+    }
+    let mut widths = std::collections::BTreeMap::new();
+    for _ in 0..2 {
+        let ShellEffect::Bitmap(bitmap) = shell.wait_for(|e| matches!(e, ShellEffect::Bitmap(_)))
+        else {
+            unreachable!()
+        };
+        shell.blobs.take(bitmap.operation.rgba);
+        widths.insert(bitmap.operation.request, bitmap.operation.width);
+    }
+    assert!(widths[&1] < widths[&2], "the requests were crossed: {widths:?}");
+}
+
+#[test]
+fn a_refused_render_fails_that_request_and_leaves_the_document_ready() {
+    let shell = Shell::new();
+    opened(&shell);
+    shell.send(Event::Render {
+        request: 9,
+        doc_id: "d".into(),
+        page_object_number: 999_999,
+        scale: 1.0,
+    });
+    let ShellEffect::Failed(failed) = shell.wait_for(|e| matches!(e, ShellEffect::Failed(_)))
+    else {
+        unreachable!()
+    };
+    assert_eq!(failed.operation.request, 9);
+    assert!(!failed.operation.code.is_empty());
+    assert_eq!(shell.view().documents[0].state, DocumentState::Ready);
+}
+
+#[test]
+fn a_page_reads_its_text() {
+    let shell = Shell::new();
+    let page = opened(&shell);
+    shell.send(Event::Text { request: 3, doc_id: "d".into(), page_object_number: page });
+    let ShellEffect::Text(text) = shell.wait_for(|e| matches!(e, ShellEffect::Text(_))) else {
+        unreachable!()
+    };
+    assert_eq!(text.operation.request, 3);
 }

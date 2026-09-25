@@ -28,7 +28,7 @@ pub mod middleware;
 
 use crux_core::{macros::effect, render::RenderOperation};
 
-use app::{CallReply, PageBitmap};
+use app::{CallReply, PageBitmap, PageText, RequestFailed};
 
 /// The effects a shell handles. [`app::Effect`] minus the engine.
 #[effect(facet_typegen)]
@@ -36,7 +36,9 @@ use app::{CallReply, PageBitmap};
 pub enum ShellEffect {
     Render(RenderOperation),
     Bitmap(PageBitmap),
+    Text(PageText),
     Reply(CallReply),
+    Failed(RequestFailed),
 }
 
 impl From<app::Effect> for ShellEffect {
@@ -44,7 +46,9 @@ impl From<app::Effect> for ShellEffect {
         match effect {
             app::Effect::Render(request) => Self::Render(request),
             app::Effect::Bitmap(request) => Self::Bitmap(request),
+            app::Effect::Text(request) => Self::Text(request),
             app::Effect::Reply(request) => Self::Reply(request),
+            app::Effect::Failed(request) => Self::Failed(request),
             // `HandleEffectLayer` takes every engine request before this
             // mapping runs; one arriving here means the middleware was not
             // installed, which is a construction bug and not a runtime state.

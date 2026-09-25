@@ -33,8 +33,8 @@ Swap "random number generator" for "PDFium owner thread" and you have this crate
   envelope plus payloads that `Host::call` takes) and never sees PDFium.
 - [`src/middleware.rs`](src/middleware.rs) resolves those requests on the existing
   `OwnerThread<Host>`.
-- [`ShellEffect`](src/lib.rs) is what's left for a shell: redraw, a finished raster, and the answer
-  to an untyped call.
+- [`ShellEffect`](src/lib.rs) is what's left for a shell: redraw, a raster, a page's text, the
+  answer to an untyped call, and a refusal. Each answer carries the request number the shell sent.
 
 One change was needed in the engine. `OwnerThread::run` blocks, and Crux asserts that a middleware
 never resolves synchronously on the calling thread. Worse, when a resolved effect asks for the next
@@ -55,15 +55,16 @@ Crux only moves bytes, so it doesn't care what generates the FFI.
 path. That deprecation is about Crux's bundled bindgen helper. We export our own functions, so it
 doesn't touch us.)
 
-[`shells/swift-cli`](shells/swift-cli) is a command-line Swift shell over all of it. On
-`annotation_kinds.pdf` it opened the document in 6 ms, rendered page 0 at scale 2 (1224 by 1584
-RGBA), wrote a correct PNG, and read metadata through the untyped `Call` event. The Swift code never
-writes a wire envelope except for that last call, and never parses engine JSON at all.
+[`shells/swift-cli`](shells/swift-cli) holds a Swift SDK facade over all of it, `EmbedPDFEngine`,
+and a command-line consumer of that facade. On `reverse_and_gapped_text.pdf` the consumer opened the
+document in 5 ms, rendered page 0 at scale 2 (1224 by 1584) in 215 ms, wrote a correct PNG, and read
+the page's text. It imports one module and never sees Crux.
 
 ```sh
 crates/epdf-crux/shells/swift-cli/generate.sh
 cd crates/epdf-crux/shells/swift-cli
-swift run -c release Shell ../../../../tooling/engine-conformance/fixtures/annotation_kinds.pdf page.png
+swift test
+swift run -c release Shell ../../../../tooling/engine-conformance/fixtures/reverse_and_gapped_text.pdf page.png
 ```
 
 Both need `PDF_RUNTIME_LIB_DIR` pointing at the fork's `darwin-arm64` prebuilt if this checkout
@@ -91,10 +92,10 @@ without a sweep.
 
 ## What else it costs
 
-Engine answers arrive through the `CruxShell` callback on the PDFium owner thread. A UI shell has to
-hop to its main thread there, every time, and nothing enforces that.
+Engine answers arrive through the `CruxShell` callback on the PDFium owner thread. A shell has to
+hop off it there, every time, and nothing enforces that. The facade below does it once.
 
-The internal events (`Opened`, `Rendered`, `Closed`) are hidden from the shell with
+The internal events (`Opened`, `Closed`) are hidden from the shell with
 `#[serde(skip)]` and `#[facet(skip)]`, and they sit last in the enum. Bincode addresses variants by
 index, so keeping them last guarantees the generated Swift cases number the same as Rust's. I
 didn't test what happens with one in the middle, and I wouldn't find out in production.
@@ -104,10 +105,59 @@ as the middleware is installed. A construction mistake is a panic across the FFI
 
 Crux is pre-1.0. This pins `crux_core = "=0.20.0"` from crates.io, and master is already 0.21.
 
+## As an SDK
+
+Crux doesn't force a final app. The core is a library with five functions and a callback, and
+nothing about it needs to own the process. But the generated Swift isn't an SDK either. It's raw
+message plumbing: an `Event` enum, `Requests.bincodeDeserialize`, an effect `switch`, blob ids. A
+consumer handed that would be writing a Crux shell, which is our job, not theirs.
+
+So [`Sources/EmbedPDFEngine`](shells/swift-cli/Sources/EmbedPDFEngine) is a handwritten facade in
+the shape `multiplatform-plan-claude.md` sketches under "Native APIs that feel native":
+
+```swift
+let engine = PDFEngine()
+let document = try await engine.open(data: pdf)          // throws PDFError
+let image = try await document.page(at: 0).render(scale: 2)   // CGImage
+let text = try await document.page(at: 0).text()
+```
+
+`CoreLoop.swift` is the only file that knows Crux exists. It owns the loop, hops off the owner
+thread onto its own queue, and turns effects back into resumed continuations. About 170 lines. The
+public file is about 160, and most of that is doc comments.
+
+Building it found three things the app shell never needed.
+
+Correlation. A Crux notification isn't a reply to anything. An app doesn't care: it redraws from
+whatever arrived. A facade has two `await`s on the same page at different scales and has to resume
+the right one. So every typed event now carries a `request` number the shell picks, and exactly one
+of `Bitmap`, `Text`, `Reply` or `Failed` comes back with it. There's a test on both sides for two
+renders in flight.
+
+Failure scope. The first render path set the whole document to `Failed` when one render was
+refused. Fine for an app that shows an error screen. Wrong for an SDK, where a bad page number should
+fail that call and leave the document usable. It's now a `RequestFailed` effect.
+
+And a real bug in `OwnerThread`. When the facade released the engine, Crux's effect resolver still
+held the last reference to the middleware, on the owner thread. Dropping it there made the thread
+try to join itself: `failed to join thread: Resource deadlock avoided (os error 11)`. The web and
+uniffi paths never drop the engine from inside a job, so this was latent. `close` now lets the
+handle go when it's called on the owner thread, and the dispatch test for it fails without the fix.
+
+(Two smaller decisions live in the facade and I'm not sure either is right. A password miss closes
+the parked session before throwing, because the wire has no kind that unlocks one. And cancellation
+ends the wait, not the work: every call behind it is one non-preemptible engine call, so a cancelled
+render still renders and its pixels get taken and dropped when they land.)
+
+The cost is the one I expected. Crux didn't remove the facade. It moved JSON decoding out of it and
+added a correlation layer to it. Compared with a facade straight over `epdf-uniffi`, that's one more
+layer to own, for typed values in place of envelopes. It only pays for itself if the app half grows
+into shared viewer logic.
+
 ## The bigger question
 
 Here's the part I'd want you to think hard about. The typed surface a shell gets is whatever the
-app models. Right now that's open, close, render and a page list, plus `Call` as an escape hatch for
+app models. Right now that's open, close, render, text and a page list, plus `Call` as an escape hatch for
 the other sixty-odd wire kinds. Typing all of them means an event per kind, which is the
 sixty-five-signatures problem `host.rs` was written to avoid, just moved into Rust where the
 compiler at least checks it.

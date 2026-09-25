@@ -122,6 +122,16 @@ impl<S: 'static> OwnerThread<S> {
     /// lifecycle contract's close for work that has already been admitted.
     pub fn close(&mut self) {
         self.jobs = None;
+        // Closed from a job on the owner thread itself, which happens when
+        // the last reference to whatever owns this is released inside a job:
+        // a Crux middleware's resolver does exactly that. Joining would be
+        // the thread waiting for itself, so let the handle go instead. The
+        // sender is already gone, so the loop ends as soon as this job
+        // returns, and the state still drops on the owner thread.
+        if self.handle.as_ref().is_some_and(|h| h.thread().id() == std::thread::current().id()) {
+            self.handle = None;
+            return;
+        }
         if let Some(handle) = self.handle.take() {
             // A panicked owner thread has already reported through its job's
             // channel; joining it here is about releasing the thread, not
@@ -216,15 +226,58 @@ mod tests {
         owner
             .submit(move |seen| {
                 seen.push(2);
-                again.submit(move |seen| {
-                    seen.push(3);
-                    let _ = done.send(());
-                })
-                .expect("follow-up");
+                again
+                    .submit(move |seen| {
+                        seen.push(3);
+                        let _ = done.send(());
+                    })
+                    .expect("follow-up");
             })
             .expect("second");
         finished.recv_timeout(std::time::Duration::from_secs(5)).expect("the follow-up ran");
         assert_eq!(owner.run(|seen| seen.clone()).expect("read"), vec![1, 2, 3]);
+    }
+
+    #[test]
+    fn dropped_from_its_own_job_it_ends_rather_than_joining_itself() {
+        struct Signal(std::sync::mpsc::Sender<std::thread::ThreadId>);
+        impl Drop for Signal {
+            fn drop(&mut self) {
+                let _ = self.0.send(std::thread::current().id());
+            }
+        }
+        let (dropped, state_dropped) = std::sync::mpsc::channel();
+        let slot =
+            Arc::new(std::sync::Mutex::new(Some(OwnerThread::start(move || Signal(dropped)))));
+        let owner_id = slot
+            .lock()
+            .unwrap()
+            .as_ref()
+            .unwrap()
+            .run(|_| std::thread::current().id())
+            .expect("owner id");
+        let inside = Arc::clone(&slot);
+        let (finished, job_finished) = std::sync::mpsc::channel();
+        slot.lock()
+            .unwrap()
+            .as_ref()
+            .unwrap()
+            .submit(move |_| {
+                drop(inside.lock().unwrap().take());
+                // Only reached if the drop returned. Joining itself panics
+                // with "failed to join thread: Resource deadlock avoided",
+                // and the unwind would still drop the state, so this line is
+                // what tells the fix from the bug.
+                let _ = finished.send(());
+            })
+            .expect("queued");
+        job_finished
+            .recv_timeout(std::time::Duration::from_secs(5))
+            .expect("the job that dropped its own owner finished normally");
+        let dropped_on = state_dropped
+            .recv_timeout(std::time::Duration::from_secs(5))
+            .expect("the thread ended and dropped its state");
+        assert_eq!(dropped_on, owner_id, "the state dropped off the owner thread");
     }
 
     #[test]

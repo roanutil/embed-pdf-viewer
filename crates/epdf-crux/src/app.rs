@@ -47,14 +47,20 @@ impl crux_core::capability::Operation for EngineRequest {
     type Output = EngineReply;
 }
 
-/// A rendered page, handed to the shell once.
+// Every event a shell sends for an answer carries a `request` number the
+// shell chose, and exactly one of the four notifications below comes back
+// with it. Crux has no correlation of its own: a notification is not a reply
+// to anything, so without the number two renders of the same page could not
+// be told apart. That is the one thing an SDK facade needs that an app shell
+// does not, because an app just redraws from whatever arrived.
+
+/// A rendered page.
 ///
 /// RGBA8 with straight alpha and an explicit stride, the same contract as
 /// `epdf-uniffi`'s `PdfBitmap`.
 #[derive(Facet, Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct PageBitmap {
-    pub doc_id: String,
-    pub page_object_number: u32,
+    pub request: u32,
     pub width: u32,
     pub height: u32,
     pub stride: u32,
@@ -65,15 +71,41 @@ impl crux_core::capability::Operation for PageBitmap {
     type Output = ();
 }
 
-/// The answer to a [`Event::Call`], correlated by the shell's own job number.
+/// A page's text in display order, UTF-16 faithful.
+#[derive(Facet, Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+pub struct PageText {
+    pub request: u32,
+    pub text: String,
+}
+
+impl crux_core::capability::Operation for PageText {
+    type Output = ();
+}
+
+/// The raw envelope answering an [`Event::Call`].
 #[derive(Facet, Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct CallReply {
-    pub job: u32,
+    pub request: u32,
     pub json: String,
     pub payloads: Vec<Blob>,
 }
 
 impl crux_core::capability::Operation for CallReply {
+    type Output = ();
+}
+
+/// A typed request the engine refused, with its `EngineErrorCode` spelling.
+///
+/// A failed render fails that render, not the document: the view model's
+/// `Failed` state is for a document that could not be opened at all.
+#[derive(Facet, Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+pub struct RequestFailed {
+    pub request: u32,
+    pub code: String,
+    pub message: String,
+}
+
+impl crux_core::capability::Operation for RequestFailed {
     type Output = ();
 }
 
@@ -94,17 +126,25 @@ pub enum Event {
     Close {
         doc_id: String,
     },
-    /// Render one page at `scale` device pixels per PDF point. The raster
-    /// arrives as a `Bitmap` effect, not in the view model.
+    /// Render one page at `scale` device pixels per PDF point. Answered by
+    /// `Bitmap` or `Failed`, not through the view model.
     Render {
+        request: u32,
         doc_id: String,
         page_object_number: u32,
         scale: f64,
     },
+    /// Read one page's text. Answered by `Text` or `Failed`.
+    Text {
+        request: u32,
+        doc_id: String,
+        page_object_number: u32,
+    },
     /// Any of the sixty-five wire kinds, untyped. The escape hatch that keeps
     /// the whole engine reachable while the typed surface above is small.
+    /// Answered by `Reply`, whose envelope carries any refusal.
     Call {
-        job: u32,
+        request: u32,
         json: String,
         payloads: Vec<Blob>,
     },
@@ -117,13 +157,6 @@ pub enum Event {
         doc_id: String,
         open: EngineReply,
         pages: Option<EngineReply>,
-    },
-    #[serde(skip)]
-    #[facet(skip)]
-    Rendered {
-        doc_id: String,
-        page_object_number: u32,
-        reply: EngineReply,
     },
     #[serde(skip)]
     #[facet(skip)]
@@ -144,7 +177,9 @@ pub enum Effect {
     Render(RenderOperation),
     Engine(EngineRequest),
     Bitmap(PageBitmap),
+    Text(PageText),
     Reply(CallReply),
+    Failed(RequestFailed),
 }
 
 // ── Model and view ─────────────────────────────────────────────────────────
@@ -233,60 +268,71 @@ impl App for PdfViewer {
                 model.documents.remove(&doc_id);
                 crux_core::render::render()
             }
-            Event::Render { doc_id, page_object_number, scale } => {
-                let request = serde_json::json!({
+            // Render, Text and Call change no model, so none of them needs an
+            // internal event: each is one command that asks the engine and
+            // notifies the shell, correlated by the shell's own number.
+            Event::Render { request, doc_id, page_object_number, scale } => {
+                let json = serde_json::json!({
                     "kind": "pages.render",
                     "docId": doc_id,
                     "pageObjectNumber": page_object_number,
                     "options": { "viewport": { "kind": "scale", "scale": scale } },
                 });
-                Command::request_from_shell(EngineRequest {
-                    json: request.to_string(),
-                    payloads: Vec::new(),
-                })
-                .then_send(move |reply| Event::Rendered {
-                    doc_id,
-                    page_object_number,
-                    reply,
-                })
-            }
-            Event::Rendered { doc_id, page_object_number, reply } => {
-                // A raster reply always carries its pixels as the first
-                // payload; one without is a wire bug, reported as one.
-                let raster = result_of(&reply).and_then(|result| {
-                    let rgba = reply.payloads.first().copied().ok_or_else(|| {
-                        ("WireFormat".to_string(), "a render answered without pixels".to_string())
-                    })?;
-                    Ok((result, rgba))
-                });
-                match raster {
-                    Ok((result, rgba)) => {
-                        let field = |name: &str| {
-                            result.get(name).and_then(serde_json::Value::as_u64).unwrap_or(0) as u32
-                        };
-                        Command::notify_shell(PageBitmap {
-                            doc_id,
-                            page_object_number,
-                            width: field("width"),
-                            height: field("height"),
-                            stride: field("stride"),
-                            rgba,
-                        })
-                        .into()
-                    }
-                    Err((code, message)) => {
-                        if let Some(document) = model.documents.get_mut(&doc_id) {
-                            document.state = DocumentState::Failed { code, message };
+                Command::new(move |ctx| async move {
+                    let reply = ctx.request_from_shell(engine(json)).await;
+                    // A raster reply always carries its pixels as the first
+                    // payload; one without is a wire bug, reported as one.
+                    let raster = result_of(&reply).and_then(|result| {
+                        let rgba = reply.payloads.first().copied().ok_or_else(|| {
+                            (
+                                "WireFormat".to_string(),
+                                "a render answered without pixels".to_string(),
+                            )
+                        })?;
+                        Ok((result, rgba))
+                    });
+                    match raster {
+                        Ok((result, rgba)) => {
+                            let field = |name: &str| {
+                                result.get(name).and_then(serde_json::Value::as_u64).unwrap_or(0)
+                                    as u32
+                            };
+                            ctx.notify_shell(PageBitmap {
+                                request,
+                                width: field("width"),
+                                height: field("height"),
+                                stride: field("stride"),
+                                rgba,
+                            });
                         }
-                        crux_core::render::render()
+                        Err((code, message)) => {
+                            ctx.notify_shell(RequestFailed { request, code, message })
+                        }
                     }
-                }
+                })
             }
-            // No model change and no internal event: the answer goes straight
-            // back to the shell, correlated by the shell's own number.
-            Event::Call { job, json, payloads } => Command::new(|ctx| async move {
+            Event::Text { request, doc_id, page_object_number } => {
+                let json = serde_json::json!({
+                    "kind": "pages.text",
+                    "docId": doc_id,
+                    "pageObjectNumber": page_object_number,
+                });
+                Command::new(move |ctx| async move {
+                    let reply = ctx.request_from_shell(engine(json)).await;
+                    match result_of(&reply) {
+                        Ok(result) => ctx.notify_shell(PageText {
+                            request,
+                            text: result["text"].as_str().unwrap_or_default().to_string(),
+                        }),
+                        Err((code, message)) => {
+                            ctx.notify_shell(RequestFailed { request, code, message })
+                        }
+                    }
+                })
+            }
+            Event::Call { request, json, payloads } => Command::new(move |ctx| async move {
                 let reply = ctx.request_from_shell(EngineRequest { json, payloads }).await;
-                ctx.notify_shell(CallReply { job, json: reply.json, payloads: reply.payloads });
+                ctx.notify_shell(CallReply { request, json: reply.json, payloads: reply.payloads });
             }),
         }
     }
@@ -304,6 +350,11 @@ impl App for PdfViewer {
                 .collect(),
         }
     }
+}
+
+/// A request that carries no payloads.
+fn engine(json: serde_json::Value) -> EngineRequest {
+    EngineRequest { json: json.to_string(), payloads: Vec::new() }
 }
 
 /// Opens and, when that worked, lists the pages, in one command
