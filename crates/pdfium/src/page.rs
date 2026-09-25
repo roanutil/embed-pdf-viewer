@@ -313,6 +313,16 @@ impl<'a> Page<'a> {
         Ok(Self { view })
     }
 
+    /// Wrap a page handle PDFium just created.
+    ///
+    /// # Safety
+    /// `handle` must be a live `FPDF_PAGE` this wrapper may close, and it
+    /// must belong to a document that outlives `'a`.
+    pub(crate) unsafe fn from_raw_owned(handle: pdfium_sys::FPDF_PAGE) -> Option<Self> {
+        // SAFETY: the caller promises the handle is live for `'a`.
+        unsafe { PageView::from_raw(handle) }.map(|view| Self { view })
+    }
+
     /// Loads a page by PDF object number with its rotation normalized to zero.
     ///
     /// The loader every read path should use. `FPDF_LoadPage` reports a

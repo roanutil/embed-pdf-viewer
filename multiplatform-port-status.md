@@ -44,7 +44,7 @@ live under `tooling/engine-conformance/vectors/`, and every generator has a
 | G11 | `annotations.move` | `vectors/annotation/move.json`, `tests/annotation_move.rs` |
 | G12 | `forms.setValue`, `forms.reset`, `forms.import`, `forms.repair` | `vectors/forms/write.json`, `tests/form_write.rs` |
 | G12 | `forms.createField`, `updateField`, `deleteField`, `attachWidget`, `detachWidget` | `vectors/forms/field.json`, `tests/form_field.rs` |
-| G13 | `pages.move`, `pages.rotate`, `pages.delete` | `vectors/pages/mutate.json`, `tests/pages_mutate.rs` |
+| G13 | `pages.move`, `rotate`, `delete`, `insertBlank`, `insert` | `vectors/pages/mutate.json`, `tests/pages_mutate.rs` |
 
 ## Done, tested against fixtures rather than vectors
 
@@ -93,8 +93,15 @@ _widgets_on_the_page` asserts the half that IS here, and
 field/widget dictionary: the annotation plane will not delete a widget, so
 the whole operation is refused.
 
-G13 has its reorder, its rotation and its delete. `pages.insertBlank`,
-`pages.insert`, `pages.flatten` and `redaction.apply` are not started.
+G13 has its reorder, its rotation, its delete and both inserts.
+`pages.flatten` and `redaction.apply` are not started.
+
+`pages.insert` takes an OPEN source document rather than bytes, and the
+reason is a lifetime. `FPDF_ImportPagesByIndex` does not fully detach what it
+copies: an imported stream still reads through the source, so the source has
+to outlive every future save of the destination. The TypeScript parks it on
+the session and releases it at close; here it is a borrow, which makes the
+requirement the caller's to satisfy and the compiler's to check.
 
 G14 and G15: the remaining mutators and the server surfaces. None of it is
 blocked by anything outside the repository.

@@ -62,6 +62,51 @@ impl Document {
         }
     }
 
+    /// Create a blank page at an index.
+    ///
+    /// Returns a handle the caller must close. PDFium CLAMPS an index past
+    /// the end to an append rather than refusing it, so a caller that wants
+    /// the range enforced checks before calling: this layer passes the
+    /// leniency through rather than inventing a contract PDFium does not
+    /// have.
+    pub fn new_page(&self, index: i32, width: f64, height: f64) -> Option<crate::Page<'_>> {
+        // SAFETY: the handle is live for the borrow this returns.
+        let handle = unsafe { pdfium_sys::FPDFPage_New(self.as_raw(), index, width, height) };
+        // SAFETY: a non-null result is a page this document now owns and
+        // this wrapper closes.
+        unsafe { crate::Page::from_raw_owned(handle) }
+    }
+
+    /// Remove the page at an index.
+    ///
+    /// By INDEX, unlike [`Document::delete_page_by_object_number`], because
+    /// its one caller is undoing pages it just created and knows where they
+    /// are. No return value: PDFium has none.
+    pub fn delete_page_at(&self, index: i32) {
+        // SAFETY: the handle is live.
+        unsafe { pdfium_sys::FPDFPage_Delete(self.as_raw(), index) };
+    }
+
+    /// Deep-copy pages out of another document.
+    ///
+    /// `indices` empty means every page, in order. The copy is not a full
+    /// detach: imported streams still read through the SOURCE document, so
+    /// it has to stay open for as long as the destination might be saved.
+    /// That lifetime is the caller's to hold, which is why this takes a
+    /// borrow rather than consuming the source.
+    pub fn import_pages(&self, source: &Document, indices: &[i32], at: i32) -> bool {
+        let (pointer, length) = if indices.is_empty() {
+            (std::ptr::null(), 0)
+        } else {
+            (indices.as_ptr(), indices.len() as std::os::raw::c_ulong)
+        };
+        // SAFETY: both handles are live and the slice outlives the call.
+        unsafe {
+            pdfium_sys::FPDF_ImportPagesByIndex(self.as_raw(), source.as_raw(), pointer, length, at)
+                != 0
+        }
+    }
+
     /// Remove a page.
     ///
     /// The object number is retired, not freed.

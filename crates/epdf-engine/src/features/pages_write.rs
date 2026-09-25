@@ -199,3 +199,154 @@ fn resolve_indices(
 fn read_back(document: &Document, cancel: &CancelToken) -> Result<PageMutationResult, EngineError> {
     Ok(PageMutationResult { layout: list_pages(document, cancel)? })
 }
+
+/// What an insert added, and what the list looks like now.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PageInsertResult {
+    /// The new pages, in the order they landed. Their object numbers are
+    /// fresh and are resolved from the list AFTER the insert: they do not
+    /// exist before it and cannot be predicted.
+    pub inserted_page_object_numbers: Vec<PageObjectNumber>,
+    pub layout: PageListSnapshot,
+}
+
+/// How many blank pages one call may create.
+///
+/// A ceiling rather than a limit on what the format allows: a larger batch
+/// is a loop at the call site, and the number is shared with the server so
+/// a client never discovers a lower one by surprise.
+pub const INSERT_BLANK_MAX_COUNT: u32 = 100;
+
+/// Create blank pages.
+pub fn insert_blank_pages(
+    document: &Document,
+    width: f64,
+    height: f64,
+    count: u32,
+    destination: Option<u32>,
+    cancel: &CancelToken,
+) -> Result<PageInsertResult, EngineError> {
+    cancel.check()?;
+    if !width.is_finite() || !height.is_finite() || width <= 0.0 || height <= 0.0 {
+        return Err(EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            format!("a blank page needs positive finite dimensions, not {width}x{height}"),
+        ));
+    }
+    if !(1..=INSERT_BLANK_MAX_COUNT).contains(&count) {
+        return Err(EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            format!("count {count} is outside 1..={INSERT_BLANK_MAX_COUNT}"),
+        ));
+    }
+    let at = resolve_destination(document, destination, "pages.insertBlank")?;
+
+    for created in 0..count {
+        cancel.check()?;
+        // `FPDFPage_New` clamps an index past the end to an append. The
+        // guard above keeps that leniency out of this contract, and the
+        // index here is in range by construction.
+        let page = document.new_page((at + created) as i32, width, height);
+        let Some(page) = page else {
+            // Undo what this call made, so a failure leaves the document as
+            // it was. Each undo removes the page at `at`, because removing
+            // one shifts the rest down onto it.
+            //
+            // Unexercised: nothing provokes `FPDFPage_New` into refusing a
+            // page whose dimensions and index this layer has already
+            // checked. The alternative to writing it is a half-inserted
+            // batch nobody asked for and nobody can name.
+            for _ in 0..created {
+                document.delete_page_at(at as i32);
+            }
+            return Err(EngineError::with_message(
+                EngineErrorCode::Unknown,
+                format!("PDFium refused blank page {} of {count}", created + 1),
+            ));
+        };
+        // An empty content stream, so the saved file renders the same in a
+        // viewer that expects one rather than showing nothing at all.
+        //
+        // Not observable here. A page with no `/Contents` lists, measures
+        // and renders identically through this engine, so a build without
+        // this line passes every vector; what it would change is what a
+        // THIRD-PARTY viewer does with the saved file, which nothing in
+        // this corpus opens.
+        page.generate_content();
+    }
+
+    read_inserted(document, at, count, cancel)
+}
+
+/// Insert every page of another PDF.
+///
+/// The source document has to stay open for as long as this one might be
+/// saved, which is why it is a borrow the caller holds rather than bytes
+/// this function loads and drops. `FPDF_ImportPagesByIndex` does not fully
+/// detach what it copies: an imported stream still reads through the source.
+pub fn insert_pages_from(
+    document: &Document,
+    source: &Document,
+    destination: Option<u32>,
+    cancel: &CancelToken,
+) -> Result<PageInsertResult, EngineError> {
+    cancel.check()?;
+    let count = source.page_count();
+    // Unexercised: a PDF with no pages is one PDFium declines to open, so
+    // no fixture can reach this. It stays because `import_pages` would then
+    // be asked to copy nothing and would answer true, and an insert that
+    // inserted nothing would report a fresh page number that is really the
+    // page that was already there.
+    if count == 0 {
+        return Err(EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            "the source document has no pages to insert",
+        ));
+    }
+    let at = resolve_destination(document, destination, "pages.insert")?;
+
+    // An empty index list means every page, in order.
+    if !document.import_pages(source, &[], at as i32) {
+        return Err(EngineError::with_message(
+            EngineErrorCode::Unknown,
+            format!("PDFium refused the import of {count} pages at index {at}"),
+        ));
+    }
+    read_inserted(document, at, count, cancel)
+}
+
+/// Where an insert goes, defaulting to the end.
+fn resolve_destination(
+    document: &Document,
+    destination: Option<u32>,
+    operation: &str,
+) -> Result<u32, EngineError> {
+    let total = document.page_count();
+    let at = destination.unwrap_or(total);
+    if at > total {
+        return Err(EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            format!("{operation} destination {at} is outside 0..={total}"),
+        ));
+    }
+    Ok(at)
+}
+
+/// The layout, and which of its pages are the new ones.
+fn read_inserted(
+    document: &Document,
+    at: u32,
+    count: u32,
+    cancel: &CancelToken,
+) -> Result<PageInsertResult, EngineError> {
+    let layout = list_pages(document, cancel)?;
+    let inserted = layout
+        .pages
+        .iter()
+        .skip(at as usize)
+        .take(count as usize)
+        .map(|page| page.page_object_number)
+        .collect();
+    Ok(PageInsertResult { inserted_page_object_numbers: inserted, layout })
+}

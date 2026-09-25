@@ -12,7 +12,9 @@
 
 use epdf_engine::cancel::CancelToken;
 use epdf_engine::error::EngineErrorCode;
-use epdf_engine::features::pages_write::{delete_pages, move_pages, rotate_pages};
+use epdf_engine::features::pages_write::{
+    delete_pages, insert_blank_pages, insert_pages_from, move_pages, rotate_pages,
+};
 use epdf_engine::geom::PdfRotation;
 use epdf_engine::identity::PageObjectNumber;
 use epdf_engine::session::authority::SessionAuthority;
@@ -39,12 +41,42 @@ struct Case {
     move_: Option<MoveInput>,
     rotate: Option<RotateInput>,
     delete: Option<DeleteInput>,
+    insert_blank: Option<InsertBlankInput>,
+    insert: Option<InsertInput>,
     #[serde(default)]
     refused: bool,
     #[serde(default)]
     refused_with: Option<String>,
     #[serde(default)]
     layout: Option<serde_json::Value>,
+    /// The object numbers an insert handed out. Absent for the operations
+    /// that add nothing.
+    #[serde(default)]
+    inserted: Option<Vec<u32>>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct InsertBlankInput {
+    size: SizeInput,
+    #[serde(default)]
+    count: Option<u32>,
+    #[serde(default)]
+    dest_index: Option<u32>,
+}
+
+#[derive(Debug, Deserialize)]
+struct SizeInput {
+    width: f64,
+    height: f64,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct InsertInput {
+    source: String,
+    #[serde(default)]
+    dest_index: Option<u32>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -93,6 +125,40 @@ fn run(
     let owned = session.document().expect("open");
     let cancel = CancelToken::never();
 
+    if let Some(input) = &case.insert_blank {
+        let result = insert_blank_pages(
+            owned.document(),
+            input.size.width,
+            input.size.height,
+            input.count.unwrap_or(1),
+            input.dest_index,
+            &cancel,
+        )?;
+        return Ok(serde_json::json!({
+            "layout": result.layout,
+            "inserted": result.inserted_page_object_numbers,
+        }));
+    }
+    if let Some(input) = &case.insert {
+        // The source document is held for the whole call and dropped with
+        // this scope. It has to outlive the import, because an imported
+        // stream still reads through it; it does NOT have to outlive this
+        // test, which never saves.
+        let source_bytes = std::fs::read(test_support::workspace_root().join(&input.source))
+            .unwrap_or_else(|e| panic!("{}: read {}: {e}", case.name, input.source));
+        let mut source_session = DocumentSession::new();
+        source_session
+            .open_with(source_bytes, None, SessionAuthority::unrestricted())
+            .expect("the source opens");
+        let source = source_session.document().expect("open");
+        let result =
+            insert_pages_from(owned.document(), source.document(), input.dest_index, &cancel)?;
+        return Ok(serde_json::json!({
+            "layout": result.layout,
+            "inserted": result.inserted_page_object_numbers,
+        }));
+    }
+
     let result = if let Some(input) = &case.move_ {
         move_pages(owned.document(), &pages(&input.pages), input.dest_index, &cancel)?
     } else if let Some(input) = &case.rotate {
@@ -117,12 +183,23 @@ fn a_page_mutation_leaves_the_layout_the_typescript_engine_left() {
         }
         applied += 1;
         let mine = run(&file, case).unwrap_or_else(|e| panic!("{}: {e}", case.name));
+        // An insert answers with two things; everything else with one.
+        let (layout, inserted) = match mine.get("layout") {
+            Some(layout) => (layout.clone(), mine.get("inserted").cloned()),
+            None => (mine, None),
+        };
         assert_eq!(
-            test_support::canonical_numbers(&mine),
+            test_support::canonical_numbers(&layout),
             test_support::canonical_numbers(case.layout.as_ref().expect("a recorded layout")),
             "{}: {}",
             case.name,
             case.covers,
+        );
+        assert_eq!(
+            inserted,
+            case.inserted.as_ref().map(|n| serde_json::to_value(n).expect("serialize")),
+            "{}: the inserted page numbers differ",
+            case.name,
         );
     }
 

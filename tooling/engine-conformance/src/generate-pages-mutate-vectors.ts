@@ -37,6 +37,14 @@ interface MutateCase {
   readonly move?: { readonly pages: number[]; readonly destIndex: number };
   readonly rotate?: { readonly pages: number[]; readonly rotation: number };
   readonly delete?: { readonly pages: number[] };
+  /** Create blank pages. */
+  readonly insertBlank?: {
+    readonly size: { readonly width: number; readonly height: number };
+    readonly count?: number;
+    readonly destIndex?: number;
+  };
+  /** Insert every page of another PDF, named by fixture path. */
+  readonly insert?: { readonly source: string; readonly destIndex?: number };
   readonly refused?: true;
 }
 
@@ -125,6 +133,53 @@ const CASES: readonly MutateCase[] = [
     refused: true,
   },
   {
+    name: 'insert-blank-at-end',
+    covers:
+      'A blank page appended, which is what an absent destination means. Its object number is fresh and is resolved from the list AFTER the insert: it does not exist before.',
+    insertBlank: { size: { width: 612, height: 792 } },
+  },
+  {
+    name: 'insert-blank-at-front',
+    covers: 'Three blank pages at the front, which pushes every existing page down by three.',
+    insertBlank: { size: { width: 200, height: 400 }, count: 3, destIndex: 0 },
+  },
+  {
+    name: 'insert-blank-in-the-middle',
+    covers: 'And in the middle, where the new pages land contiguously.',
+    insertBlank: { size: { width: 300, height: 300 }, count: 2, destIndex: 2 },
+  },
+  {
+    name: 'insert-blank-bad-size-refused',
+    covers: 'A page with no area is not a page.',
+    insertBlank: { size: { width: 0, height: 792 } },
+    refused: true,
+  },
+  {
+    name: 'insert-blank-too-many-refused',
+    covers:
+      'Past the batch ceiling. A larger batch is a loop at the call site; the number is shared with the server so a client never finds a lower one by surprise.',
+    insertBlank: { size: { width: 612, height: 792 }, count: 101 },
+    refused: true,
+  },
+  {
+    name: 'insert-blank-past-the-end-refused',
+    covers:
+      'A destination past the end. PDFium would CLAMP this to an append, and the guard is what keeps that leniency out of the contract.',
+    insertBlank: { size: { width: 612, height: 792 }, destIndex: 5 },
+    refused: true,
+  },
+  {
+    name: 'insert-document',
+    covers:
+      'Every page of another PDF, deep-copied in. The copy is not a full detach: an imported stream still reads through the source, so the source has to outlive every future save.',
+    insert: { source: 'tooling/engine-conformance/fixtures/rich_metadata.pdf', destIndex: 1 },
+  },
+  {
+    name: 'insert-document-at-end',
+    covers: 'The same with no destination, which appends.',
+    insert: { source: 'tooling/engine-conformance/fixtures/rich_metadata.pdf' },
+  },
+  {
     name: 'delete-one',
     covers:
       'A page removed. Its object number is RETIRED rather than freed, so per-page state a caller kept can never attach to an unrelated future page.',
@@ -175,6 +230,21 @@ async function readCase(entry: MutateCase): Promise<unknown> {
             await doc.pages.rotate(entry.rotate.pages as never, entry.rotate.rotation as never)
           ).layout;
         }
+        if (entry.insertBlank) {
+          const result = await doc.pages.insertBlank(
+            { size: entry.insertBlank.size, count: entry.insertBlank.count } as never,
+            entry.insertBlank.destIndex,
+          );
+          return { layout: result.layout, inserted: result.insertedPageObjectNumbers };
+        }
+        if (entry.insert) {
+          const source = new Uint8Array(await readFile(join(repoRoot, entry.insert.source)));
+          const result = await doc.pages.insert(
+            source.buffer as ArrayBuffer,
+            entry.insert.destIndex,
+          );
+          return { layout: result.layout, inserted: result.insertedPageObjectNumbers };
+        }
         return (await doc.pages.delete(entry.delete!.pages as never)).layout;
       };
 
@@ -188,7 +258,12 @@ async function readCase(entry: MutateCase): Promise<unknown> {
         if (code === null) throw new Error(`${entry.name}: expected a refusal`);
         return { ...entry, refusedWith: code };
       }
-      return { ...entry, layout: await run() };
+      const produced = (await run()) as Record<string, unknown>;
+      // The insert operations report which pages are new alongside the
+      // layout; the rest report the layout alone.
+      return 'layout' in produced
+        ? { ...entry, layout: produced.layout, inserted: produced.inserted }
+        : { ...entry, layout: produced };
     } finally {
       await doc.close();
     }
