@@ -89,12 +89,25 @@ are G10 through G15. What follows is the residue: one layer the plan keeps in
 TypeScript, five viewer flows, and a set of behaviours the corpus cannot tell
 apart.
 
-F1 through F9 exist in `tooling/viewer-e2e/tests/`. F10 through F14 do not.
-They are the Phase 4 write round trips — annotation, form fill, page assembly,
-redaction, undo and redo — and each one drives a mutation through viewer UI:
-create through a tool, save, reopen the saved bytes, compare. Nothing blocks
-them; they are simply unwritten, and each needs a fixture and a tool path that
-F1 through F9 do not touch.
+All fourteen viewer flows exist in `tooling/viewer-e2e/tests/`, but two of
+them cover less than the port order asks, and the reason in both cases is a
+viewer feature rather than a test.
+
+F12 wants rotate, delete and reorder driven through the UI. The viewer has no
+page-assembly UI at all: `rotate:clockwise` in the command table is
+`stage.rotateView`, a camera move that writes nothing, and the sidebar
+thumbnails carry no controls, no hover affordances and no context menu. The
+`page-edit` capability exists and is registered, but it sits outside the
+curated token list `@embedpdf/viewer` publishes. What F12 does assert is the
+half the port order asks for separately: page identity, object numbers and
+order alike, surviving a save and a reopen.
+
+F14 wants undo and redo. There is no history plugin —
+`packages/viewer/chrome/src/config/commands.ts` defines `history:undo` and
+`history:redo` with an empty `run` and `enabled: () => false`, under the
+comment "no history plugin in v3 yet". F14 asserts that the buttons are shown
+and disabled, so the day a plugin lands, the assertion fails and names the
+flow to write.
 
 G10 is done. The save landed earlier, the session authority is G3's
 `SessionAuthority`, and `finishMutation` with the event vocabulary is in
