@@ -1,7 +1,7 @@
 {
   "total": {
-    "statements": "2583/2634",
-    "branches": "461/490"
+    "statements": "3502/3553",
+    "branches": "656/685"
   },
   "files": {
     "packages/core/geometry/src/index.ts": {
@@ -148,6 +148,12 @@
         249,
         252
       ],
+      "uncoveredBranches": []
+    },
+    "packages/core/stage/src/index.ts": {
+      "statements": "919/919",
+      "branches": "195/195",
+      "uncoveredLines": [],
       "uncoveredBranches": []
     },
     "packages/plugin/metadata/src/capability.ts": {
