@@ -1,0 +1,105 @@
+name: Plugin layer Rust port
+
+# The kernel and plugins in Rust (multiplatform-plugins-plan.md). As with the
+# engine port, two things have to hold together:
+#
+#   1. Every Rust crate reproduces the frozen vectors under
+#      tooling/plugin-conformance/vectors/.
+#   2. Those vectors, and the coverage record beside them, still describe
+#      what the shipping TypeScript does.
+#
+# None of these crates link PDFium, so the first job needs no fork artifacts.
+
+on:
+  pull_request:
+    paths:
+      - 'crates/epdf-kernel/**'
+      - 'crates/plugin-conformance/**'
+      - 'crates/plugins/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'rust-toolchain.toml'
+      - 'tooling/plugin-conformance/**'
+      - 'packages/core/**'
+      - 'packages/plugin/**'
+      - '.github/workflows/plugin-rust.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'crates/epdf-kernel/**'
+      - 'crates/plugin-conformance/**'
+      - 'crates/plugins/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'tooling/plugin-conformance/**'
+      - 'packages/core/**'
+      - 'packages/plugin/**'
+      - '.github/workflows/plugin-rust.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: plugin-rust-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CI: true
+
+jobs:
+  cargo:
+    name: cargo test + vector replay
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        run: rustup show active-toolchain || rustup toolchain install
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Select the plugin-layer crates
+        id: crates
+        run: |
+          packages=$(cargo metadata --no-deps --format-version 1 \
+            | jq -r '.packages[] | select(.manifest_path | test("crates/(plugins/|epdf-kernel/|plugin-conformance/)")) | "-p " + .name' \
+            | tr '\n' ' ')
+          echo "packages=$packages" >> "$GITHUB_OUTPUT"
+
+      - name: cargo clippy
+        run: cargo clippy ${{ steps.crates.outputs.packages }} --all-targets -- -D warnings
+
+      - name: cargo fmt
+        run: cargo fmt ${{ steps.crates.outputs.packages }} --check
+
+      - name: cargo test
+        run: cargo test ${{ steps.crates.outputs.packages }}
+
+  vectors:
+    name: vectors and coverage are current
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v5
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: typecheck the generators
+        run: pnpm --filter @embedpdf/tooling-plugin-conformance run typecheck
+
+      - name: vectors are current
+        run: pnpm --filter @embedpdf/tooling-plugin-conformance run vectors:check
+
+      # A line a vector used to reach and no longer does fails here, and so
+      # does one a new case reaches that nobody recorded.
+      - name: coverage is current
+        run: pnpm --filter @embedpdf/tooling-plugin-conformance run coverage:check
