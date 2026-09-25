@@ -173,7 +173,23 @@ const THREADS = [
   t(25, { inReplyTo: objRef(1), state: 'none', userId: 'u1' }),
   t(26, { inReplyTo: objRef(1), state: 'unmarked', stateModel: 'marked', userId: 'u2', modified: at('1') }),
 ];
+const nmRef = (nm: string) => ({ kind: 'nm', pageObjectNumber: 1, nm });
+const ORDERING = [
+  square(60, { ref: nmRef('first') }),
+  square(61, { ref: nmRef('second') }),
+  t(62, { inReplyTo: nmRef('second'), contents: 'to second' }),
+  t(63, { inReplyTo: nmRef('first'), contents: 'to first' }),
+  square(64, { contents: 'sorting root' }),
+  t(90, { inReplyTo: objRef(64), contents: 'late index, dated', created: at('9') }),
+  t(70, { inReplyTo: objRef(64), contents: 'undated' }),
+  t(85, { inReplyTo: objRef(64), contents: 'same date, high index', created: at('8') }),
+  t(80, { inReplyTo: objRef(64), contents: 'same date, low index', created: at('8') }),
+  t(81, { inReplyTo: objRef(64), contents: 'undated, high index' }),
+  square(65, { contents: 'review default root' }),
+  t(66, { inReplyTo: objRef(65), stateModel: 'review', userId: 'u5' }),
+];
 cases.push(
+  c('buildCommentThreads', 'nm-refs-and-ordering', ORDERING, {}),
   c('buildCommentThreads', 'everything', THREADS, {}),
   c('buildCommentThreads', 'mine', THREADS, { currentUserId: 'u1' }),
   c('buildCommentThreads', 'mine-absent', THREADS, { currentUserId: 'nobody' }),

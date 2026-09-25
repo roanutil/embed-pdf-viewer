@@ -10650,6 +10650,1252 @@
       }
     },
     {
+      "name": "buildCommentThreads/nm-refs-and-ordering",
+      "fn": "buildCommentThreads",
+      "args": [
+        [
+          {
+            "ref": {
+              "kind": "nm",
+              "pageObjectNumber": 1,
+              "nm": "first"
+            },
+            "pageObjectNumber": 1,
+            "index": 60,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 100,
+              "bottom": 600,
+              "right": 200,
+              "top": 700
+            },
+            "contents": null,
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "square",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "interiorColor": null,
+            "opacity": 1,
+            "strokeWidth": 2,
+            "borderStyle": "solid",
+            "cloudyIntensity": null,
+            "rectDifferences": null
+          },
+          {
+            "ref": {
+              "kind": "nm",
+              "pageObjectNumber": 1,
+              "nm": "second"
+            },
+            "pageObjectNumber": 1,
+            "index": 61,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 100,
+              "bottom": 600,
+              "right": 200,
+              "top": 700
+            },
+            "contents": null,
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "square",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "interiorColor": null,
+            "opacity": 1,
+            "strokeWidth": 2,
+            "borderStyle": "solid",
+            "cloudyIntensity": null,
+            "rectDifferences": null
+          },
+          {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 62
+            },
+            "pageObjectNumber": 1,
+            "index": 62,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 100,
+              "bottom": 680,
+              "right": 120,
+              "top": 700
+            },
+            "contents": "to second",
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": {
+              "kind": "nm",
+              "pageObjectNumber": 1,
+              "nm": "second"
+            },
+            "replyType": null,
+            "subtype": "text",
+            "color": {
+              "r": 250,
+              "g": 204,
+              "b": 21
+            },
+            "opacity": 1,
+            "icon": "comment",
+            "state": null,
+            "stateModel": null
+          },
+          {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 63
+            },
+            "pageObjectNumber": 1,
+            "index": 63,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 100,
+              "bottom": 680,
+              "right": 120,
+              "top": 700
+            },
+            "contents": "to first",
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": {
+              "kind": "nm",
+              "pageObjectNumber": 1,
+              "nm": "first"
+            },
+            "replyType": null,
+            "subtype": "text",
+            "color": {
+              "r": 250,
+              "g": 204,
+              "b": 21
+            },
+            "opacity": 1,
+            "icon": "comment",
+            "state": null,
+            "stateModel": null
+          },
+          {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 64
+            },
+            "pageObjectNumber": 1,
+            "index": 64,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 100,
+              "bottom": 600,
+              "right": 200,
+              "top": 700
+            },
+            "contents": "sorting root",
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "square",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "interiorColor": null,
+            "opacity": 1,
+            "strokeWidth": 2,
+            "borderStyle": "solid",
+            "cloudyIntensity": null,
+            "rectDifferences": null
+          },
+          {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 90
+            },
+            "pageObjectNumber": 1,
+            "index": 90,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 100,
+              "bottom": 680,
+              "right": 120,
+              "top": 700
+            },
+            "contents": "late index, dated",
+            "subject": null,
+            "author": null,
+            "created": "2024-01-09T00:00:00Z",
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 64
+            },
+            "replyType": null,
+            "subtype": "text",
+            "color": {
+              "r": 250,
+              "g": 204,
+              "b": 21
+            },
+            "opacity": 1,
+            "icon": "comment",
+            "state": null,
+            "stateModel": null
+          },
+          {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 70
+            },
+            "pageObjectNumber": 1,
+            "index": 70,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 100,
+              "bottom": 680,
+              "right": 120,
+              "top": 700
+            },
+            "contents": "undated",
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 64
+            },
+            "replyType": null,
+            "subtype": "text",
+            "color": {
+              "r": 250,
+              "g": 204,
+              "b": 21
+            },
+            "opacity": 1,
+            "icon": "comment",
+            "state": null,
+            "stateModel": null
+          },
+          {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 85
+            },
+            "pageObjectNumber": 1,
+            "index": 85,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 100,
+              "bottom": 680,
+              "right": 120,
+              "top": 700
+            },
+            "contents": "same date, high index",
+            "subject": null,
+            "author": null,
+            "created": "2024-01-08T00:00:00Z",
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 64
+            },
+            "replyType": null,
+            "subtype": "text",
+            "color": {
+              "r": 250,
+              "g": 204,
+              "b": 21
+            },
+            "opacity": 1,
+            "icon": "comment",
+            "state": null,
+            "stateModel": null
+          },
+          {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 80
+            },
+            "pageObjectNumber": 1,
+            "index": 80,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 100,
+              "bottom": 680,
+              "right": 120,
+              "top": 700
+            },
+            "contents": "same date, low index",
+            "subject": null,
+            "author": null,
+            "created": "2024-01-08T00:00:00Z",
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 64
+            },
+            "replyType": null,
+            "subtype": "text",
+            "color": {
+              "r": 250,
+              "g": 204,
+              "b": 21
+            },
+            "opacity": 1,
+            "icon": "comment",
+            "state": null,
+            "stateModel": null
+          },
+          {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 81
+            },
+            "pageObjectNumber": 1,
+            "index": 81,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 100,
+              "bottom": 680,
+              "right": 120,
+              "top": 700
+            },
+            "contents": "undated, high index",
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 64
+            },
+            "replyType": null,
+            "subtype": "text",
+            "color": {
+              "r": 250,
+              "g": 204,
+              "b": 21
+            },
+            "opacity": 1,
+            "icon": "comment",
+            "state": null,
+            "stateModel": null
+          },
+          {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 65
+            },
+            "pageObjectNumber": 1,
+            "index": 65,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 100,
+              "bottom": 600,
+              "right": 200,
+              "top": 700
+            },
+            "contents": "review default root",
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "square",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "interiorColor": null,
+            "opacity": 1,
+            "strokeWidth": 2,
+            "borderStyle": "solid",
+            "cloudyIntensity": null,
+            "rectDifferences": null
+          },
+          {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 66
+            },
+            "pageObjectNumber": 1,
+            "index": 66,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 100,
+              "bottom": 680,
+              "right": 120,
+              "top": 700
+            },
+            "contents": null,
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 65
+            },
+            "replyType": null,
+            "subtype": "text",
+            "color": {
+              "r": 250,
+              "g": 204,
+              "b": 21
+            },
+            "opacity": 1,
+            "icon": "comment",
+            "state": null,
+            "stateModel": "review",
+            "userId": "u5"
+          }
+        ],
+        {}
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "root": {
+              "ref": {
+                "kind": "nm",
+                "pageObjectNumber": 1,
+                "nm": "first"
+              },
+              "pageObjectNumber": 1,
+              "index": 60,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 100,
+                "bottom": 600,
+                "right": 200,
+                "top": 700
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "square",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": null,
+              "opacity": 1,
+              "strokeWidth": 2,
+              "borderStyle": "solid",
+              "cloudyIntensity": null,
+              "rectDifferences": null
+            },
+            "pageObjectNumber": 1,
+            "replies": [
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1,
+                  "annotObjectNumber": 63
+                },
+                "pageObjectNumber": 1,
+                "index": 63,
+                "identityQuality": "durable",
+                "nm": null,
+                "flags": {
+                  "invisible": false,
+                  "hidden": false,
+                  "print": true,
+                  "noZoom": false,
+                  "noRotate": false,
+                  "noView": false,
+                  "readOnly": false,
+                  "locked": false,
+                  "toggleNoView": false,
+                  "lockedContents": false
+                },
+                "rect": {
+                  "left": 100,
+                  "bottom": 680,
+                  "right": 120,
+                  "top": 700
+                },
+                "contents": "to first",
+                "subject": null,
+                "author": null,
+                "created": null,
+                "modified": null,
+                "blendMode": "normal",
+                "inReplyTo": {
+                  "kind": "nm",
+                  "pageObjectNumber": 1,
+                  "nm": "first"
+                },
+                "replyType": null,
+                "subtype": "text",
+                "color": {
+                  "r": 250,
+                  "g": 204,
+                  "b": 21
+                },
+                "opacity": 1,
+                "icon": "comment",
+                "state": null,
+                "stateModel": null
+              }
+            ],
+            "groupedParts": [],
+            "review": {
+              "byReviewer": {},
+              "lastChange": null,
+              "markedBy": [],
+              "statusRefs": []
+            }
+          },
+          {
+            "root": {
+              "ref": {
+                "kind": "nm",
+                "pageObjectNumber": 1,
+                "nm": "second"
+              },
+              "pageObjectNumber": 1,
+              "index": 61,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 100,
+                "bottom": 600,
+                "right": 200,
+                "top": 700
+              },
+              "contents": null,
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "square",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": null,
+              "opacity": 1,
+              "strokeWidth": 2,
+              "borderStyle": "solid",
+              "cloudyIntensity": null,
+              "rectDifferences": null
+            },
+            "pageObjectNumber": 1,
+            "replies": [
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1,
+                  "annotObjectNumber": 62
+                },
+                "pageObjectNumber": 1,
+                "index": 62,
+                "identityQuality": "durable",
+                "nm": null,
+                "flags": {
+                  "invisible": false,
+                  "hidden": false,
+                  "print": true,
+                  "noZoom": false,
+                  "noRotate": false,
+                  "noView": false,
+                  "readOnly": false,
+                  "locked": false,
+                  "toggleNoView": false,
+                  "lockedContents": false
+                },
+                "rect": {
+                  "left": 100,
+                  "bottom": 680,
+                  "right": 120,
+                  "top": 700
+                },
+                "contents": "to second",
+                "subject": null,
+                "author": null,
+                "created": null,
+                "modified": null,
+                "blendMode": "normal",
+                "inReplyTo": {
+                  "kind": "nm",
+                  "pageObjectNumber": 1,
+                  "nm": "second"
+                },
+                "replyType": null,
+                "subtype": "text",
+                "color": {
+                  "r": 250,
+                  "g": 204,
+                  "b": 21
+                },
+                "opacity": 1,
+                "icon": "comment",
+                "state": null,
+                "stateModel": null
+              }
+            ],
+            "groupedParts": [],
+            "review": {
+              "byReviewer": {},
+              "lastChange": null,
+              "markedBy": [],
+              "statusRefs": []
+            }
+          },
+          {
+            "root": {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 64
+              },
+              "pageObjectNumber": 1,
+              "index": 64,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 100,
+                "bottom": 600,
+                "right": 200,
+                "top": 700
+              },
+              "contents": "sorting root",
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "square",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": null,
+              "opacity": 1,
+              "strokeWidth": 2,
+              "borderStyle": "solid",
+              "cloudyIntensity": null,
+              "rectDifferences": null
+            },
+            "pageObjectNumber": 1,
+            "replies": [
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1,
+                  "annotObjectNumber": 80
+                },
+                "pageObjectNumber": 1,
+                "index": 80,
+                "identityQuality": "durable",
+                "nm": null,
+                "flags": {
+                  "invisible": false,
+                  "hidden": false,
+                  "print": true,
+                  "noZoom": false,
+                  "noRotate": false,
+                  "noView": false,
+                  "readOnly": false,
+                  "locked": false,
+                  "toggleNoView": false,
+                  "lockedContents": false
+                },
+                "rect": {
+                  "left": 100,
+                  "bottom": 680,
+                  "right": 120,
+                  "top": 700
+                },
+                "contents": "same date, low index",
+                "subject": null,
+                "author": null,
+                "created": "2024-01-08T00:00:00Z",
+                "modified": null,
+                "blendMode": "normal",
+                "inReplyTo": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1,
+                  "annotObjectNumber": 64
+                },
+                "replyType": null,
+                "subtype": "text",
+                "color": {
+                  "r": 250,
+                  "g": 204,
+                  "b": 21
+                },
+                "opacity": 1,
+                "icon": "comment",
+                "state": null,
+                "stateModel": null
+              },
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1,
+                  "annotObjectNumber": 85
+                },
+                "pageObjectNumber": 1,
+                "index": 85,
+                "identityQuality": "durable",
+                "nm": null,
+                "flags": {
+                  "invisible": false,
+                  "hidden": false,
+                  "print": true,
+                  "noZoom": false,
+                  "noRotate": false,
+                  "noView": false,
+                  "readOnly": false,
+                  "locked": false,
+                  "toggleNoView": false,
+                  "lockedContents": false
+                },
+                "rect": {
+                  "left": 100,
+                  "bottom": 680,
+                  "right": 120,
+                  "top": 700
+                },
+                "contents": "same date, high index",
+                "subject": null,
+                "author": null,
+                "created": "2024-01-08T00:00:00Z",
+                "modified": null,
+                "blendMode": "normal",
+                "inReplyTo": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1,
+                  "annotObjectNumber": 64
+                },
+                "replyType": null,
+                "subtype": "text",
+                "color": {
+                  "r": 250,
+                  "g": 204,
+                  "b": 21
+                },
+                "opacity": 1,
+                "icon": "comment",
+                "state": null,
+                "stateModel": null
+              },
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1,
+                  "annotObjectNumber": 90
+                },
+                "pageObjectNumber": 1,
+                "index": 90,
+                "identityQuality": "durable",
+                "nm": null,
+                "flags": {
+                  "invisible": false,
+                  "hidden": false,
+                  "print": true,
+                  "noZoom": false,
+                  "noRotate": false,
+                  "noView": false,
+                  "readOnly": false,
+                  "locked": false,
+                  "toggleNoView": false,
+                  "lockedContents": false
+                },
+                "rect": {
+                  "left": 100,
+                  "bottom": 680,
+                  "right": 120,
+                  "top": 700
+                },
+                "contents": "late index, dated",
+                "subject": null,
+                "author": null,
+                "created": "2024-01-09T00:00:00Z",
+                "modified": null,
+                "blendMode": "normal",
+                "inReplyTo": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1,
+                  "annotObjectNumber": 64
+                },
+                "replyType": null,
+                "subtype": "text",
+                "color": {
+                  "r": 250,
+                  "g": 204,
+                  "b": 21
+                },
+                "opacity": 1,
+                "icon": "comment",
+                "state": null,
+                "stateModel": null
+              },
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1,
+                  "annotObjectNumber": 70
+                },
+                "pageObjectNumber": 1,
+                "index": 70,
+                "identityQuality": "durable",
+                "nm": null,
+                "flags": {
+                  "invisible": false,
+                  "hidden": false,
+                  "print": true,
+                  "noZoom": false,
+                  "noRotate": false,
+                  "noView": false,
+                  "readOnly": false,
+                  "locked": false,
+                  "toggleNoView": false,
+                  "lockedContents": false
+                },
+                "rect": {
+                  "left": 100,
+                  "bottom": 680,
+                  "right": 120,
+                  "top": 700
+                },
+                "contents": "undated",
+                "subject": null,
+                "author": null,
+                "created": null,
+                "modified": null,
+                "blendMode": "normal",
+                "inReplyTo": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1,
+                  "annotObjectNumber": 64
+                },
+                "replyType": null,
+                "subtype": "text",
+                "color": {
+                  "r": 250,
+                  "g": 204,
+                  "b": 21
+                },
+                "opacity": 1,
+                "icon": "comment",
+                "state": null,
+                "stateModel": null
+              },
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1,
+                  "annotObjectNumber": 81
+                },
+                "pageObjectNumber": 1,
+                "index": 81,
+                "identityQuality": "durable",
+                "nm": null,
+                "flags": {
+                  "invisible": false,
+                  "hidden": false,
+                  "print": true,
+                  "noZoom": false,
+                  "noRotate": false,
+                  "noView": false,
+                  "readOnly": false,
+                  "locked": false,
+                  "toggleNoView": false,
+                  "lockedContents": false
+                },
+                "rect": {
+                  "left": 100,
+                  "bottom": 680,
+                  "right": 120,
+                  "top": 700
+                },
+                "contents": "undated, high index",
+                "subject": null,
+                "author": null,
+                "created": null,
+                "modified": null,
+                "blendMode": "normal",
+                "inReplyTo": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1,
+                  "annotObjectNumber": 64
+                },
+                "replyType": null,
+                "subtype": "text",
+                "color": {
+                  "r": 250,
+                  "g": 204,
+                  "b": 21
+                },
+                "opacity": 1,
+                "icon": "comment",
+                "state": null,
+                "stateModel": null
+              }
+            ],
+            "groupedParts": [],
+            "review": {
+              "byReviewer": {},
+              "lastChange": null,
+              "markedBy": [],
+              "statusRefs": []
+            }
+          },
+          {
+            "root": {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 65
+              },
+              "pageObjectNumber": 1,
+              "index": 65,
+              "identityQuality": "durable",
+              "nm": null,
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "rect": {
+                "left": 100,
+                "bottom": 600,
+                "right": 200,
+                "top": 700
+              },
+              "contents": "review default root",
+              "subject": null,
+              "author": null,
+              "created": null,
+              "modified": null,
+              "blendMode": "normal",
+              "inReplyTo": null,
+              "replyType": null,
+              "subtype": "square",
+              "color": {
+                "r": 239,
+                "g": 68,
+                "b": 68
+              },
+              "interiorColor": null,
+              "opacity": 1,
+              "strokeWidth": 2,
+              "borderStyle": "solid",
+              "cloudyIntensity": null,
+              "rectDifferences": null
+            },
+            "pageObjectNumber": 1,
+            "replies": [],
+            "groupedParts": [],
+            "review": {
+              "byReviewer": {
+                "u5": {
+                  "state": "none",
+                  "stateModel": "review",
+                  "by": "u5",
+                  "at": null,
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 66
+                  }
+                }
+              },
+              "lastChange": {
+                "state": "none",
+                "stateModel": "review",
+                "by": "u5",
+                "at": null,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1,
+                  "annotObjectNumber": 66
+                }
+              },
+              "markedBy": [],
+              "statusRefs": [
+                {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1,
+                  "annotObjectNumber": 66
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "buildCommentThreads/everything",
       "fn": "buildCommentThreads",
       "args": [
