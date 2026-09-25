@@ -326,7 +326,7 @@ fn behavior_json(
 ) -> Value {
     let Some((_, scripted)) = registry.borrow().iter().find(|(x, _)| Rc::ptr_eq(x, b)).cloned()
     else {
-        return json!({ "id": b.id() });
+        return sibling_behavior_json(b, h);
     };
     let mut out = Map::new();
     for (key, value) in scripted.spec.as_object().into_iter().flatten() {
@@ -347,8 +347,23 @@ fn behavior_json(
     Value::Object(out)
 }
 
+/// A behavior a sibling plugin registered (link, form): the object literal
+/// `{id, matches, engaged}` those plugins write, its two functions as fresh
+/// refs that call the behavior.
+fn sibling_behavior_json(b: &Rc<dyn Behavior>, h: &Harness) -> Value {
+    let (on_matches, on_engaged) = (b.clone(), b.clone());
+    let matches = h.register_fn(Rc::new(move |args: Vec<Value>| {
+        let a = args.first().cloned().unwrap_or(Value::Null);
+        let subtype = a.get("subtype").and_then(Value::as_str).unwrap_or_default();
+        let r: Option<AnnotationRef> = a.get("ref").and_then(|v| from_value(v).ok());
+        Outcome::Returned(json!(on_matches.matches(subtype, r.as_ref())))
+    }));
+    let engaged = h.register_fn(Rc::new(move |_| Outcome::Returned(json!(on_engaged.engaged()))));
+    json!({ "id": b.id(), "matches": matches, "engaged": engaged })
+}
+
 thread_local! {
-    static BEHAVIORS: Rc<RefCell<Vec<(Rc<dyn Behavior>, Rc<ScriptedBehavior>)>>> = Rc::default();
+    static BEHAVIORS:Rc<RefCell<Vec<(Rc<dyn Behavior>, Rc<ScriptedBehavior>)>>> = Rc::default();
 }
 
 // ── the capability ────────────────────────────────────────────────────────────
