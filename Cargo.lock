@@ -253,6 +253,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "252afb9ae5eaa683babdc6a068b3f5726eb19e05070c731f9b2a23a7c3e8ed34"
 
 [[package]]
+name = "epdf-acrojs"
+version = "0.0.0"
+dependencies = [
+ "epdf-kernel",
+ "plugin-conformance",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "epdf-annotation-core"
 version = "0.0.0"
 dependencies = [
@@ -312,7 +322,123 @@ dependencies = [
 ]
 
 [[package]]
+name = "epdf-plugin-actions"
+version = "0.0.0"
+dependencies = [
+ "epdf-acrojs",
+ "epdf-kernel",
+ "plugin-conformance",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "epdf-plugin-annotation"
+version = "0.0.0"
+dependencies = [
+ "epdf-acrojs",
+ "epdf-annotation-core",
+ "epdf-geometry",
+ "epdf-kernel",
+ "epdf-plugin-actions",
+ "epdf-plugin-interaction",
+ "epdf-plugin-render",
+ "epdf-plugin-selection",
+ "plugin-conformance",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "epdf-plugin-commands"
+version = "0.0.0"
+dependencies = [
+ "epdf-kernel",
+ "epdf-plugin-i18n",
+ "epdf-plugin-shell",
+ "epdf-ui-core",
+ "plugin-conformance",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "epdf-plugin-i18n"
+version = "0.0.0"
+dependencies = [
+ "epdf-kernel",
+ "plugin-conformance",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "epdf-plugin-interaction"
+version = "0.0.0"
+dependencies = [
+ "epdf-geometry",
+ "epdf-kernel",
+ "plugin-conformance",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "epdf-plugin-metadata"
+version = "0.0.0"
+dependencies = [
+ "epdf-kernel",
+ "plugin-conformance",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "epdf-plugin-page-edit"
+version = "0.0.0"
+dependencies = [
+ "epdf-kernel",
+ "plugin-conformance",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "epdf-plugin-render"
+version = "0.0.0"
+dependencies = [
+ "epdf-geometry",
+ "epdf-kernel",
+ "indexmap",
+ "plugin-conformance",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "epdf-plugin-selection"
+version = "0.0.0"
+dependencies = [
+ "epdf-geometry",
+ "epdf-kernel",
+ "epdf-plugin-interaction",
+ "plugin-conformance",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "epdf-plugin-shell"
+version = "0.0.0"
+dependencies = [
+ "epdf-kernel",
+ "plugin-conformance",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "epdf-plugin-view-manager"
 version = "0.0.0"
 dependencies = [
  "epdf-kernel",
