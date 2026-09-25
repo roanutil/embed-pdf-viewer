@@ -9052,7 +9052,7 @@
     },
     {
       "name": "unregister-scoped-handler",
-      "covers": "Unregistering a source-scoped handler forgets its scope along with it.",
+      "covers": "Unregistering a source-scoped handler forgets its scope along with it, and only its scope: another scoped handler keeps filtering.",
       "plugins": [
         {
           "factory": "interaction"
@@ -9122,7 +9122,7 @@
           "args": [
             {
               "id": "scoped",
-              "priority": 1,
+              "priority": 2,
               "enabledFor": {
                 "$fn": "scoped.enabledFor",
                 "returns": true
@@ -9146,6 +9146,43 @@
             },
             {
               "source": "lens-a"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "registerHandler",
+          "args": [
+            {
+              "id": "other",
+              "priority": 1,
+              "enabledFor": {
+                "$fn": "other.enabledFor",
+                "returns": true
+              },
+              "onDown": {
+                "$fn": "other.onDown",
+                "returns": false
+              },
+              "onMove": {
+                "$fn": "other.onMove"
+              },
+              "onUp": {
+                "$fn": "other.onUp"
+              },
+              "onCancel": {
+                "$fn": "other.onCancel"
+              },
+              "onHover": {
+                "$fn": "other.onHover"
+              }
+            },
+            {
+              "source": "lens-b"
             }
           ]
         },
@@ -9239,6 +9276,37 @@
                 "meta": false
               },
               "source": "lens-a",
+              "page": {
+                "pon": 1,
+                "point": {
+                  "x": 5,
+                  "y": 6
+                }
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "dispatch",
+          "args": [
+            {
+              "phase": "down",
+              "viewport": {
+                "x": 10,
+                "y": 20
+              },
+              "modifiers": {
+                "shift": false,
+                "alt": false,
+                "ctrl": false,
+                "meta": false
+              },
+              "source": "lens-b",
               "page": {
                 "pon": 1,
                 "point": {
@@ -9356,6 +9424,69 @@
           },
           "outcome": {
             "returned": {
+              "$ref": 1
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "other.enabledFor",
+              "args": [
+                {
+                  "id": "pointer",
+                  "cursor": "default",
+                  "enables": {
+                    "$set": [
+                      "text-select",
+                      "annotation-edit",
+                      "annotation-marquee",
+                      "form-fill",
+                      "link-nav"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "other.onDown",
+              "args": [
+                {
+                  "phase": "down",
+                  "viewport": {
+                    "x": 10,
+                    "y": 20
+                  },
+                  "modifiers": {
+                    "shift": false,
+                    "alt": false,
+                    "ctrl": false,
+                    "meta": false
+                  },
+                  "source": "lens-b",
+                  "page": {
+                    "pon": 1,
+                    "point": {
+                      "x": 5,
+                      "y": 6
+                    }
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
               "$undefined": true
             }
           }
@@ -9446,6 +9577,69 @@
           "actions": [],
           "engine": [],
           "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "other.enabledFor",
+              "args": [
+                {
+                  "id": "pointer",
+                  "cursor": "default",
+                  "enables": {
+                    "$set": [
+                      "text-select",
+                      "annotation-edit",
+                      "annotation-marquee",
+                      "form-fill",
+                      "link-nav"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "other.onDown",
+              "args": [
+                {
+                  "phase": "down",
+                  "viewport": {
+                    "x": 10,
+                    "y": 20
+                  },
+                  "modifiers": {
+                    "shift": false,
+                    "alt": false,
+                    "ctrl": false,
+                    "meta": false
+                  },
+                  "source": "lens-b",
+                  "page": {
+                    "pon": 1,
+                    "point": {
+                      "x": 5,
+                      "y": 6
+                    }
+                  }
+                }
+              ]
+            }
+          ],
           "reports": [],
           "status": "started",
           "engineState": {
@@ -12434,6 +12628,20 @@
         {
           "op": "call",
           "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "setToolCursor",
+          "args": [
+            "pan",
+            {
+              "grab": "url(g.svg) 0 0, grab"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
             "ref": 0
           },
           "args": []
@@ -12462,10 +12670,37 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "setToolCursor",
+          "method": "activateTool",
           "args": [
-            "pointer",
-            null
+            "pan"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "activateTool",
+          "args": [
+            "ink"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "registerTool",
+          "args": [
+            {
+              "id": "ink",
+              "cursor": "crosshair",
+              "enables": {
+                "$set": []
+              }
+            }
           ]
         },
         {
@@ -12969,6 +13204,32 @@
           },
           "outcome": {
             "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "interaction::a": {
+                "activeToolId": "ink",
+                "cursor": "url(i.svg) 0 0, crosshair"
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
               "id": "ink",
               "cursor": "default",
               "enables": {
@@ -13038,8 +13299,15 @@
             {
               "slice": "interaction::a",
               "action": {
+                "type": "SET_TOOL",
+                "toolId": "pan"
+              }
+            },
+            {
+              "slice": "interaction::a",
+              "action": {
                 "type": "SET_CURSOR",
-                "cursor": "default"
+                "cursor": "url(g.svg) 0 0, grab"
               }
             }
           ],
@@ -13060,8 +13328,8 @@
           "state": {
             "plugins": {
               "interaction::a": {
-                "activeToolId": "ink",
-                "cursor": "default"
+                "activeToolId": "pan",
+                "cursor": "url(g.svg) 0 0, grab"
               }
             }
           }
@@ -13089,8 +13357,8 @@
           "state": {
             "plugins": {
               "interaction::a": {
-                "activeToolId": "ink",
-                "cursor": "default"
+                "activeToolId": "pan",
+                "cursor": "url(g.svg) 0 0, grab"
               }
             }
           }
@@ -13115,8 +13383,75 @@
           "state": {
             "plugins": {
               "interaction::a": {
+                "activeToolId": "pan",
+                "cursor": "url(g.svg) 0 0, grab"
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "interaction::a",
+              "action": {
+                "type": "SET_TOOL",
+                "toolId": "ink"
+              }
+            },
+            {
+              "slice": "interaction::a",
+              "action": {
+                "type": "SET_CURSOR",
+                "cursor": "crosshair"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "interaction::a": {
                 "activeToolId": "ink",
-                "cursor": "default"
+                "cursor": "crosshair"
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 3
+            }
+          },
+          "state": {
+            "plugins": {
+              "interaction::a": {
+                "activeToolId": "ink",
+                "cursor": "crosshair"
               }
             }
           }
