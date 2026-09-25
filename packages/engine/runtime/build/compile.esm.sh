@@ -42,10 +42,9 @@ if [[ "$TARGET" == "wasm32-eh" ]]; then
   EH_FLAGS=(-fwasm-exceptions -sSUPPORT_LONGJMP=wasm -sWASM_LEGACY_EXCEPTIONS=0)
 fi
 
-# The Rust core, when it has been built. Opt-in rather than automatic: the
-# shipping payload is PDFium alone until the Stage A routing is proven, and a
-# link that silently changed depending on whether someone had run cargo would
-# be the worst of both.
+# The Rust core. `scripts/build-target.sh` builds it and sets this, so a
+# normal build always has it; calling this script directly without it links
+# PDFium alone, which is what a bisect or a payload-size comparison wants.
 #
 #   cargo build -p epdf-wasm --target wasm32-unknown-emscripten --release
 #   EMBEDPDF_RUST_STATICLIB=target/wasm32-unknown-emscripten/release/libepdf_wasm.a \
@@ -67,6 +66,7 @@ if [[ -n "${EMBEDPDF_RUST_STATICLIB:-}" ]]; then
   # a typo here links fine and fails at the first call, so it should be a
   # diff somebody reads.
   RUST_EXPORTS=",_epdf_page_geometry,_epdf_buffer_free"
+  RUST_EXPORTS+=",_epdf_host_create,_epdf_host_call,_epdf_host_destroy"
 fi
 
 mkdir -p "$OUT_DIR"

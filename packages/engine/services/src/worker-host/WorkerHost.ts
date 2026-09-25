@@ -81,6 +81,7 @@ import {
 import type { MutationMeta } from '@embedpdf/engine-core/runtime';
 import type { PdfRuntimeModule } from '@embedpdf/engine-runtime';
 
+import { RustSessionRehearsal } from './RustSessionRehearsal';
 import { DocumentSession } from '../document-session/DocumentSession';
 import { BaseDocumentRegistry } from '../document-session/lifecycle/BaseDocumentRegistry';
 import {
@@ -155,6 +156,26 @@ export interface WorkerHostOptions {
    * `true` here on a stock runtime reads exactly as it does now.
    */
   rustReads?: boolean;
+
+  /**
+   * G3w: route a document's SESSION to the Rust engine. Internal, opt-in.
+   *
+   * The one exception to Stage A's "TypeScript owns the session" rule, and
+   * deliberately narrow. Seven kinds route here — the three opens, the two
+   * security calls, and the two closes — and no read does. It exists so that
+   * G10, which moves session authority for every document, is not the first
+   * time a Rust-owned session runs under the real transport.
+   *
+   * It is not the public Rust routing profile and must not change it:
+   * `rustReads` still selects the Stage A geometry reader over a session
+   * TypeScript owns. A document opened under this flag cannot be read
+   * through the TypeScript services at all, so a read that reaches one is a
+   * routing bug and is reported as one.
+   *
+   * Ignored when the runtime was built without the dispatcher, which is what
+   * a stock payload predating it is.
+   */
+  rustSession?: boolean;
 }
 
 /**
@@ -169,6 +190,11 @@ export interface WorkerHostOptions {
  */
 export class WorkerHost {
   private readonly sessions = new Map<string, DocumentSession>();
+  /**
+   * The Rust-owned sessions, when the rehearsal is on. Made on first use so
+   * a host that never opens one never creates an engine.
+   */
+  private rehearsal: RustSessionRehearsal | null = null;
   private readonly baseDocuments: BaseDocumentRegistry;
   private readonly aborts = new Map<WorkerJobId, AbortController>();
   /**
@@ -451,6 +477,23 @@ export class WorkerHost {
     const key = sessionKey(req.docId, req.kind === 'open.fatMem' ? undefined : req.layerName);
     if (this.sessions.has(key)) {
       throw new EngineError(EngineErrorCode.InvalidArg, `document session already open: ${key}`);
+    }
+    // G3w. Only the fat-memory open rehearses: the layer opens need a base
+    // registry on the Rust side that G3 owns and this flag does not reach
+    // into, so routing them here would rehearse half a lifecycle.
+    if (req.kind === 'open.fatMem') {
+      const rehearsal = this.rustSessionRehearsal();
+      if (rehearsal) {
+        return wirePack({
+          tag: 'open',
+          docId: req.docId,
+          security: rehearsal.openFatMemory(
+            req.docId,
+            new Uint8Array(req.bytes),
+            req.password ?? undefined,
+          ),
+        });
+      }
     }
     const session = new DocumentSession(this.runtime);
     if (req.kind === 'open.fatMem') {
@@ -1122,6 +1165,17 @@ export class WorkerHost {
     // "check this password" means "load the parked bytes with it". A wrong
     // password throws DocPasswordIncorrect and the session stays parked
     // (bytes retained) for the next attempt.
+    const rehearsal = this.rehearsal;
+    if (rehearsal?.owns(req.docId)) {
+      return wirePack({
+        tag: 'document.checkPasswordPermissions',
+        security: rehearsal.checkPasswordPermissions(
+          req.docId,
+          req.password,
+          req.mode ?? undefined,
+        ),
+      });
+    }
     const parked = this.sessions.get(sessionKey(req.docId));
     let session: DocumentSession;
     if (parked?.isLocked()) {
@@ -1179,6 +1233,7 @@ export class WorkerHost {
    * (e.g. after a pool eviction).
    */
   private handleLayerClose(req: LayerCloseWorkerRequest): WirePack<WorkerResultPayload> {
+    this.rehearsal?.closeLayer(req.docId, req.layerName);
     const key = sessionKey(req.docId, req.layerName);
     const session = this.sessions.get(key);
     if (session) {
@@ -1190,6 +1245,7 @@ export class WorkerHost {
   }
 
   private handleClose(req: CloseWorkerRequest): WirePack<WorkerResultPayload> {
+    this.rehearsal?.close(req.docId);
     for (const [key, session] of Array.from(this.sessions.entries())) {
       if (!sessionKeyBelongsToDoc(key, req.docId)) continue;
       disposeFormModel(this.runtime, session);
@@ -1207,14 +1263,41 @@ export class WorkerHost {
         session.close();
       }
       this.sessions.clear();
+      this.rehearsal?.destroy();
+      this.rehearsal = null;
       this.baseDocuments.releaseAll();
       destroyLibrary(this.runtime);
     }
     return wirePack({ tag: 'shutdown' });
   }
 
+  /**
+   * The Rust-owned sessions, or null when the rehearsal is off or the
+   * runtime cannot serve it.
+   *
+   * Silently off rather than an error for an unsupported runtime, matching
+   * `rustReads`: the flag says "use Rust if this build has it", and every
+   * shipping payload before the dispatcher does not.
+   */
+  private rustSessionRehearsal(): RustSessionRehearsal | null {
+    if (this.options.rustSession !== true) return null;
+    if (!RustSessionRehearsal.supportedBy(this.runtime)) return null;
+    this.rehearsal ??= new RustSessionRehearsal(this.runtime);
+    return this.rehearsal;
+  }
+
   private requireSession(req: { docId: string; layerName?: string }): DocumentSession {
     const key = sessionKey(req.docId, req.layerName);
+    if (this.rehearsal?.owns(req.docId)) {
+      // G3w routes no reads. A read that gets here would otherwise report
+      // "document session not open", which is true and useless: the document
+      // IS open, on the other side of the boundary, and what is wrong is the
+      // routing rather than the caller's bookkeeping.
+      throw new EngineError(
+        EngineErrorCode.NotImplemented,
+        `document '${req.docId}' is open on the Rust session rehearsal, which routes no reads`,
+      );
+    }
     const session = this.sessions.get(key);
     if (session?.isLocked()) {
       // Truthful error for any operation reaching a parked session: the

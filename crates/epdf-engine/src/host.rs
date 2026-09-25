@@ -1159,15 +1159,56 @@ impl Host {
         }
         let bytes = payloads.remove(0);
         let password = body.get("password").and_then(serde_json::Value::as_str);
-        self.sessions.open_memory(
-            header.key()?,
+        let key = header.key()?;
+        match self.sessions.open_memory(
+            key.clone(),
             bytes,
             password,
             // Unrestricted until the scope arrives on the wire: G3's
             // resolver takes a scope string and no caller sends one yet.
             SessionAuthority::unrestricted(),
-        )?;
-        Ok(serde_json::Value::Null)
+        ) {
+            Ok(()) => {}
+            // A password is a STATE on the wire, not a failure. The registry
+            // reports it as an error because internally it IS one: the
+            // document is not readable. To a client it is a prompt, and the
+            // session has already parked with its key and its bytes, so an
+            // error here would make a caller tear down something that is
+            // waiting for a password. This is the shape `WorkerHost`'s own
+            // open path produces, deliberately.
+            Err(error) if error.is(EngineErrorCode::DocPasswordRequired) => {}
+            Err(error) => return Err(error),
+        }
+        Ok(serde_json::json!({ "security": value(&self.security_on_open(&key)?)? }))
+    }
+
+    /// The security probe an open reports.
+    ///
+    /// An open answers with one because the client handle comes up carrying
+    /// it: a viewer decides whether to show a password prompt from this, and
+    /// a second round trip to ask would be a visible delay on every document.
+    ///
+    /// A password-parked session reports `password required` rather than
+    /// failing the open. That is a STATE, not an error: the session holds its
+    /// key and its bytes, and a later `document.checkPasswordPermissions`
+    /// does the actual load without transferring the document again.
+    fn security_on_open(
+        &self,
+        key: &SessionKey,
+    ) -> Result<crate::features::security::state::SecurityProbeInfo, EngineError> {
+        use crate::features::security::{reader::read_live, state::password_blocked};
+
+        let session = match self.sessions.session(key) {
+            Ok(session) => session,
+            // `session` refuses a locked one with `DocPasswordRequired`
+            // rather than serving it, which is the parked case and the one
+            // answer worth turning back into a probe.
+            Err(error) if error.is(EngineErrorCode::DocPasswordRequired) => {
+                return Ok(password_blocked(self.clock.now().epoch_millis));
+            }
+            Err(error) => return Err(error),
+        };
+        Ok(read_live(session.document()?.document(), self.clock.as_ref()))
     }
 
     fn close_document(&mut self, header: &RequestHeader) -> Result<serde_json::Value, EngineError> {

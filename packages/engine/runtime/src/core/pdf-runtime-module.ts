@@ -81,6 +81,50 @@ export interface PdfRuntimeRustCore {
    * depend on it.
    */
   pageGeometry(pagePtr: Ptr): string;
+  /**
+   * Creates an engine that owns its own sessions — Stage B.
+   *
+   * Absent when the linked core predates the dispatcher, which is why it is
+   * optional rather than assumed: a runtime payload and the package that
+   * loads it ship separately, and a caller that reached for a missing export
+   * would fault rather than fall back.
+   */
+  createHost?(): PdfRuntimeRustHost;
+}
+
+/**
+ * One Rust engine: every wire operation, through one call.
+ *
+ * Not a session and not a document. A host holds as many of both as the
+ * requests it is given open, and `destroy` releases all of them.
+ *
+ * Thread-confined to the worker that created it, like every other PDFium
+ * handle: the pointer beneath this is an offset into one linear memory and
+ * nothing here makes it safe to pass to another thread.
+ */
+export interface PdfRuntimeRustHost {
+  /**
+   * Runs one request.
+   *
+   * `request` is the wire envelope as JSON. `payloads` are its binary
+   * arguments, positional: the operation names the first and the second,
+   * because the transfer list this side already uses is an array.
+   *
+   * Returns the response envelope verbatim — `{ result }` or `{ error }` —
+   * beside its own binary results. Decoding the JSON is the caller's,
+   * because the shape belongs to `engine-core` and this package does not
+   * depend on it.
+   */
+  call(request: string, payloads: readonly Uint8Array[]): PdfRuntimeRustResponse;
+  /** Releases the engine and every document it still holds open. */
+  destroy(): void;
+}
+
+export interface PdfRuntimeRustResponse {
+  /** `{"result": ...}` or `{"error": ...}`, undecoded. */
+  readonly json: string;
+  /** Binary results, positional and copied out of the runtime's memory. */
+  readonly payloads: Uint8Array[];
 }
 
 export interface PdfRuntimeModule {

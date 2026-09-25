@@ -96,7 +96,8 @@ jobs:
             'packages/engine/runtime/build/generate-napi-binding.mjs',
             'packages/engine/runtime/build/CMakeLists.txt',
             'packages/engine/runtime/build/compile.sh',
-            'packages/engine/runtime/build/compile.esm.sh'
+            'packages/engine/runtime/build/compile.esm.sh',
+            'Cargo.lock'
             ) }}
       - if: ${{ steps.payload-cache.outputs.cache-hit != 'true' && !contains(matrix.target, 'linuxmusl') }}
         uses: pnpm/action-setup@v5
@@ -110,6 +111,15 @@ jobs:
       - if: ${{ steps.payload-cache.outputs.cache-hit != 'true' && !contains(matrix.target, 'linuxmusl') }}
         name: Install build tools
         run: sudo apt-get update && sudo apt-get install -y cmake clang lld
+      # The wasm payload carries the Rust engine core, which
+      # `scripts/build-target.sh` builds. rust-toolchain.toml pins the
+      # channel and the wasm32-unknown-emscripten target together, so
+      # `rustup toolchain install` is enough.
+      - if: ${{ steps.payload-cache.outputs.cache-hit != 'true' && matrix.target == 'wasm32' }}
+        name: Install Rust
+        run: rustup show active-toolchain || rustup toolchain install
+      - if: ${{ steps.payload-cache.outputs.cache-hit != 'true' && matrix.target == 'wasm32' }}
+        uses: Swatinem/rust-cache@v2
       - if: ${{ steps.payload-cache.outputs.cache-hit != 'true' && matrix.target == 'wasm32' }}
         name: Install Emscripten
         run: |
@@ -177,7 +187,8 @@ jobs:
             'packages/engine/runtime/build/generate-napi-binding.mjs',
             'packages/engine/runtime/build/CMakeLists.txt',
             'packages/engine/runtime/build/compile.sh',
-            'packages/engine/runtime/build/compile.esm.sh'
+            'packages/engine/runtime/build/compile.esm.sh',
+            'Cargo.lock'
             ) }}
       - if: ${{ steps.payload-cache.outputs.cache-hit != 'true' && !contains(matrix.target, 'linuxmusl') }}
         uses: pnpm/action-setup@v5
@@ -250,7 +261,8 @@ jobs:
             'packages/engine/runtime/build/generate-napi-binding.mjs',
             'packages/engine/runtime/build/CMakeLists.txt',
             'packages/engine/runtime/build/compile.sh',
-            'packages/engine/runtime/build/compile.esm.sh'
+            'packages/engine/runtime/build/compile.esm.sh',
+            'Cargo.lock'
             ) }}
       - if: steps.payload-cache.outputs.cache-hit != 'true'
         uses: pnpm/action-setup@v5
@@ -308,7 +320,8 @@ jobs:
             'packages/engine/runtime/build/generate-napi-binding.mjs',
             'packages/engine/runtime/build/CMakeLists.txt',
             'packages/engine/runtime/build/compile.sh',
-            'packages/engine/runtime/build/compile.esm.sh'
+            'packages/engine/runtime/build/compile.esm.sh',
+            'Cargo.lock'
             ) }}
       - if: steps.payload-cache.outputs.cache-hit != 'true'
         uses: pnpm/action-setup@v5

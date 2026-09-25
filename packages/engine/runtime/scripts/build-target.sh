@@ -16,6 +16,28 @@ node "$ROOT/build/generate-runtime-methods.mjs" "$ROOT/build/generated"
 # Prefix match, not equality: wasm32-eh is the same link with WebAssembly
 # exception handling, and every later wasm variant should land here too.
 if [[ "$TARGET" == wasm32* ]]; then
+  # The Rust engine core goes into the payload. It used to be opt-in, because
+  # the shipping payload was PDFium alone until the Stage A routing was
+  # proven; the routing is proven now (every wire kind reaches an
+  # implementation, gated by crates/epdf-engine/tests/wire_contract.rs), so
+  # the default is the other way round.
+  #
+  # Required rather than best-effort. A build that quietly produced a payload
+  # without the core would leave every Rust path silently falling back to
+  # TypeScript, which is indistinguishable from the port not having happened.
+  # EMBEDPDF_RUST_CORE=0 opts out, for someone building the runtime without a
+  # Rust toolchain.
+  if [[ "${EMBEDPDF_RUST_CORE:-1}" != "0" && -z "${EMBEDPDF_RUST_STATICLIB:-}" ]]; then
+    if ! command -v cargo >/dev/null 2>&1; then
+      echo "building $TARGET needs cargo for the Rust engine core." >&2
+      echo "Install Rust, or set EMBEDPDF_RUST_CORE=0 to build without it." >&2
+      exit 1
+    fi
+    REPO_ROOT="$(cd "$ROOT/../../.." && pwd)"
+    (cd "$REPO_ROOT" && cargo build -p epdf-wasm --target wasm32-unknown-emscripten --release)
+    EMBEDPDF_RUST_STATICLIB="$REPO_ROOT/target/wasm32-unknown-emscripten/release/libepdf_wasm.a"
+    export EMBEDPDF_RUST_STATICLIB
+  fi
   PDF_RUNTIME_TARGET="$TARGET" bash "$ROOT/build/compile.esm.sh"
   exit 0
 fi

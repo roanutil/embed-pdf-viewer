@@ -16,6 +16,8 @@ import type {
   PdfRuntimeMemory,
   PdfRuntimeModule,
   PdfRuntimeRustCore,
+  PdfRuntimeRustHost,
+  PdfRuntimeRustResponse,
   Ptr,
 } from '../core/pdf-runtime-module';
 
@@ -86,6 +88,19 @@ function createWasmRustCore(
     | undefined;
   if (!pageGeometry || !bufferFree) return undefined;
 
+  const hostCreate = module._epdf_host_create as (() => number) | undefined;
+  const hostCall = module._epdf_host_call as
+    | ((
+        host: number,
+        request: number,
+        requestLen: number,
+        payloads: number,
+        payloadsLen: number,
+        outLen: number,
+      ) => number)
+    | undefined;
+  const hostDestroy = module._epdf_host_destroy as ((host: number) => void) | undefined;
+
   return {
     pageGeometry(pagePtr) {
       // The length comes back through an out-parameter because the payload is
@@ -109,6 +124,155 @@ function createWasmRustCore(
       } finally {
         mem.free(lenPtr);
       }
+    },
+
+    // Probed separately from `pageGeometry`: a payload built before the
+    // dispatcher landed has the geometry export and not these three, and a
+    // caller that assumed both would fault rather than fall back.
+    ...(hostCreate && hostCall && hostDestroy
+      ? { createHost: () => createWasmRustHost(module, mem, hostCreate, hostCall, hostDestroy) }
+      : {}),
+  };
+}
+
+/**
+ * The little-endian `u32` framing `epdf_engine::host::frame` documents.
+ *
+ * Lengths rather than offsets throughout, so a reader walks forward once and
+ * never computes a position that could land outside the buffer:
+ *
+ *     [u32 jsonLen][json]([u32 count]([u32 len][bytes])*count)
+ *
+ * A request carries only the second half, because the JSON goes across as
+ * its own pointer and length.
+ */
+function packPayloads(payloads: readonly Uint8Array[]): Uint8Array {
+  let size = 4;
+  for (const payload of payloads) size += 4 + payload.length;
+  const out = new Uint8Array(size);
+  const view = new DataView(out.buffer);
+  view.setUint32(0, payloads.length, true);
+  let at = 4;
+  for (const payload of payloads) {
+    view.setUint32(at, payload.length, true);
+    at += 4;
+    out.set(payload, at);
+    at += payload.length;
+  }
+  return out;
+}
+
+/** The response half of the same framing. */
+function unpackResponse(bytes: Uint8Array): PdfRuntimeRustResponse {
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const need = (at: number, length: number) => {
+    if (at + length > bytes.length) {
+      throw new Error('the Rust core returned a response frame that ends early');
+    }
+  };
+
+  need(0, 4);
+  const jsonLen = view.getUint32(0, true);
+  need(4, jsonLen);
+  const json = new TextDecoder().decode(bytes.subarray(4, 4 + jsonLen));
+
+  let at = 4 + jsonLen;
+  need(at, 4);
+  const count = view.getUint32(at, true);
+  at += 4;
+
+  const payloads: Uint8Array[] = [];
+  for (let index = 0; index < count; index++) {
+    need(at, 4);
+    const length = view.getUint32(at, true);
+    at += 4;
+    need(at, length);
+    // `slice` rather than `subarray`: the caller keeps these and the buffer
+    // they point into is about to go back to Rust.
+    payloads.push(bytes.slice(at, at + length));
+    at += length;
+  }
+  if (at !== bytes.length) {
+    throw new Error('the Rust core returned a response frame with unclaimed bytes');
+  }
+  return { json, payloads };
+}
+
+function createWasmRustHost(
+  module: EmscriptenModule,
+  mem: PdfRuntimeMemory,
+  create: () => number,
+  call: (
+    host: number,
+    request: number,
+    requestLen: number,
+    payloads: number,
+    payloadsLen: number,
+    outLen: number,
+  ) => number,
+  destroyHost: (host: number) => void,
+): PdfRuntimeRustHost {
+  const host = create();
+  if (host === 0) {
+    throw new Error('the Rust core could not create an engine');
+  }
+  let live = true;
+
+  return {
+    call(request, payloads) {
+      if (!live) {
+        throw new Error('this Rust engine has been destroyed');
+      }
+      const encoded = new TextEncoder().encode(request);
+      const framed = packPayloads(payloads);
+      // Three allocations, freed in the reverse order in one `finally` each,
+      // because an exception between them would otherwise leak linear memory
+      // that nothing in this module tracks.
+      const requestPtr = mem.alloc(encoded.length || 1);
+      try {
+        module.HEAPU8.set(encoded, toNumber(requestPtr));
+        const payloadsPtr = mem.alloc(framed.length);
+        try {
+          module.HEAPU8.set(framed, toNumber(payloadsPtr));
+          const lenPtr = mem.alloc(4);
+          try {
+            const out = call(
+              host,
+              toNumber(requestPtr),
+              encoded.length,
+              toNumber(payloadsPtr),
+              framed.length,
+              toNumber(lenPtr),
+            );
+            if (out === 0) {
+              throw new Error('the Rust core refused a request without reporting why');
+            }
+            const len = Number(mem.peek(lenPtr, 'i32'));
+            try {
+              // Copied out before the buffer goes back: `unpackResponse`
+              // reads it, and a view into freed linear memory reads as
+              // whatever lands there next.
+              return unpackResponse(module.HEAPU8.slice(out, out + len));
+            } finally {
+              module._epdf_buffer_free?.(out, len);
+            }
+          } finally {
+            mem.free(lenPtr);
+          }
+        } finally {
+          mem.free(payloadsPtr);
+        }
+      } finally {
+        mem.free(requestPtr);
+      }
+    },
+
+    destroy() {
+      // Idempotent, because a host unwinding from an error may well call
+      // this twice and a double free here is a crash with no stack.
+      if (!live) return;
+      live = false;
+      destroyHost(host);
     },
   };
 }

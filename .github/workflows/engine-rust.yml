@@ -322,3 +322,61 @@ jobs:
   build-runtime:
     uses: ./.github/workflows/build-engine-runtime.yml
     secrets: inherit
+
+  rust-routing:
+    name: the Rust core, through the real transport
+    needs: build-runtime
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # The third gate, and the one the other two cannot give. `cargo` proves
+    # the Rust reproduces the vectors; `vectors` proves the vectors still
+    # describe the shipping TypeScript. Neither runs a single byte of Rust
+    # through the WASM boundary, the worker wire and the service API, which
+    # is the path every web caller actually takes.
+    #
+    # It has teeth only because the runtime payload now carries the core:
+    # both suites skip themselves on a runtime without it, so before the
+    # payload included it they were green and never ran.
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v5
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download engine-runtime artifacts
+        uses: actions/download-artifact@v7
+        with:
+          pattern: engine-runtime-*
+          path: packages/engine/runtime/_artifacts
+
+      - name: Stage runtime payloads
+        shell: bash
+        run: |
+          shopt -s nullglob
+          for dir in packages/engine/runtime/_artifacts/engine-runtime-*; do
+            target="${dir##*/engine-runtime-}"
+            mkdir -p "packages/engine/runtime/npm/$target"
+            cp -R "$dir/." "packages/engine/runtime/npm/$target/"
+          done
+          rm -rf packages/engine/runtime/_artifacts
+
+      # Asserted rather than assumed. Both suites below skip when the core is
+      # absent, so a payload that lost it would turn this whole job green
+      # while running nothing.
+      - name: The payload carries the Rust core
+        run: node packages/engine/runtime/scripts/verify-rust-core.mjs
+
+      # G2: both geometry readers over a live session, compared exactly.
+      - name: Rust and TypeScript geometry agree
+        run: pnpm --filter @embedpdf/engine exec vitest run test/geometry-rust-parity.test.ts
+
+      # G3w: a Rust-owned session under the real transport, routing no reads.
+      - name: The Rust session rehearsal opens and closes
+        run: pnpm --filter @embedpdf/engine exec vitest run test/session-rust-rehearsal.test.ts
