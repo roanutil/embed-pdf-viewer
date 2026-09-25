@@ -75,6 +75,48 @@
             "responses": [
               {
                 "path": "page.annotations.list",
+                "pon": 2,
+                "value": {
+                  "annotations": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 2
+                      },
+                      "subtype": "square",
+                      "rect": {
+                        "left": 10,
+                        "bottom": 20,
+                        "right": 30,
+                        "top": 40
+                      },
+                      "flags": {
+                        "hidden": false,
+                        "print": true,
+                        "readOnly": false,
+                        "locked": false,
+                        "noView": false,
+                        "toggleNoView": false
+                      },
+                      "actions": {
+                        "activate": {
+                          "root": {
+                            "type": "named",
+                            "subtype": "Named",
+                            "name": "click-numberless",
+                            "next": []
+                          },
+                          "incomplete": false,
+                          "warningFlags": 0,
+                          "warnings": []
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "page.annotations.list",
                 "pon": 1,
                 "value": {
                   "annotations": [
@@ -433,6 +475,24 @@
                 "annotObjectNumber": 404
               },
               "pon": 1
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "dispatch",
+          "args": [
+            {
+              "scope": "activate",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 2
+              },
+              "pon": 2
             }
           ]
         }
@@ -1209,6 +1269,111 @@
             "plugins": {
               "actions::a": {
                 "seq": 4
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 12,
+              "resolved": {
+                "status": "executed",
+                "steps": [
+                  {
+                    "source": {
+                      "kind": "annotation",
+                      "annotation": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 2
+                      },
+                      "pon": 2
+                    },
+                    "tree": {
+                      "root": {
+                        "type": "named",
+                        "subtype": "Named",
+                        "name": "click-numberless",
+                        "next": []
+                      },
+                      "incomplete": false,
+                      "warningFlags": 0,
+                      "warnings": []
+                    },
+                    "result": {
+                      "status": "executed",
+                      "nodes": [
+                        {
+                          "path": [],
+                          "type": "named",
+                          "status": "executed"
+                        }
+                      ],
+                      "diagnostics": []
+                    }
+                  }
+                ],
+                "diagnostics": []
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "actions::a",
+              "action": {
+                "type": "ACTIONS_DISPATCHED"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "page.annotations.list",
+              "pon": 2,
+              "args": []
+            }
+          ],
+          "callbacks": [
+            {
+              "fn": "exec.named",
+              "args": [
+                {
+                  "type": "named",
+                  "subtype": "Named",
+                  "name": "click-numberless",
+                  "next": []
+                },
+                {
+                  "origin": "user",
+                  "source": {
+                    "kind": "annotation",
+                    "annotation": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 2
+                    },
+                    "pon": 2
+                  },
+                  "event": {
+                    "scope": "activate"
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 12
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 5
               }
             }
           }
@@ -5149,6 +5314,14 @@
                     "right": 600,
                     "top": 800
                   }
+                },
+                "actions": {
+                  "open": {
+                    "root": null,
+                    "incomplete": false,
+                    "warningFlags": 0,
+                    "warnings": []
+                  }
                 }
               }
             ],
@@ -8688,6 +8861,14 @@
                     "bottom": 0,
                     "right": 600,
                     "top": 800
+                  }
+                },
+                "actions": {
+                  "open": {
+                    "root": null,
+                    "incomplete": false,
+                    "warningFlags": 0,
+                    "warnings": []
                   }
                 }
               }

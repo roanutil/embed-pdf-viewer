@@ -7059,6 +7059,571 @@
       ]
     },
     {
+      "name": "hide-and-later-document-work",
+      "covers": "An executed hide leaves later document nodes running; a failed hide skips them.",
+      "plugins": [
+        {
+          "factory": "actions",
+          "config": {
+            "openSequence": "off"
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "pageObjectNumber": 2,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ],
+            "security": {
+              "allows": "*"
+            },
+            "responses": [
+              {
+                "path": "forms.list",
+                "value": {
+                  "formKind": "none",
+                  "needsAppearances": false,
+                  "fields": [],
+                  "calculationOrder": []
+                }
+              },
+              {
+                "path": "page.annotations.list",
+                "value": {
+                  "annotations": []
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "registerExecutor",
+          "args": [
+            "reset-form",
+            {
+              "$fn": "exec.reset-form",
+              "returns": {
+                "status": "executed"
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "registerAnnotCommitSink",
+          "args": [
+            {
+              "$fn": "sink.annot",
+              "seq": [
+                {
+                  "returns": {
+                    "results": [
+                      {
+                        "annotObjectNumber": 7,
+                        "status": "applied"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "returns": {
+                    "results": [
+                      {
+                        "annotObjectNumber": 7,
+                        "status": "failed",
+                        "error": "refused"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "execute",
+          "args": [
+            {
+              "root": {
+                "type": "hide",
+                "subtype": "Hide",
+                "targets": [
+                  {
+                    "kind": "objectNumber",
+                    "objectNumber": 7
+                  }
+                ],
+                "hide": true,
+                "next": [
+                  {
+                    "type": "reset-form",
+                    "subtype": "ResetForm",
+                    "fields": null,
+                    "exclude": false,
+                    "next": []
+                  }
+                ]
+              },
+              "incomplete": false,
+              "warningFlags": 0,
+              "warnings": []
+            },
+            {
+              "origin": "user",
+              "source": {
+                "kind": "api"
+              },
+              "event": {
+                "scope": "activate"
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "execute",
+          "args": [
+            {
+              "root": {
+                "type": "hide",
+                "subtype": "Hide",
+                "targets": [
+                  {
+                    "kind": "objectNumber",
+                    "objectNumber": 7
+                  }
+                ],
+                "hide": true,
+                "next": [
+                  {
+                    "type": "reset-form",
+                    "subtype": "ResetForm",
+                    "fields": null,
+                    "exclude": false,
+                    "next": []
+                  }
+                ]
+              },
+              "incomplete": false,
+              "warningFlags": 0,
+              "warnings": []
+            },
+            {
+              "origin": "user",
+              "source": {
+                "kind": "api"
+              },
+              "event": {
+                "scope": "activate"
+              }
+            }
+          ]
+        }
+      ],
+      "snapshot": [
+        "actions::a"
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 0
+            }
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 1
+            }
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": {
+                "status": "executed",
+                "nodes": [
+                  {
+                    "path": [],
+                    "type": "hide",
+                    "status": "executed"
+                  },
+                  {
+                    "path": [
+                      0
+                    ],
+                    "type": "reset-form",
+                    "status": "executed"
+                  }
+                ],
+                "diagnostics": []
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "actions::a",
+              "action": {
+                "type": "ACTIONS_DISPATCHED"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "forms.list",
+              "args": []
+            }
+          ],
+          "callbacks": [
+            {
+              "fn": "sink.annot",
+              "args": [
+                [
+                  {
+                    "annotObjectNumber": 7,
+                    "patch": {
+                      "flags": {
+                        "hidden": true
+                      }
+                    }
+                  }
+                ]
+              ]
+            },
+            {
+              "fn": "exec.reset-form",
+              "args": [
+                {
+                  "type": "reset-form",
+                  "subtype": "ResetForm",
+                  "fields": null,
+                  "exclude": false,
+                  "next": []
+                },
+                {
+                  "origin": "user",
+                  "source": {
+                    "kind": "api"
+                  },
+                  "event": {
+                    "scope": "activate"
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 3,
+              "resolved": {
+                "status": "partial",
+                "nodes": [
+                  {
+                    "path": [],
+                    "type": "hide",
+                    "status": "failed",
+                    "detail": "refused"
+                  },
+                  {
+                    "path": [
+                      0
+                    ],
+                    "type": "reset-form",
+                    "status": "skipped"
+                  }
+                ],
+                "diagnostics": [
+                  {
+                    "code": "executor-failed",
+                    "message": "hide: annotation 7: refused"
+                  }
+                ]
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "actions::a",
+              "action": {
+                "type": "ACTIONS_DISPATCHED"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "forms.list",
+              "args": []
+            }
+          ],
+          "callbacks": [
+            {
+              "fn": "sink.annot",
+              "args": [
+                [
+                  {
+                    "annotObjectNumber": 7,
+                    "patch": {
+                      "flags": {
+                        "hidden": true
+                      }
+                    }
+                  }
+                ]
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 3
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 2
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "hide-without-targets",
       "covers": "A hide with no targets reads nothing and executes.",
       "plugins": [

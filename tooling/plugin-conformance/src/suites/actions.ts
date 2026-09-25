@@ -439,6 +439,20 @@ const dispatcherCases: ScenarioCase[] = [
     snapshot: snap,
   },
   {
+    name: 'hide-and-later-document-work',
+    covers: 'An executed hide leaves later document nodes running; a failed hide skips them.',
+    plugins: plugins(OFF),
+    engine: engineWith(),
+    steps: [
+      ...boot,
+      reg('reset-form'),
+      cap('registerAnnotCommitSink', fnSpec('sink.annot', { seq: [ANNOT_OK([7]), { returns: { results: [{ annotObjectNumber: 7, status: 'failed', error: 'refused' }] } }] })),
+      cap('execute', tree(hide([byNumber(7)], true, [reset(null)])), USER),
+      cap('execute', tree(hide([byNumber(7)], true, [reset(null)])), USER),
+    ],
+    snapshot: snap,
+  },
+  {
     name: 'hide-without-targets',
     covers: 'A hide with no targets reads nothing and executes.',
     plugins: plugins(OFF),
@@ -828,7 +842,7 @@ const fanPage5 = [
   annot(5, 14, { pageOpen: tree(null), cursorEnter: tree(named('E-14')) }),
 ];
 const fanEngine = engineWith({
-  pages: [page(5, 0, { open: tree(named('pageO')), close: tree(named('pageC')) }), page(6, 1)],
+  pages: [page(5, 0, { open: tree(named('pageO')), close: tree(named('pageC')) }), page(6, 1, { open: tree(null) })],
   responses: [annotations(5, fanPage5)],
 });
 
@@ -839,6 +853,7 @@ const triggerCases: ScenarioCase[] = [
     plugins: plugins(OFF),
     engine: engineWith({
       responses: [
+        annotations(2, [annot(2, 0, { activate: tree(named('click-numberless')) }, { ref: { kind: 'objectNumber', pageObjectNumber: 2 } })]),
         annotations(1, [
           annot(1, 9, { activate: tree(named('click-9')) }),
           annot(1, 10, { activate: tree(named('click-nm')) }, { ref: nmRef(1, 'tip') }),
@@ -859,6 +874,7 @@ const triggerCases: ScenarioCase[] = [
       dispatch(activate(1, indexRef(1, 4))),
       dispatch(activate(1, aref(1, 10))),
       dispatch(activate(1, { kind: 'objectNumber', pageObjectNumber: 1, annotObjectNumber: 404 })),
+      dispatch(activate(2, { kind: 'objectNumber', pageObjectNumber: 2 })),
     ],
     snapshot: snap,
   },
@@ -1580,6 +1596,8 @@ const scriptCases: ScenarioCase[] = [
         widgetCtx({ kind: 'objectNumber', fieldObjectNumber: 102 }),
         widgetCtx({ kind: 'fqn', name: 'empty' }),
         { origin: 'hover', source: { kind: 'link', annotation: aref(1, 7), pon: 1 }, event: { scope: 'annotation', name: 'cursorEnter' } },
+        { origin: 'hover', source: { kind: 'link', annotation: aref(2, 7), pon: 2 }, event: { scope: 'annotation', name: 'cursorEnter' } },
+        { origin: 'user', source: { kind: 'annotation', annotation: aref(2, 6), pon: 2 }, event: { scope: 'annotation', name: 'mouseDown' } },
         { origin: 'hover', source: { kind: 'annotation', annotation: aref(1, 6), pon: 1 }, event: { scope: 'annotation', name: 'cursorExit' } },
         { origin: 'user', source: { kind: 'annotation', annotation: aref(1, 6), pon: 1 }, event: { scope: 'annotation', name: 'mouseDown' } },
         { origin: 'user', source: { kind: 'annotation', annotation: aref(1, 6), pon: 1 }, event: { scope: 'annotation', name: 'mouseUp' } },

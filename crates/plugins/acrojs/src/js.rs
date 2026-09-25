@@ -90,11 +90,6 @@ pub fn trim(s: &str) -> &str {
     s.trim_matches(is_whitespace)
 }
 
-/// `s.length`: UTF-16 code units.
-pub fn utf16_len(s: &str) -> usize {
-    s.encode_utf16().count()
-}
-
 /// A canonical number: a JSON number, or `{"$number": "NaN" | "Infinity" |
 /// "-Infinity"}`, which is how a vector writes the values JSON cannot.
 pub fn number(value: &Value) -> Option<f64> {
@@ -201,6 +196,19 @@ mod tests {
     fn trims_the_javascript_set() {
         assert_eq!(trim("\u{FEFF} a \u{00A0}"), "a");
         assert_eq!(trim("\u{0085}a"), "\u{0085}a");
+    }
+
+    #[test]
+    fn coerces_json_as_string_does() {
+        use serde_json::json;
+        assert_eq!(string_of(&json!(null)), "null");
+        assert_eq!(string_of(&json!(true)), "true");
+        assert_eq!(string_of(&json!(1.5)), "1.5");
+        assert_eq!(string_of(&json!({ "$number": "NaN" })), "NaN");
+        assert_eq!(string_of(&json!({ "$undefined": true })), "undefined");
+        assert_eq!(string_of(&json!({ "a": 1 })), "[object Object]");
+        assert_eq!(string_of(&json!(["RGB"])), "RGB");
+        assert_eq!(string_of(&json!([null, { "$undefined": true }, "x", ["y", 2]])), ",,x,y,2");
     }
 
     #[test]

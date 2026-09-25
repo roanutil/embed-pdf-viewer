@@ -490,3 +490,34 @@ pub fn script_event_matrix() -> Value {
         "submitForm": "sink-chain",
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn looks_up_writable_keys_by_subtype() {
+        assert_eq!(annot_writable_keys("stamp"), Some(&["rect"][..]));
+        assert_eq!(annot_writable_keys("ink").map(<[_]>::len), Some(4));
+        assert_eq!(annot_writable_keys("link"), None);
+    }
+
+    #[test]
+    fn names_each_ui_effect_kind() {
+        let submit = ScriptUiEffect::SubmitForm {
+            url: None,
+            field_names: None,
+            include_empty: false,
+            format: None,
+            method: None,
+        };
+        for effect in [
+            ScriptUiEffect::Alert { message: String::new(), icon: 0.0, title: None },
+            ScriptUiEffect::Print,
+            ScriptUiEffect::GotoPage { page: 0.0 },
+            submit,
+        ] {
+            assert_eq!(serde_json::to_value(&effect).unwrap()["kind"], effect.kind());
+        }
+    }
+}

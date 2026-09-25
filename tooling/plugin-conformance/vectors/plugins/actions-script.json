@@ -11325,6 +11325,80 @@
             {
               "origin": "hover",
               "source": {
+                "kind": "link",
+                "annotation": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2,
+                  "annotObjectNumber": 7
+                },
+                "pon": 2
+              },
+              "event": {
+                "scope": "annotation",
+                "name": "cursorEnter"
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "execute",
+          "args": [
+            {
+              "root": {
+                "type": "javascript",
+                "subtype": "JavaScript",
+                "script": "probe()",
+                "next": []
+              },
+              "incomplete": false,
+              "warningFlags": 0,
+              "warnings": []
+            },
+            {
+              "origin": "user",
+              "source": {
+                "kind": "annotation",
+                "annotation": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2,
+                  "annotObjectNumber": 6
+                },
+                "pon": 2
+              },
+              "event": {
+                "scope": "annotation",
+                "name": "mouseDown"
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "execute",
+          "args": [
+            {
+              "root": {
+                "type": "javascript",
+                "subtype": "JavaScript",
+                "script": "probe()",
+                "next": []
+              },
+              "incomplete": false,
+              "warningFlags": 0,
+              "warnings": []
+            },
+            {
+              "origin": "hover",
+              "source": {
                 "kind": "annotation",
                 "annotation": {
                   "kind": "objectNumber",
@@ -13337,7 +13411,7 @@
             {
               "doc": "a",
               "path": "page.annotations.list",
-              "pon": 1,
+              "pon": 2,
               "args": []
             }
           ],
@@ -13414,97 +13488,15 @@
                       "required": false
                     }
                   ],
-                  "annots": [
-                    {
-                      "ref": {
-                        "kind": "objectNumber",
-                        "pageObjectNumber": 1,
-                        "annotObjectNumber": 6
-                      },
-                      "name": "tip",
-                      "subtype": "square",
-                      "page": 0,
-                      "rect": [
-                        10,
-                        20,
-                        30,
-                        40
-                      ],
-                      "contents": "hello",
-                      "author": "Ada",
-                      "subject": "Note",
-                      "strokeColor": [
-                        "RGB",
-                        1,
-                        0,
-                        0.2
-                      ],
-                      "fillColor": [
-                        "T"
-                      ],
-                      "opacity": 0.5,
-                      "width": 2,
-                      "borderStyle": "D",
-                      "dash": [
-                        3,
-                        1
-                      ],
-                      "hidden": true,
-                      "print": false,
-                      "readOnly": true,
-                      "locked": true,
-                      "noView": false,
-                      "toggleNoView": true,
-                      "opaqueBody": false
-                    },
-                    {
-                      "ref": {
-                        "kind": "objectNumber",
-                        "pageObjectNumber": 1,
-                        "annotObjectNumber": 9
-                      },
-                      "name": "",
-                      "subtype": "stamp",
-                      "page": 0,
-                      "rect": [
-                        10,
-                        20,
-                        30,
-                        40
-                      ],
-                      "contents": "",
-                      "author": "",
-                      "subject": "",
-                      "strokeColor": [
-                        "T"
-                      ],
-                      "fillColor": [
-                        "RGB",
-                        0,
-                        0.5019607843137255,
-                        1
-                      ],
-                      "opacity": 1,
-                      "width": 1,
-                      "borderStyle": "S",
-                      "dash": [],
-                      "hidden": false,
-                      "print": true,
-                      "readOnly": false,
-                      "locked": false,
-                      "noView": false,
-                      "toggleNoView": false,
-                      "opaqueBody": true
-                    }
-                  ],
+                  "annots": [],
                   "annotPages": [
-                    0
+                    1
                   ],
                   "annotsCoverDocument": false,
                   "event": {
                     "kind": "widget-activate",
-                    "type": "Annot",
-                    "name": "Mouse Exit"
+                    "type": "Link",
+                    "name": "Mouse Enter"
                   }
                 },
                 {
@@ -13562,7 +13554,7 @@
             {
               "doc": "a",
               "path": "page.annotations.list",
-              "pon": 1,
+              "pon": 2,
               "args": []
             }
           ],
@@ -13639,91 +13631,9 @@
                       "required": false
                     }
                   ],
-                  "annots": [
-                    {
-                      "ref": {
-                        "kind": "objectNumber",
-                        "pageObjectNumber": 1,
-                        "annotObjectNumber": 6
-                      },
-                      "name": "tip",
-                      "subtype": "square",
-                      "page": 0,
-                      "rect": [
-                        10,
-                        20,
-                        30,
-                        40
-                      ],
-                      "contents": "hello",
-                      "author": "Ada",
-                      "subject": "Note",
-                      "strokeColor": [
-                        "RGB",
-                        1,
-                        0,
-                        0.2
-                      ],
-                      "fillColor": [
-                        "T"
-                      ],
-                      "opacity": 0.5,
-                      "width": 2,
-                      "borderStyle": "D",
-                      "dash": [
-                        3,
-                        1
-                      ],
-                      "hidden": true,
-                      "print": false,
-                      "readOnly": true,
-                      "locked": true,
-                      "noView": false,
-                      "toggleNoView": true,
-                      "opaqueBody": false
-                    },
-                    {
-                      "ref": {
-                        "kind": "objectNumber",
-                        "pageObjectNumber": 1,
-                        "annotObjectNumber": 9
-                      },
-                      "name": "",
-                      "subtype": "stamp",
-                      "page": 0,
-                      "rect": [
-                        10,
-                        20,
-                        30,
-                        40
-                      ],
-                      "contents": "",
-                      "author": "",
-                      "subject": "",
-                      "strokeColor": [
-                        "T"
-                      ],
-                      "fillColor": [
-                        "RGB",
-                        0,
-                        0.5019607843137255,
-                        1
-                      ],
-                      "opacity": 1,
-                      "width": 1,
-                      "borderStyle": "S",
-                      "dash": [],
-                      "hidden": false,
-                      "print": true,
-                      "readOnly": false,
-                      "locked": false,
-                      "noView": false,
-                      "toggleNoView": false,
-                      "opaqueBody": true
-                    }
-                  ],
+                  "annots": [],
                   "annotPages": [
-                    0
+                    1
                   ],
                   "annotsCoverDocument": false,
                   "event": {
@@ -13954,7 +13864,7 @@
                   "event": {
                     "kind": "widget-activate",
                     "type": "Annot",
-                    "name": "Mouse Up"
+                    "name": "Mouse Exit"
                   }
                 },
                 {
@@ -14179,7 +14089,7 @@
                   "event": {
                     "kind": "widget-activate",
                     "type": "Annot",
-                    "name": "Blur"
+                    "name": "Mouse Down"
                   }
                 },
                 {
@@ -14237,7 +14147,7 @@
             {
               "doc": "a",
               "path": "page.annotations.list",
-              "pon": 2,
+              "pon": 1,
               "args": []
             }
           ],
@@ -14314,15 +14224,97 @@
                       "required": false
                     }
                   ],
-                  "annots": [],
+                  "annots": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1,
+                        "annotObjectNumber": 6
+                      },
+                      "name": "tip",
+                      "subtype": "square",
+                      "page": 0,
+                      "rect": [
+                        10,
+                        20,
+                        30,
+                        40
+                      ],
+                      "contents": "hello",
+                      "author": "Ada",
+                      "subject": "Note",
+                      "strokeColor": [
+                        "RGB",
+                        1,
+                        0,
+                        0.2
+                      ],
+                      "fillColor": [
+                        "T"
+                      ],
+                      "opacity": 0.5,
+                      "width": 2,
+                      "borderStyle": "D",
+                      "dash": [
+                        3,
+                        1
+                      ],
+                      "hidden": true,
+                      "print": false,
+                      "readOnly": true,
+                      "locked": true,
+                      "noView": false,
+                      "toggleNoView": true,
+                      "opaqueBody": false
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1,
+                        "annotObjectNumber": 9
+                      },
+                      "name": "",
+                      "subtype": "stamp",
+                      "page": 0,
+                      "rect": [
+                        10,
+                        20,
+                        30,
+                        40
+                      ],
+                      "contents": "",
+                      "author": "",
+                      "subject": "",
+                      "strokeColor": [
+                        "T"
+                      ],
+                      "fillColor": [
+                        "RGB",
+                        0,
+                        0.5019607843137255,
+                        1
+                      ],
+                      "opacity": 1,
+                      "width": 1,
+                      "borderStyle": "S",
+                      "dash": [],
+                      "hidden": false,
+                      "print": true,
+                      "readOnly": false,
+                      "locked": false,
+                      "noView": false,
+                      "toggleNoView": false,
+                      "opaqueBody": true
+                    }
+                  ],
                   "annotPages": [
-                    1
+                    0
                   ],
                   "annotsCoverDocument": false,
                   "event": {
                     "kind": "widget-activate",
-                    "type": "Page",
-                    "name": "Open"
+                    "type": "Annot",
+                    "name": "Mouse Up"
                   }
                 },
                 {
@@ -14380,7 +14372,7 @@
             {
               "doc": "a",
               "path": "page.annotations.list",
-              "pon": 2,
+              "pon": 1,
               "args": []
             }
           ],
@@ -14457,15 +14449,97 @@
                       "required": false
                     }
                   ],
-                  "annots": [],
+                  "annots": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1,
+                        "annotObjectNumber": 6
+                      },
+                      "name": "tip",
+                      "subtype": "square",
+                      "page": 0,
+                      "rect": [
+                        10,
+                        20,
+                        30,
+                        40
+                      ],
+                      "contents": "hello",
+                      "author": "Ada",
+                      "subject": "Note",
+                      "strokeColor": [
+                        "RGB",
+                        1,
+                        0,
+                        0.2
+                      ],
+                      "fillColor": [
+                        "T"
+                      ],
+                      "opacity": 0.5,
+                      "width": 2,
+                      "borderStyle": "D",
+                      "dash": [
+                        3,
+                        1
+                      ],
+                      "hidden": true,
+                      "print": false,
+                      "readOnly": true,
+                      "locked": true,
+                      "noView": false,
+                      "toggleNoView": true,
+                      "opaqueBody": false
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1,
+                        "annotObjectNumber": 9
+                      },
+                      "name": "",
+                      "subtype": "stamp",
+                      "page": 0,
+                      "rect": [
+                        10,
+                        20,
+                        30,
+                        40
+                      ],
+                      "contents": "",
+                      "author": "",
+                      "subject": "",
+                      "strokeColor": [
+                        "T"
+                      ],
+                      "fillColor": [
+                        "RGB",
+                        0,
+                        0.5019607843137255,
+                        1
+                      ],
+                      "opacity": 1,
+                      "width": 1,
+                      "borderStyle": "S",
+                      "dash": [],
+                      "hidden": false,
+                      "print": true,
+                      "readOnly": false,
+                      "locked": false,
+                      "noView": false,
+                      "toggleNoView": false,
+                      "opaqueBody": true
+                    }
+                  ],
                   "annotPages": [
-                    1
+                    0
                   ],
                   "annotsCoverDocument": false,
                   "event": {
                     "kind": "widget-activate",
-                    "type": "Page",
-                    "name": "Close"
+                    "type": "Annot",
+                    "name": "Blur"
                   }
                 },
                 {
@@ -14608,7 +14682,7 @@
                   "event": {
                     "kind": "widget-activate",
                     "type": "Page",
-                    "name": "Visible"
+                    "name": "Open"
                   }
                 },
                 {
@@ -14751,7 +14825,7 @@
                   "event": {
                     "kind": "widget-activate",
                     "type": "Page",
-                    "name": "Invisible"
+                    "name": "Close"
                   }
                 },
                 {
@@ -14809,7 +14883,7 @@
             {
               "doc": "a",
               "path": "page.annotations.list",
-              "pon": 1,
+              "pon": 2,
               "args": []
             }
           ],
@@ -14886,97 +14960,15 @@
                       "required": false
                     }
                   ],
-                  "annots": [
-                    {
-                      "ref": {
-                        "kind": "objectNumber",
-                        "pageObjectNumber": 1,
-                        "annotObjectNumber": 6
-                      },
-                      "name": "tip",
-                      "subtype": "square",
-                      "page": 0,
-                      "rect": [
-                        10,
-                        20,
-                        30,
-                        40
-                      ],
-                      "contents": "hello",
-                      "author": "Ada",
-                      "subject": "Note",
-                      "strokeColor": [
-                        "RGB",
-                        1,
-                        0,
-                        0.2
-                      ],
-                      "fillColor": [
-                        "T"
-                      ],
-                      "opacity": 0.5,
-                      "width": 2,
-                      "borderStyle": "D",
-                      "dash": [
-                        3,
-                        1
-                      ],
-                      "hidden": true,
-                      "print": false,
-                      "readOnly": true,
-                      "locked": true,
-                      "noView": false,
-                      "toggleNoView": true,
-                      "opaqueBody": false
-                    },
-                    {
-                      "ref": {
-                        "kind": "objectNumber",
-                        "pageObjectNumber": 1,
-                        "annotObjectNumber": 9
-                      },
-                      "name": "",
-                      "subtype": "stamp",
-                      "page": 0,
-                      "rect": [
-                        10,
-                        20,
-                        30,
-                        40
-                      ],
-                      "contents": "",
-                      "author": "",
-                      "subject": "",
-                      "strokeColor": [
-                        "T"
-                      ],
-                      "fillColor": [
-                        "RGB",
-                        0,
-                        0.5019607843137255,
-                        1
-                      ],
-                      "opacity": 1,
-                      "width": 1,
-                      "borderStyle": "S",
-                      "dash": [],
-                      "hidden": false,
-                      "print": true,
-                      "readOnly": false,
-                      "locked": false,
-                      "noView": false,
-                      "toggleNoView": false,
-                      "opaqueBody": true
-                    }
-                  ],
+                  "annots": [],
                   "annotPages": [
-                    0
+                    1
                   ],
                   "annotsCoverDocument": false,
                   "event": {
                     "kind": "widget-activate",
-                    "type": "Doc",
-                    "name": "Open"
+                    "type": "Page",
+                    "name": "Visible"
                   }
                 },
                 {
@@ -15034,7 +15026,7 @@
             {
               "doc": "a",
               "path": "page.annotations.list",
-              "pon": 1,
+              "pon": 2,
               "args": []
             }
           ],
@@ -15111,97 +15103,15 @@
                       "required": false
                     }
                   ],
-                  "annots": [
-                    {
-                      "ref": {
-                        "kind": "objectNumber",
-                        "pageObjectNumber": 1,
-                        "annotObjectNumber": 6
-                      },
-                      "name": "tip",
-                      "subtype": "square",
-                      "page": 0,
-                      "rect": [
-                        10,
-                        20,
-                        30,
-                        40
-                      ],
-                      "contents": "hello",
-                      "author": "Ada",
-                      "subject": "Note",
-                      "strokeColor": [
-                        "RGB",
-                        1,
-                        0,
-                        0.2
-                      ],
-                      "fillColor": [
-                        "T"
-                      ],
-                      "opacity": 0.5,
-                      "width": 2,
-                      "borderStyle": "D",
-                      "dash": [
-                        3,
-                        1
-                      ],
-                      "hidden": true,
-                      "print": false,
-                      "readOnly": true,
-                      "locked": true,
-                      "noView": false,
-                      "toggleNoView": true,
-                      "opaqueBody": false
-                    },
-                    {
-                      "ref": {
-                        "kind": "objectNumber",
-                        "pageObjectNumber": 1,
-                        "annotObjectNumber": 9
-                      },
-                      "name": "",
-                      "subtype": "stamp",
-                      "page": 0,
-                      "rect": [
-                        10,
-                        20,
-                        30,
-                        40
-                      ],
-                      "contents": "",
-                      "author": "",
-                      "subject": "",
-                      "strokeColor": [
-                        "T"
-                      ],
-                      "fillColor": [
-                        "RGB",
-                        0,
-                        0.5019607843137255,
-                        1
-                      ],
-                      "opacity": 1,
-                      "width": 1,
-                      "borderStyle": "S",
-                      "dash": [],
-                      "hidden": false,
-                      "print": true,
-                      "readOnly": false,
-                      "locked": false,
-                      "noView": false,
-                      "toggleNoView": false,
-                      "opaqueBody": true
-                    }
-                  ],
+                  "annots": [],
                   "annotPages": [
-                    0
+                    1
                   ],
                   "annotsCoverDocument": false,
                   "event": {
                     "kind": "widget-activate",
-                    "type": "Doc",
-                    "name": "WillSave"
+                    "type": "Page",
+                    "name": "Invisible"
                   }
                 },
                 {
@@ -15426,7 +15336,7 @@
                   "event": {
                     "kind": "widget-activate",
                     "type": "Doc",
-                    "name": "DidSave"
+                    "name": "Open"
                   }
                 },
                 {
@@ -15651,7 +15561,7 @@
                   "event": {
                     "kind": "widget-activate",
                     "type": "Doc",
-                    "name": "WillPrint"
+                    "name": "WillSave"
                   }
                 },
                 {
@@ -15876,7 +15786,7 @@
                   "event": {
                     "kind": "widget-activate",
                     "type": "Doc",
-                    "name": "DidPrint"
+                    "name": "DidSave"
                   }
                 },
                 {
@@ -16101,7 +16011,7 @@
                   "event": {
                     "kind": "widget-activate",
                     "type": "Doc",
-                    "name": "WillClose"
+                    "name": "WillPrint"
                   }
                 },
                 {
@@ -16325,8 +16235,8 @@
                   "annotsCoverDocument": false,
                   "event": {
                     "kind": "widget-activate",
-                    "type": "Link",
-                    "name": "Mouse Up"
+                    "type": "Doc",
+                    "name": "DidPrint"
                   }
                 },
                 {
@@ -16550,6 +16460,456 @@
                   "annotsCoverDocument": false,
                   "event": {
                     "kind": "widget-activate",
+                    "type": "Doc",
+                    "name": "WillClose"
+                  }
+                },
+                {
+                  "maxExecutionMs": 50,
+                  "maxMemoryBytes": 16777216,
+                  "maxStackBytes": 524288,
+                  "maxEffects": 256,
+                  "maxOutputBytes": 1048576
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 23
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 24,
+              "resolved": {
+                "status": "executed",
+                "nodes": [
+                  {
+                    "path": [],
+                    "type": "javascript",
+                    "status": "executed"
+                  }
+                ],
+                "diagnostics": []
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "actions::a",
+              "action": {
+                "type": "ACTIONS_DISPATCHED"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "forms.list",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "page.annotations.list",
+              "pon": 1,
+              "args": []
+            }
+          ],
+          "callbacks": [
+            {
+              "fn": "sandbox.run",
+              "args": [
+                0,
+                "probe()",
+                {
+                  "document": {
+                    "id": "a",
+                    "fileName": "document.pdf",
+                    "pageCount": 2,
+                    "pageNumber": 0
+                  },
+                  "identity": {
+                    "name": "Ada",
+                    "loginName": "u-1",
+                    "corporation": "g-1",
+                    "email": ""
+                  },
+                  "environment": {
+                    "nowMs": 0,
+                    "utcOffsetMinutes": 0,
+                    "randomSeed": 3017901990
+                  },
+                  "fields": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 100
+                      },
+                      "name": "name",
+                      "family": "text",
+                      "value": "name-value",
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 101
+                      },
+                      "name": "choice",
+                      "family": "combobox",
+                      "value": [
+                        "1"
+                      ],
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false,
+                      "options": [
+                        {
+                          "label": "One",
+                          "value": "1"
+                        }
+                      ]
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 102
+                      },
+                      "name": "empty",
+                      "family": "text",
+                      "value": null,
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false
+                    }
+                  ],
+                  "annots": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1,
+                        "annotObjectNumber": 6
+                      },
+                      "name": "tip",
+                      "subtype": "square",
+                      "page": 0,
+                      "rect": [
+                        10,
+                        20,
+                        30,
+                        40
+                      ],
+                      "contents": "hello",
+                      "author": "Ada",
+                      "subject": "Note",
+                      "strokeColor": [
+                        "RGB",
+                        1,
+                        0,
+                        0.2
+                      ],
+                      "fillColor": [
+                        "T"
+                      ],
+                      "opacity": 0.5,
+                      "width": 2,
+                      "borderStyle": "D",
+                      "dash": [
+                        3,
+                        1
+                      ],
+                      "hidden": true,
+                      "print": false,
+                      "readOnly": true,
+                      "locked": true,
+                      "noView": false,
+                      "toggleNoView": true,
+                      "opaqueBody": false
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1,
+                        "annotObjectNumber": 9
+                      },
+                      "name": "",
+                      "subtype": "stamp",
+                      "page": 0,
+                      "rect": [
+                        10,
+                        20,
+                        30,
+                        40
+                      ],
+                      "contents": "",
+                      "author": "",
+                      "subject": "",
+                      "strokeColor": [
+                        "T"
+                      ],
+                      "fillColor": [
+                        "RGB",
+                        0,
+                        0.5019607843137255,
+                        1
+                      ],
+                      "opacity": 1,
+                      "width": 1,
+                      "borderStyle": "S",
+                      "dash": [],
+                      "hidden": false,
+                      "print": true,
+                      "readOnly": false,
+                      "locked": false,
+                      "noView": false,
+                      "toggleNoView": false,
+                      "opaqueBody": true
+                    }
+                  ],
+                  "annotPages": [
+                    0
+                  ],
+                  "annotsCoverDocument": false,
+                  "event": {
+                    "kind": "widget-activate",
+                    "type": "Link",
+                    "name": "Mouse Up"
+                  }
+                },
+                {
+                  "maxExecutionMs": 50,
+                  "maxMemoryBytes": 16777216,
+                  "maxStackBytes": 524288,
+                  "maxEffects": 256,
+                  "maxOutputBytes": 1048576
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 24
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 25,
+              "resolved": {
+                "status": "executed",
+                "nodes": [
+                  {
+                    "path": [],
+                    "type": "javascript",
+                    "status": "executed"
+                  }
+                ],
+                "diagnostics": []
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "actions::a",
+              "action": {
+                "type": "ACTIONS_DISPATCHED"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "forms.list",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "page.annotations.list",
+              "pon": 1,
+              "args": []
+            }
+          ],
+          "callbacks": [
+            {
+              "fn": "sandbox.run",
+              "args": [
+                0,
+                "probe()",
+                {
+                  "document": {
+                    "id": "a",
+                    "fileName": "document.pdf",
+                    "pageCount": 2,
+                    "pageNumber": 0
+                  },
+                  "identity": {
+                    "name": "Ada",
+                    "loginName": "u-1",
+                    "corporation": "g-1",
+                    "email": ""
+                  },
+                  "environment": {
+                    "nowMs": 0,
+                    "utcOffsetMinutes": 0,
+                    "randomSeed": 3034679609
+                  },
+                  "fields": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 100
+                      },
+                      "name": "name",
+                      "family": "text",
+                      "value": "name-value",
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 101
+                      },
+                      "name": "choice",
+                      "family": "combobox",
+                      "value": [
+                        "1"
+                      ],
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false,
+                      "options": [
+                        {
+                          "label": "One",
+                          "value": "1"
+                        }
+                      ]
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 102
+                      },
+                      "name": "empty",
+                      "family": "text",
+                      "value": null,
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false
+                    }
+                  ],
+                  "annots": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1,
+                        "annotObjectNumber": 6
+                      },
+                      "name": "tip",
+                      "subtype": "square",
+                      "page": 0,
+                      "rect": [
+                        10,
+                        20,
+                        30,
+                        40
+                      ],
+                      "contents": "hello",
+                      "author": "Ada",
+                      "subject": "Note",
+                      "strokeColor": [
+                        "RGB",
+                        1,
+                        0,
+                        0.2
+                      ],
+                      "fillColor": [
+                        "T"
+                      ],
+                      "opacity": 0.5,
+                      "width": 2,
+                      "borderStyle": "D",
+                      "dash": [
+                        3,
+                        1
+                      ],
+                      "hidden": true,
+                      "print": false,
+                      "readOnly": true,
+                      "locked": true,
+                      "noView": false,
+                      "toggleNoView": true,
+                      "opaqueBody": false
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1,
+                        "annotObjectNumber": 9
+                      },
+                      "name": "",
+                      "subtype": "stamp",
+                      "page": 0,
+                      "rect": [
+                        10,
+                        20,
+                        30,
+                        40
+                      ],
+                      "contents": "",
+                      "author": "",
+                      "subject": "",
+                      "strokeColor": [
+                        "T"
+                      ],
+                      "fillColor": [
+                        "RGB",
+                        0,
+                        0.5019607843137255,
+                        1
+                      ],
+                      "opacity": 1,
+                      "width": 1,
+                      "borderStyle": "S",
+                      "dash": [],
+                      "hidden": false,
+                      "print": true,
+                      "readOnly": false,
+                      "locked": false,
+                      "noView": false,
+                      "toggleNoView": false,
+                      "opaqueBody": true
+                    }
+                  ],
+                  "annotPages": [
+                    0
+                  ],
+                  "annotsCoverDocument": false,
+                  "event": {
+                    "kind": "widget-activate",
                     "type": "Annot",
                     "name": "Mouse Up"
                   }
@@ -16572,7 +16932,7 @@
             }
           },
           "outcome": {
-            "promise": 23
+            "promise": 25
           }
         }
       ]
