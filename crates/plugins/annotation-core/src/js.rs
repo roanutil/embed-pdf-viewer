@@ -506,6 +506,14 @@ mod tests {
     }
 
     #[test]
+    fn id_set_reads_a_set_or_an_array() {
+        let set: IdSet = serde_json::from_value(serde_json::json!({"$set": ["a", "b"]})).unwrap();
+        let array: IdSet = serde_json::from_value(serde_json::json!(["a", "b", "a"])).unwrap();
+        assert_eq!(set, array);
+        assert!(array.has("b") && !array.has("c"));
+    }
+
+    #[test]
     fn string_to_number_matches_javascript() {
         let cases: &[(&str, f64)] = &[
             ("", 0.0),
