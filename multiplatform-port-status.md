@@ -68,6 +68,7 @@ them as verified, not as pinned.
 | G9 | `pages.extract` refusals and lifetime | `tests/page_extract.rs` |
 | G10 | layer artifact round trip, encrypted save | `tests/document_save.rs` |
 | G11 | a created annotation's appearance, and its survival of a save | `tests/annotation_create.rs` |
+| G10 | `finishMutation`, and the event vocabulary | `tests/mutation_finalization.rs` |
 | G15 | `document.renderPageFile`, and the injected image encoder | `tests/server_surfaces.rs` |
 | cross-cutting | rotation normalization | `tests/rotation_normalization.rs` |
 | cross-cutting | cancel traces | `tests/cancel_traces.rs` |
@@ -76,8 +77,16 @@ them as verified, not as pinned.
 
 Phase 2 is done: every read group from G2 through G9 is ported and gated.
 
-G10's save is done; its session authority, event stream and
-`WorkerHost.finishMutation` are not.
+G10 is done. The save landed earlier, the session authority is G3's
+`SessionAuthority`, and `finishMutation` with the event vocabulary is in
+`session/save.rs`.
+
+What stays TypeScript is the DELIVERY. `services/src/events/EventHub.ts` is
+the publisher and the port order keeps it there; what Rust owns is the
+vocabulary, the provenance envelope, and the judgement about which family a
+mutation belongs to. The acknowledged stream, its deduplication and its
+resync after a worker failure are the hub's, and they have no Rust half to
+port.
 
 `annotations.create` and `annotations.update` both cover all eighteen
 writable subtypes. The two they do not are the two that cannot be drafted: a
@@ -107,7 +116,8 @@ fork's header names it.
 
 `forms.deleteField` is the field-plane half only. The TypeScript's
 `WorkerHost` cascades into the annotation plane to take the detached widgets
-off their pages, and that cascade is G15's. `deleting_a_field_leaves_its
+off their pages, and that cascade is the host's composition rather than a
+feature: it calls two ported operations in order. `deleting_a_field_leaves_its
 _widgets_on_the_page` asserts the half that IS here, and
 `delete-merged-field-refused` records what the cascade does to a merged
 field/widget dictionary: the annotation plane will not delete a widget, so
