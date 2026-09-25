@@ -354,3 +354,54 @@ mod tests {
         assert!(found.is_empty());
     }
 }
+
+/// Why a whole query is refused, rather than only its pattern.
+///
+/// Wire spellings match `SearchQueryIssue` in `regex.ts`. The extra variant
+/// over [`SearchRegexIssue`] is the flag combination: diacritic-sensitive
+/// matching is a property of the FOLDED text plane, and a regex runs against
+/// the raw one, so asking for both is asking for something that does not
+/// exist rather than something this build has not implemented.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SearchQueryIssue {
+    DiacriticsWithRegex,
+    Regex(SearchRegexIssue),
+}
+
+impl SearchQueryIssue {
+    pub fn as_wire(self) -> &'static str {
+        match self {
+            Self::DiacriticsWithRegex => "diacritics-with-regex",
+            Self::Regex(issue) => issue.as_wire(),
+        }
+    }
+
+    /// The message the TypeScript reports, verbatim.
+    pub fn message(self) -> &'static str {
+        match self {
+            Self::DiacriticsWithRegex => {
+                "Diacritic-sensitive matching is not available for regex patterns (regex runs on \
+                 the raw text plane)."
+            }
+            Self::Regex(_) => "the pattern is not in the portable search dialect",
+        }
+    }
+}
+
+/// Validate a whole query: the flag combination, then the pattern.
+///
+/// A literal query is always valid, which is why the check returns before
+/// looking at the text at all. The order matters: a query that is both
+/// diacritic-sensitive and an invalid pattern reports the flag conflict,
+/// because that is the one the caller can fix without rewriting the pattern.
+pub fn validate_search_query(
+    query: &matcher::SearchQuery,
+) -> Result<(), SearchQueryIssue> {
+    if !query.regex {
+        return Ok(());
+    }
+    if query.match_diacritics {
+        return Err(SearchQueryIssue::DiacriticsWithRegex);
+    }
+    validate_search_regex(&query.text).map_err(SearchQueryIssue::Regex)
+}

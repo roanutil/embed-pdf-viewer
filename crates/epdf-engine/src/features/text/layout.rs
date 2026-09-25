@@ -116,7 +116,8 @@ pub struct PageTextLayout {
 /// not reading order. `rect` is its axis-aligned bounds from the same
 /// constructor, and `advance` is the reading direction along the baseline,
 /// taken from the glyph sequence rather than inferred from geometry.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PdfTextSegment {
     pub quad: PdfQuad,
     pub rect: PdfRect,

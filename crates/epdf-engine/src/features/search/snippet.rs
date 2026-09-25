@@ -18,7 +18,8 @@ use super::fold::OriginalRange;
 pub const SEARCH_SNIPPET_CONTEXT: u32 = 48;
 
 /// An excerpt, with the match located inside it.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SearchSnippet {
     pub text: String,
     /// Where the match starts within `text`, in UTF-16 code units.

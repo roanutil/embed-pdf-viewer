@@ -24,16 +24,26 @@ import {
   matchLiteral,
 } from '../../../packages/engine/core/src/search/literal';
 import { buildSnippet } from '../../../packages/engine/core/src/search/snippet';
-import { matchRegex, validateSearchRegex } from '../../../packages/engine/core/src/search/regex';
+import {
+  matchRegex,
+  validateSearchQuery,
+  validateSearchRegex,
+} from '../../../packages/engine/core/src/search/regex';
+import {
+  decodeSearchCursor,
+  searchQueryKey,
+} from '../../../packages/engine/services/src/features/search/internal/searchCursor';
 
 import {
   FOLD_CASES,
   LITERAL_CASES,
   REGEX_CASES,
+  SLICE_CASES,
   SNIPPET_CASES,
   type FoldCase,
   type LiteralCase,
   type RegexCase,
+  type SliceCase,
   type SnippetCase,
 } from './search-cases';
 
@@ -132,6 +142,39 @@ function runFoldCase(entry: FoldCase): FoldResult {
   return { ...entry, folded: folded.folded, map: [...folded.map], ranges };
 }
 
+/**
+ * What the slice protocol decides before any page is read.
+ *
+ * Three separate verdicts rather than one, because they are three separate
+ * refusals and a caller fixes each differently: a flag conflict by changing
+ * a flag, a key mismatch by restarting the search, a stale sequence by
+ * restarting it too but for a reason worth reporting differently.
+ */
+function runSliceCase(entry: SliceCase) {
+  const query = entry.request.query;
+  const mode = entry.request.mode ?? 'full';
+  const validation = validateSearchQuery(query);
+  const key = searchQueryKey(query, mode);
+
+  let cursor: { readonly ok: boolean; readonly message?: string } | undefined;
+  if (entry.request.cursor !== undefined) {
+    try {
+      decodeSearchCursor(entry.request, entry.request.cursor, entry.seq ?? 0, key);
+      cursor = { ok: true };
+    } catch (error) {
+      cursor = { ok: false, message: error instanceof Error ? error.message : String(error) };
+    }
+  }
+
+  return {
+    ...entry,
+    valid: validation.ok,
+    ...(validation.ok ? {} : { issue: validation.issue, message: validation.message }),
+    key,
+    ...(cursor === undefined ? {} : { cursor }),
+  };
+}
+
 function serialize(kind: string, entries: readonly unknown[]): string {
   const head = JSON.stringify({ schemaVersion: SCHEMA_VERSION, kind }, null, 2).replace(
     /\n}$/,
@@ -169,6 +212,11 @@ async function main(): Promise<void> {
   const check = process.argv.includes('--check');
 
   const names = new Set<string>();
+  for (const entry of [...SLICE_CASES]) {
+    const key = `slice:${entry.name}`;
+    if (names.has(key)) throw new Error(`duplicate case name ${key}`);
+    names.add(key);
+  }
   for (const entry of [...REGEX_CASES, ...FOLD_CASES, ...LITERAL_CASES, ...SNIPPET_CASES]) {
     const key =
       'pattern' in entry
@@ -202,6 +250,13 @@ async function main(): Promise<void> {
     (await emit(
       'snippet.json',
       serialize('search.snippet', SNIPPET_CASES.map(runSnippetCase)),
+      check,
+    )) || differed;
+
+  differed =
+    (await emit(
+      'slice-protocol.json',
+      serialize('search.slice', SLICE_CASES.map(runSliceCase)),
       check,
     )) || differed;
 

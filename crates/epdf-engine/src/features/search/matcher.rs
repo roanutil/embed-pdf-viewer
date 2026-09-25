@@ -12,12 +12,20 @@ use super::literal::{LiteralQuery, match_literal};
 use super::{SearchRegexIssue, match_regex};
 
 /// A query in either mode.
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SearchQuery {
     pub text: String,
+    /// Every flag defaults to false rather than being required, because the
+    /// wire omits a flag it is not setting and a missing `matchCase` means
+    /// case-folded rather than malformed.
+    #[serde(default)]
     pub regex: bool,
+    #[serde(default)]
     pub match_case: bool,
+    #[serde(default)]
     pub match_diacritics: bool,
+    #[serde(default)]
     pub whole_word: bool,
 }
 

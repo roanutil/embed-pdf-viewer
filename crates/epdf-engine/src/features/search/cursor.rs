@@ -64,6 +64,7 @@ pub fn encode_search_cursor(state: &SearchCursorState) -> String {
 /// can do exactly one thing about any of them: start again without a cursor.
 pub fn decode_search_cursor(
     cursor: &str,
+    start_page: Option<crate::identity::PageObjectNumber>,
     expected_seq: u64,
     expected_key: &str,
 ) -> Result<SearchCursorState, EngineError> {
@@ -84,6 +85,17 @@ pub fn decode_search_cursor(
         return Err(EngineError::with_message(
             EngineErrorCode::InvalidArg,
             "the document changed since this cursor was issued",
+        ));
+    }
+    // The cursor owns the position. A `startPage` beside it that disagrees is
+    // a caller bug, and silently letting the cursor win would hand back
+    // matches from a part of the document the caller did not ask about.
+    if let Some(page) = start_page
+        && page.get() != state.start
+    {
+        return Err(EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            "startPage conflicts with the cursor: omit startPage when resuming",
         ));
     }
     Ok(state)

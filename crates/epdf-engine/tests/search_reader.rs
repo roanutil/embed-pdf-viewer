@@ -8,7 +8,7 @@
 use epdf_engine::cancel::CancelToken;
 use epdf_engine::error::EngineErrorCode;
 use epdf_engine::features::search::matcher::SearchQuery;
-use epdf_engine::features::search::reader::{SearchMode, SearchRequest, search};
+use epdf_engine::features::search::reader::{SearchMode, SearchRequest, SearchSliceBudget, search};
 use epdf_engine::identity::PageObjectNumber;
 use epdf_engine::session::authority::SessionAuthority;
 use epdf_engine::session::document::DocumentSession;
@@ -61,21 +61,23 @@ fn a_query_finds_matches_with_segments_and_a_snippet() {
 }
 
 #[test]
-fn positions_mode_omits_the_snippet() {
-    // For a caller that already has the page text and only wants to know
-    // where. The segments are the same either way.
+fn the_rects_mode_withholds_the_snippet_and_keeps_the_geometry() {
+    // A permission distinction rather than a verbosity one. A snippet IS
+    // extracted text, so this is the mode for a document whose owner denies
+    // extraction: the reader can still FIND, and nothing readable crosses
+    // the boundary. The geometry is not text and stays.
     let mut session = report();
     let slice = search(
         &mut session,
-        &SearchRequest { mode: SearchMode::Positions, ..request(literal("the")) },
+        &SearchRequest { mode: SearchMode::Rects, ..request(literal("the")) },
         &CancelToken::never(),
     )
     .expect("search");
 
     assert!(!slice.matches.is_empty());
     for m in &slice.matches {
-        assert!(m.snippet.is_none(), "positions mode produced a snippet");
-        assert!(!m.segments.is_empty());
+        assert!(m.snippet.is_none(), "rects mode leaked a snippet");
+        assert!(!m.segments.is_empty(), "rects mode withheld the geometry too");
     }
 }
 
@@ -98,7 +100,10 @@ fn a_page_budget_stops_the_slice_and_yields_a_cursor() {
     let mut session = report();
     let slice = search(
         &mut session,
-        &SearchRequest { max_pages: Some(3), ..request(literal("the")) },
+        &SearchRequest {
+            budget: Some(SearchSliceBudget { max_pages: Some(3), ..Default::default() }),
+            ..request(literal("the"))
+        },
         &CancelToken::never(),
     )
     .expect("search");
@@ -113,7 +118,10 @@ fn a_cursor_resumes_where_the_last_slice_stopped() {
     let mut session = report();
     let first = search(
         &mut session,
-        &SearchRequest { max_pages: Some(5), ..request(literal(RARE)) },
+        &SearchRequest {
+            budget: Some(SearchSliceBudget { max_pages: Some(5), ..Default::default() }),
+            ..request(literal(RARE))
+        },
         &CancelToken::never(),
     )
     .expect("first");
@@ -123,7 +131,7 @@ fn a_cursor_resumes_where_the_last_slice_stopped() {
         &mut session,
         &SearchRequest {
             cursor: first.next_cursor.clone(),
-            max_pages: Some(5),
+            budget: Some(SearchSliceBudget { max_pages: Some(5), ..Default::default() }),
             ..request(literal(RARE))
         },
         &CancelToken::never(),
@@ -155,7 +163,10 @@ fn a_cursor_from_a_different_query_is_refused() {
     let mut session = report();
     let first = search(
         &mut session,
-        &SearchRequest { max_pages: Some(2), ..request(literal("the")) },
+        &SearchRequest {
+            budget: Some(SearchSliceBudget { max_pages: Some(2), ..Default::default() }),
+            ..request(literal("the"))
+        },
         &CancelToken::never(),
     )
     .expect("first");
@@ -177,7 +188,10 @@ fn a_cursor_from_before_a_mutation_is_refused() {
     let mut session = report();
     let first = search(
         &mut session,
-        &SearchRequest { max_pages: Some(2), ..request(literal("the")) },
+        &SearchRequest {
+            budget: Some(SearchSliceBudget { max_pages: Some(2), ..Default::default() }),
+            ..request(literal("the"))
+        },
         &CancelToken::never(),
     )
     .expect("first");
@@ -246,7 +260,10 @@ fn a_match_budget_stops_the_slice() {
     let mut session = report();
     let slice = search(
         &mut session,
-        &SearchRequest { max_matches: Some(1), ..request(literal("the")) },
+        &SearchRequest {
+            budget: Some(SearchSliceBudget { max_matches: Some(1), ..Default::default() }),
+            ..request(literal("the"))
+        },
         &CancelToken::never(),
     )
     .expect("search");
@@ -310,4 +327,182 @@ fn searching_a_closed_session_is_refused() {
             .code,
         EngineErrorCode::DocNotOpen,
     );
+}
+
+#[test]
+fn skip_resumes_by_position_without_a_cursor() {
+    // The trusted resume. A caller that pins content versions externally,
+    // which the cloud wire does by carrying the search epoch in its URL, has
+    // no cursor to present and no sequence to check against; what it has is
+    // how far it already got. Without this it would re-scan from page one
+    // and re-serve every match it has already shown.
+    let mut session = report();
+    let whole = search(&mut session, &request(literal(RARE)), &CancelToken::never())
+        .expect("the whole scan");
+
+    let skipped = search(
+        &mut session,
+        &SearchRequest { skip: Some(7), ..request(literal(RARE)) },
+        &CancelToken::never(),
+    )
+    .expect("the resumed scan");
+
+    assert_eq!(skipped.scanned_pages, whole.scanned_pages, "the scan did not reach the end");
+
+    let order = pages(&mut session);
+    let skipped_pages: Vec<_> = order[..7].to_vec();
+    let expected: Vec<_> = whole
+        .matches
+        .iter()
+        .filter(|m| !skipped_pages.contains(&m.page_object_number))
+        .map(|m| m.page_object_number)
+        .collect();
+    let actual: Vec<_> = skipped.matches.iter().map(|m| m.page_object_number).collect();
+    assert_eq!(actual, expected, "a skipped scan is not the tail of the whole one");
+    assert!(!expected.is_empty(), "the skip consumed the whole document");
+}
+
+#[test]
+fn a_skip_past_the_end_scans_nothing_rather_than_wrapping() {
+    // Clamped, not wrapped. A caller whose external pin is stale asks for a
+    // position past the document and gets an empty slice, which reads as
+    // "nothing left"; wrapping would silently re-serve page one as though it
+    // were new.
+    let mut session = report();
+    let slice = search(
+        &mut session,
+        &SearchRequest { skip: Some(9_999), ..request(literal(RARE)) },
+        &CancelToken::never(),
+    )
+    .expect("search");
+
+    assert!(slice.matches.is_empty(), "a skip past the end still found matches");
+    assert_eq!(slice.scanned_pages, slice.total_pages, "the skip was not clamped to the document");
+    assert!(slice.next_cursor.is_none(), "a finished scan offered a cursor");
+}
+
+#[test]
+fn a_start_page_and_a_skip_apply_together() {
+    // Not either/or. `startPage` chooses where the scan ORDER begins and
+    // `skip` how far into that order the caller already is, so a viewport-
+    // first scan that resumes needs both. Treating them as alternatives
+    // would make the second slice of a viewport-first search start over at
+    // page one.
+    let mut session = report();
+    let order = pages(&mut session);
+    let fifth = order[4];
+
+    let from_fifth = search(
+        &mut session,
+        &SearchRequest { start_page: Some(fifth), ..request(literal(RARE)) },
+        &CancelToken::never(),
+    )
+    .expect("the viewport-first scan");
+
+    let resumed = search(
+        &mut session,
+        &SearchRequest { start_page: Some(fifth), skip: Some(3), ..request(literal(RARE)) },
+        &CancelToken::never(),
+    )
+    .expect("the resumed viewport-first scan");
+
+    // The rotated order is pages 5..14 then 1..4. Skipping three of it drops
+    // the matches on the first three of those and keeps the rest, which is
+    // only true if the rotation happened as well as the skip.
+    let dropped: Vec<_> = order[4..7].to_vec();
+    let expected: Vec<_> = from_fifth
+        .matches
+        .iter()
+        .filter(|m| !dropped.contains(&m.page_object_number))
+        .map(|m| m.page_object_number)
+        .collect();
+    let actual: Vec<_> = resumed.matches.iter().map(|m| m.page_object_number).collect();
+    assert_eq!(actual, expected, "the start page and the skip did not both apply");
+    assert!(!expected.is_empty(), "the fixture has nothing left after the skip");
+}
+
+#[test]
+fn a_query_the_dialect_refuses_is_refused_before_any_page_is_read() {
+    // Up front, not on the first page. A document with no pages would
+    // otherwise accept a broken pattern and answer with an empty slice,
+    // which a caller reads as "no matches" rather than "your query is
+    // wrong". The refusal also names the issue, because a search box shows
+    // it.
+    let mut session = report();
+    let error = search(
+        &mut session,
+        &request(SearchQuery { text: "a(?=b)".into(), regex: true, ..SearchQuery::default() }),
+        &CancelToken::never(),
+    )
+    .expect_err("a lookaround is not in the dialect");
+    assert_eq!(error.code, EngineErrorCode::InvalidArg);
+    assert!(error.message.contains("lookaround"), "the issue is not named: {}", error.message);
+}
+
+#[test]
+fn diacritic_sensitive_matching_is_refused_for_a_regex() {
+    // The one rejected flag combination, and the one most likely to be
+    // waved through: both flags are individually valid and the matcher
+    // simply ignores the second. Ignoring it means a caller who asked for
+    // "café" not to match "cafe" gets matches that do, with no indication
+    // that the flag did nothing.
+    let mut session = report();
+    let error = search(
+        &mut session,
+        &request(SearchQuery {
+            text: "caf.".into(),
+            regex: true,
+            match_diacritics: true,
+            ..SearchQuery::default()
+        }),
+        &CancelToken::never(),
+    )
+    .expect_err("regex plus diacritics is refused");
+    assert_eq!(error.code, EngineErrorCode::InvalidArg);
+    assert!(
+        error.message.contains("diacritics-with-regex"),
+        "the issue is not named: {}",
+        error.message,
+    );
+}
+
+#[test]
+fn a_cursor_will_not_resume_against_a_conflicting_start_page() {
+    // The cursor owns the position. A `startPage` beside it that disagrees
+    // is a caller bug, and letting the cursor quietly win would hand back
+    // matches from a part of the document the caller did not ask about.
+    let mut session = report();
+    let order = pages(&mut session);
+    let first = search(
+        &mut session,
+        &SearchRequest {
+            budget: Some(SearchSliceBudget { max_pages: Some(2), ..Default::default() }),
+            ..request(literal(RARE))
+        },
+        &CancelToken::never(),
+    )
+    .expect("first");
+    let cursor = first.next_cursor.expect("the scan is not finished");
+
+    let error = search(
+        &mut session,
+        &SearchRequest {
+            cursor: Some(cursor.clone()),
+            start_page: Some(order[5]),
+            ..request(literal(RARE))
+        },
+        &CancelToken::never(),
+    )
+    .expect_err("a conflicting start page is refused");
+    assert_eq!(error.code, EngineErrorCode::InvalidArg);
+    assert!(error.message.contains("startPage"), "the conflict is not named: {}", error.message);
+
+    // And the same cursor without it still resumes, so the refusal is about
+    // the conflict rather than about the cursor.
+    search(
+        &mut session,
+        &SearchRequest { cursor: Some(cursor), ..request(literal(RARE)) },
+        &CancelToken::never(),
+    )
+    .expect("the cursor alone resumes");
 }

@@ -741,3 +741,157 @@ export const FOLD_CASES: readonly FoldCase[] = [
     text: FOLDING,
   },
 ];
+
+/**
+ * One request as it comes off the wire, and what the slice protocol makes of
+ * it before a single page is scanned.
+ *
+ * The three things pinned here are the three a caller can get wrong without
+ * the engine ever reading a page: the flag combination, the identity a cursor
+ * is minted against, and whether a cursor may be resumed at all. Each one
+ * refuses rather than degrades, which is the part worth pinning: a query that
+ * silently returns no matches is indistinguishable from a document that
+ * contains none.
+ */
+export interface SliceCase {
+  readonly name: string;
+  readonly covers: string;
+  /** Exactly the JSON a caller sends. */
+  readonly request: {
+    readonly query: {
+      readonly text: string;
+      readonly regex?: boolean;
+      readonly matchCase?: boolean;
+      readonly wholeWord?: boolean;
+      readonly matchDiacritics?: boolean;
+    };
+    readonly mode?: 'rects' | 'full';
+    readonly cursor?: string;
+    readonly startPage?: number;
+  };
+  /** The sequence the session is on, for the cursor's staleness check. */
+  readonly seq?: number;
+}
+
+export const SLICE_CASES: readonly SliceCase[] = [
+  {
+    name: 'literal-is-always-valid',
+    covers: 'A literal query skips the pattern check entirely, flags and all.',
+    request: { query: { text: 'a(', matchCase: true, matchDiacritics: true } },
+  },
+  {
+    name: 'regex-with-diacritics-is-refused',
+    covers:
+      'The one rejected flag combination. Diacritic folding is a property of the folded text plane and a regex runs on the raw one, so this asks for something that does not exist.',
+    request: { query: { text: 'caf.', regex: true, matchDiacritics: true } },
+  },
+  {
+    name: 'diacritics-is-reported-before-a-bad-pattern',
+    covers:
+      'Both wrong at once reports the flag, because that is the one a caller can fix without rewriting the pattern.',
+    request: { query: { text: '(?=x)', regex: true, matchDiacritics: true } },
+  },
+  {
+    name: 'regex-lookaround-is-refused',
+    covers: 'A dialect refusal reaches the query validator with its own issue intact.',
+    request: { query: { text: 'a(?=b)', regex: true } },
+  },
+  {
+    name: 'regex-backreference-is-refused',
+    covers: 'The other dialect refusal, through the same path.',
+    request: { query: { text: '(a)\\1', regex: true } },
+  },
+  {
+    name: 'empty-pattern-is-refused',
+    covers: 'An empty regex is refused where an empty literal is merely fruitless.',
+    request: { query: { text: '', regex: true } },
+  },
+  {
+    name: 'key-defaults-to-full-mode',
+    covers: 'An absent mode is full, and the cursor key says so.',
+    request: { query: { text: 'the' } },
+  },
+  {
+    name: 'key-spells-the-rects-mode',
+    covers:
+      'The spelling in the key is the wire spelling. A cursor minted by one implementation and replayed against another compares as a string, so a synonym here is a refusal no caller could diagnose.',
+    request: { query: { text: 'the' }, mode: 'rects' },
+  },
+  {
+    name: 'key-separates-every-flag',
+    covers: 'Each flag moves the key, so a cursor is not transferable across a toggle.',
+    request: {
+      query: { text: 'the', matchCase: true, wholeWord: true, matchDiacritics: true },
+      mode: 'full',
+    },
+  },
+  {
+    name: 'key-separates-regex-from-literal',
+    covers: 'Same text, different plane, different identity.',
+    request: { query: { text: 'the', regex: true } },
+  },
+  {
+    name: 'cursor-resumes-its-own-query',
+    covers: 'The accepting case, so the refusals below are not vacuous.',
+    request: {
+      query: { text: 'the' },
+      cursor: '{"v":1,"seq":7,"key":"[\\"l\\",\\"the\\",0,0,0,\\"full\\"]","start":0,"scanned":5}',
+    },
+    seq: 7,
+  },
+  {
+    name: 'cursor-from-another-query-is-refused',
+    covers: 'The key pins the query. Resuming under a different one would scan the wrong needle.',
+    request: {
+      query: { text: 'other' },
+      cursor: '{"v":1,"seq":7,"key":"[\\"l\\",\\"the\\",0,0,0,\\"full\\"]","start":0,"scanned":5}',
+    },
+    seq: 7,
+  },
+  {
+    name: 'cursor-from-before-a-mutation-is-refused',
+    covers:
+      'The sequence pins the content. Resuming over mutated pages could serve text a redaction just removed.',
+    request: {
+      query: { text: 'the' },
+      cursor: '{"v":1,"seq":6,"key":"[\\"l\\",\\"the\\",0,0,0,\\"full\\"]","start":0,"scanned":5}',
+    },
+    seq: 7,
+  },
+  {
+    name: 'cursor-beside-a-conflicting-start-page-is-refused',
+    covers:
+      'The cursor owns the position. Letting it quietly win would hand back matches from a part of the document the caller did not ask about.',
+    request: {
+      query: { text: 'the' },
+      cursor: '{"v":1,"seq":7,"key":"[\\"l\\",\\"the\\",0,0,0,\\"full\\"]","start":0,"scanned":5}',
+      startPage: 4,
+    },
+    seq: 7,
+  },
+  {
+    name: 'cursor-beside-the-matching-start-page-is-allowed',
+    covers: 'A startPage that agrees with the cursor is redundant rather than wrong.',
+    request: {
+      query: { text: 'the' },
+      cursor: '{"v":1,"seq":7,"key":"[\\"l\\",\\"the\\",0,0,0,\\"full\\"]","start":4,"scanned":5}',
+      startPage: 4,
+    },
+    seq: 7,
+  },
+  {
+    name: 'a-cursor-that-is-not-json-is-refused',
+    covers: 'The opaque contract cuts both ways: nothing is read out of a malformed one.',
+    request: { query: { text: 'the' }, cursor: 'not-json' },
+    seq: 7,
+  },
+  {
+    name: 'a-cursor-of-another-version-is-refused',
+    covers: 'A future format is refused rather than reinterpreted through this one.',
+    request: {
+      query: { text: 'the' },
+      cursor: '{"v":2,"seq":7,"key":"[\\"l\\",\\"the\\",0,0,0,\\"full\\"]","start":0,"scanned":5}',
+    },
+    seq: 7,
+  },
+];
