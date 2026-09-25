@@ -1,7 +1,7 @@
 {
   "total": {
-    "statements": "30433/30494",
-    "branches": "7454/7655"
+    "statements": "30785/30846",
+    "branches": "7540/7743"
   },
   "files": {
     "packages/core/acrojs/src/actions.ts": {
@@ -312,7 +312,7 @@
     },
     "packages/plugin/actions/src/capability.ts": {
       "statements": "1604/1615",
-      "branches": "575/603",
+      "branches": "574/602",
       "uncoveredLines": [
         329,
         330,
@@ -417,7 +417,7 @@
     },
     "packages/plugin/annotation/src/capability.ts": {
       "statements": "2251/2264",
-      "branches": "728/775",
+      "branches": "732/778",
       "uncoveredLines": [
         1395,
         1396,
@@ -471,7 +471,6 @@
         "1647:37#0",
         "1660:21#0",
         "1690:16#0",
-        "1838:57#0",
         "1858:30#0",
         "1866:42#0",
         "1869:16#0",
@@ -785,6 +784,48 @@
     "packages/plugin/interaction/src/types.ts": {
       "statements": "240/240",
       "branches": "6/6",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/link/src/capability.ts": {
+      "statements": "99/99",
+      "branches": "26/27",
+      "uncoveredLines": [],
+      "uncoveredBranches": [
+        "96:85#0"
+      ]
+    },
+    "packages/plugin/link/src/effects.ts": {
+      "statements": "41/41",
+      "branches": "11/12",
+      "uncoveredLines": [],
+      "uncoveredBranches": [
+        "15:12#0"
+      ]
+    },
+    "packages/plugin/link/src/link.plugin.ts": {
+      "statements": "47/47",
+      "branches": "7/8",
+      "uncoveredLines": [],
+      "uncoveredBranches": [
+        "43:73#0"
+      ]
+    },
+    "packages/plugin/link/src/reducer.ts": {
+      "statements": "18/18",
+      "branches": "6/6",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/link/src/source.ts": {
+      "statements": "59/59",
+      "branches": "31/31",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/link/src/types.ts": {
+      "statements": "88/88",
+      "branches": "0/0",
       "uncoveredLines": [],
       "uncoveredBranches": []
     },
@@ -1240,7 +1281,7 @@
     },
     "packages/plugin/stage/src/destination.ts": {
       "statements": "122/122",
-      "branches": "34/34",
+      "branches": "36/36",
       "uncoveredLines": [],
       "uncoveredBranches": []
     },
