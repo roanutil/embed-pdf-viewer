@@ -1,7 +1,11 @@
 # cargo-mutants configuration for the plugin-layer crates
 # (multiplatform-plugins-plan.md section 3.1).
 #
-#   cargo mutants -p epdf-plugin-<id> --test-package epdf-plugin-<id>
+#   scripts/mutants.sh -p epdf-plugin-<id> --test-package epdf-plugin-<id>
+#
+# Always through that wrapper: it allows one run per machine, one mutant at a
+# time, capped build jobs, at nice 19. Parallel unthrottled runs crashed the
+# development machine twice.
 #
 # The conformance adapters are test scaffolding that translates a vector's
 # JSON into calls; a mutant there changes what is being asked, not what the
