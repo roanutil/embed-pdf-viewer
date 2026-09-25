@@ -30,6 +30,11 @@ fn tools_and_gestures_match_the_typescript() {
 }
 
 #[test]
+fn hover_and_permissions_match_the_typescript() {
+    scenarios("plugins/annotation-hover.json");
+}
+
+#[test]
 fn markup_matches_the_typescript() {
     scenarios("plugins/annotation-markup.json");
 }
