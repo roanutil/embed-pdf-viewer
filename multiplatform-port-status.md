@@ -4,14 +4,17 @@ What is ported, what pins it, and what is left. `multiplatform-port-order.md`
 is the plan; this is where the plan actually got to. Regenerate nothing from
 this file: every claim below points at a test you can run.
 
-Run everything with `cargo test --workspace`, which is 66 suites at the time
-of writing, plus `cargo clippy --workspace --all-targets -- -D warnings`.
+Run everything with `cargo test --workspace`, which is 72 suites at the time
+of writing, plus `cargo clippy --workspace --all-targets -- -D warnings`. The
+TypeScript half is `pnpm --filter @embedpdf/tooling-engine-conformance run
+<name>:check` for each of the thirty-two check scripts, all wired into
+`.github/workflows/engine-rust.yml`.
 
-Every group from G0 through G15 now has a Rust implementation. What is left
-is listed under "Not started" below, and it is three things: a form-JavaScript
-applier that depends on a capability rather than on a port, the event
-DELIVERY that the port order keeps in TypeScript, and a handful of behaviours
-this corpus cannot distinguish, each documented where it lives.
+Every group from G0 through G15 now has a Rust implementation, every one of
+the sixty-five wire kinds reaches it, and all three bindings call it. What is
+left is listed under "Not started" below: the event DELIVERY that the port
+order keeps in TypeScript, five viewer flows nobody has written, and a handful
+of behaviours this corpus cannot distinguish, each documented where it lives.
 
 ## Done, and pinned to the TypeScript by vectors
 
@@ -82,9 +85,16 @@ them as verified, not as pinned.
 ## Not started, and what each gap actually is
 
 Phase 2 is done: every read group from G2 through G9 is ported and gated. So
-are G10 through G15. What follows is the residue: one operation that is not a
-port, one layer the plan keeps in TypeScript, and a set of behaviours the
-corpus cannot tell apart.
+are G10 through G15. What follows is the residue: one layer the plan keeps in
+TypeScript, five viewer flows, and a set of behaviours the corpus cannot tell
+apart.
+
+F1 through F9 exist in `tooling/viewer-e2e/tests/`. F10 through F14 do not.
+They are the Phase 4 write round trips — annotation, form fill, page assembly,
+redaction, undo and redo — and each one drives a mutation through viewer UI:
+create through a tool, save, reopen the saved bytes, compare. Nothing blocks
+them; they are simply unwritten, and each needs a fixture and a tool path that
+F1 through F9 do not touch.
 
 G10 is done. The save landed earlier, the session authority is G3's
 `SessionAuthority`, and `finishMutation` with the event vocabulary is in
@@ -103,9 +113,11 @@ popup is a child of the annotation it belongs to rather than a thing a caller
 places, and `unsupported` is the reader's name for a subtype this build does
 not model.
 
-G12 has everything but `forms.applyEffects`, which is the form-JavaScript
-effect applier and depends on a capability rather than on a port: web keeps
-`packages/core/js-sandbox` and mobile reports unsupported.
+G12 is complete. `forms.applyEffects` is in `features/forms/effects.rs`,
+pinned by `vectors/forms/effects.json`. What is NOT ported is the thing that
+produces the effects: a form script runs in `packages/core/js-sandbox` on web
+and is unsupported on mobile, and that is a capability rather than a port. The
+applier takes the decisions a script already made.
 
 `metadata.update` cannot say "the title is deliberately blank". The wire has
 three states and `Clear` is one of them, but `EPDF_SetMetaText` removes the
@@ -161,6 +173,54 @@ The encoder is injected for the reason the TypeScript injects it: a PNG
 library in the engine would ship to every target to satisfy the one that
 needs it. Two of the three targets refuse the encoded kinds today and this
 port keeps them refusing.
+
+## The wire, and the three bindings
+
+`crates/epdf-engine/src/host.rs` routes all sixty-five kinds: one JSON
+envelope in, one out, binary payloads positional on both sides. Each binding
+is one export over it. `epdf_host_call` is the C ABI, with the payload
+framing in `host::frame` because a pointer and a length cannot carry a list;
+`PdfEngine::call` and `Engine::call` need no framing, since uniffi and napi
+already carry a list of byte arrays.
+
+The cost is stated because the plan asks for it. Swift, Kotlin and TypeScript
+see strings and byte arrays rather than typed records, so a facade decodes the
+JSON itself and a mistyped argument is a runtime refusal rather than a compile
+error. The typed alternative is sixty-five signatures per language that no
+compiler checks against the TypeScript they mirror, and
+`vectors/wire/requests.json` checks these: the TypeScript compiler reads the
+`WorkerRequest` union, records every kind with its arguments, and
+`tests/wire_contract.rs` fires each one and fails on `NotImplemented`.
+
+Forty-eight kinds have a vector pinning their BEHAVIOUR against the
+TypeScript. Seventeen reach an implementation whose only gate is that routing
+check, which proves the arm exists and says nothing about what it does;
+`tooling/engine-conformance/OPERATIONS.md` marks which is which.
+
+## Where the Rust core actually runs
+
+The published WASM payload carries it. `scripts/build-target.sh` builds
+`crates/epdf-wasm` and links it, required rather than opt-in:
+`EMBEDPDF_RUST_CORE=0` opts out for a build without a Rust toolchain, and
+`scripts/verify-rust-core.mjs` asserts a payload has it.
+
+That assertion is what makes the suites above it worth running. Both
+`geometry-rust-parity.test.ts` and `session-rust-rehearsal.test.ts` skip
+themselves on a runtime without the core, so before the payload included one
+they were green and had never run: nothing in CI built a Rust-linked runtime.
+The `rust-routing` job in `engine-rust.yml` builds one and runs both.
+
+G3w is `RustSessionRehearsal`, behind an internal `rustSession` flag. It
+routes a document's SESSION to Rust — the fat-memory open, the two security
+calls, the two closes — and no read. A read that reaches such a document is
+reported as a routing bug rather than as "document not open", which would be
+true and useless. It exists so that G10, which moves session authority for
+every document, is not the first time a Rust-owned session runs on web.
+
+The viewer flows run on either backend: `VIEWER_E2E_BACKENDS=typescript,rust`
+doubles the projects and the flows are written once. They are not in CI yet,
+because that job fetches a pinned runtime payload and the core reaches a
+payload only once one is built after the link became the default.
 
 ## Known gaps inside what is done
 
