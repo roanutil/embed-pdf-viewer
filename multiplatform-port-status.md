@@ -68,6 +68,7 @@ them as verified, not as pinned.
 | G9 | `pages.extract` refusals and lifetime | `tests/page_extract.rs` |
 | G10 | layer artifact round trip, encrypted save | `tests/document_save.rs` |
 | G11 | a created annotation's appearance, and its survival of a save | `tests/annotation_create.rs` |
+| G15 | `document.renderPageFile`, and the injected image encoder | `tests/server_surfaces.rs` |
 | cross-cutting | rotation normalization | `tests/rotation_normalization.rs` |
 | cross-cutting | cancel traces | `tests/cancel_traces.rs` |
 
@@ -130,8 +131,17 @@ requirement the caller's to satisfy and the compiler's to check.
 
 G14 is done: all five of its operations.
 
-G15, the server and file surfaces, is not started. None of it is blocked by
-anything outside the repository.
+G15 is done, and it is the one group with no vectors. The port order says
+why: "no new Rust behavior beyond G4 raster and G10 save". What is there is
+composition, and what it composes is already pinned, so
+`tests/server_surfaces.rs` checks the joins instead: that a path opens and
+closes, that an index resolves to the page a session would have named, and
+that an engine with no encoder refuses rather than inventing one.
+
+The encoder is injected for the reason the TypeScript injects it: a PNG
+library in the engine would ship to every target to satisfy the one that
+needs it. Two of the three targets refuse the encoded kinds today and this
+port keeps them refusing.
 
 ## Known gaps inside what is done
 
