@@ -1,0 +1,5318 @@
+{
+  "schemaVersion": 1,
+  "kind": "scenario",
+  "describes": "packages/plugin/search: the session-free findAll service and its abort signal.",
+  "cases": [
+    {
+      "name": "find-all-walks-the-chain",
+      "covers": "findAll() walks the cursor chain in natural page order (no startPage, even with a Stage) and resolves every hit, dispatching nothing and leaving the session untouched.",
+      "plugins": [
+        {
+          "factory": "stage",
+          "config": {
+            "viewUnitsPerPoint": 1
+          }
+        },
+        {
+          "factory": "search"
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "security": {
+              "allows": [
+                "doc.text.search",
+                "doc.text.copy"
+              ]
+            },
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 11,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "pageObjectNumber": 22,
+                "label": null,
+                "size": {
+                  "width": 300,
+                  "height": 400
+                },
+                "rotation": 90,
+                "userUnit": 2,
+                "boxes": {
+                  "media": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 310,
+                    "top": 420
+                  },
+                  "crop": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 310,
+                    "top": 420
+                  }
+                }
+              },
+              {
+                "index": 2,
+                "pageObjectNumber": 33,
+                "label": null,
+                "size": {
+                  "width": 300,
+                  "height": 300
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 300,
+                    "top": 300
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 300,
+                    "top": 300
+                  }
+                }
+              }
+            ],
+            "responses": [
+              {
+                "path": "search.query",
+                "args": [
+                  {
+                    "query": {
+                      "text": "the"
+                    },
+                    "mode": "full"
+                  }
+                ],
+                "value": {
+                  "matches": [
+                    {
+                      "pageObjectNumber": 11,
+                      "charStart": 0,
+                      "charCount": 4,
+                      "segments": [
+                        {
+                          "quad": {
+                            "p1": {
+                              "x": 10,
+                              "y": 40
+                            },
+                            "p2": {
+                              "x": 50,
+                              "y": 40
+                            },
+                            "p3": {
+                              "x": 10,
+                              "y": 20
+                            },
+                            "p4": {
+                              "x": 50,
+                              "y": 20
+                            }
+                          },
+                          "rect": {
+                            "left": 10,
+                            "bottom": 20,
+                            "right": 50,
+                            "top": 40
+                          },
+                          "advance": 1
+                        }
+                      ]
+                    },
+                    {
+                      "pageObjectNumber": 11,
+                      "charStart": 9,
+                      "charCount": 4,
+                      "segments": [
+                        {
+                          "quad": {
+                            "p1": {
+                              "x": 10,
+                              "y": 40
+                            },
+                            "p2": {
+                              "x": 50,
+                              "y": 40
+                            },
+                            "p3": {
+                              "x": 10,
+                              "y": 20
+                            },
+                            "p4": {
+                              "x": 50,
+                              "y": 20
+                            }
+                          },
+                          "rect": {
+                            "left": 10,
+                            "bottom": 20,
+                            "right": 50,
+                            "top": 40
+                          },
+                          "advance": 1
+                        }
+                      ]
+                    }
+                  ],
+                  "nextCursor": "c1",
+                  "scannedPages": 1,
+                  "totalPages": 3
+                }
+              },
+              {
+                "path": "search.query",
+                "args": [
+                  {
+                    "query": {
+                      "text": "the"
+                    },
+                    "mode": "full",
+                    "cursor": "c1"
+                  }
+                ],
+                "value": {
+                  "matches": [
+                    {
+                      "pageObjectNumber": 22,
+                      "charStart": 2,
+                      "charCount": 4,
+                      "segments": [
+                        {
+                          "quad": {
+                            "p1": {
+                              "x": 10,
+                              "y": 40
+                            },
+                            "p2": {
+                              "x": 50,
+                              "y": 40
+                            },
+                            "p3": {
+                              "x": 10,
+                              "y": 20
+                            },
+                            "p4": {
+                              "x": 50,
+                              "y": 20
+                            }
+                          },
+                          "rect": {
+                            "left": 10,
+                            "bottom": 20,
+                            "right": 50,
+                            "top": 40
+                          },
+                          "advance": 1
+                        }
+                      ]
+                    },
+                    {
+                      "pageObjectNumber": 33,
+                      "charStart": 5,
+                      "charCount": 4,
+                      "segments": [
+                        {
+                          "quad": {
+                            "p1": {
+                              "x": 10,
+                              "y": 40
+                            },
+                            "p2": {
+                              "x": 50,
+                              "y": 40
+                            },
+                            "p3": {
+                              "x": 10,
+                              "y": 20
+                            },
+                            "p4": {
+                              "x": 50,
+                              "y": 20
+                            }
+                          },
+                          "rect": {
+                            "left": 10,
+                            "bottom": 20,
+                            "right": 50,
+                            "top": 40
+                          },
+                          "advance": 1
+                        }
+                      ]
+                    }
+                  ],
+                  "nextCursor": null,
+                  "scannedPages": 3,
+                  "totalPages": 3
+                }
+              }
+            ]
+          }
+        }
+      },
+      "snapshot": [
+        "search::a"
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stage",
+            "doc": "a"
+          },
+          "method": "goToPage",
+          "args": [
+            2
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "search",
+            "doc": "a"
+          },
+          "method": "findAll",
+          "args": [
+            {
+              "text": "the"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "search",
+            "doc": "a"
+          },
+          "method": "status",
+          "args": []
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "plugins": {
+              "search::a": {
+                "query": null,
+                "status": "idle",
+                "hits": [],
+                "hitsByPage": {},
+                "activeIndex": -1,
+                "progress": {
+                  "scanned": 0,
+                  "total": 0
+                },
+                "error": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "stage::a",
+              "action": {
+                "type": "MOTION_CAUSE",
+                "cause": "programmatic"
+              }
+            },
+            {
+              "slice": "stage::a",
+              "action": {
+                "type": "CURSOR",
+                "cursor": 2
+              }
+            },
+            {
+              "slice": "stage::a",
+              "action": {
+                "type": "CAMERA",
+                "camera": {
+                  "zoom": 0.05,
+                  "x": -230,
+                  "y": 952
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "search::a": {
+                "query": null,
+                "status": "idle",
+                "hits": [],
+                "hitsByPage": {},
+                "activeIndex": -1,
+                "progress": {
+                  "scanned": 0,
+                  "total": 0
+                },
+                "error": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": [
+                {
+                  "pon": 11,
+                  "pageIndex": 0,
+                  "charStart": 0,
+                  "charCount": 4,
+                  "segments": [
+                    {
+                      "quad": {
+                        "upperStart": {
+                          "x": 10,
+                          "y": 760
+                        },
+                        "upperEnd": {
+                          "x": 50,
+                          "y": 760
+                        },
+                        "lowerStart": {
+                          "x": 10,
+                          "y": 780
+                        },
+                        "lowerEnd": {
+                          "x": 50,
+                          "y": 780
+                        }
+                      },
+                      "rect": {
+                        "x": 10,
+                        "y": 760,
+                        "width": 40,
+                        "height": 20
+                      },
+                      "advance": 1
+                    }
+                  ],
+                  "bounds": {
+                    "x": 10,
+                    "y": 760,
+                    "width": 40,
+                    "height": 20
+                  }
+                },
+                {
+                  "pon": 11,
+                  "pageIndex": 0,
+                  "charStart": 9,
+                  "charCount": 4,
+                  "segments": [
+                    {
+                      "quad": {
+                        "upperStart": {
+                          "x": 10,
+                          "y": 760
+                        },
+                        "upperEnd": {
+                          "x": 50,
+                          "y": 760
+                        },
+                        "lowerStart": {
+                          "x": 10,
+                          "y": 780
+                        },
+                        "lowerEnd": {
+                          "x": 50,
+                          "y": 780
+                        }
+                      },
+                      "rect": {
+                        "x": 10,
+                        "y": 760,
+                        "width": 40,
+                        "height": 20
+                      },
+                      "advance": 1
+                    }
+                  ],
+                  "bounds": {
+                    "x": 10,
+                    "y": 760,
+                    "width": 40,
+                    "height": 20
+                  }
+                },
+                {
+                  "pon": 22,
+                  "pageIndex": 1,
+                  "charStart": 2,
+                  "charCount": 4,
+                  "segments": [
+                    {
+                      "quad": {
+                        "upperStart": {
+                          "x": 0,
+                          "y": 380
+                        },
+                        "upperEnd": {
+                          "x": 40,
+                          "y": 380
+                        },
+                        "lowerStart": {
+                          "x": 0,
+                          "y": 400
+                        },
+                        "lowerEnd": {
+                          "x": 40,
+                          "y": 400
+                        }
+                      },
+                      "rect": {
+                        "x": 0,
+                        "y": 380,
+                        "width": 40,
+                        "height": 20
+                      },
+                      "advance": 1
+                    }
+                  ],
+                  "bounds": {
+                    "x": 0,
+                    "y": 380,
+                    "width": 40,
+                    "height": 20
+                  }
+                },
+                {
+                  "pon": 33,
+                  "pageIndex": 2,
+                  "charStart": 5,
+                  "charCount": 4,
+                  "segments": [
+                    {
+                      "quad": {
+                        "upperStart": {
+                          "x": 10,
+                          "y": 260
+                        },
+                        "upperEnd": {
+                          "x": 50,
+                          "y": 260
+                        },
+                        "lowerStart": {
+                          "x": 10,
+                          "y": 280
+                        },
+                        "lowerEnd": {
+                          "x": 50,
+                          "y": 280
+                        }
+                      },
+                      "rect": {
+                        "x": 10,
+                        "y": 260,
+                        "width": 40,
+                        "height": 20
+                      },
+                      "advance": 1
+                    }
+                  ],
+                  "bounds": {
+                    "x": 10,
+                    "y": 260,
+                    "width": 40,
+                    "height": 20
+                  }
+                }
+              ]
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "search.query",
+              "args": [
+                {
+                  "query": {
+                    "text": "the"
+                  },
+                  "mode": "full"
+                }
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "search.query",
+              "args": [
+                {
+                  "query": {
+                    "text": "the"
+                  },
+                  "mode": "full",
+                  "cursor": "c1"
+                }
+              ]
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "plugins": {
+              "search::a": {
+                "query": null,
+                "status": "idle",
+                "hits": [],
+                "hitsByPage": {},
+                "activeIndex": -1,
+                "progress": {
+                  "scanned": 0,
+                  "total": 0
+                },
+                "error": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": "idle"
+          },
+          "state": {
+            "plugins": {
+              "search::a": {
+                "query": null,
+                "status": "idle",
+                "hits": [],
+                "hitsByPage": {},
+                "activeIndex": -1,
+                "progress": {
+                  "scanned": 0,
+                  "total": 0
+                },
+                "error": null
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "find-all-pinned-mode",
+      "covers": "An explicit mode is sent as is and never degrades: a pinned 'full' refused rejects with the refusal.",
+      "plugins": [
+        {
+          "factory": "search"
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "security": {
+              "allows": [
+                "doc.text.search",
+                "doc.text.copy"
+              ]
+            },
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 11,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "pageObjectNumber": 22,
+                "label": null,
+                "size": {
+                  "width": 300,
+                  "height": 400
+                },
+                "rotation": 90,
+                "userUnit": 2,
+                "boxes": {
+                  "media": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 310,
+                    "top": 420
+                  },
+                  "crop": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 310,
+                    "top": 420
+                  }
+                }
+              },
+              {
+                "index": 2,
+                "pageObjectNumber": 33,
+                "label": null,
+                "size": {
+                  "width": 300,
+                  "height": 300
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 300,
+                    "top": 300
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 300,
+                    "top": 300
+                  }
+                }
+              }
+            ],
+            "responses": [
+              {
+                "path": "search.query",
+                "args": [
+                  {
+                    "query": {
+                      "text": "the"
+                    },
+                    "mode": "rects"
+                  }
+                ],
+                "value": {
+                  "matches": [
+                    {
+                      "pageObjectNumber": 11,
+                      "charStart": 0,
+                      "charCount": 4,
+                      "segments": [
+                        {
+                          "quad": {
+                            "p1": {
+                              "x": 10,
+                              "y": 40
+                            },
+                            "p2": {
+                              "x": 50,
+                              "y": 40
+                            },
+                            "p3": {
+                              "x": 10,
+                              "y": 20
+                            },
+                            "p4": {
+                              "x": 50,
+                              "y": 20
+                            }
+                          },
+                          "rect": {
+                            "left": 10,
+                            "bottom": 20,
+                            "right": 50,
+                            "top": 40
+                          },
+                          "advance": 1
+                        }
+                      ]
+                    }
+                  ],
+                  "nextCursor": null,
+                  "scannedPages": 3,
+                  "totalPages": 3
+                }
+              },
+              {
+                "path": "search.query",
+                "args": [
+                  {
+                    "query": {
+                      "text": "other",
+                      "matchCase": true
+                    },
+                    "mode": "full"
+                  }
+                ],
+                "error": {
+                  "name": "PermissionDenied",
+                  "message": "permission denied (local): doc.text.copy",
+                  "required": "doc.text.copy",
+                  "context": "local"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "snapshot": [
+        "search::a"
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "search",
+            "doc": "a"
+          },
+          "method": "findAll",
+          "args": [
+            {
+              "text": "the"
+            },
+            {
+              "mode": "rects"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "search",
+            "doc": "a"
+          },
+          "method": "findAll",
+          "args": [
+            {
+              "text": "other",
+              "matchCase": true
+            },
+            {
+              "mode": "full"
+            }
+          ]
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "plugins": {
+              "search::a": {
+                "query": null,
+                "status": "idle",
+                "hits": [],
+                "hitsByPage": {},
+                "activeIndex": -1,
+                "progress": {
+                  "scanned": 0,
+                  "total": 0
+                },
+                "error": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": [
+                {
+                  "pon": 11,
+                  "pageIndex": 0,
+                  "charStart": 0,
+                  "charCount": 4,
+                  "segments": [
+                    {
+                      "quad": {
+                        "upperStart": {
+                          "x": 10,
+                          "y": 760
+                        },
+                        "upperEnd": {
+                          "x": 50,
+                          "y": 760
+                        },
+                        "lowerStart": {
+                          "x": 10,
+                          "y": 780
+                        },
+                        "lowerEnd": {
+                          "x": 50,
+                          "y": 780
+                        }
+                      },
+                      "rect": {
+                        "x": 10,
+                        "y": 760,
+                        "width": 40,
+                        "height": 20
+                      },
+                      "advance": 1
+                    }
+                  ],
+                  "bounds": {
+                    "x": 10,
+                    "y": 760,
+                    "width": 40,
+                    "height": 20
+                  }
+                }
+              ]
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "search.query",
+              "args": [
+                {
+                  "query": {
+                    "text": "the"
+                  },
+                  "mode": "rects"
+                }
+              ]
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "plugins": {
+              "search::a": {
+                "query": null,
+                "status": "idle",
+                "hits": [],
+                "hitsByPage": {},
+                "activeIndex": -1,
+                "progress": {
+                  "scanned": 0,
+                  "total": 0
+                },
+                "error": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 3,
+              "rejected": {
+                "$error": {
+                  "name": "PermissionDenied",
+                  "message": "permission denied (local): doc.text.copy",
+                  "required": "doc.text.copy",
+                  "context": "local"
+                }
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "search.query",
+              "args": [
+                {
+                  "query": {
+                    "text": "other",
+                    "matchCase": true
+                  },
+                  "mode": "full"
+                }
+              ]
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 3
+          },
+          "state": {
+            "plugins": {
+              "search::a": {
+                "query": null,
+                "status": "idle",
+                "hits": [],
+                "hitsByPage": {},
+                "activeIndex": -1,
+                "progress": {
+                  "scanned": 0,
+                  "total": 0
+                },
+                "error": null
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "find-all-degrades",
+      "covers": "With no mode, findAll degrades 'full' to 'rects' on a refusal, as the session does.",
+      "plugins": [
+        {
+          "factory": "search"
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "security": {
+              "allows": [
+                "doc.text.search",
+                "doc.text.copy"
+              ]
+            },
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 11,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "pageObjectNumber": 22,
+                "label": null,
+                "size": {
+                  "width": 300,
+                  "height": 400
+                },
+                "rotation": 90,
+                "userUnit": 2,
+                "boxes": {
+                  "media": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 310,
+                    "top": 420
+                  },
+                  "crop": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 310,
+                    "top": 420
+                  }
+                }
+              },
+              {
+                "index": 2,
+                "pageObjectNumber": 33,
+                "label": null,
+                "size": {
+                  "width": 300,
+                  "height": 300
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 300,
+                    "top": 300
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 300,
+                    "top": 300
+                  }
+                }
+              }
+            ],
+            "responses": [
+              {
+                "path": "search.query",
+                "args": [
+                  {
+                    "query": {
+                      "text": "the"
+                    },
+                    "mode": "full"
+                  }
+                ],
+                "error": {
+                  "name": "EngineError",
+                  "message": "forbidden",
+                  "code": "Forbidden"
+                }
+              },
+              {
+                "path": "search.query",
+                "args": [
+                  {
+                    "query": {
+                      "text": "the"
+                    },
+                    "mode": "rects"
+                  }
+                ],
+                "value": {
+                  "matches": [
+                    {
+                      "pageObjectNumber": 22,
+                      "charStart": 0,
+                      "charCount": 4,
+                      "segments": [
+                        {
+                          "quad": {
+                            "p1": {
+                              "x": 10,
+                              "y": 40
+                            },
+                            "p2": {
+                              "x": 50,
+                              "y": 40
+                            },
+                            "p3": {
+                              "x": 10,
+                              "y": 20
+                            },
+                            "p4": {
+                              "x": 50,
+                              "y": 20
+                            }
+                          },
+                          "rect": {
+                            "left": 10,
+                            "bottom": 20,
+                            "right": 50,
+                            "top": 40
+                          },
+                          "advance": 1
+                        }
+                      ]
+                    }
+                  ],
+                  "nextCursor": null,
+                  "scannedPages": 3,
+                  "totalPages": 3
+                }
+              }
+            ]
+          }
+        }
+      },
+      "snapshot": [
+        "search::a"
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "search",
+            "doc": "a"
+          },
+          "method": "findAll",
+          "args": [
+            {
+              "text": "the"
+            },
+            {}
+          ]
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "plugins": {
+              "search::a": {
+                "query": null,
+                "status": "idle",
+                "hits": [],
+                "hitsByPage": {},
+                "activeIndex": -1,
+                "progress": {
+                  "scanned": 0,
+                  "total": 0
+                },
+                "error": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": [
+                {
+                  "pon": 22,
+                  "pageIndex": 1,
+                  "charStart": 0,
+                  "charCount": 4,
+                  "segments": [
+                    {
+                      "quad": {
+                        "upperStart": {
+                          "x": 0,
+                          "y": 380
+                        },
+                        "upperEnd": {
+                          "x": 40,
+                          "y": 380
+                        },
+                        "lowerStart": {
+                          "x": 0,
+                          "y": 400
+                        },
+                        "lowerEnd": {
+                          "x": 40,
+                          "y": 400
+                        }
+                      },
+                      "rect": {
+                        "x": 0,
+                        "y": 380,
+                        "width": 40,
+                        "height": 20
+                      },
+                      "advance": 1
+                    }
+                  ],
+                  "bounds": {
+                    "x": 0,
+                    "y": 380,
+                    "width": 40,
+                    "height": 20
+                  }
+                }
+              ]
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "search.query",
+              "args": [
+                {
+                  "query": {
+                    "text": "the"
+                  },
+                  "mode": "full"
+                }
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "search.query",
+              "args": [
+                {
+                  "query": {
+                    "text": "the"
+                  },
+                  "mode": "rects"
+                }
+              ]
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "plugins": {
+              "search::a": {
+                "query": null,
+                "status": "idle",
+                "hits": [],
+                "hitsByPage": {},
+                "activeIndex": -1,
+                "progress": {
+                  "scanned": 0,
+                  "total": 0
+                },
+                "error": null
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "find-all-restart-resets",
+      "covers": "A stale cursor restarts findAll once and drops what the first pass had collected.",
+      "plugins": [
+        {
+          "factory": "search"
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "security": {
+              "allows": [
+                "doc.text.search",
+                "doc.text.copy"
+              ]
+            },
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 11,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "pageObjectNumber": 22,
+                "label": null,
+                "size": {
+                  "width": 300,
+                  "height": 400
+                },
+                "rotation": 90,
+                "userUnit": 2,
+                "boxes": {
+                  "media": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 310,
+                    "top": 420
+                  },
+                  "crop": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 310,
+                    "top": 420
+                  }
+                }
+              },
+              {
+                "index": 2,
+                "pageObjectNumber": 33,
+                "label": null,
+                "size": {
+                  "width": 300,
+                  "height": 300
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 300,
+                    "top": 300
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 300,
+                    "top": 300
+                  }
+                }
+              }
+            ],
+            "responses": [
+              {
+                "path": "search.query",
+                "args": [
+                  {
+                    "query": {
+                      "text": "the"
+                    },
+                    "mode": "full"
+                  }
+                ],
+                "value": {
+                  "matches": [
+                    {
+                      "pageObjectNumber": 11,
+                      "charStart": 0,
+                      "charCount": 4,
+                      "segments": [
+                        {
+                          "quad": {
+                            "p1": {
+                              "x": 10,
+                              "y": 40
+                            },
+                            "p2": {
+                              "x": 50,
+                              "y": 40
+                            },
+                            "p3": {
+                              "x": 10,
+                              "y": 20
+                            },
+                            "p4": {
+                              "x": 50,
+                              "y": 20
+                            }
+                          },
+                          "rect": {
+                            "left": 10,
+                            "bottom": 20,
+                            "right": 50,
+                            "top": 40
+                          },
+                          "advance": 1
+                        }
+                      ]
+                    }
+                  ],
+                  "nextCursor": "c1",
+                  "scannedPages": 1,
+                  "totalPages": 3
+                },
+                "times": 1
+              },
+              {
+                "path": "search.query",
+                "args": [
+                  {
+                    "query": {
+                      "text": "the"
+                    },
+                    "mode": "full",
+                    "cursor": "c1"
+                  }
+                ],
+                "error": {
+                  "name": "EngineError",
+                  "message": "stale cursor",
+                  "code": "InvalidArg"
+                },
+                "times": 1
+              },
+              {
+                "path": "search.query",
+                "args": [
+                  {
+                    "query": {
+                      "text": "the"
+                    },
+                    "mode": "full"
+                  }
+                ],
+                "value": {
+                  "matches": [
+                    {
+                      "pageObjectNumber": 11,
+                      "charStart": 4,
+                      "charCount": 4,
+                      "segments": [
+                        {
+                          "quad": {
+                            "p1": {
+                              "x": 10,
+                              "y": 40
+                            },
+                            "p2": {
+                              "x": 50,
+                              "y": 40
+                            },
+                            "p3": {
+                              "x": 10,
+                              "y": 20
+                            },
+                            "p4": {
+                              "x": 50,
+                              "y": 20
+                            }
+                          },
+                          "rect": {
+                            "left": 10,
+                            "bottom": 20,
+                            "right": 50,
+                            "top": 40
+                          },
+                          "advance": 1
+                        }
+                      ]
+                    }
+                  ],
+                  "nextCursor": "c2",
+                  "scannedPages": 1,
+                  "totalPages": 3
+                },
+                "times": 1
+              },
+              {
+                "path": "search.query",
+                "args": [
+                  {
+                    "query": {
+                      "text": "the"
+                    },
+                    "mode": "full",
+                    "cursor": "c2"
+                  }
+                ],
+                "value": {
+                  "matches": [
+                    {
+                      "pageObjectNumber": 22,
+                      "charStart": 0,
+                      "charCount": 4,
+                      "segments": [
+                        {
+                          "quad": {
+                            "p1": {
+                              "x": 10,
+                              "y": 40
+                            },
+                            "p2": {
+                              "x": 50,
+                              "y": 40
+                            },
+                            "p3": {
+                              "x": 10,
+                              "y": 20
+                            },
+                            "p4": {
+                              "x": 50,
+                              "y": 20
+                            }
+                          },
+                          "rect": {
+                            "left": 10,
+                            "bottom": 20,
+                            "right": 50,
+                            "top": 40
+                          },
+                          "advance": 1
+                        }
+                      ]
+                    }
+                  ],
+                  "nextCursor": null,
+                  "scannedPages": 3,
+                  "totalPages": 3
+                },
+                "times": 1
+              }
+            ]
+          }
+        }
+      },
+      "snapshot": [
+        "search::a"
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "search",
+            "doc": "a"
+          },
+          "method": "findAll",
+          "args": [
+            {
+              "text": "the"
+            }
+          ]
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "plugins": {
+              "search::a": {
+                "query": null,
+                "status": "idle",
+                "hits": [],
+                "hitsByPage": {},
+                "activeIndex": -1,
+                "progress": {
+                  "scanned": 0,
+                  "total": 0
+                },
+                "error": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": [
+                {
+                  "pon": 11,
+                  "pageIndex": 0,
+                  "charStart": 4,
+                  "charCount": 4,
+                  "segments": [
+                    {
+                      "quad": {
+                        "upperStart": {
+                          "x": 10,
+                          "y": 760
+                        },
+                        "upperEnd": {
+                          "x": 50,
+                          "y": 760
+                        },
+                        "lowerStart": {
+                          "x": 10,
+                          "y": 780
+                        },
+                        "lowerEnd": {
+                          "x": 50,
+                          "y": 780
+                        }
+                      },
+                      "rect": {
+                        "x": 10,
+                        "y": 760,
+                        "width": 40,
+                        "height": 20
+                      },
+                      "advance": 1
+                    }
+                  ],
+                  "bounds": {
+                    "x": 10,
+                    "y": 760,
+                    "width": 40,
+                    "height": 20
+                  }
+                },
+                {
+                  "pon": 22,
+                  "pageIndex": 1,
+                  "charStart": 0,
+                  "charCount": 4,
+                  "segments": [
+                    {
+                      "quad": {
+                        "upperStart": {
+                          "x": 0,
+                          "y": 380
+                        },
+                        "upperEnd": {
+                          "x": 40,
+                          "y": 380
+                        },
+                        "lowerStart": {
+                          "x": 0,
+                          "y": 400
+                        },
+                        "lowerEnd": {
+                          "x": 40,
+                          "y": 400
+                        }
+                      },
+                      "rect": {
+                        "x": 0,
+                        "y": 380,
+                        "width": 40,
+                        "height": 20
+                      },
+                      "advance": 1
+                    }
+                  ],
+                  "bounds": {
+                    "x": 0,
+                    "y": 380,
+                    "width": 40,
+                    "height": 20
+                  }
+                }
+              ]
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "search.query",
+              "args": [
+                {
+                  "query": {
+                    "text": "the"
+                  },
+                  "mode": "full"
+                }
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "search.query",
+              "args": [
+                {
+                  "query": {
+                    "text": "the"
+                  },
+                  "mode": "full",
+                  "cursor": "c1"
+                }
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "search.query",
+              "args": [
+                {
+                  "query": {
+                    "text": "the"
+                  },
+                  "mode": "full"
+                }
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "search.query",
+              "args": [
+                {
+                  "query": {
+                    "text": "the"
+                  },
+                  "mode": "full",
+                  "cursor": "c2"
+                }
+              ]
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "plugins": {
+              "search::a": {
+                "query": null,
+                "status": "idle",
+                "hits": [],
+                "hitsByPage": {},
+                "activeIndex": -1,
+                "progress": {
+                  "scanned": 0,
+                  "total": 0
+                },
+                "error": null
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "find-all-errors-reject",
+      "covers": "An engine error rejects findAll with that error; so does a geometry failure while converting hits.",
+      "plugins": [
+        {
+          "factory": "search"
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "security": {
+              "allows": [
+                "doc.text.search",
+                "doc.text.copy"
+              ]
+            },
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 11,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "pageObjectNumber": 22,
+                "label": null,
+                "size": {
+                  "width": 300,
+                  "height": 400
+                },
+                "rotation": 90,
+                "userUnit": 2,
+                "boxes": {
+                  "media": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 310,
+                    "top": 420
+                  },
+                  "crop": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 310,
+                    "top": 420
+                  }
+                }
+              },
+              {
+                "index": 2,
+                "pageObjectNumber": 33,
+                "label": null,
+                "size": {
+                  "width": 300,
+                  "height": 300
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 300,
+                    "top": 300
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 300,
+                    "top": 300
+                  }
+                }
+              },
+              {
+                "index": 3,
+                "pageObjectNumber": 44,
+                "label": null,
+                "size": {
+                  "width": 100,
+                  "height": 100
+                },
+                "rotation": 0,
+                "userUnit": 0,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 100,
+                    "top": 100
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 100,
+                    "top": 100
+                  }
+                }
+              }
+            ],
+            "responses": [
+              {
+                "path": "search.query",
+                "args": [
+                  {
+                    "query": {
+                      "text": "the"
+                    },
+                    "mode": "full"
+                  }
+                ],
+                "error": {
+                  "name": "EngineError",
+                  "message": "boom",
+                  "code": "Unknown"
+                }
+              },
+              {
+                "path": "search.query",
+                "args": [
+                  {
+                    "query": {
+                      "text": "other",
+                      "matchCase": true
+                    },
+                    "mode": "full"
+                  }
+                ],
+                "value": {
+                  "matches": [
+                    {
+                      "pageObjectNumber": 44,
+                      "charStart": 0,
+                      "charCount": 4,
+                      "segments": [
+                        {
+                          "quad": {
+                            "p1": {
+                              "x": 10,
+                              "y": 40
+                            },
+                            "p2": {
+                              "x": 50,
+                              "y": 40
+                            },
+                            "p3": {
+                              "x": 10,
+                              "y": 20
+                            },
+                            "p4": {
+                              "x": 50,
+                              "y": 20
+                            }
+                          },
+                          "rect": {
+                            "left": 10,
+                            "bottom": 20,
+                            "right": 50,
+                            "top": 40
+                          },
+                          "advance": 1
+                        }
+                      ]
+                    }
+                  ],
+                  "nextCursor": null,
+                  "scannedPages": 1,
+                  "totalPages": 1
+                }
+              }
+            ]
+          }
+        }
+      },
+      "snapshot": [
+        "search::a"
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "search",
+            "doc": "a"
+          },
+          "method": "findAll",
+          "args": [
+            {
+              "text": "the"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "search",
+            "doc": "a"
+          },
+          "method": "findAll",
+          "args": [
+            {
+              "text": "other",
+              "matchCase": true
+            }
+          ]
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "plugins": {
+              "search::a": {
+                "query": null,
+                "status": "idle",
+                "hits": [],
+                "hitsByPage": {},
+                "activeIndex": -1,
+                "progress": {
+                  "scanned": 0,
+                  "total": 0
+                },
+                "error": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "rejected": {
+                "$error": {
+                  "name": "EngineError",
+                  "message": "boom",
+                  "code": "Unknown"
+                }
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "search.query",
+              "args": [
+                {
+                  "query": {
+                    "text": "the"
+                  },
+                  "mode": "full"
+                }
+              ]
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "plugins": {
+              "search::a": {
+                "query": null,
+                "status": "idle",
+                "hits": [],
+                "hitsByPage": {},
+                "activeIndex": -1,
+                "progress": {
+                  "scanned": 0,
+                  "total": 0
+                },
+                "error": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 3,
+              "rejected": {
+                "$error": {
+                  "name": "Error",
+                  "message": "Mat2D.invert: non-invertible matrix (det = 0)"
+                }
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "search.query",
+              "args": [
+                {
+                  "query": {
+                    "text": "other",
+                    "matchCase": true
+                  },
+                  "mode": "full"
+                }
+              ]
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 3
+          },
+          "state": {
+            "plugins": {
+              "search::a": {
+                "query": null,
+                "status": "idle",
+                "hits": [],
+                "hitsByPage": {},
+                "activeIndex": -1,
+                "progress": {
+                  "scanned": 0,
+                  "total": 0
+                },
+                "error": null
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "find-all-is-independent-of-the-session",
+      "covers": "A findAll running beside the session neither supersedes it nor is superseded by it; both complete.",
+      "plugins": [
+        {
+          "factory": "search"
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "security": {
+              "allows": [
+                "doc.text.search",
+                "doc.text.copy"
+              ]
+            },
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 11,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "pageObjectNumber": 22,
+                "label": null,
+                "size": {
+                  "width": 300,
+                  "height": 400
+                },
+                "rotation": 90,
+                "userUnit": 2,
+                "boxes": {
+                  "media": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 310,
+                    "top": 420
+                  },
+                  "crop": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 310,
+                    "top": 420
+                  }
+                }
+              },
+              {
+                "index": 2,
+                "pageObjectNumber": 33,
+                "label": null,
+                "size": {
+                  "width": 300,
+                  "height": 300
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 300,
+                    "top": 300
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 300,
+                    "top": 300
+                  }
+                }
+              }
+            ],
+            "responses": [
+              {
+                "path": "search.query",
+                "args": [
+                  {
+                    "query": {
+                      "text": "the"
+                    },
+                    "mode": "full"
+                  }
+                ],
+                "defer": "session",
+                "times": 1
+              },
+              {
+                "path": "search.query",
+                "args": [
+                  {
+                    "query": {
+                      "text": "the"
+                    },
+                    "mode": "full"
+                  }
+                ],
+                "defer": "find",
+                "times": 1
+              },
+              {
+                "path": "search.query",
+                "args": [
+                  {
+                    "query": {
+                      "text": "other",
+                      "matchCase": true
+                    },
+                    "mode": "full"
+                  }
+                ],
+                "value": {
+                  "matches": [],
+                  "nextCursor": null,
+                  "scannedPages": 3,
+                  "totalPages": 3
+                }
+              }
+            ]
+          }
+        }
+      },
+      "snapshot": [
+        "search::a"
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "search",
+            "doc": "a"
+          },
+          "method": "search",
+          "args": [
+            {
+              "text": "the"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "search",
+            "doc": "a"
+          },
+          "method": "findAll",
+          "args": [
+            {
+              "text": "the"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "search",
+            "doc": "a"
+          },
+          "method": "search",
+          "args": [
+            {
+              "text": "other",
+              "matchCase": true
+            }
+          ]
+        },
+        {
+          "op": "settle",
+          "label": "find",
+          "value": {
+            "matches": [
+              {
+                "pageObjectNumber": 33,
+                "charStart": 0,
+                "charCount": 4,
+                "segments": [
+                  {
+                    "quad": {
+                      "p1": {
+                        "x": 10,
+                        "y": 40
+                      },
+                      "p2": {
+                        "x": 50,
+                        "y": 40
+                      },
+                      "p3": {
+                        "x": 10,
+                        "y": 20
+                      },
+                      "p4": {
+                        "x": 50,
+                        "y": 20
+                      }
+                    },
+                    "rect": {
+                      "left": 10,
+                      "bottom": 20,
+                      "right": 50,
+                      "top": 40
+                    },
+                    "advance": 1
+                  }
+                ]
+              }
+            ],
+            "nextCursor": null,
+            "scannedPages": 3,
+            "totalPages": 3
+          }
+        },
+        {
+          "op": "settle",
+          "label": "session",
+          "value": {
+            "matches": [
+              {
+                "pageObjectNumber": 11,
+                "charStart": 0,
+                "charCount": 4,
+                "segments": [
+                  {
+                    "quad": {
+                      "p1": {
+                        "x": 10,
+                        "y": 40
+                      },
+                      "p2": {
+                        "x": 50,
+                        "y": 40
+                      },
+                      "p3": {
+                        "x": 10,
+                        "y": 20
+                      },
+                      "p4": {
+                        "x": 50,
+                        "y": 20
+                      }
+                    },
+                    "rect": {
+                      "left": 10,
+                      "bottom": 20,
+                      "right": 50,
+                      "top": 40
+                    },
+                    "advance": 1
+                  }
+                ]
+              }
+            ],
+            "nextCursor": null,
+            "scannedPages": 3,
+            "totalPages": 3
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "search",
+            "doc": "a"
+          },
+          "method": "findAll",
+          "args": [
+            {
+              "text": "other",
+              "matchCase": true
+            }
+          ]
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "plugins": {
+              "search::a": {
+                "query": null,
+                "status": "idle",
+                "hits": [],
+                "hitsByPage": {},
+                "activeIndex": -1,
+                "progress": {
+                  "scanned": 0,
+                  "total": 0
+                },
+                "error": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "search::a",
+              "action": {
+                "type": "START",
+                "query": {
+                  "text": "the"
+                }
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "search.query",
+              "args": [
+                {
+                  "query": {
+                    "text": "the"
+                  },
+                  "mode": "full"
+                }
+              ]
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "search::a": {
+                "query": {
+                  "text": "the"
+                },
+                "status": "searching",
+                "hits": [],
+                "hitsByPage": {},
+                "activeIndex": -1,
+                "progress": {
+                  "scanned": 0,
+                  "total": 0
+                },
+                "error": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "search.query",
+              "args": [
+                {
+                  "query": {
+                    "text": "the"
+                  },
+                  "mode": "full"
+                }
+              ]
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "plugins": {
+              "search::a": {
+                "query": {
+                  "text": "the"
+                },
+                "status": "searching",
+                "hits": [],
+                "hitsByPage": {},
+                "activeIndex": -1,
+                "progress": {
+                  "scanned": 0,
+                  "total": 0
+                },
+                "error": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "search::a",
+              "action": {
+                "type": "START",
+                "query": {
+                  "text": "other",
+                  "matchCase": true
+                }
+              }
+            },
+            {
+              "slice": "search::a",
+              "action": {
+                "type": "APPEND",
+                "hits": [],
+                "scanned": 3,
+                "total": 3
+              }
+            },
+            {
+              "slice": "search::a",
+              "action": {
+                "type": "COMPLETE"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "abort": 2,
+              "reason": "superseded"
+            },
+            {
+              "doc": "a",
+              "path": "search.query",
+              "args": [
+                {
+                  "query": {
+                    "text": "other",
+                    "matchCase": true
+                  },
+                  "mode": "full"
+                }
+              ]
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "search::a": {
+                "query": {
+                  "text": "other",
+                  "matchCase": true
+                },
+                "status": "complete",
+                "hits": [],
+                "hitsByPage": {},
+                "activeIndex": -1,
+                "progress": {
+                  "scanned": 3,
+                  "total": 3
+                },
+                "error": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": [
+                {
+                  "pon": 33,
+                  "pageIndex": 2,
+                  "charStart": 0,
+                  "charCount": 4,
+                  "segments": [
+                    {
+                      "quad": {
+                        "upperStart": {
+                          "x": 10,
+                          "y": 260
+                        },
+                        "upperEnd": {
+                          "x": 50,
+                          "y": 260
+                        },
+                        "lowerStart": {
+                          "x": 10,
+                          "y": 280
+                        },
+                        "lowerEnd": {
+                          "x": 50,
+                          "y": 280
+                        }
+                      },
+                      "rect": {
+                        "x": 10,
+                        "y": 260,
+                        "width": 40,
+                        "height": 20
+                      },
+                      "advance": 1
+                    }
+                  ],
+                  "bounds": {
+                    "x": 10,
+                    "y": 260,
+                    "width": 40,
+                    "height": 20
+                  }
+                }
+              ]
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "state": {
+            "plugins": {
+              "search::a": {
+                "query": {
+                  "text": "other",
+                  "matchCase": true
+                },
+                "status": "complete",
+                "hits": [],
+                "hitsByPage": {},
+                "activeIndex": -1,
+                "progress": {
+                  "scanned": 3,
+                  "total": 3
+                },
+                "error": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "state": {
+            "plugins": {
+              "search::a": {
+                "query": {
+                  "text": "other",
+                  "matchCase": true
+                },
+                "status": "complete",
+                "hits": [],
+                "hitsByPage": {},
+                "activeIndex": -1,
+                "progress": {
+                  "scanned": 3,
+                  "total": 3
+                },
+                "error": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 3,
+              "resolved": []
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "search.query",
+              "args": [
+                {
+                  "query": {
+                    "text": "other",
+                    "matchCase": true
+                  },
+                  "mode": "full"
+                }
+              ]
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 3
+          },
+          "state": {
+            "plugins": {
+              "search::a": {
+                "query": {
+                  "text": "other",
+                  "matchCase": true
+                },
+                "status": "complete",
+                "hits": [],
+                "hitsByPage": {},
+                "activeIndex": -1,
+                "progress": {
+                  "scanned": 3,
+                  "total": 3
+                },
+                "error": null
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "find-all-signal-aborts-the-slice",
+      "covers": "Aborting findAll's signal aborts the in-flight slice with the signal's reason and rejects with it: the platform AbortError with no reason, the given error with one.",
+      "plugins": [
+        {
+          "factory": "search-signals"
+        },
+        {
+          "factory": "search"
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "security": {
+              "allows": [
+                "doc.text.search",
+                "doc.text.copy"
+              ]
+            },
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 11,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "pageObjectNumber": 22,
+                "label": null,
+                "size": {
+                  "width": 300,
+                  "height": 400
+                },
+                "rotation": 90,
+                "userUnit": 2,
+                "boxes": {
+                  "media": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 310,
+                    "top": 420
+                  },
+                  "crop": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 310,
+                    "top": 420
+                  }
+                }
+              },
+              {
+                "index": 2,
+                "pageObjectNumber": 33,
+                "label": null,
+                "size": {
+                  "width": 300,
+                  "height": 300
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 300,
+                    "top": 300
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 300,
+                    "top": 300
+                  }
+                }
+              }
+            ],
+            "responses": [
+              {
+                "path": "search.query",
+                "args": [
+                  {
+                    "query": {
+                      "text": "the"
+                    },
+                    "mode": "full"
+                  }
+                ],
+                "defer": "f1",
+                "times": 1
+              },
+              {
+                "path": "search.query",
+                "args": [
+                  {
+                    "query": {
+                      "text": "other",
+                      "matchCase": true
+                    },
+                    "mode": "full"
+                  }
+                ],
+                "value": {
+                  "matches": [
+                    {
+                      "pageObjectNumber": 11,
+                      "charStart": 0,
+                      "charCount": 4,
+                      "segments": [
+                        {
+                          "quad": {
+                            "p1": {
+                              "x": 10,
+                              "y": 40
+                            },
+                            "p2": {
+                              "x": 50,
+                              "y": 40
+                            },
+                            "p3": {
+                              "x": 10,
+                              "y": 20
+                            },
+                            "p4": {
+                              "x": 50,
+                              "y": 20
+                            }
+                          },
+                          "rect": {
+                            "left": 10,
+                            "bottom": 20,
+                            "right": 50,
+                            "top": 40
+                          },
+                          "advance": 1
+                        }
+                      ]
+                    }
+                  ],
+                  "nextCursor": "c1",
+                  "scannedPages": 1,
+                  "totalPages": 3
+                }
+              },
+              {
+                "path": "search.query",
+                "args": [
+                  {
+                    "query": {
+                      "text": "other",
+                      "matchCase": true
+                    },
+                    "mode": "full",
+                    "cursor": "c1"
+                  }
+                ],
+                "defer": "f2"
+              }
+            ]
+          }
+        }
+      },
+      "snapshot": [
+        "search::a"
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "search",
+            "doc": "a"
+          },
+          "method": "findAll",
+          "args": [
+            {
+              "text": "the"
+            },
+            {
+              "signal": {
+                "$abortSignal": "s1"
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "search-test/signals"
+          },
+          "method": "abort",
+          "args": [
+            "s1"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "search",
+            "doc": "a"
+          },
+          "method": "findAll",
+          "args": [
+            {
+              "text": "other",
+              "matchCase": true
+            },
+            {
+              "signal": {
+                "$abortSignal": "s3"
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "search-test/signals"
+          },
+          "method": "abort",
+          "args": [
+            "s3",
+            {
+              "$error": {
+                "name": "Error",
+                "message": "user left"
+              }
+            }
+          ]
+        },
+        {
+          "op": "settle",
+          "label": "f1",
+          "value": {
+            "matches": [
+              {
+                "pageObjectNumber": 22,
+                "charStart": 0,
+                "charCount": 4,
+                "segments": [
+                  {
+                    "quad": {
+                      "p1": {
+                        "x": 10,
+                        "y": 40
+                      },
+                      "p2": {
+                        "x": 50,
+                        "y": 40
+                      },
+                      "p3": {
+                        "x": 10,
+                        "y": 20
+                      },
+                      "p4": {
+                        "x": 50,
+                        "y": 20
+                      }
+                    },
+                    "rect": {
+                      "left": 10,
+                      "bottom": 20,
+                      "right": 50,
+                      "top": 40
+                    },
+                    "advance": 1
+                  }
+                ]
+              }
+            ],
+            "nextCursor": null,
+            "scannedPages": 3,
+            "totalPages": 3
+          }
+        },
+        {
+          "op": "settle",
+          "label": "f2",
+          "value": {
+            "matches": [
+              {
+                "pageObjectNumber": 22,
+                "charStart": 0,
+                "charCount": 4,
+                "segments": [
+                  {
+                    "quad": {
+                      "p1": {
+                        "x": 10,
+                        "y": 40
+                      },
+                      "p2": {
+                        "x": 50,
+                        "y": 40
+                      },
+                      "p3": {
+                        "x": 10,
+                        "y": 20
+                      },
+                      "p4": {
+                        "x": 50,
+                        "y": 20
+                      }
+                    },
+                    "rect": {
+                      "left": 10,
+                      "bottom": 20,
+                      "right": 50,
+                      "top": 40
+                    },
+                    "advance": 1
+                  }
+                ]
+              }
+            ],
+            "nextCursor": null,
+            "scannedPages": 3,
+            "totalPages": 3
+          }
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "plugins": {
+              "search::a": {
+                "query": null,
+                "status": "idle",
+                "hits": [],
+                "hitsByPage": {},
+                "activeIndex": -1,
+                "progress": {
+                  "scanned": 0,
+                  "total": 0
+                },
+                "error": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "search.query",
+              "args": [
+                {
+                  "query": {
+                    "text": "the"
+                  },
+                  "mode": "full"
+                }
+              ]
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "plugins": {
+              "search::a": {
+                "query": null,
+                "status": "idle",
+                "hits": [],
+                "hitsByPage": {},
+                "activeIndex": -1,
+                "progress": {
+                  "scanned": 0,
+                  "total": 0
+                },
+                "error": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "rejected": {
+                "$error": {
+                  "name": "AbortError",
+                  "message": "This operation was aborted"
+                }
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "abort": 2,
+              "reason": {
+                "$error": {
+                  "name": "AbortError",
+                  "message": "This operation was aborted"
+                }
+              }
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "search::a": {
+                "query": null,
+                "status": "idle",
+                "hits": [],
+                "hitsByPage": {},
+                "activeIndex": -1,
+                "progress": {
+                  "scanned": 0,
+                  "total": 0
+                },
+                "error": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "search.query",
+              "args": [
+                {
+                  "query": {
+                    "text": "other",
+                    "matchCase": true
+                  },
+                  "mode": "full"
+                }
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "search.query",
+              "args": [
+                {
+                  "query": {
+                    "text": "other",
+                    "matchCase": true
+                  },
+                  "mode": "full",
+                  "cursor": "c1"
+                }
+              ]
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 3
+          },
+          "state": {
+            "plugins": {
+              "search::a": {
+                "query": null,
+                "status": "idle",
+                "hits": [],
+                "hitsByPage": {},
+                "activeIndex": -1,
+                "progress": {
+                  "scanned": 0,
+                  "total": 0
+                },
+                "error": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 3,
+              "rejected": {
+                "$error": {
+                  "name": "Error",
+                  "message": "user left"
+                }
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "abort": 5,
+              "reason": {
+                "$error": {
+                  "name": "Error",
+                  "message": "user left"
+                }
+              }
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "search::a": {
+                "query": null,
+                "status": "idle",
+                "hits": [],
+                "hitsByPage": {},
+                "activeIndex": -1,
+                "progress": {
+                  "scanned": 0,
+                  "total": 0
+                },
+                "error": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "state": {
+            "plugins": {
+              "search::a": {
+                "query": null,
+                "status": "idle",
+                "hits": [],
+                "hitsByPage": {},
+                "activeIndex": -1,
+                "progress": {
+                  "scanned": 0,
+                  "total": 0
+                },
+                "error": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "state": {
+            "plugins": {
+              "search::a": {
+                "query": null,
+                "status": "idle",
+                "hits": [],
+                "hitsByPage": {},
+                "activeIndex": -1,
+                "progress": {
+                  "scanned": 0,
+                  "total": 0
+                },
+                "error": null
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "find-all-signal-already-aborted",
+      "covers": "A signal aborted before the call still sends the first request; when it lands, findAll rejects with the reason.",
+      "plugins": [
+        {
+          "factory": "search-signals"
+        },
+        {
+          "factory": "search"
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "security": {
+              "allows": [
+                "doc.text.search",
+                "doc.text.copy"
+              ]
+            },
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 11,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "pageObjectNumber": 22,
+                "label": null,
+                "size": {
+                  "width": 300,
+                  "height": 400
+                },
+                "rotation": 90,
+                "userUnit": 2,
+                "boxes": {
+                  "media": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 310,
+                    "top": 420
+                  },
+                  "crop": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 310,
+                    "top": 420
+                  }
+                }
+              },
+              {
+                "index": 2,
+                "pageObjectNumber": 33,
+                "label": null,
+                "size": {
+                  "width": 300,
+                  "height": 300
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 300,
+                    "top": 300
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 300,
+                    "top": 300
+                  }
+                }
+              }
+            ],
+            "responses": [
+              {
+                "path": "search.query",
+                "args": [
+                  {
+                    "query": {
+                      "text": "the"
+                    },
+                    "mode": "full"
+                  }
+                ],
+                "value": {
+                  "matches": [
+                    {
+                      "pageObjectNumber": 11,
+                      "charStart": 0,
+                      "charCount": 4,
+                      "segments": [
+                        {
+                          "quad": {
+                            "p1": {
+                              "x": 10,
+                              "y": 40
+                            },
+                            "p2": {
+                              "x": 50,
+                              "y": 40
+                            },
+                            "p3": {
+                              "x": 10,
+                              "y": 20
+                            },
+                            "p4": {
+                              "x": 50,
+                              "y": 20
+                            }
+                          },
+                          "rect": {
+                            "left": 10,
+                            "bottom": 20,
+                            "right": 50,
+                            "top": 40
+                          },
+                          "advance": 1
+                        }
+                      ]
+                    }
+                  ],
+                  "nextCursor": "c1",
+                  "scannedPages": 1,
+                  "totalPages": 3
+                }
+              }
+            ]
+          }
+        }
+      },
+      "snapshot": [
+        "search::a"
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "search-test/signals"
+          },
+          "method": "abort",
+          "args": [
+            "s1"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "search",
+            "doc": "a"
+          },
+          "method": "findAll",
+          "args": [
+            {
+              "text": "the"
+            },
+            {
+              "signal": {
+                "$abortSignal": "s1"
+              }
+            }
+          ]
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "plugins": {
+              "search::a": {
+                "query": null,
+                "status": "idle",
+                "hits": [],
+                "hitsByPage": {},
+                "activeIndex": -1,
+                "progress": {
+                  "scanned": 0,
+                  "total": 0
+                },
+                "error": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "search::a": {
+                "query": null,
+                "status": "idle",
+                "hits": [],
+                "hitsByPage": {},
+                "activeIndex": -1,
+                "progress": {
+                  "scanned": 0,
+                  "total": 0
+                },
+                "error": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "rejected": {
+                "$error": {
+                  "name": "AbortError",
+                  "message": "This operation was aborted"
+                }
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "search.query",
+              "args": [
+                {
+                  "query": {
+                    "text": "the"
+                  },
+                  "mode": "full"
+                }
+              ]
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "plugins": {
+              "search::a": {
+                "query": null,
+                "status": "idle",
+                "hits": [],
+                "hitsByPage": {},
+                "activeIndex": -1,
+                "progress": {
+                  "scanned": 0,
+                  "total": 0
+                },
+                "error": null
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "find-all-signal-after-resolution",
+      "covers": "Aborting after findAll resolved does nothing: the listener was removed and no slice is in flight.",
+      "plugins": [
+        {
+          "factory": "search-signals"
+        },
+        {
+          "factory": "search"
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "security": {
+              "allows": [
+                "doc.text.search",
+                "doc.text.copy"
+              ]
+            },
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 11,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "pageObjectNumber": 22,
+                "label": null,
+                "size": {
+                  "width": 300,
+                  "height": 400
+                },
+                "rotation": 90,
+                "userUnit": 2,
+                "boxes": {
+                  "media": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 310,
+                    "top": 420
+                  },
+                  "crop": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 310,
+                    "top": 420
+                  }
+                }
+              },
+              {
+                "index": 2,
+                "pageObjectNumber": 33,
+                "label": null,
+                "size": {
+                  "width": 300,
+                  "height": 300
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 300,
+                    "top": 300
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 300,
+                    "top": 300
+                  }
+                }
+              }
+            ],
+            "responses": [
+              {
+                "path": "search.query",
+                "args": [
+                  {
+                    "query": {
+                      "text": "the"
+                    },
+                    "mode": "full"
+                  }
+                ],
+                "value": {
+                  "matches": [
+                    {
+                      "pageObjectNumber": 11,
+                      "charStart": 0,
+                      "charCount": 4,
+                      "segments": [
+                        {
+                          "quad": {
+                            "p1": {
+                              "x": 10,
+                              "y": 40
+                            },
+                            "p2": {
+                              "x": 50,
+                              "y": 40
+                            },
+                            "p3": {
+                              "x": 10,
+                              "y": 20
+                            },
+                            "p4": {
+                              "x": 50,
+                              "y": 20
+                            }
+                          },
+                          "rect": {
+                            "left": 10,
+                            "bottom": 20,
+                            "right": 50,
+                            "top": 40
+                          },
+                          "advance": 1
+                        }
+                      ]
+                    }
+                  ],
+                  "nextCursor": null,
+                  "scannedPages": 3,
+                  "totalPages": 3
+                }
+              }
+            ]
+          }
+        }
+      },
+      "snapshot": [
+        "search::a"
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "search",
+            "doc": "a"
+          },
+          "method": "findAll",
+          "args": [
+            {
+              "text": "the"
+            },
+            {
+              "signal": {
+                "$abortSignal": "s1"
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "search-test/signals"
+          },
+          "method": "abort",
+          "args": [
+            "s1"
+          ]
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "plugins": {
+              "search::a": {
+                "query": null,
+                "status": "idle",
+                "hits": [],
+                "hitsByPage": {},
+                "activeIndex": -1,
+                "progress": {
+                  "scanned": 0,
+                  "total": 0
+                },
+                "error": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": [
+                {
+                  "pon": 11,
+                  "pageIndex": 0,
+                  "charStart": 0,
+                  "charCount": 4,
+                  "segments": [
+                    {
+                      "quad": {
+                        "upperStart": {
+                          "x": 10,
+                          "y": 760
+                        },
+                        "upperEnd": {
+                          "x": 50,
+                          "y": 760
+                        },
+                        "lowerStart": {
+                          "x": 10,
+                          "y": 780
+                        },
+                        "lowerEnd": {
+                          "x": 50,
+                          "y": 780
+                        }
+                      },
+                      "rect": {
+                        "x": 10,
+                        "y": 760,
+                        "width": 40,
+                        "height": 20
+                      },
+                      "advance": 1
+                    }
+                  ],
+                  "bounds": {
+                    "x": 10,
+                    "y": 760,
+                    "width": 40,
+                    "height": 20
+                  }
+                }
+              ]
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "search.query",
+              "args": [
+                {
+                  "query": {
+                    "text": "the"
+                  },
+                  "mode": "full"
+                }
+              ]
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "plugins": {
+              "search::a": {
+                "query": null,
+                "status": "idle",
+                "hits": [],
+                "hitsByPage": {},
+                "activeIndex": -1,
+                "progress": {
+                  "scanned": 0,
+                  "total": 0
+                },
+                "error": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "search::a": {
+                "query": null,
+                "status": "idle",
+                "hits": [],
+                "hitsByPage": {},
+                "activeIndex": -1,
+                "progress": {
+                  "scanned": 0,
+                  "total": 0
+                },
+                "error": null
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "find-all-signal-on-an-error",
+      "covers": "A signal that never aborts leaves an engine error to reject findAll; aborting afterwards does nothing.",
+      "plugins": [
+        {
+          "factory": "search-signals"
+        },
+        {
+          "factory": "search"
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "security": {
+              "allows": [
+                "doc.text.search",
+                "doc.text.copy"
+              ]
+            },
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 11,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "pageObjectNumber": 22,
+                "label": null,
+                "size": {
+                  "width": 300,
+                  "height": 400
+                },
+                "rotation": 90,
+                "userUnit": 2,
+                "boxes": {
+                  "media": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 310,
+                    "top": 420
+                  },
+                  "crop": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 310,
+                    "top": 420
+                  }
+                }
+              },
+              {
+                "index": 2,
+                "pageObjectNumber": 33,
+                "label": null,
+                "size": {
+                  "width": 300,
+                  "height": 300
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 300,
+                    "top": 300
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 300,
+                    "top": 300
+                  }
+                }
+              }
+            ],
+            "responses": [
+              {
+                "path": "search.query",
+                "args": [
+                  {
+                    "query": {
+                      "text": "the"
+                    },
+                    "mode": "full"
+                  }
+                ],
+                "error": {
+                  "name": "EngineError",
+                  "message": "boom",
+                  "code": "Unknown"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "snapshot": [
+        "search::a"
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "search",
+            "doc": "a"
+          },
+          "method": "findAll",
+          "args": [
+            {
+              "text": "the"
+            },
+            {
+              "signal": {
+                "$abortSignal": "s1"
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "search-test/signals"
+          },
+          "method": "abort",
+          "args": [
+            "s1"
+          ]
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "plugins": {
+              "search::a": {
+                "query": null,
+                "status": "idle",
+                "hits": [],
+                "hitsByPage": {},
+                "activeIndex": -1,
+                "progress": {
+                  "scanned": 0,
+                  "total": 0
+                },
+                "error": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "rejected": {
+                "$error": {
+                  "name": "EngineError",
+                  "message": "boom",
+                  "code": "Unknown"
+                }
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "search.query",
+              "args": [
+                {
+                  "query": {
+                    "text": "the"
+                  },
+                  "mode": "full"
+                }
+              ]
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "plugins": {
+              "search::a": {
+                "query": null,
+                "status": "idle",
+                "hits": [],
+                "hitsByPage": {},
+                "activeIndex": -1,
+                "progress": {
+                  "scanned": 0,
+                  "total": 0
+                },
+                "error": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "search::a": {
+                "query": null,
+                "status": "idle",
+                "hits": [],
+                "hitsByPage": {},
+                "activeIndex": -1,
+                "progress": {
+                  "scanned": 0,
+                  "total": 0
+                },
+                "error": null
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
