@@ -1,0 +1,4726 @@
+{
+  "schemaVersion": 1,
+  "kind": "scenario",
+  "describes": "packages/plugin/actions createHoverPump, scripted and over the real dispatcher.",
+  "cases": [
+    {
+      "name": "pairs-are-submitted-back-to-back",
+      "covers": "Enter(A); then A to B while idle submits Exit(A) and Enter(B) together, synchronously.",
+      "plugins": [
+        {
+          "factory": "hover-pump",
+          "config": {
+            "dispatch": {
+              "$fn": "dispatch",
+              "seq": [
+                {
+                  "defer": "d1"
+                },
+                {
+                  "defer": "d2"
+                },
+                {
+                  "defer": "d3"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "pageObjectNumber": 2,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ],
+            "security": {
+              "allows": "*"
+            },
+            "responses": [
+              {
+                "path": "forms.list",
+                "value": {
+                  "formKind": "none",
+                  "needsAppearances": false,
+                  "fields": [],
+                  "calculationOrder": []
+                }
+              },
+              {
+                "path": "page.annotations.list",
+                "value": {
+                  "annotations": []
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "hover-pump",
+            "doc": "a"
+          },
+          "method": "hover",
+          "args": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 1
+              },
+              "pon": 1
+            }
+          ]
+        },
+        {
+          "op": "settle",
+          "label": "d1",
+          "value": {
+            "status": "executed",
+            "steps": [],
+            "diagnostics": []
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "hover-pump",
+            "doc": "a"
+          },
+          "method": "hover",
+          "args": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 2
+              },
+              "pon": 1
+            }
+          ]
+        },
+        {
+          "op": "settle",
+          "label": "d2",
+          "value": {
+            "status": "executed",
+            "steps": [],
+            "diagnostics": []
+          }
+        },
+        {
+          "op": "settle",
+          "label": "d3",
+          "value": {
+            "status": "executed",
+            "steps": [],
+            "diagnostics": []
+          }
+        }
+      ],
+      "snapshot": "none",
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 1
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "dispatch",
+              "args": [
+                {
+                  "scope": "annotation",
+                  "event": "cursorEnter",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 1
+                  },
+                  "pon": 1
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "dispatch",
+              "args": [
+                {
+                  "scope": "annotation",
+                  "event": "cursorExit",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 1
+                  },
+                  "pon": 1
+                }
+              ]
+            },
+            {
+              "fn": "dispatch",
+              "args": [
+                {
+                  "scope": "annotation",
+                  "event": "cursorEnter",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 2
+                  },
+                  "pon": 1
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "a-slow-transition-is-never-split",
+      "covers": "While a transition is in flight nothing else is submitted; after it settles the pump delivers the latest target.",
+      "plugins": [
+        {
+          "factory": "hover-pump",
+          "config": {
+            "dispatch": {
+              "$fn": "dispatch",
+              "seq": [
+                {
+                  "defer": "d1"
+                },
+                {
+                  "defer": "d2"
+                },
+                {
+                  "defer": "d3"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "pageObjectNumber": 2,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ],
+            "security": {
+              "allows": "*"
+            },
+            "responses": [
+              {
+                "path": "forms.list",
+                "value": {
+                  "formKind": "none",
+                  "needsAppearances": false,
+                  "fields": [],
+                  "calculationOrder": []
+                }
+              },
+              {
+                "path": "page.annotations.list",
+                "value": {
+                  "annotations": []
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "hover-pump",
+            "doc": "a"
+          },
+          "method": "hover",
+          "args": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 1
+              },
+              "pon": 1
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "hover-pump",
+            "doc": "a"
+          },
+          "method": "hover",
+          "args": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 2
+              },
+              "pon": 1
+            }
+          ]
+        },
+        {
+          "op": "settle",
+          "label": "d1",
+          "value": {
+            "status": "executed",
+            "steps": [],
+            "diagnostics": []
+          }
+        },
+        {
+          "op": "settle",
+          "label": "d2",
+          "value": {
+            "status": "executed",
+            "steps": [],
+            "diagnostics": []
+          }
+        },
+        {
+          "op": "settle",
+          "label": "d3",
+          "value": {
+            "status": "executed",
+            "steps": [],
+            "diagnostics": []
+          }
+        }
+      ],
+      "snapshot": "none",
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 1
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "dispatch",
+              "args": [
+                {
+                  "scope": "annotation",
+                  "event": "cursorEnter",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 1
+                  },
+                  "pon": 1
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "dispatch",
+              "args": [
+                {
+                  "scope": "annotation",
+                  "event": "cursorExit",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 1
+                  },
+                  "pon": 1
+                }
+              ]
+            },
+            {
+              "fn": "dispatch",
+              "args": [
+                {
+                  "scope": "annotation",
+                  "event": "cursorEnter",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 2
+                  },
+                  "pon": 1
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "intermediate-targets-are-skipped",
+      "covers": "A to B to C to nothing to D while A is in flight delivers Exit(A) then Enter(D).",
+      "plugins": [
+        {
+          "factory": "hover-pump",
+          "config": {
+            "dispatch": {
+              "$fn": "dispatch",
+              "seq": [
+                {
+                  "defer": "d1"
+                },
+                {
+                  "defer": "d2"
+                },
+                {
+                  "defer": "d3"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "pageObjectNumber": 2,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ],
+            "security": {
+              "allows": "*"
+            },
+            "responses": [
+              {
+                "path": "forms.list",
+                "value": {
+                  "formKind": "none",
+                  "needsAppearances": false,
+                  "fields": [],
+                  "calculationOrder": []
+                }
+              },
+              {
+                "path": "page.annotations.list",
+                "value": {
+                  "annotations": []
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "hover-pump",
+            "doc": "a"
+          },
+          "method": "hover",
+          "args": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 1
+              },
+              "pon": 1
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "hover-pump",
+            "doc": "a"
+          },
+          "method": "hover",
+          "args": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 2
+              },
+              "pon": 1
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "hover-pump",
+            "doc": "a"
+          },
+          "method": "hover",
+          "args": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 3
+              },
+              "pon": 1
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "hover-pump",
+            "doc": "a"
+          },
+          "method": "hover",
+          "args": [
+            null
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "hover-pump",
+            "doc": "a"
+          },
+          "method": "hover",
+          "args": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 4
+              },
+              "pon": 1
+            }
+          ]
+        },
+        {
+          "op": "settle",
+          "label": "d1",
+          "value": {
+            "status": "executed",
+            "steps": [],
+            "diagnostics": []
+          }
+        },
+        {
+          "op": "settle",
+          "label": "d2",
+          "value": {
+            "status": "executed",
+            "steps": [],
+            "diagnostics": []
+          }
+        },
+        {
+          "op": "settle",
+          "label": "d3",
+          "value": {
+            "status": "executed",
+            "steps": [],
+            "diagnostics": []
+          }
+        }
+      ],
+      "snapshot": "none",
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 1
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "dispatch",
+              "args": [
+                {
+                  "scope": "annotation",
+                  "event": "cursorEnter",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 1
+                  },
+                  "pon": 1
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "dispatch",
+              "args": [
+                {
+                  "scope": "annotation",
+                  "event": "cursorExit",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 1
+                  },
+                  "pon": 1
+                }
+              ]
+            },
+            {
+              "fn": "dispatch",
+              "args": [
+                {
+                  "scope": "annotation",
+                  "event": "cursorEnter",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 4
+                  },
+                  "pon": 1
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "same-target-is-free-and-exit-happens-once",
+      "covers": "Hovering the same target submits nothing; leaving to nothing exits once, and nothing again stays silent.",
+      "plugins": [
+        {
+          "factory": "hover-pump",
+          "config": {
+            "dispatch": {
+              "$fn": "dispatch",
+              "seq": [
+                {
+                  "defer": "d1"
+                },
+                {
+                  "defer": "d2"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "pageObjectNumber": 2,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ],
+            "security": {
+              "allows": "*"
+            },
+            "responses": [
+              {
+                "path": "forms.list",
+                "value": {
+                  "formKind": "none",
+                  "needsAppearances": false,
+                  "fields": [],
+                  "calculationOrder": []
+                }
+              },
+              {
+                "path": "page.annotations.list",
+                "value": {
+                  "annotations": []
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "hover-pump",
+            "doc": "a"
+          },
+          "method": "hover",
+          "args": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 1
+              },
+              "pon": 1
+            }
+          ]
+        },
+        {
+          "op": "settle",
+          "label": "d1",
+          "value": {
+            "status": "executed",
+            "steps": [],
+            "diagnostics": []
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "hover-pump",
+            "doc": "a"
+          },
+          "method": "hover",
+          "args": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 1
+              },
+              "pon": 1
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "hover-pump",
+            "doc": "a"
+          },
+          "method": "hover",
+          "args": [
+            null
+          ]
+        },
+        {
+          "op": "settle",
+          "label": "d2",
+          "value": {
+            "status": "executed",
+            "steps": [],
+            "diagnostics": []
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "hover-pump",
+            "doc": "a"
+          },
+          "method": "hover",
+          "args": [
+            null
+          ]
+        }
+      ],
+      "snapshot": "none",
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 1
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "dispatch",
+              "args": [
+                {
+                  "scope": "annotation",
+                  "event": "cursorEnter",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 1
+                  },
+                  "pon": 1
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "dispatch",
+              "args": [
+                {
+                  "scope": "annotation",
+                  "event": "cursorExit",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 1
+                  },
+                  "pon": 1
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "event-flags-skip-tree-less-halves",
+      "covers": "events.enter false and events.exit false skip their half; a transition with nothing to submit settles on the next turn.",
+      "plugins": [
+        {
+          "factory": "hover-pump",
+          "config": {
+            "dispatch": {
+              "$fn": "dispatch",
+              "seq": [
+                {
+                  "defer": "d1"
+                },
+                {
+                  "defer": "d2"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "pageObjectNumber": 2,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ],
+            "security": {
+              "allows": "*"
+            },
+            "responses": [
+              {
+                "path": "forms.list",
+                "value": {
+                  "formKind": "none",
+                  "needsAppearances": false,
+                  "fields": [],
+                  "calculationOrder": []
+                }
+              },
+              {
+                "path": "page.annotations.list",
+                "value": {
+                  "annotations": []
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "hover-pump",
+            "doc": "a"
+          },
+          "method": "hover",
+          "args": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 1
+              },
+              "pon": 1,
+              "events": {
+                "enter": false
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "hover-pump",
+            "doc": "a"
+          },
+          "method": "hover",
+          "args": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 2
+              },
+              "pon": 1,
+              "events": {
+                "exit": false
+              }
+            }
+          ]
+        },
+        {
+          "op": "settle",
+          "label": "d1",
+          "value": {
+            "status": "executed",
+            "steps": [],
+            "diagnostics": []
+          }
+        },
+        {
+          "op": "settle",
+          "label": "d2",
+          "value": {
+            "status": "executed",
+            "steps": [],
+            "diagnostics": []
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "hover-pump",
+            "doc": "a"
+          },
+          "method": "hover",
+          "args": [
+            null
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "hover-pump",
+            "doc": "a"
+          },
+          "method": "hover",
+          "args": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 3
+              },
+              "pon": 1,
+              "events": {}
+            }
+          ]
+        }
+      ],
+      "snapshot": "none",
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 1
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "dispatch",
+              "args": [
+                {
+                  "scope": "annotation",
+                  "event": "cursorExit",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 1
+                  },
+                  "pon": 1
+                }
+              ]
+            },
+            {
+              "fn": "dispatch",
+              "args": [
+                {
+                  "scope": "annotation",
+                  "event": "cursorEnter",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 2
+                  },
+                  "pon": 1
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "dispatch",
+              "args": [
+                {
+                  "scope": "annotation",
+                  "event": "cursorEnter",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 3
+                  },
+                  "pon": 1
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "reset-forgets-without-dispatching",
+      "covers": "reset drops the delivered target, so the next hover enters without an exit.",
+      "plugins": [
+        {
+          "factory": "hover-pump",
+          "config": {
+            "dispatch": {
+              "$fn": "dispatch",
+              "seq": [
+                {
+                  "defer": "d1"
+                },
+                {
+                  "defer": "d2"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "pageObjectNumber": 2,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ],
+            "security": {
+              "allows": "*"
+            },
+            "responses": [
+              {
+                "path": "forms.list",
+                "value": {
+                  "formKind": "none",
+                  "needsAppearances": false,
+                  "fields": [],
+                  "calculationOrder": []
+                }
+              },
+              {
+                "path": "page.annotations.list",
+                "value": {
+                  "annotations": []
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "hover-pump",
+            "doc": "a"
+          },
+          "method": "hover",
+          "args": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 1
+              },
+              "pon": 1
+            }
+          ]
+        },
+        {
+          "op": "settle",
+          "label": "d1",
+          "value": {
+            "status": "executed",
+            "steps": [],
+            "diagnostics": []
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "hover-pump",
+            "doc": "a"
+          },
+          "method": "reset",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "hover-pump",
+            "doc": "a"
+          },
+          "method": "hover",
+          "args": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 2
+              },
+              "pon": 1
+            }
+          ]
+        },
+        {
+          "op": "settle",
+          "label": "d2",
+          "value": {
+            "status": "executed",
+            "steps": [],
+            "diagnostics": []
+          }
+        }
+      ],
+      "snapshot": "none",
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 1
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "dispatch",
+              "args": [
+                {
+                  "scope": "annotation",
+                  "event": "cursorEnter",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 1
+                  },
+                  "pon": 1
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "dispatch",
+              "args": [
+                {
+                  "scope": "annotation",
+                  "event": "cursorEnter",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 2
+                  },
+                  "pon": 1
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "target-identity",
+      "covers": "Targets compare by ref kind and page: object numbers, /NM, and index plus revision; a different kind or page is a new target.",
+      "plugins": [
+        {
+          "factory": "hover-pump",
+          "config": {
+            "dispatch": {
+              "$fn": "dispatch",
+              "resolves": {
+                "status": "executed",
+                "steps": [],
+                "diagnostics": []
+              }
+            }
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "pageObjectNumber": 2,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ],
+            "security": {
+              "allows": "*"
+            },
+            "responses": [
+              {
+                "path": "forms.list",
+                "value": {
+                  "formKind": "none",
+                  "needsAppearances": false,
+                  "fields": [],
+                  "calculationOrder": []
+                }
+              },
+              {
+                "path": "page.annotations.list",
+                "value": {
+                  "annotations": []
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "hover-pump",
+            "doc": "a"
+          },
+          "method": "hover",
+          "args": [
+            {
+              "ref": {
+                "kind": "nm",
+                "pageObjectNumber": 1,
+                "nm": "tip"
+              },
+              "pon": 1
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "hover-pump",
+            "doc": "a"
+          },
+          "method": "hover",
+          "args": [
+            {
+              "ref": {
+                "kind": "nm",
+                "pageObjectNumber": 1,
+                "nm": "tip"
+              },
+              "pon": 1
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "hover-pump",
+            "doc": "a"
+          },
+          "method": "hover",
+          "args": [
+            {
+              "ref": {
+                "kind": "nm",
+                "pageObjectNumber": 1,
+                "nm": "other"
+              },
+              "pon": 1
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "hover-pump",
+            "doc": "a"
+          },
+          "method": "hover",
+          "args": [
+            {
+              "ref": {
+                "kind": "index",
+                "pageObjectNumber": 1,
+                "index": 2,
+                "revision": "r1"
+              },
+              "pon": 1
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "hover-pump",
+            "doc": "a"
+          },
+          "method": "hover",
+          "args": [
+            {
+              "ref": {
+                "kind": "index",
+                "pageObjectNumber": 1,
+                "index": 2,
+                "revision": "r1"
+              },
+              "pon": 1
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "hover-pump",
+            "doc": "a"
+          },
+          "method": "hover",
+          "args": [
+            {
+              "ref": {
+                "kind": "index",
+                "pageObjectNumber": 1,
+                "index": 2,
+                "revision": "r2"
+              },
+              "pon": 1
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "hover-pump",
+            "doc": "a"
+          },
+          "method": "hover",
+          "args": [
+            {
+              "ref": {
+                "kind": "index",
+                "pageObjectNumber": 1,
+                "index": 3,
+                "revision": "r2"
+              },
+              "pon": 1
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "hover-pump",
+            "doc": "a"
+          },
+          "method": "hover",
+          "args": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 1
+              },
+              "pon": 1
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "hover-pump",
+            "doc": "a"
+          },
+          "method": "hover",
+          "args": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 2,
+                "annotObjectNumber": 1
+              },
+              "pon": 2
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "hover-pump",
+            "doc": "a"
+          },
+          "method": "hover",
+          "args": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 2,
+                "annotObjectNumber": 1
+              },
+              "pon": 2
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "hover-pump",
+            "doc": "a"
+          },
+          "method": "hover",
+          "args": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 2,
+                "annotObjectNumber": 2
+              },
+              "pon": 2
+            }
+          ]
+        }
+      ],
+      "snapshot": "none",
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 1
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "dispatch",
+              "args": [
+                {
+                  "scope": "annotation",
+                  "event": "cursorEnter",
+                  "ref": {
+                    "kind": "nm",
+                    "pageObjectNumber": 1,
+                    "nm": "tip"
+                  },
+                  "pon": 1
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "dispatch",
+              "args": [
+                {
+                  "scope": "annotation",
+                  "event": "cursorExit",
+                  "ref": {
+                    "kind": "nm",
+                    "pageObjectNumber": 1,
+                    "nm": "tip"
+                  },
+                  "pon": 1
+                }
+              ]
+            },
+            {
+              "fn": "dispatch",
+              "args": [
+                {
+                  "scope": "annotation",
+                  "event": "cursorEnter",
+                  "ref": {
+                    "kind": "nm",
+                    "pageObjectNumber": 1,
+                    "nm": "other"
+                  },
+                  "pon": 1
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "dispatch",
+              "args": [
+                {
+                  "scope": "annotation",
+                  "event": "cursorExit",
+                  "ref": {
+                    "kind": "nm",
+                    "pageObjectNumber": 1,
+                    "nm": "other"
+                  },
+                  "pon": 1
+                }
+              ]
+            },
+            {
+              "fn": "dispatch",
+              "args": [
+                {
+                  "scope": "annotation",
+                  "event": "cursorEnter",
+                  "ref": {
+                    "kind": "index",
+                    "pageObjectNumber": 1,
+                    "index": 2,
+                    "revision": "r1"
+                  },
+                  "pon": 1
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "dispatch",
+              "args": [
+                {
+                  "scope": "annotation",
+                  "event": "cursorExit",
+                  "ref": {
+                    "kind": "index",
+                    "pageObjectNumber": 1,
+                    "index": 2,
+                    "revision": "r1"
+                  },
+                  "pon": 1
+                }
+              ]
+            },
+            {
+              "fn": "dispatch",
+              "args": [
+                {
+                  "scope": "annotation",
+                  "event": "cursorEnter",
+                  "ref": {
+                    "kind": "index",
+                    "pageObjectNumber": 1,
+                    "index": 2,
+                    "revision": "r2"
+                  },
+                  "pon": 1
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "dispatch",
+              "args": [
+                {
+                  "scope": "annotation",
+                  "event": "cursorExit",
+                  "ref": {
+                    "kind": "index",
+                    "pageObjectNumber": 1,
+                    "index": 2,
+                    "revision": "r2"
+                  },
+                  "pon": 1
+                }
+              ]
+            },
+            {
+              "fn": "dispatch",
+              "args": [
+                {
+                  "scope": "annotation",
+                  "event": "cursorEnter",
+                  "ref": {
+                    "kind": "index",
+                    "pageObjectNumber": 1,
+                    "index": 3,
+                    "revision": "r2"
+                  },
+                  "pon": 1
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "dispatch",
+              "args": [
+                {
+                  "scope": "annotation",
+                  "event": "cursorExit",
+                  "ref": {
+                    "kind": "index",
+                    "pageObjectNumber": 1,
+                    "index": 3,
+                    "revision": "r2"
+                  },
+                  "pon": 1
+                }
+              ]
+            },
+            {
+              "fn": "dispatch",
+              "args": [
+                {
+                  "scope": "annotation",
+                  "event": "cursorEnter",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 1
+                  },
+                  "pon": 1
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "dispatch",
+              "args": [
+                {
+                  "scope": "annotation",
+                  "event": "cursorExit",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 1
+                  },
+                  "pon": 1
+                }
+              ]
+            },
+            {
+              "fn": "dispatch",
+              "args": [
+                {
+                  "scope": "annotation",
+                  "event": "cursorEnter",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 2,
+                    "annotObjectNumber": 1
+                  },
+                  "pon": 2
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "dispatch",
+              "args": [
+                {
+                  "scope": "annotation",
+                  "event": "cursorExit",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 2,
+                    "annotObjectNumber": 1
+                  },
+                  "pon": 2
+                }
+              ]
+            },
+            {
+              "fn": "dispatch",
+              "args": [
+                {
+                  "scope": "annotation",
+                  "event": "cursorEnter",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 2,
+                    "annotObjectNumber": 2
+                  },
+                  "pon": 2
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "a-rejected-dispatch-still-releases",
+      "covers": "allSettled: a rejected dispatch releases the pump like a resolved one.",
+      "plugins": [
+        {
+          "factory": "hover-pump",
+          "config": {
+            "dispatch": {
+              "$fn": "dispatch",
+              "seq": [
+                {
+                  "rejects": {
+                    "message": "no"
+                  }
+                },
+                {
+                  "resolves": {
+                    "status": "executed",
+                    "steps": [],
+                    "diagnostics": []
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "pageObjectNumber": 2,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ],
+            "security": {
+              "allows": "*"
+            },
+            "responses": [
+              {
+                "path": "forms.list",
+                "value": {
+                  "formKind": "none",
+                  "needsAppearances": false,
+                  "fields": [],
+                  "calculationOrder": []
+                }
+              },
+              {
+                "path": "page.annotations.list",
+                "value": {
+                  "annotations": []
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "hover-pump",
+            "doc": "a"
+          },
+          "method": "hover",
+          "args": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 1
+              },
+              "pon": 1
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "hover-pump",
+            "doc": "a"
+          },
+          "method": "hover",
+          "args": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 2
+              },
+              "pon": 1
+            }
+          ]
+        }
+      ],
+      "snapshot": "none",
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 1
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "dispatch",
+              "args": [
+                {
+                  "scope": "annotation",
+                  "event": "cursorEnter",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 1
+                  },
+                  "pon": 1
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "dispatch",
+              "args": [
+                {
+                  "scope": "annotation",
+                  "event": "cursorExit",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 1
+                  },
+                  "pon": 1
+                }
+              ]
+            },
+            {
+              "fn": "dispatch",
+              "args": [
+                {
+                  "scope": "annotation",
+                  "event": "cursorEnter",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1,
+                    "annotObjectNumber": 2
+                  },
+                  "pon": 1
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "an-unknown-ref-kind-never-matches-itself",
+      "covers": "sameTarget is false for a ref kind it does not know, even against itself, so every settle delivers the same target again.",
+      "plugins": [
+        {
+          "factory": "hover-pump",
+          "config": {
+            "dispatch": {
+              "$fn": "dispatch",
+              "seq": [
+                {
+                  "defer": "d1"
+                },
+                {
+                  "defer": "d2"
+                },
+                {
+                  "defer": "d3"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "pageObjectNumber": 2,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ],
+            "security": {
+              "allows": "*"
+            },
+            "responses": [
+              {
+                "path": "forms.list",
+                "value": {
+                  "formKind": "none",
+                  "needsAppearances": false,
+                  "fields": [],
+                  "calculationOrder": []
+                }
+              },
+              {
+                "path": "page.annotations.list",
+                "value": {
+                  "annotations": []
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "hover-pump",
+            "doc": "a"
+          },
+          "method": "hover",
+          "args": [
+            {
+              "ref": {
+                "kind": "mystery"
+              },
+              "pon": 1
+            }
+          ]
+        },
+        {
+          "op": "settle",
+          "label": "d1",
+          "value": {
+            "status": "executed",
+            "steps": [],
+            "diagnostics": []
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "hover-pump",
+            "doc": "a"
+          },
+          "method": "hover",
+          "args": [
+            {
+              "ref": {
+                "kind": "mystery"
+              },
+              "pon": 1
+            }
+          ]
+        }
+      ],
+      "snapshot": "none",
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 1
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "dispatch",
+              "args": [
+                {
+                  "scope": "annotation",
+                  "event": "cursorEnter",
+                  "ref": {
+                    "kind": "mystery"
+                  },
+                  "pon": 1
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "dispatch",
+              "args": [
+                {
+                  "scope": "annotation",
+                  "event": "cursorExit",
+                  "ref": {
+                    "kind": "mystery"
+                  },
+                  "pon": 1
+                }
+              ]
+            },
+            {
+              "fn": "dispatch",
+              "args": [
+                {
+                  "scope": "annotation",
+                  "event": "cursorEnter",
+                  "ref": {
+                    "kind": "mystery"
+                  },
+                  "pon": 1
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "drives-the-real-dispatcher",
+      "covers": "Over the actions capability: the pump forwards the source hint, and the /E and /X trees run as hover-origin steps.",
+      "plugins": [
+        {
+          "factory": "actions",
+          "config": {
+            "openSequence": "off"
+          }
+        },
+        {
+          "factory": "hover-pump",
+          "config": {
+            "dispatch": "actions"
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "pageObjectNumber": 2,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ],
+            "security": {
+              "allows": "*"
+            },
+            "responses": [
+              {
+                "path": "page.annotations.list",
+                "pon": 1,
+                "value": {
+                  "annotations": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1,
+                        "annotObjectNumber": 5
+                      },
+                      "subtype": "square",
+                      "rect": {
+                        "left": 10,
+                        "bottom": 20,
+                        "right": 30,
+                        "top": 40
+                      },
+                      "flags": {
+                        "hidden": false,
+                        "print": true,
+                        "readOnly": false,
+                        "locked": false,
+                        "noView": false,
+                        "toggleNoView": false
+                      },
+                      "actions": {
+                        "cursorEnter": {
+                          "root": {
+                            "type": "named",
+                            "subtype": "Named",
+                            "name": "show",
+                            "next": []
+                          },
+                          "incomplete": false,
+                          "warningFlags": 0,
+                          "warnings": []
+                        },
+                        "cursorExit": {
+                          "root": {
+                            "type": "named",
+                            "subtype": "Named",
+                            "name": "hide",
+                            "next": []
+                          },
+                          "incomplete": false,
+                          "warningFlags": 0,
+                          "warnings": []
+                        }
+                      }
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1,
+                        "annotObjectNumber": 6
+                      },
+                      "subtype": "square",
+                      "rect": {
+                        "left": 10,
+                        "bottom": 20,
+                        "right": 30,
+                        "top": 40
+                      },
+                      "flags": {
+                        "hidden": false,
+                        "print": true,
+                        "readOnly": false,
+                        "locked": false,
+                        "noView": false,
+                        "toggleNoView": false
+                      },
+                      "actions": {
+                        "cursorEnter": {
+                          "root": {
+                            "type": "named",
+                            "subtype": "Named",
+                            "name": "show-6",
+                            "next": []
+                          },
+                          "incomplete": false,
+                          "warningFlags": 0,
+                          "warnings": []
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "forms.list",
+                "value": {
+                  "formKind": "none",
+                  "needsAppearances": false,
+                  "fields": [],
+                  "calculationOrder": []
+                }
+              },
+              {
+                "path": "page.annotations.list",
+                "value": {
+                  "annotations": []
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "registerExecutor",
+          "args": [
+            "named",
+            {
+              "$fn": "exec.named",
+              "returns": {
+                "status": "executed"
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "onAction",
+          "args": [
+            {
+              "$fn": "onAction"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "hover-pump",
+            "doc": "a"
+          },
+          "method": "hover",
+          "args": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 5
+              },
+              "pon": 1,
+              "source": {
+                "kind": "link",
+                "annotation": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1,
+                  "annotObjectNumber": 5
+                },
+                "pon": 1
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "hover-pump",
+            "doc": "a"
+          },
+          "method": "hover",
+          "args": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 6
+              },
+              "pon": 1
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "hover-pump",
+            "doc": "a"
+          },
+          "method": "hover",
+          "args": [
+            null
+          ]
+        }
+      ],
+      "snapshot": [
+        "actions::a"
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 0
+            }
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 1
+            }
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "actions::a",
+              "action": {
+                "type": "ACTIONS_DISPATCHED"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "page.annotations.list",
+              "pon": 1,
+              "args": []
+            }
+          ],
+          "callbacks": [
+            {
+              "fn": "exec.named",
+              "args": [
+                {
+                  "type": "named",
+                  "subtype": "Named",
+                  "name": "show",
+                  "next": []
+                },
+                {
+                  "origin": "hover",
+                  "source": {
+                    "kind": "link",
+                    "annotation": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1,
+                      "annotObjectNumber": 5
+                    },
+                    "pon": 1
+                  },
+                  "event": {
+                    "scope": "annotation",
+                    "name": "cursorEnter"
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "onAction",
+              "args": [
+                {
+                  "ctx": {
+                    "origin": "hover",
+                    "source": {
+                      "kind": "link",
+                      "annotation": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1,
+                        "annotObjectNumber": 5
+                      },
+                      "pon": 1
+                    },
+                    "event": {
+                      "scope": "annotation",
+                      "name": "cursorEnter"
+                    }
+                  },
+                  "tree": {
+                    "root": {
+                      "type": "named",
+                      "subtype": "Named",
+                      "name": "show",
+                      "next": []
+                    },
+                    "incomplete": false,
+                    "warningFlags": 0,
+                    "warnings": []
+                  },
+                  "result": {
+                    "status": "executed",
+                    "nodes": [
+                      {
+                        "path": [],
+                        "type": "named",
+                        "status": "executed"
+                      }
+                    ],
+                    "diagnostics": []
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "actions::a",
+              "action": {
+                "type": "ACTIONS_DISPATCHED"
+              }
+            },
+            {
+              "slice": "actions::a",
+              "action": {
+                "type": "ACTIONS_DISPATCHED"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "page.annotations.list",
+              "pon": 1,
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "page.annotations.list",
+              "pon": 1,
+              "args": []
+            }
+          ],
+          "callbacks": [
+            {
+              "fn": "exec.named",
+              "args": [
+                {
+                  "type": "named",
+                  "subtype": "Named",
+                  "name": "hide",
+                  "next": []
+                },
+                {
+                  "origin": "hover",
+                  "source": {
+                    "kind": "link",
+                    "annotation": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1,
+                      "annotObjectNumber": 5
+                    },
+                    "pon": 1
+                  },
+                  "event": {
+                    "scope": "annotation",
+                    "name": "cursorExit"
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "onAction",
+              "args": [
+                {
+                  "ctx": {
+                    "origin": "hover",
+                    "source": {
+                      "kind": "link",
+                      "annotation": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1,
+                        "annotObjectNumber": 5
+                      },
+                      "pon": 1
+                    },
+                    "event": {
+                      "scope": "annotation",
+                      "name": "cursorExit"
+                    }
+                  },
+                  "tree": {
+                    "root": {
+                      "type": "named",
+                      "subtype": "Named",
+                      "name": "hide",
+                      "next": []
+                    },
+                    "incomplete": false,
+                    "warningFlags": 0,
+                    "warnings": []
+                  },
+                  "result": {
+                    "status": "executed",
+                    "nodes": [
+                      {
+                        "path": [],
+                        "type": "named",
+                        "status": "executed"
+                      }
+                    ],
+                    "diagnostics": []
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "exec.named",
+              "args": [
+                {
+                  "type": "named",
+                  "subtype": "Named",
+                  "name": "show-6",
+                  "next": []
+                },
+                {
+                  "origin": "hover",
+                  "source": {
+                    "kind": "annotation",
+                    "annotation": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1,
+                      "annotObjectNumber": 6
+                    },
+                    "pon": 1
+                  },
+                  "event": {
+                    "scope": "annotation",
+                    "name": "cursorEnter"
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "onAction",
+              "args": [
+                {
+                  "ctx": {
+                    "origin": "hover",
+                    "source": {
+                      "kind": "annotation",
+                      "annotation": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1,
+                        "annotObjectNumber": 6
+                      },
+                      "pon": 1
+                    },
+                    "event": {
+                      "scope": "annotation",
+                      "name": "cursorEnter"
+                    }
+                  },
+                  "tree": {
+                    "root": {
+                      "type": "named",
+                      "subtype": "Named",
+                      "name": "show-6",
+                      "next": []
+                    },
+                    "incomplete": false,
+                    "warningFlags": 0,
+                    "warnings": []
+                  },
+                  "result": {
+                    "status": "executed",
+                    "nodes": [
+                      {
+                        "path": [],
+                        "type": "named",
+                        "status": "executed"
+                      }
+                    ],
+                    "diagnostics": []
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 3
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "page.annotations.list",
+              "pon": 1,
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 3
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

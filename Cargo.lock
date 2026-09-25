@@ -253,6 +253,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "252afb9ae5eaa683babdc6a068b3f5726eb19e05070c731f9b2a23a7c3e8ed34"
 
 [[package]]
+name = "epdf-acrojs"
+version = "0.0.0"
+dependencies = [
+ "epdf-kernel",
+ "plugin-conformance",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "epdf-engine"
 version = "0.0.0"
 dependencies = [
@@ -288,6 +298,17 @@ dependencies = [
  "napi-build",
  "napi-derive",
  "napi-derive-backend",
+]
+
+[[package]]
+name = "epdf-plugin-actions"
+version = "0.0.0"
+dependencies = [
+ "epdf-acrojs",
+ "epdf-kernel",
+ "plugin-conformance",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
