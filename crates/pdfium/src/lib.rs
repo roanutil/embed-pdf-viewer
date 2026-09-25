@@ -63,6 +63,7 @@ pub use library::Library;
 pub use metadata::Trapped;
 pub use page::{Page, PageView, SharedPage};
 pub use page_list::PageBoxType;
+pub use page_write::{FlattenOutcome, FlattenUsage};
 pub use piece_info::{PieceInfoHolder, object_type};
 pub use save::{LayerOutput, LayerSaveError, PdfSaveMode};
 pub use stamp::{ImageObject, StampFit};

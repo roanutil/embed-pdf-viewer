@@ -45,6 +45,12 @@ interface MutateCase {
   };
   /** Insert every page of another PDF, named by fixture path. */
   readonly insert?: { readonly source: string; readonly destIndex?: number };
+  /** Flatten pages, which runs against its own fixture. */
+  readonly flatten?: {
+    readonly fixture: string;
+    readonly pages: number[];
+    readonly usage: 'display' | 'print';
+  };
   readonly refused?: true;
 }
 
@@ -180,6 +186,46 @@ const CASES: readonly MutateCase[] = [
     insert: { source: 'tooling/engine-conformance/fixtures/rich_metadata.pdf' },
   },
   {
+    name: 'flatten-annotated-page',
+    covers:
+      'A page with annotations turned into content. Irreversible, and it is the page that changes rather than the page list.',
+    flatten: {
+      fixture: 'tooling/engine-conformance/fixtures/annotation_appearances.pdf',
+      pages: [3],
+      usage: 'display',
+    },
+  },
+  {
+    name: 'flatten-for-print',
+    covers:
+      'The other usage. An annotation may carry a different stream for each, and a stamp hidden on screen that prints is what makes the distinction matter.',
+    flatten: {
+      fixture: 'tooling/engine-conformance/fixtures/annotation_appearances.pdf',
+      pages: [3],
+      usage: 'print',
+    },
+  },
+  {
+    name: 'flatten-page-with-nothing-on-it',
+    covers:
+      'A page with no annotations, which is UNCHANGED rather than failed: a page with nothing to flatten is already flat.',
+    flatten: {
+      fixture: 'tooling/engine-conformance/fixtures/rich_metadata.pdf',
+      pages: [3],
+      usage: 'display',
+    },
+  },
+  {
+    name: 'flatten-duplicate-refused',
+    covers: 'The same page twice. The second would flatten what the first already did.',
+    flatten: {
+      fixture: 'tooling/engine-conformance/fixtures/annotation_appearances.pdf',
+      pages: [3, 3],
+      usage: 'display',
+    },
+    refused: true,
+  },
+  {
     name: 'delete-one',
     covers:
       'A page removed. Its object number is RETIRED rather than freed, so per-page state a caller kept can never attach to an unrelated future page.',
@@ -205,7 +251,11 @@ const CASES: readonly MutateCase[] = [
 ];
 
 async function readCase(entry: MutateCase): Promise<unknown> {
-  const bytes = new Uint8Array(await readFile(join(repoRoot, FIXTURE)));
+  // A flatten needs a page with annotations on it, which the page-order
+  // fixture has none of, so those cases name their own.
+  const bytes = new Uint8Array(
+    await readFile(join(repoRoot, entry.flatten?.fixture ?? FIXTURE)),
+  );
   const engine = createLocalEngine({
     runtime: {
       prefer: 'wasm',
@@ -237,6 +287,17 @@ async function readCase(entry: MutateCase): Promise<unknown> {
           );
           return { layout: result.layout, inserted: result.insertedPageObjectNumbers };
         }
+        if (entry.flatten) {
+          const result = await doc.pages.flatten(
+            entry.flatten.pages as never,
+            entry.flatten.usage,
+          );
+          // The whole result, not just the per-page outcomes: it echoes
+          // the request back, and an engine that lost the echo would still
+          // agree about what happened.
+          const { meta: _meta, ...flattened } = result as Record<string, unknown>;
+          return { flattened };
+        }
         if (entry.insert) {
           const source = new Uint8Array(await readFile(join(repoRoot, entry.insert.source)));
           const result = await doc.pages.insert(
@@ -261,6 +322,7 @@ async function readCase(entry: MutateCase): Promise<unknown> {
       const produced = (await run()) as Record<string, unknown>;
       // The insert operations report which pages are new alongside the
       // layout; the rest report the layout alone.
+      if ('flattened' in produced) return { ...entry, flattened: produced.flattened };
       return 'layout' in produced
         ? { ...entry, layout: produced.layout, inserted: produced.inserted }
         : { ...entry, layout: produced };

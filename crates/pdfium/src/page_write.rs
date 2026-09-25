@@ -61,7 +61,50 @@ impl Document {
             ) != 0
         }
     }
+}
 
+impl crate::PageView<'_> {
+    /// What a flatten did to one page.
+    ///
+    /// `EPDF_FLATTEN_*`. The middle value is the interesting one: a page
+    /// with nothing to flatten is not a failure, and collapsing the two
+    /// would make "this page had no annotations" indistinguishable from
+    /// "this page could not be flattened".
+    pub fn flatten(&self, usage: FlattenUsage) -> FlattenOutcome {
+        // SAFETY: the page handle is live.
+        let code = unsafe { pdfium_sys::EPDFPage_Flatten(self.as_raw(), usage as i32) };
+        match code {
+            0 => FlattenOutcome::Failed,
+            1 => FlattenOutcome::Applied,
+            2 => FlattenOutcome::NothingToDo,
+            other => FlattenOutcome::Unknown(other),
+        }
+    }
+}
+
+/// Which appearance a flatten bakes.
+///
+/// An annotation may carry a different stream for each, and a hidden-on-
+/// screen stamp that prints is the case that makes the distinction matter.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FlattenUsage {
+    Display = 0,
+    Print = 1,
+}
+
+/// What a flatten did.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FlattenOutcome {
+    /// The page's annotations are now content.
+    Applied,
+    /// There was nothing to flatten, which is not a failure.
+    NothingToDo,
+    Failed,
+    /// A code this build does not know, kept rather than collapsed.
+    Unknown(i32),
+}
+
+impl Document {
     /// Create a blank page at an index.
     ///
     /// Returns a handle the caller must close. PDFium CLAMPS an index past

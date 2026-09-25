@@ -44,7 +44,7 @@ live under `tooling/engine-conformance/vectors/`, and every generator has a
 | G11 | `annotations.move` | `vectors/annotation/move.json`, `tests/annotation_move.rs` |
 | G12 | `forms.setValue`, `forms.reset`, `forms.import`, `forms.repair` | `vectors/forms/write.json`, `tests/form_write.rs` |
 | G12 | `forms.createField`, `updateField`, `deleteField`, `attachWidget`, `detachWidget` | `vectors/forms/field.json`, `tests/form_field.rs` |
-| G13 | `pages.move`, `rotate`, `delete`, `insertBlank`, `insert` | `vectors/pages/mutate.json`, `tests/pages_mutate.rs` |
+| G13 | `pages.move`, `rotate`, `delete`, `insertBlank`, `insert`, `flatten` | `vectors/pages/mutate.json`, `tests/pages_mutate.rs` |
 
 ## Done, tested against fixtures rather than vectors
 
@@ -85,6 +85,14 @@ G12 has everything but `forms.applyEffects`, which is the form-JavaScript
 effect applier and depends on a capability rather than on a port: web keeps
 `packages/core/js-sandbox` and mobile reports unsupported.
 
+`pages.flatten` does not distinguish its two usages on this corpus, and the
+corpus tried. `annotation_appearances.pdf` carries a square with `/F 36`,
+which prints and never shows on screen, and that is the one annotation the
+display and print flattens should disagree about. They do not: both leave the
+same four annotations and render the same pixels, so a build that passed
+`Display` for both passes every vector. The mapping is written the way the
+fork's header names it.
+
 `forms.deleteField` is the field-plane half only. The TypeScript's
 `WorkerHost` cascades into the annotation plane to take the detached widgets
 off their pages, and that cascade is G15's. `deleting_a_field_leaves_its
@@ -93,8 +101,7 @@ _widgets_on_the_page` asserts the half that IS here, and
 field/widget dictionary: the annotation plane will not delete a widget, so
 the whole operation is refused.
 
-G13 has its reorder, its rotation, its delete and both inserts.
-`pages.flatten` and `redaction.apply` are not started.
+G13 has everything but `redaction.apply`.
 
 `pages.insert` takes an OPEN source document rather than bytes, and the
 reason is a lifetime. `FPDF_ImportPagesByIndex` does not fully detach what it

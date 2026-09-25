@@ -7,7 +7,7 @@ endobj
 << /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 612 792] >>
 endobj
 3 0 obj
-<< /Type /Page /Parent 2 0 R /Contents 4 0 R /Resources << >> /Annots [<< /Type /Annot /Subtype /Square /Rect [72 600 172 660] /F 4 /NM (a-three-mode-square) /AP << /N 5 0 R /R 6 0 R /D 7 0 R >> >> << /Type /Annot /Subtype /Square /Rect [220 580 350 680] /F 4 /NM (a-rotated-square) /AP << /N 8 0 R >> /EMBD_Metadata << /Rotation 30 /UnrotatedRect [240 600 340 660] >> >> << /Type /Annot /Subtype /FreeText /Rect [72 450 240 530] /F 4 /NM (a-rotated-callout) /IT /FreeTextCallout /CL [60 430 100 470 72 480] /AP << /N 9 0 R >> /EMBD_Metadata << /Rotation 30 /UnrotatedRect [90 460 220 520] >> >> << /Type /Annot /Subtype /Square /Rect [380 580 480 680] /F 4 /NM (a-square-with-a-box-but-no-angle) /AP << /N 11 0 R >> /EMBD_Metadata << /UnrotatedRect [400 600 460 660] >> >> << /Type /Annot /Subtype /Polygon /Rect [300 420 420 520] /F 4 /NM (a-rotated-polygon) /Vertices [300 420 420 420 360 520] /AP << /N 10 0 R >> /EMBD_Metadata << /Rotation 45 >> >> << /Type /Annot /Subtype /Square /Rect [6 20 606 770] /F 4 /NM (a-page-sized-square) /AP << /N 13 0 R >> >> << /Type /Annot /Subtype /Highlight /Rect [72 380 240 400] /F 4 /NM (a-bare-highlight) /QuadPoints [72 400 240 400 72 380 240 380] >> << /Type /Annot /Subtype /Widget /Rect [72 300 240 330] /F 4 /NM (a-bare-widget) /MK << /BC [0 0 0] /BG [1 1 0.8] >> /DA (0 0 0 rg /Helv 10 Tf) >> 12 0 R 14 0 R] >>
+<< /Type /Page /Parent 2 0 R /Contents 4 0 R /Resources << >> /Annots [<< /Type /Annot /Subtype /Square /Rect [72 600 172 660] /F 4 /NM (a-three-mode-square) /AP << /N 5 0 R /R 6 0 R /D 7 0 R >> >> << /Type /Annot /Subtype /Square /Rect [72 300 172 360] /F 36 /NM (a-print-only-square) /AP << /N 5 0 R >> >> << /Type /Annot /Subtype /Square /Rect [220 580 350 680] /F 4 /NM (a-rotated-square) /AP << /N 8 0 R >> /EMBD_Metadata << /Rotation 30 /UnrotatedRect [240 600 340 660] >> >> << /Type /Annot /Subtype /FreeText /Rect [72 450 240 530] /F 4 /NM (a-rotated-callout) /IT /FreeTextCallout /CL [60 430 100 470 72 480] /AP << /N 9 0 R >> /EMBD_Metadata << /Rotation 30 /UnrotatedRect [90 460 220 520] >> >> << /Type /Annot /Subtype /Square /Rect [380 580 480 680] /F 4 /NM (a-square-with-a-box-but-no-angle) /AP << /N 11 0 R >> /EMBD_Metadata << /UnrotatedRect [400 600 460 660] >> >> << /Type /Annot /Subtype /Polygon /Rect [300 420 420 520] /F 4 /NM (a-rotated-polygon) /Vertices [300 420 420 420 360 520] /AP << /N 10 0 R >> /EMBD_Metadata << /Rotation 45 >> >> << /Type /Annot /Subtype /Square /Rect [6 20 606 770] /F 4 /NM (a-page-sized-square) /AP << /N 13 0 R >> >> << /Type /Annot /Subtype /Highlight /Rect [72 380 240 400] /F 4 /NM (a-bare-highlight) /QuadPoints [72 400 240 400 72 380 240 380] >> << /Type /Annot /Subtype /Widget /Rect [72 300 240 330] /F 4 /NM (a-bare-widget) /MK << /BC [0 0 0] /BG [1 1 0.8] >> /DA (0 0 0 rg /Helv 10 Tf) >> 12 0 R 14 0 R] >>
 endobj
 4 0 obj
 <<  /Length 19 >>
@@ -104,19 +104,19 @@ xref
 0000000015 00000 n 
 0000000097 00000 n 
 0000000178 00000 n 
-0000001554 00000 n 
-0000001624 00000 n 
-0000001777 00000 n 
-0000001930 00000 n 
-0000002083 00000 n 
-0000002279 00000 n 
-0000002472 00000 n 
-0000002628 00000 n 
-0000002784 00000 n 
-0000002978 00000 n 
-0000003140 00000 n 
+0000001664 00000 n 
+0000001734 00000 n 
+0000001887 00000 n 
+0000002040 00000 n 
+0000002193 00000 n 
+0000002389 00000 n 
+0000002582 00000 n 
+0000002738 00000 n 
+0000002894 00000 n 
+0000003088 00000 n 
+0000003250 00000 n 
 trailer
 << /Size 15 /Root 1 0 R >>
 startxref
-3266
+3376
 %%EOF

@@ -992,6 +992,12 @@ function annotationAppearances() {
     // Three modes on one annotation.
     '<< /Type /Annot /Subtype /Square /Rect [72 600 172 660] /F 4 /NM (a-three-mode-square) ' +
       '/AP << /N 5 0 R /R 6 0 R /D 7 0 R >> >>',
+    // Print (bit 3) and NoView (bit 6) together: an annotation that prints
+    // and never shows on screen. The one thing that tells a display
+    // flatten from a print flatten, which are otherwise the same call with
+    // a different number.
+    '<< /Type /Annot /Subtype /Square /Rect [72 300 172 360] /F 36 ' +
+      '/NM (a-print-only-square) /AP << /N 5 0 R >> >>',
     // The stripped case: a box kind whose rotation is in the /AP /Matrix.
     '<< /Type /Annot /Subtype /Square /Rect [220 580 350 680] /F 4 /NM (a-rotated-square) ' +
       '/AP << /N 8 0 R >> ' +

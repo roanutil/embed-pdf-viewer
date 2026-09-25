@@ -13,7 +13,8 @@
 use epdf_engine::cancel::CancelToken;
 use epdf_engine::error::EngineErrorCode;
 use epdf_engine::features::pages_write::{
-    delete_pages, insert_blank_pages, insert_pages_from, move_pages, rotate_pages,
+    FlattenUsage, delete_pages, flatten_pages, insert_blank_pages, insert_pages_from, move_pages,
+    rotate_pages,
 };
 use epdf_engine::geom::PdfRotation;
 use epdf_engine::identity::PageObjectNumber;
@@ -43,6 +44,7 @@ struct Case {
     delete: Option<DeleteInput>,
     insert_blank: Option<InsertBlankInput>,
     insert: Option<InsertInput>,
+    flatten: Option<FlattenInput>,
     #[serde(default)]
     refused: bool,
     #[serde(default)]
@@ -53,6 +55,19 @@ struct Case {
     /// that add nothing.
     #[serde(default)]
     inserted: Option<Vec<u32>>,
+    /// Per-page flatten outcomes, for the cases that flatten.
+    #[serde(default)]
+    flattened: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct FlattenInput {
+    /// A flatten needs a page with annotations on it, which the page-order
+    /// fixture has none of, so these cases name their own.
+    fixture: String,
+    pages: Vec<u32>,
+    usage: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -118,12 +133,32 @@ fn run(
     file: &VectorFile,
     case: &Case,
 ) -> Result<serde_json::Value, epdf_engine::error::EngineError> {
-    let bytes = std::fs::read(test_support::workspace_root().join(&file.fixture))
-        .unwrap_or_else(|e| panic!("{}: read {}: {e}", case.name, file.fixture));
+    let fixture = case.flatten.as_ref().map_or(file.fixture.as_str(), |f| f.fixture.as_str());
+    let bytes = std::fs::read(test_support::workspace_root().join(fixture))
+        .unwrap_or_else(|e| panic!("{}: read {fixture}: {e}", case.name));
     let mut session = DocumentSession::new();
     session.open_with(bytes, None, SessionAuthority::unrestricted()).expect("open");
     let owned = session.document().expect("open");
     let cancel = CancelToken::never();
+
+    if let Some(input) = &case.flatten {
+        let usage = match input.usage.as_str() {
+            "print" => FlattenUsage::Print,
+            "display" => FlattenUsage::Display,
+            other => panic!("{}: unhandled usage {other:?}", case.name),
+        };
+        let result = flatten_pages(
+            owned.document(),
+            |page| {
+                use epdf_engine::access::DocumentAccess;
+                owned.page(page)
+            },
+            &pages(&input.pages),
+            usage,
+            &cancel,
+        )?;
+        return Ok(serde_json::json!({ "flattened": result }));
+    }
 
     if let Some(input) = &case.insert_blank {
         let result = insert_blank_pages(
@@ -184,6 +219,18 @@ fn a_page_mutation_leaves_the_layout_the_typescript_engine_left() {
         applied += 1;
         let mine = run(&file, case).unwrap_or_else(|e| panic!("{}: {e}", case.name));
         // An insert answers with two things; everything else with one.
+        if let Some(flattened) = mine.get("flattened") {
+            assert_eq!(
+                test_support::canonical_numbers(flattened),
+                test_support::canonical_numbers(
+                    case.flattened.as_ref().expect("recorded flatten results")
+                ),
+                "{}: {}",
+                case.name,
+                case.covers,
+            );
+            continue;
+        }
         let (layout, inserted) = match mine.get("layout") {
             Some(layout) => (layout.clone(), mine.get("inserted").cloned()),
             None => (mine, None),

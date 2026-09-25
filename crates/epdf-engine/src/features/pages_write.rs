@@ -350,3 +350,146 @@ fn read_inserted(
         .collect();
     Ok(PageInsertResult { inserted_page_object_numbers: inserted, layout })
 }
+
+/// What flattening one page did.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum FlattenStatus {
+    /// The page's annotations are now content.
+    Applied,
+    /// There was nothing to flatten, which is not a failure: a page with no
+    /// annotations is a page that is already flat.
+    Unchanged,
+    Failed,
+    /// Not attempted, because an earlier page failed.
+    Skipped,
+}
+
+/// One page's outcome.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FlattenItem {
+    pub page_object_number: PageObjectNumber,
+    pub status: FlattenStatus,
+    /// Why, for a failure. Carried per page rather than thrown, because a
+    /// batch that flattened four pages and failed on the fifth has done
+    /// something the caller needs to know about.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+/// What a flatten batch did.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FlattenResult {
+    /// The request as it was made, in order. Kept so an event replay can
+    /// see what was asked for and not only what happened.
+    pub page_object_numbers: Vec<PageObjectNumber>,
+    pub usage: FlattenUsage,
+    pub results: Vec<FlattenItem>,
+}
+
+/// Which appearance to bake.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum FlattenUsage {
+    Display,
+    Print,
+}
+
+impl FlattenUsage {
+    /// Which number the fork takes.
+    ///
+    /// Not observable on this corpus, and the corpus tried.
+    /// `annotation_appearances.pdf` carries a square with `/F 36`, which
+    /// prints and never shows on screen, and that is the one annotation the
+    /// two usages should disagree about. They do not: both leave the same
+    /// four annotations on the page and render the same pixels. So a build
+    /// that passed `Display` for both passes every vector, and the mapping
+    /// is written the way the fork's header names it rather than the way
+    /// this corpus can prove.
+    fn native(self) -> pdfium::FlattenUsage {
+        match self {
+            Self::Display => pdfium::FlattenUsage::Display,
+            Self::Print => pdfium::FlattenUsage::Print,
+        }
+    }
+}
+
+/// Turn a page's annotations into page content.
+///
+/// Irreversible, and per page. A failure does NOT unwind the pages already
+/// flattened, because there is nothing to unwind to: the annotations they
+/// held are content now. What it does instead is stop, so the pages after
+/// the failure are reported as skipped rather than silently left alone.
+pub fn flatten_pages<P: crate::access::PageAccess>(
+    document: &Document,
+    open_page: impl Fn(PageObjectNumber) -> Result<P, EngineError>,
+    pages: &[PageObjectNumber],
+    usage: FlattenUsage,
+    cancel: &CancelToken,
+) -> Result<FlattenResult, EngineError> {
+    cancel.check()?;
+    require_distinct("pages.flatten", pages)?;
+    resolve_indices(document, pages)?;
+
+    let mut results = Vec::with_capacity(pages.len());
+    let mut stop = false;
+    for page_object_number in pages {
+        if stop {
+            results.push(FlattenItem {
+                page_object_number: *page_object_number,
+                status: FlattenStatus::Skipped,
+                error: None,
+            });
+            continue;
+        }
+        // The cancel check is BEFORE the flatten and not inside the loop's
+        // reporting: a cancelled batch reports what it did rather than
+        // throwing away the record of it.
+        if cancel.check().is_err() {
+            stop = true;
+            results.push(FlattenItem {
+                page_object_number: *page_object_number,
+                status: FlattenStatus::Skipped,
+                error: None,
+            });
+            continue;
+        }
+
+        let page = open_page(*page_object_number)?;
+        let item = match crate::access::PageAccess::view(&page).flatten(usage.native()) {
+            pdfium::FlattenOutcome::Applied => FlattenItem {
+                page_object_number: *page_object_number,
+                status: FlattenStatus::Applied,
+                error: None,
+            },
+            pdfium::FlattenOutcome::NothingToDo => FlattenItem {
+                page_object_number: *page_object_number,
+                status: FlattenStatus::Unchanged,
+                error: None,
+            },
+            // Unexercised: nothing in the corpus makes a flatten fail, so
+            // the stop and the skipped statuses after it are written from
+            // the TypeScript rather than from a case. The alternative is a
+            // batch that keeps flattening after a failure and reports the
+            // rest as though nothing had gone wrong.
+            outcome => {
+                stop = true;
+                FlattenItem {
+                    page_object_number: *page_object_number,
+                    status: FlattenStatus::Failed,
+                    error: Some(match outcome {
+                        pdfium::FlattenOutcome::Failed => {
+                            String::from("PDFium refused the flatten after the page resolved")
+                        }
+                        other => format!("PDFium answered the flatten with {other:?}"),
+                    }),
+                }
+            }
+        };
+        results.push(item);
+    }
+
+    Ok(FlattenResult { page_object_numbers: pages.to_vec(), usage, results })
+}
