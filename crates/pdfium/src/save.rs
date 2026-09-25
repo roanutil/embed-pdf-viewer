@@ -33,7 +33,10 @@ pub enum PdfSaveMode {
 
 impl PdfSaveMode {
     /// The `FPDF_SAVE_FLAGS` word.
-    fn flags(self) -> u64 {
+    /// `c_ulong`, not `u64`: PDFium takes `unsigned long`, which is 64 bits
+    /// on the native targets and 32 on `wasm32-unknown-emscripten`. Naming
+    /// the C type is the only spelling that is right on both.
+    fn flags(self) -> std::os::raw::c_ulong {
         match self {
             // 1 << 0 and 1 << 1 in `fpdf_save.h`. They are not a bitfield to
             // combine: passing both is a contradiction PDFium resolves by

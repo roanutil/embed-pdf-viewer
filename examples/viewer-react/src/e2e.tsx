@@ -45,6 +45,12 @@ const documents = {
   features: '/features.pdf',
   encrypted: '/encrypted.pdf',
   roundtrip: '/roundtrip.pdf',
+  // The two real documents this example already ships in `public/`. Nothing
+  // in the suite opens them: they are here so the same entry can be pointed
+  // at a document with actual content when somebody wants to compare the
+  // two backends by hand.
+  ebook: '/ebook.pdf',
+  testlab: '/testlab.pdf',
 } as const;
 const requested = new URLSearchParams(location.search).get('doc') ?? 'baseline';
 if (!(requested in documents)) throw new Error(`Unknown viewer test document: ${requested}`);

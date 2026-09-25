@@ -15,7 +15,7 @@ use std::rc::Rc;
 /// An incremental save appends a revision to the original bytes, which for a
 /// document built from nothing would produce a file with a history it never
 /// had. Extraction wants a clean document.
-const FPDF_NO_INCREMENTAL: u64 = 1 << 1;
+const FPDF_NO_INCREMENTAL: std::os::raw::c_ulong = 1 << 1;
 
 /// A buffer PDFium allocated, freed when this drops.
 ///
@@ -88,7 +88,7 @@ impl Document {
                 scratch.0,
                 self.handle,
                 signed.as_ptr(),
-                signed.len() as u64,
+                signed.len() as std::os::raw::c_ulong,
                 0,
             )
         };
@@ -99,7 +99,11 @@ impl Document {
         let mut size: std::os::raw::c_ulong = 0;
         // SAFETY: the handle is live and `size` is an initialized local.
         let ptr = unsafe {
-            pdfium_sys::EPDF_SaveDocumentToOwnedBuffer(scratch.0, FPDF_NO_INCREMENTAL, &mut size)
+            pdfium_sys::EPDF_SaveDocumentToOwnedBuffer(
+                scratch.0,
+                FPDF_NO_INCREMENTAL,
+                &mut size,
+            )
         };
         if ptr.is_null() || size == 0 {
             if !ptr.is_null() {
