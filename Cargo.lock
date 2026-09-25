@@ -311,6 +311,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "epdf-plugin-render"
+version = "0.0.0"
+dependencies = [
+ "epdf-geometry",
+ "epdf-kernel",
+ "indexmap",
+ "plugin-conformance",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "epdf-stage-core"
 version = "0.0.0"
 dependencies = [

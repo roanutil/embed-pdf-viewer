@@ -1,0 +1,28 @@
+[package]
+name = "epdf-plugin-render"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+description = "packages/plugin/render in Rust: document-scoped render capability (policy conformance, the raster store, the epoch ledger) and the tile paint-plan machinery."
+
+[lib]
+crate-type = ["rlib"]
+
+[features]
+# The conformance adapter (`harness` module). On by default so `cargo test`
+# replays the vectors with no flags; a host that ships the plugin turns it
+# off with `default-features = false`.
+default = ["harness"]
+harness = ["dep:plugin-conformance"]
+
+[dependencies]
+epdf-kernel = { path = "../../epdf-kernel" }
+epdf-geometry = { path = "../geometry", default-features = false }
+indexmap = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["float_roundtrip"] }
+plugin-conformance = { path = "../../plugin-conformance", optional = true }
+
+[[test]]
+name = "conformance"
+required-features = ["harness"]
