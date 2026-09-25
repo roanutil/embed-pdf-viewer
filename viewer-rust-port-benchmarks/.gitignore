@@ -27,3 +27,5 @@ dist/
 bench/results/*-probe-r*.json
 bench/results/*-timing-r*.json
 bench/results/*-alloc-r*.json
+
+swift-geometry-only/.build
