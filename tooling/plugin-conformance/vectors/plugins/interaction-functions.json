@@ -1,0 +1,410 @@
+{
+  "schemaVersion": 1,
+  "kind": "function",
+  "describes": "packages/plugin/interaction: samplePointOn, the built-in tools, the reducer.",
+  "cases": [
+    {
+      "name": "samplePointOn/project-wins",
+      "fn": "samplePointOn",
+      "args": [
+        {
+          "phase": "move",
+          "viewport": {
+            "x": 10,
+            "y": 20
+          },
+          "modifiers": {
+            "shift": false,
+            "alt": false,
+            "ctrl": false,
+            "meta": false
+          },
+          "page": {
+            "pon": 1,
+            "point": {
+              "x": 5,
+              "y": 6
+            }
+          },
+          "projects": {
+            "1": {
+              "x": -40,
+              "y": 900
+            }
+          }
+        },
+        1
+      ],
+      "outcome": {
+        "returned": {
+          "x": -40,
+          "y": 900
+        }
+      }
+    },
+    {
+      "name": "samplePointOn/project-null-falls-back-to-the-same-page",
+      "fn": "samplePointOn",
+      "args": [
+        {
+          "phase": "move",
+          "viewport": {
+            "x": 10,
+            "y": 20
+          },
+          "modifiers": {
+            "shift": false,
+            "alt": false,
+            "ctrl": false,
+            "meta": false
+          },
+          "page": {
+            "pon": 2,
+            "point": {
+              "x": 3,
+              "y": 4
+            }
+          },
+          "projects": {
+            "2": null
+          }
+        },
+        2
+      ],
+      "outcome": {
+        "returned": {
+          "x": 3,
+          "y": 4
+        }
+      }
+    },
+    {
+      "name": "samplePointOn/project-undefined-falls-back",
+      "fn": "samplePointOn",
+      "args": [
+        {
+          "phase": "move",
+          "viewport": {
+            "x": 10,
+            "y": 20
+          },
+          "modifiers": {
+            "shift": false,
+            "alt": false,
+            "ctrl": false,
+            "meta": false
+          },
+          "page": {
+            "pon": 2,
+            "point": {
+              "x": 3,
+              "y": 4
+            }
+          },
+          "projects": {}
+        },
+        2
+      ],
+      "outcome": {
+        "returned": {
+          "x": 3,
+          "y": 4
+        }
+      }
+    },
+    {
+      "name": "samplePointOn/no-project-same-page",
+      "fn": "samplePointOn",
+      "args": [
+        {
+          "phase": "move",
+          "viewport": {
+            "x": 10,
+            "y": 20
+          },
+          "modifiers": {
+            "shift": false,
+            "alt": false,
+            "ctrl": false,
+            "meta": false
+          },
+          "page": {
+            "pon": 3,
+            "point": {
+              "x": 7,
+              "y": 8
+            }
+          }
+        },
+        3
+      ],
+      "outcome": {
+        "returned": {
+          "x": 7,
+          "y": 8
+        }
+      }
+    },
+    {
+      "name": "samplePointOn/no-project-foreign-page",
+      "fn": "samplePointOn",
+      "args": [
+        {
+          "phase": "move",
+          "viewport": {
+            "x": 10,
+            "y": 20
+          },
+          "modifiers": {
+            "shift": false,
+            "alt": false,
+            "ctrl": false,
+            "meta": false
+          },
+          "page": {
+            "pon": 3,
+            "point": {
+              "x": 7,
+              "y": 8
+            }
+          }
+        },
+        4
+      ],
+      "outcome": {
+        "returned": null
+      }
+    },
+    {
+      "name": "samplePointOn/project-null-foreign-page",
+      "fn": "samplePointOn",
+      "args": [
+        {
+          "phase": "move",
+          "viewport": {
+            "x": 10,
+            "y": 20
+          },
+          "modifiers": {
+            "shift": false,
+            "alt": false,
+            "ctrl": false,
+            "meta": false
+          },
+          "page": {
+            "pon": 3,
+            "point": {
+              "x": 7,
+              "y": 8
+            }
+          },
+          "projects": {
+            "4": null
+          }
+        },
+        4
+      ],
+      "outcome": {
+        "returned": null
+      }
+    },
+    {
+      "name": "samplePointOn/over-a-gap",
+      "fn": "samplePointOn",
+      "args": [
+        {
+          "phase": "move",
+          "viewport": {
+            "x": 10,
+            "y": 20
+          },
+          "modifiers": {
+            "shift": false,
+            "alt": false,
+            "ctrl": false,
+            "meta": false
+          }
+        },
+        1
+      ],
+      "outcome": {
+        "returned": null
+      }
+    },
+    {
+      "name": "samplePointOn/over-a-gap-projected",
+      "fn": "samplePointOn",
+      "args": [
+        {
+          "phase": "move",
+          "viewport": {
+            "x": 10,
+            "y": 20
+          },
+          "modifiers": {
+            "shift": false,
+            "alt": false,
+            "ctrl": false,
+            "meta": false
+          },
+          "projects": {
+            "1": {
+              "x": 0,
+              "y": -1
+            }
+          }
+        },
+        1
+      ],
+      "outcome": {
+        "returned": {
+          "x": 0,
+          "y": -1
+        }
+      }
+    },
+    {
+      "name": "builtinTools/pointer-and-pan",
+      "fn": "builtinTools",
+      "args": [],
+      "outcome": {
+        "returned": [
+          {
+            "id": "pointer",
+            "cursor": "default",
+            "enables": {
+              "$set": [
+                "text-select",
+                "annotation-edit",
+                "annotation-marquee",
+                "form-fill",
+                "link-nav"
+              ]
+            }
+          },
+          {
+            "id": "pan",
+            "cursor": "grab",
+            "gapCursor": "grab",
+            "enables": {
+              "$set": [
+                "scroll",
+                "annotation-edit",
+                "form-fill",
+                "link-nav"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "initialInteractionState/no-config",
+      "fn": "initialInteractionState",
+      "args": [
+        {}
+      ],
+      "outcome": {
+        "returned": {
+          "activeToolId": "pointer",
+          "cursor": "default"
+        }
+      }
+    },
+    {
+      "name": "initialInteractionState/default-tool",
+      "fn": "initialInteractionState",
+      "args": [
+        {
+          "defaultTool": "pan"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "activeToolId": "pan",
+          "cursor": "default"
+        }
+      }
+    },
+    {
+      "name": "interactionReducer/set-tool",
+      "fn": "interactionReducer",
+      "args": [
+        {
+          "activeToolId": "pointer",
+          "cursor": "default"
+        },
+        {
+          "type": "SET_TOOL",
+          "toolId": "pan"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "activeToolId": "pan",
+          "cursor": "default"
+        }
+      }
+    },
+    {
+      "name": "interactionReducer/set-same-tool",
+      "fn": "interactionReducer",
+      "args": [
+        {
+          "activeToolId": "pan",
+          "cursor": "grab"
+        },
+        {
+          "type": "SET_TOOL",
+          "toolId": "pan"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "activeToolId": "pan",
+          "cursor": "grab"
+        }
+      }
+    },
+    {
+      "name": "interactionReducer/set-cursor",
+      "fn": "interactionReducer",
+      "args": [
+        {
+          "activeToolId": "pan",
+          "cursor": "grab"
+        },
+        {
+          "type": "SET_CURSOR",
+          "cursor": "grabbing"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "activeToolId": "pan",
+          "cursor": "grabbing"
+        }
+      }
+    },
+    {
+      "name": "interactionReducer/set-same-cursor",
+      "fn": "interactionReducer",
+      "args": [
+        {
+          "activeToolId": "pan",
+          "cursor": "grab"
+        },
+        {
+          "type": "SET_CURSOR",
+          "cursor": "grab"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "activeToolId": "pan",
+          "cursor": "grab"
+        }
+      }
+    }
+  ]
+}
