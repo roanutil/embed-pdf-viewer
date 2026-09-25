@@ -1,9 +1,47 @@
 {
   "total": {
-    "statements": "6023/6035",
-    "branches": "1367/1383"
+    "statements": "9161/9175",
+    "branches": "2128/2174"
   },
   "files": {
+    "packages/core/acrojs/src/actions.ts": {
+      "statements": "26/26",
+      "branches": "10/10",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/core/acrojs/src/color.ts": {
+      "statements": "76/76",
+      "branches": "28/28",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/core/acrojs/src/host.ts": {
+      "statements": "240/240",
+      "branches": "65/66",
+      "uncoveredLines": [],
+      "uncoveredBranches": [
+        "184:108#0"
+      ]
+    },
+    "packages/core/acrojs/src/index.ts": {
+      "statements": "51/51",
+      "branches": "0/0",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/core/acrojs/src/input.ts": {
+      "statements": "44/44",
+      "branches": "16/16",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/core/acrojs/src/types.ts": {
+      "statements": "360/360",
+      "branches": "0/0",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
     "packages/core/geometry/src/index.ts": {
       "statements": "801/801",
       "branches": "93/93",
@@ -59,20 +97,9 @@
       "uncoveredBranches": []
     },
     "packages/core/main/src/serial-queue.ts": {
-      "statements": "10/20",
-      "branches": "1/1",
-      "uncoveredLines": [
-        11,
-        12,
-        13,
-        14,
-        15,
-        16,
-        17,
-        18,
-        19,
-        20
-      ],
+      "statements": "20/20",
+      "branches": "5/5",
+      "uncoveredLines": [],
       "uncoveredBranches": []
     },
     "packages/core/main/src/store.ts": {
@@ -134,6 +161,99 @@
     "packages/core/ui/src/transforms.ts": {
       "statements": "194/194",
       "branches": "76/76",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/actions/src/actions.plugin.ts": {
+      "statements": "25/25",
+      "branches": "3/3",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/actions/src/capability.ts": {
+      "statements": "1604/1615",
+      "branches": "573/601",
+      "uncoveredLines": [
+        329,
+        330,
+        331,
+        332,
+        345,
+        1327,
+        1328,
+        1329,
+        1330,
+        1331,
+        1332
+      ],
+      "uncoveredBranches": [
+        "328:15#0",
+        "182:56#0",
+        "182:79#0",
+        "272:52#0",
+        "298:54#0",
+        "310:54#0",
+        "291:47#0",
+        "329:13#0",
+        "336:22#0",
+        "338:31#0",
+        "344:58#0",
+        "351:60#0",
+        "454:75#0",
+        "511:46#0",
+        "559:51#0",
+        "561:47#0",
+        "562:46#0",
+        "638:38#0",
+        "640:16#0",
+        "782:89#0",
+        "902:50#0",
+        "980:52#0",
+        "1069:14#0",
+        "1177:16#0",
+        "1230:78#0",
+        "1326:4#0",
+        "1377:73#0",
+        "1430:61#0"
+      ]
+    },
+    "packages/plugin/actions/src/host-contract.ts": {
+      "statements": "21/21",
+      "branches": "0/0",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/actions/src/hover-pump.ts": {
+      "statements": "99/99",
+      "branches": "38/38",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/actions/src/internal.ts": {
+      "statements": "9/9",
+      "branches": "0/0",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/actions/src/reducer.ts": {
+      "statements": "11/12",
+      "branches": "3/4",
+      "uncoveredLines": [
+        10
+      ],
+      "uncoveredBranches": [
+        "9:4#0"
+      ]
+    },
+    "packages/plugin/actions/src/submit-encoding.ts": {
+      "statements": "22/22",
+      "branches": "7/7",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/actions/src/types.ts": {
+      "statements": "540/540",
+      "branches": "14/14",
       "uncoveredLines": [],
       "uncoveredBranches": []
     },

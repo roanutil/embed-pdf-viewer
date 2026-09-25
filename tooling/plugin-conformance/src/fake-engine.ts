@@ -67,7 +67,8 @@ export interface FakeDocumentSpec {
   /** The handle's id; defaults to the table key. */
   readonly id?: string;
   /** Optional services present on this handle: `render`, `actions`,
-   *  `attachments`, `pieceInfo`, `redaction`, `downloadLayer`, `page.pieceInfo`. */
+   *  `attachments`, `pieceInfo`, `redaction`, `downloadLayer`, `page.pieceInfo`,
+   *  and the optional member `forms.submit`. */
   readonly services?: readonly string[];
   readonly capabilities?: unknown;
   readonly security?: SecuritySpec;
@@ -194,12 +195,13 @@ export function createFakeEngine(
     table: readonly ResponseSpec[] | undefined,
     prefix: string,
     pon?: number,
+    absent: ReadonlySet<string> = new Set(),
   ): unknown {
     return new Proxy(
       {},
       {
         get: (_target, member) => {
-          if (typeof member !== 'string' || member === 'then') return undefined;
+          if (typeof member !== 'string' || member === 'then' || absent.has(member)) return undefined;
           return (...args: unknown[]) => call(doc, table, `${prefix}.${member}`, pon, args);
         },
       },
@@ -236,7 +238,9 @@ export function createFakeEngine(
       },
       metadata: service(id, table, 'metadata'),
       annotations: service(id, table, 'annotations'),
-      forms: service(id, table, 'forms'),
+      // `forms.submit` is optional in the contract (a submit-capable home):
+      // present only when `services` lists it, so `typeof submit` can be false.
+      forms: service(id, table, 'forms', undefined, services.has('forms.submit') ? new Set() : new Set(['submit'])),
       search: service(id, table, 'search'),
       pages: new Proxy(
         {},

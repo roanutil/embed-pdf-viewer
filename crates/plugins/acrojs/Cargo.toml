@@ -1,0 +1,23 @@
+[package]
+name = "epdf-acrojs"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+description = "packages/core/acrojs in Rust: the script host bridge (realm mutex, field view, colors, action-tree sources) and the sandbox contract as a trait. The in-sandbox prelude ships as data."
+
+[lib]
+crate-type = ["rlib"]
+
+[features]
+# The conformance adapter (`harness` module): the scripted sandbox the
+# actions vectors share, the script-host driver, and the function table. On
+# by default so `cargo test` replays the vectors with no flags; a host that
+# ships the crate turns it off with `default-features = false`.
+default = ["harness"]
+harness = ["dep:plugin-conformance"]
+
+[dependencies]
+epdf-kernel = { path = "../../epdf-kernel" }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["float_roundtrip"] }
+plugin-conformance = { path = "../../plugin-conformance", optional = true }

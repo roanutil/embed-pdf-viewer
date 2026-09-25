@@ -25,6 +25,10 @@ import { join, relative, resolve } from 'node:path';
 import { vectorsRoot } from './vectors';
 
 const PORTED = /^packages\/(core\/(main|geometry|stage|ui|annotation|acrojs)|plugin\/[^/]+)\/src\//;
+/** JavaScript that runs inside the script sandbox. It ships to Rust as data
+ *  (`crates/plugins/acrojs/prelude.js`), not as a port, so its lines are not
+ *  this gate's to count. */
+const NOT_PORTED = new Set(['packages/core/acrojs/src/prelude.ts']);
 
 const packageRoot = resolve(vectorsRoot, '..');
 const repoRoot = resolve(packageRoot, '../..');
@@ -69,7 +73,7 @@ try {
   let branchesHit = 0;
   for (const [absolute, file] of Object.entries(raw)) {
     const path = relative(repoRoot, absolute);
-    if (!PORTED.test(path)) continue;
+    if (!PORTED.test(path) || NOT_PORTED.has(path)) continue;
     const uncoveredLines = new Set<number>();
     let hit = 0;
     for (const [id, count] of Object.entries(file.s)) {

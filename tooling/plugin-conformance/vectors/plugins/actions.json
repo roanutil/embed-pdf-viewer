@@ -1,0 +1,635 @@
+{
+  "schemaVersion": 1,
+  "kind": "function",
+  "describes": "packages/plugin/actions: eventOf, originOf and submitEntriesToUrlEncoded.",
+  "cases": [
+    {
+      "name": "event-of-0",
+      "fn": "eventOf",
+      "args": [
+        {
+          "scope": "activate",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 1
+          },
+          "pon": 1
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "scope": "activate"
+        }
+      }
+    },
+    {
+      "name": "event-of-1",
+      "fn": "eventOf",
+      "args": [
+        {
+          "scope": "annotation",
+          "event": "cursorEnter",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 1
+          },
+          "pon": 1
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "scope": "annotation",
+          "name": "cursorEnter"
+        }
+      }
+    },
+    {
+      "name": "event-of-2",
+      "fn": "eventOf",
+      "args": [
+        {
+          "scope": "annotation",
+          "event": "cursorExit",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 1
+          },
+          "pon": 1
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "scope": "annotation",
+          "name": "cursorExit"
+        }
+      }
+    },
+    {
+      "name": "event-of-3",
+      "fn": "eventOf",
+      "args": [
+        {
+          "scope": "annotation",
+          "event": "mouseDown",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 1
+          },
+          "pon": 1
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "scope": "annotation",
+          "name": "mouseDown"
+        }
+      }
+    },
+    {
+      "name": "event-of-4",
+      "fn": "eventOf",
+      "args": [
+        {
+          "scope": "annotation",
+          "event": "mouseUp",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 1
+          },
+          "pon": 1
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "scope": "annotation",
+          "name": "mouseUp"
+        }
+      }
+    },
+    {
+      "name": "event-of-5",
+      "fn": "eventOf",
+      "args": [
+        {
+          "scope": "annotation",
+          "event": "focus",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 1
+          },
+          "pon": 1
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "scope": "annotation",
+          "name": "focus"
+        }
+      }
+    },
+    {
+      "name": "event-of-6",
+      "fn": "eventOf",
+      "args": [
+        {
+          "scope": "annotation",
+          "event": "blur",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 1
+          },
+          "pon": 1
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "scope": "annotation",
+          "name": "blur"
+        }
+      }
+    },
+    {
+      "name": "event-of-7",
+      "fn": "eventOf",
+      "args": [
+        {
+          "scope": "page",
+          "event": "open",
+          "pon": 1
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "scope": "page",
+          "name": "open"
+        }
+      }
+    },
+    {
+      "name": "event-of-8",
+      "fn": "eventOf",
+      "args": [
+        {
+          "scope": "page",
+          "event": "close",
+          "pon": 1
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "scope": "page",
+          "name": "close"
+        }
+      }
+    },
+    {
+      "name": "event-of-9",
+      "fn": "eventOf",
+      "args": [
+        {
+          "scope": "page",
+          "event": "visible",
+          "pon": 1
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "scope": "page",
+          "name": "visible"
+        }
+      }
+    },
+    {
+      "name": "event-of-10",
+      "fn": "eventOf",
+      "args": [
+        {
+          "scope": "page",
+          "event": "invisible",
+          "pon": 1
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "scope": "page",
+          "name": "invisible"
+        }
+      }
+    },
+    {
+      "name": "event-of-11",
+      "fn": "eventOf",
+      "args": [
+        {
+          "scope": "document",
+          "event": "open"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "scope": "document",
+          "name": "open"
+        }
+      }
+    },
+    {
+      "name": "event-of-12",
+      "fn": "eventOf",
+      "args": [
+        {
+          "scope": "document",
+          "event": "will-save"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "scope": "document",
+          "name": "will-save"
+        }
+      }
+    },
+    {
+      "name": "event-of-13",
+      "fn": "eventOf",
+      "args": [
+        {
+          "scope": "document",
+          "event": "did-save"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "scope": "document",
+          "name": "did-save"
+        }
+      }
+    },
+    {
+      "name": "event-of-14",
+      "fn": "eventOf",
+      "args": [
+        {
+          "scope": "document",
+          "event": "will-print"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "scope": "document",
+          "name": "will-print"
+        }
+      }
+    },
+    {
+      "name": "event-of-15",
+      "fn": "eventOf",
+      "args": [
+        {
+          "scope": "document",
+          "event": "did-print"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "scope": "document",
+          "name": "did-print"
+        }
+      }
+    },
+    {
+      "name": "event-of-16",
+      "fn": "eventOf",
+      "args": [
+        {
+          "scope": "document",
+          "event": "will-close"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "scope": "document",
+          "name": "will-close"
+        }
+      }
+    },
+    {
+      "name": "origin-of-0",
+      "fn": "originOf",
+      "args": [
+        {
+          "scope": "activate",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 1
+          },
+          "pon": 1
+        }
+      ],
+      "outcome": {
+        "returned": "user"
+      }
+    },
+    {
+      "name": "origin-of-1",
+      "fn": "originOf",
+      "args": [
+        {
+          "scope": "annotation",
+          "event": "cursorEnter",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 1
+          },
+          "pon": 1
+        }
+      ],
+      "outcome": {
+        "returned": "hover"
+      }
+    },
+    {
+      "name": "origin-of-2",
+      "fn": "originOf",
+      "args": [
+        {
+          "scope": "annotation",
+          "event": "cursorExit",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 1
+          },
+          "pon": 1
+        }
+      ],
+      "outcome": {
+        "returned": "hover"
+      }
+    },
+    {
+      "name": "origin-of-3",
+      "fn": "originOf",
+      "args": [
+        {
+          "scope": "annotation",
+          "event": "mouseDown",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 1
+          },
+          "pon": 1
+        }
+      ],
+      "outcome": {
+        "returned": "user"
+      }
+    },
+    {
+      "name": "origin-of-4",
+      "fn": "originOf",
+      "args": [
+        {
+          "scope": "annotation",
+          "event": "mouseUp",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 1
+          },
+          "pon": 1
+        }
+      ],
+      "outcome": {
+        "returned": "user"
+      }
+    },
+    {
+      "name": "origin-of-5",
+      "fn": "originOf",
+      "args": [
+        {
+          "scope": "annotation",
+          "event": "focus",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 1
+          },
+          "pon": 1
+        }
+      ],
+      "outcome": {
+        "returned": "user"
+      }
+    },
+    {
+      "name": "origin-of-6",
+      "fn": "originOf",
+      "args": [
+        {
+          "scope": "annotation",
+          "event": "blur",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 1
+          },
+          "pon": 1
+        }
+      ],
+      "outcome": {
+        "returned": "user"
+      }
+    },
+    {
+      "name": "origin-of-7",
+      "fn": "originOf",
+      "args": [
+        {
+          "scope": "page",
+          "event": "open",
+          "pon": 1
+        }
+      ],
+      "outcome": {
+        "returned": "lifecycle"
+      }
+    },
+    {
+      "name": "origin-of-8",
+      "fn": "originOf",
+      "args": [
+        {
+          "scope": "page",
+          "event": "close",
+          "pon": 1
+        }
+      ],
+      "outcome": {
+        "returned": "lifecycle"
+      }
+    },
+    {
+      "name": "origin-of-9",
+      "fn": "originOf",
+      "args": [
+        {
+          "scope": "page",
+          "event": "visible",
+          "pon": 1
+        }
+      ],
+      "outcome": {
+        "returned": "lifecycle"
+      }
+    },
+    {
+      "name": "origin-of-10",
+      "fn": "originOf",
+      "args": [
+        {
+          "scope": "page",
+          "event": "invisible",
+          "pon": 1
+        }
+      ],
+      "outcome": {
+        "returned": "lifecycle"
+      }
+    },
+    {
+      "name": "origin-of-11",
+      "fn": "originOf",
+      "args": [
+        {
+          "scope": "document",
+          "event": "open"
+        }
+      ],
+      "outcome": {
+        "returned": "lifecycle"
+      }
+    },
+    {
+      "name": "origin-of-12",
+      "fn": "originOf",
+      "args": [
+        {
+          "scope": "document",
+          "event": "will-save"
+        }
+      ],
+      "outcome": {
+        "returned": "lifecycle"
+      }
+    },
+    {
+      "name": "origin-of-13",
+      "fn": "originOf",
+      "args": [
+        {
+          "scope": "document",
+          "event": "did-save"
+        }
+      ],
+      "outcome": {
+        "returned": "lifecycle"
+      }
+    },
+    {
+      "name": "origin-of-14",
+      "fn": "originOf",
+      "args": [
+        {
+          "scope": "document",
+          "event": "will-print"
+        }
+      ],
+      "outcome": {
+        "returned": "lifecycle"
+      }
+    },
+    {
+      "name": "origin-of-15",
+      "fn": "originOf",
+      "args": [
+        {
+          "scope": "document",
+          "event": "did-print"
+        }
+      ],
+      "outcome": {
+        "returned": "lifecycle"
+      }
+    },
+    {
+      "name": "origin-of-16",
+      "fn": "originOf",
+      "args": [
+        {
+          "scope": "document",
+          "event": "will-close"
+        }
+      ],
+      "outcome": {
+        "returned": "lifecycle"
+      }
+    },
+    {
+      "name": "url-encode-empty",
+      "fn": "submitEntriesToUrlEncoded",
+      "args": [
+        []
+      ],
+      "outcome": {
+        "returned": ""
+      }
+    },
+    {
+      "name": "url-encode-mixed",
+      "covers": "A name-only entry, a scalar, a multi-select repeating its name, and an empty multi-select; UTF-8 percent encoding of everything outside the unreserved set.",
+      "fn": "submitEntriesToUrlEncoded",
+      "args": [
+        [
+          {
+            "name": "flag",
+            "value": null
+          },
+          {
+            "name": "full name",
+            "value": "Ada Lovelace & co=1"
+          },
+          {
+            "name": "pick[]",
+            "value": [
+              "a/b",
+              "ç",
+              "😀"
+            ]
+          },
+          {
+            "name": "none",
+            "value": []
+          },
+          {
+            "name": "safe-_.!~*'()",
+            "value": "ok"
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": "flag&full%20name=Ada%20Lovelace%20%26%20co%3D1&pick%5B%5D=a%2Fb&pick%5B%5D=%C3%A7&pick%5B%5D=%F0%9F%98%80&safe-_.!~*'()=ok"
+      }
+    }
+  ]
+}
