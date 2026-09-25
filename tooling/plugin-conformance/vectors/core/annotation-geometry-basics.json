@@ -1,0 +1,6351 @@
+{
+  "schemaVersion": 1,
+  "kind": "function",
+  "describes": "packages/core/annotation geometry.ts: constants, rect math, rotation helpers, upright placement, stamp fit, group scaling, rotate knob, guide chords, SAT.",
+  "cases": [
+    {
+      "name": "RECT_HANDLES/order",
+      "fn": "RECT_HANDLES",
+      "args": [],
+      "outcome": {
+        "returned": [
+          "nw",
+          "n",
+          "ne",
+          "e",
+          "se",
+          "s",
+          "sw",
+          "w"
+        ]
+      }
+    },
+    {
+      "name": "ROTATE_KNOB_OFFSET/value",
+      "fn": "ROTATE_KNOB_OFFSET",
+      "args": [],
+      "outcome": {
+        "returned": 24
+      }
+    },
+    {
+      "name": "DEFAULT_CHROME_GEOM/value",
+      "fn": "DEFAULT_CHROME_GEOM",
+      "args": [],
+      "outcome": {
+        "returned": {
+          "handleTol": 6,
+          "knobTol": 6,
+          "knobOffset": 24
+        }
+      }
+    },
+    {
+      "name": "MITER_LIMIT/value",
+      "fn": "MITER_LIMIT",
+      "args": [],
+      "outcome": {
+        "returned": 10
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/nw-0",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "nw",
+        0
+      ],
+      "outcome": {
+        "returned": "nwse-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/nw-22.4",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "nw",
+        22.4
+      ],
+      "outcome": {
+        "returned": "nwse-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/nw-22.5",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "nw",
+        22.5
+      ],
+      "outcome": {
+        "returned": "ns-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/nw-45",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "nw",
+        45
+      ],
+      "outcome": {
+        "returned": "ns-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/nw-90",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "nw",
+        90
+      ],
+      "outcome": {
+        "returned": "nesw-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/nw-135",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "nw",
+        135
+      ],
+      "outcome": {
+        "returned": "ew-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/nw-180",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "nw",
+        180
+      ],
+      "outcome": {
+        "returned": "nwse-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/nw-225",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "nw",
+        225
+      ],
+      "outcome": {
+        "returned": "ns-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/nw-270",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "nw",
+        270
+      ],
+      "outcome": {
+        "returned": "nesw-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/nw-315",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "nw",
+        315
+      ],
+      "outcome": {
+        "returned": "ew-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/nw-337.6",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "nw",
+        337.6
+      ],
+      "outcome": {
+        "returned": "nwse-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/nw--30",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "nw",
+        -30
+      ],
+      "outcome": {
+        "returned": "ew-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/nw-720",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "nw",
+        720
+      ],
+      "outcome": {
+        "returned": "nwse-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/nw-1000",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "nw",
+        1000
+      ],
+      "outcome": {
+        "returned": "nesw-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/n-0",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "n",
+        0
+      ],
+      "outcome": {
+        "returned": "ns-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/n-22.4",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "n",
+        22.4
+      ],
+      "outcome": {
+        "returned": "ns-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/n-22.5",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "n",
+        22.5
+      ],
+      "outcome": {
+        "returned": "nesw-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/n-45",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "n",
+        45
+      ],
+      "outcome": {
+        "returned": "nesw-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/n-90",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "n",
+        90
+      ],
+      "outcome": {
+        "returned": "ew-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/n-135",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "n",
+        135
+      ],
+      "outcome": {
+        "returned": "nwse-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/n-180",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "n",
+        180
+      ],
+      "outcome": {
+        "returned": "ns-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/n-225",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "n",
+        225
+      ],
+      "outcome": {
+        "returned": "nesw-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/n-270",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "n",
+        270
+      ],
+      "outcome": {
+        "returned": "ew-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/n-315",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "n",
+        315
+      ],
+      "outcome": {
+        "returned": "nwse-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/n-337.6",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "n",
+        337.6
+      ],
+      "outcome": {
+        "returned": "ns-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/n--30",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "n",
+        -30
+      ],
+      "outcome": {
+        "returned": "nwse-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/n-720",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "n",
+        720
+      ],
+      "outcome": {
+        "returned": "ns-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/n-1000",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "n",
+        1000
+      ],
+      "outcome": {
+        "returned": "ew-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/ne-0",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "ne",
+        0
+      ],
+      "outcome": {
+        "returned": "nesw-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/ne-22.4",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "ne",
+        22.4
+      ],
+      "outcome": {
+        "returned": "nesw-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/ne-22.5",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "ne",
+        22.5
+      ],
+      "outcome": {
+        "returned": "ew-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/ne-45",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "ne",
+        45
+      ],
+      "outcome": {
+        "returned": "ew-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/ne-90",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "ne",
+        90
+      ],
+      "outcome": {
+        "returned": "nwse-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/ne-135",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "ne",
+        135
+      ],
+      "outcome": {
+        "returned": "ns-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/ne-180",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "ne",
+        180
+      ],
+      "outcome": {
+        "returned": "nesw-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/ne-225",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "ne",
+        225
+      ],
+      "outcome": {
+        "returned": "ew-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/ne-270",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "ne",
+        270
+      ],
+      "outcome": {
+        "returned": "nwse-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/ne-315",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "ne",
+        315
+      ],
+      "outcome": {
+        "returned": "ns-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/ne-337.6",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "ne",
+        337.6
+      ],
+      "outcome": {
+        "returned": "nesw-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/ne--30",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "ne",
+        -30
+      ],
+      "outcome": {
+        "returned": "ns-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/ne-720",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "ne",
+        720
+      ],
+      "outcome": {
+        "returned": "nesw-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/ne-1000",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "ne",
+        1000
+      ],
+      "outcome": {
+        "returned": "nwse-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/e-0",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "e",
+        0
+      ],
+      "outcome": {
+        "returned": "ew-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/e-22.4",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "e",
+        22.4
+      ],
+      "outcome": {
+        "returned": "ew-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/e-22.5",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "e",
+        22.5
+      ],
+      "outcome": {
+        "returned": "nwse-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/e-45",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "e",
+        45
+      ],
+      "outcome": {
+        "returned": "nwse-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/e-90",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "e",
+        90
+      ],
+      "outcome": {
+        "returned": "ns-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/e-135",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "e",
+        135
+      ],
+      "outcome": {
+        "returned": "nesw-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/e-180",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "e",
+        180
+      ],
+      "outcome": {
+        "returned": "ew-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/e-225",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "e",
+        225
+      ],
+      "outcome": {
+        "returned": "nwse-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/e-270",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "e",
+        270
+      ],
+      "outcome": {
+        "returned": "ns-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/e-315",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "e",
+        315
+      ],
+      "outcome": {
+        "returned": "nesw-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/e-337.6",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "e",
+        337.6
+      ],
+      "outcome": {
+        "returned": "ew-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/e--30",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "e",
+        -30
+      ],
+      "outcome": {
+        "returned": "nesw-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/e-720",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "e",
+        720
+      ],
+      "outcome": {
+        "returned": "ew-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/e-1000",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "e",
+        1000
+      ],
+      "outcome": {
+        "returned": "ns-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/se-0",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "se",
+        0
+      ],
+      "outcome": {
+        "returned": "nwse-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/se-22.4",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "se",
+        22.4
+      ],
+      "outcome": {
+        "returned": "nwse-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/se-22.5",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "se",
+        22.5
+      ],
+      "outcome": {
+        "returned": "ns-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/se-45",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "se",
+        45
+      ],
+      "outcome": {
+        "returned": "ns-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/se-90",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "se",
+        90
+      ],
+      "outcome": {
+        "returned": "nesw-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/se-135",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "se",
+        135
+      ],
+      "outcome": {
+        "returned": "ew-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/se-180",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "se",
+        180
+      ],
+      "outcome": {
+        "returned": "nwse-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/se-225",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "se",
+        225
+      ],
+      "outcome": {
+        "returned": "ns-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/se-270",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "se",
+        270
+      ],
+      "outcome": {
+        "returned": "nesw-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/se-315",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "se",
+        315
+      ],
+      "outcome": {
+        "returned": "ew-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/se-337.6",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "se",
+        337.6
+      ],
+      "outcome": {
+        "returned": "nwse-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/se--30",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "se",
+        -30
+      ],
+      "outcome": {
+        "returned": "ew-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/se-720",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "se",
+        720
+      ],
+      "outcome": {
+        "returned": "nwse-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/se-1000",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "se",
+        1000
+      ],
+      "outcome": {
+        "returned": "nesw-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/s-0",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "s",
+        0
+      ],
+      "outcome": {
+        "returned": "ns-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/s-22.4",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "s",
+        22.4
+      ],
+      "outcome": {
+        "returned": "ns-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/s-22.5",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "s",
+        22.5
+      ],
+      "outcome": {
+        "returned": "nesw-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/s-45",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "s",
+        45
+      ],
+      "outcome": {
+        "returned": "nesw-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/s-90",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "s",
+        90
+      ],
+      "outcome": {
+        "returned": "ew-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/s-135",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "s",
+        135
+      ],
+      "outcome": {
+        "returned": "nwse-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/s-180",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "s",
+        180
+      ],
+      "outcome": {
+        "returned": "ns-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/s-225",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "s",
+        225
+      ],
+      "outcome": {
+        "returned": "nesw-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/s-270",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "s",
+        270
+      ],
+      "outcome": {
+        "returned": "ew-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/s-315",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "s",
+        315
+      ],
+      "outcome": {
+        "returned": "nwse-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/s-337.6",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "s",
+        337.6
+      ],
+      "outcome": {
+        "returned": "ns-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/s--30",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "s",
+        -30
+      ],
+      "outcome": {
+        "returned": "nwse-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/s-720",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "s",
+        720
+      ],
+      "outcome": {
+        "returned": "ns-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/s-1000",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "s",
+        1000
+      ],
+      "outcome": {
+        "returned": "ew-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/sw-0",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "sw",
+        0
+      ],
+      "outcome": {
+        "returned": "nesw-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/sw-22.4",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "sw",
+        22.4
+      ],
+      "outcome": {
+        "returned": "nesw-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/sw-22.5",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "sw",
+        22.5
+      ],
+      "outcome": {
+        "returned": "ew-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/sw-45",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "sw",
+        45
+      ],
+      "outcome": {
+        "returned": "ew-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/sw-90",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "sw",
+        90
+      ],
+      "outcome": {
+        "returned": "nwse-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/sw-135",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "sw",
+        135
+      ],
+      "outcome": {
+        "returned": "ns-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/sw-180",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "sw",
+        180
+      ],
+      "outcome": {
+        "returned": "nesw-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/sw-225",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "sw",
+        225
+      ],
+      "outcome": {
+        "returned": "ew-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/sw-270",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "sw",
+        270
+      ],
+      "outcome": {
+        "returned": "nwse-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/sw-315",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "sw",
+        315
+      ],
+      "outcome": {
+        "returned": "ns-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/sw-337.6",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "sw",
+        337.6
+      ],
+      "outcome": {
+        "returned": "nesw-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/sw--30",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "sw",
+        -30
+      ],
+      "outcome": {
+        "returned": "ns-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/sw-720",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "sw",
+        720
+      ],
+      "outcome": {
+        "returned": "nesw-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/sw-1000",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "sw",
+        1000
+      ],
+      "outcome": {
+        "returned": "nwse-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/w-0",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "w",
+        0
+      ],
+      "outcome": {
+        "returned": "ew-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/w-22.4",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "w",
+        22.4
+      ],
+      "outcome": {
+        "returned": "ew-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/w-22.5",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "w",
+        22.5
+      ],
+      "outcome": {
+        "returned": "nwse-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/w-45",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "w",
+        45
+      ],
+      "outcome": {
+        "returned": "nwse-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/w-90",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "w",
+        90
+      ],
+      "outcome": {
+        "returned": "ns-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/w-135",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "w",
+        135
+      ],
+      "outcome": {
+        "returned": "nesw-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/w-180",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "w",
+        180
+      ],
+      "outcome": {
+        "returned": "ew-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/w-225",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "w",
+        225
+      ],
+      "outcome": {
+        "returned": "nwse-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/w-270",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "w",
+        270
+      ],
+      "outcome": {
+        "returned": "ns-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/w-315",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "w",
+        315
+      ],
+      "outcome": {
+        "returned": "nesw-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/w-337.6",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "w",
+        337.6
+      ],
+      "outcome": {
+        "returned": "ew-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/w--30",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "w",
+        -30
+      ],
+      "outcome": {
+        "returned": "nesw-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/w-720",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "w",
+        720
+      ],
+      "outcome": {
+        "returned": "ew-resize"
+      }
+    },
+    {
+      "name": "rotatedHandleCursor/w-1000",
+      "fn": "rotatedHandleCursor",
+      "args": [
+        "w",
+        1000
+      ],
+      "outcome": {
+        "returned": "ns-resize"
+      }
+    },
+    {
+      "name": "rectFromPoints/ordered",
+      "fn": "rectFromPoints",
+      "args": [
+        {
+          "x": 1,
+          "y": 2
+        },
+        {
+          "x": 5,
+          "y": 9
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 1,
+          "y": 2,
+          "width": 4,
+          "height": 7
+        }
+      }
+    },
+    {
+      "name": "rectFromPoints/reversed",
+      "fn": "rectFromPoints",
+      "args": [
+        {
+          "x": 5,
+          "y": 9
+        },
+        {
+          "x": 1,
+          "y": 2
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 1,
+          "y": 2,
+          "width": 4,
+          "height": 7
+        }
+      }
+    },
+    {
+      "name": "rectFromPoints/same",
+      "fn": "rectFromPoints",
+      "args": [
+        {
+          "x": 3,
+          "y": 3
+        },
+        {
+          "x": 3,
+          "y": 3
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 3,
+          "y": 3,
+          "width": 0,
+          "height": 0
+        }
+      }
+    },
+    {
+      "name": "rectFromPoints/mixed",
+      "fn": "rectFromPoints",
+      "args": [
+        {
+          "x": 10,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 10
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        }
+      }
+    },
+    {
+      "name": "rectFromPoints/nan",
+      "fn": "rectFromPoints",
+      "args": [
+        {
+          "x": {
+            "$number": "NaN"
+          },
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 10
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": {
+            "$number": "NaN"
+          },
+          "y": 0,
+          "width": {
+            "$number": "NaN"
+          },
+          "height": 10
+        }
+      }
+    },
+    {
+      "name": "rectsIntersect/overlap",
+      "fn": "rectsIntersect",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        },
+        {
+          "x": 5,
+          "y": 5,
+          "width": 10,
+          "height": 10
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "rectsIntersect/touching",
+      "fn": "rectsIntersect",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        },
+        {
+          "x": 10,
+          "y": 10,
+          "width": 5,
+          "height": 5
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "rectsIntersect/apart-x",
+      "fn": "rectsIntersect",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        },
+        {
+          "x": 11,
+          "y": 0,
+          "width": 5,
+          "height": 5
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "rectsIntersect/apart-x-before",
+      "fn": "rectsIntersect",
+      "args": [
+        {
+          "x": 20,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 5,
+          "height": 5
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "rectsIntersect/apart-y",
+      "fn": "rectsIntersect",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        },
+        {
+          "x": 0,
+          "y": 11,
+          "width": 5,
+          "height": 5
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "rectsIntersect/apart-y-before",
+      "fn": "rectsIntersect",
+      "args": [
+        {
+          "x": 0,
+          "y": 20,
+          "width": 10,
+          "height": 10
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 5,
+          "height": 5
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "rectsIntersect/contained",
+      "fn": "rectsIntersect",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 100,
+          "height": 100
+        },
+        {
+          "x": 10,
+          "y": 10,
+          "width": 5,
+          "height": 5
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "rectsIntersect/zero-size-inside",
+      "fn": "rectsIntersect",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        },
+        {
+          "x": 5,
+          "y": 5,
+          "width": 0,
+          "height": 0
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "unionRect/empty",
+      "fn": "unionRect",
+      "args": [
+        []
+      ],
+      "outcome": {
+        "returned": {
+          "x": {
+            "$number": "Infinity"
+          },
+          "y": {
+            "$number": "Infinity"
+          },
+          "width": {
+            "$number": "-Infinity"
+          },
+          "height": {
+            "$number": "-Infinity"
+          }
+        }
+      }
+    },
+    {
+      "name": "unionRect/one",
+      "fn": "unionRect",
+      "args": [
+        [
+          {
+            "x": 3,
+            "y": 4
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "x": 3,
+          "y": 4,
+          "width": 0,
+          "height": 0
+        }
+      }
+    },
+    {
+      "name": "unionRect/many",
+      "fn": "unionRect",
+      "args": [
+        [
+          {
+            "x": 3,
+            "y": 4
+          },
+          {
+            "x": -1,
+            "y": 10
+          },
+          {
+            "x": 7,
+            "y": -2
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "x": -1,
+          "y": -2,
+          "width": 8,
+          "height": 12
+        }
+      }
+    },
+    {
+      "name": "unionRect/nan",
+      "fn": "unionRect",
+      "args": [
+        [
+          {
+            "x": 3,
+            "y": 4
+          },
+          {
+            "x": {
+              "$number": "NaN"
+            },
+            "y": 1
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "x": {
+            "$number": "NaN"
+          },
+          "y": 1,
+          "width": {
+            "$number": "NaN"
+          },
+          "height": 3
+        }
+      }
+    },
+    {
+      "name": "unionRect/infinite",
+      "fn": "unionRect",
+      "args": [
+        [
+          {
+            "x": {
+              "$number": "-Infinity"
+            },
+            "y": 0
+          },
+          {
+            "x": 1,
+            "y": {
+              "$number": "Infinity"
+            }
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "x": {
+            "$number": "-Infinity"
+          },
+          "y": 0,
+          "width": {
+            "$number": "Infinity"
+          },
+          "height": {
+            "$number": "Infinity"
+          }
+        }
+      }
+    },
+    {
+      "name": "normalizeDeg/0",
+      "fn": "normalizeDeg",
+      "args": [
+        0
+      ],
+      "outcome": {
+        "returned": 0
+      }
+    },
+    {
+      "name": "normalizeDeg/90",
+      "fn": "normalizeDeg",
+      "args": [
+        90
+      ],
+      "outcome": {
+        "returned": 90
+      }
+    },
+    {
+      "name": "normalizeDeg/-90",
+      "fn": "normalizeDeg",
+      "args": [
+        -90
+      ],
+      "outcome": {
+        "returned": 270
+      }
+    },
+    {
+      "name": "normalizeDeg/360",
+      "fn": "normalizeDeg",
+      "args": [
+        360
+      ],
+      "outcome": {
+        "returned": 0
+      }
+    },
+    {
+      "name": "normalizeDeg/450",
+      "fn": "normalizeDeg",
+      "args": [
+        450
+      ],
+      "outcome": {
+        "returned": 90
+      }
+    },
+    {
+      "name": "normalizeDeg/-450",
+      "fn": "normalizeDeg",
+      "args": [
+        -450
+      ],
+      "outcome": {
+        "returned": 270
+      }
+    },
+    {
+      "name": "normalizeDeg/359.999",
+      "fn": "normalizeDeg",
+      "args": [
+        359.999
+      ],
+      "outcome": {
+        "returned": 359.999
+      }
+    },
+    {
+      "name": "normalizeDeg/-0.5",
+      "fn": "normalizeDeg",
+      "args": [
+        -0.5
+      ],
+      "outcome": {
+        "returned": 359.5
+      }
+    },
+    {
+      "name": "normalizeDeg/1e-12",
+      "fn": "normalizeDeg",
+      "args": [
+        1e-12
+      ],
+      "outcome": {
+        "returned": 1.0231815394945443e-12
+      }
+    },
+    {
+      "name": "normalizeDeg/720.25",
+      "fn": "normalizeDeg",
+      "args": [
+        720.25
+      ],
+      "outcome": {
+        "returned": 0.25
+      }
+    },
+    {
+      "name": "normalizeDeg/NaN",
+      "fn": "normalizeDeg",
+      "args": [
+        {
+          "$number": "NaN"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "$number": "NaN"
+        }
+      }
+    },
+    {
+      "name": "normalizeDeg/Infinity",
+      "fn": "normalizeDeg",
+      "args": [
+        {
+          "$number": "Infinity"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "$number": "NaN"
+        }
+      }
+    },
+    {
+      "name": "rotatePoint/about-origin-0",
+      "fn": "rotatePoint",
+      "args": [
+        {
+          "x": 10,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 0
+        },
+        0
+      ],
+      "outcome": {
+        "returned": {
+          "x": 10,
+          "y": 0
+        }
+      }
+    },
+    {
+      "name": "rotatePoint/about-origin-30",
+      "fn": "rotatePoint",
+      "args": [
+        {
+          "x": 10,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 0
+        },
+        30
+      ],
+      "outcome": {
+        "returned": {
+          "x": 8.660254037844387,
+          "y": 4.999999999999999
+        }
+      }
+    },
+    {
+      "name": "rotatePoint/about-origin-90",
+      "fn": "rotatePoint",
+      "args": [
+        {
+          "x": 10,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 0
+        },
+        90
+      ],
+      "outcome": {
+        "returned": {
+          "x": 6.123233995736766e-16,
+          "y": 10
+        }
+      }
+    },
+    {
+      "name": "rotatePoint/about-origin-180",
+      "fn": "rotatePoint",
+      "args": [
+        {
+          "x": 10,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 0
+        },
+        180
+      ],
+      "outcome": {
+        "returned": {
+          "x": -10,
+          "y": 1.2246467991473533e-15
+        }
+      }
+    },
+    {
+      "name": "rotatePoint/about-origin-270",
+      "fn": "rotatePoint",
+      "args": [
+        {
+          "x": 10,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 0
+        },
+        270
+      ],
+      "outcome": {
+        "returned": {
+          "x": -1.8369701987210296e-15,
+          "y": -10
+        }
+      }
+    },
+    {
+      "name": "rotatePoint/about-origin--45",
+      "fn": "rotatePoint",
+      "args": [
+        {
+          "x": 10,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 0
+        },
+        -45
+      ],
+      "outcome": {
+        "returned": {
+          "x": 7.0710678118654755,
+          "y": -7.071067811865475
+        }
+      }
+    },
+    {
+      "name": "rotatePoint/about-origin-400",
+      "fn": "rotatePoint",
+      "args": [
+        {
+          "x": 10,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 0
+        },
+        400
+      ],
+      "outcome": {
+        "returned": {
+          "x": 7.660444431189781,
+          "y": 6.4278760968653925
+        }
+      }
+    },
+    {
+      "name": "rotatePoint/about-pivot",
+      "fn": "rotatePoint",
+      "args": [
+        {
+          "x": 15,
+          "y": 20
+        },
+        {
+          "x": 10,
+          "y": 10
+        },
+        90
+      ],
+      "outcome": {
+        "returned": {
+          "x": 0,
+          "y": 15.000000000000002
+        }
+      }
+    },
+    {
+      "name": "rotatePoint/at-pivot",
+      "fn": "rotatePoint",
+      "args": [
+        {
+          "x": 10,
+          "y": 10
+        },
+        {
+          "x": 10,
+          "y": 10
+        },
+        77
+      ],
+      "outcome": {
+        "returned": {
+          "x": 10.000000000000002,
+          "y": 10
+        }
+      }
+    },
+    {
+      "name": "apSizeChanged/moved-rect",
+      "fn": "apSizeChanged",
+      "args": [
+        {
+          "t": "rect",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 10,
+            "height": 10
+          },
+          "ellipse": false
+        },
+        {
+          "t": "rect",
+          "rect": {
+            "x": 50,
+            "y": 50,
+            "width": 10,
+            "height": 10
+          },
+          "ellipse": false
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "apSizeChanged/resized-rect",
+      "fn": "apSizeChanged",
+      "args": [
+        {
+          "t": "rect",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 10,
+            "height": 10
+          },
+          "ellipse": false
+        },
+        {
+          "t": "rect",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 10.02,
+            "height": 10
+          },
+          "ellipse": false
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "apSizeChanged/noise-rect",
+      "fn": "apSizeChanged",
+      "args": [
+        {
+          "t": "rect",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 10,
+            "height": 10
+          },
+          "ellipse": false
+        },
+        {
+          "t": "rect",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 10.005,
+            "height": 10.009
+          },
+          "ellipse": false
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "apSizeChanged/height-only",
+      "fn": "apSizeChanged",
+      "args": [
+        {
+          "t": "rect",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 10,
+            "height": 10
+          },
+          "ellipse": false
+        },
+        {
+          "t": "rect",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 10,
+            "height": 10.5
+          },
+          "ellipse": false
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "apSizeChanged/text",
+      "fn": "apSizeChanged",
+      "args": [
+        {
+          "t": "text",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 10,
+            "height": 10
+          }
+        },
+        {
+          "t": "text",
+          "rect": {
+            "x": 3,
+            "y": 3,
+            "width": 10,
+            "height": 10
+          }
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "apSizeChanged/caret",
+      "fn": "apSizeChanged",
+      "args": [
+        {
+          "t": "caret",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 4,
+            "height": 4
+          }
+        },
+        {
+          "t": "caret",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 5,
+            "height": 4
+          }
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "apSizeChanged/line-moved",
+      "fn": "apSizeChanged",
+      "args": [
+        {
+          "t": "line",
+          "a": {
+            "x": 0,
+            "y": 0
+          },
+          "b": {
+            "x": 10,
+            "y": 10
+          }
+        },
+        {
+          "t": "line",
+          "a": {
+            "x": 5,
+            "y": 5
+          },
+          "b": {
+            "x": 15,
+            "y": 15
+          }
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "apSizeChanged/line-stretched",
+      "fn": "apSizeChanged",
+      "args": [
+        {
+          "t": "line",
+          "a": {
+            "x": 0,
+            "y": 0
+          },
+          "b": {
+            "x": 10,
+            "y": 10
+          }
+        },
+        {
+          "t": "line",
+          "a": {
+            "x": 0,
+            "y": 0
+          },
+          "b": {
+            "x": 20,
+            "y": 10
+          }
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "apSizeChanged/poly",
+      "fn": "apSizeChanged",
+      "args": [
+        {
+          "t": "poly",
+          "points": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 10,
+              "y": 0
+            },
+            {
+              "x": 5,
+              "y": 5
+            }
+          ],
+          "closed": true
+        },
+        {
+          "t": "poly",
+          "points": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 10,
+              "y": 0
+            },
+            {
+              "x": 5,
+              "y": 9
+            }
+          ],
+          "closed": true
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "apSizeChanged/ink",
+      "fn": "apSizeChanged",
+      "args": [
+        {
+          "t": "ink",
+          "strokes": [
+            [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 4,
+                "y": 4
+              }
+            ]
+          ]
+        },
+        {
+          "t": "ink",
+          "strokes": [
+            [
+              {
+                "x": 1,
+                "y": 1
+              },
+              {
+                "x": 5,
+                "y": 5
+              }
+            ]
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "apSizeChanged/quads",
+      "fn": "apSizeChanged",
+      "args": [
+        {
+          "t": "quads",
+          "quads": [
+            {
+              "upperStart": {
+                "x": 0,
+                "y": 0
+              },
+              "upperEnd": {
+                "x": 10,
+                "y": 0
+              },
+              "lowerStart": {
+                "x": 0,
+                "y": 5
+              },
+              "lowerEnd": {
+                "x": 10,
+                "y": 5
+              }
+            }
+          ]
+        },
+        {
+          "t": "quads",
+          "quads": [
+            {
+              "upperStart": {
+                "x": 0,
+                "y": 0
+              },
+              "upperEnd": {
+                "x": 12,
+                "y": 0
+              },
+              "lowerStart": {
+                "x": 0,
+                "y": 5
+              },
+              "lowerEnd": {
+                "x": 12,
+                "y": 5
+              }
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "apSizeChanged/rect-to-line",
+      "fn": "apSizeChanged",
+      "args": [
+        {
+          "t": "rect",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 10,
+            "height": 10
+          },
+          "ellipse": false
+        },
+        {
+          "t": "line",
+          "a": {
+            "x": 0,
+            "y": 0
+          },
+          "b": {
+            "x": 10,
+            "y": 10
+          }
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "rotatedAabb/deg-0",
+      "fn": "rotatedAabb",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 40,
+          "height": 20
+        },
+        0
+      ],
+      "outcome": {
+        "returned": {
+          "x": 10,
+          "y": 20,
+          "width": 40,
+          "height": 20
+        }
+      }
+    },
+    {
+      "name": "rotatedAabb/deg-30",
+      "fn": "rotatedAabb",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 40,
+          "height": 20
+        },
+        30
+      ],
+      "outcome": {
+        "returned": {
+          "x": 7.679491924311231,
+          "y": 11.339745962155614,
+          "width": 44.64101615137755,
+          "height": 37.320508075688764
+        }
+      }
+    },
+    {
+      "name": "rotatedAabb/deg-90",
+      "fn": "rotatedAabb",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 40,
+          "height": 20
+        },
+        90
+      ],
+      "outcome": {
+        "returned": {
+          "x": 20,
+          "y": 9.999999999999998,
+          "width": 20,
+          "height": 40
+        }
+      }
+    },
+    {
+      "name": "rotatedAabb/deg-45",
+      "fn": "rotatedAabb",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 40,
+          "height": 20
+        },
+        45
+      ],
+      "outcome": {
+        "returned": {
+          "x": 8.786796564403573,
+          "y": 8.786796564403573,
+          "width": 42.42640687119285,
+          "height": 42.426406871192846
+        }
+      }
+    },
+    {
+      "name": "rotatedAabb/deg--90",
+      "fn": "rotatedAabb",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 40,
+          "height": 20
+        },
+        -90
+      ],
+      "outcome": {
+        "returned": {
+          "x": 19.999999999999996,
+          "y": 10,
+          "width": 20.000000000000004,
+          "height": 40
+        }
+      }
+    },
+    {
+      "name": "rotatedAabb/nan",
+      "fn": "rotatedAabb",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 40,
+          "height": 20
+        },
+        {
+          "$number": "NaN"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 10,
+          "y": 20,
+          "width": 40,
+          "height": 20
+        }
+      }
+    },
+    {
+      "name": "uprightRotation/0",
+      "fn": "uprightRotation",
+      "args": [
+        0
+      ],
+      "outcome": {
+        "returned": 0
+      }
+    },
+    {
+      "name": "uprightRotation/90",
+      "fn": "uprightRotation",
+      "args": [
+        90
+      ],
+      "outcome": {
+        "returned": 270
+      }
+    },
+    {
+      "name": "uprightRotation/180",
+      "fn": "uprightRotation",
+      "args": [
+        180
+      ],
+      "outcome": {
+        "returned": 180
+      }
+    },
+    {
+      "name": "uprightRotation/270",
+      "fn": "uprightRotation",
+      "args": [
+        270
+      ],
+      "outcome": {
+        "returned": 90
+      }
+    },
+    {
+      "name": "uprightRotation/30",
+      "fn": "uprightRotation",
+      "args": [
+        30
+      ],
+      "outcome": {
+        "returned": 330
+      }
+    },
+    {
+      "name": "uprightRotation/45",
+      "fn": "uprightRotation",
+      "args": [
+        45
+      ],
+      "outcome": {
+        "returned": 315
+      }
+    },
+    {
+      "name": "uprightRotation/-90",
+      "fn": "uprightRotation",
+      "args": [
+        -90
+      ],
+      "outcome": {
+        "returned": 90
+      }
+    },
+    {
+      "name": "uprightRotation/-45",
+      "fn": "uprightRotation",
+      "args": [
+        -45
+      ],
+      "outcome": {
+        "returned": 45
+      }
+    },
+    {
+      "name": "uprightRotation/360",
+      "fn": "uprightRotation",
+      "args": [
+        360
+      ],
+      "outcome": {
+        "returned": 0
+      }
+    },
+    {
+      "name": "uprightRotation/405",
+      "fn": "uprightRotation",
+      "args": [
+        405
+      ],
+      "outcome": {
+        "returned": 315
+      }
+    },
+    {
+      "name": "uprightRotation/179.5",
+      "fn": "uprightRotation",
+      "args": [
+        179.5
+      ],
+      "outcome": {
+        "returned": 180.5
+      }
+    },
+    {
+      "name": "uprightRotation/1e-9",
+      "fn": "uprightRotation",
+      "args": [
+        1e-9
+      ],
+      "outcome": {
+        "returned": 359.999999999
+      }
+    },
+    {
+      "name": "transposedAboutCenter/landscape",
+      "fn": "transposedAboutCenter",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 40,
+          "height": 20
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 20,
+          "y": 10,
+          "width": 20,
+          "height": 40
+        }
+      }
+    },
+    {
+      "name": "transposedAboutCenter/square",
+      "fn": "transposedAboutCenter",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 5,
+          "height": 5
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 0,
+          "y": 0,
+          "width": 5,
+          "height": 5
+        }
+      }
+    },
+    {
+      "name": "transposedAboutCenter/zero",
+      "fn": "transposedAboutCenter",
+      "args": [
+        {
+          "x": 3,
+          "y": 3,
+          "width": 0,
+          "height": 8
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": -1,
+          "y": 7,
+          "width": 8,
+          "height": 0
+        }
+      }
+    },
+    {
+      "name": "uprightAnchoredRect/r0",
+      "fn": "uprightAnchoredRect",
+      "args": [
+        {
+          "x": 100,
+          "y": 200
+        },
+        180,
+        40,
+        0
+      ],
+      "outcome": {
+        "returned": {
+          "x": 100,
+          "y": 200,
+          "width": 180,
+          "height": 40
+        }
+      }
+    },
+    {
+      "name": "uprightAnchoredRect/r90",
+      "fn": "uprightAnchoredRect",
+      "args": [
+        {
+          "x": 100,
+          "y": 200
+        },
+        180,
+        40,
+        90
+      ],
+      "outcome": {
+        "returned": {
+          "x": 30,
+          "y": 90,
+          "width": 180,
+          "height": 40
+        }
+      }
+    },
+    {
+      "name": "uprightAnchoredRect/r180",
+      "fn": "uprightAnchoredRect",
+      "args": [
+        {
+          "x": 100,
+          "y": 200
+        },
+        180,
+        40,
+        180
+      ],
+      "outcome": {
+        "returned": {
+          "x": -80,
+          "y": 160,
+          "width": 180,
+          "height": 40
+        }
+      }
+    },
+    {
+      "name": "uprightAnchoredRect/r270",
+      "fn": "uprightAnchoredRect",
+      "args": [
+        {
+          "x": 100,
+          "y": 200
+        },
+        180,
+        40,
+        270
+      ],
+      "outcome": {
+        "returned": {
+          "x": -10,
+          "y": 270,
+          "width": 180,
+          "height": 40
+        }
+      }
+    },
+    {
+      "name": "uprightAnchoredRect/r45",
+      "fn": "uprightAnchoredRect",
+      "args": [
+        {
+          "x": 100,
+          "y": 200
+        },
+        180,
+        40,
+        45
+      ],
+      "outcome": {
+        "returned": {
+          "x": 100,
+          "y": 200,
+          "width": 180,
+          "height": 40
+        }
+      }
+    },
+    {
+      "name": "uprightAnchoredRect/r-90",
+      "fn": "uprightAnchoredRect",
+      "args": [
+        {
+          "x": 100,
+          "y": 200
+        },
+        180,
+        40,
+        -90
+      ],
+      "outcome": {
+        "returned": {
+          "x": -10,
+          "y": 270,
+          "width": 180,
+          "height": 40
+        }
+      }
+    },
+    {
+      "name": "uprightAnchoredRect/r450",
+      "fn": "uprightAnchoredRect",
+      "args": [
+        {
+          "x": 100,
+          "y": 200
+        },
+        180,
+        40,
+        450
+      ],
+      "outcome": {
+        "returned": {
+          "x": 30,
+          "y": 90,
+          "width": 180,
+          "height": 40
+        }
+      }
+    },
+    {
+      "name": "fitStampBox/fits",
+      "fn": "fitStampBox",
+      "args": [
+        {
+          "x": 300,
+          "y": 400
+        },
+        {
+          "width": 100,
+          "height": 50
+        },
+        {
+          "width": 600,
+          "height": 800
+        },
+        0
+      ],
+      "outcome": {
+        "returned": {
+          "x": 250,
+          "y": 375,
+          "width": 100,
+          "height": 50
+        }
+      }
+    },
+    {
+      "name": "fitStampBox/too-wide",
+      "fn": "fitStampBox",
+      "args": [
+        {
+          "x": 300,
+          "y": 400
+        },
+        {
+          "width": 1200,
+          "height": 100
+        },
+        {
+          "width": 600,
+          "height": 800
+        },
+        0
+      ],
+      "outcome": {
+        "returned": {
+          "x": 0,
+          "y": 375,
+          "width": 600,
+          "height": 50
+        }
+      }
+    },
+    {
+      "name": "fitStampBox/too-tall",
+      "fn": "fitStampBox",
+      "args": [
+        {
+          "x": 300,
+          "y": 400
+        },
+        {
+          "width": 100,
+          "height": 1600
+        },
+        {
+          "width": 600,
+          "height": 800
+        },
+        0
+      ],
+      "outcome": {
+        "returned": {
+          "x": 275,
+          "y": 0,
+          "width": 50,
+          "height": 800
+        }
+      }
+    },
+    {
+      "name": "fitStampBox/quarter-transposes",
+      "fn": "fitStampBox",
+      "args": [
+        {
+          "x": 300,
+          "y": 400
+        },
+        {
+          "width": 1000,
+          "height": 100
+        },
+        {
+          "width": 600,
+          "height": 800
+        },
+        90
+      ],
+      "outcome": {
+        "returned": {
+          "x": -100,
+          "y": 360,
+          "width": 800,
+          "height": 80
+        }
+      }
+    },
+    {
+      "name": "fitStampBox/quarter-270",
+      "fn": "fitStampBox",
+      "args": [
+        {
+          "x": 300,
+          "y": 400
+        },
+        {
+          "width": 700,
+          "height": 100
+        },
+        {
+          "width": 600,
+          "height": 800
+        },
+        270
+      ],
+      "outcome": {
+        "returned": {
+          "x": -50,
+          "y": 350,
+          "width": 700,
+          "height": 100
+        }
+      }
+    },
+    {
+      "name": "fitStampBox/negative-quarter",
+      "fn": "fitStampBox",
+      "args": [
+        {
+          "x": 300,
+          "y": 400
+        },
+        {
+          "width": 700,
+          "height": 100
+        },
+        {
+          "width": 600,
+          "height": 800
+        },
+        -90
+      ],
+      "outcome": {
+        "returned": {
+          "x": -50,
+          "y": 350,
+          "width": 700,
+          "height": 100
+        }
+      }
+    },
+    {
+      "name": "fitStampBox/half-turn",
+      "fn": "fitStampBox",
+      "args": [
+        {
+          "x": 300,
+          "y": 400
+        },
+        {
+          "width": 700,
+          "height": 100
+        },
+        {
+          "width": 600,
+          "height": 800
+        },
+        180
+      ],
+      "outcome": {
+        "returned": {
+          "x": 0,
+          "y": 357.14285714285717,
+          "width": 600,
+          "height": 85.71428571428571
+        }
+      }
+    },
+    {
+      "name": "fitStampBox/tilted-not-quarter",
+      "fn": "fitStampBox",
+      "args": [
+        {
+          "x": 300,
+          "y": 400
+        },
+        {
+          "width": 700,
+          "height": 100
+        },
+        {
+          "width": 600,
+          "height": 800
+        },
+        45
+      ],
+      "outcome": {
+        "returned": {
+          "x": 0,
+          "y": 357.14285714285717,
+          "width": 600,
+          "height": 85.71428571428571
+        }
+      }
+    },
+    {
+      "name": "fitStampBox/clamp-left-top",
+      "fn": "fitStampBox",
+      "args": [
+        {
+          "x": 10,
+          "y": 10
+        },
+        {
+          "width": 100,
+          "height": 50
+        },
+        {
+          "width": 600,
+          "height": 800
+        },
+        0
+      ],
+      "outcome": {
+        "returned": {
+          "x": 0,
+          "y": 0,
+          "width": 100,
+          "height": 50
+        }
+      }
+    },
+    {
+      "name": "fitStampBox/clamp-right-bottom",
+      "fn": "fitStampBox",
+      "args": [
+        {
+          "x": 595,
+          "y": 799
+        },
+        {
+          "width": 100,
+          "height": 50
+        },
+        {
+          "width": 600,
+          "height": 800
+        },
+        0
+      ],
+      "outcome": {
+        "returned": {
+          "x": 500,
+          "y": 750,
+          "width": 100,
+          "height": 50
+        }
+      }
+    },
+    {
+      "name": "fitStampBox/zero-size",
+      "fn": "fitStampBox",
+      "args": [
+        {
+          "x": 300,
+          "y": 400
+        },
+        {
+          "width": 0,
+          "height": 0
+        },
+        {
+          "width": 600,
+          "height": 800
+        },
+        0
+      ],
+      "outcome": {
+        "returned": {
+          "x": 300,
+          "y": 400,
+          "width": 0,
+          "height": 0
+        }
+      }
+    },
+    {
+      "name": "fitStampBox/zero-width",
+      "fn": "fitStampBox",
+      "args": [
+        {
+          "x": 300,
+          "y": 400
+        },
+        {
+          "width": 0,
+          "height": 900
+        },
+        {
+          "width": 600,
+          "height": 800
+        },
+        0
+      ],
+      "outcome": {
+        "returned": {
+          "x": 300,
+          "y": 0,
+          "width": 0,
+          "height": 800
+        }
+      }
+    },
+    {
+      "name": "fitStampBox/never-scales-up",
+      "fn": "fitStampBox",
+      "args": [
+        {
+          "x": 300,
+          "y": 400
+        },
+        {
+          "width": 10,
+          "height": 10
+        },
+        {
+          "width": 600,
+          "height": 800
+        },
+        0
+      ],
+      "outcome": {
+        "returned": {
+          "x": 295,
+          "y": 395,
+          "width": 10,
+          "height": 10
+        }
+      }
+    },
+    {
+      "name": "rectHandlesFor/box",
+      "fn": "rectHandlesFor",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        }
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "id": "nw",
+            "at": {
+              "x": 10,
+              "y": 20
+            },
+            "cursor": "nwse-resize"
+          },
+          {
+            "id": "n",
+            "at": {
+              "x": 60,
+              "y": 20
+            },
+            "cursor": "ns-resize"
+          },
+          {
+            "id": "ne",
+            "at": {
+              "x": 110,
+              "y": 20
+            },
+            "cursor": "nesw-resize"
+          },
+          {
+            "id": "e",
+            "at": {
+              "x": 110,
+              "y": 45
+            },
+            "cursor": "ew-resize"
+          },
+          {
+            "id": "se",
+            "at": {
+              "x": 110,
+              "y": 70
+            },
+            "cursor": "nwse-resize"
+          },
+          {
+            "id": "s",
+            "at": {
+              "x": 60,
+              "y": 70
+            },
+            "cursor": "ns-resize"
+          },
+          {
+            "id": "sw",
+            "at": {
+              "x": 10,
+              "y": 70
+            },
+            "cursor": "nesw-resize"
+          },
+          {
+            "id": "w",
+            "at": {
+              "x": 10,
+              "y": 45
+            },
+            "cursor": "ew-resize"
+          }
+        ]
+      }
+    },
+    {
+      "name": "rectHandlesFor/zero",
+      "fn": "rectHandlesFor",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        }
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "id": "nw",
+            "at": {
+              "x": 0,
+              "y": 0
+            },
+            "cursor": "nwse-resize"
+          },
+          {
+            "id": "n",
+            "at": {
+              "x": 0,
+              "y": 0
+            },
+            "cursor": "ns-resize"
+          },
+          {
+            "id": "ne",
+            "at": {
+              "x": 0,
+              "y": 0
+            },
+            "cursor": "nesw-resize"
+          },
+          {
+            "id": "e",
+            "at": {
+              "x": 0,
+              "y": 0
+            },
+            "cursor": "ew-resize"
+          },
+          {
+            "id": "se",
+            "at": {
+              "x": 0,
+              "y": 0
+            },
+            "cursor": "nwse-resize"
+          },
+          {
+            "id": "s",
+            "at": {
+              "x": 0,
+              "y": 0
+            },
+            "cursor": "ns-resize"
+          },
+          {
+            "id": "sw",
+            "at": {
+              "x": 0,
+              "y": 0
+            },
+            "cursor": "nesw-resize"
+          },
+          {
+            "id": "w",
+            "at": {
+              "x": 0,
+              "y": 0
+            },
+            "cursor": "ew-resize"
+          }
+        ]
+      }
+    },
+    {
+      "name": "groupResizeAnchor/nw",
+      "fn": "groupResizeAnchor",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        },
+        "nw"
+      ],
+      "outcome": {
+        "returned": {
+          "x": 110,
+          "y": 70
+        }
+      }
+    },
+    {
+      "name": "groupResizeAnchor/n",
+      "fn": "groupResizeAnchor",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        },
+        "n"
+      ],
+      "outcome": {
+        "returned": {
+          "x": 60,
+          "y": 70
+        }
+      }
+    },
+    {
+      "name": "groupResizeAnchor/ne",
+      "fn": "groupResizeAnchor",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        },
+        "ne"
+      ],
+      "outcome": {
+        "returned": {
+          "x": 10,
+          "y": 70
+        }
+      }
+    },
+    {
+      "name": "groupResizeAnchor/e",
+      "fn": "groupResizeAnchor",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        },
+        "e"
+      ],
+      "outcome": {
+        "returned": {
+          "x": 10,
+          "y": 45
+        }
+      }
+    },
+    {
+      "name": "groupResizeAnchor/se",
+      "fn": "groupResizeAnchor",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        },
+        "se"
+      ],
+      "outcome": {
+        "returned": {
+          "x": 10,
+          "y": 20
+        }
+      }
+    },
+    {
+      "name": "groupResizeAnchor/s",
+      "fn": "groupResizeAnchor",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        },
+        "s"
+      ],
+      "outcome": {
+        "returned": {
+          "x": 60,
+          "y": 20
+        }
+      }
+    },
+    {
+      "name": "groupResizeAnchor/sw",
+      "fn": "groupResizeAnchor",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        },
+        "sw"
+      ],
+      "outcome": {
+        "returned": {
+          "x": 110,
+          "y": 20
+        }
+      }
+    },
+    {
+      "name": "groupResizeAnchor/w",
+      "fn": "groupResizeAnchor",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        },
+        "w"
+      ],
+      "outcome": {
+        "returned": {
+          "x": 110,
+          "y": 45
+        }
+      }
+    },
+    {
+      "name": "groupResizeAnchor/bogus",
+      "fn": "groupResizeAnchor",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        },
+        "bogus"
+      ],
+      "outcome": {
+        "returned": {
+          "x": 10,
+          "y": 20
+        }
+      }
+    },
+    {
+      "name": "groupResizeAnchor/v0",
+      "fn": "groupResizeAnchor",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        },
+        "v0"
+      ],
+      "outcome": {
+        "returned": {
+          "x": 10,
+          "y": 20
+        }
+      }
+    },
+    {
+      "name": "groupResizeAnchor/toString",
+      "fn": "groupResizeAnchor",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        },
+        "toString"
+      ],
+      "outcome": {
+        "returned": {
+          "x": 60,
+          "y": 45
+        }
+      }
+    },
+    {
+      "name": "groupResizeAnchor/__proto__",
+      "fn": "groupResizeAnchor",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        },
+        "__proto__"
+      ],
+      "outcome": {
+        "returned": {
+          "x": 60,
+          "y": 45
+        }
+      }
+    },
+    {
+      "name": "groupResizeAnchor/constructor",
+      "fn": "groupResizeAnchor",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        },
+        "constructor"
+      ],
+      "outcome": {
+        "returned": {
+          "x": 60,
+          "y": 45
+        }
+      }
+    },
+    {
+      "name": "groupResizeBox/nw-aniso",
+      "fn": "groupResizeBox",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        },
+        "nw",
+        {
+          "x": 150,
+          "y": 100
+        },
+        false
+      ],
+      "outcome": {
+        "returned": {
+          "x": 110,
+          "y": 70,
+          "width": 40,
+          "height": 30
+        }
+      }
+    },
+    {
+      "name": "groupResizeBox/nw-iso",
+      "fn": "groupResizeBox",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        },
+        "nw",
+        {
+          "x": 150,
+          "y": 100
+        },
+        true
+      ],
+      "outcome": {
+        "returned": {
+          "x": 50,
+          "y": 40,
+          "width": 60,
+          "height": 30
+        }
+      }
+    },
+    {
+      "name": "groupResizeBox/nw-iso-shrink",
+      "fn": "groupResizeBox",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        },
+        "nw",
+        {
+          "x": 20,
+          "y": 25
+        },
+        true
+      ],
+      "outcome": {
+        "returned": {
+          "x": 20,
+          "y": 25,
+          "width": 90,
+          "height": 45
+        }
+      }
+    },
+    {
+      "name": "groupResizeBox/n-aniso",
+      "fn": "groupResizeBox",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        },
+        "n",
+        {
+          "x": 150,
+          "y": 100
+        },
+        false
+      ],
+      "outcome": {
+        "returned": {
+          "x": 10,
+          "y": 70,
+          "width": 100,
+          "height": 30
+        }
+      }
+    },
+    {
+      "name": "groupResizeBox/n-iso",
+      "fn": "groupResizeBox",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        },
+        "n",
+        {
+          "x": 150,
+          "y": 100
+        },
+        true
+      ],
+      "outcome": {
+        "returned": {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        }
+      }
+    },
+    {
+      "name": "groupResizeBox/n-iso-shrink",
+      "fn": "groupResizeBox",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        },
+        "n",
+        {
+          "x": 20,
+          "y": 25
+        },
+        true
+      ],
+      "outcome": {
+        "returned": {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        }
+      }
+    },
+    {
+      "name": "groupResizeBox/ne-aniso",
+      "fn": "groupResizeBox",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        },
+        "ne",
+        {
+          "x": 150,
+          "y": 100
+        },
+        false
+      ],
+      "outcome": {
+        "returned": {
+          "x": 10,
+          "y": 70,
+          "width": 140,
+          "height": 30
+        }
+      }
+    },
+    {
+      "name": "groupResizeBox/ne-iso",
+      "fn": "groupResizeBox",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        },
+        "ne",
+        {
+          "x": 150,
+          "y": 100
+        },
+        true
+      ],
+      "outcome": {
+        "returned": {
+          "x": 10,
+          "y": 0,
+          "width": 140,
+          "height": 70
+        }
+      }
+    },
+    {
+      "name": "groupResizeBox/ne-iso-shrink",
+      "fn": "groupResizeBox",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        },
+        "ne",
+        {
+          "x": 20,
+          "y": 25
+        },
+        true
+      ],
+      "outcome": {
+        "returned": {
+          "x": 10,
+          "y": 25,
+          "width": 90,
+          "height": 45
+        }
+      }
+    },
+    {
+      "name": "groupResizeBox/e-aniso",
+      "fn": "groupResizeBox",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        },
+        "e",
+        {
+          "x": 150,
+          "y": 100
+        },
+        false
+      ],
+      "outcome": {
+        "returned": {
+          "x": 10,
+          "y": 20,
+          "width": 140,
+          "height": 50
+        }
+      }
+    },
+    {
+      "name": "groupResizeBox/e-iso",
+      "fn": "groupResizeBox",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        },
+        "e",
+        {
+          "x": 150,
+          "y": 100
+        },
+        true
+      ],
+      "outcome": {
+        "returned": {
+          "x": 10,
+          "y": 10,
+          "width": 140,
+          "height": 70
+        }
+      }
+    },
+    {
+      "name": "groupResizeBox/e-iso-shrink",
+      "fn": "groupResizeBox",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        },
+        "e",
+        {
+          "x": 20,
+          "y": 25
+        },
+        true
+      ],
+      "outcome": {
+        "returned": {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        }
+      }
+    },
+    {
+      "name": "groupResizeBox/se-aniso",
+      "fn": "groupResizeBox",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        },
+        "se",
+        {
+          "x": 150,
+          "y": 100
+        },
+        false
+      ],
+      "outcome": {
+        "returned": {
+          "x": 10,
+          "y": 20,
+          "width": 140,
+          "height": 80
+        }
+      }
+    },
+    {
+      "name": "groupResizeBox/se-iso",
+      "fn": "groupResizeBox",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        },
+        "se",
+        {
+          "x": 150,
+          "y": 100
+        },
+        true
+      ],
+      "outcome": {
+        "returned": {
+          "x": 10,
+          "y": 20,
+          "width": 160,
+          "height": 80
+        }
+      }
+    },
+    {
+      "name": "groupResizeBox/se-iso-shrink",
+      "fn": "groupResizeBox",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        },
+        "se",
+        {
+          "x": 20,
+          "y": 25
+        },
+        true
+      ],
+      "outcome": {
+        "returned": {
+          "x": 10,
+          "y": 20,
+          "width": 10,
+          "height": 5
+        }
+      }
+    },
+    {
+      "name": "groupResizeBox/s-aniso",
+      "fn": "groupResizeBox",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        },
+        "s",
+        {
+          "x": 150,
+          "y": 100
+        },
+        false
+      ],
+      "outcome": {
+        "returned": {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 80
+        }
+      }
+    },
+    {
+      "name": "groupResizeBox/s-iso",
+      "fn": "groupResizeBox",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        },
+        "s",
+        {
+          "x": 150,
+          "y": 100
+        },
+        true
+      ],
+      "outcome": {
+        "returned": {
+          "x": -20,
+          "y": 20,
+          "width": 160,
+          "height": 80
+        }
+      }
+    },
+    {
+      "name": "groupResizeBox/s-iso-shrink",
+      "fn": "groupResizeBox",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        },
+        "s",
+        {
+          "x": 20,
+          "y": 25
+        },
+        true
+      ],
+      "outcome": {
+        "returned": {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        }
+      }
+    },
+    {
+      "name": "groupResizeBox/sw-aniso",
+      "fn": "groupResizeBox",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        },
+        "sw",
+        {
+          "x": 150,
+          "y": 100
+        },
+        false
+      ],
+      "outcome": {
+        "returned": {
+          "x": 110,
+          "y": 20,
+          "width": 40,
+          "height": 80
+        }
+      }
+    },
+    {
+      "name": "groupResizeBox/sw-iso",
+      "fn": "groupResizeBox",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        },
+        "sw",
+        {
+          "x": 150,
+          "y": 100
+        },
+        true
+      ],
+      "outcome": {
+        "returned": {
+          "x": -50,
+          "y": 20,
+          "width": 160,
+          "height": 80
+        }
+      }
+    },
+    {
+      "name": "groupResizeBox/sw-iso-shrink",
+      "fn": "groupResizeBox",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        },
+        "sw",
+        {
+          "x": 20,
+          "y": 25
+        },
+        true
+      ],
+      "outcome": {
+        "returned": {
+          "x": 20,
+          "y": 20,
+          "width": 90,
+          "height": 45
+        }
+      }
+    },
+    {
+      "name": "groupResizeBox/w-aniso",
+      "fn": "groupResizeBox",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        },
+        "w",
+        {
+          "x": 150,
+          "y": 100
+        },
+        false
+      ],
+      "outcome": {
+        "returned": {
+          "x": 110,
+          "y": 20,
+          "width": 40,
+          "height": 50
+        }
+      }
+    },
+    {
+      "name": "groupResizeBox/w-iso",
+      "fn": "groupResizeBox",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        },
+        "w",
+        {
+          "x": 150,
+          "y": 100
+        },
+        true
+      ],
+      "outcome": {
+        "returned": {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        }
+      }
+    },
+    {
+      "name": "groupResizeBox/w-iso-shrink",
+      "fn": "groupResizeBox",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        },
+        "w",
+        {
+          "x": 20,
+          "y": 25
+        },
+        true
+      ],
+      "outcome": {
+        "returned": {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        }
+      }
+    },
+    {
+      "name": "groupResizeBox/bogus-handle",
+      "fn": "groupResizeBox",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        },
+        "zz",
+        {
+          "x": 150,
+          "y": 100
+        },
+        false
+      ],
+      "outcome": {
+        "returned": {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        }
+      }
+    },
+    {
+      "name": "groupResizeBox/bogus-handle-iso",
+      "fn": "groupResizeBox",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        },
+        "zz",
+        {
+          "x": 150,
+          "y": 100
+        },
+        true
+      ],
+      "outcome": {
+        "returned": {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        }
+      }
+    },
+    {
+      "name": "groupResizeBox/crossing-min-size",
+      "fn": "groupResizeBox",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        },
+        "se",
+        {
+          "x": 11,
+          "y": 21
+        },
+        false
+      ],
+      "outcome": {
+        "returned": {
+          "x": 10,
+          "y": 20,
+          "width": 4,
+          "height": 4
+        }
+      }
+    },
+    {
+      "name": "groupResizeBox/iso-zero-base",
+      "fn": "groupResizeBox",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 0,
+          "height": 0
+        },
+        "se",
+        {
+          "x": 50,
+          "y": 50
+        },
+        true
+      ],
+      "outcome": {
+        "returned": {
+          "x": 10,
+          "y": 20,
+          "width": 0,
+          "height": 0
+        }
+      }
+    },
+    {
+      "name": "groupResizeBox/iso-zero-width",
+      "fn": "groupResizeBox",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 0,
+          "height": 40
+        },
+        "e",
+        {
+          "x": 50,
+          "y": 50
+        },
+        true
+      ],
+      "outcome": {
+        "returned": {
+          "x": 10,
+          "y": 20,
+          "width": 0,
+          "height": 40
+        }
+      }
+    },
+    {
+      "name": "groupResizeBox/iso-flip",
+      "fn": "groupResizeBox",
+      "args": [
+        {
+          "x": 10,
+          "y": 20,
+          "width": 100,
+          "height": 50
+        },
+        "se",
+        {
+          "x": -200,
+          "y": -100
+        },
+        true
+      ],
+      "outcome": {
+        "returned": {
+          "x": 10,
+          "y": 20,
+          "width": 240,
+          "height": 120
+        }
+      }
+    },
+    {
+      "name": "groupResizeFactors/grow",
+      "fn": "groupResizeFactors",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 20
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 30,
+          "height": 10
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "sx": 3,
+          "sy": 0.5
+        }
+      }
+    },
+    {
+      "name": "groupResizeFactors/zero-base",
+      "fn": "groupResizeFactors",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 30,
+          "height": 10
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "sx": 1,
+          "sy": 1
+        }
+      }
+    },
+    {
+      "name": "groupResizeFactors/zero-height",
+      "fn": "groupResizeFactors",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 0
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 30,
+          "height": 10
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "sx": 3,
+          "sy": 1
+        }
+      }
+    },
+    {
+      "name": "rotateKnob/upright",
+      "fn": "rotateKnob",
+      "args": [
+        [
+          {
+            "x": 100,
+            "y": 100
+          },
+          {
+            "x": 180,
+            "y": 100
+          },
+          {
+            "x": 180,
+            "y": 160
+          },
+          {
+            "x": 100,
+            "y": 160
+          }
+        ],
+        24
+      ],
+      "outcome": {
+        "returned": {
+          "at": {
+            "x": 140,
+            "y": 76
+          },
+          "from": {
+            "x": 140,
+            "y": 100
+          }
+        }
+      }
+    },
+    {
+      "name": "rotateKnob/tilted",
+      "fn": "rotateKnob",
+      "args": [
+        [
+          {
+            "x": 120.35898384862244,
+            "y": 84.01923788646687
+          },
+          {
+            "x": 189.64101615137753,
+            "y": 124.01923788646684
+          },
+          {
+            "x": 159.64101615137753,
+            "y": 175.98076211353316
+          },
+          {
+            "x": 90.35898384862246,
+            "y": 135.9807621135332
+          }
+        ],
+        24
+      ],
+      "outcome": {
+        "returned": {
+          "at": {
+            "x": 167,
+            "y": 83.23462819564033
+          },
+          "from": {
+            "x": 155,
+            "y": 104.01923788646685
+          }
+        }
+      }
+    },
+    {
+      "name": "rotateKnob/flat-box",
+      "fn": "rotateKnob",
+      "args": [
+        [
+          {
+            "x": 100,
+            "y": 100
+          },
+          {
+            "x": 180,
+            "y": 100
+          },
+          {
+            "x": 180,
+            "y": 100
+          },
+          {
+            "x": 100,
+            "y": 100
+          }
+        ],
+        24
+      ],
+      "outcome": {
+        "returned": {
+          "at": {
+            "x": 140,
+            "y": 100
+          },
+          "from": {
+            "x": 140,
+            "y": 100
+          }
+        }
+      }
+    },
+    {
+      "name": "rotateKnob/zero-offset",
+      "fn": "rotateKnob",
+      "args": [
+        [
+          {
+            "x": 100,
+            "y": 100
+          },
+          {
+            "x": 180,
+            "y": 100
+          },
+          {
+            "x": 180,
+            "y": 160
+          },
+          {
+            "x": 100,
+            "y": 160
+          }
+        ],
+        0
+      ],
+      "outcome": {
+        "returned": {
+          "at": {
+            "x": 140,
+            "y": 100
+          },
+          "from": {
+            "x": 140,
+            "y": 100
+          }
+        }
+      }
+    },
+    {
+      "name": "chordThrough/inside-0",
+      "fn": "chordThrough",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 600,
+          "height": 800
+        },
+        {
+          "x": 300,
+          "y": 400
+        },
+        0
+      ],
+      "outcome": {
+        "returned": {
+          "a": {
+            "x": 0,
+            "y": 400
+          },
+          "b": {
+            "x": 600,
+            "y": 400
+          }
+        }
+      }
+    },
+    {
+      "name": "chordThrough/inside-90",
+      "fn": "chordThrough",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 600,
+          "height": 800
+        },
+        {
+          "x": 300,
+          "y": 400
+        },
+        90
+      ],
+      "outcome": {
+        "returned": {
+          "a": {
+            "x": 300,
+            "y": 0
+          },
+          "b": {
+            "x": 300,
+            "y": 800
+          }
+        }
+      }
+    },
+    {
+      "name": "chordThrough/inside-45",
+      "fn": "chordThrough",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 600,
+          "height": 800
+        },
+        {
+          "x": 300,
+          "y": 400
+        },
+        45
+      ],
+      "outcome": {
+        "returned": {
+          "a": {
+            "x": 0,
+            "y": 100.00000000000006
+          },
+          "b": {
+            "x": 600,
+            "y": 700
+          }
+        }
+      }
+    },
+    {
+      "name": "chordThrough/inside-30",
+      "fn": "chordThrough",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 600,
+          "height": 800
+        },
+        {
+          "x": 300,
+          "y": 400
+        },
+        30
+      ],
+      "outcome": {
+        "returned": {
+          "a": {
+            "x": 0,
+            "y": 226.7949192431123
+          },
+          "b": {
+            "x": 600,
+            "y": 573.2050807568877
+          }
+        }
+      }
+    },
+    {
+      "name": "chordThrough/inside-135",
+      "fn": "chordThrough",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 600,
+          "height": 800
+        },
+        {
+          "x": 300,
+          "y": 400
+        },
+        135
+      ],
+      "outcome": {
+        "returned": {
+          "a": {
+            "x": 600,
+            "y": 99.99999999999994
+          },
+          "b": {
+            "x": 0,
+            "y": 700
+          }
+        }
+      }
+    },
+    {
+      "name": "chordThrough/inside--60",
+      "fn": "chordThrough",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 600,
+          "height": 800
+        },
+        {
+          "x": 300,
+          "y": 400
+        },
+        -60
+      ],
+      "outcome": {
+        "returned": {
+          "a": {
+            "x": 69.05989232414962,
+            "y": 800
+          },
+          "b": {
+            "x": 530.9401076758504,
+            "y": 0
+          }
+        }
+      }
+    },
+    {
+      "name": "chordThrough/inside-180",
+      "fn": "chordThrough",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 600,
+          "height": 800
+        },
+        {
+          "x": 300,
+          "y": 400
+        },
+        180
+      ],
+      "outcome": {
+        "returned": {
+          "a": {
+            "x": 600,
+            "y": 399.99999999999994
+          },
+          "b": {
+            "x": 0,
+            "y": 400.00000000000006
+          }
+        }
+      }
+    },
+    {
+      "name": "chordThrough/outside-parallel-x",
+      "fn": "chordThrough",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 600,
+          "height": 800
+        },
+        {
+          "x": 300,
+          "y": -10
+        },
+        0
+      ],
+      "outcome": {
+        "returned": null
+      }
+    },
+    {
+      "name": "chordThrough/outside-parallel-y",
+      "fn": "chordThrough",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 600,
+          "height": 800
+        },
+        {
+          "x": -10,
+          "y": 400
+        },
+        90
+      ],
+      "outcome": {
+        "returned": null
+      }
+    },
+    {
+      "name": "chordThrough/outside-parallel-x-below",
+      "fn": "chordThrough",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 600,
+          "height": 800
+        },
+        {
+          "x": 300,
+          "y": 900
+        },
+        0
+      ],
+      "outcome": {
+        "returned": null
+      }
+    },
+    {
+      "name": "chordThrough/outside-parallel-y-right",
+      "fn": "chordThrough",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 600,
+          "height": 800
+        },
+        {
+          "x": 700,
+          "y": 400
+        },
+        90
+      ],
+      "outcome": {
+        "returned": null
+      }
+    },
+    {
+      "name": "chordThrough/misses-diagonal",
+      "fn": "chordThrough",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 600,
+          "height": 800
+        },
+        {
+          "x": -500,
+          "y": -500
+        },
+        135
+      ],
+      "outcome": {
+        "returned": null
+      }
+    },
+    {
+      "name": "chordThrough/corner-touch",
+      "fn": "chordThrough",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 600,
+          "height": 800
+        },
+        {
+          "x": -100,
+          "y": -100
+        },
+        45
+      ],
+      "outcome": {
+        "returned": {
+          "a": {
+            "x": 1.4210854715202004e-14,
+            "y": 0
+          },
+          "b": {
+            "x": 600,
+            "y": 599.9999999999999
+          }
+        }
+      }
+    },
+    {
+      "name": "chordThrough/on-edge",
+      "fn": "chordThrough",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 600,
+          "height": 800
+        },
+        {
+          "x": 0,
+          "y": 400
+        },
+        90
+      ],
+      "outcome": {
+        "returned": {
+          "a": {
+            "x": -2.4492935982947064e-14,
+            "y": 0
+          },
+          "b": {
+            "x": 2.4492935982947064e-14,
+            "y": 800
+          }
+        }
+      }
+    },
+    {
+      "name": "chordThrough/zero-box",
+      "fn": "chordThrough",
+      "args": [
+        {
+          "x": 10,
+          "y": 10,
+          "width": 0,
+          "height": 0
+        },
+        {
+          "x": 10,
+          "y": 10
+        },
+        45
+      ],
+      "outcome": {
+        "returned": null
+      }
+    },
+    {
+      "name": "chordThrough/nan-angle",
+      "fn": "chordThrough",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 600,
+          "height": 800
+        },
+        {
+          "x": 300,
+          "y": 400
+        },
+        {
+          "$number": "NaN"
+        }
+      ],
+      "outcome": {
+        "returned": null
+      }
+    },
+    {
+      "name": "placeRotateKnob/no-page",
+      "fn": "placeRotateKnob",
+      "args": [
+        [
+          {
+            "x": 100,
+            "y": 100
+          },
+          {
+            "x": 180,
+            "y": 100
+          },
+          {
+            "x": 180,
+            "y": 160
+          },
+          {
+            "x": 100,
+            "y": 160
+          }
+        ],
+        24
+      ],
+      "outcome": {
+        "returned": {
+          "at": {
+            "x": 140,
+            "y": 76
+          },
+          "from": {
+            "x": 140,
+            "y": 100
+          }
+        }
+      }
+    },
+    {
+      "name": "placeRotateKnob/inside",
+      "fn": "placeRotateKnob",
+      "args": [
+        [
+          {
+            "x": 100,
+            "y": 100
+          },
+          {
+            "x": 180,
+            "y": 100
+          },
+          {
+            "x": 180,
+            "y": 160
+          },
+          {
+            "x": 100,
+            "y": 160
+          }
+        ],
+        24,
+        {
+          "x": 0,
+          "y": 0,
+          "width": 600,
+          "height": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "at": {
+            "x": 140,
+            "y": 76
+          },
+          "from": {
+            "x": 140,
+            "y": 100
+          }
+        }
+      }
+    },
+    {
+      "name": "placeRotateKnob/flip-bottom",
+      "fn": "placeRotateKnob",
+      "args": [
+        [
+          {
+            "x": 100,
+            "y": 10
+          },
+          {
+            "x": 180,
+            "y": 10
+          },
+          {
+            "x": 180,
+            "y": 70
+          },
+          {
+            "x": 100,
+            "y": 70
+          }
+        ],
+        24,
+        {
+          "x": 0,
+          "y": 0,
+          "width": 600,
+          "height": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "at": {
+            "x": 140,
+            "y": 94
+          },
+          "from": {
+            "x": 140,
+            "y": 70
+          }
+        }
+      }
+    },
+    {
+      "name": "placeRotateKnob/flip-tilted",
+      "fn": "placeRotateKnob",
+      "args": [
+        [
+          {
+            "x": 112.67289946833372,
+            "y": -1.8715843566040036
+          },
+          {
+            "x": 187.8483091312064,
+            "y": 25.4900271094495
+          },
+          {
+            "x": 167.3271005316663,
+            "y": 81.871584356604
+          },
+          {
+            "x": 92.15169086879361,
+            "y": 54.509972890550486
+          }
+        ],
+        24,
+        {
+          "x": 0,
+          "y": 0,
+          "width": 600,
+          "height": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "at": {
+            "x": 121.5309122604139,
+            "y": 90.74340152243906
+          },
+          "from": {
+            "x": 129.73939570022995,
+            "y": 68.19077862357724
+          }
+        }
+      }
+    },
+    {
+      "name": "placeRotateKnob/clamp",
+      "fn": "placeRotateKnob",
+      "args": [
+        [
+          {
+            "x": 0,
+            "y": 5
+          },
+          {
+            "x": 600,
+            "y": 5
+          },
+          {
+            "x": 600,
+            "y": 795
+          },
+          {
+            "x": 0,
+            "y": 795
+          }
+        ],
+        24,
+        {
+          "x": 0,
+          "y": 0,
+          "width": 600,
+          "height": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "at": {
+            "x": 300,
+            "y": 0
+          },
+          "from": {
+            "x": 300,
+            "y": 5
+          }
+        }
+      }
+    },
+    {
+      "name": "placeRotateKnob/clamp-offpage",
+      "fn": "placeRotateKnob",
+      "args": [
+        [
+          {
+            "x": -100,
+            "y": -100
+          },
+          {
+            "x": -50,
+            "y": -100
+          },
+          {
+            "x": -50,
+            "y": 850
+          },
+          {
+            "x": -100,
+            "y": 850
+          }
+        ],
+        24,
+        {
+          "x": 0,
+          "y": 0,
+          "width": 600,
+          "height": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "at": {
+            "x": 0,
+            "y": 0
+          },
+          "from": {
+            "x": -75,
+            "y": -100
+          }
+        }
+      }
+    },
+    {
+      "name": "placeRotateKnob/flat-box-flip",
+      "fn": "placeRotateKnob",
+      "args": [
+        [
+          {
+            "x": 100,
+            "y": 5
+          },
+          {
+            "x": 180,
+            "y": 5
+          },
+          {
+            "x": 180,
+            "y": 5
+          },
+          {
+            "x": 100,
+            "y": 5
+          }
+        ],
+        24,
+        {
+          "x": 0,
+          "y": 0,
+          "width": 600,
+          "height": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "at": {
+            "x": 140,
+            "y": 5
+          },
+          "from": {
+            "x": 140,
+            "y": 5
+          }
+        }
+      }
+    },
+    {
+      "name": "placeRotateKnob/flat-box-offpage",
+      "fn": "placeRotateKnob",
+      "args": [
+        [
+          {
+            "x": 100,
+            "y": -5
+          },
+          {
+            "x": 180,
+            "y": -5
+          },
+          {
+            "x": 180,
+            "y": -5
+          },
+          {
+            "x": 100,
+            "y": -5
+          }
+        ],
+        24,
+        {
+          "x": 0,
+          "y": 0,
+          "width": 600,
+          "height": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "at": {
+            "x": 140,
+            "y": 0
+          },
+          "from": {
+            "x": 140,
+            "y": -5
+          }
+        }
+      }
+    },
+    {
+      "name": "placeRotateKnob/on-page-edge",
+      "fn": "placeRotateKnob",
+      "args": [
+        [
+          {
+            "x": 100,
+            "y": 24
+          },
+          {
+            "x": 180,
+            "y": 24
+          },
+          {
+            "x": 180,
+            "y": 84
+          },
+          {
+            "x": 100,
+            "y": 84
+          }
+        ],
+        24,
+        {
+          "x": 0,
+          "y": 0,
+          "width": 600,
+          "height": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "at": {
+            "x": 140,
+            "y": 0
+          },
+          "from": {
+            "x": 140,
+            "y": 24
+          }
+        }
+      }
+    },
+    {
+      "name": "shapeRectFor/rect-border0",
+      "fn": "shapeRectFor",
+      "args": [
+        {
+          "x": 10,
+          "y": 10,
+          "width": 100,
+          "height": 50
+        },
+        false,
+        {
+          "color": "#000",
+          "interiorColor": null,
+          "strokeWidth": 2,
+          "opacity": 1,
+          "blendMode": "normal",
+          "border": {
+            "kind": "solid"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 10,
+          "y": 10,
+          "width": 100,
+          "height": 50
+        }
+      }
+    },
+    {
+      "name": "shapeRectFor/ellipse-border0",
+      "fn": "shapeRectFor",
+      "args": [
+        {
+          "x": 10,
+          "y": 10,
+          "width": 100,
+          "height": 50
+        },
+        true,
+        {
+          "color": "#000",
+          "interiorColor": null,
+          "strokeWidth": 3,
+          "opacity": 1,
+          "blendMode": "normal",
+          "border": {
+            "kind": "solid"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 10,
+          "y": 10,
+          "width": 100,
+          "height": 50
+        }
+      }
+    },
+    {
+      "name": "shapeRectFor/rect-border1",
+      "fn": "shapeRectFor",
+      "args": [
+        {
+          "x": 10,
+          "y": 10,
+          "width": 100,
+          "height": 50
+        },
+        false,
+        {
+          "color": "#000",
+          "interiorColor": null,
+          "strokeWidth": 2,
+          "opacity": 1,
+          "blendMode": "normal",
+          "border": {
+            "kind": "dashed",
+            "dash": [
+              3,
+              2
+            ]
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 10,
+          "y": 10,
+          "width": 100,
+          "height": 50
+        }
+      }
+    },
+    {
+      "name": "shapeRectFor/ellipse-border1",
+      "fn": "shapeRectFor",
+      "args": [
+        {
+          "x": 10,
+          "y": 10,
+          "width": 100,
+          "height": 50
+        },
+        true,
+        {
+          "color": "#000",
+          "interiorColor": null,
+          "strokeWidth": 3,
+          "opacity": 1,
+          "blendMode": "normal",
+          "border": {
+            "kind": "dashed",
+            "dash": [
+              3,
+              2
+            ]
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 10,
+          "y": 10,
+          "width": 100,
+          "height": 50
+        }
+      }
+    },
+    {
+      "name": "shapeRectFor/rect-border2",
+      "fn": "shapeRectFor",
+      "args": [
+        {
+          "x": 10,
+          "y": 10,
+          "width": 100,
+          "height": 50
+        },
+        false,
+        {
+          "color": "#000",
+          "interiorColor": null,
+          "strokeWidth": 2,
+          "opacity": 1,
+          "blendMode": "normal",
+          "border": {
+            "kind": "cloudy",
+            "intensity": 1
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 4,
+          "y": 4,
+          "width": 112,
+          "height": 62
+        }
+      }
+    },
+    {
+      "name": "shapeRectFor/ellipse-border2",
+      "fn": "shapeRectFor",
+      "args": [
+        {
+          "x": 10,
+          "y": 10,
+          "width": 100,
+          "height": 50
+        },
+        true,
+        {
+          "color": "#000",
+          "interiorColor": null,
+          "strokeWidth": 3,
+          "opacity": 1,
+          "blendMode": "normal",
+          "border": {
+            "kind": "cloudy",
+            "intensity": 1
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 2.25,
+          "y": 2.25,
+          "width": 115.5,
+          "height": 65.5
+        }
+      }
+    },
+    {
+      "name": "shapeRectFor/rect-border3",
+      "fn": "shapeRectFor",
+      "args": [
+        {
+          "x": 10,
+          "y": 10,
+          "width": 100,
+          "height": 50
+        },
+        false,
+        {
+          "color": "#000",
+          "interiorColor": null,
+          "strokeWidth": 2,
+          "opacity": 1,
+          "blendMode": "normal",
+          "border": {
+            "kind": "cloudy",
+            "intensity": 0
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 8,
+          "y": 8,
+          "width": 104,
+          "height": 54
+        }
+      }
+    },
+    {
+      "name": "shapeRectFor/ellipse-border3",
+      "fn": "shapeRectFor",
+      "args": [
+        {
+          "x": 10,
+          "y": 10,
+          "width": 100,
+          "height": 50
+        },
+        true,
+        {
+          "color": "#000",
+          "interiorColor": null,
+          "strokeWidth": 3,
+          "opacity": 1,
+          "blendMode": "normal",
+          "border": {
+            "kind": "cloudy",
+            "intensity": 0
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 7,
+          "y": 7,
+          "width": 106,
+          "height": 56
+        }
+      }
+    },
+    {
+      "name": "shapeRectFor/rect-border4",
+      "fn": "shapeRectFor",
+      "args": [
+        {
+          "x": 10,
+          "y": 10,
+          "width": 100,
+          "height": 50
+        },
+        false,
+        {
+          "color": "#000",
+          "interiorColor": null,
+          "strokeWidth": 2,
+          "opacity": 1,
+          "blendMode": "normal",
+          "border": {
+            "kind": "cloudy",
+            "intensity": 2.5
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": -2,
+          "y": -2,
+          "width": 124,
+          "height": 74
+        }
+      }
+    },
+    {
+      "name": "shapeRectFor/ellipse-border4",
+      "fn": "shapeRectFor",
+      "args": [
+        {
+          "x": 10,
+          "y": 10,
+          "width": 100,
+          "height": 50
+        },
+        true,
+        {
+          "color": "#000",
+          "interiorColor": null,
+          "strokeWidth": 3,
+          "opacity": 1,
+          "blendMode": "normal",
+          "border": {
+            "kind": "cloudy",
+            "intensity": 2.5
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": -4.875,
+          "y": -4.875,
+          "width": 129.75,
+          "height": 79.75
+        }
+      }
+    },
+    {
+      "name": "pointInQuad/inside",
+      "fn": "pointInQuad",
+      "args": [
+        {
+          "x": 5,
+          "y": 5
+        },
+        [
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 10,
+            "y": 0
+          },
+          {
+            "x": 10,
+            "y": 10
+          },
+          {
+            "x": 0,
+            "y": 10
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "pointInQuad/outside",
+      "fn": "pointInQuad",
+      "args": [
+        {
+          "x": 15,
+          "y": 5
+        },
+        [
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 10,
+            "y": 0
+          },
+          {
+            "x": 10,
+            "y": 10
+          },
+          {
+            "x": 0,
+            "y": 10
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "pointInQuad/left-edge",
+      "fn": "pointInQuad",
+      "args": [
+        {
+          "x": 0,
+          "y": 5
+        },
+        [
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 10,
+            "y": 0
+          },
+          {
+            "x": 10,
+            "y": 10
+          },
+          {
+            "x": 0,
+            "y": 10
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "pointInQuad/right-edge",
+      "fn": "pointInQuad",
+      "args": [
+        {
+          "x": 10,
+          "y": 5
+        },
+        [
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 10,
+            "y": 0
+          },
+          {
+            "x": 10,
+            "y": 10
+          },
+          {
+            "x": 0,
+            "y": 10
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "pointInQuad/top-edge",
+      "fn": "pointInQuad",
+      "args": [
+        {
+          "x": 5,
+          "y": 0
+        },
+        [
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 10,
+            "y": 0
+          },
+          {
+            "x": 10,
+            "y": 10
+          },
+          {
+            "x": 0,
+            "y": 10
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "pointInQuad/bottom-edge",
+      "fn": "pointInQuad",
+      "args": [
+        {
+          "x": 5,
+          "y": 10
+        },
+        [
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 10,
+            "y": 0
+          },
+          {
+            "x": 10,
+            "y": 10
+          },
+          {
+            "x": 0,
+            "y": 10
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "pointInQuad/tilted-inside",
+      "fn": "pointInQuad",
+      "args": [
+        {
+          "x": 140,
+          "y": 130
+        },
+        [
+          {
+            "x": 120.35898384862244,
+            "y": 84.01923788646687
+          },
+          {
+            "x": 189.64101615137753,
+            "y": 124.01923788646684
+          },
+          {
+            "x": 159.64101615137753,
+            "y": 175.98076211353316
+          },
+          {
+            "x": 90.35898384862246,
+            "y": 135.9807621135332
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "pointInQuad/tilted-corner-gap",
+      "fn": "pointInQuad",
+      "args": [
+        {
+          "x": 101,
+          "y": 101
+        },
+        [
+          {
+            "x": 132.92893218813452,
+            "y": 80.50252531694167
+          },
+          {
+            "x": 189.49747468305833,
+            "y": 137.07106781186548
+          },
+          {
+            "x": 147.07106781186548,
+            "y": 179.49747468305833
+          },
+          {
+            "x": 90.50252531694169,
+            "y": 122.92893218813452
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "pointInQuad/degenerate",
+      "fn": "pointInQuad",
+      "args": [
+        {
+          "x": 5,
+          "y": 0
+        },
+        [
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 10,
+            "y": 0
+          },
+          {
+            "x": 10,
+            "y": 0
+          },
+          {
+            "x": 0,
+            "y": 0
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "quadIntersectsRect/overlap",
+      "fn": "quadIntersectsRect",
+      "args": [
+        [
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 10,
+            "y": 0
+          },
+          {
+            "x": 10,
+            "y": 10
+          },
+          {
+            "x": 0,
+            "y": 10
+          }
+        ],
+        {
+          "x": 5,
+          "y": 5,
+          "width": 10,
+          "height": 10
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "quadIntersectsRect/touching",
+      "fn": "quadIntersectsRect",
+      "args": [
+        [
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 10,
+            "y": 0
+          },
+          {
+            "x": 10,
+            "y": 10
+          },
+          {
+            "x": 0,
+            "y": 10
+          }
+        ],
+        {
+          "x": 10,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "quadIntersectsRect/apart",
+      "fn": "quadIntersectsRect",
+      "args": [
+        [
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 10,
+            "y": 0
+          },
+          {
+            "x": 10,
+            "y": 10
+          },
+          {
+            "x": 0,
+            "y": 10
+          }
+        ],
+        {
+          "x": 11,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "quadIntersectsRect/apart-before",
+      "fn": "quadIntersectsRect",
+      "args": [
+        [
+          {
+            "x": 20,
+            "y": 0
+          },
+          {
+            "x": 30,
+            "y": 0
+          },
+          {
+            "x": 30,
+            "y": 10
+          },
+          {
+            "x": 20,
+            "y": 10
+          }
+        ],
+        {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "quadIntersectsRect/tilted-miss-in-aabb",
+      "fn": "quadIntersectsRect",
+      "args": [
+        [
+          {
+            "x": 118.18019484660536,
+            "y": 66.10912703473991
+          },
+          {
+            "x": 188.89087296526012,
+            "y": 136.81980515339464
+          },
+          {
+            "x": 181.81980515339464,
+            "y": 143.89087296526012
+          },
+          {
+            "x": 111.10912703473988,
+            "y": 73.18019484660539
+          }
+        ],
+        {
+          "x": 100,
+          "y": 100,
+          "width": 20,
+          "height": 20
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "quadIntersectsRect/tilted-hit",
+      "fn": "quadIntersectsRect",
+      "args": [
+        [
+          {
+            "x": 118.18019484660536,
+            "y": 66.10912703473991
+          },
+          {
+            "x": 188.89087296526012,
+            "y": 136.81980515339464
+          },
+          {
+            "x": 181.81980515339464,
+            "y": 143.89087296526012
+          },
+          {
+            "x": 111.10912703473988,
+            "y": 73.18019484660539
+          }
+        ],
+        {
+          "x": 140,
+          "y": 90,
+          "width": 20,
+          "height": 20
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "quadIntersectsRect/degenerate-quad",
+      "fn": "quadIntersectsRect",
+      "args": [
+        [
+          {
+            "x": 5,
+            "y": 5
+          },
+          {
+            "x": 5,
+            "y": 5
+          },
+          {
+            "x": 5,
+            "y": 5
+          },
+          {
+            "x": 5,
+            "y": 5
+          }
+        ],
+        {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "quadIntersectsRect/degenerate-quad-outside",
+      "fn": "quadIntersectsRect",
+      "args": [
+        [
+          {
+            "x": 50,
+            "y": 50
+          },
+          {
+            "x": 50,
+            "y": 50
+          },
+          {
+            "x": 50,
+            "y": 50
+          },
+          {
+            "x": 50,
+            "y": 50
+          }
+        ],
+        {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "quadIntersectsRect/flat-quad",
+      "fn": "quadIntersectsRect",
+      "args": [
+        [
+          {
+            "x": 0,
+            "y": 5
+          },
+          {
+            "x": 20,
+            "y": 5
+          },
+          {
+            "x": 20,
+            "y": 5
+          },
+          {
+            "x": 0,
+            "y": 5
+          }
+        ],
+        {
+          "x": 5,
+          "y": 0,
+          "width": 5,
+          "height": 10
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "quadIntersectsRect/quad-axis-gap",
+      "fn": "quadIntersectsRect",
+      "args": [
+        [
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 10,
+            "y": 10
+          },
+          {
+            "x": 0,
+            "y": 20
+          },
+          {
+            "x": -10,
+            "y": 10
+          }
+        ],
+        {
+          "x": 8,
+          "y": 0,
+          "width": 4,
+          "height": 4
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    }
+  ]
+}
