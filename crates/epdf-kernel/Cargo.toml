@@ -1,0 +1,16 @@
+[package]
+name = "epdf-kernel"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+description = "packages/core/main in Rust: the viewer kernel, its store, plugin plan, scopes and document lifecycle, on a single-threaded runtime with an injected clock."
+
+[lib]
+crate-type = ["rlib"]
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+# `float_roundtrip` because the vectors are compared value for value, and the
+# default parser is not correctly rounded (crates/test-support/src/lib.rs).
+serde_json = { version = "1", features = ["float_roundtrip"] }
+base64 = "0.22"

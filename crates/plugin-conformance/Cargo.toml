@@ -1,0 +1,15 @@
+[package]
+name = "plugin-conformance"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+description = "Replays tooling/plugin-conformance/vectors against the Rust kernel and plugins: the scenario runner, the fake engine, the probe plugin and canonical comparison."
+
+[lib]
+crate-type = ["rlib"]
+
+[dependencies]
+epdf-kernel = { path = "../epdf-kernel" }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["float_roundtrip"] }
+base64 = "0.22"

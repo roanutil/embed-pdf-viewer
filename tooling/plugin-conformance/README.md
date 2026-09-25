@@ -1,0 +1,165 @@
+# Plugin conformance vectors
+
+The TypeScript kernel and plugins are the oracle. The generators here drive them and write what they
+did to `vectors/`; `crates/plugin-conformance` replays every file against the Rust port and fails on
+the first difference. `multiplatform-plugins-plan.md` is why; this file is the contract both halves
+implement.
+
+```sh
+pnpm --filter @embedpdf/tooling-plugin-conformance run vectors          # write
+pnpm --filter @embedpdf/tooling-plugin-conformance run vectors:check    # fail if stale
+pnpm --filter @embedpdf/tooling-plugin-conformance run coverage         # write vectors/coverage.json
+pnpm --filter @embedpdf/tooling-plugin-conformance run coverage:check
+cargo test -p plugin-conformance                                        # replay the kernel
+PLUGIN_CONFORMANCE_ONLY=open-all PLUGIN_CONFORMANCE_VERBOSE=1 cargo test -p plugin-conformance
+```
+
+## Files
+
+Every module in `src/suites/` exports `suites`, and `src/generate.ts` discovers them, so a new
+plugin's generator is one new file there. A suite writes one vector file:
+
+```json
+{ "schemaVersion": 1, "kind": "scenario" | "function", "describes": "...", "cases": [...] }
+```
+
+A function case is `{name, fn, args, outcome}`: a pure function called with canonical arguments.
+The Rust side looks `fn` up in the table its test passes to `assert_suite`. Use this family for
+everything that has no lifecycle: geometry, reducers called directly, tile planning, layout. It is
+cheaper to grow than scenarios and it is where most arithmetic should be pinned.
+
+A scenario case is `{name, covers, plugins, engine, steps, snapshot?, allowUnmatched?, trace}`.
+
+## Scenarios
+
+`plugins` lists `{factory, config}`. A factory is a name a plugin registers with `registerPlugin`
+on the TypeScript side and returns from `HarnessPlugin::factories` on the Rust side. The runner
+always prepends a spy plugin, `@@conformance/spy`, which logs the kernel's eight `@@core/*` actions;
+its empty slice is in every snapshot.
+
+`steps` run in order. After each one the runner drains every queued microtask (one real
+`setImmediate` in Node, `rt::run_until_stalled` in Rust) and records a trace entry.
+
+| op | fields | does |
+|---|---|---|
+| `call` | `target`, `method?`, `args?` | calls a function; `target` is `"kernel"`, `"documents"`, `{token, doc?}` (resolved with `kernel.capability`) or `{ref}` (a function an earlier outcome returned, called without `method`) |
+| `emit` | `doc`, `event` | the fake engine delivers a document event to that handle's subscribers |
+| `settle` | `label`, `value?` or `error?` | settles the oldest pending engine call or callback deferred under `label` |
+| `advance` | `ms` | advances the fake clock, firing timers in order and draining after each |
+| `abort` | `promise`, `reason?` | calls `abort` on a returned `AbortablePromise` |
+| `drain` | | nothing; records an entry |
+
+A trace entry has:
+
+| field | holds |
+|---|---|
+| `outcome` | `{returned}`, `{threw}` or `{promise: n}` for a `call` step |
+| `settled` | `{promise, resolved}` or `{promise, rejected}` for each tracked promise that settled during the step, in settlement order |
+| `actions` | `{slice, action}` for every plugin dispatch, logged before its reducer runs, and `{slice: "@@core", action}` for kernel lifecycle actions |
+| `engine` | the fake engine's call log for the step: `{doc, path, pon?, args}` and `{abort, reason}` |
+| `callbacks` | `{fn, args}` for every call of a scripted callback or a probe hook |
+| `reports` | errors the kernel's `report` sink received |
+| `status` | `kernel.status()` |
+| `engineState` | per opened handle, `{subscribers}`: a leaked subscription shows here |
+| `state` | the whole `getState()` tree, or the slices `snapshot` names (`"@@core"` adds `core`), or nothing with `"snapshot": "none"` |
+
+If `createKernel` throws, the trace is a single entry with that outcome and status `unconstructed`.
+
+### Arguments
+
+Arguments are canonical JSON, decoded before the call. `{"$token": name}` is a token.
+`{"$ref": n}` is a function an earlier outcome returned. `{"$fn": name, ...}` is a scripted
+callback: every call logs `{fn: name, args}` and answers with `throws`, `defer` (a promise a
+`settle` step settles), `rejects`, `resolves` or `returns`, checked in that order; `seq` gives one
+answer per call and repeats the last. An interaction handler, a listener, an open thunk: each is a
+`$fn`, or an object of them.
+
+### Canonical JSON
+
+`src/canonical.ts` defines it and `crates/plugin-conformance/src/canonical.rs` compares it.
+
+- `undefined` is omitted as an object member and `{"$undefined":true}` anywhere else.
+- `NaN` and the infinities are `{"$number": "NaN"}` and so on. `-0` is `0`.
+- Bytes are `{"$bytes": base64}`, a `Map` is `{"$map": [[k, v], ...]}`, a `Set` is `{"$set": [...]}`.
+- An error is `{"$error": {name, message, ...own enumerable members}}`, so `EngineError.code` and
+  `PermissionDenied.required` are compared. Messages are compared exactly.
+- A function in an outcome is `{"$ref": n}`, numbered in the order the runner first sees it; one
+  in state or in callback arguments is `{"$function": true}`. A promise is `{"$promise": n}`.
+- Member order is not compared; array order is. Numbers compare as `f64` within one part in 10^12,
+  which absorbs a last-bit difference in a transcendental and nothing a coordinate could carry.
+
+A Rust capability printed as an outcome lists its members in the order the TypeScript object
+literal defines them (`HarnessPlugin::members`), because that order numbers the refs.
+
+## The fake engine
+
+`src/fake-engine.ts` and `crates/plugin-conformance/src/fake_engine.rs` answer `engine-core`'s
+`Engine` and `DocumentHandle` contract from `engine`:
+
+```json
+{
+  "documents": {
+    "a": {
+      "id": "a",
+      "services": ["render", "page.pieceInfo"],
+      "security": { "allows": ["doc.render"], "passwordPrompt": { "state": "none" } },
+      "pages": [ { "index": 0, "pageObjectNumber": 1, "...": "a PageLayout" } ],
+      "responses": [ { "path": "metadata.read", "value": { "title": "x" } } ]
+    }
+  },
+  "responses": [ { "path": "open", "args": [ { "kind": "bytes", "id": "a" }, {} ], "defer": "open-a" } ]
+}
+```
+
+Every asynchronous call is logged and answered by the first entry whose `path`, `pon` and `args`
+match; `args` compares canonically, and an entry without it matches any arguments. An entry with
+`times` is consumed that many times; one without is sticky. It answers with `value`, `error`, or
+`defer: label`. Page services are `page.<service>.<method>` with the page's object number as `pon`.
+
+Four calls have fallbacks: `open` hands out the document whose key is the input's `id`,
+`pages.list` answers from `pages`, `close` and `destroy` resolve. Anything else unanswered rejects
+with `FakeEngineUnmatched`, and the generator refuses to write that trace unless the case sets
+`allowUnmatched`: it is almost always a case that forgot a response.
+
+Synchronous reads come from `security` and are not logged, because how often a selector runs is not
+behaviour. `allows` takes a list or `"*"`. `allowsAnnotationCreate` and `allowsAnnotationMutation`
+default to `allows('doc.annotate.create')` and `allows('doc.annotate.modify')`.
+
+Every call returns an `AbortablePromise`. An abort is logged as `{abort: <index of the call>, reason}`
+and rejects with `AbortError`. An answer that arrives after an abort is still mapped (an `open`
+still makes its handle) and then ignored, as the TypeScript's `resolve(map(value))` does.
+
+## The probe
+
+`src/probe.ts` and `crates/plugin-conformance/src/probe.rs` are a plugin configured entirely by the
+vector, for testing the kernel without any real plugin's behaviour. The config is documented on
+`ProbeConfig`; every hook logs as `<id>.<hook>`.
+
+## Time and ordering
+
+The generator runs under `@sinonjs/fake-timers` 15.4.0 with `now: 0`, faking `setTimeout`,
+`setInterval`, `Date` and `performance`, and nothing that would change microtask order. The Rust
+runtime's clock (`crates/epdf-kernel/src/rt.rs`) reproduces its rules: delays truncate to whole
+milliseconds, a zero delay scheduled while the clock advances becomes one, and timers fire by
+(deadline, insertion order).
+
+Microtask order is the hazard every port meets first. Two chains that the TypeScript interleaves
+must interleave the same way in Rust, and the rules that get them there are in `rt.rs`: a spawned
+future's first poll is inline, awaiting any promise costs a turn, and `rt::returned(future)` adds the
+turn a JavaScript caller spends resuming after an `async` function it awaited. The kernel's first
+replay had 13 of 43 cases out of order until those rules were in place, and every one of them was a
+missing turn.
+
+The other hazard is reference identity. A TypeScript reducer that returns `state` means "no change",
+and the store then skips its notification: a Rust reducer returns `None` for that branch. `watch`
+compares with `Object.is`, so a selector returning a fresh object fires on every change and one
+returning a slice member fires when the reducer replaced that member; the Rust `watch` takes the
+comparison explicitly, and a port picks the one that fires on the same changes.
+
+## Adding a plugin
+
+1. Add `src/suites/<id>.ts`: `registerPlugin('<id>', {factory, tokens})` and export `suites`.
+2. Run `vectors`, then `coverage`, and read `vectors/coverage.json` for the plugin's files. Every
+   uncovered line is either reached by a new case or explained in `multiplatform-plugins-status.md`.
+3. In the plugin's crate, implement `HarnessPlugin` behind the `harness` feature and add a test
+   that calls `assert_suite` for each of its vector files.
