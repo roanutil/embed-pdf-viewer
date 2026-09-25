@@ -51,7 +51,8 @@ function build(objects, rootIndex = 1) {
 // Three pages, 600x400 like the baseline so the test harness's content-space
 // arithmetic carries over unchanged:
 //
-//   page 1  the link page: one /GoTo to page 3, one /URI
+//   page 1  the link page: one /GoTo to page 3, one /URI, and a line of
+//           text well clear of both link rects for F13 to redact
 //   page 2  the annotation page: a square and a highlight, both at fixed
 //           rects, both with /NM so they have durable identities
 //   page 3  the form page: a text field, a checkbox and a listbox, each with
@@ -113,7 +114,13 @@ function build(objects, rootIndex = 1) {
   );
 
   const contents = [
-    text('40 360 Td (Links page) Tj 0 -50 Td (Go to page three) Tj 0 -60 Td (Open example) Tj'),
+    // The redaction target sits at y=120, below both link rects (300..330
+    // and 240..270), so marking it cannot take a link with it and F6 stays
+    // true after F13 has run against its own copy of the document.
+    text(
+      '40 360 Td (Links page) Tj 0 -50 Td (Go to page three) Tj 0 -60 Td (Open example) Tj ' +
+        '0 -130 Td (Redactable CONFIDENTIAL marker) Tj',
+    ),
     text('40 360 Td (Annotations page) Tj'),
     text('40 360 Td (Form page) Tj'),
   ];

@@ -44,6 +44,7 @@ const documents = {
   baseline: '/baseline.pdf',
   features: '/features.pdf',
   encrypted: '/encrypted.pdf',
+  roundtrip: '/roundtrip.pdf',
 } as const;
 const requested = new URLSearchParams(location.search).get('doc') ?? 'baseline';
 if (!(requested in documents)) throw new Error(`Unknown viewer test document: ${requested}`);
@@ -123,6 +124,38 @@ function ready(viewer: ViewerHandle) {
 
     // Every field the form model holds, reduced to the parts a reader can
     // state from the file: the name, the family, and the value.
+    /** The pages in display order, with the identity each one keeps. */
+    pages: () => {
+      const stage = viewer.tryGet(StageToken);
+      if (!stage) return null;
+      return stage.pages().map((entry) => {
+        const rect = stage.pageRect(entry.pon);
+        return {
+          index: entry.index,
+          pon: entry.pon,
+          // The rendered size, which is how a rotation shows up without
+          // asking the registry for a number: a quarter turn swaps these.
+          width: rect?.transform.contentWidth ?? null,
+          height: rect?.transform.contentHeight ?? null,
+        };
+      });
+    },
+
+    /**
+     * Run a search and report how many matches it found.
+     *
+     * F13's "the text is gone" reads through this: search runs over the
+     * page's EXTRACTED text, so a needle that no longer matches is a needle
+     * no longer in the text. Settling is the caller's to poll, because the
+     * scan is sliced and `status()` is what says it finished.
+     */
+    search: (needle: string) => {
+      const search = viewer.tryGet(SearchToken);
+      if (!search) return null;
+      search.search({ text: needle });
+      return true;
+    },
+
     /** Every open document, with the status the viewer is showing for it. */
     documentStatuses: () =>
       viewer.documents.list().map(({ id, status }) => ({ id, status })),
@@ -180,6 +213,10 @@ declare global {
         pon: number,
       ) => { nm: string | null; subtype: string; rect: unknown }[] | null;
       annotationSelection: () => string[] | null;
+      pages: () =>
+        | { index: number; pon: number; width: number | null; height: number | null }[]
+        | null;
+      search: (needle: string) => boolean | null;
       documentStatuses: () => { id: string; status: string }[];
       unlock: (password: string) => Promise<{ ok: boolean; code: string | null }>;
       formFields: () =>
