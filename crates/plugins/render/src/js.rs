@@ -123,6 +123,8 @@ mod tests {
         assert_eq!(locale_compare("B", "a"), Ordering::Greater);
         assert_eq!(locale_compare("ab", "ab"), Ordering::Equal);
         assert_eq!(locale_compare("a", "a|"), Ordering::Less);
+        assert_eq!(locale_compare("z", "é"), Ordering::Less);
+        assert_eq!(locale_compare("é", "€"), Ordering::Less);
     }
 
     #[test]

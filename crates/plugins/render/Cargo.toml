@@ -26,3 +26,7 @@ plugin-conformance = { path = "../../plugin-conformance", optional = true }
 [[test]]
 name = "conformance"
 required-features = ["harness"]
+
+[[test]]
+name = "api"
+required-features = ["harness"]
