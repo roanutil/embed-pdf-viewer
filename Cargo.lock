@@ -398,6 +398,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "epdf-plugin-stage"
+version = "0.0.0"
+dependencies = [
+ "epdf-geometry",
+ "epdf-kernel",
+ "epdf-plugin-actions",
+ "epdf-plugin-interaction",
+ "epdf-stage-core",
+ "plugin-conformance",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "epdf-plugin-view-manager"
 version = "0.0.0"
 dependencies = [
