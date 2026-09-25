@@ -6,9 +6,12 @@
 # Two cargo-mutants runs at `-j 4` from parallel worktrees held every core at
 # 100% until the machine crashed, twice. So this wrapper enforces three rules:
 #
-#   1. One run at a time on the machine. The lock is a directory under /tmp
-#      shared by every worktree; a second caller waits for the first to finish.
-#      A lock left by a process that no longer exists is taken over.
+#   1. One run at a time on the machine, first come first served. Each caller
+#      takes a ticket in a queue directory under /tmp shared by every
+#      worktree, and runs only when its ticket is the oldest one left. A
+#      ticket or lock left by a process that no longer exists is removed.
+#      (A bare lock was not enough: a caller running file after file
+#      re-took it before a waiter polling every 30 seconds ever saw it free.)
 #   2. One mutant at a time (`-j 1`), each built with at most
 #      EPDF_MUTANTS_BUILD_JOBS compile jobs (default 4 of this machine's 16).
 #   3. Lowest scheduling priority (`nice -n 19`), so the desktop stays usable.
@@ -27,20 +30,39 @@ for arg in "$@"; do
   esac
 done
 
+QUEUE=/tmp/epdf-cargo-mutants.queue
 LOCK=/tmp/epdf-cargo-mutants.lock
 BUILD_JOBS=${EPDF_MUTANTS_BUILD_JOBS:-4}
 
-while ! mkdir "$LOCK" 2>/dev/null; do
+mkdir -p "$QUEUE"
+# Seconds since the epoch, zero-padded so tickets sort by arrival; the pid
+# breaks ties and names the owner.
+TICKET="$QUEUE/$(printf '%012d' "$(date +%s)")-$$"
+: >"$TICKET"
+trap 'rm -f "$TICKET"; [ "$(cat "$LOCK/pid" 2>/dev/null)" = "$$" ] && rm -rf "$LOCK"' EXIT INT TERM HUP
+
+alive() { kill -0 "$1" 2>/dev/null; }
+
+while :; do
+  # Drop tickets whose owner is gone.
+  for t in "$QUEUE"/*; do
+    [ -e "$t" ] || continue
+    owner=${t##*-}
+    alive "$owner" || rm -f "$t"
+  done
+  # Drop a lock whose holder is gone.
   holder=$(cat "$LOCK/pid" 2>/dev/null || echo "")
-  if [ -n "$holder" ] && ! kill -0 "$holder" 2>/dev/null; then
-    echo "scripts/mutants.sh: taking over a stale lock from pid $holder" >&2
+  if [ -n "$holder" ] && ! alive "$holder"; then
     rm -rf "$LOCK"
-    continue
   fi
-  echo "scripts/mutants.sh: another mutation run holds $LOCK (pid ${holder:-?}); waiting" >&2
-  sleep 30
+  oldest=$(ls "$QUEUE" | sort | head -n 1)
+  if [ "$QUEUE/$oldest" = "$TICKET" ] && mkdir "$LOCK" 2>/dev/null; then
+    echo $$ >"$LOCK/pid"
+    break
+  fi
+  echo "scripts/mutants.sh: waiting for $(ls "$QUEUE" | wc -l | tr -d ' ') queued run(s) ahead (lock pid ${holder:-none})" >&2
+  sleep 15
 done
-echo $$ >"$LOCK/pid"
-trap 'rm -rf "$LOCK"' EXIT INT TERM HUP
+rm -f "$TICKET"
 
 CARGO_BUILD_JOBS=$BUILD_JOBS nice -n 19 cargo mutants -j 1 "$@"
