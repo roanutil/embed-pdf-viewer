@@ -24699,6 +24699,372 @@
       ]
     },
     {
+      "name": "unregister-behind-a-search",
+      "covers": "A derivation that unregisters a command the search already visited changes nothing about the rest of the walk: every later command is still visited once.",
+      "plugins": [
+        {
+          "factory": "commands",
+          "config": {
+            "commands": [
+              {
+                "id": "a",
+                "labelKey": "a",
+                "visible": {
+                  "$fn": "a.visible",
+                  "returns": true
+                }
+              },
+              {
+                "id": "b",
+                "labelKey": "b",
+                "visible": {
+                  "$fn": "b.visible",
+                  "returns": true,
+                  "uses": [
+                    {
+                      "get": "commands",
+                      "call": "unregister",
+                      "args": [
+                        "a"
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "c",
+                "labelKey": "c",
+                "visible": {
+                  "$fn": "c.visible",
+                  "returns": true
+                }
+              },
+              {
+                "id": "d",
+                "labelKey": "d",
+                "visible": {
+                  "$fn": "d.visible",
+                  "returns": true
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "search",
+          "args": [
+            ""
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "ids",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "search",
+          "args": [
+            ""
+          ]
+        }
+      ],
+      "trace": [
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "a.visible",
+              "args": [
+                {
+                  "documentId": null,
+                  "core": {
+                    "$function": true
+                  },
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "b.visible",
+              "args": [
+                {
+                  "documentId": null,
+                  "core": {
+                    "$function": true
+                  },
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "b.visible:uses",
+              "args": [
+                {}
+              ]
+            },
+            {
+              "fn": "c.visible",
+              "args": [
+                {
+                  "documentId": null,
+                  "core": {
+                    "$function": true
+                  },
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "d.visible",
+              "args": [
+                {
+                  "documentId": null,
+                  "core": {
+                    "$function": true
+                  },
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "created",
+          "engineState": {},
+          "outcome": {
+            "returned": [
+              {
+                "id": "a",
+                "label": "a",
+                "shortcuts": [],
+                "enabled": true,
+                "active": false,
+                "visible": true,
+                "categories": []
+              },
+              {
+                "id": "b",
+                "label": "b",
+                "shortcuts": [],
+                "enabled": true,
+                "active": false,
+                "visible": true,
+                "categories": []
+              },
+              {
+                "id": "c",
+                "label": "c",
+                "shortcuts": [],
+                "enabled": true,
+                "active": false,
+                "visible": true,
+                "categories": []
+              },
+              {
+                "id": "d",
+                "label": "d",
+                "shortcuts": [],
+                "enabled": true,
+                "active": false,
+                "visible": true,
+                "categories": []
+              }
+            ]
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "commands": {
+                "disabledCategories": []
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "created",
+          "engineState": {},
+          "outcome": {
+            "returned": [
+              "b",
+              "c",
+              "d"
+            ]
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "commands": {
+                "disabledCategories": []
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "b.visible",
+              "args": [
+                {
+                  "documentId": null,
+                  "core": {
+                    "$function": true
+                  },
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "b.visible:uses",
+              "args": [
+                {}
+              ]
+            },
+            {
+              "fn": "c.visible",
+              "args": [
+                {
+                  "documentId": null,
+                  "core": {
+                    "$function": true
+                  },
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "d.visible",
+              "args": [
+                {
+                  "documentId": null,
+                  "core": {
+                    "$function": true
+                  },
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "created",
+          "engineState": {},
+          "outcome": {
+            "returned": [
+              {
+                "id": "b",
+                "label": "b",
+                "shortcuts": [],
+                "enabled": true,
+                "active": false,
+                "visible": true,
+                "categories": []
+              },
+              {
+                "id": "c",
+                "label": "c",
+                "shortcuts": [],
+                "enabled": true,
+                "active": false,
+                "visible": true,
+                "categories": []
+              },
+              {
+                "id": "d",
+                "label": "d",
+                "shortcuts": [],
+                "enabled": true,
+                "active": false,
+                "visible": true,
+                "categories": []
+              }
+            ]
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "commands": {
+                "disabledCategories": []
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "after-destroy",
       "covers": "A capability reference kept past destroy still reads and changes the registry and matches strokes, but everything that reads the slice throws the TypeError of reading a member of the missing state; category intents dispatch into nothing.",
       "plugins": [

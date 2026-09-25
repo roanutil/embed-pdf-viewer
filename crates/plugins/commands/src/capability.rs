@@ -370,3 +370,45 @@ impl CommandsCapability {
             .dispatch(CommandsAction::SetDisabledCategories { categories: categories.to_vec() });
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn registry(ids: &[&str]) -> CommandRegistry {
+        let mut registry = CommandRegistry::new();
+        for id in ids {
+            register_command(&mut registry, CommandDef::new(*id, *id)).unwrap();
+        }
+        registry
+    }
+
+    /// Compaction is not behaviour a vector can see, only memory: a delete
+    /// outside a walk drops its slot, and one inside a walk drops it when
+    /// the walk ends.
+    #[test]
+    fn deleted_slots_are_reclaimed() {
+        let mut outside = registry(&["a", "b", "c"]);
+        outside.delete("b");
+        assert_eq!(outside.slots.len(), 2);
+        assert!(outside.get("c").is_some());
+
+        let shared = RefCell::new(registry(&["a", "b", "c"]));
+        let mut seen = Vec::new();
+        walk(&shared, |id| {
+            seen.push(id.to_string());
+            if id == "b" {
+                shared.borrow_mut().delete("a");
+                assert_eq!(shared.borrow().slots.len(), 3, "no compaction mid-walk");
+            }
+            Ok(())
+        })
+        .unwrap();
+        assert_eq!(seen, ["a", "b", "c"]);
+        let shared = shared.into_inner();
+        assert_eq!(shared.walks, 0);
+        assert_eq!(shared.slots.len(), 2);
+        assert_eq!(shared.keys(), ["b", "c"]);
+        assert!(shared.get("c").is_some());
+    }
+}

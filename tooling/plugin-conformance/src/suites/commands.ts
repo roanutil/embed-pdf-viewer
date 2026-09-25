@@ -794,6 +794,19 @@ const cases: ScenarioCase[] = [
     steps: [cmd('search', 'x'), cmd('ids'), cmd('search', 'x'), cmd('execute', 'chain')],
   },
   {
+    name: 'unregister-behind-a-search',
+    covers: 'A derivation that unregisters a command the search already visited changes nothing about the rest of the walk: every later command is still visited once.',
+    plugins: [
+      commands([
+        vdef('a', { visible: yes('a.visible') }),
+        vdef('b', { visible: fn('b.visible', { returns: true, uses: [{ get: 'commands', call: 'unregister', args: ['a'] }] }) }),
+        vdef('c', { visible: yes('c.visible') }),
+        vdef('d', { visible: yes('d.visible') }),
+      ]),
+    ],
+    steps: [cmd('search', ''), cmd('ids'), cmd('search', '')],
+  },
+  {
     name: 'after-destroy',
     covers:
       'A capability reference kept past destroy still reads and changes the registry and matches strokes, but everything that reads the slice throws the TypeError of reading a member of the missing state; category intents dispatch into nothing.',
