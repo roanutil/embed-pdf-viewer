@@ -260,3 +260,115 @@ fn read_back(
         .collect();
     Ok(FormSetValueResult { field: dto, changed_widgets })
 }
+
+/// What an import did, and what the form looks like afterwards.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FormImportResult {
+    /// Fields the payload named.
+    pub fields_total: u32,
+    /// Fields it named that the document has and that took the value.
+    pub fields_applied: u32,
+    /// Fields it named that the document does not have, or that refused.
+    /// A skip is not a failure: an FDF exported from one form and applied
+    /// to another legitimately names fields the second one lacks.
+    pub fields_skipped: u32,
+    pub widgets_changed: u32,
+    /// The whole form, read back. An import can touch any number of
+    /// fields, so a caller has no useful subset to ask for.
+    pub snapshot: super::snapshot::FormSnapshot,
+}
+
+/// What a repair pass found and fixed.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FormRepairResult {
+    pub acroform_created: bool,
+    pub fields_linked: u32,
+    pub widgets_linked: u32,
+    pub fields_unrepairable: u32,
+    pub appearances_baked: u32,
+    pub need_appearances_cleared: bool,
+}
+
+/// Apply an FDF or XFDF payload.
+///
+/// The format is SNIFFED when the caller does not name one, because a
+/// declared format that disagrees with the bytes sends the payload to the
+/// wrong parser, and both parsers answer a bad payload the same way.
+pub fn import_data(
+    document: &Document,
+    bytes: &[u8],
+    format: Option<pdfium::FormDataFormat>,
+    cancel: &CancelToken,
+) -> Result<FormImportResult, EngineError> {
+    cancel.check()?;
+    if bytes.is_empty() {
+        return Err(EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            "the form data payload is empty",
+        ));
+    }
+    let format = format.unwrap_or_else(|| sniff_format(bytes));
+    let counts = match format {
+        pdfium::FormDataFormat::Fdf => document.import_fdf(bytes),
+        pdfium::FormDataFormat::Xfdf => document.import_xfdf(bytes),
+    }
+    .ok_or_else(|| {
+        EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            match format {
+                pdfium::FormDataFormat::Fdf => "the payload is not valid FDF",
+                pdfium::FormDataFormat::Xfdf => "the payload is not valid XFDF",
+            },
+        )
+    })?;
+
+    cancel.check()?;
+    let model = load_model(document)?;
+    Ok(FormImportResult {
+        fields_total: counts.fields_total,
+        fields_applied: counts.fields_applied,
+        fields_skipped: counts.fields_skipped,
+        widgets_changed: counts.widgets_changed,
+        snapshot: super::snapshot::read_form_snapshot(&model, cancel)?,
+    })
+}
+
+/// Which parser the bytes want.
+///
+/// XFDF is XML and FDF is a PDF-shaped file, so the first character that is
+/// not whitespace or a byte-order mark decides it. A payload that is neither
+/// goes to the FDF parser, which is the one that will say so.
+fn sniff_format(bytes: &[u8]) -> pdfium::FormDataFormat {
+    for byte in bytes.iter().take(64) {
+        match byte {
+            // A UTF-8 byte-order mark, which an XFDF exporter may write.
+            0xEF | 0xBB | 0xBF => continue,
+            b' ' | b'\t' | b'\n' | b'\r' => continue,
+            b'<' => return pdfium::FormDataFormat::Xfdf,
+            _ => return pdfium::FormDataFormat::Fdf,
+        }
+    }
+    pdfium::FormDataFormat::Fdf
+}
+
+/// Relink a form whose `/AcroForm` and pages disagree.
+pub fn repair(
+    document: &Document,
+    bake_appearances: bool,
+    cancel: &CancelToken,
+) -> Result<FormRepairResult, EngineError> {
+    cancel.check()?;
+    let report = document.repair_form(bake_appearances).ok_or_else(|| {
+        EngineError::with_message(EngineErrorCode::Unknown, "the form repair failed")
+    })?;
+    Ok(FormRepairResult {
+        acroform_created: report.acroform_created,
+        fields_linked: report.fields_linked,
+        widgets_linked: report.widgets_linked,
+        fields_unrepairable: report.fields_unrepairable,
+        appearances_baked: report.appearances_baked,
+        need_appearances_cleared: report.need_appearances_cleared,
+    })
+}

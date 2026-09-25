@@ -42,7 +42,105 @@ impl ChangedWidgets {
     }
 }
 
+/// What an import applied and what it did not.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct FormImportCounts {
+    /// Fields the payload named.
+    pub fields_total: u32,
+    /// Fields it named that the document has and that took the value.
+    pub fields_applied: u32,
+    /// Fields it named that the document does not have, or that refused.
+    pub fields_skipped: u32,
+    pub widgets_changed: u32,
+}
+
+/// What a repair pass found and fixed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct FormRepairReport {
+    /// The document had no `/AcroForm` and now has one.
+    pub acroform_created: bool,
+    /// Fields found by sweeping the pages and linked into `/Fields`.
+    pub fields_linked: u32,
+    /// Widgets attached to the field they name through `/Parent`.
+    pub widgets_linked: u32,
+    /// Fields a sweep found and could not attach to anything.
+    pub fields_unrepairable: u32,
+    pub appearances_baked: u32,
+    /// `/NeedAppearances` was set and has been cleared, which it can be
+    /// once every widget has a stream of its own.
+    pub need_appearances_cleared: bool,
+}
+
 impl Document {
+    /// Apply an FDF payload.
+    pub fn import_fdf(&self, bytes: &[u8]) -> Option<FormImportCounts> {
+        // SAFETY: the handle is live and the buffer outlives the call.
+        self.import_with(|result| unsafe {
+            pdfium_sys::EPDFForm_ImportFDF(
+                self.as_raw(),
+                bytes.as_ptr().cast(),
+                bytes.len() as std::os::raw::c_ulong,
+                result,
+            )
+        })
+    }
+
+    /// Apply an XFDF payload.
+    pub fn import_xfdf(&self, bytes: &[u8]) -> Option<FormImportCounts> {
+        // SAFETY: as above.
+        self.import_with(|result| unsafe {
+            pdfium_sys::EPDFForm_ImportXFDF(
+                self.as_raw(),
+                bytes.as_ptr().cast(),
+                bytes.len() as std::os::raw::c_ulong,
+                result,
+            )
+        })
+    }
+
+    fn import_with(
+        &self,
+        call: impl FnOnce(*mut pdfium_sys::EPDF_FORM_IMPORT_RESULT) -> i32,
+    ) -> Option<FormImportCounts> {
+        let mut result = pdfium_sys::EPDF_FORM_IMPORT_RESULT::default();
+        if call(&raw mut result) == 0 {
+            return None;
+        }
+        Some(FormImportCounts {
+            fields_total: result.fields_total,
+            fields_applied: result.fields_applied,
+            fields_skipped: result.fields_skipped,
+            widgets_changed: result.widgets_changed,
+        })
+    }
+
+    /// Relink a form whose `/AcroForm` and pages disagree.
+    ///
+    /// `bake_appearances` also draws a stream for every widget, which is
+    /// what lets `/NeedAppearances` be cleared: the flag asks a viewer to
+    /// draw the widgets itself, and once they all have streams it is a
+    /// request nobody needs to honour.
+    pub fn repair_form(&self, bake_appearances: bool) -> Option<FormRepairReport> {
+        /// `EPDF_FORM_REPAIR_BAKE_APPEARANCES`.
+        const BAKE_APPEARANCES: u32 = 0x1;
+
+        let mut report = pdfium_sys::EPDF_FORM_REPAIR_REPORT::default();
+        let flags = if bake_appearances { BAKE_APPEARANCES } else { 0 };
+        // SAFETY: the handle is live and `report` is a valid out-parameter.
+        let ok = unsafe { pdfium_sys::EPDFForm_Repair(self.as_raw(), flags, &raw mut report) };
+        if ok == 0 {
+            return None;
+        }
+        Some(FormRepairReport {
+            acroform_created: report.acroform_created != 0,
+            fields_linked: report.fields_linked,
+            widgets_linked: report.widgets_linked,
+            fields_unrepairable: report.fields_unrepairable,
+            appearances_baked: report.appearances_baked,
+            need_appearances_cleared: report.need_appearances_cleared != 0,
+        })
+    }
+
     /// `/V` on a text field.
     pub fn set_field_text_value(
         &self,

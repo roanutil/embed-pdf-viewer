@@ -31,6 +31,102 @@ const SCHEMA_VERSION = 1;
 
 const FIXTURE = 'tooling/engine-conformance/fixtures/form_fields.pdf';
 
+/** What an import or repair case does, as distinct from a value write. */
+interface DocumentCase {
+  readonly name: string;
+  readonly covers: string;
+  /** An import: the payload, in the format named or sniffed. */
+  readonly importOf?: 'fdf' | 'xfdf';
+  /** Text to import verbatim, instead of a round-tripped export. */
+  readonly importText?: string;
+  /** Whether the declared format is sent, or left to the sniffer. */
+  readonly declareFormat?: boolean;
+  /** A repair, and whether it bakes appearances. */
+  readonly repair?: { readonly bakeAppearances: boolean };
+  readonly refused?: true;
+}
+
+const DOCUMENT_CASES: readonly DocumentCase[] = [
+  {
+    name: 'import-fdf-roundtrip',
+    covers:
+      'A document importing its own export. Every field is named and every value already matches, so nothing is skipped and the counts say the payload was understood.',
+    importOf: 'fdf',
+    declareFormat: true,
+  },
+  {
+    name: 'import-xfdf-roundtrip',
+    covers: 'The same through the other serialization.',
+    importOf: 'xfdf',
+    declareFormat: true,
+  },
+  {
+    name: 'import-fdf-sniffed',
+    covers:
+      'The same payload with no declared format. FDF is a PDF-shaped file and XFDF is XML, so the first byte that is not whitespace decides, and a declaration that disagreed with the bytes would send the payload to the wrong parser.',
+    importOf: 'fdf',
+  },
+  {
+    name: 'import-xfdf-sniffed',
+    covers: 'And the XML one, which the same byte tells apart.',
+    importOf: 'xfdf',
+  },
+  {
+    name: 'import-xfdf-changes-values',
+    covers:
+      'A payload that actually changes something, naming one field the document has and one it does not. The second is SKIPPED rather than failing: an export from one form legitimately names fields another lacks.',
+    importText:
+      '<?xml version="1.0" encoding="UTF-8"?>\n' +
+      '<xfdf xmlns="http://ns.adobe.com/xfdf/"><fields>' +
+      '<field name="billing.name"><value>Imported Name</value></field>' +
+      '<field name="nobody.here"><value>ignored</value></field>' +
+      '</fields></xfdf>',
+    importOf: 'xfdf',
+    declareFormat: true,
+  },
+  {
+    name: 'import-xfdf-with-bom-sniffed',
+    covers:
+      'An XFDF payload behind a UTF-8 byte-order mark, which an exporter may write. The sniffer skips it; one that stopped at the first byte would send XML to the FDF parser.',
+    importText:
+      '\uFEFF<?xml version="1.0" encoding="UTF-8"?>\n' +
+      '<xfdf xmlns="http://ns.adobe.com/xfdf/"><fields>' +
+      '<field name="billing.name"><value>Behind A Mark</value></field>' +
+      '</fields></xfdf>',
+  },
+  {
+    name: 'import-format-disagrees-refused',
+    covers:
+      'XFDF bytes declared as FDF. The declaration wins over the sniffer, which is what makes a wrong declaration visible: the payload goes to the parser the caller named and that parser says no.',
+    importText:
+      '<?xml version="1.0" encoding="UTF-8"?>\n' +
+      '<xfdf xmlns="http://ns.adobe.com/xfdf/"><fields>' +
+      '<field name="billing.name"><value>Mislabelled</value></field>' +
+      '</fields></xfdf>',
+    importOf: 'fdf',
+    declareFormat: true,
+    refused: true,
+  },
+  {
+    name: 'import-garbage-refused',
+    covers: 'Bytes that are neither. The sniffer sends them to the FDF parser, which says so.',
+    importText: 'this is not a form payload',
+    refused: true,
+  },
+  {
+    name: 'repair-plain',
+    covers:
+      'A repair on a form that is already consistent. Nothing to link, and the fixture asks for /NeedAppearances, which stays set because nothing baked a stream to replace it.',
+    repair: { bakeAppearances: false },
+  },
+  {
+    name: 'repair-baking',
+    covers:
+      'The same with appearances baked. /NeedAppearances asks a viewer to draw the widgets itself, and once every widget has a stream of its own it is a request nobody needs to honour, so it can be cleared.',
+    repair: { bakeAppearances: true },
+  },
+];
+
 interface WriteCase {
   readonly name: string;
   readonly covers: string;
@@ -217,14 +313,74 @@ async function readCase(entry: WriteCase): Promise<unknown> {
   }
 }
 
-function serialize(cases: readonly unknown[]): string {
+async function readDocumentCase(entry: DocumentCase): Promise<unknown> {
+  const bytes = new Uint8Array(await readFile(join(repoRoot, FIXTURE)));
+  const engine = createLocalEngine({
+    runtime: {
+      prefer: 'wasm',
+      wasm: {
+        print: (message: string) => process.stderr.write(`${message}\n`),
+        printErr: (message: string) => process.stderr.write(`${message}\n`),
+      },
+    },
+  });
+  try {
+    const doc = await engine.open(
+      { kind: 'bytes', id: `form-doc:${entry.name}`, bytes },
+      { scope: ['*'] },
+    );
+    try {
+      if (entry.repair) {
+        const result = await doc.forms.repair(entry.repair);
+        const { meta: _meta, ...report } = result as Record<string, unknown>;
+        return { ...entry, report };
+      }
+
+      // The payload is either literal text or this document's own export,
+      // which is what makes the round-trip cases a round trip.
+      const payload = entry.importText
+        ? new TextEncoder().encode(entry.importText)
+        : (await doc.forms.exportData(entry.importOf)).bytes;
+      if (entry.refused) {
+        let code: string | null = null;
+        try {
+          await doc.forms.importData(payload.buffer as ArrayBuffer, entry.importOf);
+        } catch (error) {
+          code = String((error as { code?: unknown })?.code ?? 'unknown');
+        }
+        if (code === null) throw new Error(`${entry.name}: expected a refusal`);
+        return { ...entry, refusedWith: code, payload: Array.from(payload) };
+      }
+      const result = await doc.forms.importData(
+        payload.buffer as ArrayBuffer,
+        entry.declareFormat ? entry.importOf : undefined,
+      );
+      const { meta: _meta, snapshot, ...counts } = result as Record<string, unknown>;
+      return {
+        ...entry,
+        // The payload is recorded so the Rust runner imports the SAME bytes
+        // rather than its own export, which would compare two writers.
+        payload: Array.from(payload),
+        counts,
+        snapshot,
+      };
+    } finally {
+      await doc.close();
+    }
+  } finally {
+    await engine.destroy();
+  }
+}
+
+function serialize(cases: readonly (readonly unknown[])[]): string {
   const head = JSON.stringify(
     { schemaVersion: SCHEMA_VERSION, kind: 'forms.write', fixture: FIXTURE },
     null,
     2,
   ).replace(/\n}$/, ',');
-  const body = cases.map((entry) => `  ${JSON.stringify(entry)}`).join(',\n');
-  return `${head}\n  "cases": [\n${body}\n  ]\n}\n`;
+  const body = cases[0].map((entry) => `  ${JSON.stringify(entry)}`).join(',\n');
+  const documents = cases[1].map((entry) => `  ${JSON.stringify(entry)}`).join(',\n');
+  return `${head}\n  "cases": [\n${body}\n  ],\n  "documentCases": [\n${documents}\n  ]\n}\n`;
 }
 
 async function main(): Promise<void> {
@@ -239,7 +395,18 @@ async function main(): Promise<void> {
       throw error;
     }
   }
-  const text = serialize(cases);
+  const documents: unknown[] = [];
+  for (const entry of DOCUMENT_CASES) {
+    try {
+      documents.push(await readDocumentCase(entry));
+    } catch (error) {
+      process.stderr.write(
+        `  case ${entry.name}: ${String((error as Error)?.message ?? error)}\n`,
+      );
+      throw error;
+    }
+  }
+  const text = serialize([cases, documents]);
   const absolute = join(vectorsRoot, 'write.json');
   if (check) {
     const current = await readFile(absolute, 'utf8').catch(() => '');

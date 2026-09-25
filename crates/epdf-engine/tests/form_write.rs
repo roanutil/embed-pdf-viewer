@@ -28,6 +28,44 @@ struct VectorFile {
     kind: String,
     fixture: String,
     cases: Vec<Case>,
+    document_cases: Vec<DocumentCase>,
+}
+
+/// An import or a repair: the operations that touch the whole form rather
+/// than one field.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct DocumentCase {
+    name: String,
+    covers: String,
+    /// The bytes the TypeScript imported. Recorded rather than re-derived,
+    /// so both engines import the SAME payload: importing each engine's own
+    /// export would compare two writers instead of two readers.
+    #[serde(default)]
+    payload: Vec<u8>,
+    /// The format the caller declared, or absent to let the sniffer decide.
+    #[serde(default)]
+    import_of: Option<String>,
+    #[serde(default)]
+    declare_format: bool,
+    #[serde(default)]
+    repair: Option<RepairOptions>,
+    #[serde(default)]
+    refused: bool,
+    #[serde(default)]
+    refused_with: Option<String>,
+    #[serde(default)]
+    counts: Option<serde_json::Value>,
+    #[serde(default)]
+    snapshot: Option<serde_json::Value>,
+    #[serde(default)]
+    report: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct RepairOptions {
+    bake_appearances: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -250,4 +288,147 @@ fn read_value(document: &pdfium::Document, reference: &FormFieldRef) -> serde_js
         .find(|field| &field.base.field_ref == reference)
         .expect("the field is in the snapshot");
     serde_json::to_value(&field.kind).expect("serialize")
+}
+
+/// Open a fresh copy of the fixture for a document-wide case.
+fn open(file: &VectorFile, name: &str) -> DocumentSession {
+    let bytes = std::fs::read(test_support::workspace_root().join(&file.fixture))
+        .unwrap_or_else(|e| panic!("{name}: read {}: {e}", file.fixture));
+    let mut session = DocumentSession::new();
+    session.open_with(bytes, None, SessionAuthority::unrestricted()).expect("open");
+    session
+}
+
+fn declared_format(case: &DocumentCase) -> Option<pdfium::FormDataFormat> {
+    if !case.declare_format {
+        return None;
+    }
+    match case.import_of.as_deref() {
+        Some("fdf") => Some(pdfium::FormDataFormat::Fdf),
+        Some("xfdf") => Some(pdfium::FormDataFormat::Xfdf),
+        other => panic!("unhandled format {other:?}"),
+    }
+}
+
+#[test]
+fn an_import_applies_what_the_typescript_engine_applied() {
+    let file = load();
+    let mut imports = 0usize;
+
+    for case in &file.document_cases {
+        if case.repair.is_some() || case.refused {
+            continue;
+        }
+        imports += 1;
+        let session = open(&file, &case.name);
+        let owned = session.document().expect("open");
+        let result = epdf_engine::features::forms::write::import_data(
+            owned.document(),
+            &case.payload,
+            declared_format(case),
+            &CancelToken::never(),
+        )
+        .unwrap_or_else(|e| panic!("{}: {e}", case.name));
+
+        let recorded = case.counts.as_ref().expect("recorded counts");
+        for key in ["fieldsTotal", "fieldsApplied", "fieldsSkipped", "widgetsChanged"] {
+            let mine = match key {
+                "fieldsTotal" => result.fields_total,
+                "fieldsApplied" => result.fields_applied,
+                "fieldsSkipped" => result.fields_skipped,
+                _ => result.widgets_changed,
+            };
+            assert_eq!(
+                serde_json::Value::from(mine),
+                recorded[key],
+                "{}: {key}: {}",
+                case.name,
+                case.covers,
+            );
+        }
+        assert_eq!(
+            test_support::canonical_numbers(
+                &serde_json::to_value(&result.snapshot).expect("serialize")
+            ),
+            test_support::canonical_numbers(case.snapshot.as_ref().expect("a snapshot")),
+            "{}: the form after the import differs",
+            case.name,
+        );
+    }
+
+    assert!(imports >= 4, "the import list shrank");
+}
+
+#[test]
+fn a_repair_reports_what_the_typescript_engine_reported() {
+    let file = load();
+    let mut repairs = 0usize;
+
+    for case in &file.document_cases {
+        let Some(options) = &case.repair else { continue };
+        repairs += 1;
+        let session = open(&file, &case.name);
+        let owned = session.document().expect("open");
+        let result = epdf_engine::features::forms::write::repair(
+            owned.document(),
+            options.bake_appearances,
+            &CancelToken::never(),
+        )
+        .unwrap_or_else(|e| panic!("{}: {e}", case.name));
+        assert_eq!(
+            test_support::canonical_numbers(&serde_json::to_value(&result).expect("serialize")),
+            test_support::canonical_numbers(case.report.as_ref().expect("a report")),
+            "{}: {}",
+            case.name,
+            case.covers,
+        );
+    }
+
+    assert_eq!(repairs, 2, "both repair modes are covered");
+}
+
+#[test]
+fn an_unreadable_payload_is_refused() {
+    let file = load();
+    let mut refusals = 0usize;
+
+    for case in &file.document_cases {
+        if !case.refused {
+            continue;
+        }
+        refusals += 1;
+        let session = open(&file, &case.name);
+        let owned = session.document().expect("open");
+        let error = epdf_engine::features::forms::write::import_data(
+            owned.document(),
+            &case.payload,
+            declared_format(case),
+            &CancelToken::never(),
+        )
+        .expect_err(&case.name);
+        assert_eq!(
+            case.refused_with.as_deref(),
+            Some("InvalidArg"),
+            "{}: unhandled refusal code",
+            case.name,
+        );
+        assert!(error.is(EngineErrorCode::InvalidArg), "{}: {error}", case.name);
+    }
+
+    assert!(refusals > 0, "no payload is refused");
+
+    // An EMPTY payload is refused by this layer rather than by PDFium,
+    // which answers it the same way it answers malformed bytes. Nothing
+    // sent nothing, and saying so is more useful than saying the nothing
+    // was badly formed.
+    let session = open(&file, "empty");
+    let owned = session.document().expect("open");
+    let error = epdf_engine::features::forms::write::import_data(
+        owned.document(),
+        &[],
+        None,
+        &CancelToken::never(),
+    )
+    .expect_err("an empty payload");
+    assert!(error.to_string().contains("empty"), "{error}");
 }
