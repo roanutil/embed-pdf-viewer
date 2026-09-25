@@ -1694,6 +1694,20 @@
       }
     },
     {
+      "name": "interpolate-empty-slot-is-not-a-slot",
+      "fn": "interpolate",
+      "args": [
+        "{}|{a}",
+        {
+          "": "no",
+          "a": "x"
+        }
+      ],
+      "outcome": {
+        "returned": "{}|x"
+      }
+    },
+    {
       "name": "interpolate-repeated",
       "fn": "interpolate",
       "args": [

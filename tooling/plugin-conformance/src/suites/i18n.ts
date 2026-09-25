@@ -200,6 +200,7 @@ const coreCases: FunctionCase[] = [
   ]),
   fnCase('interpolate-empty-string-param', 'interpolate', ['[{e}]', { e: '' }]),
   fnCase('interpolate-slot-grammar', 'interpolate', ['{a_1}{A}{9}{}{a-b}{ a}{é}{{a}}{a', { a_1: 'u', A: 'U', 9: 'n', a: 'x', 'a-b': 'no', ' a': 'no', é: 'no' }]),
+  fnCase('interpolate-empty-slot-is-not-a-slot', 'interpolate', ['{}|{a}', { '': 'no', a: 'x' }]),
   fnCase('interpolate-repeated', 'interpolate', ['{a}{a}{a}', { a: '{a}' }]),
   fnCase('interpolate-dollar-patterns', 'interpolate', ['{a}', { a: '$& $1 $$' }]),
 
@@ -268,6 +269,7 @@ const plurals = (locale: string, counts: number[]) =>
 const counts: unknown[] = [
   0, 1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 14, 15, 19, 20, 21, 22, 25, 100, 101, 102, 111, 1000, 1000000, 2000000, 3e6, 1e7,
   0.5, 1.5, 2.5, 0.1, 1.1, 2.1, 1.25, 1.0004, 1.0005, 0.9995, 2.0001, 1.001, 10.5, -1, -2, -0.5, 1e21, 1234567.5,
+  9.9995, 99.9999,
   { $number: 'NaN' }, { $number: 'Infinity' }, { $number: '-Infinity' },
 ];
 
@@ -292,12 +294,13 @@ const pluralTags = [
   'it-CH', 'es-ES', 'ca-ES', 'sh-RS', 'no-NO', 'nb-NO', 'iw-IL', 'in-ID', 'tl-PH', 'mo-MD', 'cnr', 'drw', 'swc', 'hbs', 'zh-min',
   // unsupported → the default locale (en-US)
   'und', 'xx', 'qaa', 'tlh', 'aam', 'xx-Latn-ZZ', 'abcdefgh', 'zz-ZZ', 'und-Latn', 'root-x-y',
-  // invalid → RangeError → the catch arm
+  // invalid → RangeError → the catch arm (with a few valid neighbours)
   '', 'root', 'en_US', 'x-foo', 'i-klingon', 'de-DE-1996-1996', 'en-a-bb-a-cc', 'e', 'en-', '-en', 'en--US', 'toolongtag',
   'en-US-u', 'en-t', 'en-x', 'en-u-a1', 'en-a', 'en-1', 'en-12', 'en-1234', 'en-Latn-Latn', 'en-US-GB', '123', 'en-é', 'toString',
   'en-t-a1', 'en-t-en-a1-abc', 'en-t-h0', 'en-u-ca', 'en-u-aaa-ca-bbb', 'en-u-ca-ca', 'en-u-ca-x', 'en-t-en-US-h0-hybrid',
   'en-t-en-US-1996-1996', 'en-x-a-b', 'en-x-toolongpriv', 'en-u-attribute-ca', 'en-u-ca-abcdefghi', 'en-0-ab', 'en-US-12345',
   'en-US-1abc', 'en-US-abcd', 'en-u-cu-usd-t-ja', 'en-t-ja-u-ca-gregory', 'en-US-t-x', 'en-US-t-h0-abc', 'en-x-1',
+  'en-t-h0-abc-ab-abc', 'en-t-h0-abc-a1-abc', 'en-t-ab', 'en-t-a0b-abc',
 ];
 
 const pluralCases: FunctionCase[] = pluralTags.map((tag) => fnCase(`plural ${JSON.stringify(tag)}`, 'plurals', [tag, counts]));
@@ -382,7 +385,7 @@ const scenarios: ScenarioCase[] = [
     covers:
       'dir() is the current pack\'s dir, ltr by default, ltr for a locale with no pack; locales() lists registered packs in registration order (dir defaulted, loaded) then lazy ones not yet loaded (code as name).',
     plugins: plugin({
-      locales: [en, ar, { ...es, code: '7' }],
+      locales: [en, ar, { ...es, code: '7' }, { ...fr, code: '0' }],
       locale: 'ar',
       loaders: { '3': loader('load-3', { resolves: { ...fr, code: '3' } }), en: loader('load-en', { resolves: en }), fr: loader('load-fr', { resolves: fr }), he: loader('load-he', { resolves: he }) },
     }),

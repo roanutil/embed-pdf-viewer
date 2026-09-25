@@ -98,6 +98,7 @@ const cases: ScenarioCase[] = [
       edit('rotateBy', [20, 45]),
       edit('rotateBy', [20, 450]),
       edit('rotateBy', [20, -720]),
+      edit('rotateBy', [20, -900]),
       edit('rotateBy', [20, 0.5]),
       edit('rotateBy', [20, { $number: 'NaN' }]),
     ],

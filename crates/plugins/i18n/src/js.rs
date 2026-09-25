@@ -105,14 +105,6 @@ impl<V> JsRecord<V> {
         }
     }
 
-    pub fn len(&self) -> usize {
-        self.entries.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.entries.is_empty()
-    }
-
     /// `Object.entries(record)`, in property order.
     pub fn iter(&self) -> impl Iterator<Item = (&str, &V)> {
         let mut indexed: Vec<(u32, usize)> = Vec::new();

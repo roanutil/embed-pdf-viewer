@@ -2278,6 +2278,18 @@
           "method": "rotateBy",
           "args": [
             20,
+            -900
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "page-edit",
+            "doc": "a"
+          },
+          "method": "rotateBy",
+          "args": [
+            20,
             0.5
           ]
         },
@@ -2728,7 +2740,7 @@
                 [
                   20
                 ],
-                90.5
+                270
               ]
             }
           ],
@@ -2762,6 +2774,40 @@
                 [
                   20
                 ],
+                90.5
+              ]
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 13
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 14,
+              "resolved": {
+                "ok": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "pages.rotate",
+              "args": [
+                [
+                  20
+                ],
                 {
                   "$number": "NaN"
                 }
@@ -2777,7 +2823,7 @@
             }
           },
           "outcome": {
-            "promise": 13
+            "promise": 14
           }
         }
       ]

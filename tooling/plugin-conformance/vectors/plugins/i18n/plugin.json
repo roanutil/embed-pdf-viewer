@@ -3462,6 +3462,16 @@
                     "other": "{count} páginas"
                   }
                 }
+              },
+              {
+                "code": "0",
+                "name": "Français",
+                "dir": "ltr",
+                "translations": {
+                  "commands": {
+                    "save": "Enregistrer"
+                  }
+                }
               }
             ],
             "locale": "ar",
@@ -3668,6 +3678,16 @@
                 "locale": "ar",
                 "fallbackLocale": "en",
                 "locales": {
+                  "0": {
+                    "code": "0",
+                    "name": "Français",
+                    "dir": "ltr",
+                    "translations": {
+                      "commands": {
+                        "save": "Enregistrer"
+                      }
+                    }
+                  },
                   "7": {
                     "code": "7",
                     "name": "Español",
@@ -3748,6 +3768,16 @@
                 "locale": "ar",
                 "fallbackLocale": "en",
                 "locales": {
+                  "0": {
+                    "code": "0",
+                    "name": "Français",
+                    "dir": "ltr",
+                    "translations": {
+                      "commands": {
+                        "save": "Enregistrer"
+                      }
+                    }
+                  },
                   "7": {
                     "code": "7",
                     "name": "Español",
@@ -3828,6 +3858,16 @@
                 "locale": "ar",
                 "fallbackLocale": "en",
                 "locales": {
+                  "0": {
+                    "code": "0",
+                    "name": "Français",
+                    "dir": "ltr",
+                    "translations": {
+                      "commands": {
+                        "save": "Enregistrer"
+                      }
+                    }
+                  },
                   "7": {
                     "code": "7",
                     "name": "Español",
@@ -3895,6 +3935,12 @@
           "outcome": {
             "returned": [
               {
+                "code": "0",
+                "name": "Français",
+                "dir": "ltr",
+                "loaded": true
+              },
+              {
                 "code": "7",
                 "name": "Español",
                 "dir": "ltr",
@@ -3945,6 +3991,16 @@
                 "locale": "ar",
                 "fallbackLocale": "en",
                 "locales": {
+                  "0": {
+                    "code": "0",
+                    "name": "Français",
+                    "dir": "ltr",
+                    "translations": {
+                      "commands": {
+                        "save": "Enregistrer"
+                      }
+                    }
+                  },
                   "7": {
                     "code": "7",
                     "name": "Español",
@@ -4035,6 +4091,16 @@
                 "locale": "en",
                 "fallbackLocale": "en",
                 "locales": {
+                  "0": {
+                    "code": "0",
+                    "name": "Français",
+                    "dir": "ltr",
+                    "translations": {
+                      "commands": {
+                        "save": "Enregistrer"
+                      }
+                    }
+                  },
                   "7": {
                     "code": "7",
                     "name": "Español",
@@ -4115,6 +4181,16 @@
                 "locale": "en",
                 "fallbackLocale": "en",
                 "locales": {
+                  "0": {
+                    "code": "0",
+                    "name": "Français",
+                    "dir": "ltr",
+                    "translations": {
+                      "commands": {
+                        "save": "Enregistrer"
+                      }
+                    }
+                  },
                   "7": {
                     "code": "7",
                     "name": "Español",
@@ -4205,6 +4281,16 @@
                 "locale": "7",
                 "fallbackLocale": "en",
                 "locales": {
+                  "0": {
+                    "code": "0",
+                    "name": "Français",
+                    "dir": "ltr",
+                    "translations": {
+                      "commands": {
+                        "save": "Enregistrer"
+                      }
+                    }
+                  },
                   "7": {
                     "code": "7",
                     "name": "Español",
@@ -4285,6 +4371,16 @@
                 "locale": "7",
                 "fallbackLocale": "en",
                 "locales": {
+                  "0": {
+                    "code": "0",
+                    "name": "Français",
+                    "dir": "ltr",
+                    "translations": {
+                      "commands": {
+                        "save": "Enregistrer"
+                      }
+                    }
+                  },
                   "7": {
                     "code": "7",
                     "name": "Español",
@@ -4375,6 +4471,16 @@
                 "locale": "7",
                 "fallbackLocale": "en",
                 "locales": {
+                  "0": {
+                    "code": "0",
+                    "name": "Français",
+                    "dir": "ltr",
+                    "translations": {
+                      "commands": {
+                        "save": "Enregistrer"
+                      }
+                    }
+                  },
                   "7": {
                     "code": "7",
                     "name": "Español",
@@ -4455,6 +4561,16 @@
                 "locale": "7",
                 "fallbackLocale": "en",
                 "locales": {
+                  "0": {
+                    "code": "0",
+                    "name": "Français",
+                    "dir": "ltr",
+                    "translations": {
+                      "commands": {
+                        "save": "Enregistrer"
+                      }
+                    }
+                  },
                   "7": {
                     "code": "7",
                     "name": "Español",
@@ -4535,6 +4651,16 @@
                 "locale": "7",
                 "fallbackLocale": "en",
                 "locales": {
+                  "0": {
+                    "code": "0",
+                    "name": "Français",
+                    "dir": "ltr",
+                    "translations": {
+                      "commands": {
+                        "save": "Enregistrer"
+                      }
+                    }
+                  },
                   "7": {
                     "code": "7",
                     "name": "Español",
@@ -4615,6 +4741,16 @@
                 "locale": "7",
                 "fallbackLocale": "en",
                 "locales": {
+                  "0": {
+                    "code": "0",
+                    "name": "Français",
+                    "dir": "ltr",
+                    "translations": {
+                      "commands": {
+                        "save": "Enregistrer"
+                      }
+                    }
+                  },
                   "7": {
                     "code": "7",
                     "name": "Español",
@@ -4682,6 +4818,12 @@
           "outcome": {
             "returned": [
               {
+                "code": "0",
+                "name": "Français",
+                "dir": "ltr",
+                "loaded": true
+              },
+              {
                 "code": "7",
                 "name": "Español",
                 "dir": "ltr",
@@ -4732,6 +4874,16 @@
                 "locale": "7",
                 "fallbackLocale": "en",
                 "locales": {
+                  "0": {
+                    "code": "0",
+                    "name": "Français",
+                    "dir": "ltr",
+                    "translations": {
+                      "commands": {
+                        "save": "Enregistrer"
+                      }
+                    }
+                  },
                   "7": {
                     "code": "7",
                     "name": "Español",

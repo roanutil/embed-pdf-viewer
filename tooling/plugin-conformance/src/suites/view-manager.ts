@@ -61,6 +61,7 @@ const reducerCases: FunctionCase[] = [
   r('add-fractional-truncates', { type: 'ADD_DOC', viewId: 'view-1', documentId: 'e', index: 2.9 }),
   r('add-nan-lands-first', { type: 'ADD_DOC', viewId: 'view-1', documentId: 'e', index: nan }),
   r('add-infinity-appends', { type: 'ADD_DOC', viewId: 'view-1', documentId: 'e', index: { $number: 'Infinity' } }),
+  r('add-negative-infinity-lands-first', { type: 'ADD_DOC', viewId: 'view-1', documentId: 'e', index: { $number: '-Infinity' } }),
   r('add-to-empty-activates', { type: 'ADD_DOC', viewId: 'view-3', documentId: 'e' }),
   r('add-present-is-ignored', { type: 'ADD_DOC', viewId: 'view-1', documentId: 'a' }),
   r('add-unknown-view-is-ignored', { type: 'ADD_DOC', viewId: 'nope', documentId: 'e' }),

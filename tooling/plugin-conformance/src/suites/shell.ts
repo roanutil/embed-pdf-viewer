@@ -115,6 +115,7 @@ const cases: ScenarioCase[] = [
       ...reads(),
       shell('open', ['left', { exclusive: 'side' }]),
       shell('open', ['9']),
+      shell('open', ['0']),
       shell('open', ['right', { exclusive: 'side', props: { tab: 'layers' } }]),
       ...reads('a', 'right'),
       shell('isOpen', ['left']),

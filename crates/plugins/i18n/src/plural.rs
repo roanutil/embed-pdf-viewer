@@ -75,23 +75,12 @@ fn language_id(subtags: &[String], mut at: usize) -> Option<(LanguageTag, usize)
     Some((LanguageTag { language, script, region, variants }, at))
 }
 
-/// `-u-`: `(attribute)* (key (type)*)*`, at least one subtag.
+/// `-u-`: `(attribute)* (key (type)*)*`, at least one subtag. The body's
+/// subtags are two to eight characters (one is a singleton, nine a parse
+/// error), so the grammar reduces to: every two-character subtag is a key,
+/// alphanumeric then alphabetic, and the rest are attributes or types.
 fn unicode_extension(body: &[String]) -> bool {
-    if body.is_empty() {
-        return false;
-    }
-    let mut keywords = false;
-    for subtag in body {
-        if subtag.len() == 2 {
-            if !subtag.as_bytes()[1].is_ascii_alphabetic() {
-                return false;
-            }
-            keywords = true;
-        } else if !keywords && !(3..=8).contains(&subtag.len()) {
-            return false;
-        }
-    }
-    true
+    !body.is_empty() && body.iter().all(|s| s.len() != 2 || s.as_bytes()[1].is_ascii_alphabetic())
 }
 
 /// `-t-`: `tlang? (tkey tvalue+)*`, at least one of them.
@@ -123,9 +112,10 @@ fn transformed_extension(body: &[String]) -> bool {
 
 /// ECMA-402 `IsStructurallyValidLanguageTag`. `None` is the `RangeError`.
 pub fn parse(tag: &str) -> Option<LanguageTag> {
-    if tag.is_empty() || !tag.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-') {
+    if !tag.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-') {
         return None;
     }
+    // An empty tag is one empty subtag.
     let subtags: Vec<String> = tag.split('-').map(str::to_ascii_lowercase).collect();
     if subtags.iter().any(|s| s.is_empty() || s.len() > 8) {
         return None;
@@ -163,22 +153,21 @@ pub fn parse(tag: &str) -> Option<LanguageTag> {
     Some(id)
 }
 
-/// The tag after V8's canonicalization and locale matching: an alias
-/// replaced by its canonical form, and a language V8 has no plural data
-/// for replaced by the default locale's.
+/// The tag after V8's canonicalization and locale matching: an aliased
+/// language replaced by its canonical one, and a language V8 has no plural
+/// data for replaced by the default locale's.
+///
+/// Only the language of an alias is taken. Seven aliases also carry a
+/// script or region (`sh` and `hbs` are `sr-Latn`, `cnr` is `sr-ME`, `drw`,
+/// `prs` and `tnf` are `fa-AF`, `swc` is `sw-CD`), and none of those reaches a locale with rules of its own
+/// (only `pt-PT` and `kok-Latn` have them), so the rules are the language's
+/// either way.
 pub fn resolve(tag: &LanguageTag) -> LanguageTag {
     let mut tag = tag.clone();
     if let Ok(i) = LANGUAGE_ALIASES.binary_search_by(|(alias, _)| alias.cmp(&tag.language.as_str()))
     {
-        let mut canonical = LANGUAGE_ALIASES[i].1.split('-');
-        tag.language = canonical.next().unwrap_or_default().to_string();
-        for part in canonical {
-            if is_script(part) && tag.script.is_none() {
-                tag.script = Some(part.to_ascii_lowercase());
-            } else if is_region(part) && tag.region.is_none() {
-                tag.region = Some(part.to_ascii_lowercase());
-            }
-        }
+        let canonical = LANGUAGE_ALIASES[i].1;
+        tag.language = canonical.split('-').next().unwrap_or_default().to_string();
     }
     if SUPPORTED_LANGUAGES.binary_search(&tag.language.as_str()).is_err() {
         return LanguageTag {
@@ -245,9 +234,7 @@ pub fn operands(count: f64) -> Option<Operands> {
         all = padded;
         integer_len = 1;
     }
-    if (all.len() as i32) < integer_len {
-        all.resize(integer_len as usize, 0);
-    }
+    all.resize(all.len().max(integer_len as usize), 0);
     let keep = integer_len as usize + 3;
     if all.len() > keep {
         let round_up = all[keep] >= 5;

@@ -1700,6 +1700,90 @@
       }
     },
     {
+      "name": "add-negative-infinity-lands-first",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "ADD_DOC",
+          "viewId": "view-1",
+          "documentId": "e",
+          "index": {
+            "$number": "-Infinity"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "e",
+                  "a",
+                  "b",
+                  "c"
+                ],
+                "activeDocumentId": "b"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "d"
+                ],
+                "activeDocumentId": "d"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": "view-2",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
       "name": "add-to-empty-activates",
       "fn": "viewManagerReducer",
       "args": [

@@ -544,6 +544,17 @@
           },
           "method": "open",
           "args": [
+            "0"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "open",
+          "args": [
             "right",
             {
               "exclusive": "side",
@@ -1459,6 +1470,96 @@
               "slice": "shell::a",
               "action": {
                 "type": "SHELL/OPEN_SURFACE",
+                "id": "0"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "pageObjectNumber": 1,
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {
+                  "0": {
+                    "open": true
+                  },
+                  "9": {
+                    "open": true
+                  },
+                  "left": {
+                    "open": true,
+                    "exclusive": "side"
+                  }
+                },
+                "openMenus": []
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "shell::a",
+              "action": {
+                "type": "SHELL/OPEN_SURFACE",
                 "id": "right",
                 "exclusive": "side",
                 "props": {
@@ -1530,6 +1631,9 @@
               "@@conformance/spy": {},
               "shell::a": {
                 "surfaces": {
+                  "0": {
+                    "open": true
+                  },
                   "9": {
                     "open": true
                   },
@@ -1614,6 +1718,9 @@
               "@@conformance/spy": {},
               "shell::a": {
                 "surfaces": {
+                  "0": {
+                    "open": true
+                  },
                   "9": {
                     "open": true
                   },
@@ -1700,6 +1807,9 @@
               "@@conformance/spy": {},
               "shell::a": {
                 "surfaces": {
+                  "0": {
+                    "open": true
+                  },
                   "9": {
                     "open": true
                   },
@@ -1734,6 +1844,7 @@
           },
           "outcome": {
             "returned": [
+              "0",
               "9",
               "right"
             ]
@@ -1787,6 +1898,9 @@
               "@@conformance/spy": {},
               "shell::a": {
                 "surfaces": {
+                  "0": {
+                    "open": true
+                  },
                   "9": {
                     "open": true
                   },
@@ -1871,6 +1985,9 @@
               "@@conformance/spy": {},
               "shell::a": {
                 "surfaces": {
+                  "0": {
+                    "open": true
+                  },
                   "9": {
                     "open": true
                   },
@@ -1955,6 +2072,9 @@
               "@@conformance/spy": {},
               "shell::a": {
                 "surfaces": {
+                  "0": {
+                    "open": true
+                  },
                   "9": {
                     "open": true
                   },
@@ -2039,6 +2159,9 @@
               "@@conformance/spy": {},
               "shell::a": {
                 "surfaces": {
+                  "0": {
+                    "open": true
+                  },
                   "9": {
                     "open": true
                   },
@@ -2136,6 +2259,9 @@
               "@@conformance/spy": {},
               "shell::a": {
                 "surfaces": {
+                  "0": {
+                    "open": true
+                  },
                   "9": {
                     "open": true
                   },
@@ -2221,6 +2347,9 @@
               "@@conformance/spy": {},
               "shell::a": {
                 "surfaces": {
+                  "0": {
+                    "open": true
+                  },
                   "9": {
                     "open": true
                   },
@@ -2315,6 +2444,9 @@
               "@@conformance/spy": {},
               "shell::a": {
                 "surfaces": {
+                  "0": {
+                    "open": true
+                  },
                   "9": {
                     "open": true
                   },
@@ -2412,6 +2544,9 @@
               "@@conformance/spy": {},
               "shell::a": {
                 "surfaces": {
+                  "0": {
+                    "open": true
+                  },
                   "9": {
                     "open": true
                   },
@@ -2509,6 +2644,9 @@
               "@@conformance/spy": {},
               "shell::a": {
                 "surfaces": {
+                  "0": {
+                    "open": true
+                  },
                   "9": {
                     "open": true
                   },
@@ -2598,6 +2736,9 @@
               "@@conformance/spy": {},
               "shell::a": {
                 "surfaces": {
+                  "0": {
+                    "open": true
+                  },
                   "9": {
                     "open": true
                   },
@@ -2635,6 +2776,7 @@
           },
           "outcome": {
             "returned": [
+              "0",
               "9",
               "modal"
             ]
@@ -2688,6 +2830,9 @@
               "@@conformance/spy": {},
               "shell::a": {
                 "surfaces": {
+                  "0": {
+                    "open": true
+                  },
                   "9": {
                     "open": true
                   },
@@ -2789,6 +2934,9 @@
               "@@conformance/spy": {},
               "shell::a": {
                 "surfaces": {
+                  "0": {
+                    "open": true
+                  },
                   "9": {
                     "open": true
                   },
@@ -2890,6 +3038,9 @@
               "@@conformance/spy": {},
               "shell::a": {
                 "surfaces": {
+                  "0": {
+                    "open": true
+                  },
                   "9": {
                     "open": true
                   },
@@ -2988,6 +3139,9 @@
               "@@conformance/spy": {},
               "shell::a": {
                 "surfaces": {
+                  "0": {
+                    "open": true
+                  },
                   "9": {
                     "open": true
                   },
@@ -3086,6 +3240,9 @@
               "@@conformance/spy": {},
               "shell::a": {
                 "surfaces": {
+                  "0": {
+                    "open": true
+                  },
                   "2": {
                     "open": true
                   },
@@ -3127,6 +3284,7 @@
           },
           "outcome": {
             "returned": [
+              "0",
               "2",
               "9",
               "modal"
@@ -3181,6 +3339,9 @@
               "@@conformance/spy": {},
               "shell::a": {
                 "surfaces": {
+                  "0": {
+                    "open": true
+                  },
                   "2": {
                     "open": true
                   },
@@ -3272,6 +3433,9 @@
               "@@conformance/spy": {},
               "shell::a": {
                 "surfaces": {
+                  "0": {
+                    "open": true
+                  },
                   "2": {
                     "open": true
                   },
@@ -3365,6 +3529,9 @@
               "@@conformance/spy": {},
               "shell::a": {
                 "surfaces": {
+                  "0": {
+                    "open": true
+                  },
                   "2": {
                     "open": true
                   },
@@ -3466,6 +3633,9 @@
               "@@conformance/spy": {},
               "shell::a": {
                 "surfaces": {
+                  "0": {
+                    "open": true
+                  },
                   "2": {
                     "open": true
                   },
