@@ -663,7 +663,8 @@ impl Inner {
             id: session.id(),
             name: session.name.clone(),
             page_count,
-            pages: snapshot.get("pages").cloned().unwrap_or(Value::Array(Vec::new())),
+            // `snapshot.pages`: absent stays undefined, as the TypeScript copies it.
+            pages: snapshot.get("pages").cloned().unwrap_or_else(crate::undefined),
             revision: 0,
             render_policy,
         });
@@ -678,7 +679,7 @@ impl Inner {
             let Some(existing) = core.documents.get(&id).cloned() else { return };
             let updated = DocumentMeta {
                 page_count: layout.get("pageCount").and_then(Value::as_u64).unwrap_or(0) as u32,
-                pages: layout.get("pages").cloned().unwrap_or(Value::Array(Vec::new())),
+                pages: layout.get("pages").cloned().unwrap_or_else(crate::undefined),
                 revision: existing.revision + 1,
                 ..existing
             };

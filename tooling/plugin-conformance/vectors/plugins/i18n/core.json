@@ -1,0 +1,3849 @@
+{
+  "schemaVersion": 1,
+  "kind": "function",
+  "describes": "packages/plugin/i18n: translate, interpolate, negotiateLocale, initialI18nState and the reducer (`same` is reference identity).",
+  "cases": [
+    {
+      "name": "translate-current-locale",
+      "fn": "translate",
+      "args": [
+        {
+          "locale": "es",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": null
+        },
+        "commands.save"
+      ],
+      "outcome": {
+        "returned": {
+          "text": "Guardar",
+          "found": true
+        }
+      }
+    },
+    {
+      "name": "translate-fallback-locale",
+      "fn": "translate",
+      "args": [
+        {
+          "locale": "es",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": null
+        },
+        "commands.zoom.in"
+      ],
+      "outcome": {
+        "returned": {
+          "text": "Zoom In",
+          "found": true
+        }
+      }
+    },
+    {
+      "name": "translate-options-fallback",
+      "fn": "translate",
+      "args": [
+        {
+          "locale": "es",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": null
+        },
+        "nope.nothing",
+        {
+          "fallback": "Hi {name}",
+          "params": {
+            "name": "Bob"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "text": "Hi Bob",
+          "found": false
+        }
+      }
+    },
+    {
+      "name": "translate-options-fallback-no-params",
+      "fn": "translate",
+      "args": [
+        {
+          "locale": "es",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": null
+        },
+        "nope",
+        {
+          "fallback": "Hi {name}"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "text": "Hi {name}",
+          "found": false
+        }
+      }
+    },
+    {
+      "name": "translate-key-itself",
+      "fn": "translate",
+      "args": [
+        {
+          "locale": "es",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": null
+        },
+        "nope.nothing"
+      ],
+      "outcome": {
+        "returned": {
+          "text": "nope.nothing",
+          "found": false
+        }
+      }
+    },
+    {
+      "name": "translate-empty-key",
+      "fn": "translate",
+      "args": [
+        {
+          "locale": "es",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": null
+        },
+        ""
+      ],
+      "outcome": {
+        "returned": {
+          "text": "",
+          "found": false
+        }
+      }
+    },
+    {
+      "name": "translate-empty-options",
+      "fn": "translate",
+      "args": [
+        {
+          "locale": "es",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": null
+        },
+        "nope",
+        {}
+      ],
+      "outcome": {
+        "returned": {
+          "text": "nope",
+          "found": false
+        }
+      }
+    },
+    {
+      "name": "translate-interpolates",
+      "fn": "translate",
+      "args": [
+        {
+          "locale": "es",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": null
+        },
+        "zoomLevel",
+        {
+          "params": {
+            "level": 150
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "text": "Zoom Level (150%)",
+          "found": true
+        }
+      }
+    },
+    {
+      "name": "translate-plural-one",
+      "fn": "translate",
+      "args": [
+        {
+          "locale": "en",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": null
+        },
+        "pages",
+        {
+          "params": {
+            "count": 1
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "text": "1 page",
+          "found": true
+        }
+      }
+    },
+    {
+      "name": "translate-plural-other",
+      "fn": "translate",
+      "args": [
+        {
+          "locale": "en",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": null
+        },
+        "pages",
+        {
+          "params": {
+            "count": 5
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "text": "5 pages",
+          "found": true
+        }
+      }
+    },
+    {
+      "name": "translate-plural-in-current-locale",
+      "fn": "translate",
+      "args": [
+        {
+          "locale": "es",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": null
+        },
+        "pages",
+        {
+          "params": {
+            "count": 1
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "text": "1 página",
+          "found": true
+        }
+      }
+    },
+    {
+      "name": "translate-branch-without-count",
+      "fn": "translate",
+      "args": [
+        {
+          "locale": "es",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": null
+        },
+        "pages"
+      ],
+      "outcome": {
+        "returned": {
+          "text": "pages",
+          "found": false
+        }
+      }
+    },
+    {
+      "name": "translate-branch-with-string-count",
+      "fn": "translate",
+      "args": [
+        {
+          "locale": "es",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": null
+        },
+        "pages",
+        {
+          "params": {
+            "count": "1"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "text": "pages",
+          "found": false
+        }
+      }
+    },
+    {
+      "name": "translate-branch-missing-category-uses-other",
+      "fn": "translate",
+      "args": [
+        {
+          "locale": "ar",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            },
+            "ar": {
+              "code": "ar",
+              "name": "العربية",
+              "dir": "rtl",
+              "translations": {
+                "pages": {
+                  "other": "{count} x"
+                }
+              }
+            }
+          },
+          "loading": null
+        },
+        "pages",
+        {
+          "params": {
+            "count": 2
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "text": "2 x",
+          "found": true
+        }
+      }
+    },
+    {
+      "name": "translate-branch-with-no-other-falls-through",
+      "fn": "translate",
+      "args": [
+        {
+          "locale": "en",
+          "fallbackLocale": "es",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "pages": {
+                  "one": "uno"
+                }
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": null
+        },
+        "pages",
+        {
+          "params": {
+            "count": 3
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "text": "3 páginas",
+          "found": true
+        }
+      }
+    },
+    {
+      "name": "translate-branch-category-is-a-branch",
+      "fn": "translate",
+      "args": [
+        {
+          "locale": "en",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "pages": {
+                  "other": {
+                    "deeper": "x"
+                  }
+                }
+              }
+            }
+          },
+          "loading": null
+        },
+        "pages",
+        {
+          "params": {
+            "count": 3
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "text": "pages",
+          "found": false
+        }
+      }
+    },
+    {
+      "name": "translate-walks-through-a-leaf",
+      "fn": "translate",
+      "args": [
+        {
+          "locale": "es",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": null
+        },
+        "commands.save.more"
+      ],
+      "outcome": {
+        "returned": {
+          "text": "commands.save.more",
+          "found": false
+        }
+      }
+    },
+    {
+      "name": "translate-unregistered-current-locale",
+      "fn": "translate",
+      "args": [
+        {
+          "locale": "de",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": null
+        },
+        "commands.save"
+      ],
+      "outcome": {
+        "returned": {
+          "text": "Save",
+          "found": true
+        }
+      }
+    },
+    {
+      "name": "translate-unregistered-both",
+      "fn": "translate",
+      "args": [
+        {
+          "locale": "de",
+          "fallbackLocale": "it",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": null
+        },
+        "commands.save"
+      ],
+      "outcome": {
+        "returned": {
+          "text": "commands.save",
+          "found": false
+        }
+      }
+    },
+    {
+      "name": "translate-fallback-plural-uses-fallback-locale-rules",
+      "fn": "translate",
+      "args": [
+        {
+          "locale": "de",
+          "fallbackLocale": "ar",
+          "locales": {
+            "ar": {
+              "code": "ar",
+              "name": "العربية",
+              "dir": "rtl",
+              "translations": {
+                "commands": {
+                  "save": "حفظ"
+                },
+                "pages": {
+                  "zero": "لا صفحات",
+                  "one": "صفحة",
+                  "two": "صفحتان",
+                  "few": "{count} صفحات",
+                  "many": "{count} صفحة",
+                  "other": "{count} صفحة"
+                }
+              }
+            }
+          },
+          "loading": null
+        },
+        "pages",
+        {
+          "params": {
+            "count": 2
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "text": "صفحتان",
+          "found": true
+        }
+      }
+    },
+    {
+      "name": "translate-nan-count",
+      "fn": "translate",
+      "args": [
+        {
+          "locale": "en",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": null
+        },
+        "pages",
+        {
+          "params": {
+            "count": {
+              "$number": "NaN"
+            }
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "text": "NaN pages",
+          "found": true
+        }
+      }
+    },
+    {
+      "name": "translate-proto-member-key",
+      "fn": "translate",
+      "args": [
+        {
+          "locale": "es",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": null
+        },
+        "toString"
+      ],
+      "outcome": {
+        "returned": {
+          "text": "toString",
+          "found": false
+        }
+      }
+    },
+    {
+      "name": "translate-proto-member-name",
+      "fn": "translate",
+      "args": [
+        {
+          "locale": "es",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": null
+        },
+        "toString.name"
+      ],
+      "outcome": {
+        "returned": {
+          "text": "toString",
+          "found": true
+        }
+      }
+    },
+    {
+      "name": "translate-proto-constructor-name",
+      "fn": "translate",
+      "args": [
+        {
+          "locale": "es",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": null
+        },
+        "constructor.name"
+      ],
+      "outcome": {
+        "returned": {
+          "text": "Object",
+          "found": true
+        }
+      }
+    },
+    {
+      "name": "translate-proto-member-count",
+      "fn": "translate",
+      "args": [
+        {
+          "locale": "es",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": null
+        },
+        "valueOf",
+        {
+          "params": {
+            "count": 1
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "text": "valueOf",
+          "found": false
+        }
+      }
+    },
+    {
+      "name": "translate-proto-member-length",
+      "fn": "translate",
+      "args": [
+        {
+          "locale": "es",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": null
+        },
+        "toString.length",
+        {
+          "params": {
+            "count": 1
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "text": "toString.length",
+          "found": false
+        }
+      }
+    },
+    {
+      "name": "translate-proto-proto-member",
+      "fn": "translate",
+      "args": [
+        {
+          "locale": "es",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": null
+        },
+        "__proto__.hasOwnProperty.name"
+      ],
+      "outcome": {
+        "returned": {
+          "text": "hasOwnProperty",
+          "found": true
+        }
+      }
+    },
+    {
+      "name": "translate-proto-member-deeper",
+      "fn": "translate",
+      "args": [
+        {
+          "locale": "es",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": null
+        },
+        "toString.name.x"
+      ],
+      "outcome": {
+        "returned": {
+          "text": "toString.name.x",
+          "found": false
+        }
+      }
+    },
+    {
+      "name": "translate-proto-locale",
+      "fn": "translate",
+      "args": [
+        {
+          "locale": "toString",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": null
+        },
+        "commands.save"
+      ],
+      "outcome": {
+        "returned": {
+          "text": "Save",
+          "found": true
+        }
+      }
+    },
+    {
+      "name": "translate-proto-param",
+      "fn": "translate",
+      "args": [
+        {
+          "locale": "es",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": null
+        },
+        "nope",
+        {
+          "fallback": "{toString}|{constructor}|{__proto__}|{valueOf}|{x}",
+          "params": {
+            "x": 1
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "text": "function toString() { [native code] }|function Object() { [native code] }|[object Object]|function valueOf() { [native code] }|1",
+          "found": false
+        }
+      }
+    },
+    {
+      "name": "interpolate-no-params",
+      "fn": "interpolate",
+      "args": [
+        "{a} {b}"
+      ],
+      "outcome": {
+        "returned": "{a} {b}"
+      }
+    },
+    {
+      "name": "interpolate-unknown-slot-verbatim",
+      "fn": "interpolate",
+      "args": [
+        "{a} {b}",
+        {
+          "a": "x"
+        }
+      ],
+      "outcome": {
+        "returned": "x {b}"
+      }
+    },
+    {
+      "name": "interpolate-numbers",
+      "fn": "interpolate",
+      "args": [
+        "{a}|{b}|{c}|{d}|{e}|{f}|{g}|{h}|{i}|{j}|{k}|{l}|{m}|{n}",
+        {
+          "a": 0,
+          "b": 0,
+          "c": 1.5,
+          "d": 1e+21,
+          "e": 1e-7,
+          "f": 123456789012345680000,
+          "g": 0.000001,
+          "h": -2.5e-8,
+          "i": {
+            "$number": "NaN"
+          },
+          "j": {
+            "$number": "Infinity"
+          },
+          "k": {
+            "$number": "-Infinity"
+          },
+          "l": 0.30000000000000004,
+          "m": 9007199254740992,
+          "n": 1.7976931348623157e+308
+        }
+      ],
+      "outcome": {
+        "returned": "0|0|1.5|1e+21|1e-7|123456789012345680000|0.000001|-2.5e-8|NaN|Infinity|-Infinity|0.30000000000000004|9007199254740992|1.7976931348623157e+308"
+      }
+    },
+    {
+      "name": "interpolate-empty-string-param",
+      "fn": "interpolate",
+      "args": [
+        "[{e}]",
+        {
+          "e": ""
+        }
+      ],
+      "outcome": {
+        "returned": "[]"
+      }
+    },
+    {
+      "name": "interpolate-slot-grammar",
+      "fn": "interpolate",
+      "args": [
+        "{a_1}{A}{9}{}{a-b}{ a}{é}{{a}}{a",
+        {
+          "9": "n",
+          "a_1": "u",
+          "A": "U",
+          "a": "x",
+          "a-b": "no",
+          " a": "no",
+          "é": "no"
+        }
+      ],
+      "outcome": {
+        "returned": "uUn{}{a-b}{ a}{é}{x}{a"
+      }
+    },
+    {
+      "name": "interpolate-empty-slot-is-not-a-slot",
+      "fn": "interpolate",
+      "args": [
+        "{}|{a}",
+        {
+          "": "no",
+          "a": "x"
+        }
+      ],
+      "outcome": {
+        "returned": "{}|x"
+      }
+    },
+    {
+      "name": "interpolate-repeated",
+      "fn": "interpolate",
+      "args": [
+        "{a}{a}{a}",
+        {
+          "a": "{a}"
+        }
+      ],
+      "outcome": {
+        "returned": "{a}{a}{a}"
+      }
+    },
+    {
+      "name": "interpolate-dollar-patterns",
+      "fn": "interpolate",
+      "args": [
+        "{a}",
+        {
+          "a": "$& $1 $$"
+        }
+      ],
+      "outcome": {
+        "returned": "$& $1 $$"
+      }
+    },
+    {
+      "name": "negotiate-exact-case-insensitive",
+      "fn": "negotiateLocale",
+      "args": [
+        [
+          "en",
+          "es-MX"
+        ],
+        [
+          "ES-mx",
+          "en"
+        ]
+      ],
+      "outcome": {
+        "returned": "es-MX"
+      }
+    },
+    {
+      "name": "negotiate-narrow",
+      "fn": "negotiateLocale",
+      "args": [
+        [
+          "en",
+          "es"
+        ],
+        [
+          "en-GB"
+        ]
+      ],
+      "outcome": {
+        "returned": "en"
+      }
+    },
+    {
+      "name": "negotiate-widen",
+      "fn": "negotiateLocale",
+      "args": [
+        [
+          "zh-Hans",
+          "en"
+        ],
+        [
+          "zh"
+        ]
+      ],
+      "outcome": {
+        "returned": "zh-Hans"
+      }
+    },
+    {
+      "name": "negotiate-preference-across-passes",
+      "fn": "negotiateLocale",
+      "args": [
+        [
+          "fr",
+          "en"
+        ],
+        [
+          "de",
+          "fr-CA"
+        ]
+      ],
+      "outcome": {
+        "returned": "fr"
+      }
+    },
+    {
+      "name": "negotiate-none",
+      "fn": "negotiateLocale",
+      "args": [
+        [
+          "en"
+        ],
+        [
+          "ja",
+          "ko"
+        ]
+      ],
+      "outcome": {
+        "returned": null
+      }
+    },
+    {
+      "name": "negotiate-empty",
+      "fn": "negotiateLocale",
+      "args": [
+        [],
+        [
+          "en"
+        ]
+      ],
+      "outcome": {
+        "returned": null
+      }
+    },
+    {
+      "name": "negotiate-no-request",
+      "fn": "negotiateLocale",
+      "args": [
+        [
+          "en"
+        ],
+        []
+      ],
+      "outcome": {
+        "returned": null
+      }
+    },
+    {
+      "name": "negotiate-duplicate-canon-keeps-first",
+      "fn": "negotiateLocale",
+      "args": [
+        [
+          "EN",
+          "en",
+          "en-gb",
+          "en-GB"
+        ],
+        [
+          "en-GB",
+          "en"
+        ]
+      ],
+      "outcome": {
+        "returned": "en-gb"
+      }
+    },
+    {
+      "name": "negotiate-widen-keeps-available-order",
+      "fn": "negotiateLocale",
+      "args": [
+        [
+          "pt-PT",
+          "pt-BR",
+          "en"
+        ],
+        [
+          "pt-AO"
+        ]
+      ],
+      "outcome": {
+        "returned": "pt-PT"
+      }
+    },
+    {
+      "name": "negotiate-widen-first-request-wins",
+      "fn": "negotiateLocale",
+      "args": [
+        [
+          "zh-Hant",
+          "sr-Latn"
+        ],
+        [
+          "sr",
+          "zh"
+        ]
+      ],
+      "outcome": {
+        "returned": "sr-Latn"
+      }
+    },
+    {
+      "name": "negotiate-underscore-is-not-a-separator",
+      "fn": "negotiateLocale",
+      "args": [
+        [
+          "en_US",
+          "en"
+        ],
+        [
+          "en_US-x",
+          "en_GB"
+        ]
+      ],
+      "outcome": {
+        "returned": "en_US"
+      }
+    },
+    {
+      "name": "negotiate-empty-strings",
+      "fn": "negotiateLocale",
+      "args": [
+        [
+          "",
+          "en"
+        ],
+        [
+          "-x"
+        ]
+      ],
+      "outcome": {
+        "returned": ""
+      }
+    },
+    {
+      "name": "negotiate-unicode-lowercase",
+      "fn": "negotiateLocale",
+      "args": [
+        [
+          "İ",
+          "Straße"
+        ],
+        [
+          "i̇",
+          "STRASSE",
+          "straße"
+        ]
+      ],
+      "outcome": {
+        "returned": "İ"
+      }
+    },
+    {
+      "name": "initial-defaults",
+      "fn": "initialI18nState",
+      "args": [
+        {}
+      ],
+      "outcome": {
+        "returned": {
+          "locale": "en",
+          "fallbackLocale": "en",
+          "locales": {},
+          "loading": null
+        }
+      }
+    },
+    {
+      "name": "initial-eager-packs",
+      "fn": "initialI18nState",
+      "args": [
+        {
+          "locales": [
+            {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          ],
+          "locale": "es"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "locale": "es",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": null
+        }
+      }
+    },
+    {
+      "name": "initial-duplicate-codes-keep-position",
+      "fn": "initialI18nState",
+      "args": [
+        {
+          "locales": [
+            {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            },
+            {
+              "code": "en",
+              "name": "English 2",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "locale": "en",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English 2",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": null
+        }
+      }
+    },
+    {
+      "name": "initial-integer-like-codes",
+      "fn": "initialI18nState",
+      "args": [
+        {
+          "locales": [
+            {
+              "code": "b",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            {
+              "code": "10",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            {
+              "code": "2",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "locale": "en",
+          "fallbackLocale": "en",
+          "locales": {
+            "2": {
+              "code": "2",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "10": {
+              "code": "10",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "b": {
+              "code": "b",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            }
+          },
+          "loading": null
+        }
+      }
+    },
+    {
+      "name": "initial-lazy-startup-seeds-loading",
+      "fn": "initialI18nState",
+      "args": [
+        {
+          "locales": [
+            {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            }
+          ],
+          "locale": "ar",
+          "loaders": {
+            "ar": true
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "locale": "ar",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            }
+          },
+          "loading": "ar"
+        }
+      }
+    },
+    {
+      "name": "initial-lazy-but-registered",
+      "fn": "initialI18nState",
+      "args": [
+        {
+          "locales": [
+            {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            {
+              "code": "ar",
+              "name": "العربية",
+              "dir": "rtl",
+              "translations": {
+                "commands": {
+                  "save": "حفظ"
+                },
+                "pages": {
+                  "zero": "لا صفحات",
+                  "one": "صفحة",
+                  "two": "صفحتان",
+                  "few": "{count} صفحات",
+                  "many": "{count} صفحة",
+                  "other": "{count} صفحة"
+                }
+              }
+            }
+          ],
+          "locale": "ar",
+          "loaders": {
+            "ar": true
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "locale": "ar",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "ar": {
+              "code": "ar",
+              "name": "العربية",
+              "dir": "rtl",
+              "translations": {
+                "commands": {
+                  "save": "حفظ"
+                },
+                "pages": {
+                  "zero": "لا صفحات",
+                  "one": "صفحة",
+                  "two": "صفحتان",
+                  "few": "{count} صفحات",
+                  "many": "{count} صفحة",
+                  "other": "{count} صفحة"
+                }
+              }
+            }
+          },
+          "loading": null
+        }
+      }
+    },
+    {
+      "name": "initial-unknown-locale",
+      "fn": "initialI18nState",
+      "args": [
+        {
+          "locales": [
+            {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            }
+          ],
+          "locale": "xx",
+          "loaders": {
+            "ar": true
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "locale": "xx",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            }
+          },
+          "loading": null
+        }
+      }
+    },
+    {
+      "name": "initial-custom-fallback",
+      "fn": "initialI18nState",
+      "args": [
+        {
+          "fallbackLocale": "es",
+          "locales": [
+            {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "locale": "es",
+          "fallbackLocale": "es",
+          "locales": {
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": null
+        }
+      }
+    },
+    {
+      "name": "initial-null-loader-counts",
+      "fn": "initialI18nState",
+      "args": [
+        {
+          "locale": "ar",
+          "loaders": {
+            "ar": null
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "locale": "ar",
+          "fallbackLocale": "en",
+          "locales": {},
+          "loading": "ar"
+        }
+      }
+    },
+    {
+      "name": "initial-proto-locale",
+      "fn": "initialI18nState",
+      "args": [
+        {
+          "locale": "toString",
+          "loaders": {
+            "toString": true
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "locale": "toString",
+          "fallbackLocale": "en",
+          "locales": {},
+          "loading": null
+        }
+      }
+    },
+    {
+      "name": "set-locale-unregistered-is-ignored",
+      "fn": "i18nReducer",
+      "args": [
+        {
+          "locale": "es",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": null
+        },
+        {
+          "type": "I18N/SET_LOCALE",
+          "locale": "ar"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": true,
+          "next": {
+            "locale": "es",
+            "fallbackLocale": "en",
+            "locales": {
+              "en": {
+                "code": "en",
+                "name": "English",
+                "translations": {
+                  "commands": {
+                    "zoom": {
+                      "in": "Zoom In",
+                      "out": "Zoom Out"
+                    },
+                    "save": "Save"
+                  },
+                  "zoomLevel": "Zoom Level ({level}%)",
+                  "pages": {
+                    "one": "{count} page",
+                    "other": "{count} pages"
+                  },
+                  "greeting": "Hello {name}, you have {count} {unknown}"
+                }
+              },
+              "es": {
+                "code": "es",
+                "name": "Español",
+                "translations": {
+                  "commands": {
+                    "save": "Guardar"
+                  },
+                  "pages": {
+                    "one": "{count} página",
+                    "other": "{count} páginas"
+                  }
+                }
+              }
+            },
+            "loading": null
+          }
+        }
+      }
+    },
+    {
+      "name": "set-locale-same-and-idle-is-ignored",
+      "fn": "i18nReducer",
+      "args": [
+        {
+          "locale": "es",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": null
+        },
+        {
+          "type": "I18N/SET_LOCALE",
+          "locale": "es"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": true,
+          "next": {
+            "locale": "es",
+            "fallbackLocale": "en",
+            "locales": {
+              "en": {
+                "code": "en",
+                "name": "English",
+                "translations": {
+                  "commands": {
+                    "zoom": {
+                      "in": "Zoom In",
+                      "out": "Zoom Out"
+                    },
+                    "save": "Save"
+                  },
+                  "zoomLevel": "Zoom Level ({level}%)",
+                  "pages": {
+                    "one": "{count} page",
+                    "other": "{count} pages"
+                  },
+                  "greeting": "Hello {name}, you have {count} {unknown}"
+                }
+              },
+              "es": {
+                "code": "es",
+                "name": "Español",
+                "translations": {
+                  "commands": {
+                    "save": "Guardar"
+                  },
+                  "pages": {
+                    "one": "{count} página",
+                    "other": "{count} páginas"
+                  }
+                }
+              }
+            },
+            "loading": null
+          }
+        }
+      }
+    },
+    {
+      "name": "set-locale-same-but-loading-clears",
+      "fn": "i18nReducer",
+      "args": [
+        {
+          "locale": "es",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": "ar"
+        },
+        {
+          "type": "I18N/SET_LOCALE",
+          "locale": "es"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "locale": "es",
+            "fallbackLocale": "en",
+            "locales": {
+              "en": {
+                "code": "en",
+                "name": "English",
+                "translations": {
+                  "commands": {
+                    "zoom": {
+                      "in": "Zoom In",
+                      "out": "Zoom Out"
+                    },
+                    "save": "Save"
+                  },
+                  "zoomLevel": "Zoom Level ({level}%)",
+                  "pages": {
+                    "one": "{count} page",
+                    "other": "{count} pages"
+                  },
+                  "greeting": "Hello {name}, you have {count} {unknown}"
+                }
+              },
+              "es": {
+                "code": "es",
+                "name": "Español",
+                "translations": {
+                  "commands": {
+                    "save": "Guardar"
+                  },
+                  "pages": {
+                    "one": "{count} página",
+                    "other": "{count} páginas"
+                  }
+                }
+              }
+            },
+            "loading": null
+          }
+        }
+      }
+    },
+    {
+      "name": "set-locale-switches",
+      "fn": "i18nReducer",
+      "args": [
+        {
+          "locale": "es",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": "en"
+        },
+        {
+          "type": "I18N/SET_LOCALE",
+          "locale": "en"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "locale": "en",
+            "fallbackLocale": "en",
+            "locales": {
+              "en": {
+                "code": "en",
+                "name": "English",
+                "translations": {
+                  "commands": {
+                    "zoom": {
+                      "in": "Zoom In",
+                      "out": "Zoom Out"
+                    },
+                    "save": "Save"
+                  },
+                  "zoomLevel": "Zoom Level ({level}%)",
+                  "pages": {
+                    "one": "{count} page",
+                    "other": "{count} pages"
+                  },
+                  "greeting": "Hello {name}, you have {count} {unknown}"
+                }
+              },
+              "es": {
+                "code": "es",
+                "name": "Español",
+                "translations": {
+                  "commands": {
+                    "save": "Guardar"
+                  },
+                  "pages": {
+                    "one": "{count} página",
+                    "other": "{count} páginas"
+                  }
+                }
+              }
+            },
+            "loading": null
+          }
+        }
+      }
+    },
+    {
+      "name": "set-locale-proto-member",
+      "fn": "i18nReducer",
+      "args": [
+        {
+          "locale": "es",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": null
+        },
+        {
+          "type": "I18N/SET_LOCALE",
+          "locale": "hasOwnProperty"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "locale": "hasOwnProperty",
+            "fallbackLocale": "en",
+            "locales": {
+              "en": {
+                "code": "en",
+                "name": "English",
+                "translations": {
+                  "commands": {
+                    "zoom": {
+                      "in": "Zoom In",
+                      "out": "Zoom Out"
+                    },
+                    "save": "Save"
+                  },
+                  "zoomLevel": "Zoom Level ({level}%)",
+                  "pages": {
+                    "one": "{count} page",
+                    "other": "{count} pages"
+                  },
+                  "greeting": "Hello {name}, you have {count} {unknown}"
+                }
+              },
+              "es": {
+                "code": "es",
+                "name": "Español",
+                "translations": {
+                  "commands": {
+                    "save": "Guardar"
+                  },
+                  "pages": {
+                    "one": "{count} página",
+                    "other": "{count} páginas"
+                  }
+                }
+              }
+            },
+            "loading": null
+          }
+        }
+      }
+    },
+    {
+      "name": "register-adds",
+      "fn": "i18nReducer",
+      "args": [
+        {
+          "locale": "es",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": null
+        },
+        {
+          "type": "I18N/REGISTER_LOCALE",
+          "locale": {
+            "code": "ar",
+            "name": "العربية",
+            "dir": "rtl",
+            "translations": {
+              "commands": {
+                "save": "حفظ"
+              },
+              "pages": {
+                "zero": "لا صفحات",
+                "one": "صفحة",
+                "two": "صفحتان",
+                "few": "{count} صفحات",
+                "many": "{count} صفحة",
+                "other": "{count} صفحة"
+              }
+            }
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "locale": "es",
+            "fallbackLocale": "en",
+            "locales": {
+              "en": {
+                "code": "en",
+                "name": "English",
+                "translations": {
+                  "commands": {
+                    "zoom": {
+                      "in": "Zoom In",
+                      "out": "Zoom Out"
+                    },
+                    "save": "Save"
+                  },
+                  "zoomLevel": "Zoom Level ({level}%)",
+                  "pages": {
+                    "one": "{count} page",
+                    "other": "{count} pages"
+                  },
+                  "greeting": "Hello {name}, you have {count} {unknown}"
+                }
+              },
+              "es": {
+                "code": "es",
+                "name": "Español",
+                "translations": {
+                  "commands": {
+                    "save": "Guardar"
+                  },
+                  "pages": {
+                    "one": "{count} página",
+                    "other": "{count} páginas"
+                  }
+                }
+              },
+              "ar": {
+                "code": "ar",
+                "name": "العربية",
+                "dir": "rtl",
+                "translations": {
+                  "commands": {
+                    "save": "حفظ"
+                  },
+                  "pages": {
+                    "zero": "لا صفحات",
+                    "one": "صفحة",
+                    "two": "صفحتان",
+                    "few": "{count} صفحات",
+                    "many": "{count} صفحة",
+                    "other": "{count} صفحة"
+                  }
+                }
+              }
+            },
+            "loading": null
+          }
+        }
+      }
+    },
+    {
+      "name": "register-replaces-in-place",
+      "fn": "i18nReducer",
+      "args": [
+        {
+          "locale": "es",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": null
+        },
+        {
+          "type": "I18N/REGISTER_LOCALE",
+          "locale": {
+            "code": "en",
+            "name": "Inglés",
+            "translations": {
+              "commands": {
+                "zoom": {
+                  "in": "Zoom In",
+                  "out": "Zoom Out"
+                },
+                "save": "Save"
+              },
+              "zoomLevel": "Zoom Level ({level}%)",
+              "pages": {
+                "one": "{count} page",
+                "other": "{count} pages"
+              },
+              "greeting": "Hello {name}, you have {count} {unknown}"
+            }
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "locale": "es",
+            "fallbackLocale": "en",
+            "locales": {
+              "en": {
+                "code": "en",
+                "name": "Inglés",
+                "translations": {
+                  "commands": {
+                    "zoom": {
+                      "in": "Zoom In",
+                      "out": "Zoom Out"
+                    },
+                    "save": "Save"
+                  },
+                  "zoomLevel": "Zoom Level ({level}%)",
+                  "pages": {
+                    "one": "{count} page",
+                    "other": "{count} pages"
+                  },
+                  "greeting": "Hello {name}, you have {count} {unknown}"
+                }
+              },
+              "es": {
+                "code": "es",
+                "name": "Español",
+                "translations": {
+                  "commands": {
+                    "save": "Guardar"
+                  },
+                  "pages": {
+                    "one": "{count} página",
+                    "other": "{count} páginas"
+                  }
+                }
+              }
+            },
+            "loading": null
+          }
+        }
+      }
+    },
+    {
+      "name": "load-started",
+      "fn": "i18nReducer",
+      "args": [
+        {
+          "locale": "es",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": null
+        },
+        {
+          "type": "I18N/LOAD_STARTED",
+          "locale": "ar"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "locale": "es",
+            "fallbackLocale": "en",
+            "locales": {
+              "en": {
+                "code": "en",
+                "name": "English",
+                "translations": {
+                  "commands": {
+                    "zoom": {
+                      "in": "Zoom In",
+                      "out": "Zoom Out"
+                    },
+                    "save": "Save"
+                  },
+                  "zoomLevel": "Zoom Level ({level}%)",
+                  "pages": {
+                    "one": "{count} page",
+                    "other": "{count} pages"
+                  },
+                  "greeting": "Hello {name}, you have {count} {unknown}"
+                }
+              },
+              "es": {
+                "code": "es",
+                "name": "Español",
+                "translations": {
+                  "commands": {
+                    "save": "Guardar"
+                  },
+                  "pages": {
+                    "one": "{count} página",
+                    "other": "{count} páginas"
+                  }
+                }
+              }
+            },
+            "loading": "ar"
+          }
+        }
+      }
+    },
+    {
+      "name": "load-started-again-is-ignored",
+      "fn": "i18nReducer",
+      "args": [
+        {
+          "locale": "es",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": "ar"
+        },
+        {
+          "type": "I18N/LOAD_STARTED",
+          "locale": "ar"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": true,
+          "next": {
+            "locale": "es",
+            "fallbackLocale": "en",
+            "locales": {
+              "en": {
+                "code": "en",
+                "name": "English",
+                "translations": {
+                  "commands": {
+                    "zoom": {
+                      "in": "Zoom In",
+                      "out": "Zoom Out"
+                    },
+                    "save": "Save"
+                  },
+                  "zoomLevel": "Zoom Level ({level}%)",
+                  "pages": {
+                    "one": "{count} page",
+                    "other": "{count} pages"
+                  },
+                  "greeting": "Hello {name}, you have {count} {unknown}"
+                }
+              },
+              "es": {
+                "code": "es",
+                "name": "Español",
+                "translations": {
+                  "commands": {
+                    "save": "Guardar"
+                  },
+                  "pages": {
+                    "one": "{count} página",
+                    "other": "{count} páginas"
+                  }
+                }
+              }
+            },
+            "loading": "ar"
+          }
+        }
+      }
+    },
+    {
+      "name": "load-started-replaces",
+      "fn": "i18nReducer",
+      "args": [
+        {
+          "locale": "es",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": "ar"
+        },
+        {
+          "type": "I18N/LOAD_STARTED",
+          "locale": "he"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "locale": "es",
+            "fallbackLocale": "en",
+            "locales": {
+              "en": {
+                "code": "en",
+                "name": "English",
+                "translations": {
+                  "commands": {
+                    "zoom": {
+                      "in": "Zoom In",
+                      "out": "Zoom Out"
+                    },
+                    "save": "Save"
+                  },
+                  "zoomLevel": "Zoom Level ({level}%)",
+                  "pages": {
+                    "one": "{count} page",
+                    "other": "{count} pages"
+                  },
+                  "greeting": "Hello {name}, you have {count} {unknown}"
+                }
+              },
+              "es": {
+                "code": "es",
+                "name": "Español",
+                "translations": {
+                  "commands": {
+                    "save": "Guardar"
+                  },
+                  "pages": {
+                    "one": "{count} página",
+                    "other": "{count} páginas"
+                  }
+                }
+              }
+            },
+            "loading": "he"
+          }
+        }
+      }
+    },
+    {
+      "name": "load-failed-other-code-is-ignored",
+      "fn": "i18nReducer",
+      "args": [
+        {
+          "locale": "es",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": "ar"
+        },
+        {
+          "type": "I18N/LOAD_FAILED",
+          "locale": "fr"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": true,
+          "next": {
+            "locale": "es",
+            "fallbackLocale": "en",
+            "locales": {
+              "en": {
+                "code": "en",
+                "name": "English",
+                "translations": {
+                  "commands": {
+                    "zoom": {
+                      "in": "Zoom In",
+                      "out": "Zoom Out"
+                    },
+                    "save": "Save"
+                  },
+                  "zoomLevel": "Zoom Level ({level}%)",
+                  "pages": {
+                    "one": "{count} page",
+                    "other": "{count} pages"
+                  },
+                  "greeting": "Hello {name}, you have {count} {unknown}"
+                }
+              },
+              "es": {
+                "code": "es",
+                "name": "Español",
+                "translations": {
+                  "commands": {
+                    "save": "Guardar"
+                  },
+                  "pages": {
+                    "one": "{count} página",
+                    "other": "{count} páginas"
+                  }
+                }
+              }
+            },
+            "loading": "ar"
+          }
+        }
+      }
+    },
+    {
+      "name": "load-failed-clears",
+      "fn": "i18nReducer",
+      "args": [
+        {
+          "locale": "es",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": "ar"
+        },
+        {
+          "type": "I18N/LOAD_FAILED",
+          "locale": "ar"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "locale": "es",
+            "fallbackLocale": "en",
+            "locales": {
+              "en": {
+                "code": "en",
+                "name": "English",
+                "translations": {
+                  "commands": {
+                    "zoom": {
+                      "in": "Zoom In",
+                      "out": "Zoom Out"
+                    },
+                    "save": "Save"
+                  },
+                  "zoomLevel": "Zoom Level ({level}%)",
+                  "pages": {
+                    "one": "{count} page",
+                    "other": "{count} pages"
+                  },
+                  "greeting": "Hello {name}, you have {count} {unknown}"
+                }
+              },
+              "es": {
+                "code": "es",
+                "name": "Español",
+                "translations": {
+                  "commands": {
+                    "save": "Guardar"
+                  },
+                  "pages": {
+                    "one": "{count} página",
+                    "other": "{count} páginas"
+                  }
+                }
+              }
+            },
+            "loading": null
+          }
+        }
+      }
+    },
+    {
+      "name": "unknown-action-is-ignored",
+      "fn": "i18nReducer",
+      "args": [
+        {
+          "locale": "es",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": null
+        },
+        {
+          "type": "I18N/NOPE"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": true,
+          "next": {
+            "locale": "es",
+            "fallbackLocale": "en",
+            "locales": {
+              "en": {
+                "code": "en",
+                "name": "English",
+                "translations": {
+                  "commands": {
+                    "zoom": {
+                      "in": "Zoom In",
+                      "out": "Zoom Out"
+                    },
+                    "save": "Save"
+                  },
+                  "zoomLevel": "Zoom Level ({level}%)",
+                  "pages": {
+                    "one": "{count} page",
+                    "other": "{count} pages"
+                  },
+                  "greeting": "Hello {name}, you have {count} {unknown}"
+                }
+              },
+              "es": {
+                "code": "es",
+                "name": "Español",
+                "translations": {
+                  "commands": {
+                    "save": "Guardar"
+                  },
+                  "pages": {
+                    "one": "{count} página",
+                    "other": "{count} páginas"
+                  }
+                }
+              }
+            },
+            "loading": null
+          }
+        }
+      }
+    }
+  ]
+}

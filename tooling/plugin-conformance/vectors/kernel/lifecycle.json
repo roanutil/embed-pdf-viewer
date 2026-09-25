@@ -41541,6 +41541,252 @@
           }
         }
       ]
+    },
+    {
+      "name": "a-layout-without-pages",
+      "covers": "A page event whose layout carries a count and no page list: the registry copies what it is given, so the meta has no pages member rather than an empty one.",
+      "plugins": [],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "emit",
+          "doc": "a",
+          "event": {
+            "type": "pages.deleted",
+            "layout": {
+              "pageCount": 0
+            }
+          }
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "pageObjectNumber": 1,
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-pages-updated"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "pageCount": 0,
+                  "revision": 1,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        }
+      ]
     }
   ]
 }

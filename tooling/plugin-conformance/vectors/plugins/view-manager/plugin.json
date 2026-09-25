@@ -1,0 +1,7941 @@
+{
+  "schemaVersion": 1,
+  "kind": "scenario",
+  "describes": "packages/plugin/view-manager: panes over the open documents.",
+  "cases": [
+    {
+      "name": "selectors-before-start",
+      "covers": "The capability exists from createKernel(); with no panes the selectors are empty, get() and documentView() are null.",
+      "plugins": [
+        {
+          "factory": "view-manager"
+        }
+      ],
+      "snapshot": [
+        "view-manager"
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "list",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "order",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "focusedViewId",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "get",
+          "args": [
+            "view-1"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "documentView",
+          "args": [
+            "a"
+          ]
+        }
+      ],
+      "trace": [
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "created",
+          "engineState": {},
+          "outcome": {
+            "returned": []
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {},
+                "order": [],
+                "focusedViewId": null,
+                "seq": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "created",
+          "engineState": {},
+          "outcome": {
+            "returned": []
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {},
+                "order": [],
+                "focusedViewId": null,
+                "seq": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "created",
+          "engineState": {},
+          "outcome": {
+            "returned": null
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {},
+                "order": [],
+                "focusedViewId": null,
+                "seq": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "created",
+          "engineState": {},
+          "outcome": {
+            "returned": null
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {},
+                "order": [],
+                "focusedViewId": null,
+                "seq": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "created",
+          "engineState": {},
+          "outcome": {
+            "returned": null
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {},
+                "order": [],
+                "focusedViewId": null,
+                "seq": 0
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "first-open-makes-a-pane",
+      "covers": "The effect reconciles whenever the open order changes: the first open (while still loading) creates view-1 and assigns the document to it; later opens land in the focused pane; get/documentView/list read it back as copies.",
+      "plugins": [
+        {
+          "factory": "view-manager"
+        }
+      ],
+      "snapshot": [
+        "view-manager"
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          },
+          "b": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          },
+          "c": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "responses": [
+          {
+            "path": "open",
+            "args": [
+              {
+                "kind": "bytes",
+                "id": "c",
+                "bytes": {
+                  "$bytes": ""
+                }
+              },
+              {}
+            ],
+            "defer": "open-c"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "list",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "order",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "focusedViewId",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "list",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "order",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "focusedViewId",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "b",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "get",
+          "args": [
+            "view-1"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "documentView",
+          "args": [
+            "b"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "documentView",
+          "args": [
+            "zzz"
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "c",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "list",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "order",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "focusedViewId",
+          "args": []
+        },
+        {
+          "op": "settle",
+          "label": "open-c",
+          "value": {
+            "$document": "c"
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "list",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "order",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "focusedViewId",
+          "args": []
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {},
+                "order": [],
+                "focusedViewId": null,
+                "seq": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": []
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {},
+                "order": [],
+                "focusedViewId": null,
+                "seq": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": []
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {},
+                "order": [],
+                "focusedViewId": null,
+                "seq": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": null
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {},
+                "order": [],
+                "focusedViewId": null,
+                "seq": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "RECONCILE",
+                "open": [
+                  "a"
+                ],
+                "preferViewId": null
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": [
+              {
+                "id": "view-1",
+                "documentIds": [
+                  "a"
+                ],
+                "activeDocumentId": "a"
+              }
+            ]
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": [
+              "view-1"
+            ]
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": "view-1"
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": "b"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "RECONCILE",
+                "open": [
+                  "a",
+                  "b"
+                ],
+                "preferViewId": "view-1"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "b",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "b",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a",
+                      "b"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b"
+              ],
+              "activeDocumentId": "a"
+            }
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a",
+                      "b"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": "view-1"
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a",
+                      "b"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": null
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a",
+                      "b"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "RECONCILE",
+                "open": [
+                  "a",
+                  "b",
+                  "c"
+                ],
+                "preferViewId": "view-1"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "c",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 3
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a",
+                      "b",
+                      "c"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": [
+              {
+                "id": "view-1",
+                "documentIds": [
+                  "a",
+                  "b",
+                  "c"
+                ],
+                "activeDocumentId": "a"
+              }
+            ]
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a",
+                      "b",
+                      "c"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": [
+              "view-1"
+            ]
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a",
+                      "b",
+                      "c"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": "view-1"
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a",
+                      "b",
+                      "c"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 3,
+              "resolved": "c"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": "c",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            },
+            "c": {
+              "subscribers": 1
+            }
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a",
+                      "b",
+                      "c"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            },
+            "c": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": [
+              {
+                "id": "view-1",
+                "documentIds": [
+                  "a",
+                  "b",
+                  "c"
+                ],
+                "activeDocumentId": "a"
+              }
+            ]
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a",
+                      "b",
+                      "c"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            },
+            "c": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": [
+              "view-1"
+            ]
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a",
+                      "b",
+                      "c"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            },
+            "c": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": "view-1"
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a",
+                      "b",
+                      "c"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "closing-prunes",
+      "covers": "Closing a document drops it from its pane and picks a neighbour as active; closing every document leaves the empty pane.",
+      "plugins": [
+        {
+          "factory": "view-manager"
+        }
+      ],
+      "snapshot": [
+        "view-manager"
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          },
+          "b": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          },
+          "c": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "b",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "c",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "setActiveDocument",
+          "args": [
+            "view-1",
+            "b"
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "close",
+          "args": [
+            "b"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "list",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "order",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "focusedViewId",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "closeAll",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "list",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "order",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "focusedViewId",
+          "args": []
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {},
+                "order": [],
+                "focusedViewId": null,
+                "seq": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "RECONCILE",
+                "open": [
+                  "a"
+                ],
+                "preferViewId": null
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": "b"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "RECONCILE",
+                "open": [
+                  "a",
+                  "b"
+                ],
+                "preferViewId": "view-1"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "b",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "b",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a",
+                      "b"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 3,
+              "resolved": "c"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "RECONCILE",
+                "open": [
+                  "a",
+                  "b",
+                  "c"
+                ],
+                "preferViewId": "view-1"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "c",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "c",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            },
+            "c": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 3
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a",
+                      "b",
+                      "c"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "SET_ACTIVE_DOC",
+                "viewId": "view-1",
+                "documentId": "b"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            },
+            "c": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a",
+                      "b",
+                      "c"
+                    ],
+                    "activeDocumentId": "b"
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 4,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "RECONCILE",
+                "open": [
+                  "a",
+                  "c"
+                ],
+                "preferViewId": "view-1"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-removed"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": "b",
+              "path": "close",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 0
+            },
+            "c": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 4
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a",
+                      "c"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 0
+            },
+            "c": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": [
+              {
+                "id": "view-1",
+                "documentIds": [
+                  "a",
+                  "c"
+                ],
+                "activeDocumentId": "a"
+              }
+            ]
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a",
+                      "c"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 0
+            },
+            "c": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": [
+              "view-1"
+            ]
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a",
+                      "c"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 0
+            },
+            "c": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": "view-1"
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a",
+                      "c"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 5,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "RECONCILE",
+                "open": [
+                  "c"
+                ],
+                "preferViewId": "view-1"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-removed"
+              }
+            },
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "RECONCILE",
+                "open": [],
+                "preferViewId": "view-1"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-removed"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "close",
+              "args": []
+            },
+            {
+              "doc": "c",
+              "path": "close",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 0
+            },
+            "b": {
+              "subscribers": 0
+            },
+            "c": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 5
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [],
+                    "activeDocumentId": null
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 0
+            },
+            "b": {
+              "subscribers": 0
+            },
+            "c": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "returned": [
+              {
+                "id": "view-1",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            ]
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [],
+                    "activeDocumentId": null
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 0
+            },
+            "b": {
+              "subscribers": 0
+            },
+            "c": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "returned": [
+              "view-1"
+            ]
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [],
+                    "activeDocumentId": null
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 0
+            },
+            "b": {
+              "subscribers": 0
+            },
+            "c": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "returned": "view-1"
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [],
+                    "activeDocumentId": null
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "panes",
+      "covers": "createView focuses the new pane and later opens land there; removeView refocuses; moveView reorders with clamping and ignores unknown ids; setFocused takes any id.",
+      "plugins": [
+        {
+          "factory": "view-manager"
+        }
+      ],
+      "snapshot": [
+        "view-manager"
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          },
+          "b": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          },
+          "c": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "createView",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "b",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "createView",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "list",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "order",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "focusedViewId",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "moveView",
+          "args": [
+            "view-3",
+            0
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "moveView",
+          "args": [
+            "view-1",
+            99
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "moveView",
+          "args": [
+            "view-1",
+            -3
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "moveView",
+          "args": [
+            "view-2",
+            1.5
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "moveView",
+          "args": [
+            "view-2",
+            {
+              "$number": "NaN"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "moveView",
+          "args": [
+            "nope",
+            0
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "order",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "setFocused",
+          "args": [
+            "view-1"
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "c",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "list",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "removeView",
+          "args": [
+            "view-1"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "list",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "order",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "focusedViewId",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "removeView",
+          "args": [
+            "view-1"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "setFocused",
+          "args": [
+            "ghost"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "focusedViewId",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "close",
+          "args": [
+            "c"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "list",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "order",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "focusedViewId",
+          "args": []
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {},
+                "order": [],
+                "focusedViewId": null,
+                "seq": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "RECONCILE",
+                "open": [
+                  "a"
+                ],
+                "preferViewId": null
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "CREATE",
+                "view": {
+                  "id": "view-2",
+                  "documentIds": [],
+                  "activeDocumentId": null
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": "view-2"
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a"
+                    ],
+                    "activeDocumentId": "a"
+                  },
+                  "view-2": {
+                    "id": "view-2",
+                    "documentIds": [],
+                    "activeDocumentId": null
+                  }
+                },
+                "order": [
+                  "view-1",
+                  "view-2"
+                ],
+                "focusedViewId": "view-2",
+                "seq": 2
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": "b"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "RECONCILE",
+                "open": [
+                  "a",
+                  "b"
+                ],
+                "preferViewId": "view-2"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "b",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "b",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a"
+                    ],
+                    "activeDocumentId": "a"
+                  },
+                  "view-2": {
+                    "id": "view-2",
+                    "documentIds": [
+                      "b"
+                    ],
+                    "activeDocumentId": "b"
+                  }
+                },
+                "order": [
+                  "view-1",
+                  "view-2"
+                ],
+                "focusedViewId": "view-2",
+                "seq": 2
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "CREATE",
+                "view": {
+                  "id": "view-3",
+                  "documentIds": [],
+                  "activeDocumentId": null
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": "view-3"
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a"
+                    ],
+                    "activeDocumentId": "a"
+                  },
+                  "view-2": {
+                    "id": "view-2",
+                    "documentIds": [
+                      "b"
+                    ],
+                    "activeDocumentId": "b"
+                  },
+                  "view-3": {
+                    "id": "view-3",
+                    "documentIds": [],
+                    "activeDocumentId": null
+                  }
+                },
+                "order": [
+                  "view-1",
+                  "view-2",
+                  "view-3"
+                ],
+                "focusedViewId": "view-3",
+                "seq": 3
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": [
+              {
+                "id": "view-1",
+                "documentIds": [
+                  "a"
+                ],
+                "activeDocumentId": "a"
+              },
+              {
+                "id": "view-2",
+                "documentIds": [
+                  "b"
+                ],
+                "activeDocumentId": "b"
+              },
+              {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            ]
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a"
+                    ],
+                    "activeDocumentId": "a"
+                  },
+                  "view-2": {
+                    "id": "view-2",
+                    "documentIds": [
+                      "b"
+                    ],
+                    "activeDocumentId": "b"
+                  },
+                  "view-3": {
+                    "id": "view-3",
+                    "documentIds": [],
+                    "activeDocumentId": null
+                  }
+                },
+                "order": [
+                  "view-1",
+                  "view-2",
+                  "view-3"
+                ],
+                "focusedViewId": "view-3",
+                "seq": 3
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ]
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a"
+                    ],
+                    "activeDocumentId": "a"
+                  },
+                  "view-2": {
+                    "id": "view-2",
+                    "documentIds": [
+                      "b"
+                    ],
+                    "activeDocumentId": "b"
+                  },
+                  "view-3": {
+                    "id": "view-3",
+                    "documentIds": [],
+                    "activeDocumentId": null
+                  }
+                },
+                "order": [
+                  "view-1",
+                  "view-2",
+                  "view-3"
+                ],
+                "focusedViewId": "view-3",
+                "seq": 3
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": "view-3"
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a"
+                    ],
+                    "activeDocumentId": "a"
+                  },
+                  "view-2": {
+                    "id": "view-2",
+                    "documentIds": [
+                      "b"
+                    ],
+                    "activeDocumentId": "b"
+                  },
+                  "view-3": {
+                    "id": "view-3",
+                    "documentIds": [],
+                    "activeDocumentId": null
+                  }
+                },
+                "order": [
+                  "view-1",
+                  "view-2",
+                  "view-3"
+                ],
+                "focusedViewId": "view-3",
+                "seq": 3
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "REORDER_VIEWS",
+                "order": [
+                  "view-3",
+                  "view-1",
+                  "view-2"
+                ]
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a"
+                    ],
+                    "activeDocumentId": "a"
+                  },
+                  "view-2": {
+                    "id": "view-2",
+                    "documentIds": [
+                      "b"
+                    ],
+                    "activeDocumentId": "b"
+                  },
+                  "view-3": {
+                    "id": "view-3",
+                    "documentIds": [],
+                    "activeDocumentId": null
+                  }
+                },
+                "order": [
+                  "view-3",
+                  "view-1",
+                  "view-2"
+                ],
+                "focusedViewId": "view-3",
+                "seq": 3
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "REORDER_VIEWS",
+                "order": [
+                  "view-3",
+                  "view-2",
+                  "view-1"
+                ]
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a"
+                    ],
+                    "activeDocumentId": "a"
+                  },
+                  "view-2": {
+                    "id": "view-2",
+                    "documentIds": [
+                      "b"
+                    ],
+                    "activeDocumentId": "b"
+                  },
+                  "view-3": {
+                    "id": "view-3",
+                    "documentIds": [],
+                    "activeDocumentId": null
+                  }
+                },
+                "order": [
+                  "view-3",
+                  "view-2",
+                  "view-1"
+                ],
+                "focusedViewId": "view-3",
+                "seq": 3
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "REORDER_VIEWS",
+                "order": [
+                  "view-1",
+                  "view-3",
+                  "view-2"
+                ]
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a"
+                    ],
+                    "activeDocumentId": "a"
+                  },
+                  "view-2": {
+                    "id": "view-2",
+                    "documentIds": [
+                      "b"
+                    ],
+                    "activeDocumentId": "b"
+                  },
+                  "view-3": {
+                    "id": "view-3",
+                    "documentIds": [],
+                    "activeDocumentId": null
+                  }
+                },
+                "order": [
+                  "view-1",
+                  "view-3",
+                  "view-2"
+                ],
+                "focusedViewId": "view-3",
+                "seq": 3
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "REORDER_VIEWS",
+                "order": [
+                  "view-1",
+                  "view-2",
+                  "view-3"
+                ]
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a"
+                    ],
+                    "activeDocumentId": "a"
+                  },
+                  "view-2": {
+                    "id": "view-2",
+                    "documentIds": [
+                      "b"
+                    ],
+                    "activeDocumentId": "b"
+                  },
+                  "view-3": {
+                    "id": "view-3",
+                    "documentIds": [],
+                    "activeDocumentId": null
+                  }
+                },
+                "order": [
+                  "view-1",
+                  "view-2",
+                  "view-3"
+                ],
+                "focusedViewId": "view-3",
+                "seq": 3
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "REORDER_VIEWS",
+                "order": [
+                  "view-2",
+                  "view-1",
+                  "view-3"
+                ]
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a"
+                    ],
+                    "activeDocumentId": "a"
+                  },
+                  "view-2": {
+                    "id": "view-2",
+                    "documentIds": [
+                      "b"
+                    ],
+                    "activeDocumentId": "b"
+                  },
+                  "view-3": {
+                    "id": "view-3",
+                    "documentIds": [],
+                    "activeDocumentId": null
+                  }
+                },
+                "order": [
+                  "view-2",
+                  "view-1",
+                  "view-3"
+                ],
+                "focusedViewId": "view-3",
+                "seq": 3
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a"
+                    ],
+                    "activeDocumentId": "a"
+                  },
+                  "view-2": {
+                    "id": "view-2",
+                    "documentIds": [
+                      "b"
+                    ],
+                    "activeDocumentId": "b"
+                  },
+                  "view-3": {
+                    "id": "view-3",
+                    "documentIds": [],
+                    "activeDocumentId": null
+                  }
+                },
+                "order": [
+                  "view-2",
+                  "view-1",
+                  "view-3"
+                ],
+                "focusedViewId": "view-3",
+                "seq": 3
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": [
+              "view-2",
+              "view-1",
+              "view-3"
+            ]
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a"
+                    ],
+                    "activeDocumentId": "a"
+                  },
+                  "view-2": {
+                    "id": "view-2",
+                    "documentIds": [
+                      "b"
+                    ],
+                    "activeDocumentId": "b"
+                  },
+                  "view-3": {
+                    "id": "view-3",
+                    "documentIds": [],
+                    "activeDocumentId": null
+                  }
+                },
+                "order": [
+                  "view-2",
+                  "view-1",
+                  "view-3"
+                ],
+                "focusedViewId": "view-3",
+                "seq": 3
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "SET_FOCUSED",
+                "id": "view-1"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a"
+                    ],
+                    "activeDocumentId": "a"
+                  },
+                  "view-2": {
+                    "id": "view-2",
+                    "documentIds": [
+                      "b"
+                    ],
+                    "activeDocumentId": "b"
+                  },
+                  "view-3": {
+                    "id": "view-3",
+                    "documentIds": [],
+                    "activeDocumentId": null
+                  }
+                },
+                "order": [
+                  "view-2",
+                  "view-1",
+                  "view-3"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 3
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 3,
+              "resolved": "c"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "RECONCILE",
+                "open": [
+                  "a",
+                  "b",
+                  "c"
+                ],
+                "preferViewId": "view-1"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "c",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "c",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            },
+            "c": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 3
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-2": {
+                    "id": "view-2",
+                    "documentIds": [
+                      "b"
+                    ],
+                    "activeDocumentId": "b"
+                  },
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a",
+                      "c"
+                    ],
+                    "activeDocumentId": "a"
+                  },
+                  "view-3": {
+                    "id": "view-3",
+                    "documentIds": [],
+                    "activeDocumentId": null
+                  }
+                },
+                "order": [
+                  "view-2",
+                  "view-1",
+                  "view-3"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 3
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            },
+            "c": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": [
+              {
+                "id": "view-2",
+                "documentIds": [
+                  "b"
+                ],
+                "activeDocumentId": "b"
+              },
+              {
+                "id": "view-1",
+                "documentIds": [
+                  "a",
+                  "c"
+                ],
+                "activeDocumentId": "a"
+              },
+              {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            ]
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-2": {
+                    "id": "view-2",
+                    "documentIds": [
+                      "b"
+                    ],
+                    "activeDocumentId": "b"
+                  },
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a",
+                      "c"
+                    ],
+                    "activeDocumentId": "a"
+                  },
+                  "view-3": {
+                    "id": "view-3",
+                    "documentIds": [],
+                    "activeDocumentId": null
+                  }
+                },
+                "order": [
+                  "view-2",
+                  "view-1",
+                  "view-3"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 3
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "REMOVE",
+                "id": "view-1"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            },
+            "c": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-2": {
+                    "id": "view-2",
+                    "documentIds": [
+                      "b"
+                    ],
+                    "activeDocumentId": "b"
+                  },
+                  "view-3": {
+                    "id": "view-3",
+                    "documentIds": [],
+                    "activeDocumentId": null
+                  }
+                },
+                "order": [
+                  "view-2",
+                  "view-3"
+                ],
+                "focusedViewId": "view-3",
+                "seq": 3
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            },
+            "c": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": [
+              {
+                "id": "view-2",
+                "documentIds": [
+                  "b"
+                ],
+                "activeDocumentId": "b"
+              },
+              {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            ]
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-2": {
+                    "id": "view-2",
+                    "documentIds": [
+                      "b"
+                    ],
+                    "activeDocumentId": "b"
+                  },
+                  "view-3": {
+                    "id": "view-3",
+                    "documentIds": [],
+                    "activeDocumentId": null
+                  }
+                },
+                "order": [
+                  "view-2",
+                  "view-3"
+                ],
+                "focusedViewId": "view-3",
+                "seq": 3
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            },
+            "c": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": [
+              "view-2",
+              "view-3"
+            ]
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-2": {
+                    "id": "view-2",
+                    "documentIds": [
+                      "b"
+                    ],
+                    "activeDocumentId": "b"
+                  },
+                  "view-3": {
+                    "id": "view-3",
+                    "documentIds": [],
+                    "activeDocumentId": null
+                  }
+                },
+                "order": [
+                  "view-2",
+                  "view-3"
+                ],
+                "focusedViewId": "view-3",
+                "seq": 3
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            },
+            "c": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": "view-3"
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-2": {
+                    "id": "view-2",
+                    "documentIds": [
+                      "b"
+                    ],
+                    "activeDocumentId": "b"
+                  },
+                  "view-3": {
+                    "id": "view-3",
+                    "documentIds": [],
+                    "activeDocumentId": null
+                  }
+                },
+                "order": [
+                  "view-2",
+                  "view-3"
+                ],
+                "focusedViewId": "view-3",
+                "seq": 3
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "REMOVE",
+                "id": "view-1"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            },
+            "c": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-2": {
+                    "id": "view-2",
+                    "documentIds": [
+                      "b"
+                    ],
+                    "activeDocumentId": "b"
+                  },
+                  "view-3": {
+                    "id": "view-3",
+                    "documentIds": [],
+                    "activeDocumentId": null
+                  }
+                },
+                "order": [
+                  "view-2",
+                  "view-3"
+                ],
+                "focusedViewId": "view-3",
+                "seq": 3
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "SET_FOCUSED",
+                "id": "ghost"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            },
+            "c": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-2": {
+                    "id": "view-2",
+                    "documentIds": [
+                      "b"
+                    ],
+                    "activeDocumentId": "b"
+                  },
+                  "view-3": {
+                    "id": "view-3",
+                    "documentIds": [],
+                    "activeDocumentId": null
+                  }
+                },
+                "order": [
+                  "view-2",
+                  "view-3"
+                ],
+                "focusedViewId": "ghost",
+                "seq": 3
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            },
+            "c": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": "ghost"
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-2": {
+                    "id": "view-2",
+                    "documentIds": [
+                      "b"
+                    ],
+                    "activeDocumentId": "b"
+                  },
+                  "view-3": {
+                    "id": "view-3",
+                    "documentIds": [],
+                    "activeDocumentId": null
+                  }
+                },
+                "order": [
+                  "view-2",
+                  "view-3"
+                ],
+                "focusedViewId": "ghost",
+                "seq": 3
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 4,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "RECONCILE",
+                "open": [
+                  "a",
+                  "b"
+                ],
+                "preferViewId": "ghost"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-removed"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": "c",
+              "path": "close",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            },
+            "c": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 4
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-2": {
+                    "id": "view-2",
+                    "documentIds": [
+                      "b",
+                      "a"
+                    ],
+                    "activeDocumentId": "b"
+                  },
+                  "view-3": {
+                    "id": "view-3",
+                    "documentIds": [],
+                    "activeDocumentId": null
+                  }
+                },
+                "order": [
+                  "view-2",
+                  "view-3"
+                ],
+                "focusedViewId": "ghost",
+                "seq": 3
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            },
+            "c": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "returned": [
+              {
+                "id": "view-2",
+                "documentIds": [
+                  "b",
+                  "a"
+                ],
+                "activeDocumentId": "b"
+              },
+              {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            ]
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-2": {
+                    "id": "view-2",
+                    "documentIds": [
+                      "b",
+                      "a"
+                    ],
+                    "activeDocumentId": "b"
+                  },
+                  "view-3": {
+                    "id": "view-3",
+                    "documentIds": [],
+                    "activeDocumentId": null
+                  }
+                },
+                "order": [
+                  "view-2",
+                  "view-3"
+                ],
+                "focusedViewId": "ghost",
+                "seq": 3
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            },
+            "c": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "returned": [
+              "view-2",
+              "view-3"
+            ]
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-2": {
+                    "id": "view-2",
+                    "documentIds": [
+                      "b",
+                      "a"
+                    ],
+                    "activeDocumentId": "b"
+                  },
+                  "view-3": {
+                    "id": "view-3",
+                    "documentIds": [],
+                    "activeDocumentId": null
+                  }
+                },
+                "order": [
+                  "view-2",
+                  "view-3"
+                ],
+                "focusedViewId": "ghost",
+                "seq": 3
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            },
+            "c": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "returned": "ghost"
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-2": {
+                    "id": "view-2",
+                    "documentIds": [
+                      "b",
+                      "a"
+                    ],
+                    "activeDocumentId": "b"
+                  },
+                  "view-3": {
+                    "id": "view-3",
+                    "documentIds": [],
+                    "activeDocumentId": null
+                  }
+                },
+                "order": [
+                  "view-2",
+                  "view-3"
+                ],
+                "focusedViewId": "ghost",
+                "seq": 3
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "tabs",
+      "covers": "addDocument/removeDocument/setActiveDocument/moveDocumentWithin/moveDocumentBetween dispatch their actions; the reducer ignores the invalid ones.",
+      "plugins": [
+        {
+          "factory": "view-manager"
+        }
+      ],
+      "snapshot": [
+        "view-manager"
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          },
+          "b": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          },
+          "c": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "b",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "c",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "createView",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "moveDocumentBetween",
+          "args": [
+            "view-1",
+            "view-2",
+            "b"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "list",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "order",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "focusedViewId",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "moveDocumentBetween",
+          "args": [
+            "view-2",
+            "view-1",
+            "b",
+            0
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "moveDocumentWithin",
+          "args": [
+            "view-1",
+            "b",
+            2
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "moveDocumentBetween",
+          "args": [
+            "view-1",
+            "view-1",
+            "a"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "setActiveDocument",
+          "args": [
+            "view-1",
+            null
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "setActiveDocument",
+          "args": [
+            "view-1",
+            "zzz"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "addDocument",
+          "args": [
+            "view-2",
+            "a"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "addDocument",
+          "args": [
+            "view-2",
+            "c",
+            0
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "addDocument",
+          "args": [
+            "view-2",
+            "c"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "removeDocument",
+          "args": [
+            "view-1",
+            "c"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "removeDocument",
+          "args": [
+            "view-1",
+            "nope"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "documentView",
+          "args": [
+            "a"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "list",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "order",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "focusedViewId",
+          "args": []
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {},
+                "order": [],
+                "focusedViewId": null,
+                "seq": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "RECONCILE",
+                "open": [
+                  "a"
+                ],
+                "preferViewId": null
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": "b"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "RECONCILE",
+                "open": [
+                  "a",
+                  "b"
+                ],
+                "preferViewId": "view-1"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "b",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "b",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a",
+                      "b"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 3,
+              "resolved": "c"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "RECONCILE",
+                "open": [
+                  "a",
+                  "b",
+                  "c"
+                ],
+                "preferViewId": "view-1"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "c",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "c",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            },
+            "c": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 3
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a",
+                      "b",
+                      "c"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "CREATE",
+                "view": {
+                  "id": "view-2",
+                  "documentIds": [],
+                  "activeDocumentId": null
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            },
+            "c": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": "view-2"
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a",
+                      "b",
+                      "c"
+                    ],
+                    "activeDocumentId": "a"
+                  },
+                  "view-2": {
+                    "id": "view-2",
+                    "documentIds": [],
+                    "activeDocumentId": null
+                  }
+                },
+                "order": [
+                  "view-1",
+                  "view-2"
+                ],
+                "focusedViewId": "view-2",
+                "seq": 2
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "MOVE_DOC_BETWEEN",
+                "fromViewId": "view-1",
+                "toViewId": "view-2",
+                "documentId": "b"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            },
+            "c": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a",
+                      "c"
+                    ],
+                    "activeDocumentId": "a"
+                  },
+                  "view-2": {
+                    "id": "view-2",
+                    "documentIds": [
+                      "b"
+                    ],
+                    "activeDocumentId": "b"
+                  }
+                },
+                "order": [
+                  "view-1",
+                  "view-2"
+                ],
+                "focusedViewId": "view-2",
+                "seq": 2
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            },
+            "c": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": [
+              {
+                "id": "view-1",
+                "documentIds": [
+                  "a",
+                  "c"
+                ],
+                "activeDocumentId": "a"
+              },
+              {
+                "id": "view-2",
+                "documentIds": [
+                  "b"
+                ],
+                "activeDocumentId": "b"
+              }
+            ]
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a",
+                      "c"
+                    ],
+                    "activeDocumentId": "a"
+                  },
+                  "view-2": {
+                    "id": "view-2",
+                    "documentIds": [
+                      "b"
+                    ],
+                    "activeDocumentId": "b"
+                  }
+                },
+                "order": [
+                  "view-1",
+                  "view-2"
+                ],
+                "focusedViewId": "view-2",
+                "seq": 2
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            },
+            "c": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": [
+              "view-1",
+              "view-2"
+            ]
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a",
+                      "c"
+                    ],
+                    "activeDocumentId": "a"
+                  },
+                  "view-2": {
+                    "id": "view-2",
+                    "documentIds": [
+                      "b"
+                    ],
+                    "activeDocumentId": "b"
+                  }
+                },
+                "order": [
+                  "view-1",
+                  "view-2"
+                ],
+                "focusedViewId": "view-2",
+                "seq": 2
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            },
+            "c": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": "view-2"
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a",
+                      "c"
+                    ],
+                    "activeDocumentId": "a"
+                  },
+                  "view-2": {
+                    "id": "view-2",
+                    "documentIds": [
+                      "b"
+                    ],
+                    "activeDocumentId": "b"
+                  }
+                },
+                "order": [
+                  "view-1",
+                  "view-2"
+                ],
+                "focusedViewId": "view-2",
+                "seq": 2
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "MOVE_DOC_BETWEEN",
+                "fromViewId": "view-2",
+                "toViewId": "view-1",
+                "documentId": "b",
+                "toIndex": 0
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            },
+            "c": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "b",
+                      "a",
+                      "c"
+                    ],
+                    "activeDocumentId": "b"
+                  },
+                  "view-2": {
+                    "id": "view-2",
+                    "documentIds": [],
+                    "activeDocumentId": null
+                  }
+                },
+                "order": [
+                  "view-1",
+                  "view-2"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 2
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "MOVE_DOC_WITHIN",
+                "viewId": "view-1",
+                "documentId": "b",
+                "toIndex": 2
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            },
+            "c": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a",
+                      "c",
+                      "b"
+                    ],
+                    "activeDocumentId": "b"
+                  },
+                  "view-2": {
+                    "id": "view-2",
+                    "documentIds": [],
+                    "activeDocumentId": null
+                  }
+                },
+                "order": [
+                  "view-1",
+                  "view-2"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 2
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "MOVE_DOC_BETWEEN",
+                "fromViewId": "view-1",
+                "toViewId": "view-1",
+                "documentId": "a"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            },
+            "c": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "c",
+                      "b",
+                      "a"
+                    ],
+                    "activeDocumentId": "b"
+                  },
+                  "view-2": {
+                    "id": "view-2",
+                    "documentIds": [],
+                    "activeDocumentId": null
+                  }
+                },
+                "order": [
+                  "view-1",
+                  "view-2"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 2
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "SET_ACTIVE_DOC",
+                "viewId": "view-1",
+                "documentId": null
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            },
+            "c": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "c",
+                      "b",
+                      "a"
+                    ],
+                    "activeDocumentId": null
+                  },
+                  "view-2": {
+                    "id": "view-2",
+                    "documentIds": [],
+                    "activeDocumentId": null
+                  }
+                },
+                "order": [
+                  "view-1",
+                  "view-2"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 2
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "SET_ACTIVE_DOC",
+                "viewId": "view-1",
+                "documentId": "zzz"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            },
+            "c": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "c",
+                      "b",
+                      "a"
+                    ],
+                    "activeDocumentId": null
+                  },
+                  "view-2": {
+                    "id": "view-2",
+                    "documentIds": [],
+                    "activeDocumentId": null
+                  }
+                },
+                "order": [
+                  "view-1",
+                  "view-2"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 2
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "ADD_DOC",
+                "viewId": "view-2",
+                "documentId": "a"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            },
+            "c": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "c",
+                      "b",
+                      "a"
+                    ],
+                    "activeDocumentId": null
+                  },
+                  "view-2": {
+                    "id": "view-2",
+                    "documentIds": [
+                      "a"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1",
+                  "view-2"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 2
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "ADD_DOC",
+                "viewId": "view-2",
+                "documentId": "c",
+                "index": 0
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            },
+            "c": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "c",
+                      "b",
+                      "a"
+                    ],
+                    "activeDocumentId": null
+                  },
+                  "view-2": {
+                    "id": "view-2",
+                    "documentIds": [
+                      "c",
+                      "a"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1",
+                  "view-2"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 2
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "ADD_DOC",
+                "viewId": "view-2",
+                "documentId": "c"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            },
+            "c": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "c",
+                      "b",
+                      "a"
+                    ],
+                    "activeDocumentId": null
+                  },
+                  "view-2": {
+                    "id": "view-2",
+                    "documentIds": [
+                      "c",
+                      "a"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1",
+                  "view-2"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 2
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "REMOVE_DOC",
+                "viewId": "view-1",
+                "documentId": "c"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            },
+            "c": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "b",
+                      "a"
+                    ],
+                    "activeDocumentId": null
+                  },
+                  "view-2": {
+                    "id": "view-2",
+                    "documentIds": [
+                      "c",
+                      "a"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1",
+                  "view-2"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 2
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "REMOVE_DOC",
+                "viewId": "view-1",
+                "documentId": "nope"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            },
+            "c": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "b",
+                      "a"
+                    ],
+                    "activeDocumentId": null
+                  },
+                  "view-2": {
+                    "id": "view-2",
+                    "documentIds": [
+                      "c",
+                      "a"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1",
+                  "view-2"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 2
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            },
+            "c": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": "view-1"
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "b",
+                      "a"
+                    ],
+                    "activeDocumentId": null
+                  },
+                  "view-2": {
+                    "id": "view-2",
+                    "documentIds": [
+                      "c",
+                      "a"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1",
+                  "view-2"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 2
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            },
+            "c": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": [
+              {
+                "id": "view-1",
+                "documentIds": [
+                  "b",
+                  "a"
+                ],
+                "activeDocumentId": null
+              },
+              {
+                "id": "view-2",
+                "documentIds": [
+                  "c",
+                  "a"
+                ],
+                "activeDocumentId": "a"
+              }
+            ]
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "b",
+                      "a"
+                    ],
+                    "activeDocumentId": null
+                  },
+                  "view-2": {
+                    "id": "view-2",
+                    "documentIds": [
+                      "c",
+                      "a"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1",
+                  "view-2"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 2
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            },
+            "c": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": [
+              "view-1",
+              "view-2"
+            ]
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "b",
+                      "a"
+                    ],
+                    "activeDocumentId": null
+                  },
+                  "view-2": {
+                    "id": "view-2",
+                    "documentIds": [
+                      "c",
+                      "a"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1",
+                  "view-2"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 2
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            },
+            "c": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": "view-1"
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "b",
+                      "a"
+                    ],
+                    "activeDocumentId": null
+                  },
+                  "view-2": {
+                    "id": "view-2",
+                    "documentIds": [
+                      "c",
+                      "a"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1",
+                  "view-2"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 2
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "reordering-tabs-reconciles",
+      "covers": "documents.move changes the open order, so the effect reconciles (a no-op for pane contents); setActive alone does not.",
+      "plugins": [
+        {
+          "factory": "view-manager"
+        }
+      ],
+      "snapshot": [
+        "view-manager"
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          },
+          "b": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "b",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "setActive",
+          "args": [
+            "a"
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "move",
+          "args": [
+            "b",
+            0
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "list",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "order",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "focusedViewId",
+          "args": []
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {},
+                "order": [],
+                "focusedViewId": null,
+                "seq": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "RECONCILE",
+                "open": [
+                  "a"
+                ],
+                "preferViewId": null
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": "b"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "RECONCILE",
+                "open": [
+                  "a",
+                  "b"
+                ],
+                "preferViewId": "view-1"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "b",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "b",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a",
+                      "b"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/active-changed"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a",
+                      "b"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "RECONCILE",
+                "open": [
+                  "b",
+                  "a"
+                ],
+                "preferViewId": "view-1"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/order-changed"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a",
+                      "b"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": [
+              {
+                "id": "view-1",
+                "documentIds": [
+                  "a",
+                  "b"
+                ],
+                "activeDocumentId": "a"
+              }
+            ]
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a",
+                      "b"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": [
+              "view-1"
+            ]
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a",
+                      "b"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": "view-1"
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a",
+                      "b"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "a-failed-open",
+      "covers": "A document whose open fails keeps its tab in the order (status error), so it stays assigned until it is closed.",
+      "plugins": [
+        {
+          "factory": "view-manager"
+        }
+      ],
+      "snapshot": [
+        "view-manager"
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "responses": [
+          {
+            "path": "open",
+            "args": [
+              {
+                "kind": "bytes",
+                "id": "x",
+                "bytes": {
+                  "$bytes": ""
+                }
+              },
+              {}
+            ],
+            "error": {
+              "name": "EngineError",
+              "message": "bad file",
+              "code": "Format"
+            }
+          }
+        ]
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "x",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "list",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "order",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "focusedViewId",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "close",
+          "args": [
+            "x"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "list",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "order",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "focusedViewId",
+          "args": []
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {},
+                "order": [],
+                "focusedViewId": null,
+                "seq": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "RECONCILE",
+                "open": [
+                  "a"
+                ],
+                "preferViewId": null
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "rejected": {
+                "$error": {
+                  "name": "EngineError",
+                  "message": "bad file",
+                  "code": "Format"
+                }
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "RECONCILE",
+                "open": [
+                  "a",
+                  "x"
+                ],
+                "preferViewId": "view-1"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-open-failed"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "x",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a",
+                      "x"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": [
+              {
+                "id": "view-1",
+                "documentIds": [
+                  "a",
+                  "x"
+                ],
+                "activeDocumentId": "a"
+              }
+            ]
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a",
+                      "x"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": [
+              "view-1"
+            ]
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a",
+                      "x"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": "view-1"
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a",
+                      "x"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 3,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "RECONCILE",
+                "open": [
+                  "a"
+                ],
+                "preferViewId": "view-1"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-removed"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 3
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": [
+              {
+                "id": "view-1",
+                "documentIds": [
+                  "a"
+                ],
+                "activeDocumentId": "a"
+              }
+            ]
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": [
+              "view-1"
+            ]
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": "view-1"
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "destroy",
+      "covers": "After destroy the effect is gone and the capability no longer resolves.",
+      "plugins": [
+        {
+          "factory": "view-manager"
+        }
+      ],
+      "snapshot": [
+        "view-manager"
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "destroy"
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "view-manager"
+          },
+          "method": "list",
+          "args": []
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {},
+                "order": [],
+                "focusedViewId": null,
+                "seq": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "RECONCILE",
+                "open": [
+                  "a"
+                ],
+                "preferViewId": null
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "plugins": {
+              "view-manager": {
+                "views": {
+                  "view-1": {
+                    "id": "view-1",
+                    "documentIds": [
+                      "a"
+                    ],
+                    "activeDocumentId": "a"
+                  }
+                },
+                "order": [
+                  "view-1"
+                ],
+                "focusedViewId": "view-1",
+                "seq": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "view-manager",
+              "action": {
+                "type": "RECONCILE",
+                "open": [],
+                "preferViewId": "view-1"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-removed"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "close",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "destroyed",
+          "engineState": {
+            "a": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "destroyed",
+          "engineState": {
+            "a": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "threw": {
+              "$error": {
+                "name": "Error",
+                "message": "[kernel] capability(\"view-manager\") on a destroyed kernel"
+              }
+            }
+          },
+          "state": {
+            "plugins": {}
+          }
+        }
+      ]
+    }
+  ]
+}

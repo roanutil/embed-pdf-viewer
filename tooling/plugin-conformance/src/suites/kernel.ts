@@ -903,6 +903,14 @@ const cases: ScenarioCase[] = [
       cap('alpha', 'dispatch', [{ type: 'SET', state: { n: 2 } }], 'c'),
     ],
   },
+  {
+    name: 'a-layout-without-pages',
+    covers:
+      'A page event whose layout carries a count and no page list: the registry copies what it is given, so the meta has no pages member rather than an empty one.',
+    plugins: [],
+    engine: { documents: { a: doc() } },
+    steps: [start, open(bytes('a')), { op: 'emit', doc: 'a', event: { type: 'pages.deleted', layout: { pageCount: 0 } } }],
+  },
 ];
 
 export const suites: Suite[] = [

@@ -1,7 +1,7 @@
 {
   "total": {
-    "statements": "4748/4760",
-    "branches": "1047/1059"
+    "statements": "6023/6035",
+    "branches": "1367/1383"
   },
   "files": {
     "packages/core/geometry/src/index.ts": {
@@ -12,7 +12,7 @@
     },
     "packages/core/main/src/context.ts": {
       "statements": "123/123",
-      "branches": "31/32",
+      "branches": "32/33",
       "uncoveredLines": [],
       "uncoveredBranches": [
         "81:52#0"
@@ -32,7 +32,7 @@
     },
     "packages/core/main/src/kernel.ts": {
       "statements": "844/844",
-      "branches": "269/275",
+      "branches": "270/276",
       "uncoveredLines": [],
       "uncoveredBranches": [
         "179:22#0",
@@ -45,7 +45,7 @@
     },
     "packages/core/main/src/order.ts": {
       "statements": "66/66",
-      "branches": "29/29",
+      "branches": "30/30",
       "uncoveredLines": [],
       "uncoveredBranches": []
     },
@@ -137,6 +137,62 @@
       "uncoveredLines": [],
       "uncoveredBranches": []
     },
+    "packages/plugin/i18n/src/capability.ts": {
+      "statements": "68/68",
+      "branches": "26/26",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/i18n/src/contract.ts": {
+      "statements": "11/11",
+      "branches": "0/0",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/i18n/src/effects.ts": {
+      "statements": "37/37",
+      "branches": "12/13",
+      "uncoveredLines": [],
+      "uncoveredBranches": [
+        "14:19#0"
+      ]
+    },
+    "packages/plugin/i18n/src/i18n.plugin.ts": {
+      "statements": "23/23",
+      "branches": "4/4",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/i18n/src/index.ts": {
+      "statements": "7/7",
+      "branches": "0/0",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/i18n/src/negotiate.ts": {
+      "statements": "44/44",
+      "branches": "14/14",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/i18n/src/reducer.ts": {
+      "statements": "38/38",
+      "branches": "25/25",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/i18n/src/translate.ts": {
+      "statements": "82/82",
+      "branches": "40/40",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/i18n/src/types.ts": {
+      "statements": "114/114",
+      "branches": "0/0",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
     "packages/plugin/metadata/src/capability.ts": {
       "statements": "50/50",
       "branches": "9/11",
@@ -183,6 +239,118 @@
     "packages/plugin/metadata/src/types.ts": {
       "statements": "37/37",
       "branches": "0/0",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/page-edit/src/capability.ts": {
+      "statements": "108/108",
+      "branches": "35/38",
+      "uncoveredLines": [],
+      "uncoveredBranches": [
+        "29:14#0",
+        "60:34#0",
+        "72:57#0"
+      ]
+    },
+    "packages/plugin/page-edit/src/contract.ts": {
+      "statements": "3/3",
+      "branches": "0/0",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/page-edit/src/index.ts": {
+      "statements": "7/7",
+      "branches": "0/0",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/page-edit/src/page-edit.plugin.ts": {
+      "statements": "18/18",
+      "branches": "2/2",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/page-edit/src/types.ts": {
+      "statements": "95/95",
+      "branches": "0/0",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/shell/src/capability.ts": {
+      "statements": "45/45",
+      "branches": "24/24",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/shell/src/contract.ts": {
+      "statements": "9/9",
+      "branches": "0/0",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/shell/src/index.ts": {
+      "statements": "3/3",
+      "branches": "0/0",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/shell/src/reducer.ts": {
+      "statements": "63/63",
+      "branches": "31/31",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/shell/src/shell.plugin.ts": {
+      "statements": "20/20",
+      "branches": "2/2",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/shell/src/types.ts": {
+      "statements": "75/75",
+      "branches": "0/0",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/view-manager/src/capability.ts": {
+      "statements": "69/69",
+      "branches": "24/24",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/view-manager/src/contract.ts": {
+      "statements": "9/9",
+      "branches": "0/0",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/view-manager/src/effects.ts": {
+      "statements": "25/25",
+      "branches": "4/4",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/view-manager/src/index.ts": {
+      "statements": "2/2",
+      "branches": "0/0",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/view-manager/src/reducer.ts": {
+      "statements": "189/189",
+      "branches": "72/72",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/view-manager/src/types.ts": {
+      "statements": "89/89",
+      "branches": "0/0",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/view-manager/src/view-manager.plugin.ts": {
+      "statements": "22/22",
+      "branches": "2/2",
       "uncoveredLines": [],
       "uncoveredBranches": []
     }

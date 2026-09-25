@@ -301,7 +301,47 @@ dependencies = [
 ]
 
 [[package]]
+name = "epdf-plugin-i18n"
+version = "0.0.0"
+dependencies = [
+ "epdf-kernel",
+ "plugin-conformance",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "epdf-plugin-metadata"
+version = "0.0.0"
+dependencies = [
+ "epdf-kernel",
+ "plugin-conformance",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "epdf-plugin-page-edit"
+version = "0.0.0"
+dependencies = [
+ "epdf-kernel",
+ "plugin-conformance",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "epdf-plugin-shell"
+version = "0.0.0"
+dependencies = [
+ "epdf-kernel",
+ "plugin-conformance",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "epdf-plugin-view-manager"
 version = "0.0.0"
 dependencies = [
  "epdf-kernel",
