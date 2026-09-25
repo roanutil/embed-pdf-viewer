@@ -229,6 +229,10 @@ jobs:
       - name: Page mutate vectors are current
         run: pnpm --filter @embedpdf/tooling-engine-conformance run pages-mutate:check
 
+      # G13's destructive half: what applying a redaction takes with it.
+      - name: Redaction vectors are current
+        run: pnpm --filter @embedpdf/tooling-engine-conformance run redaction:check
+
       # G8's /PieceInfo, on both holders. The catalog and page accessor
       # families differ only by a page object number, so a branch written the
       # wrong way round reads one while claiming the other.

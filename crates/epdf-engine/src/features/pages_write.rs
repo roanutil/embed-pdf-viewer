@@ -170,6 +170,15 @@ fn require_distinct(operation: &str, pages: &[PageObjectNumber]) -> Result<(), E
     Ok(())
 }
 
+/// That a page exists, without caring where.
+///
+/// Shared with the redaction applier, which resolves its pages up front for
+/// the same reason every operation here does: a scope naming one page that
+/// does not exist must change nothing.
+pub(crate) fn require_page(document: &Document, page: PageObjectNumber) -> Result<(), EngineError> {
+    resolve_indices(document, std::slice::from_ref(&page)).map(|_| ())
+}
+
 /// Where each page sits today.
 ///
 /// Resolved in one pass over the page list rather than one lookup per page,

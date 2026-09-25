@@ -45,6 +45,7 @@ live under `tooling/engine-conformance/vectors/`, and every generator has a
 | G12 | `forms.setValue`, `forms.reset`, `forms.import`, `forms.repair` | `vectors/forms/write.json`, `tests/form_write.rs` |
 | G12 | `forms.createField`, `updateField`, `deleteField`, `attachWidget`, `detachWidget` | `vectors/forms/field.json`, `tests/form_field.rs` |
 | G13 | `pages.move`, `rotate`, `delete`, `insertBlank`, `insert`, `flatten` | `vectors/pages/mutate.json`, `tests/pages_mutate.rs` |
+| G13 | `redaction.apply`, both scopes | `vectors/redaction/apply.json`, `tests/redaction_apply.rs` |
 
 ## Done, tested against fixtures rather than vectors
 
@@ -101,7 +102,14 @@ _widgets_on_the_page` asserts the half that IS here, and
 field/widget dictionary: the annotation plane will not delete a widget, so
 the whole operation is refused.
 
-G13 has everything but `redaction.apply`.
+G13 is done: page assembly and redaction both.
+
+`redaction.apply` reports a collateral count that is zero on every case, and
+the corpus cannot make it anything else. The count is annotations removed
+ALONGSIDE the markings, which is popups cascading and widgets detaching, and
+no marking in `annotation_kinds.pdf` has either. Giving one a `/Popup` would
+mean restructuring that fixture: its annotations are direct dictionaries in
+`/Annots`, so there is no object number to point at.
 
 `pages.insert` takes an OPEN source document rather than bytes, and the
 reason is a lifetime. `FPDF_ImportPagesByIndex` does not fully detach what it

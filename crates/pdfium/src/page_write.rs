@@ -70,6 +70,40 @@ impl crate::PageView<'_> {
     /// with nothing to flatten is not a failure, and collapsing the two
     /// would make "this page had no annotations" indistinguishable from
     /// "this page could not be flattened".
+    /// Apply every redaction marking on this page.
+    ///
+    /// Destructive: the content under each marking is removed and the
+    /// marking with it. `None` is PDFium's false, which is OVERLOADED: it
+    /// means either that the page had no markings or that applying one
+    /// failed. The engine tells the two apart by looking first, because a
+    /// sanitizer failure reported as an unchanged page is a document
+    /// somebody believes was redacted.
+    pub fn apply_redactions(&self) -> Option<u32> {
+        let mut removed = 0u32;
+        // SAFETY: the page handle is live and `removed` is a valid
+        // out-parameter.
+        let ok = unsafe { pdfium_sys::EPDFPage_ApplyRedactions(self.as_raw(), &raw mut removed) };
+        (ok != 0).then_some(removed)
+    }
+
+    /// Apply one marking.
+    ///
+    /// The count is COLLATERAL: annotations other than the marking that
+    /// went with it, which is popups cascading and widgets detaching.
+    pub fn apply_redaction(&self, annotation: &crate::Annotation<'_>) -> Option<u32> {
+        let mut removed = 0u32;
+        // SAFETY: both handles are live and `removed` is a valid
+        // out-parameter.
+        let ok = unsafe {
+            pdfium_sys::EPDFAnnot_ApplyRedaction(
+                self.as_raw(),
+                annotation.as_raw(),
+                &raw mut removed,
+            )
+        };
+        (ok != 0).then_some(removed)
+    }
+
     pub fn flatten(&self, usage: FlattenUsage) -> FlattenOutcome {
         // SAFETY: the page handle is live.
         let code = unsafe { pdfium_sys::EPDFPage_Flatten(self.as_raw(), usage as i32) };
