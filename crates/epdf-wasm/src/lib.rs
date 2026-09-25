@@ -144,6 +144,131 @@ pub unsafe extern "C" fn epdf_page_geometry(page: *mut c_void, out_len: *mut u32
     })
 }
 
+// ── The whole engine, through one entry point ─────────────────────────────
+//
+// Everything above this is Stage A: the host owns the session and lends this
+// crate a page. What follows is Stage B, where the session is Rust's, and it
+// is one function rather than sixty-five because
+// `epdf_engine::host::Host` already routes the protocol. Adding an export per
+// operation here would put a second copy of the routing in a language whose
+// compiler cannot check it against the first.
+
+/// Create an engine. The caller owns it until [`epdf_host_destroy`].
+///
+/// Not `Send`, and the pointer must stay on the thread that made it: every
+/// PDFium handle beneath it is thread-confined.
+#[unsafe(no_mangle)]
+pub extern "C" fn epdf_host_create() -> *mut c_void {
+    match catch_unwind(|| Box::into_raw(Box::new(epdf_engine::host::Host::new()))) {
+        Ok(host) => host.cast(),
+        // Null rather than a poisoned pointer. A host that cannot be created
+        // has no channel to report through yet, so the return value is the
+        // only signal available.
+        Err(_) => std::ptr::null_mut(),
+    }
+}
+
+/// Destroy an engine and everything it holds open.
+///
+/// # Safety
+/// `host` must be a pointer from [`epdf_host_create`] that has not already
+/// been destroyed.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn epdf_host_destroy(host: *mut c_void) {
+    if host.is_null() {
+        return;
+    }
+    // SAFETY: the contract above. Reconstructing the Box that `create` leaked
+    // is what closes every session it still holds.
+    let host = unsafe { Box::from_raw(host.cast::<epdf_engine::host::Host>()) };
+    // A panic while closing must not cross the ABI, and there is nowhere to
+    // report it: the caller has already given up the pointer.
+    let _ = catch_unwind(AssertUnwindSafe(move || drop(host)));
+}
+
+/// Run one request.
+///
+/// `request` is UTF-8 JSON. `payloads` is the request's binary arguments in
+/// the framing `epdf_engine::host::frame` documents, or null for none. The
+/// return is one buffer in that same framing, holding the response JSON and
+/// its binary results, which the caller frees with [`epdf_buffer_free`].
+///
+/// One buffer rather than two calls, because a second call to collect the
+/// payloads would need this side to hold them between the two, and a host
+/// that abandoned the sequence would leak them.
+///
+/// # Safety
+/// `host` must be a live pointer from [`epdf_host_create`], used on the
+/// thread that created it. `request` must point to `request_len` readable
+/// bytes, and `payloads` to `payloads_len` readable bytes or be null.
+/// `out_len` must point to a writable `u32`.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn epdf_host_call(
+    host: *mut c_void,
+    request: *const u8,
+    request_len: u32,
+    payloads: *const u8,
+    payloads_len: u32,
+    out_len: *mut u32,
+) -> *mut u8 {
+    let outcome = catch_unwind(AssertUnwindSafe(|| {
+        let Some(host) = (unsafe { host.cast::<epdf_engine::host::Host>().as_mut() }) else {
+            return refusal("the engine pointer is null");
+        };
+        // SAFETY: the contract above.
+        let request = match std::str::from_utf8(unsafe {
+            std::slice::from_raw_parts(request, request_len as usize)
+        }) {
+            Ok(request) => request,
+            Err(_) => return refusal("the request is not UTF-8"),
+        };
+        let payloads = if payloads.is_null() || payloads_len == 0 {
+            Vec::new()
+        } else {
+            // SAFETY: the contract above.
+            let bytes = unsafe { std::slice::from_raw_parts(payloads, payloads_len as usize) };
+            match epdf_engine::host::frame::unpack_payloads(bytes) {
+                Some(payloads) => payloads,
+                None => return refusal("the payload frame does not parse"),
+            }
+        };
+        epdf_engine::host::frame::pack(&host.call(request, payloads))
+    }));
+
+    let bytes = outcome.unwrap_or_else(|_| {
+        refusal("the Rust engine panicked; the session may be poisoned")
+    });
+    hand_off_bytes(bytes, out_len)
+}
+
+/// A framed response carrying only an error, for the failures that happen
+/// before the dispatcher is reached.
+fn refusal(message: &str) -> Vec<u8> {
+    epdf_engine::host::frame::pack(&epdf_engine::host::HostResponse {
+        json: serde_json::json!({
+            "error": { "code": "WireFormat", "message": message },
+        })
+        .to_string(),
+        payloads: Vec::new(),
+    })
+}
+
+/// Hand the host an owned buffer, on the same terms as [`hand_off`].
+fn hand_off_bytes(bytes: Vec<u8>, out_len: *mut u32) -> *mut u8 {
+    let mut boxed = bytes.into_boxed_slice();
+    let ptr = boxed.as_mut_ptr();
+    let len = boxed.len();
+    std::mem::forget(boxed);
+    if out_len.is_null() {
+        // SAFETY: the Box this just forgot, reconstructed unchanged.
+        unsafe { drop(Box::from_raw(std::ptr::slice_from_raw_parts_mut(ptr, len))) };
+        return std::ptr::null_mut();
+    }
+    // SAFETY: the caller's contract says this is a writable u32.
+    unsafe { *out_len = len as u32 };
+    ptr
+}
+
 /// Frees a buffer handed out by this module.
 ///
 /// # Safety

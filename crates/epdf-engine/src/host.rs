@@ -106,12 +106,17 @@ impl RequestHeader {
 /// through [`crate::dispatch::OwnerThread`].
 pub struct Host {
     sessions: SessionRegistry,
-    /// Fonts this host registered, shared by every session.
+    /// Fonts this host registered, shared by every session it holds.
     ///
-    /// Process-wide rather than per document, which is what PDFium's
-    /// registration actually is: an id minted here is valid in every document
-    /// this library instance opens.
-    fonts: crate::features::fonts::FontRegistry,
+    /// Claimed on first use rather than at construction, and `None` until
+    /// then. PDFium's registry is THREAD-global and
+    /// [`crate::features::fonts::FontRegistry`] enforces one owner per
+    /// thread, so building one here eagerly would make "one host per thread"
+    /// a hard rule. A server pool holding two engines on one thread is a
+    /// reasonable thing to do, and only the one that actually registers a
+    /// font needs the registry; the second gets the registry's own refusal
+    /// if it tries, which says what the conflict is.
+    fonts: Option<crate::features::fonts::FontRegistry>,
     clock: Box<dyn crate::clock::Clock>,
     ids: Box<dyn crate::ids::IdSource>,
     /// Set by a host that can turn a raster into a PNG or a JPEG.
@@ -139,7 +144,7 @@ impl std::fmt::Debug for Host {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Host")
             .field("sessions", &self.sessions.len())
-            .field("fonts", &self.fonts.len())
+            .field("fonts", &self.fonts.as_ref().map_or(0, |f| f.len()))
             .field("encoder", &self.encoder.is_some())
             .finish()
     }
@@ -149,11 +154,7 @@ impl Host {
     pub fn new() -> Self {
         Self {
             sessions: SessionRegistry::new(),
-            // A registry needs the library, and a host with no library has
-            // nothing to serve anyway. An unregisterable registry would make
-            // every font operation fail later with a worse message.
-            fonts: crate::features::fonts::FontRegistry::new()
-                .unwrap_or_else(|e| panic!("the font registry could not be created: {e}")),
+            fonts: None,
             clock: Box::new(crate::clock::SystemClock),
             ids: Box::new(crate::ids::SystemIdSource),
             encoder: None,
@@ -188,6 +189,16 @@ impl Host {
     /// close. Not part of the wire.
     pub fn sessions(&self) -> &SessionRegistry {
         &self.sessions
+    }
+
+    /// The registry, mutably.
+    ///
+    /// For a host that supervises the engine rather than using it: a server
+    /// pool closing everything between checkouts, or a test asserting on
+    /// state after a shutdown. Not part of the wire, and not a way around
+    /// an operation that the wire refuses.
+    pub fn sessions_mut(&mut self) -> &mut SessionRegistry {
+        &mut self.sessions
     }
 
     /// Handle one request.
@@ -247,26 +258,28 @@ impl Host {
             // them would be a lie about the scope of the change.
             "fonts.register" => {
                 let key = string_field(&body, "fontKey")?;
+                let fonts = self.fonts()?;
                 let description = pdfium::FontDescription {
                     family_name: string_field(&body, "familyName")?,
                     weight: field(&body, "weight")?,
                     italic: field(&body, "italic")?,
                 };
                 let data = payload(&payloads, 0, "the font file")?;
-                let id = self.fonts.register(key.clone(), &description, data)?;
+                let id = fonts.register(key.clone(), &description, data)?;
                 serde_json::json!({ "fontKey": key, "registered": id.raw() })
             }
             "fonts.addFallback" => {
                 let key = string_field(&body, "fontKey")?;
-                self.fonts.add_fallback(&key)?;
-                serde_json::json!({ "fallbacks": self.fonts.fallback_order() })
+                let fonts = self.fonts()?;
+                fonts.add_fallback(&key)?;
+                serde_json::json!({ "fallbacks": fonts.fallback_order() })
             }
             "fonts.clearFallbacks" => {
-                self.fonts.clear_fallbacks();
+                self.fonts()?.clear_fallbacks();
                 serde_json::json!({ "fallbacks": [] })
             }
             "fonts.clear" => {
-                self.fonts.clear();
+                self.fonts()?.clear();
                 serde_json::json!({ "registered": 0 })
             }
             // Both take a path and no session: the point of a probe is to
@@ -504,8 +517,7 @@ impl Host {
                     crate::access::PageAccess::view(&opened),
                     &annotation_ref,
                 )?;
-                let file =
-                    f::files::attachments::read_annotation_file(&found, ceiling, cancel)?;
+                let file = f::files::attachments::read_annotation_file(&found, ceiling, cancel)?;
                 Ok(attachment_response(file))
             }
             "attachments.readFile" => {
@@ -593,9 +605,7 @@ impl Host {
                     optional(body, "actor")?.unwrap_or_default();
                 let owned_payloads = resource_map(body, &payloads)?;
                 let resources = borrowed_resources(&owned_payloads);
-                let context =
-                    f::annotation::write::context::AnnotationWriteContext::with_fonts(&self.fonts)
-                        .with_resources(&resources);
+                let context = annotation_context(self.fonts.as_ref(), &resources);
                 let result = f::annotation::write::mutator::create(
                     self.sessions.session_mut(&key)?,
                     page,
@@ -615,9 +625,7 @@ impl Host {
                 let patch: f::annotation::write::patch::AnnotationPatch = field(body, "patch")?;
                 let owned_payloads = resource_map(body, &payloads)?;
                 let resources = borrowed_resources(&owned_payloads);
-                let context =
-                    f::annotation::write::context::AnnotationWriteContext::with_fonts(&self.fonts)
-                        .with_resources(&resources);
+                let context = annotation_context(self.fonts.as_ref(), &resources);
                 let result = f::annotation::write::mutator::update(
                     self.sessions.session_mut(&key)?,
                     &annotation_ref,
@@ -698,9 +706,10 @@ impl Host {
                 if result.meta.is_none() {
                     return Ok(ok(value(&result)?));
                 }
-                self.finish(&key, crate::session::save::DocumentEventInit::FormValueChanged(
-                    value(&result)?,
-                ))
+                self.finish(
+                    &key,
+                    crate::session::save::DocumentEventInit::FormValueChanged(value(&result)?),
+                )
             }
             "forms.import" => {
                 // The data is a PAYLOAD, never a JSON field. An FDF is a file,
@@ -997,6 +1006,18 @@ impl Host {
                 ))
             }
         }
+    }
+
+    /// This thread's font registry, claimed on first use.
+    ///
+    /// The refusal a second host on one thread gets is the registry's own,
+    /// which names the conflict. Reporting it here rather than at
+    /// construction means a host that never registers a font never collides.
+    fn fonts(&mut self) -> Result<&mut crate::features::fonts::FontRegistry, EngineError> {
+        if self.fonts.is_none() {
+            self.fonts = Some(crate::features::fonts::FontRegistry::new()?);
+        }
+        Ok(self.fonts.as_mut().expect("just set"))
     }
 
     /// Bump the sequence, save the layer artifact, and return the result.
@@ -1407,6 +1428,25 @@ fn resource_map(
     Ok(out)
 }
 
+/// What an annotation writer is given beyond its draft.
+///
+/// The fonts are present only when this host has claimed the thread's
+/// registry. A draft naming a registered family without one is refused by
+/// the context itself, saying that this host has no registry, which is more
+/// useful than a silent fall back to Helvetica: the document would get the
+/// wrong glyphs and nothing downstream could tell.
+fn annotation_context<'a>(
+    fonts: Option<&'a crate::features::fonts::FontRegistry>,
+    resources: &'a crate::features::annotation::write::context::WriteResourceMap<'a>,
+) -> crate::features::annotation::write::context::AnnotationWriteContext<'a> {
+    use crate::features::annotation::write::context::AnnotationWriteContext;
+    match fonts {
+        Some(fonts) => AnnotationWriteContext::with_fonts(fonts),
+        None => AnnotationWriteContext::empty(),
+    }
+    .with_resources(resources)
+}
+
 /// Borrow the owned resource map in the shape a writer takes.
 fn borrowed_resources(
     owned: &OwnedResources,
@@ -1465,4 +1505,145 @@ fn page_tokens(
         tokens.insert(page, session.page_state(page)?.revision);
     }
     Ok(tokens)
+}
+
+/// Framing for a host that has one buffer rather than a list of them.
+///
+/// The uniffi and napi bindings hand `Vec<Vec<u8>>` across directly, because
+/// their generated glue already knows how to carry a list of byte arrays.
+/// The C ABI does not: it has a pointer and a length, so the payloads have
+/// to be laid out in one allocation and taken apart on the other side.
+///
+/// The layout is little-endian `u32` throughout, which is what WASM's linear
+/// memory is and what a `DataView` on the other side reads without a flag:
+///
+/// ```text
+/// [u32 json_len][json bytes][u32 count]([u32 len][bytes])*count
+/// ```
+///
+/// Lengths rather than offsets, so a reader walks forward once and never
+/// computes a position that could point outside the buffer. A `u32` caps one
+/// payload at four gigabytes, which is also the cap on the whole address
+/// space this framing is used in.
+pub mod frame {
+    use super::{HostResponse, Payloads};
+
+    /// Pack a response into one buffer.
+    pub fn pack(response: &HostResponse) -> Vec<u8> {
+        let json = response.json.as_bytes();
+        let size =
+            4 + json.len() + 4 + response.payloads.iter().map(|p| 4 + p.len()).sum::<usize>();
+        let mut out = Vec::with_capacity(size);
+        out.extend_from_slice(&(json.len() as u32).to_le_bytes());
+        out.extend_from_slice(json);
+        out.extend_from_slice(&(response.payloads.len() as u32).to_le_bytes());
+        for payload in &response.payloads {
+            out.extend_from_slice(&(payload.len() as u32).to_le_bytes());
+            out.extend_from_slice(payload);
+        }
+        out
+    }
+
+    /// Take a request's payloads out of one buffer.
+    ///
+    /// `None` for anything that does not parse: a truncated length, a count
+    /// that overruns, a trailing byte. A host that framed its own request
+    /// wrong is a bug on its side, and guessing at a partial read would hand
+    /// an operation bytes that are not the ones it was sent.
+    pub fn unpack_payloads(bytes: &[u8]) -> Option<Payloads> {
+        let mut at = 0usize;
+        let count = read_u32(bytes, &mut at)? as usize;
+        let mut payloads = Vec::with_capacity(count.min(64));
+        for _ in 0..count {
+            let len = read_u32(bytes, &mut at)? as usize;
+            let end = at.checked_add(len)?;
+            payloads.push(bytes.get(at..end)?.to_vec());
+            at = end;
+        }
+        (at == bytes.len()).then_some(payloads)
+    }
+
+    fn read_u32(bytes: &[u8], at: &mut usize) -> Option<u32> {
+        let end = at.checked_add(4)?;
+        let value = u32::from_le_bytes(bytes.get(*at..end)?.try_into().ok()?);
+        *at = end;
+        Some(value)
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        fn response(json: &str, payloads: Vec<Vec<u8>>) -> HostResponse {
+            HostResponse { json: json.to_owned(), payloads }
+        }
+
+        /// Reading a packed response back, the way a host does.
+        fn unpack(bytes: &[u8]) -> Option<(String, Payloads)> {
+            let mut at = 0usize;
+            let json_len = read_u32(bytes, &mut at)? as usize;
+            let end = at.checked_add(json_len)?;
+            let json = String::from_utf8(bytes.get(at..end)?.to_vec()).ok()?;
+            Some((json, unpack_payloads(bytes.get(end..)?)?))
+        }
+
+        #[test]
+        fn a_response_survives_the_round_trip() {
+            let original = response(r#"{"result":{"size":3}}"#, vec![vec![1, 2, 3], vec![9]]);
+            let (json, payloads) = unpack(&pack(&original)).expect("it unpacks");
+            assert_eq!(json, original.json);
+            assert_eq!(payloads, original.payloads);
+        }
+
+        #[test]
+        fn a_response_with_no_payloads_still_carries_the_count() {
+            // Zero is written rather than omitted. A reader that had to infer
+            // "no count field" from a buffer ending early could not tell that
+            // from a truncated one.
+            let packed = pack(&response("{}", Vec::new()));
+            assert_eq!(packed.len(), 4 + 2 + 4);
+            let (json, payloads) = unpack(&packed).expect("it unpacks");
+            assert_eq!(json, "{}");
+            assert!(payloads.is_empty());
+        }
+
+        #[test]
+        fn an_empty_payload_is_kept_rather_than_dropped() {
+            // A zero-length payload is a real answer: an attachment can hold
+            // no bytes, and collapsing it to "no payload" would shift every
+            // payload after it by one position.
+            let original = response("{}", vec![Vec::new(), vec![7]]);
+            let (_, payloads) = unpack(&pack(&original)).expect("it unpacks");
+            assert_eq!(payloads, original.payloads);
+        }
+
+        #[test]
+        fn a_truncated_buffer_is_refused_rather_than_partly_read() {
+            let packed = pack(&response("{}", vec![vec![1, 2, 3, 4]]));
+            for cut in 1..packed.len() {
+                assert!(unpack(&packed[..cut]).is_none(), "a buffer cut at {cut} was accepted",);
+            }
+        }
+
+        #[test]
+        fn trailing_bytes_are_refused() {
+            // A count that does not account for the whole buffer means the
+            // two sides disagree about the framing, and reading the part
+            // they agree on would hide that.
+            let mut packed = pack(&response("{}", vec![vec![1]]));
+            packed.push(0);
+            assert!(unpack(&packed).is_none());
+        }
+
+        #[test]
+        fn a_count_that_overruns_is_refused() {
+            // The shape a malicious or corrupted frame takes: a huge count
+            // with nothing behind it. It must not allocate against the
+            // count, which is why the reader reserves a bounded amount and
+            // grows as it actually reads.
+            let mut bytes = u32::MAX.to_le_bytes().to_vec();
+            bytes.extend_from_slice(&4u32.to_le_bytes());
+            assert!(unpack_payloads(&bytes).is_none());
+        }
+    }
 }

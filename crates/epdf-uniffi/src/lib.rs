@@ -118,6 +118,12 @@ pub struct PdfBitmap {
 struct OwnedState {
     documents: HashMap<u64, OwnedDocument>,
     next_id: u64,
+    /// The whole protocol, made on first use.
+    ///
+    /// Lazy rather than built with the state, because creating one acquires
+    /// the PDFium library and a facade that only ever calls the Phase 1
+    /// surface should not pay for a font registry it never touches.
+    host: Option<epdf_engine::host::Host>,
 }
 
 /// What an engine and its documents share: the thread.
@@ -139,6 +145,31 @@ impl Shared {
     }
 }
 
+/// One request and its binary arguments.
+///
+/// A record rather than two parameters, so the request and the payloads that
+/// belong to it cannot be passed to different calls. `payloads` is
+/// positional: the operation names the first and the second, because the
+/// transfer list on the web side is an array and a keyed shape here would be
+/// a second convention.
+#[derive(Debug, uniffi::Record)]
+pub struct PdfRequest {
+    /// UTF-8 JSON: the wire envelope, `{ kind, docId, ... }`.
+    pub json: String,
+    pub payloads: Vec<Vec<u8>>,
+}
+
+/// What one request produced.
+///
+/// One shape for both outcomes. `json` is either `{"result": ...}` or
+/// `{"error": ...}`, because a facade that got no answer at all could not
+/// tell a refused operation from a crashed engine.
+#[derive(Debug, uniffi::Record)]
+pub struct PdfResponse {
+    pub json: String,
+    pub payloads: Vec<Vec<u8>>,
+}
+
 /// One engine, one owner thread, and every PDFium handle it creates.
 #[derive(uniffi::Object)]
 pub struct PdfEngine {
@@ -155,6 +186,32 @@ impl PdfEngine {
         // constructor is where the library appears.
         Arc::new(Self {
             shared: Arc::new(Shared { owner: Mutex::new(OwnerThread::start(OwnedState::default)) }),
+        })
+    }
+
+    /// Run one wire request.
+    ///
+    /// The whole engine, through one call. Sixty-five operations reach a
+    /// facade this way rather than through sixty-five generated methods,
+    /// which would be sixty-five signatures uniffi cannot check against the
+    /// TypeScript they mirror.
+    ///
+    /// The cost, stated plainly: Swift and Kotlin see strings and byte
+    /// arrays rather than typed records, so a facade has to decode the JSON
+    /// itself and a mistyped argument is a runtime refusal rather than a
+    /// compile error. That is the trade the plan takes, because the typed
+    /// alternative drifts silently and this one does not: every kind and
+    /// every argument name is pinned by
+    /// `tooling/engine-conformance/vectors/wire/requests.json`.
+    ///
+    /// Runs on the owner thread, like everything else here. Never fails for
+    /// an operation's own refusal, which arrives as `error` in the JSON;
+    /// the `Result` is for the engine thread being gone.
+    pub fn call(&self, request: PdfRequest) -> Result<PdfResponse> {
+        self.shared.run(move |state| {
+            let host = state.host.get_or_insert_with(epdf_engine::host::Host::new);
+            let response = host.call(&request.json, request.payloads);
+            PdfResponse { json: response.json, payloads: response.payloads }
         })
     }
 

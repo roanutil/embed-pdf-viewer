@@ -84,6 +84,15 @@ jobs:
       - name: cargo test
         run: cargo test --workspace
 
+      # The Node addon, loaded by Node. `napi::Buffer` cannot be built
+      # outside a Node environment, so a Rust test of `epdf-node` would reach
+      # the export's body and skip the Node-API marshalling, which is the
+      # only part of that crate `epdf-engine` does not already cover.
+      - name: Node addon loads and runs
+        run: |
+          cargo build -p epdf-node --release
+          node crates/epdf-node/tests/addon.mjs
+
       - name: Generated TypeScript DTOs are current
         run: git diff --exit-code -- packages/engine/core/src/dto/generated
 

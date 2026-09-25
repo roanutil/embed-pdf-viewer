@@ -10,7 +10,22 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 epdf-engine = { path = "../epdf-engine" }
+# Pinned exactly, as the workspace manifest records. `default-features = false`
+# drops the async runtime: every export here is synchronous and runs on the
+# thread that owns the engine, so a Tokio runtime would be a second scheduler
+# with nothing to schedule. `napi8` is the Node-API level the server's Node
+# 20 floor provides.
+napi = { version = "=3.12.2", default-features = false, features = ["napi8"] }
+napi-derive = "=3.6.3"
+# Pinned to work around an upstream mismatch, not because this crate uses it.
+# `napi-derive` 3.6.3 depends on `convert_case` "0.11" and re-exports symbols
+# from `napi-derive-backend`, whose 6.1.4 moved to "0.12". Cargo resolves both,
+# the two `Case` types are different types, and the macro crate stops
+# compiling. 6.1.2 is the newest backend on "0.11", and `napi-derive` asks for
+# ">=6.1.2", so this narrows rather than contradicts it. Remove when
+# `napi-derive` ships a release whose backend agrees with it.
+napi-derive-backend = "=6.1.2"
 
-# Takes napi "=3.12.2" (default-features = false, "napi8"), napi-derive
-# "=3.6.3", and napi-build "=2.4.1" as a build-dependency. The build.rs that
-# napi-build needs lands with the first export.
+[build-dependencies]
+build-support = { path = "../build-support" }
+napi-build = "=2.4.1"
