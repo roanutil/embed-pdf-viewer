@@ -115,6 +115,9 @@ Every asynchronous call is logged and answered by the first entry whose `path`, 
 match; `args` compares canonically, and an entry without it matches any arguments. An entry with
 `times` is consumed that many times; one without is sticky. It answers with `value`, `error`, or
 `defer: label`. Page services are `page.<service>.<method>` with the page's object number as `pon`.
+Optional members exist only when `services` lists them: `render`, `actions`, `attachments`,
+`pieceInfo`, `redaction`, `downloadLayer`, `page.pieceInfo`, and `forms.submit` (the Rust side
+answers `DocumentHandle::has` from the same list).
 
 Four calls have fallbacks: `open` hands out the document whose key is the input's `id`,
 `pages.list` answers from `pages`, `close` and `destroy` resolve. Anything else unanswered rejects
