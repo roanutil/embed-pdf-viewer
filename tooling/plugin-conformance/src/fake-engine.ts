@@ -70,6 +70,10 @@ export interface FakeDocumentSpec {
    *  `attachments`, `pieceInfo`, `redaction`, `downloadLayer`, `page.pieceInfo`,
    *  and the optional member `forms.submit`. */
   readonly services?: readonly string[];
+  /** Optional members present by default that this handle lacks:
+   *  `forms.applyEffects`, which the contract makes optional and every
+   *  shipped engine implements. */
+  readonly lacks?: readonly string[];
   readonly capabilities?: unknown;
   readonly security?: SecuritySpec;
   /** The page registry. `pages.list` answers from it unless the table says otherwise,
@@ -213,6 +217,10 @@ export function createFakeEngine(
     if (!document) throw new Error(`[fake-engine] no document "${key}"`);
     const id = document.id ?? key;
     const services = new Set(document.services ?? []);
+    const lacks = new Set(document.lacks ?? []);
+    const formsAbsent = new Set<string>();
+    if (!services.has('forms.submit')) formsAbsent.add('submit');
+    if (lacks.has('forms.applyEffects')) formsAbsent.add('applyEffects');
     const table = document.responses;
     const security = document.security ?? {};
     const listeners = new Set<(event: unknown) => void>();
@@ -240,7 +248,8 @@ export function createFakeEngine(
       annotations: service(id, table, 'annotations'),
       // `forms.submit` is optional in the contract (a submit-capable home):
       // present only when `services` lists it, so `typeof submit` can be false.
-      forms: service(id, table, 'forms', undefined, services.has('forms.submit') ? new Set() : new Set(['submit'])),
+      // `forms.applyEffects` is optional too, but present unless `lacks` names it.
+      forms: service(id, table, 'forms', undefined, formsAbsent),
       search: service(id, table, 'search'),
       pages: new Proxy(
         {},

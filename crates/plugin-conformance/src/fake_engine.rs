@@ -332,6 +332,9 @@ impl Engine for AsEngine {
     }
 }
 
+/// Optional contract members every handle has unless its `lacks` names them.
+const DEFAULT_PRESENT: &[&str] = &["forms.applyEffects"];
+
 struct FakeHandle {
     engine: Rc<FakeEngine>,
     table: Table,
@@ -344,6 +347,14 @@ impl FakeHandle {
     fn services(&self) -> Vec<&str> {
         self.spec
             .get("services")
+            .and_then(Value::as_array)
+            .map(|a| a.iter().filter_map(Value::as_str).collect())
+            .unwrap_or_default()
+    }
+
+    fn lacks(&self) -> Vec<&str> {
+        self.spec
+            .get("lacks")
             .and_then(Value::as_array)
             .map(|a| a.iter().filter_map(Value::as_str).collect())
             .unwrap_or_default()
@@ -373,6 +384,9 @@ impl DocumentHandle for FakeHandle {
     }
 
     fn has(&self, member: &str) -> bool {
+        if DEFAULT_PRESENT.contains(&member) {
+            return !self.lacks().contains(&member);
+        }
         self.services().contains(&member)
     }
 
