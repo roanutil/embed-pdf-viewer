@@ -13,6 +13,7 @@
 pub mod canonical;
 pub mod fake_engine;
 pub mod harness;
+pub mod js;
 pub mod probe;
 pub mod scenario;
 
