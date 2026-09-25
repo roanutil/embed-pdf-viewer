@@ -1,0 +1,26 @@
+[package]
+name = "epdf-plugin-commands"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+description = "packages/plugin/commands in Rust: the workspace command registry, with labels, enablement and surface state derived per call from i18n, shell and the app's own derivations."
+
+[lib]
+crate-type = ["rlib"]
+
+[features]
+# The conformance adapter (`harness` module). On by default so `cargo test`
+# replays the vectors with no flags; a host that ships the plugin turns it
+# off with `default-features = false`. The adapter needs the i18n and shell
+# adapters too, because the vectors run those plugins next to this one.
+default = ["harness"]
+harness = ["dep:plugin-conformance", "epdf-plugin-i18n/harness", "epdf-plugin-shell/harness"]
+
+[dependencies]
+epdf-kernel = { path = "../../epdf-kernel" }
+epdf-ui-core = { path = "../ui-core", default-features = false }
+epdf-plugin-i18n = { path = "../i18n", default-features = false }
+epdf-plugin-shell = { path = "../shell", default-features = false }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["float_roundtrip"] }
+plugin-conformance = { path = "../../plugin-conformance", optional = true }
