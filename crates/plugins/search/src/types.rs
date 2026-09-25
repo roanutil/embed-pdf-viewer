@@ -35,12 +35,6 @@ pub struct SearchQuery {
     pub match_diacritics: Option<bool>,
 }
 
-impl SearchQuery {
-    pub fn text(text: impl Into<String>) -> Self {
-        SearchQuery { text: text.into(), ..Default::default() }
-    }
-}
-
 /// `SearchMode`: how much of a match leaves the engine. `Rects` needs
 /// `doc.text.search`; `Full` (a snippet per match) also `doc.text.copy`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]

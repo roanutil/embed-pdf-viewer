@@ -23281,7 +23281,7 @@
     },
     {
       "name": "navigation-wraps",
-      "covers": "next/prev/goTo dispatch SET_ACTIVE with the index wrapped modulo the hit count (negative and past-the-end alike) and return the hit; with no Stage nothing moves.",
+      "covers": "next/prev/goTo dispatch SET_ACTIVE with the index wrapped modulo the hit count (negative, more than twice the count below zero, and past the end alike) and return the hit; with no Stage nothing moves.",
       "plugins": [
         {
           "factory": "search"
@@ -23625,6 +23625,17 @@
           "method": "goTo",
           "args": [
             -6
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "search",
+            "doc": "a"
+          },
+          "method": "goTo",
+          "args": [
+            -9
           ]
         },
         {
@@ -26005,6 +26016,196 @@
                   ]
                 },
                 "activeIndex": 2,
+                "progress": {
+                  "scanned": 3,
+                  "total": 3
+                },
+                "error": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "search::a",
+              "action": {
+                "type": "SET_ACTIVE",
+                "index": 3
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "pon": 33,
+              "pageIndex": 2,
+              "charStart": 5,
+              "charCount": 4,
+              "segments": []
+            }
+          },
+          "state": {
+            "plugins": {
+              "search::a": {
+                "query": {
+                  "text": "the"
+                },
+                "status": "complete",
+                "hits": [
+                  {
+                    "pon": 11,
+                    "pageIndex": 0,
+                    "charStart": 0,
+                    "charCount": 4,
+                    "segments": [
+                      {
+                        "quad": {
+                          "upperStart": {
+                            "x": 10,
+                            "y": 760
+                          },
+                          "upperEnd": {
+                            "x": 50,
+                            "y": 760
+                          },
+                          "lowerStart": {
+                            "x": 10,
+                            "y": 780
+                          },
+                          "lowerEnd": {
+                            "x": 50,
+                            "y": 780
+                          }
+                        },
+                        "rect": {
+                          "x": 10,
+                          "y": 760,
+                          "width": 40,
+                          "height": 20
+                        },
+                        "advance": 1
+                      }
+                    ],
+                    "bounds": {
+                      "x": 10,
+                      "y": 760,
+                      "width": 40,
+                      "height": 20
+                    }
+                  },
+                  {
+                    "pon": 11,
+                    "pageIndex": 0,
+                    "charStart": 9,
+                    "charCount": 4,
+                    "segments": [
+                      {
+                        "quad": {
+                          "upperStart": {
+                            "x": 10,
+                            "y": 760
+                          },
+                          "upperEnd": {
+                            "x": 50,
+                            "y": 760
+                          },
+                          "lowerStart": {
+                            "x": 10,
+                            "y": 780
+                          },
+                          "lowerEnd": {
+                            "x": 50,
+                            "y": 780
+                          }
+                        },
+                        "rect": {
+                          "x": 10,
+                          "y": 760,
+                          "width": 40,
+                          "height": 20
+                        },
+                        "advance": 1
+                      }
+                    ],
+                    "bounds": {
+                      "x": 10,
+                      "y": 760,
+                      "width": 40,
+                      "height": 20
+                    }
+                  },
+                  {
+                    "pon": 22,
+                    "pageIndex": 1,
+                    "charStart": 2,
+                    "charCount": 4,
+                    "segments": [
+                      {
+                        "quad": {
+                          "upperStart": {
+                            "x": 0,
+                            "y": 380
+                          },
+                          "upperEnd": {
+                            "x": 40,
+                            "y": 380
+                          },
+                          "lowerStart": {
+                            "x": 0,
+                            "y": 400
+                          },
+                          "lowerEnd": {
+                            "x": 40,
+                            "y": 400
+                          }
+                        },
+                        "rect": {
+                          "x": 0,
+                          "y": 380,
+                          "width": 40,
+                          "height": 20
+                        },
+                        "advance": 1
+                      }
+                    ],
+                    "bounds": {
+                      "x": 0,
+                      "y": 380,
+                      "width": 40,
+                      "height": 20
+                    }
+                  },
+                  {
+                    "pon": 33,
+                    "pageIndex": 2,
+                    "charStart": 5,
+                    "charCount": 4,
+                    "segments": []
+                  }
+                ],
+                "hitsByPage": {
+                  "11": [
+                    0,
+                    1
+                  ],
+                  "22": [
+                    2
+                  ],
+                  "33": [
+                    3
+                  ]
+                },
+                "activeIndex": 3,
                 "progress": {
                   "scanned": 3,
                   "total": 3

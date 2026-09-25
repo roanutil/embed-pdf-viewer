@@ -616,7 +616,7 @@ const navigationCases: ScenarioCase[] = [
   {
     name: 'navigation-wraps',
     covers:
-      'next/prev/goTo dispatch SET_ACTIVE with the index wrapped modulo the hit count (negative and past-the-end alike) and return the hit; with no Stage nothing moves.',
+      'next/prev/goTo dispatch SET_ACTIVE with the index wrapped modulo the hit count (negative, more than twice the count below zero, and past the end alike) and return the hit; with no Stage nothing moves.',
     plugins: search(),
     engine: { documents: { a: doc(FOUR) } },
     snapshot: SNAPSHOT,
@@ -633,6 +633,7 @@ const navigationCases: ScenarioCase[] = [
       s('goTo', -1),
       s('goTo', 9),
       s('goTo', -6),
+      s('goTo', -9),
       s('goTo', 2, { behavior: 'instant' }),
       s('activeIndex'),
       s('activeHit'),
