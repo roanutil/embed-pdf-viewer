@@ -1,0 +1,4506 @@
+{
+  "schemaVersion": 1,
+  "kind": "function",
+  "describes": "packages/plugin/view-manager: viewManagerReducer and initialViewManagerState (`same` is reference identity).",
+  "cases": [
+    {
+      "name": "initial-state",
+      "fn": "initialViewManagerState",
+      "args": [],
+      "outcome": {
+        "returned": {
+          "views": {},
+          "order": [],
+          "focusedViewId": null,
+          "seq": 0
+        }
+      }
+    },
+    {
+      "name": "create",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "CREATE",
+          "view": {
+            "id": "view-4",
+            "documentIds": [],
+            "activeDocumentId": null
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "a",
+                  "b",
+                  "c"
+                ],
+                "activeDocumentId": "b"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "d"
+                ],
+                "activeDocumentId": "d"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              },
+              "view-4": {
+                "id": "view-4",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3",
+              "view-4"
+            ],
+            "focusedViewId": "view-4",
+            "seq": 4
+          }
+        }
+      }
+    },
+    {
+      "name": "create-on-empty",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {},
+          "order": [],
+          "focusedViewId": null,
+          "seq": 0
+        },
+        {
+          "type": "CREATE",
+          "view": {
+            "id": "view-1",
+            "documentIds": [],
+            "activeDocumentId": null
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1"
+            ],
+            "focusedViewId": "view-1",
+            "seq": 1
+          }
+        }
+      }
+    },
+    {
+      "name": "remove-unknown-is-ignored",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "REMOVE",
+          "id": "nope"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": true,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "a",
+                  "b",
+                  "c"
+                ],
+                "activeDocumentId": "b"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "d"
+                ],
+                "activeDocumentId": "d"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": "view-2",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "remove-focused-focuses-the-last",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "REMOVE",
+          "id": "view-2"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "a",
+                  "b",
+                  "c"
+                ],
+                "activeDocumentId": "b"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1",
+              "view-3"
+            ],
+            "focusedViewId": "view-3",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "remove-unfocused-keeps-focus",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "REMOVE",
+          "id": "view-1"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "d"
+                ],
+                "activeDocumentId": "d"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": "view-2",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "remove-the-only-view",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a"
+              ],
+              "activeDocumentId": "a"
+            }
+          },
+          "order": [
+            "view-1"
+          ],
+          "focusedViewId": "view-1",
+          "seq": 1
+        },
+        {
+          "type": "REMOVE",
+          "id": "view-1"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {},
+            "order": [],
+            "focusedViewId": null,
+            "seq": 1
+          }
+        }
+      }
+    },
+    {
+      "name": "reorder",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "REORDER_VIEWS",
+          "order": [
+            "view-3",
+            "view-1",
+            "view-2"
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "a",
+                  "b",
+                  "c"
+                ],
+                "activeDocumentId": "b"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "d"
+                ],
+                "activeDocumentId": "d"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-3",
+              "view-1",
+              "view-2"
+            ],
+            "focusedViewId": "view-2",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "set-focused",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "SET_FOCUSED",
+          "id": "view-3"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "a",
+                  "b",
+                  "c"
+                ],
+                "activeDocumentId": "b"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "d"
+                ],
+                "activeDocumentId": "d"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": "view-3",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "set-focused-null",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "SET_FOCUSED",
+          "id": null
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "a",
+                  "b",
+                  "c"
+                ],
+                "activeDocumentId": "b"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "d"
+                ],
+                "activeDocumentId": "d"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": null,
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "set-focused-same-is-a-new-state",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "SET_FOCUSED",
+          "id": "view-2"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "a",
+                  "b",
+                  "c"
+                ],
+                "activeDocumentId": "b"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "d"
+                ],
+                "activeDocumentId": "d"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": "view-2",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "set-active",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "SET_ACTIVE_DOC",
+          "viewId": "view-1",
+          "documentId": "c"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "a",
+                  "b",
+                  "c"
+                ],
+                "activeDocumentId": "c"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "d"
+                ],
+                "activeDocumentId": "d"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": "view-2",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "set-active-null",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "SET_ACTIVE_DOC",
+          "viewId": "view-1",
+          "documentId": null
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "a",
+                  "b",
+                  "c"
+                ],
+                "activeDocumentId": null
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "d"
+                ],
+                "activeDocumentId": "d"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": "view-2",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "set-active-unknown-view",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "SET_ACTIVE_DOC",
+          "viewId": "nope",
+          "documentId": "a"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": true,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "a",
+                  "b",
+                  "c"
+                ],
+                "activeDocumentId": "b"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "d"
+                ],
+                "activeDocumentId": "d"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": "view-2",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "set-active-foreign-document",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "SET_ACTIVE_DOC",
+          "viewId": "view-1",
+          "documentId": "d"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": true,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "a",
+                  "b",
+                  "c"
+                ],
+                "activeDocumentId": "b"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "d"
+                ],
+                "activeDocumentId": "d"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": "view-2",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "add-appends",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "ADD_DOC",
+          "viewId": "view-1",
+          "documentId": "e"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "a",
+                  "b",
+                  "c",
+                  "e"
+                ],
+                "activeDocumentId": "b"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "d"
+                ],
+                "activeDocumentId": "d"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": "view-2",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "add-at-index",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "ADD_DOC",
+          "viewId": "view-1",
+          "documentId": "e",
+          "index": 1
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "a",
+                  "e",
+                  "b",
+                  "c"
+                ],
+                "activeDocumentId": "b"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "d"
+                ],
+                "activeDocumentId": "d"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": "view-2",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "add-at-zero",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "ADD_DOC",
+          "viewId": "view-1",
+          "documentId": "e",
+          "index": 0
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "e",
+                  "a",
+                  "b",
+                  "c"
+                ],
+                "activeDocumentId": "b"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "d"
+                ],
+                "activeDocumentId": "d"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": "view-2",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "add-negative-clamps",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "ADD_DOC",
+          "viewId": "view-1",
+          "documentId": "e",
+          "index": -4
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "e",
+                  "a",
+                  "b",
+                  "c"
+                ],
+                "activeDocumentId": "b"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "d"
+                ],
+                "activeDocumentId": "d"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": "view-2",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "add-past-the-end-clamps",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "ADD_DOC",
+          "viewId": "view-1",
+          "documentId": "e",
+          "index": 99
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "a",
+                  "b",
+                  "c",
+                  "e"
+                ],
+                "activeDocumentId": "b"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "d"
+                ],
+                "activeDocumentId": "d"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": "view-2",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "add-fractional-truncates",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "ADD_DOC",
+          "viewId": "view-1",
+          "documentId": "e",
+          "index": 2.9
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "a",
+                  "b",
+                  "e",
+                  "c"
+                ],
+                "activeDocumentId": "b"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "d"
+                ],
+                "activeDocumentId": "d"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": "view-2",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "add-nan-lands-first",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "ADD_DOC",
+          "viewId": "view-1",
+          "documentId": "e",
+          "index": {
+            "$number": "NaN"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "e",
+                  "a",
+                  "b",
+                  "c"
+                ],
+                "activeDocumentId": "b"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "d"
+                ],
+                "activeDocumentId": "d"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": "view-2",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "add-infinity-appends",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "ADD_DOC",
+          "viewId": "view-1",
+          "documentId": "e",
+          "index": {
+            "$number": "Infinity"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "a",
+                  "b",
+                  "c",
+                  "e"
+                ],
+                "activeDocumentId": "b"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "d"
+                ],
+                "activeDocumentId": "d"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": "view-2",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "add-to-empty-activates",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "ADD_DOC",
+          "viewId": "view-3",
+          "documentId": "e"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "a",
+                  "b",
+                  "c"
+                ],
+                "activeDocumentId": "b"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "d"
+                ],
+                "activeDocumentId": "d"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [
+                  "e"
+                ],
+                "activeDocumentId": "e"
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": "view-2",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "add-present-is-ignored",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "ADD_DOC",
+          "viewId": "view-1",
+          "documentId": "a"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": true,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "a",
+                  "b",
+                  "c"
+                ],
+                "activeDocumentId": "b"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "d"
+                ],
+                "activeDocumentId": "d"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": "view-2",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "add-unknown-view-is-ignored",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "ADD_DOC",
+          "viewId": "nope",
+          "documentId": "e"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": true,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "a",
+                  "b",
+                  "c"
+                ],
+                "activeDocumentId": "b"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "d"
+                ],
+                "activeDocumentId": "d"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": "view-2",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "remove-doc-inactive",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "REMOVE_DOC",
+          "viewId": "view-1",
+          "documentId": "a"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "b",
+                  "c"
+                ],
+                "activeDocumentId": "b"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "d"
+                ],
+                "activeDocumentId": "d"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": "view-2",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "remove-doc-active-picks-the-next",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "REMOVE_DOC",
+          "viewId": "view-1",
+          "documentId": "b"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "a",
+                  "c"
+                ],
+                "activeDocumentId": "c"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "d"
+                ],
+                "activeDocumentId": "d"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": "view-2",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "remove-doc-active-last-picks-the-previous",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "c"
+            }
+          },
+          "order": [
+            "view-1"
+          ],
+          "focusedViewId": "view-1",
+          "seq": 1
+        },
+        {
+          "type": "REMOVE_DOC",
+          "viewId": "view-1",
+          "documentId": "c"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "a",
+                  "b"
+                ],
+                "activeDocumentId": "b"
+              }
+            },
+            "order": [
+              "view-1"
+            ],
+            "focusedViewId": "view-1",
+            "seq": 1
+          }
+        }
+      }
+    },
+    {
+      "name": "remove-doc-only-leaves-null",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "REMOVE_DOC",
+          "viewId": "view-2",
+          "documentId": "d"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "a",
+                  "b",
+                  "c"
+                ],
+                "activeDocumentId": "b"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [],
+                "activeDocumentId": null
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": "view-2",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "remove-doc-absent-is-a-new-state",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "REMOVE_DOC",
+          "viewId": "view-1",
+          "documentId": "zzz"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "a",
+                  "b",
+                  "c"
+                ],
+                "activeDocumentId": "b"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "d"
+                ],
+                "activeDocumentId": "d"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": "view-2",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "remove-doc-unknown-view",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "REMOVE_DOC",
+          "viewId": "nope",
+          "documentId": "a"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": true,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "a",
+                  "b",
+                  "c"
+                ],
+                "activeDocumentId": "b"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "d"
+                ],
+                "activeDocumentId": "d"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": "view-2",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "move-within",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "MOVE_DOC_WITHIN",
+          "viewId": "view-1",
+          "documentId": "a",
+          "toIndex": 2
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "b",
+                  "c",
+                  "a"
+                ],
+                "activeDocumentId": "b"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "d"
+                ],
+                "activeDocumentId": "d"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": "view-2",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "move-within-to-front",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "MOVE_DOC_WITHIN",
+          "viewId": "view-1",
+          "documentId": "c",
+          "toIndex": 0
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "c",
+                  "a",
+                  "b"
+                ],
+                "activeDocumentId": "b"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "d"
+                ],
+                "activeDocumentId": "d"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": "view-2",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "move-within-clamps",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "MOVE_DOC_WITHIN",
+          "viewId": "view-1",
+          "documentId": "a",
+          "toIndex": 50
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "b",
+                  "c",
+                  "a"
+                ],
+                "activeDocumentId": "b"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "d"
+                ],
+                "activeDocumentId": "d"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": "view-2",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "move-within-nan",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "MOVE_DOC_WITHIN",
+          "viewId": "view-1",
+          "documentId": "c",
+          "toIndex": {
+            "$number": "NaN"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "c",
+                  "a",
+                  "b"
+                ],
+                "activeDocumentId": "b"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "d"
+                ],
+                "activeDocumentId": "d"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": "view-2",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "move-within-absent",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "MOVE_DOC_WITHIN",
+          "viewId": "view-1",
+          "documentId": "d",
+          "toIndex": 0
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": true,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "a",
+                  "b",
+                  "c"
+                ],
+                "activeDocumentId": "b"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "d"
+                ],
+                "activeDocumentId": "d"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": "view-2",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "move-within-unknown-view",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "MOVE_DOC_WITHIN",
+          "viewId": "nope",
+          "documentId": "a",
+          "toIndex": 0
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": true,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "a",
+                  "b",
+                  "c"
+                ],
+                "activeDocumentId": "b"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "d"
+                ],
+                "activeDocumentId": "d"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": "view-2",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "move-between",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "MOVE_DOC_BETWEEN",
+          "fromViewId": "view-1",
+          "toViewId": "view-2",
+          "documentId": "b"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "a",
+                  "c"
+                ],
+                "activeDocumentId": "c"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "d",
+                  "b"
+                ],
+                "activeDocumentId": "b"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": "view-2",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "move-between-at-index",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "MOVE_DOC_BETWEEN",
+          "fromViewId": "view-1",
+          "toViewId": "view-2",
+          "documentId": "a",
+          "toIndex": 0
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "b",
+                  "c"
+                ],
+                "activeDocumentId": "b"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "a",
+                  "d"
+                ],
+                "activeDocumentId": "a"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": "view-2",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "move-between-into-empty",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "MOVE_DOC_BETWEEN",
+          "fromViewId": "view-2",
+          "toViewId": "view-3",
+          "documentId": "d",
+          "toIndex": 5
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "a",
+                  "b",
+                  "c"
+                ],
+                "activeDocumentId": "b"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [],
+                "activeDocumentId": null
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [
+                  "d"
+                ],
+                "activeDocumentId": "d"
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": "view-3",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "move-between-same-view",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "MOVE_DOC_BETWEEN",
+          "fromViewId": "view-1",
+          "toViewId": "view-1",
+          "documentId": "a"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "b",
+                  "c",
+                  "a"
+                ],
+                "activeDocumentId": "b"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "d"
+                ],
+                "activeDocumentId": "d"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": "view-2",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "move-between-same-view-at-index",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "MOVE_DOC_BETWEEN",
+          "fromViewId": "view-1",
+          "toViewId": "view-1",
+          "documentId": "c",
+          "toIndex": 0
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "c",
+                  "a",
+                  "b"
+                ],
+                "activeDocumentId": "b"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "d"
+                ],
+                "activeDocumentId": "d"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": "view-2",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "move-between-unknown-from",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "MOVE_DOC_BETWEEN",
+          "fromViewId": "nope",
+          "toViewId": "view-1",
+          "documentId": "a"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": true,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "a",
+                  "b",
+                  "c"
+                ],
+                "activeDocumentId": "b"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "d"
+                ],
+                "activeDocumentId": "d"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": "view-2",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "move-between-unknown-to",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "MOVE_DOC_BETWEEN",
+          "fromViewId": "view-1",
+          "toViewId": "nope",
+          "documentId": "a"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": true,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "a",
+                  "b",
+                  "c"
+                ],
+                "activeDocumentId": "b"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "d"
+                ],
+                "activeDocumentId": "d"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": "view-2",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "move-between-absent-document",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "MOVE_DOC_BETWEEN",
+          "fromViewId": "view-1",
+          "toViewId": "view-2",
+          "documentId": "d"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": true,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "a",
+                  "b",
+                  "c"
+                ],
+                "activeDocumentId": "b"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "d"
+                ],
+                "activeDocumentId": "d"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": "view-2",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "reconcile-prunes-closed",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "RECONCILE",
+          "open": [
+            "a",
+            "d"
+          ],
+          "preferViewId": "view-2"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "a"
+                ],
+                "activeDocumentId": "a"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "d"
+                ],
+                "activeDocumentId": "d"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": "view-2",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "reconcile-prunes-the-active",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "RECONCILE",
+          "open": [
+            "a",
+            "c",
+            "d"
+          ],
+          "preferViewId": null
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "a",
+                  "c"
+                ],
+                "activeDocumentId": "a"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "d"
+                ],
+                "activeDocumentId": "d"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": "view-2",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "reconcile-assigns-to-preferred",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "RECONCILE",
+          "open": [
+            "a",
+            "b",
+            "c",
+            "d",
+            "x",
+            "y"
+          ],
+          "preferViewId": "view-3"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "a",
+                  "b",
+                  "c"
+                ],
+                "activeDocumentId": "b"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "d"
+                ],
+                "activeDocumentId": "d"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [
+                  "x",
+                  "y"
+                ],
+                "activeDocumentId": "x"
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": "view-2",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "reconcile-assigns-to-focused",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "RECONCILE",
+          "open": [
+            "x",
+            "a",
+            "b",
+            "c",
+            "d"
+          ],
+          "preferViewId": "nope"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "a",
+                  "b",
+                  "c"
+                ],
+                "activeDocumentId": "b"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "d",
+                  "x"
+                ],
+                "activeDocumentId": "d"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": "view-2",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "reconcile-assigns-to-first",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "gone",
+          "seq": 3
+        },
+        {
+          "type": "RECONCILE",
+          "open": [
+            "a",
+            "b",
+            "c",
+            "d",
+            "x"
+          ],
+          "preferViewId": null
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "a",
+                  "b",
+                  "c",
+                  "x"
+                ],
+                "activeDocumentId": "b"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "d"
+                ],
+                "activeDocumentId": "d"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": "gone",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "reconcile-assigns-to-first-no-focus",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": null,
+          "seq": 3
+        },
+        {
+          "type": "RECONCILE",
+          "open": [
+            "x"
+          ],
+          "preferViewId": ""
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "x"
+                ],
+                "activeDocumentId": "x"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [],
+                "activeDocumentId": null
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": null,
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "reconcile-creates-a-default-pane",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {},
+          "order": [],
+          "focusedViewId": null,
+          "seq": 0
+        },
+        {
+          "type": "RECONCILE",
+          "open": [
+            "a",
+            "b"
+          ],
+          "preferViewId": null
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "a",
+                  "b"
+                ],
+                "activeDocumentId": "a"
+              }
+            },
+            "order": [
+              "view-1"
+            ],
+            "focusedViewId": "view-1",
+            "seq": 1
+          }
+        }
+      }
+    },
+    {
+      "name": "reconcile-creates-and-keeps-a-stale-focus",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {},
+          "order": [],
+          "focusedViewId": "x",
+          "seq": 4
+        },
+        {
+          "type": "RECONCILE",
+          "open": [
+            "a"
+          ],
+          "preferViewId": "x"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {
+              "view-5": {
+                "id": "view-5",
+                "documentIds": [
+                  "a"
+                ],
+                "activeDocumentId": "a"
+              }
+            },
+            "order": [
+              "view-5"
+            ],
+            "focusedViewId": "x",
+            "seq": 5
+          }
+        }
+      }
+    },
+    {
+      "name": "reconcile-nothing-open",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "RECONCILE",
+          "open": [],
+          "preferViewId": null
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [],
+                "activeDocumentId": null
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [],
+                "activeDocumentId": null
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": "view-2",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "reconcile-nothing-open-no-views",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {},
+          "order": [],
+          "focusedViewId": null,
+          "seq": 0
+        },
+        {
+          "type": "RECONCILE",
+          "open": [],
+          "preferViewId": null
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {},
+            "order": [],
+            "focusedViewId": null,
+            "seq": 0
+          }
+        }
+      }
+    },
+    {
+      "name": "reconcile-empty-active-is-replaced",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b"
+              ],
+              "activeDocumentId": ""
+            }
+          },
+          "order": [
+            "view-1"
+          ],
+          "focusedViewId": "view-1",
+          "seq": 1
+        },
+        {
+          "type": "RECONCILE",
+          "open": [
+            "a",
+            "b"
+          ],
+          "preferViewId": null
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "a",
+                  "b"
+                ],
+                "activeDocumentId": "a"
+              }
+            },
+            "order": [
+              "view-1"
+            ],
+            "focusedViewId": "view-1",
+            "seq": 1
+          }
+        }
+      }
+    },
+    {
+      "name": "reconcile-duplicate-assignments",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a"
+              ],
+              "activeDocumentId": "a"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "a",
+                "b"
+              ],
+              "activeDocumentId": "b"
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2"
+          ],
+          "focusedViewId": "view-1",
+          "seq": 2
+        },
+        {
+          "type": "RECONCILE",
+          "open": [
+            "a",
+            "b"
+          ],
+          "preferViewId": null
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "a"
+                ],
+                "activeDocumentId": "a"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "a",
+                  "b"
+                ],
+                "activeDocumentId": "b"
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2"
+            ],
+            "focusedViewId": "view-1",
+            "seq": 2
+          }
+        }
+      }
+    },
+    {
+      "name": "reconcile-keeps-other-members",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "RECONCILE",
+          "open": [
+            "a",
+            "b",
+            "c",
+            "d"
+          ],
+          "preferViewId": null
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "a",
+                  "b",
+                  "c"
+                ],
+                "activeDocumentId": "b"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "d"
+                ],
+                "activeDocumentId": "d"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": "view-2",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "unknown-action-is-ignored",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "views": {
+            "view-1": {
+              "id": "view-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "view-2": {
+              "id": "view-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "view-3": {
+              "id": "view-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "view-1",
+            "view-2",
+            "view-3"
+          ],
+          "focusedViewId": "view-2",
+          "seq": 3
+        },
+        {
+          "type": "NOPE"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": true,
+          "next": {
+            "views": {
+              "view-1": {
+                "id": "view-1",
+                "documentIds": [
+                  "a",
+                  "b",
+                  "c"
+                ],
+                "activeDocumentId": "b"
+              },
+              "view-2": {
+                "id": "view-2",
+                "documentIds": [
+                  "d"
+                ],
+                "activeDocumentId": "d"
+              },
+              "view-3": {
+                "id": "view-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "view-1",
+              "view-2",
+              "view-3"
+            ],
+            "focusedViewId": "view-2",
+            "seq": 3
+          }
+        }
+      }
+    }
+  ]
+}
