@@ -1,7 +1,7 @@
 {
   "total": {
     "statements": "1821/1833",
-    "branches": "419/430"
+    "branches": "423/434"
   },
   "files": {
     "packages/core/main/src/context.ts": {
@@ -26,7 +26,7 @@
     },
     "packages/core/main/src/kernel.ts": {
       "statements": "844/844",
-      "branches": "265/271",
+      "branches": "269/275",
       "uncoveredLines": [],
       "uncoveredBranches": [
         "179:22#0",

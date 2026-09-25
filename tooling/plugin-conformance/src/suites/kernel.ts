@@ -832,6 +832,77 @@ const cases: ScenarioCase[] = [
     plugins: [probe({ id: 'only', token: 'only', init: { defer: 'init' } })],
     steps: [start, destroy, fail('init', 'boot failed late'), kernel('status')],
   },
+  {
+    name: 'capability-of-an-error-or-closing-tab',
+    covers: 'Resolution refuses truthfully for a tab that failed and for one whose close is still disposing.',
+    plugins: [probe(docProbe('alpha', { effects: { cleanup: { defer: 'teardown' } } }))],
+    engine: {
+      documents: { a: doc(), bad: doc() },
+      responses: [{ path: 'open', args: [bytes('bad'), {}], error: { name: 'EngineError', message: 'broken', code: 'Format' } }],
+    },
+    steps: [
+      start,
+      open(bytes('bad')),
+      kernel('capability', { $token: 'alpha' }, 'bad'),
+      open(bytes('a')),
+      docs('close', 'a'),
+      kernel('capability', { $token: 'alpha' }, 'a'),
+      kernel('tryCapability', { $token: 'alpha' }, 'a'),
+      settle('teardown'),
+    ],
+  },
+  {
+    name: 'try-get-during-bring-up',
+    covers:
+      "A capability resolved while its document is still in bring-up (a plugin's init pending) is usable, and its tryGet counts bring-up; the public tryCapability does not.",
+    plugins: [probe(docProbe('alpha', { init: { defer: 'init' } })), probe(docProbe('beta'))],
+    engine: { documents: { a: doc() } },
+    steps: [
+      start,
+      open(bytes('a')),
+      kernel('tryCapability', { $token: 'alpha' }, 'a'),
+      cap('alpha', 'tryGet', ['beta'], 'a'),
+      cap('alpha', 'documentId', [], 'a'),
+      settle('init'),
+    ],
+  },
+  {
+    name: 'an-abort-error-from-unlock-reads-as-cancelled',
+    covers: 'security.unlock rejecting with AbortError, with no close: the unlock rejects as cancelled and the tab stays locked.',
+    plugins: [],
+    engine: {
+      documents: {
+        a: doc({
+          security: { passwordPrompt: { state: 'required' } },
+          responses: [{ path: 'security.unlock', error: { name: 'AbortError', message: 'worker aborted' } }],
+        }),
+      },
+    },
+    steps: [start, open(bytes('a')), docs('unlock', 'a', { password: 'p' }), docs('list')],
+  },
+  {
+    name: 'a-rekeyed-slot-carries-its-new-id',
+    covers: 'A ticket re-keyed to a document that then parks as locked keeps the real id on its pending slot.',
+    plugins: [],
+    engine: { documents: { real: doc({ security: { passwordPrompt: { state: 'required' } } }) } },
+    steps: [start, open({ $fn: 'source', resolves: bytes('real') }), docs('list'), docs('get', 'real')],
+  },
+  {
+    name: 'closing-one-document-leaves-the-others-listening',
+    covers:
+      "Closing a document releases its plugins' watches and action listeners and nobody else's: the other document's probe still hears its own dispatches.",
+    plugins: [probe(docProbe('alpha', { effects: { watchState: true, onAction: ['SET'] } }))],
+    engine: { documents: { a: doc(), b: doc(), c: doc() } },
+    steps: [
+      start,
+      open(bytes('a')),
+      open(bytes('b')),
+      open(bytes('c')),
+      docs('close', 'b'),
+      cap('alpha', 'dispatch', [{ type: 'SET', state: { n: 1 } }], 'a'),
+      cap('alpha', 'dispatch', [{ type: 'SET', state: { n: 2 } }], 'c'),
+    ],
+  },
 ];
 
 export const suites: Suite[] = [
