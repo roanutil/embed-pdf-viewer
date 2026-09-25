@@ -14,11 +14,11 @@ use serde_json::Value;
 use crate::types::{HoverFlags, LinkAction, LinkNavItem, LinkState, PageObjectNumber};
 
 /// `String(value)` inside a template literal, for the members an id is
-/// built from. Absence is `undefined`.
+/// built from. Absence is `undefined`; callers read members with `get`,
+/// which already turns the `undefined` marker into absence.
 pub fn js_string(value: Option<&Value>) -> String {
     match value {
         None => "undefined".into(),
-        Some(v) if epdf_kernel::is_undefined(v) => "undefined".into(),
         Some(Value::Null) => "null".into(),
         Some(Value::Bool(b)) => b.to_string(),
         Some(Value::Number(n)) => {
