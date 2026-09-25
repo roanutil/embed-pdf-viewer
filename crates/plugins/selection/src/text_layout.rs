@@ -491,8 +491,7 @@ struct MergedSubRun {
     last_x: f64,
 }
 
-/// The sub-run a glyph walk is building. `first_x` and `last_x` survive a
-/// flush, as the TypeScript's closure variables do.
+/// The sub-run a glyph walk is building.
 struct Accumulator {
     left: f64,
     right: f64,
@@ -536,7 +535,9 @@ impl Accumulator {
                 last_x: self.last_x,
             });
         }
-        *self = Accumulator { first_x: self.first_x, last_x: self.last_x, ..Accumulator::new() };
+        // `first_x` and `last_x` survive in the TypeScript's closure, but
+        // the next glyph writes both before anything reads them.
+        *self = Accumulator::new();
     }
 }
 

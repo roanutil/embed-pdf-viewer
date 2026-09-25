@@ -270,6 +270,95 @@ fn reducer_fn(args: &[Value]) -> Result<Value, Error> {
     out(selection_reducer(&state, &action).unwrap_or(state))
 }
 
+/// The generator's `layoutSweep`: segments from every start in `[-1, n]`
+/// for the counts `{0, 1, 2, 3, 5, 8, n - from, n + 1 - from}` (a `Set`,
+/// so in that order, once each), then word, line and quad per glyph.
+fn layout_sweep_fn(args: &[Value]) -> Result<Value, Error> {
+    let layout = layout_arg(args)?;
+    let n = layout.glyphs.len() as i64;
+    let mut segments = Vec::new();
+    for from in -1..=n {
+        let mut counts: Vec<i64> = Vec::new();
+        for count in [0, 1, 2, 3, 5, 8, n - from, n + 1 - from] {
+            if !counts.contains(&count) {
+                counts.push(count);
+            }
+        }
+        for count in counts {
+            segments.push(to_value(&text_segments_for_range(&layout, from, count)));
+        }
+    }
+    let glyphs = -1..=n;
+    let words: Vec<[i64; 2]> = glyphs
+        .clone()
+        .map(|g| {
+            let (a, b) = expand_text_range_to_word(&layout, g);
+            [a, b]
+        })
+        .collect();
+    let lines: Vec<[i64; 2]> = glyphs
+        .clone()
+        .map(|g| {
+            let (a, b) = expand_text_range_to_line(&layout, g);
+            [a, b]
+        })
+        .collect();
+    let quads: Vec<Option<PdfQuad>> = glyphs.map(|g| text_glyph_quad(&layout, g)).collect();
+    Ok(
+        json!({ "segments": segments, "words": to_value(&words), "lines": to_value(&lines), "quads": to_value(&quads) }),
+    )
+}
+
+/// The generator's `glyphAtGrid`: row-major, the steps accumulated as the
+/// TypeScript's `+=` does.
+fn glyph_at_grid_fn(args: &[Value]) -> Result<Value, Error> {
+    let layout = layout_arg(args)?;
+    let grid = args.get(1).cloned().unwrap_or(Value::Null);
+    let n = |k: &str| grid[k].as_f64().unwrap_or(f64::NAN);
+    let tolerance: Option<f64> = arg(args, 2)?;
+    let tolerance = tolerance.unwrap_or(DEFAULT_TOLERANCE_FACTOR);
+    let mut hits = Vec::new();
+    let mut y = n("y0");
+    while y <= n("y1") {
+        let mut x = n("x0");
+        while x <= n("x1") {
+            hits.push(text_glyph_at(&layout, Point { x, y }, tolerance));
+            x += n("step");
+        }
+        y += n("step");
+    }
+    out(hits)
+}
+
+/// The generator's `pairProbe`.
+fn pair_probe_fn(args: &[Value]) -> Result<Value, Error> {
+    let layout = layout_arg(args)?;
+    let n = layout.glyphs.len() as i64;
+    let (a, b) = expand_text_range_to_line(&layout, 0);
+    let (c, d) = expand_text_range_to_line(&layout, n - 1);
+    Ok(json!({
+        "segments": to_value(&text_segments_for_range(&layout, 0, n)),
+        "first": [a, b],
+        "last": [c, d],
+    }))
+}
+
+/// The generator's `sliceSweep`: every `(from, to)` in `[-1, charCount + 1]`.
+fn slice_sweep_fn(args: &[Value]) -> Result<Value, Error> {
+    let snapshot: PageTextSnapshot = arg(args, 0)?;
+    let mut out = Vec::new();
+    let mut from = -1.0;
+    while from <= snapshot.char_count + 1.0 {
+        let mut to = from;
+        while to <= snapshot.char_count + 1.0 {
+            out.push(slice_text_by_chars(&snapshot, from, to));
+            to += 1.0;
+        }
+        from += 1.0;
+    }
+    Ok(json!(out))
+}
+
 pub fn geometry_functions() -> FunctionTable {
     vec![
         ("buildSelectionPageGeometry", build_selection_page_geometry_fn),
@@ -283,6 +372,10 @@ pub fn geometry_functions() -> FunctionTable {
         ("textGlyphQuad", text_glyph_quad_fn),
         ("textSegmentsForRange", text_segments_fn),
         ("sliceTextByChars", slice_text_fn),
+        ("layoutSweep", layout_sweep_fn),
+        ("glyphAtGrid", glyph_at_grid_fn),
+        ("pairProbe", pair_probe_fn),
+        ("sliceSweep", slice_sweep_fn),
         ("initialSelectionState", initial_state_fn),
         ("selectionReducer", reducer_fn),
     ]
