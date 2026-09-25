@@ -1,0 +1,6658 @@
+{
+  "schemaVersion": 1,
+  "kind": "function",
+  "describes": "packages/core/annotation snap.ts: move snapping guides.",
+  "cases": [
+    {
+      "name": "computeMoveSnap/no-targets-in-range",
+      "fn": "computeMoveSnap",
+      "args": [
+        {
+          "byId": {
+            "a": {
+              "id": "a",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 314
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 100,
+                  "width": 80,
+                  "height": 60
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "b": {
+              "id": "b",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 315
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 300,
+                  "y": 100,
+                  "width": 50,
+                  "height": 50
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "c": {
+              "id": "c",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 316
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 300,
+                  "width": 40,
+                  "height": 40
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "rot": {
+              "id": "rot",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 21648
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 400,
+                  "y": 400,
+                  "width": 60,
+                  "height": 30
+                },
+                "ellipse": false,
+                "rot": 45
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "other-page": {
+              "id": "other-page",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 97331
+              },
+              "pon": 2,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 100,
+                  "width": 80,
+                  "height": 60
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "hidden": {
+              "id": "hidden",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 5617
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 0,
+                  "y": 0,
+                  "width": 10,
+                  "height": 10
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": true,
+                "print": false,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "note": {
+              "id": "note",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 52025
+              },
+              "pon": 1,
+              "subtype": "text",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 500,
+                  "y": 500,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "nozoom": {
+              "id": "nozoom",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 87931
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 250,
+                  "y": 250,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": false,
+                "noZoom": true,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            }
+          },
+          "order": [
+            "a",
+            "b",
+            "c",
+            "rot",
+            "other-page",
+            "hidden",
+            "note",
+            "nozoom"
+          ]
+        },
+        [
+          "a"
+        ],
+        1,
+        {
+          "x": 50,
+          "y": 50
+        },
+        5
+      ],
+      "outcome": {
+        "returned": {
+          "delta": {
+            "x": 50,
+            "y": 50
+          },
+          "guides": [
+            {
+              "axis": "y",
+              "at": 150,
+              "lo": 136,
+              "hi": 364
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "computeMoveSnap/x-edge",
+      "fn": "computeMoveSnap",
+      "args": [
+        {
+          "byId": {
+            "a": {
+              "id": "a",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 314
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 100,
+                  "width": 80,
+                  "height": 60
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "b": {
+              "id": "b",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 315
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 300,
+                  "y": 100,
+                  "width": 50,
+                  "height": 50
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "c": {
+              "id": "c",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 316
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 300,
+                  "width": 40,
+                  "height": 40
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "rot": {
+              "id": "rot",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 21648
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 400,
+                  "y": 400,
+                  "width": 60,
+                  "height": 30
+                },
+                "ellipse": false,
+                "rot": 45
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "other-page": {
+              "id": "other-page",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 97331
+              },
+              "pon": 2,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 100,
+                  "width": 80,
+                  "height": 60
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "hidden": {
+              "id": "hidden",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 5617
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 0,
+                  "y": 0,
+                  "width": 10,
+                  "height": 10
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": true,
+                "print": false,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "note": {
+              "id": "note",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 52025
+              },
+              "pon": 1,
+              "subtype": "text",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 500,
+                  "y": 500,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "nozoom": {
+              "id": "nozoom",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 87931
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 250,
+                  "y": 250,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": false,
+                "noZoom": true,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            }
+          },
+          "order": [
+            "a",
+            "b",
+            "c",
+            "rot",
+            "other-page",
+            "hidden",
+            "note",
+            "nozoom"
+          ]
+        },
+        [
+          "a"
+        ],
+        1,
+        {
+          "x": 118,
+          "y": 37
+        },
+        5
+      ],
+      "outcome": {
+        "returned": {
+          "delta": {
+            "x": 120,
+            "y": 37
+          },
+          "guides": [
+            {
+              "axis": "x",
+              "at": 300,
+              "lo": 86,
+              "hi": 211
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "computeMoveSnap/y-edge",
+      "fn": "computeMoveSnap",
+      "args": [
+        {
+          "byId": {
+            "a": {
+              "id": "a",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 314
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 100,
+                  "width": 80,
+                  "height": 60
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "b": {
+              "id": "b",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 315
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 300,
+                  "y": 100,
+                  "width": 50,
+                  "height": 50
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "c": {
+              "id": "c",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 316
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 300,
+                  "width": 40,
+                  "height": 40
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "rot": {
+              "id": "rot",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 21648
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 400,
+                  "y": 400,
+                  "width": 60,
+                  "height": 30
+                },
+                "ellipse": false,
+                "rot": 45
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "other-page": {
+              "id": "other-page",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 97331
+              },
+              "pon": 2,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 100,
+                  "width": 80,
+                  "height": 60
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "hidden": {
+              "id": "hidden",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 5617
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 0,
+                  "y": 0,
+                  "width": 10,
+                  "height": 10
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": true,
+                "print": false,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "note": {
+              "id": "note",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 52025
+              },
+              "pon": 1,
+              "subtype": "text",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 500,
+                  "y": 500,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "nozoom": {
+              "id": "nozoom",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 87931
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 250,
+                  "y": 250,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": false,
+                "noZoom": true,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            }
+          },
+          "order": [
+            "a",
+            "b",
+            "c",
+            "rot",
+            "other-page",
+            "hidden",
+            "note",
+            "nozoom"
+          ]
+        },
+        [
+          "a"
+        ],
+        1,
+        {
+          "x": 37,
+          "y": 2
+        },
+        5
+      ],
+      "outcome": {
+        "returned": {
+          "delta": {
+            "x": 40,
+            "y": 0
+          },
+          "guides": [
+            {
+              "axis": "x",
+              "at": 140,
+              "lo": 86,
+              "hi": 354
+            },
+            {
+              "axis": "y",
+              "at": 100,
+              "lo": 126,
+              "hi": 364
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "computeMoveSnap/both-axes",
+      "fn": "computeMoveSnap",
+      "args": [
+        {
+          "byId": {
+            "a": {
+              "id": "a",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 314
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 100,
+                  "width": 80,
+                  "height": 60
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "b": {
+              "id": "b",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 315
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 300,
+                  "y": 100,
+                  "width": 50,
+                  "height": 50
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "c": {
+              "id": "c",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 316
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 300,
+                  "width": 40,
+                  "height": 40
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "rot": {
+              "id": "rot",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 21648
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 400,
+                  "y": 400,
+                  "width": 60,
+                  "height": 30
+                },
+                "ellipse": false,
+                "rot": 45
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "other-page": {
+              "id": "other-page",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 97331
+              },
+              "pon": 2,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 100,
+                  "width": 80,
+                  "height": 60
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "hidden": {
+              "id": "hidden",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 5617
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 0,
+                  "y": 0,
+                  "width": 10,
+                  "height": 10
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": true,
+                "print": false,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "note": {
+              "id": "note",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 52025
+              },
+              "pon": 1,
+              "subtype": "text",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 500,
+                  "y": 500,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "nozoom": {
+              "id": "nozoom",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 87931
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 250,
+                  "y": 250,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": false,
+                "noZoom": true,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            }
+          },
+          "order": [
+            "a",
+            "b",
+            "c",
+            "rot",
+            "other-page",
+            "hidden",
+            "note",
+            "nozoom"
+          ]
+        },
+        [
+          "a"
+        ],
+        1,
+        {
+          "x": 122,
+          "y": 3
+        },
+        5
+      ],
+      "outcome": {
+        "returned": {
+          "delta": {
+            "x": 120,
+            "y": 0
+          },
+          "guides": [
+            {
+              "axis": "x",
+              "at": 300,
+              "lo": 86,
+              "hi": 174
+            },
+            {
+              "axis": "y",
+              "at": 100,
+              "lo": 206,
+              "hi": 364
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "computeMoveSnap/centre",
+      "fn": "computeMoveSnap",
+      "args": [
+        {
+          "byId": {
+            "a": {
+              "id": "a",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 314
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 100,
+                  "width": 80,
+                  "height": 60
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "b": {
+              "id": "b",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 315
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 300,
+                  "y": 100,
+                  "width": 50,
+                  "height": 50
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "c": {
+              "id": "c",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 316
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 300,
+                  "width": 40,
+                  "height": 40
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "rot": {
+              "id": "rot",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 21648
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 400,
+                  "y": 400,
+                  "width": 60,
+                  "height": 30
+                },
+                "ellipse": false,
+                "rot": 45
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "other-page": {
+              "id": "other-page",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 97331
+              },
+              "pon": 2,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 100,
+                  "width": 80,
+                  "height": 60
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "hidden": {
+              "id": "hidden",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 5617
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 0,
+                  "y": 0,
+                  "width": 10,
+                  "height": 10
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": true,
+                "print": false,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "note": {
+              "id": "note",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 52025
+              },
+              "pon": 1,
+              "subtype": "text",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 500,
+                  "y": 500,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "nozoom": {
+              "id": "nozoom",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 87931
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 250,
+                  "y": 250,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": false,
+                "noZoom": true,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            }
+          },
+          "order": [
+            "a",
+            "b",
+            "c",
+            "rot",
+            "other-page",
+            "hidden",
+            "note",
+            "nozoom"
+          ]
+        },
+        [
+          "c"
+        ],
+        1,
+        {
+          "x": 203,
+          "y": -1
+        },
+        5
+      ],
+      "outcome": {
+        "returned": {
+          "delta": {
+            "x": 205,
+            "y": -1
+          },
+          "guides": [
+            {
+              "axis": "x",
+              "at": 325,
+              "lo": 86,
+              "hi": 353
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "computeMoveSnap/page-edge",
+      "fn": "computeMoveSnap",
+      "args": [
+        {
+          "byId": {
+            "a": {
+              "id": "a",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 314
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 100,
+                  "width": 80,
+                  "height": 60
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "b": {
+              "id": "b",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 315
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 300,
+                  "y": 100,
+                  "width": 50,
+                  "height": 50
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "c": {
+              "id": "c",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 316
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 300,
+                  "width": 40,
+                  "height": 40
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "rot": {
+              "id": "rot",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 21648
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 400,
+                  "y": 400,
+                  "width": 60,
+                  "height": 30
+                },
+                "ellipse": false,
+                "rot": 45
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "other-page": {
+              "id": "other-page",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 97331
+              },
+              "pon": 2,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 100,
+                  "width": 80,
+                  "height": 60
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "hidden": {
+              "id": "hidden",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 5617
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 0,
+                  "y": 0,
+                  "width": 10,
+                  "height": 10
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": true,
+                "print": false,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "note": {
+              "id": "note",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 52025
+              },
+              "pon": 1,
+              "subtype": "text",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 500,
+                  "y": 500,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "nozoom": {
+              "id": "nozoom",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 87931
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 250,
+                  "y": 250,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": false,
+                "noZoom": true,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            }
+          },
+          "order": [
+            "a",
+            "b",
+            "c",
+            "rot",
+            "other-page",
+            "hidden",
+            "note",
+            "nozoom"
+          ]
+        },
+        [
+          "a"
+        ],
+        1,
+        {
+          "x": -98,
+          "y": 0
+        },
+        5,
+        {
+          "x": 0,
+          "y": 0,
+          "width": 600,
+          "height": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "delta": {
+            "x": -100,
+            "y": 0
+          },
+          "guides": [
+            {
+              "axis": "x",
+              "at": 0,
+              "lo": -14,
+              "hi": 814
+            },
+            {
+              "axis": "y",
+              "at": 100,
+              "lo": -14,
+              "hi": 364
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "computeMoveSnap/page-centre",
+      "fn": "computeMoveSnap",
+      "args": [
+        {
+          "byId": {
+            "a": {
+              "id": "a",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 314
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 100,
+                  "width": 80,
+                  "height": 60
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "b": {
+              "id": "b",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 315
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 300,
+                  "y": 100,
+                  "width": 50,
+                  "height": 50
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "c": {
+              "id": "c",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 316
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 300,
+                  "width": 40,
+                  "height": 40
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "rot": {
+              "id": "rot",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 21648
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 400,
+                  "y": 400,
+                  "width": 60,
+                  "height": 30
+                },
+                "ellipse": false,
+                "rot": 45
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "other-page": {
+              "id": "other-page",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 97331
+              },
+              "pon": 2,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 100,
+                  "width": 80,
+                  "height": 60
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "hidden": {
+              "id": "hidden",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 5617
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 0,
+                  "y": 0,
+                  "width": 10,
+                  "height": 10
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": true,
+                "print": false,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "note": {
+              "id": "note",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 52025
+              },
+              "pon": 1,
+              "subtype": "text",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 500,
+                  "y": 500,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "nozoom": {
+              "id": "nozoom",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 87931
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 250,
+                  "y": 250,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": false,
+                "noZoom": true,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            }
+          },
+          "order": [
+            "a",
+            "b",
+            "c",
+            "rot",
+            "other-page",
+            "hidden",
+            "note",
+            "nozoom"
+          ]
+        },
+        [
+          "a"
+        ],
+        1,
+        {
+          "x": 158,
+          "y": 297
+        },
+        5,
+        {
+          "x": 0,
+          "y": 0,
+          "width": 600,
+          "height": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "delta": {
+            "x": 160,
+            "y": 300
+          },
+          "guides": [
+            {
+              "axis": "x",
+              "at": 300,
+              "lo": -14,
+              "hi": 814
+            },
+            {
+              "axis": "y",
+              "at": 400,
+              "lo": -14,
+              "hi": 614
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "computeMoveSnap/threshold-exclusive",
+      "fn": "computeMoveSnap",
+      "args": [
+        {
+          "byId": {
+            "a": {
+              "id": "a",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 314
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 100,
+                  "width": 80,
+                  "height": 60
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "b": {
+              "id": "b",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 315
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 300,
+                  "y": 100,
+                  "width": 50,
+                  "height": 50
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "c": {
+              "id": "c",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 316
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 300,
+                  "width": 40,
+                  "height": 40
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "rot": {
+              "id": "rot",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 21648
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 400,
+                  "y": 400,
+                  "width": 60,
+                  "height": 30
+                },
+                "ellipse": false,
+                "rot": 45
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "other-page": {
+              "id": "other-page",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 97331
+              },
+              "pon": 2,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 100,
+                  "width": 80,
+                  "height": 60
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "hidden": {
+              "id": "hidden",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 5617
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 0,
+                  "y": 0,
+                  "width": 10,
+                  "height": 10
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": true,
+                "print": false,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "note": {
+              "id": "note",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 52025
+              },
+              "pon": 1,
+              "subtype": "text",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 500,
+                  "y": 500,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "nozoom": {
+              "id": "nozoom",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 87931
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 250,
+                  "y": 250,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": false,
+                "noZoom": true,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            }
+          },
+          "order": [
+            "a",
+            "b",
+            "c",
+            "rot",
+            "other-page",
+            "hidden",
+            "note",
+            "nozoom"
+          ]
+        },
+        [
+          "a"
+        ],
+        1,
+        {
+          "x": 125,
+          "y": 37
+        },
+        5
+      ],
+      "outcome": {
+        "returned": {
+          "delta": {
+            "x": 125,
+            "y": 37
+          },
+          "guides": []
+        }
+      }
+    },
+    {
+      "name": "computeMoveSnap/threshold-inside",
+      "fn": "computeMoveSnap",
+      "args": [
+        {
+          "byId": {
+            "a": {
+              "id": "a",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 314
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 100,
+                  "width": 80,
+                  "height": 60
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "b": {
+              "id": "b",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 315
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 300,
+                  "y": 100,
+                  "width": 50,
+                  "height": 50
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "c": {
+              "id": "c",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 316
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 300,
+                  "width": 40,
+                  "height": 40
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "rot": {
+              "id": "rot",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 21648
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 400,
+                  "y": 400,
+                  "width": 60,
+                  "height": 30
+                },
+                "ellipse": false,
+                "rot": 45
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "other-page": {
+              "id": "other-page",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 97331
+              },
+              "pon": 2,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 100,
+                  "width": 80,
+                  "height": 60
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "hidden": {
+              "id": "hidden",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 5617
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 0,
+                  "y": 0,
+                  "width": 10,
+                  "height": 10
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": true,
+                "print": false,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "note": {
+              "id": "note",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 52025
+              },
+              "pon": 1,
+              "subtype": "text",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 500,
+                  "y": 500,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "nozoom": {
+              "id": "nozoom",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 87931
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 250,
+                  "y": 250,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": false,
+                "noZoom": true,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            }
+          },
+          "order": [
+            "a",
+            "b",
+            "c",
+            "rot",
+            "other-page",
+            "hidden",
+            "note",
+            "nozoom"
+          ]
+        },
+        [
+          "a"
+        ],
+        1,
+        {
+          "x": 124.99,
+          "y": 37
+        },
+        5
+      ],
+      "outcome": {
+        "returned": {
+          "delta": {
+            "x": 119.99999999999999,
+            "y": 37
+          },
+          "guides": [
+            {
+              "axis": "x",
+              "at": 300,
+              "lo": 86,
+              "hi": 211
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "computeMoveSnap/rotated-target",
+      "fn": "computeMoveSnap",
+      "args": [
+        {
+          "byId": {
+            "a": {
+              "id": "a",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 314
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 100,
+                  "width": 80,
+                  "height": 60
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "b": {
+              "id": "b",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 315
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 300,
+                  "y": 100,
+                  "width": 50,
+                  "height": 50
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "c": {
+              "id": "c",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 316
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 300,
+                  "width": 40,
+                  "height": 40
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "rot": {
+              "id": "rot",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 21648
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 400,
+                  "y": 400,
+                  "width": 60,
+                  "height": 30
+                },
+                "ellipse": false,
+                "rot": 45
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "other-page": {
+              "id": "other-page",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 97331
+              },
+              "pon": 2,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 100,
+                  "width": 80,
+                  "height": 60
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "hidden": {
+              "id": "hidden",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 5617
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 0,
+                  "y": 0,
+                  "width": 10,
+                  "height": 10
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": true,
+                "print": false,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "note": {
+              "id": "note",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 52025
+              },
+              "pon": 1,
+              "subtype": "text",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 500,
+                  "y": 500,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "nozoom": {
+              "id": "nozoom",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 87931
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 250,
+                  "y": 250,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": false,
+                "noZoom": true,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            }
+          },
+          "order": [
+            "a",
+            "b",
+            "c",
+            "rot",
+            "other-page",
+            "hidden",
+            "note",
+            "nozoom"
+          ]
+        },
+        [
+          "c"
+        ],
+        1,
+        {
+          "x": 274,
+          "y": 60
+        },
+        5
+      ],
+      "outcome": {
+        "returned": {
+          "delta": {
+            "x": 278.1801948466054,
+            "y": 63.180194846605445
+          },
+          "guides": [
+            {
+              "axis": "x",
+              "at": 398.1801948466054,
+              "lo": 349.18019484660545,
+              "hi": 460.81980515339467
+            },
+            {
+              "axis": "y",
+              "at": 383.18019484660545,
+              "lo": 364.1801948466054,
+              "hi": 475.81980515339467
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "computeMoveSnap/multi-moving",
+      "fn": "computeMoveSnap",
+      "args": [
+        {
+          "byId": {
+            "a": {
+              "id": "a",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 314
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 100,
+                  "width": 80,
+                  "height": 60
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "b": {
+              "id": "b",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 315
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 300,
+                  "y": 100,
+                  "width": 50,
+                  "height": 50
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "c": {
+              "id": "c",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 316
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 300,
+                  "width": 40,
+                  "height": 40
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "rot": {
+              "id": "rot",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 21648
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 400,
+                  "y": 400,
+                  "width": 60,
+                  "height": 30
+                },
+                "ellipse": false,
+                "rot": 45
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "other-page": {
+              "id": "other-page",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 97331
+              },
+              "pon": 2,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 100,
+                  "width": 80,
+                  "height": 60
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "hidden": {
+              "id": "hidden",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 5617
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 0,
+                  "y": 0,
+                  "width": 10,
+                  "height": 10
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": true,
+                "print": false,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "note": {
+              "id": "note",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 52025
+              },
+              "pon": 1,
+              "subtype": "text",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 500,
+                  "y": 500,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "nozoom": {
+              "id": "nozoom",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 87931
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 250,
+                  "y": 250,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": false,
+                "noZoom": true,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            }
+          },
+          "order": [
+            "a",
+            "b",
+            "c",
+            "rot",
+            "other-page",
+            "hidden",
+            "note",
+            "nozoom"
+          ]
+        },
+        [
+          "a",
+          "b"
+        ],
+        1,
+        {
+          "x": 1,
+          "y": 198
+        },
+        5
+      ],
+      "outcome": {
+        "returned": {
+          "delta": {
+            "x": 0,
+            "y": 200
+          },
+          "guides": [
+            {
+              "axis": "x",
+              "at": 100,
+              "lo": 286,
+              "hi": 374
+            },
+            {
+              "axis": "y",
+              "at": 300,
+              "lo": 86,
+              "hi": 364
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "computeMoveSnap/anchored-mover",
+      "fn": "computeMoveSnap",
+      "args": [
+        {
+          "byId": {
+            "a": {
+              "id": "a",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 314
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 100,
+                  "width": 80,
+                  "height": 60
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "b": {
+              "id": "b",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 315
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 300,
+                  "y": 100,
+                  "width": 50,
+                  "height": 50
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "c": {
+              "id": "c",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 316
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 300,
+                  "width": 40,
+                  "height": 40
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "rot": {
+              "id": "rot",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 21648
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 400,
+                  "y": 400,
+                  "width": 60,
+                  "height": 30
+                },
+                "ellipse": false,
+                "rot": 45
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "other-page": {
+              "id": "other-page",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 97331
+              },
+              "pon": 2,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 100,
+                  "width": 80,
+                  "height": 60
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "hidden": {
+              "id": "hidden",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 5617
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 0,
+                  "y": 0,
+                  "width": 10,
+                  "height": 10
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": true,
+                "print": false,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "note": {
+              "id": "note",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 52025
+              },
+              "pon": 1,
+              "subtype": "text",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 500,
+                  "y": 500,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "nozoom": {
+              "id": "nozoom",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 87931
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 250,
+                  "y": 250,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": false,
+                "noZoom": true,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            }
+          },
+          "order": [
+            "a",
+            "b",
+            "c",
+            "rot",
+            "other-page",
+            "hidden",
+            "note",
+            "nozoom"
+          ]
+        },
+        [
+          "a",
+          "note"
+        ],
+        1,
+        {
+          "x": 118,
+          "y": 37
+        },
+        5
+      ],
+      "outcome": {
+        "returned": {
+          "delta": {
+            "x": 118,
+            "y": 37
+          },
+          "guides": []
+        }
+      }
+    },
+    {
+      "name": "computeMoveSnap/nozoom-mover",
+      "fn": "computeMoveSnap",
+      "args": [
+        {
+          "byId": {
+            "a": {
+              "id": "a",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 314
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 100,
+                  "width": 80,
+                  "height": 60
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "b": {
+              "id": "b",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 315
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 300,
+                  "y": 100,
+                  "width": 50,
+                  "height": 50
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "c": {
+              "id": "c",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 316
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 300,
+                  "width": 40,
+                  "height": 40
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "rot": {
+              "id": "rot",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 21648
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 400,
+                  "y": 400,
+                  "width": 60,
+                  "height": 30
+                },
+                "ellipse": false,
+                "rot": 45
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "other-page": {
+              "id": "other-page",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 97331
+              },
+              "pon": 2,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 100,
+                  "width": 80,
+                  "height": 60
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "hidden": {
+              "id": "hidden",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 5617
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 0,
+                  "y": 0,
+                  "width": 10,
+                  "height": 10
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": true,
+                "print": false,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "note": {
+              "id": "note",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 52025
+              },
+              "pon": 1,
+              "subtype": "text",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 500,
+                  "y": 500,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "nozoom": {
+              "id": "nozoom",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 87931
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 250,
+                  "y": 250,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": false,
+                "noZoom": true,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            }
+          },
+          "order": [
+            "a",
+            "b",
+            "c",
+            "rot",
+            "other-page",
+            "hidden",
+            "note",
+            "nozoom"
+          ]
+        },
+        [
+          "nozoom"
+        ],
+        1,
+        {
+          "x": 50,
+          "y": 150
+        },
+        5
+      ],
+      "outcome": {
+        "returned": {
+          "delta": {
+            "x": 50,
+            "y": 150
+          },
+          "guides": []
+        }
+      }
+    },
+    {
+      "name": "computeMoveSnap/other-page-pon",
+      "fn": "computeMoveSnap",
+      "args": [
+        {
+          "byId": {
+            "a": {
+              "id": "a",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 314
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 100,
+                  "width": 80,
+                  "height": 60
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "b": {
+              "id": "b",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 315
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 300,
+                  "y": 100,
+                  "width": 50,
+                  "height": 50
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "c": {
+              "id": "c",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 316
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 300,
+                  "width": 40,
+                  "height": 40
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "rot": {
+              "id": "rot",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 21648
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 400,
+                  "y": 400,
+                  "width": 60,
+                  "height": 30
+                },
+                "ellipse": false,
+                "rot": 45
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "other-page": {
+              "id": "other-page",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 97331
+              },
+              "pon": 2,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 100,
+                  "width": 80,
+                  "height": 60
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "hidden": {
+              "id": "hidden",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 5617
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 0,
+                  "y": 0,
+                  "width": 10,
+                  "height": 10
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": true,
+                "print": false,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "note": {
+              "id": "note",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 52025
+              },
+              "pon": 1,
+              "subtype": "text",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 500,
+                  "y": 500,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "nozoom": {
+              "id": "nozoom",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 87931
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 250,
+                  "y": 250,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": false,
+                "noZoom": true,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            }
+          },
+          "order": [
+            "a",
+            "b",
+            "c",
+            "rot",
+            "other-page",
+            "hidden",
+            "note",
+            "nozoom"
+          ]
+        },
+        [
+          "other-page"
+        ],
+        2,
+        {
+          "x": 118,
+          "y": 37
+        },
+        5
+      ],
+      "outcome": {
+        "returned": {
+          "delta": {
+            "x": 118,
+            "y": 37
+          },
+          "guides": []
+        }
+      }
+    },
+    {
+      "name": "computeMoveSnap/zero-threshold",
+      "fn": "computeMoveSnap",
+      "args": [
+        {
+          "byId": {
+            "a": {
+              "id": "a",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 314
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 100,
+                  "width": 80,
+                  "height": 60
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "b": {
+              "id": "b",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 315
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 300,
+                  "y": 100,
+                  "width": 50,
+                  "height": 50
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "c": {
+              "id": "c",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 316
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 300,
+                  "width": 40,
+                  "height": 40
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "rot": {
+              "id": "rot",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 21648
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 400,
+                  "y": 400,
+                  "width": 60,
+                  "height": 30
+                },
+                "ellipse": false,
+                "rot": 45
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "other-page": {
+              "id": "other-page",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 97331
+              },
+              "pon": 2,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 100,
+                  "width": 80,
+                  "height": 60
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "hidden": {
+              "id": "hidden",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 5617
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 0,
+                  "y": 0,
+                  "width": 10,
+                  "height": 10
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": true,
+                "print": false,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "note": {
+              "id": "note",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 52025
+              },
+              "pon": 1,
+              "subtype": "text",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 500,
+                  "y": 500,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "nozoom": {
+              "id": "nozoom",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 87931
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 250,
+                  "y": 250,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": false,
+                "noZoom": true,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            }
+          },
+          "order": [
+            "a",
+            "b",
+            "c",
+            "rot",
+            "other-page",
+            "hidden",
+            "note",
+            "nozoom"
+          ]
+        },
+        [
+          "a"
+        ],
+        1,
+        {
+          "x": 200,
+          "y": 0
+        },
+        0
+      ],
+      "outcome": {
+        "returned": {
+          "delta": {
+            "x": 200,
+            "y": 0
+          },
+          "guides": []
+        }
+      }
+    },
+    {
+      "name": "computeMoveSnap/closest-wins",
+      "fn": "computeMoveSnap",
+      "args": [
+        {
+          "byId": {
+            "a": {
+              "id": "a",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 314
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 100,
+                  "width": 80,
+                  "height": 60
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "b": {
+              "id": "b",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 315
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 300,
+                  "y": 100,
+                  "width": 50,
+                  "height": 50
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "c": {
+              "id": "c",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 316
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 300,
+                  "width": 40,
+                  "height": 40
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "rot": {
+              "id": "rot",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 21648
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 400,
+                  "y": 400,
+                  "width": 60,
+                  "height": 30
+                },
+                "ellipse": false,
+                "rot": 45
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "other-page": {
+              "id": "other-page",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 97331
+              },
+              "pon": 2,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 100,
+                  "width": 80,
+                  "height": 60
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "hidden": {
+              "id": "hidden",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 5617
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 0,
+                  "y": 0,
+                  "width": 10,
+                  "height": 10
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": true,
+                "print": false,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "note": {
+              "id": "note",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 52025
+              },
+              "pon": 1,
+              "subtype": "text",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 500,
+                  "y": 500,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "nozoom": {
+              "id": "nozoom",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 87931
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 250,
+                  "y": 250,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": false,
+                "noZoom": true,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            }
+          },
+          "order": [
+            "a",
+            "b",
+            "c",
+            "rot",
+            "other-page",
+            "hidden",
+            "note",
+            "nozoom"
+          ]
+        },
+        [
+          "c"
+        ],
+        1,
+        {
+          "x": -2,
+          "y": -199
+        },
+        5
+      ],
+      "outcome": {
+        "returned": {
+          "delta": {
+            "x": 0,
+            "y": -200
+          },
+          "guides": [
+            {
+              "axis": "x",
+              "at": 100,
+              "lo": 86,
+              "hi": 174
+            },
+            {
+              "axis": "y",
+              "at": 100,
+              "lo": 86,
+              "hi": 194
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "computeMoveSnap/equal-distance-keeps-first",
+      "fn": "computeMoveSnap",
+      "args": [
+        {
+          "byId": {
+            "a": {
+              "id": "a",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 314
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 100,
+                  "width": 80,
+                  "height": 60
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "b": {
+              "id": "b",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 315
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 300,
+                  "y": 100,
+                  "width": 50,
+                  "height": 50
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "c": {
+              "id": "c",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 316
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 300,
+                  "width": 40,
+                  "height": 40
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "rot": {
+              "id": "rot",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 21648
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 400,
+                  "y": 400,
+                  "width": 60,
+                  "height": 30
+                },
+                "ellipse": false,
+                "rot": 45
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "other-page": {
+              "id": "other-page",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 97331
+              },
+              "pon": 2,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 100,
+                  "y": 100,
+                  "width": 80,
+                  "height": 60
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "hidden": {
+              "id": "hidden",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 5617
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 0,
+                  "y": 0,
+                  "width": 10,
+                  "height": 10
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": true,
+                "print": false,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "note": {
+              "id": "note",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 52025
+              },
+              "pon": 1,
+              "subtype": "text",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 500,
+                  "y": 500,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            },
+            "nozoom": {
+              "id": "nozoom",
+              "ref": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1,
+                "annotObjectNumber": 87931
+              },
+              "pon": 1,
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 250,
+                  "y": 250,
+                  "width": 20,
+                  "height": 20
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": false,
+                "noZoom": true,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            }
+          },
+          "order": [
+            "a",
+            "b",
+            "c",
+            "rot",
+            "other-page",
+            "hidden",
+            "note",
+            "nozoom"
+          ]
+        },
+        [
+          "c"
+        ],
+        1,
+        {
+          "x": -2.5,
+          "y": 0
+        },
+        5
+      ],
+      "outcome": {
+        "returned": {
+          "delta": {
+            "x": 0,
+            "y": 0
+          },
+          "guides": [
+            {
+              "axis": "x",
+              "at": 100,
+              "lo": 86,
+              "hi": 354
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

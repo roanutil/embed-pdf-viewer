@@ -1,0 +1,2531 @@
+{
+  "schemaVersion": 1,
+  "kind": "function",
+  "describes": "packages/core/annotation endings.ts: /LE ending points and render nodes.",
+  "cases": [
+    {
+      "name": "endingPoints/none-a0.000-sw1",
+      "fn": "endingPoints",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        0,
+        "none",
+        1
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "endingNodes/none-a0.000-sw1",
+      "fn": "endingNodes",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        0,
+        "none",
+        1
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "endingPoints/none-a1.571-sw2",
+      "fn": "endingPoints",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        1.5707963267948966,
+        "none",
+        2
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "endingNodes/none-a1.571-sw2",
+      "fn": "endingNodes",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        1.5707963267948966,
+        "none",
+        2
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "endingPoints/none-a-2.500-sw3",
+      "fn": "endingPoints",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        -2.5,
+        "none",
+        3
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "endingNodes/none-a-2.500-sw3",
+      "fn": "endingNodes",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        -2.5,
+        "none",
+        3
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "endingPoints/none-a3.142-sw0",
+      "fn": "endingPoints",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        3.141592653589793,
+        "none",
+        0
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "endingNodes/none-a3.142-sw0",
+      "fn": "endingNodes",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        3.141592653589793,
+        "none",
+        0
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "endingPoints/square-a0.000-sw1",
+      "fn": "endingPoints",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        0,
+        "square",
+        1
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "x": 47,
+            "y": 57
+          },
+          {
+            "x": 53,
+            "y": 57
+          },
+          {
+            "x": 53,
+            "y": 63
+          },
+          {
+            "x": 47,
+            "y": 63
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingNodes/square-a0.000-sw1",
+      "fn": "endingNodes",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        0,
+        "square",
+        1
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "kind": "poly",
+            "points": [
+              {
+                "x": 47,
+                "y": 57
+              },
+              {
+                "x": 53,
+                "y": 57
+              },
+              {
+                "x": 53,
+                "y": 63
+              },
+              {
+                "x": 47,
+                "y": 63
+              }
+            ],
+            "closed": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingPoints/square-a1.571-sw2",
+      "fn": "endingPoints",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        1.5707963267948966,
+        "square",
+        2
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "x": 56,
+            "y": 54
+          },
+          {
+            "x": 56,
+            "y": 66
+          },
+          {
+            "x": 44,
+            "y": 66
+          },
+          {
+            "x": 44,
+            "y": 54
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingNodes/square-a1.571-sw2",
+      "fn": "endingNodes",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        1.5707963267948966,
+        "square",
+        2
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "kind": "poly",
+            "points": [
+              {
+                "x": 56,
+                "y": 54
+              },
+              {
+                "x": 56,
+                "y": 66
+              },
+              {
+                "x": 44,
+                "y": 66
+              },
+              {
+                "x": 44,
+                "y": 54
+              }
+            ],
+            "closed": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingPoints/square-a-2.500-sw3",
+      "fn": "endingPoints",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        -2.5,
+        "square",
+        3
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "x": 51.8240432429868,
+            "y": 72.59654183685801
+          },
+          {
+            "x": 37.403458163141984,
+            "y": 61.8240432429868
+          },
+          {
+            "x": 48.1759567570132,
+            "y": 47.403458163141984
+          },
+          {
+            "x": 62.596541836858016,
+            "y": 58.175956757013196
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingNodes/square-a-2.500-sw3",
+      "fn": "endingNodes",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        -2.5,
+        "square",
+        3
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "kind": "poly",
+            "points": [
+              {
+                "x": 51.8240432429868,
+                "y": 72.59654183685801
+              },
+              {
+                "x": 37.403458163141984,
+                "y": 61.8240432429868
+              },
+              {
+                "x": 48.1759567570132,
+                "y": 47.403458163141984
+              },
+              {
+                "x": 62.596541836858016,
+                "y": 58.175956757013196
+              }
+            ],
+            "closed": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingPoints/square-a3.142-sw0",
+      "fn": "endingPoints",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        3.141592653589793,
+        "square",
+        0
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "x": 50,
+            "y": 60
+          },
+          {
+            "x": 50,
+            "y": 60
+          },
+          {
+            "x": 50,
+            "y": 60
+          },
+          {
+            "x": 50,
+            "y": 60
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingNodes/square-a3.142-sw0",
+      "fn": "endingNodes",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        3.141592653589793,
+        "square",
+        0
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "kind": "poly",
+            "points": [
+              {
+                "x": 50,
+                "y": 60
+              },
+              {
+                "x": 50,
+                "y": 60
+              },
+              {
+                "x": 50,
+                "y": 60
+              },
+              {
+                "x": 50,
+                "y": 60
+              }
+            ],
+            "closed": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingPoints/circle-a0.000-sw1",
+      "fn": "endingPoints",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        0,
+        "circle",
+        1
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "x": 47.5,
+            "y": 57.5
+          },
+          {
+            "x": 52.5,
+            "y": 62.5
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingNodes/circle-a0.000-sw1",
+      "fn": "endingNodes",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        0,
+        "circle",
+        1
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "kind": "ellipse",
+            "rect": {
+              "x": 47.5,
+              "y": 57.5,
+              "width": 5,
+              "height": 5
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingPoints/circle-a1.571-sw2",
+      "fn": "endingPoints",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        1.5707963267948966,
+        "circle",
+        2
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "x": 45,
+            "y": 55
+          },
+          {
+            "x": 55,
+            "y": 65
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingNodes/circle-a1.571-sw2",
+      "fn": "endingNodes",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        1.5707963267948966,
+        "circle",
+        2
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "kind": "ellipse",
+            "rect": {
+              "x": 45,
+              "y": 55,
+              "width": 10,
+              "height": 10
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingPoints/circle-a-2.500-sw3",
+      "fn": "endingPoints",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        -2.5,
+        "circle",
+        3
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "x": 42.5,
+            "y": 52.5
+          },
+          {
+            "x": 57.5,
+            "y": 67.5
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingNodes/circle-a-2.500-sw3",
+      "fn": "endingNodes",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        -2.5,
+        "circle",
+        3
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "kind": "ellipse",
+            "rect": {
+              "x": 42.5,
+              "y": 52.5,
+              "width": 15,
+              "height": 15
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingPoints/circle-a3.142-sw0",
+      "fn": "endingPoints",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        3.141592653589793,
+        "circle",
+        0
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "x": 50,
+            "y": 60
+          },
+          {
+            "x": 50,
+            "y": 60
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingNodes/circle-a3.142-sw0",
+      "fn": "endingNodes",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        3.141592653589793,
+        "circle",
+        0
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "kind": "ellipse",
+            "rect": {
+              "x": 50,
+              "y": 60,
+              "width": 0,
+              "height": 0
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingPoints/diamond-a0.000-sw1",
+      "fn": "endingPoints",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        0,
+        "diamond",
+        1
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "x": 53,
+            "y": 60
+          },
+          {
+            "x": 50,
+            "y": 63
+          },
+          {
+            "x": 47,
+            "y": 60
+          },
+          {
+            "x": 50,
+            "y": 57
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingNodes/diamond-a0.000-sw1",
+      "fn": "endingNodes",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        0,
+        "diamond",
+        1
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "kind": "poly",
+            "points": [
+              {
+                "x": 53,
+                "y": 60
+              },
+              {
+                "x": 50,
+                "y": 63
+              },
+              {
+                "x": 47,
+                "y": 60
+              },
+              {
+                "x": 50,
+                "y": 57
+              }
+            ],
+            "closed": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingPoints/diamond-a1.571-sw2",
+      "fn": "endingPoints",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        1.5707963267948966,
+        "diamond",
+        2
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "x": 50,
+            "y": 66
+          },
+          {
+            "x": 44,
+            "y": 60
+          },
+          {
+            "x": 50,
+            "y": 54
+          },
+          {
+            "x": 56,
+            "y": 60
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingNodes/diamond-a1.571-sw2",
+      "fn": "endingNodes",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        1.5707963267948966,
+        "diamond",
+        2
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "kind": "poly",
+            "points": [
+              {
+                "x": 50,
+                "y": 66
+              },
+              {
+                "x": 44,
+                "y": 60
+              },
+              {
+                "x": 50,
+                "y": 54
+              },
+              {
+                "x": 56,
+                "y": 60
+              }
+            ],
+            "closed": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingPoints/diamond-a-2.500-sw3",
+      "fn": "endingPoints",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        -2.5,
+        "diamond",
+        3
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "x": 42.789707460077594,
+            "y": 54.61375070306439
+          },
+          {
+            "x": 55.38624929693561,
+            "y": 52.789707460077594
+          },
+          {
+            "x": 57.210292539922406,
+            "y": 65.3862492969356
+          },
+          {
+            "x": 44.61375070306439,
+            "y": 67.2102925399224
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingNodes/diamond-a-2.500-sw3",
+      "fn": "endingNodes",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        -2.5,
+        "diamond",
+        3
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "kind": "poly",
+            "points": [
+              {
+                "x": 42.789707460077594,
+                "y": 54.61375070306439
+              },
+              {
+                "x": 55.38624929693561,
+                "y": 52.789707460077594
+              },
+              {
+                "x": 57.210292539922406,
+                "y": 65.3862492969356
+              },
+              {
+                "x": 44.61375070306439,
+                "y": 67.2102925399224
+              }
+            ],
+            "closed": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingPoints/diamond-a3.142-sw0",
+      "fn": "endingPoints",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        3.141592653589793,
+        "diamond",
+        0
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "x": 50,
+            "y": 60
+          },
+          {
+            "x": 50,
+            "y": 60
+          },
+          {
+            "x": 50,
+            "y": 60
+          },
+          {
+            "x": 50,
+            "y": 60
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingNodes/diamond-a3.142-sw0",
+      "fn": "endingNodes",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        3.141592653589793,
+        "diamond",
+        0
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "kind": "poly",
+            "points": [
+              {
+                "x": 50,
+                "y": 60
+              },
+              {
+                "x": 50,
+                "y": 60
+              },
+              {
+                "x": 50,
+                "y": 60
+              },
+              {
+                "x": 50,
+                "y": 60
+              }
+            ],
+            "closed": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingPoints/open-arrow-a0.000-sw1",
+      "fn": "endingPoints",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        0,
+        "open-arrow",
+        1
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "x": 42.20577136594005,
+            "y": 64.5
+          },
+          {
+            "x": 50,
+            "y": 60
+          },
+          {
+            "x": 42.20577136594005,
+            "y": 55.5
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingNodes/open-arrow-a0.000-sw1",
+      "fn": "endingNodes",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        0,
+        "open-arrow",
+        1
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "kind": "poly",
+            "points": [
+              {
+                "x": 42.20577136594005,
+                "y": 64.5
+              },
+              {
+                "x": 50,
+                "y": 60
+              },
+              {
+                "x": 42.20577136594005,
+                "y": 55.5
+              }
+            ],
+            "closed": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingPoints/open-arrow-a1.571-sw2",
+      "fn": "endingPoints",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        1.5707963267948966,
+        "open-arrow",
+        2
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "x": 41,
+            "y": 44.411542731880104
+          },
+          {
+            "x": 50,
+            "y": 60
+          },
+          {
+            "x": 59,
+            "y": 44.411542731880104
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingNodes/open-arrow-a1.571-sw2",
+      "fn": "endingNodes",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        1.5707963267948966,
+        "open-arrow",
+        2
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "kind": "poly",
+            "points": [
+              {
+                "x": 41,
+                "y": 44.411542731880104
+              },
+              {
+                "x": 50,
+                "y": 60
+              },
+              {
+                "x": 59,
+                "y": 44.411542731880104
+              }
+            ],
+            "closed": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingPoints/open-arrow-a-2.500-sw3",
+      "fn": "endingPoints",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        -2.5,
+        "open-arrow",
+        3
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "x": 76.81226347027408,
+            "y": 63.17844735690332
+          },
+          {
+            "x": 50,
+            "y": 60
+          },
+          {
+            "x": 60.65351557946726,
+            "y": 84.80932497667052
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingNodes/open-arrow-a-2.500-sw3",
+      "fn": "endingNodes",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        -2.5,
+        "open-arrow",
+        3
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "kind": "poly",
+            "points": [
+              {
+                "x": 76.81226347027408,
+                "y": 63.17844735690332
+              },
+              {
+                "x": 50,
+                "y": 60
+              },
+              {
+                "x": 60.65351557946726,
+                "y": 84.80932497667052
+              }
+            ],
+            "closed": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingPoints/open-arrow-a3.142-sw0",
+      "fn": "endingPoints",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        3.141592653589793,
+        "open-arrow",
+        0
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "x": 50,
+            "y": 60
+          },
+          {
+            "x": 50,
+            "y": 60
+          },
+          {
+            "x": 50,
+            "y": 60
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingNodes/open-arrow-a3.142-sw0",
+      "fn": "endingNodes",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        3.141592653589793,
+        "open-arrow",
+        0
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "kind": "poly",
+            "points": [
+              {
+                "x": 50,
+                "y": 60
+              },
+              {
+                "x": 50,
+                "y": 60
+              },
+              {
+                "x": 50,
+                "y": 60
+              }
+            ],
+            "closed": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingPoints/closed-arrow-a0.000-sw1",
+      "fn": "endingPoints",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        0,
+        "closed-arrow",
+        1
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "x": 50,
+            "y": 60
+          },
+          {
+            "x": 42.20577136594005,
+            "y": 64.5
+          },
+          {
+            "x": 42.20577136594005,
+            "y": 55.5
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingNodes/closed-arrow-a0.000-sw1",
+      "fn": "endingNodes",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        0,
+        "closed-arrow",
+        1
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "kind": "poly",
+            "points": [
+              {
+                "x": 50,
+                "y": 60
+              },
+              {
+                "x": 42.20577136594005,
+                "y": 64.5
+              },
+              {
+                "x": 42.20577136594005,
+                "y": 55.5
+              }
+            ],
+            "closed": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingPoints/closed-arrow-a1.571-sw2",
+      "fn": "endingPoints",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        1.5707963267948966,
+        "closed-arrow",
+        2
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "x": 50,
+            "y": 60
+          },
+          {
+            "x": 41,
+            "y": 44.411542731880104
+          },
+          {
+            "x": 59,
+            "y": 44.411542731880104
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingNodes/closed-arrow-a1.571-sw2",
+      "fn": "endingNodes",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        1.5707963267948966,
+        "closed-arrow",
+        2
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "kind": "poly",
+            "points": [
+              {
+                "x": 50,
+                "y": 60
+              },
+              {
+                "x": 41,
+                "y": 44.411542731880104
+              },
+              {
+                "x": 59,
+                "y": 44.411542731880104
+              }
+            ],
+            "closed": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingPoints/closed-arrow-a-2.500-sw3",
+      "fn": "endingPoints",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        -2.5,
+        "closed-arrow",
+        3
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "x": 50,
+            "y": 60
+          },
+          {
+            "x": 76.81226347027408,
+            "y": 63.17844735690332
+          },
+          {
+            "x": 60.65351557946726,
+            "y": 84.80932497667052
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingNodes/closed-arrow-a-2.500-sw3",
+      "fn": "endingNodes",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        -2.5,
+        "closed-arrow",
+        3
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "kind": "poly",
+            "points": [
+              {
+                "x": 50,
+                "y": 60
+              },
+              {
+                "x": 76.81226347027408,
+                "y": 63.17844735690332
+              },
+              {
+                "x": 60.65351557946726,
+                "y": 84.80932497667052
+              }
+            ],
+            "closed": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingPoints/closed-arrow-a3.142-sw0",
+      "fn": "endingPoints",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        3.141592653589793,
+        "closed-arrow",
+        0
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "x": 50,
+            "y": 60
+          },
+          {
+            "x": 50,
+            "y": 60
+          },
+          {
+            "x": 50,
+            "y": 60
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingNodes/closed-arrow-a3.142-sw0",
+      "fn": "endingNodes",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        3.141592653589793,
+        "closed-arrow",
+        0
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "kind": "poly",
+            "points": [
+              {
+                "x": 50,
+                "y": 60
+              },
+              {
+                "x": 50,
+                "y": 60
+              },
+              {
+                "x": 50,
+                "y": 60
+              }
+            ],
+            "closed": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingPoints/butt-a0.000-sw1",
+      "fn": "endingPoints",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        0,
+        "butt",
+        1
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "x": 50,
+            "y": 57
+          },
+          {
+            "x": 50,
+            "y": 63
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingNodes/butt-a0.000-sw1",
+      "fn": "endingNodes",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        0,
+        "butt",
+        1
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "kind": "poly",
+            "points": [
+              {
+                "x": 50,
+                "y": 57
+              },
+              {
+                "x": 50,
+                "y": 63
+              }
+            ],
+            "closed": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingPoints/butt-a1.571-sw2",
+      "fn": "endingPoints",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        1.5707963267948966,
+        "butt",
+        2
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "x": 56,
+            "y": 60
+          },
+          {
+            "x": 44,
+            "y": 60
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingNodes/butt-a1.571-sw2",
+      "fn": "endingNodes",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        1.5707963267948966,
+        "butt",
+        2
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "kind": "poly",
+            "points": [
+              {
+                "x": 56,
+                "y": 60
+              },
+              {
+                "x": 44,
+                "y": 60
+              }
+            ],
+            "closed": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingPoints/butt-a-2.500-sw3",
+      "fn": "endingPoints",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        -2.5,
+        "butt",
+        3
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "x": 44.61375070306439,
+            "y": 67.2102925399224
+          },
+          {
+            "x": 55.38624929693561,
+            "y": 52.789707460077594
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingNodes/butt-a-2.500-sw3",
+      "fn": "endingNodes",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        -2.5,
+        "butt",
+        3
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "kind": "poly",
+            "points": [
+              {
+                "x": 44.61375070306439,
+                "y": 67.2102925399224
+              },
+              {
+                "x": 55.38624929693561,
+                "y": 52.789707460077594
+              }
+            ],
+            "closed": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingPoints/butt-a3.142-sw0",
+      "fn": "endingPoints",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        3.141592653589793,
+        "butt",
+        0
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "x": 50,
+            "y": 60
+          },
+          {
+            "x": 50,
+            "y": 60
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingNodes/butt-a3.142-sw0",
+      "fn": "endingNodes",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        3.141592653589793,
+        "butt",
+        0
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "kind": "poly",
+            "points": [
+              {
+                "x": 50,
+                "y": 60
+              },
+              {
+                "x": 50,
+                "y": 60
+              }
+            ],
+            "closed": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingPoints/r-open-arrow-a0.000-sw1",
+      "fn": "endingPoints",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        0,
+        "r-open-arrow",
+        1
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "x": 57.79422863405995,
+            "y": 55.5
+          },
+          {
+            "x": 50,
+            "y": 60
+          },
+          {
+            "x": 57.79422863405995,
+            "y": 64.5
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingNodes/r-open-arrow-a0.000-sw1",
+      "fn": "endingNodes",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        0,
+        "r-open-arrow",
+        1
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "kind": "poly",
+            "points": [
+              {
+                "x": 57.79422863405995,
+                "y": 55.5
+              },
+              {
+                "x": 50,
+                "y": 60
+              },
+              {
+                "x": 57.79422863405995,
+                "y": 64.5
+              }
+            ],
+            "closed": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingPoints/r-open-arrow-a1.571-sw2",
+      "fn": "endingPoints",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        1.5707963267948966,
+        "r-open-arrow",
+        2
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "x": 59,
+            "y": 75.5884572681199
+          },
+          {
+            "x": 50,
+            "y": 60
+          },
+          {
+            "x": 41,
+            "y": 75.5884572681199
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingNodes/r-open-arrow-a1.571-sw2",
+      "fn": "endingNodes",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        1.5707963267948966,
+        "r-open-arrow",
+        2
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "kind": "poly",
+            "points": [
+              {
+                "x": 59,
+                "y": 75.5884572681199
+              },
+              {
+                "x": 50,
+                "y": 60
+              },
+              {
+                "x": 41,
+                "y": 75.5884572681199
+              }
+            ],
+            "closed": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingPoints/r-open-arrow-a-2.500-sw3",
+      "fn": "endingPoints",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        -2.5,
+        "r-open-arrow",
+        3
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "x": 23.18773652972591,
+            "y": 56.82155264309668
+          },
+          {
+            "x": 50,
+            "y": 60
+          },
+          {
+            "x": 39.34648442053273,
+            "y": 35.19067502332946
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingNodes/r-open-arrow-a-2.500-sw3",
+      "fn": "endingNodes",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        -2.5,
+        "r-open-arrow",
+        3
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "kind": "poly",
+            "points": [
+              {
+                "x": 23.18773652972591,
+                "y": 56.82155264309668
+              },
+              {
+                "x": 50,
+                "y": 60
+              },
+              {
+                "x": 39.34648442053273,
+                "y": 35.19067502332946
+              }
+            ],
+            "closed": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingPoints/r-open-arrow-a3.142-sw0",
+      "fn": "endingPoints",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        3.141592653589793,
+        "r-open-arrow",
+        0
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "x": 50,
+            "y": 60
+          },
+          {
+            "x": 50,
+            "y": 60
+          },
+          {
+            "x": 50,
+            "y": 60
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingNodes/r-open-arrow-a3.142-sw0",
+      "fn": "endingNodes",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        3.141592653589793,
+        "r-open-arrow",
+        0
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "kind": "poly",
+            "points": [
+              {
+                "x": 50,
+                "y": 60
+              },
+              {
+                "x": 50,
+                "y": 60
+              },
+              {
+                "x": 50,
+                "y": 60
+              }
+            ],
+            "closed": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingPoints/r-closed-arrow-a0.000-sw1",
+      "fn": "endingPoints",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        0,
+        "r-closed-arrow",
+        1
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "x": 50,
+            "y": 60
+          },
+          {
+            "x": 57.79422863405995,
+            "y": 55.5
+          },
+          {
+            "x": 57.79422863405995,
+            "y": 64.5
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingNodes/r-closed-arrow-a0.000-sw1",
+      "fn": "endingNodes",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        0,
+        "r-closed-arrow",
+        1
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "kind": "poly",
+            "points": [
+              {
+                "x": 50,
+                "y": 60
+              },
+              {
+                "x": 57.79422863405995,
+                "y": 55.5
+              },
+              {
+                "x": 57.79422863405995,
+                "y": 64.5
+              }
+            ],
+            "closed": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingPoints/r-closed-arrow-a1.571-sw2",
+      "fn": "endingPoints",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        1.5707963267948966,
+        "r-closed-arrow",
+        2
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "x": 50,
+            "y": 60
+          },
+          {
+            "x": 59,
+            "y": 75.5884572681199
+          },
+          {
+            "x": 41,
+            "y": 75.5884572681199
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingNodes/r-closed-arrow-a1.571-sw2",
+      "fn": "endingNodes",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        1.5707963267948966,
+        "r-closed-arrow",
+        2
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "kind": "poly",
+            "points": [
+              {
+                "x": 50,
+                "y": 60
+              },
+              {
+                "x": 59,
+                "y": 75.5884572681199
+              },
+              {
+                "x": 41,
+                "y": 75.5884572681199
+              }
+            ],
+            "closed": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingPoints/r-closed-arrow-a-2.500-sw3",
+      "fn": "endingPoints",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        -2.5,
+        "r-closed-arrow",
+        3
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "x": 50,
+            "y": 60
+          },
+          {
+            "x": 23.18773652972591,
+            "y": 56.82155264309668
+          },
+          {
+            "x": 39.34648442053273,
+            "y": 35.19067502332946
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingNodes/r-closed-arrow-a-2.500-sw3",
+      "fn": "endingNodes",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        -2.5,
+        "r-closed-arrow",
+        3
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "kind": "poly",
+            "points": [
+              {
+                "x": 50,
+                "y": 60
+              },
+              {
+                "x": 23.18773652972591,
+                "y": 56.82155264309668
+              },
+              {
+                "x": 39.34648442053273,
+                "y": 35.19067502332946
+              }
+            ],
+            "closed": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingPoints/r-closed-arrow-a3.142-sw0",
+      "fn": "endingPoints",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        3.141592653589793,
+        "r-closed-arrow",
+        0
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "x": 50,
+            "y": 60
+          },
+          {
+            "x": 50,
+            "y": 60
+          },
+          {
+            "x": 50,
+            "y": 60
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingNodes/r-closed-arrow-a3.142-sw0",
+      "fn": "endingNodes",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        3.141592653589793,
+        "r-closed-arrow",
+        0
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "kind": "poly",
+            "points": [
+              {
+                "x": 50,
+                "y": 60
+              },
+              {
+                "x": 50,
+                "y": 60
+              },
+              {
+                "x": 50,
+                "y": 60
+              }
+            ],
+            "closed": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingPoints/slash-a0.000-sw1",
+      "fn": "endingPoints",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        0,
+        "slash",
+        1
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "x": 54.5,
+            "y": 52.20577136594005
+          },
+          {
+            "x": 45.5,
+            "y": 67.79422863405995
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingNodes/slash-a0.000-sw1",
+      "fn": "endingNodes",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        0,
+        "slash",
+        1
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "kind": "poly",
+            "points": [
+              {
+                "x": 54.5,
+                "y": 52.20577136594005
+              },
+              {
+                "x": 45.5,
+                "y": 67.79422863405995
+              }
+            ],
+            "closed": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingPoints/slash-a1.571-sw2",
+      "fn": "endingPoints",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        1.5707963267948966,
+        "slash",
+        2
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "x": 65.5884572681199,
+            "y": 69
+          },
+          {
+            "x": 34.411542731880104,
+            "y": 51.00000000000001
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingNodes/slash-a1.571-sw2",
+      "fn": "endingNodes",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        1.5707963267948966,
+        "slash",
+        2
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "kind": "poly",
+            "points": [
+              {
+                "x": 65.5884572681199,
+                "y": 69
+              },
+              {
+                "x": 34.411542731880104,
+                "y": 51.00000000000001
+              }
+            ],
+            "closed": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingPoints/slash-a-2.500-sw3",
+      "fn": "endingPoints",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        -2.5,
+        "slash",
+        3
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "x": 25.19067502332947,
+            "y": 70.65351557946727
+          },
+          {
+            "x": 74.80932497667052,
+            "y": 49.34648442053273
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingNodes/slash-a-2.500-sw3",
+      "fn": "endingNodes",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        -2.5,
+        "slash",
+        3
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "kind": "poly",
+            "points": [
+              {
+                "x": 25.19067502332947,
+                "y": 70.65351557946727
+              },
+              {
+                "x": 74.80932497667052,
+                "y": 49.34648442053273
+              }
+            ],
+            "closed": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingPoints/slash-a3.142-sw0",
+      "fn": "endingPoints",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        3.141592653589793,
+        "slash",
+        0
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "x": 50,
+            "y": 60
+          },
+          {
+            "x": 50,
+            "y": 60
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingNodes/slash-a3.142-sw0",
+      "fn": "endingNodes",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        3.141592653589793,
+        "slash",
+        0
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "kind": "poly",
+            "points": [
+              {
+                "x": 50,
+                "y": 60
+              },
+              {
+                "x": 50,
+                "y": 60
+              }
+            ],
+            "closed": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "endingPoints/undefined-a0.000-sw1",
+      "fn": "endingPoints",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        0,
+        {
+          "$undefined": true
+        },
+        1
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "endingNodes/undefined-a0.000-sw1",
+      "fn": "endingNodes",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        0,
+        {
+          "$undefined": true
+        },
+        1
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "endingPoints/undefined-a1.571-sw2",
+      "fn": "endingPoints",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        1.5707963267948966,
+        {
+          "$undefined": true
+        },
+        2
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "endingNodes/undefined-a1.571-sw2",
+      "fn": "endingNodes",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        1.5707963267948966,
+        {
+          "$undefined": true
+        },
+        2
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "endingPoints/undefined-a-2.500-sw3",
+      "fn": "endingPoints",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        -2.5,
+        {
+          "$undefined": true
+        },
+        3
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "endingNodes/undefined-a-2.500-sw3",
+      "fn": "endingNodes",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        -2.5,
+        {
+          "$undefined": true
+        },
+        3
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "endingPoints/undefined-a3.142-sw0",
+      "fn": "endingPoints",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        3.141592653589793,
+        {
+          "$undefined": true
+        },
+        0
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "endingNodes/undefined-a3.142-sw0",
+      "fn": "endingNodes",
+      "args": [
+        {
+          "x": 50,
+          "y": 60
+        },
+        3.141592653589793,
+        {
+          "$undefined": true
+        },
+        0
+      ],
+      "outcome": {
+        "returned": []
+      }
+    }
+  ]
+}
