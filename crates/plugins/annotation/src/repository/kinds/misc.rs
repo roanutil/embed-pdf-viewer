@@ -13,7 +13,11 @@ use crate::repository::seam::{box_geom_from_dto, color_to_css, pdf_json, writabl
 use crate::value::{get, opt_f64, opt_pdf_rect, pdf_rect_of, str_of};
 
 fn rect_geom(dto: &Value, crop: PdfRect) -> Geom {
-    Geom::Rect { rect: pdf_to_content_rect(pdf_rect_of(get(dto, "rect")), crop), ellipse: false, rot: None }
+    Geom::Rect {
+        rect: pdf_to_content_rect(pdf_rect_of(get(dto, "rect")), crop),
+        ellipse: false,
+        rot: None,
+    }
 }
 
 /// `rectGeometry`: `/Rect` for any geom that has a box.
@@ -111,13 +115,8 @@ fn widget_text_from_dto(d: &Value) -> TextStyle {
 }
 
 pub fn widget_ingest(d: &Value, crop: PdfRect) -> IngestSlice {
-    let mut slice = IngestSlice::geom(box_geom_from_dto(
-        pdf_rect_of(get(d, "rect")),
-        None,
-        None,
-        crop,
-        false,
-    ));
+    let mut slice =
+        IngestSlice::geom(box_geom_from_dto(pdf_rect_of(get(d, "rect")), None, None, crop, false));
     let family = str_of(d, "fieldFamily").unwrap_or_default();
     if WIDGET_TEXT_KINDS.contains(&widget_kind_of(family).as_str()) {
         slice.text = Some(widget_text_from_dto(d));

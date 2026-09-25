@@ -126,7 +126,9 @@ fn chronological(a: &Value, b: &Value) -> Ordering {
     let at = date(a, "created").or_else(|| date(a, "modified"));
     let bt = date(b, "created").or_else(|| date(b, "modified"));
     match (&at, &bt) {
-        (Some(x), Some(y)) if x != y => return if x < y { Ordering::Less } else { Ordering::Greater },
+        (Some(x), Some(y)) if x != y => {
+            return if x < y { Ordering::Less } else { Ordering::Greater };
+        }
         (Some(_), None) => return Ordering::Less,
         (None, Some(_)) => return Ordering::Greater,
         _ => {}
@@ -236,7 +238,10 @@ fn is_grouped_subordinate(a: &Value) -> bool {
 }
 
 /// `buildCommentThreads(annotations, { currentUserId })`.
-pub fn build_comment_threads(annotations: &[Value], current_user_id: Option<&str>) -> Vec<CommentThread> {
+pub fn build_comment_threads(
+    annotations: &[Value],
+    current_user_id: Option<&str>,
+) -> Vec<CommentThread> {
     let eligible: Vec<&Value> = annotations
         .iter()
         .filter(|a| !matches!(str_of(a, "subtype"), Some("widget" | "link" | "unsupported")))

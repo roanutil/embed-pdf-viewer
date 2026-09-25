@@ -33,7 +33,7 @@ import { cloudyExtras } from '../../../../packages/plugin/annotation/src/reposit
 import { calloutFields } from '../../../../packages/plugin/annotation/src/repository/kinds/freeText';
 import { pdfBoundsOfQuads, quadPointsFor } from '../../../../packages/plugin/annotation/src/repository/kinds/quads';
 import { widgetKindOf } from '../../../../packages/plugin/annotation/src/repository/kinds/misc';
-import type { Annot } from '../../../../packages/core/annotation/src/types';
+import type { Annot, Border } from '../../../../packages/core/annotation/src/types';
 
 import {
   CROP,
@@ -136,8 +136,8 @@ const annotOf = (label: string, source: 'baked' | 'vector' = 'vector'): Annot =>
 const cropOf = (label: string) => DTOS.find(([l]) => l === label)![2];
 
 /** Style overrides that reach the shape and stroke couplings. */
-const CLOUDY = { kind: 'cloudy', intensity: 2 } as const;
-const DASHED = { kind: 'dashed', dash: [5, 3] } as const;
+const CLOUDY: Border = { kind: 'cloudy', intensity: 2 };
+const DASHED: Border = { kind: 'dashed', dash: [5, 3] };
 const restyle = (a: Annot, style: Partial<Annot['style']>): Annot => ({ ...a, style: { ...a.style, ...style } });
 
 const PROP_SCOPES: [string, string[]][] = [

@@ -54,13 +54,12 @@ pub fn from_dto(dto: &Value, crop: PdfRect, source: Source) -> Annot {
     };
     let ref_: Option<AnnotationRef> =
         get(dto, "ref").and_then(|r| serde_json::from_value(r.clone()).ok());
-    let irt = get(dto, "inReplyTo")
-        .filter(|v| truthy(Some(v)))
-        .and_then(seam::ref_key_of);
+    let irt = get(dto, "inReplyTo").filter(|v| truthy(Some(v))).and_then(seam::ref_key_of);
     let group = if str_of(dto, "replyType") == Some("group") { irt.clone() } else { None };
     let flags: AnnotationFlags =
         get(dto, "flags").and_then(|f| serde_json::from_value(f.clone()).ok()).unwrap_or_default();
-    let ap_box = pdf_to_content_rect(stripped.unwrap_or_else(|| pdf_rect_of(get(dto, "rect"))), crop);
+    let ap_box =
+        pdf_to_content_rect(stripped.unwrap_or_else(|| pdf_rect_of(get(dto, "rect"))), crop);
     Annot {
         id: ref_.as_ref().map(ref_key).unwrap_or_default(),
         ref_,

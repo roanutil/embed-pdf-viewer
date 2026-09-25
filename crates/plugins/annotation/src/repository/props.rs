@@ -13,7 +13,10 @@ pub fn border_slice(style: &Style) -> Wire {
     match &style.border {
         Border::Dashed { dash } => {
             out.insert("borderStyle".into(), json!("dashed"));
-            out.insert("dashArray".into(), Value::Array(dash.iter().map(|d| num_json(*d)).collect()));
+            out.insert(
+                "dashArray".into(),
+                Value::Array(dash.iter().map(|d| num_json(*d)).collect()),
+            );
         }
         _ => {
             out.insert("borderStyle".into(), json!("solid"));

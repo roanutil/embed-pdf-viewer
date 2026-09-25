@@ -222,6 +222,8 @@ pub struct AnnotationState {
     pub stamp_arm_epoch: f64,
 }
 
+/// The hydration error makes one variant large; actions are transient.
+#[allow(clippy::large_enum_variant)]
 #[derive(Clone, Debug, Serialize)]
 #[serde(tag = "type")]
 pub enum AnnotationAction {

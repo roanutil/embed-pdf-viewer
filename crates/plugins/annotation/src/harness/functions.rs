@@ -9,10 +9,10 @@ use plugin_conformance::FunctionTable;
 use plugin_conformance::js::{arg, from_value, to_value};
 use serde_json::{Value, json};
 
+use crate::reducer::{annotation_reducer, initial_annotation_state, merge_chrome};
 use crate::repository::kinds::{free_text, misc, quads, shape};
 use crate::repository::seam::{self, pdf_json};
 use crate::repository::{self, projection::Wire};
-use crate::reducer::{annotation_reducer, initial_annotation_state, merge_chrome};
 use crate::tools::{AnnotationToolDef, build_tool_registry, is_touch_direct};
 use crate::types::*;
 use crate::value::{opt_f64, opt_pdf_rect, pdf_rect_of};
@@ -298,7 +298,9 @@ fn state_from_json(v: &Value) -> Result<AnnotationState, Error> {
 fn action_from_json(v: &Value) -> Result<AnnotationAction, Error> {
     let member = |k: &str| v.get(k).unwrap_or(&Value::Null);
     Ok(match v.get("type").and_then(Value::as_str) {
-        Some("SET_MODEL") => AnnotationAction::SetModel { model: Rc::new(from_value(member("model"))?) },
+        Some("SET_MODEL") => {
+            AnnotationAction::SetModel { model: Rc::new(from_value(member("model"))?) }
+        }
         Some("SET_HYDRATION") => {
             AnnotationAction::SetHydration { hydration: hydration_from_json(member("hydration")) }
         }

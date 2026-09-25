@@ -18,7 +18,9 @@ use crate::value::{
 };
 
 fn text_align_of(dto: &Value) -> TextAlign {
-    get(dto, "textAlign").and_then(|a| serde_json::from_value(a.clone()).ok()).unwrap_or(TextAlign::Left)
+    get(dto, "textAlign")
+        .and_then(|a| serde_json::from_value(a.clone()).ok())
+        .unwrap_or(TextAlign::Left)
 }
 
 /// `textFromDTO(dto)`: an absent `fontColor` falls back to the `/DA` colour.
@@ -39,7 +41,8 @@ pub fn callout_fields(a: &Annot, crop: PdfRect) -> Option<Wire> {
     let Geom::Text { rect, callout: Some(callout), .. } = g else { return None };
     let rot = geom_rotation(g);
     let overall = geom_pdf_bounds(g, a.style.stroke_width, crop, None);
-    let tb = content_to_pdf_rect(if truthy_num(rot) { rotated_aabb(*rect, rot) } else { *rect }, crop);
+    let tb =
+        content_to_pdf_rect(if truthy_num(rot) { rotated_aabb(*rect, rot) } else { *rect }, crop);
     let nn = |n: f64| num::max(0.0, n);
     let pts: Vec<Value> = callout_line_points(g)
         .into_iter()

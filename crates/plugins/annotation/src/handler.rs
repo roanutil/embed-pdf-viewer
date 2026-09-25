@@ -61,7 +61,10 @@ pub struct GhostHandler {
 }
 
 /// `createGhostHandler(anno, interaction)`.
-pub fn create_ghost_handler(anno: AnnotationCapability, interaction: InteractionCapability) -> GhostHandler {
+pub fn create_ghost_handler(
+    anno: AnnotationCapability,
+    interaction: InteractionCapability,
+) -> GhostHandler {
     GhostHandler { anno, interaction }
 }
 
@@ -108,7 +111,10 @@ pub struct EditHandler {
 }
 
 /// `createEditHandler(anno, interaction)`.
-pub fn create_edit_handler(anno: AnnotationCapability, interaction: InteractionCapability) -> EditHandler {
+pub fn create_edit_handler(
+    anno: AnnotationCapability,
+    interaction: InteractionCapability,
+) -> EditHandler {
     EditHandler { anno, interaction, origin: RefCell::new(None) }
 }
 
@@ -134,7 +140,9 @@ impl InteractionHandler for EditHandler {
             self.anno.end_text_edit();
         }
         let rot = rotation_of(s);
-        if self.anno.hit_kind(page.pon, page.point, page.scale, rot, page.zoom, Some(touch)) == "empty" {
+        if self.anno.hit_kind(page.pon, page.point, page.scale, rot, page.zoom, Some(touch))
+            == "empty"
+        {
             if !s.modifiers.shift {
                 self.anno.deselect();
             }
@@ -179,7 +187,16 @@ impl InteractionHandler for EditHandler {
     fn on_up(&self, s: &PointerSample) {
         let Some(origin) = *self.origin.borrow() else { return };
         let point = sample_point_on(s, origin.pon).unwrap_or(origin.point);
-        self.anno.edit_pointer(CorePhase::Up, origin.pon, point, false, None, None, None, Some(origin.touch));
+        self.anno.edit_pointer(
+            CorePhase::Up,
+            origin.pon,
+            point,
+            false,
+            None,
+            None,
+            None,
+            Some(origin.touch),
+        );
         *self.origin.borrow_mut() = None;
     }
     fn on_cancel(&self, _s: &PointerSample) {
@@ -286,7 +303,8 @@ impl InteractionHandler for MarqueeHandler {
         *self.last.borrow_mut() = Some((anchor.pon, point));
         let view = self.view.get();
         if !self.dragging.get() {
-            if hypot(s.viewport.x - anchor.vx, s.viewport.y - anchor.vy) < MARQUEE_DRAG_THRESHOLD_PX {
+            if hypot(s.viewport.x - anchor.vx, s.viewport.y - anchor.vy) < MARQUEE_DRAG_THRESHOLD_PX
+            {
                 return;
             }
             self.dragging.set(true);
@@ -368,7 +386,10 @@ fn flush_pending_ink(state: &DrawState, anno: &AnnotationCapability) {
 
 /// `createDrawHandler(anno, interaction)`. Registers its own tool-change
 /// callback, which flushes a buffered ink group and resets the gesture.
-pub fn create_draw_handler(anno: AnnotationCapability, interaction: InteractionCapability) -> DrawHandler {
+pub fn create_draw_handler(
+    anno: AnnotationCapability,
+    interaction: InteractionCapability,
+) -> DrawHandler {
     let state = Rc::new(DrawState::default());
     let (s, a) = (Rc::downgrade(&state), anno.clone());
     interaction.on_tool_change(move || {
@@ -428,7 +449,14 @@ impl InteractionHandler for DrawHandler {
         if is_callout_tool(&st) {
             self.state.drawing_callout.set(true);
         }
-        self.anno.create_pointer(&tool, CorePhase::Down, page.pon, page.point, false, rotation_of(s));
+        self.anno.create_pointer(
+            &tool,
+            CorePhase::Down,
+            page.pon,
+            page.point,
+            false,
+            rotation_of(s),
+        );
         true
     }
     fn on_move(&self, s: &PointerSample) {
@@ -452,7 +480,12 @@ impl InteractionHandler for DrawHandler {
             let point = sample_point_on(s, pon).unwrap_or(last);
             self.anno.create_pointer(&tool, CorePhase::Up, pon, point, false, None);
             if st == "ink" {
-                let group_ms = self.anno.tool(&tool).and_then(|t| t.ink).and_then(|i| i.group_strokes_ms).unwrap_or(0.0);
+                let group_ms = self
+                    .anno
+                    .tool(&tool)
+                    .and_then(|t| t.ink)
+                    .and_then(|i| i.group_strokes_ms)
+                    .unwrap_or(0.0);
                 if group_ms > 0.0 {
                     let (state, anno) = (Rc::downgrade(&self.state), self.anno.clone());
                     let timer = rt::set_timeout(group_ms, move || {

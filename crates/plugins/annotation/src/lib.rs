@@ -25,6 +25,9 @@
 //! DTOs stay `serde_json::Value`: the model carries each one verbatim
 //! (`Annot.data`), and the engine calls send JSON.
 
+// Callback-shaped types are the port of JavaScript closures, as in the kernel.
+#![allow(clippy::type_complexity)]
+
 pub mod binary;
 pub mod capability;
 pub mod effects;
@@ -53,7 +56,7 @@ use epdf_plugin_selection::SELECTION;
 
 pub use capability::{AnnotationCapability, HoverAt, create_annotation_capability, view_env};
 pub use effects::register_annotation_effects;
-pub use epdf_annotation_core::{MIN_DRAG, ClickPlacement, props_for, resolve_click_placement};
+pub use epdf_annotation_core::{ClickPlacement, MIN_DRAG, props_for, resolve_click_placement};
 pub use handler::{
     create_draw_handler, create_edit_handler, create_ghost_handler, create_marquee_handler,
     create_place_handler,
@@ -61,7 +64,9 @@ pub use handler::{
 pub use markup::wire_markup;
 pub use reducer::{annotation_reducer, default_chrome, initial_annotation_state, merge_chrome};
 pub use repository::seam::{color_to_css, css_to_color, widget_appearance_from_props};
-pub use repository::{from_dto, ref_key, style_from_dto, to_create_draft, to_patch, to_scoped_patch};
+pub use repository::{
+    from_dto, ref_key, style_from_dto, to_create_draft, to_patch, to_scoped_patch,
+};
 pub use threads::{CommentThread, CommentThreadReview, ReviewStatus, build_comment_threads};
 pub use tools::{
     AnnotationToolDef, GhostPolicy, InkAuthoringOptions, PromptSourceSpec, ResolvedTool,
@@ -101,8 +106,11 @@ pub fn annotation_plugin(config: AnnotationConfig) -> AnyPlugin {
                 if tool.enables("text-select") && selection.is_none() {
                     continue;
                 }
-                let mut hub_tool =
-                    Tool::new(tool.id.clone(), tool.cursor.clone(), tool.enables.iter().map(String::as_str));
+                let mut hub_tool = Tool::new(
+                    tool.id.clone(),
+                    tool.cursor.clone(),
+                    tool.enables.iter().map(String::as_str),
+                );
                 hub_tool.touch_direct = Some(is_touch_direct(&tool.enables));
                 interaction.register_tool(hub_tool);
                 if let Some(defaults) = tool.defaults.clone() {

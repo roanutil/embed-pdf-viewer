@@ -34,8 +34,10 @@ pub fn wire_markup(
                 (Some(subtype), Some(tool)) if selection.has_selection() => {
                     let mut quads_by_page = Record::new();
                     for page in selection.snapshot().pages {
-                        quads_by_page
-                            .insert(page.pon.to_string(), page.segments.iter().map(|s| s.quad).collect());
+                        quads_by_page.insert(
+                            page.pon.to_string(),
+                            page.segments.iter().map(|s| s.quad).collect(),
+                        );
                     }
                     annotation.preview_markup(subtype, quads_by_page, Some(&tool.preset));
                 }
@@ -61,7 +63,10 @@ pub fn wire_markup(
                 if let Some(end) = &snapshot.end {
                     annotation.create_caret(
                         end.pon,
-                        TextEndAnchor { glyph_quad: end.glyph_quad, advance: f64::from(end.advance) },
+                        TextEndAnchor {
+                            glyph_quad: end.glyph_quad,
+                            advance: f64::from(end.advance),
+                        },
                     );
                 }
                 selection.clear();
@@ -74,7 +79,10 @@ pub fn wire_markup(
                             glyph_quad: end.glyph_quad,
                             advance: f64::from(end.advance),
                         },
-                        _ => TextEndAnchor { glyph_quad: last.quad, advance: f64::from(last.advance) },
+                        _ => TextEndAnchor {
+                            glyph_quad: last.quad,
+                            advance: f64::from(last.advance),
+                        },
                     };
                     annotation.create_replace_text(
                         page.pon,

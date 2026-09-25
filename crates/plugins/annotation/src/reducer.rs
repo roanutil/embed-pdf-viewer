@@ -78,7 +78,10 @@ fn snap_over(base: &SnapSettings, patch: &epdf_annotation_core::SnapSettingsPatc
         guides: patch.guides.unwrap_or(base.guides),
         guide_threshold: patch.guide_threshold.unwrap_or(base.guide_threshold),
         rotation: patch.rotation.unwrap_or(base.rotation),
-        rotation_angles: patch.rotation_angles.clone().unwrap_or_else(|| base.rotation_angles.clone()),
+        rotation_angles: patch
+            .rotation_angles
+            .clone()
+            .unwrap_or_else(|| base.rotation_angles.clone()),
         rotation_threshold: patch.rotation_threshold.unwrap_or(base.rotation_threshold),
     }
 }
@@ -93,14 +96,20 @@ pub fn initial_annotation_state(config: &AnnotationConfig) -> AnnotationState {
     AnnotationState {
         model: Rc::new(Model { snap, ..base }),
         hydration: AnnotationHydration::Loading,
-        chrome: Rc::new(merge_chrome(&default_chrome(), &config.chrome.clone().unwrap_or_default())),
+        chrome: Rc::new(merge_chrome(
+            &default_chrome(),
+            &config.chrome.clone().unwrap_or_default(),
+        )),
         tool_ghost: None,
         stamp_arm_epoch: 0.0,
     }
 }
 
 /// `annotationReducer`. Every action replaces the state.
-pub fn annotation_reducer(state: &AnnotationState, action: &AnnotationAction) -> Option<AnnotationState> {
+pub fn annotation_reducer(
+    state: &AnnotationState,
+    action: &AnnotationAction,
+) -> Option<AnnotationState> {
     let mut next = state.clone();
     match action {
         AnnotationAction::SetModel { model } => next.model = model.clone(),

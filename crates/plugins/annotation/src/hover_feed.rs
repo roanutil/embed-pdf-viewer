@@ -3,7 +3,9 @@
 //! onto the actions plugin's shared hover pump.
 
 use epdf_annotation_core::Annot;
-use epdf_plugin_actions::{ActionsCapability, HoverEvents, HoverPump, HoverTarget, create_hover_pump};
+use epdf_plugin_actions::{
+    ActionsCapability, HoverEvents, HoverPump, HoverTarget, create_hover_pump,
+};
 
 use crate::value::{get, truthy};
 

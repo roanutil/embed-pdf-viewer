@@ -169,11 +169,7 @@ impl Kind {
     pub fn createable(self) -> bool {
         !matches!(
             self,
-            Kind::Text
-                | Kind::FileAttachment
-                | Kind::Stamp
-                | Kind::Widget
-                | Kind::Unsupported
+            Kind::Text | Kind::FileAttachment | Kind::Stamp | Kind::Widget | Kind::Unsupported
         )
     }
 }

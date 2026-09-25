@@ -18,16 +18,16 @@ use std::rc::Rc;
 use epdf_acrojs::{ScriptColorArray, script_color_to_rgb};
 use epdf_annotation_core::js::{IdSet, Nullable, Record};
 use epdf_annotation_core::{
-    Annot, AnnotationFlagsPatch, AnnotationProps, AnnotationPropsPatch, AnnotationRef,
-    ChromeGeom, ChromeNode, CreationDraftAnchor, Effect, FLAG_KEYS, Geom, Id, Intent, Model, Msg,
+    Annot, AnnotationFlagsPatch, AnnotationProps, AnnotationPropsPatch, AnnotationRef, ChromeGeom,
+    ChromeNode, CreationDraftAnchor, Effect, FLAG_KEYS, Geom, Id, Intent, Model, Msg,
     PageObjectNumber, PdfRect, Phase, PlacementOptions, PointerInput, PropKey, PropSpec, Rect,
     RenderItem, RenderSource, SelectionAnchor, SnapSettings, SnapSettingsPatch, Source, Target,
     TextEndAnchor, TextQuad, ViewEnv, annot_contents_editable, annot_deletable,
-    annot_transformable, can_move, click_create_geom, content_to_pdf_rect,
-    creation_draft_anchor, cursor_at, defaults_for, expand_groups, fit_stamp_box,
-    geom_visual_bounds, group_key_of, hit_test, is_substrate_only, link_children_of, link_of,
-    page_items, pdf_to_content_rect, props_for, read_prop, resolve_click_placement,
-    selection_anchor, shared_props, style_from_props, update, upright_rotation, viewable,
+    annot_transformable, can_move, click_create_geom, content_to_pdf_rect, creation_draft_anchor,
+    cursor_at, defaults_for, expand_groups, fit_stamp_box, geom_visual_bounds, group_key_of,
+    hit_test, is_substrate_only, link_children_of, link_of, page_items, pdf_to_content_rect,
+    props_for, read_prop, resolve_click_placement, selection_anchor, shared_props,
+    style_from_props, update, upright_rotation, viewable,
 };
 use epdf_geometry::{Point, Size};
 use epdf_kernel::engine::DocumentHandle;
@@ -311,9 +311,10 @@ impl AnnotationCapability {
     /// `cropOf(pon)`: the page's crop box from the document registry.
     fn crop_of(&self, pon: PageObjectNumber) -> Option<PdfRect> {
         let meta = self.ctx().document()?;
-        let page = meta.pages.as_array()?.iter().find(|p| {
-            get(p, "pageObjectNumber").and_then(Value::as_f64) == Some(f64::from(pon))
-        })?;
+        let page =
+            meta.pages.as_array()?.iter().find(|p| {
+                get(p, "pageObjectNumber").and_then(Value::as_f64) == Some(f64::from(pon))
+            })?;
         let crop = get(page, "boxes").and_then(|b| get(b, "crop")).filter(|c| c.is_object())?;
         Some(crate::value::pdf_rect_of(Some(crop)))
     }
@@ -456,12 +457,15 @@ impl AnnotationCapability {
     fn perform(&self, fx: Effect, m: &Rc<Model>) {
         let Some(doc) = self.doc() else { return };
         match fx {
-            Effect::CreateGroup { primary, members } => self.perform_create_group(doc, primary, members, m),
+            Effect::CreateGroup { primary, members } => {
+                self.perform_create_group(doc, primary, members, m)
+            }
             Effect::Create { id } => {
                 let Some(a) = m.by_id.get(&id).cloned() else { return };
                 let Some(crop) = self.crop_of(a.pon) else { return };
                 let Some(draft) = to_create_draft(&a, crop, &|| self.random_uuid()) else { return };
-                let Ok(call) = Self::page_call(&doc, a.pon, "create", vec![Value::Object(draft)]) else {
+                let Ok(call) = Self::page_call(&doc, a.pon, "create", vec![Value::Object(draft)])
+                else {
                     return;
                 };
                 let this = self.clone();
@@ -484,12 +488,15 @@ impl AnnotationCapability {
                     "subtype": get(&data, "subtype").cloned().unwrap_or(Value::Null),
                     "flags": serde_json::to_value(a.flags).unwrap_or_default(),
                 });
-                let Ok(call) = Self::page_call(&doc, a.pon, "update", vec![ref_json(&r), patch]) else {
+                let Ok(call) = Self::page_call(&doc, a.pon, "update", vec![ref_json(&r), patch])
+                else {
                     return;
                 };
                 let this = self.clone();
                 then(call, move |result| match result {
-                    Ok(res) => this.sync_dto(get(&res, "updated").unwrap_or(&Value::Null), a.source, false),
+                    Ok(res) => {
+                        this.sync_dto(get(&res, "updated").unwrap_or(&Value::Null), a.source, false)
+                    }
                     Err(err) => this.console_error("[annotation] flags write failed:", Some(&err)),
                 });
             }
@@ -501,9 +508,12 @@ impl AnnotationCapability {
                     _ => None,
                 };
                 let (Some(r), Some(patch)) = (a.ref_.clone(), patch) else { return };
-                let Ok(call) =
-                    Self::page_call(&doc, a.pon, "update", vec![ref_json(&r), Value::Object(patch)])
-                else {
+                let Ok(call) = Self::page_call(
+                    &doc,
+                    a.pon,
+                    "update",
+                    vec![ref_json(&r), Value::Object(patch)],
+                ) else {
                     return;
                 };
                 let this = self.clone();
@@ -578,12 +588,13 @@ impl AnnotationCapability {
         rt::spawn(async move {
             let mut committed: Vec<(Id, AnnotationRef)> = Vec::new();
             let run = async {
-                let primary_call = Self::page_call(&doc, pon, "create", vec![Value::Object(drafts[0].clone())])?;
+                let primary_call =
+                    Self::page_call(&doc, pon, "create", vec![Value::Object(drafts[0].clone())])?;
                 let primary_result = await_engine(primary_call).await?;
                 let created = get(&primary_result, "created").cloned().unwrap_or(Value::Null);
-                let primary_ref = get(&created, "ref")
-                    .and_then(ref_from)
-                    .ok_or_else(|| Error::named("TypeError", "Cannot read properties of undefined (reading 'ref')"))?;
+                let primary_ref = get(&created, "ref").and_then(ref_from).ok_or_else(|| {
+                    Error::named("TypeError", "Cannot read properties of undefined (reading 'ref')")
+                })?;
                 committed.push((primary.clone(), primary_ref.clone()));
                 this.apply(Msg::Created {
                     temp_id: primary.clone(),
@@ -598,9 +609,12 @@ impl AnnotationCapability {
                     let call = Self::page_call(&doc, pon, "create", vec![Value::Object(draft)])?;
                     let result = await_engine(call).await?;
                     let created = get(&result, "created").cloned().unwrap_or(Value::Null);
-                    let r = get(&created, "ref")
-                        .and_then(ref_from)
-                        .ok_or_else(|| Error::named("TypeError", "Cannot read properties of undefined (reading 'ref')"))?;
+                    let r = get(&created, "ref").and_then(ref_from).ok_or_else(|| {
+                        Error::named(
+                            "TypeError",
+                            "Cannot read properties of undefined (reading 'ref')",
+                        )
+                    })?;
                     committed.push((temp_id.clone(), r.clone()));
                     this.apply(Msg::Created { temp_id: temp_id.clone(), id: ref_key(&r), ref_: r });
                     this.sync_dto(&created, Source::Vector, false);
@@ -609,8 +623,11 @@ impl AnnotationCapability {
             };
             let outcome = run.await;
             if let Err(error) = outcome {
-                let mut remove_ids: Vec<Id> =
-                    ids.iter().filter(|id| !committed.iter().any(|(t, _)| t == *id)).cloned().collect();
+                let mut remove_ids: Vec<Id> = ids
+                    .iter()
+                    .filter(|id| !committed.iter().any(|(t, _)| t == *id))
+                    .cloned()
+                    .collect();
                 for (_, r) in committed.iter().rev() {
                     let deleted = match Self::page_call(&doc, pon, "delete", vec![ref_json(r)]) {
                         Ok(call) => await_engine(call).await.is_ok(),
@@ -623,7 +640,10 @@ impl AnnotationCapability {
                 if !remove_ids.is_empty() {
                     this.apply(Msg::Remove { ids: remove_ids });
                 }
-                this.console_error("[annotation] grouped annotation creation failed:", Some(&error));
+                this.console_error(
+                    "[annotation] grouped annotation creation failed:",
+                    Some(&error),
+                );
             }
         });
     }
@@ -675,7 +695,11 @@ impl AnnotationCapability {
 
     /// `reconcileLinkChildren(id, desired)`: the one place attached link
     /// children are created, retargeted, re-rected or deleted.
-    fn reconcile_link_children(&self, id: Id, desired: Option<epdf_annotation_core::PdfLinkTarget>) -> Promise<()> {
+    fn reconcile_link_children(
+        &self,
+        id: Id,
+        desired: Option<epdf_annotation_core::PdfLinkTarget>,
+    ) -> Promise<()> {
         let this = self.clone();
         promise::spawn(async move {
             let doc = this.doc();
@@ -690,7 +714,9 @@ impl AnnotationCapability {
             let target = writable_target(desired.as_ref());
             let rects: Vec<PdfRect> = match desired {
                 None => Vec::new(),
-                Some(_) => link_child_rects(&a).into_iter().map(|r| content_to_pdf_rect(r, crop)).collect(),
+                Some(_) => {
+                    link_child_rects(&a).into_iter().map(|r| content_to_pdf_rect(r, crop)).collect()
+                }
             };
             let current: Vec<Annot> =
                 link_children_of(&this.model(), &id).into_iter().cloned().collect();
@@ -705,7 +731,12 @@ impl AnnotationCapability {
                     if let Some(t) = &target_json {
                         patch.insert("target".into(), t.clone());
                     }
-                    let call = Self::page_call(&doc, a.pon, "update", vec![ref_json(&r), Value::Object(patch)])?;
+                    let call = Self::page_call(
+                        &doc,
+                        a.pon,
+                        "update",
+                        vec![ref_json(&r), Value::Object(patch)],
+                    )?;
                     let res = await_engine(call).await?;
                     let dto = get(&res, "updated").cloned().unwrap_or(Value::Null);
                     let annot = this.ingest_dto(&dto, crop, Source::Baked);
@@ -743,7 +774,12 @@ impl AnnotationCapability {
 
     /// `writeRelationship(a, rel)`: a relationship-only patch, re-synced with
     /// the annotation's own render source.
-    fn write_relationship(&self, a: Annot, in_reply_to: Option<AnnotationRef>, group: bool) -> Promise<()> {
+    fn write_relationship(
+        &self,
+        a: Annot,
+        in_reply_to: Option<AnnotationRef>,
+        group: bool,
+    ) -> Promise<()> {
         let this = self.clone();
         promise::spawn(async move {
             let Some(doc) = this.doc() else { return Ok(()) };
@@ -754,7 +790,8 @@ impl AnnotationCapability {
             if group {
                 patch.insert("replyType".into(), json!("group"));
             }
-            let call = Self::page_call(&doc, a.pon, "update", vec![ref_json(&r), Value::Object(patch)])?;
+            let call =
+                Self::page_call(&doc, a.pon, "update", vec![ref_json(&r), Value::Object(patch)])?;
             let res = await_engine(call).await?;
             this.sync_dto(get(&res, "updated").unwrap_or(&Value::Null), a.source, false);
             Ok(())
@@ -813,7 +850,9 @@ impl AnnotationCapability {
             this.0.hydration.window.set(false);
             for event in queued {
                 let server_id = match event.get("origin") {
-                    Some(origin) => origin.get("serverId").cloned().unwrap_or_else(epdf_kernel::undefined),
+                    Some(origin) => {
+                        origin.get("serverId").cloned().unwrap_or_else(epdf_kernel::undefined)
+                    }
                     None => Value::Null,
                 };
                 if let Some(head) = &head
@@ -896,19 +935,31 @@ impl AnnotationCapability {
             }
             Some("annotation.updated") => {
                 let changed = get(event, "appearance").and_then(|a| get(a, "changed"));
-                self.upsert_remote(&[get(event, "updated").cloned().unwrap_or(Value::Null)], truthy(changed))
+                self.upsert_remote(
+                    &[get(event, "updated").cloned().unwrap_or(Value::Null)],
+                    truthy(changed),
+                )
             }
             Some("annotation.moved") => {
-                let moved = get(event, "moved").and_then(Value::as_array).cloned().unwrap_or_default();
+                let moved =
+                    get(event, "moved").and_then(Value::as_array).cloned().unwrap_or_default();
                 self.upsert_remote(&moved, false)
             }
             Some("annotation.deleted") => {
-                let Some(deleted) = get(event, "deleted").filter(|d| truthy(Some(d))) else { return };
+                let Some(deleted) = get(event, "deleted").filter(|d| truthy(Some(d))) else {
+                    return;
+                };
                 let key = match str_of(deleted, "kind") {
                     Some("objectNumber") => {
-                        format!("obj:{}", epdf_geometry::js::number_to_string(f64_of(deleted, "value")))
+                        format!(
+                            "obj:{}",
+                            epdf_geometry::js::number_to_string(f64_of(deleted, "value"))
+                        )
                     }
-                    _ => format!("nm:{}", get(deleted, "value").and_then(Value::as_str).unwrap_or_default()),
+                    _ => format!(
+                        "nm:{}",
+                        get(deleted, "value").and_then(Value::as_str).unwrap_or_default()
+                    ),
                 };
                 if self.model().by_id.contains_key(&key) {
                     self.apply(Msg::Remove { ids: vec![key] });
@@ -929,7 +980,9 @@ impl AnnotationCapability {
         let intrinsic = match (intrinsic_override, meta.size) {
             (Some(o), _) if o.width > 0.0 && o.height > 0.0 => o,
             (_, Some((w, h))) if w > 0.0 => Size { width: w, height: h },
-            _ => Size { width: target_width.unwrap_or(150.0), height: target_width.unwrap_or(150.0) },
+            _ => {
+                Size { width: target_width.unwrap_or(150.0), height: target_width.unwrap_or(150.0) }
+            }
         };
         match target_width {
             None => intrinsic,
@@ -955,7 +1008,14 @@ impl AnnotationCapability {
     }
 
     /// `createStampAt(pon, point, source, desired, rotCW)`.
-    fn create_stamp_at(&self, pon: PageObjectNumber, point: Point, source: Value, desired: Size, rot_cw: f64) -> bool {
+    fn create_stamp_at(
+        &self,
+        pon: PageObjectNumber,
+        point: Point,
+        source: Value,
+        desired: Size,
+        rot_cw: f64,
+    ) -> bool {
         let (Some(doc), Some(crop)) = (self.doc(), self.crop_of(pon)) else { return false };
         let bx = fit_stamp_box(point, desired, Self::page_size(crop), rot_cw);
         let mut draft = Map::new();
@@ -975,15 +1035,30 @@ impl AnnotationCapability {
     }
 
     /// `placeStampSource(pon, point, source, rotCW, targetWidth)`.
-    fn place_stamp_source(&self, pon: PageObjectNumber, point: Point, source: Value, rot_cw: f64) -> Promise<()> {
+    fn place_stamp_source(
+        &self,
+        pon: PageObjectNumber,
+        point: Point,
+        source: Value,
+        rot_cw: f64,
+    ) -> Promise<()> {
         let this = self.clone();
         promise::spawn(async move {
             let resolved = resolve_binary_source(&source).await?;
             let Some(meta) = sniff_binary_metadata(&resolved.bytes) else {
-                this.console_error("[annotation] stamp source must be PNG, JPEG, or single-page PDF bytes", None);
+                this.console_error(
+                    "[annotation] stamp source must be PNG, JPEG, or single-page PDF bytes",
+                    None,
+                );
                 return Ok(());
             };
-            this.create_stamp_at(pon, point, source, Self::desired_stamp_size(&meta, None, None), rot_cw);
+            this.create_stamp_at(
+                pon,
+                point,
+                source,
+                Self::desired_stamp_size(&meta, None, None),
+                rot_cw,
+            );
             Ok(())
         })
     }
@@ -1037,7 +1112,14 @@ impl AnnotationCapability {
     }
 
     /// `createIconAt(tool, pon, point, rotCW, file)`.
-    fn create_icon_at(&self, tool: &ResolvedTool, pon: PageObjectNumber, point: Point, rot_cw: f64, file: Option<Value>) -> bool {
+    fn create_icon_at(
+        &self,
+        tool: &ResolvedTool,
+        pon: PageObjectNumber,
+        point: Point,
+        rot_cw: f64,
+        file: Option<Value>,
+    ) -> bool {
         let (Some(doc), Some(crop)) = (self.doc(), self.crop_of(pon)) else { return false };
         if !is_icon_place_kind(&tool.subtype) {
             return false;
@@ -1093,19 +1175,22 @@ impl AnnotationCapability {
     /// `computeThreadsIndex()`: committed truth only, display-ordered.
     fn threads_index(&self) -> (Vec<CommentThread>, Vec<(Id, usize)>) {
         let m = self.model();
-        let dtos: Vec<Value> =
-            m.order.iter().filter_map(|id| m.by_id.get(id)).filter_map(|a| a.data.clone()).collect();
+        let dtos: Vec<Value> = m
+            .order
+            .iter()
+            .filter_map(|id| m.by_id.get(id))
+            .filter_map(|a| a.data.clone())
+            .collect();
         let user = self.current_user_id();
         let mut threads = build_comment_threads(&dtos, user.as_deref());
         let pons = self.layout_pons();
         let index = |t: &CommentThread| -> f64 {
             let pon = t.page_object_number.as_f64();
-            pons.iter()
-                .position(|p| Some(*p) == pon)
-                .map_or(9_007_199_254_740_991.0, |i| i as f64)
+            pons.iter().position(|p| Some(*p) == pon).map_or(9_007_199_254_740_991.0, |i| i as f64)
         };
         let top = |t: &CommentThread| get(&t.root, "rect").map_or(f64::NAN, |r| f64_of(r, "top"));
-        let created = |t: &CommentThread| str_of(&t.root, "created").unwrap_or_default().to_string();
+        let created =
+            |t: &CommentThread| str_of(&t.root, "created").unwrap_or_default().to_string();
         threads.sort_by(|a, b| {
             let (pa, pb) = (index(a), index(b));
             if pa != pb {
@@ -1252,7 +1337,10 @@ fn engine_script_patch(subtype: &str, patch: &Value) -> Result<Value, Error> {
     }
     if let Some(r) = get(patch, "rect").filter(|v| truthy(Some(v))) {
         let at = |i: usize| r.get(i).cloned().unwrap_or(Value::Null);
-        out.insert("rect".into(), json!({ "left": at(0), "bottom": at(1), "right": at(2), "top": at(3) }));
+        out.insert(
+            "rect".into(),
+            json!({ "left": at(0), "bottom": at(1), "right": at(2), "top": at(3) }),
+        );
     }
     if let Some(v) = get(patch, "contents") {
         out.insert("contents".into(), v.clone());
@@ -1282,8 +1370,11 @@ impl AnnotationCapability {
             let call = Self::page_call(&doc, pon, "create", vec![draft])?;
             let res = await_engine(call).await?;
             let created = get(&res, "created").cloned().unwrap_or(Value::Null);
-            let source =
-                if str_of(&created, "subtype") == Some("stamp") { Source::Baked } else { Source::Vector };
+            let source = if str_of(&created, "subtype") == Some("stamp") {
+                Source::Baked
+            } else {
+                Source::Vector
+            };
             this.sync_dto(&created, source, false);
             Ok(get(&created, "ref").cloned().unwrap_or_else(epdf_kernel::undefined))
         })
@@ -1312,8 +1403,12 @@ impl AnnotationCapability {
                 _ => None,
             };
             let size = Self::desired_stamp_size(&meta, input.target_width, input.intrinsic_size);
-            *this.0.armed.borrow_mut() =
-                Some(ArmedStamp { source: input.source, width: size.width, height: size.height, preview });
+            *this.0.armed.borrow_mut() = Some(ArmedStamp {
+                source: input.source,
+                width: size.width,
+                height: size.height,
+                preview,
+            });
             this.ctx().dispatch(AnnotationAction::StampArmChanged);
             if let Some(ix) = this.ctx().try_get(&INTERACTION)? {
                 ix.activate_tool("stamp")?;
@@ -1332,7 +1427,12 @@ impl AnnotationCapability {
     }
 
     /// `placeArmedStamp(pon, point, displayRotation)` (host).
-    pub fn place_armed_stamp(&self, pon: PageObjectNumber, point: Point, display_rotation: Option<f64>) -> bool {
+    pub fn place_armed_stamp(
+        &self,
+        pon: PageObjectNumber,
+        point: Point,
+        display_rotation: Option<f64>,
+    ) -> bool {
         let Some(armed) = self.0.armed.borrow().clone() else { return false };
         let rot = self.upright_rot_for(display_rotation);
         self.create_stamp_at(
@@ -1345,7 +1445,12 @@ impl AnnotationCapability {
     }
 
     /// `requestStampAt(pon, point, displayRotation)` (host).
-    pub fn request_stamp_at(&self, pon: PageObjectNumber, point: Point, display_rotation: Option<f64>) -> bool {
+    pub fn request_stamp_at(
+        &self,
+        pon: PageObjectNumber,
+        point: Point,
+        display_rotation: Option<f64>,
+    ) -> bool {
         let Some(tool) = self.active_tool() else { return false };
         let Some(spec) = tool.source.clone() else { return false };
         let rot = match display_rotation {
@@ -1357,16 +1462,23 @@ impl AnnotationCapability {
                 let _ = self.place_stamp_source(pon, point, source, rot);
                 true
             }
-            StampSourceSpec::Prompt(_) => self.prompt_file_at(&tool, pon, point, move |this, picked| {
-                let data = get(&picked, "data").cloned().unwrap_or_else(epdf_kernel::undefined);
-                let _ = this.place_stamp_source(pon, point, data, rot);
-            }),
+            StampSourceSpec::Prompt(_) => {
+                self.prompt_file_at(&tool, pon, point, move |this, picked| {
+                    let data = get(&picked, "data").cloned().unwrap_or_else(epdf_kernel::undefined);
+                    let _ = this.place_stamp_source(pon, point, data, rot);
+                })
+            }
         }
     }
 
     /// `placeAt(pon, point, displayRotation)` (host): the one click-to-place
     /// entry.
-    pub fn place_at(&self, pon: PageObjectNumber, point: Point, display_rotation: Option<f64>) -> bool {
+    pub fn place_at(
+        &self,
+        pon: PageObjectNumber,
+        point: Point,
+        display_rotation: Option<f64>,
+    ) -> bool {
         if self.place_armed_stamp(pon, point, display_rotation) {
             return true;
         }
@@ -1396,7 +1508,13 @@ impl AnnotationCapability {
     }
 
     /// `ghostHoverAt(toolId, pon, point, displayRotation)` (host).
-    pub fn ghost_hover_at(&self, tool_id: &str, pon: PageObjectNumber, point: Point, display_rotation: Option<f64>) {
+    pub fn ghost_hover_at(
+        &self,
+        tool_id: &str,
+        pon: PageObjectNumber,
+        point: Point,
+        display_rotation: Option<f64>,
+    ) {
         let tool = self.registry_get(tool_id);
         let crop = self.crop_of(pon);
         let (Some(tool), Some(crop)) = (tool, crop) else {
@@ -1411,7 +1529,8 @@ impl AnnotationCapability {
         let armed = self.0.armed.borrow().clone();
         if let Some(armed) = armed {
             let rot = self.upright_rot_for(display_rotation);
-            let bx = fit_stamp_box(point, Size { width: armed.width, height: armed.height }, page, rot);
+            let bx =
+                fit_stamp_box(point, Size { width: armed.width, height: armed.height }, page, rot);
             self.ctx().dispatch(AnnotationAction::SetToolGhost {
                 ghost: Some(Rc::new(ToolGhost { pon, box_: bx, rot, kind: ToolGhostKind::Image })),
             });
@@ -1420,7 +1539,11 @@ impl AnnotationCapability {
         if is_icon_place_kind(&tool.subtype) {
             let rot = self.upright_rot_for(display_rotation);
             let bx = fit_stamp_box(point, ICON_PLACE_SIZE, page, rot);
-            self.dispatch_vector_ghost(pon, tool_id, Geom::Rect { rect: bx, ellipse: false, rot: None });
+            self.dispatch_vector_ghost(
+                pon,
+                tool_id,
+                Geom::Rect { rect: bx, ellipse: false, rot: None },
+            );
             return;
         }
         let Some(policy) = tool.click_policy() else {
@@ -1436,7 +1559,11 @@ impl AnnotationCapability {
                 display_rotation,
             },
         );
-        match click_create_geom(&tool.subtype, &placement, &defaults_for(&self.model(), &tool.preset)) {
+        match click_create_geom(
+            &tool.subtype,
+            &placement,
+            &defaults_for(&self.model(), &tool.preset),
+        ) {
             Some(geom) => self.dispatch_vector_ghost(pon, tool_id, geom),
             None => self.clear_ghost(),
         }
@@ -1530,10 +1657,9 @@ impl AnnotationCapability {
         let mut all = self.0.config_tools.clone();
         all.push(def.clone());
         let registry = build_tool_registry(&all)?;
-        let resolved = registry
-            .get(&def.id)
-            .cloned()
-            .ok_or_else(|| Error::new(format!("[annotation] could not resolve tool '{}'", def.id)))?;
+        let resolved = registry.get(&def.id).cloned().ok_or_else(|| {
+            Error::new(format!("[annotation] could not resolve tool '{}'", def.id))
+        })?;
         self.0.registry.borrow_mut().set(resolved.clone());
         let un = match self.ctx().try_get(&INTERACTION)? {
             Some(ix) => {
@@ -1663,7 +1789,9 @@ impl AnnotationCapability {
                 .model()
                 .by_id
                 .get(&ref_key(&r))
-                .and_then(|a| a.data.as_ref().and_then(|d| str_of(d, "subtype")).map(str::to_string))
+                .and_then(|a| {
+                    a.data.as_ref().and_then(|d| str_of(d, "subtype")).map(str::to_string)
+                })
                 .filter(|s| !s.is_empty());
             let Some(subtype) = subtype else {
                 return Err(Error::new("[annotation] cannot edit an uncommitted annotation"));
@@ -1679,7 +1807,8 @@ impl AnnotationCapability {
         promise::spawn(async move {
             let t = this.thread_of(&r)?;
             let user = this.current_user_id();
-            let previous = user.as_deref().and_then(|u| t.review.by_reviewer.get(u).map(|s| s.ref_.clone()));
+            let previous =
+                user.as_deref().and_then(|u| t.review.by_reviewer.get(u).map(|s| s.ref_.clone()));
             let draft = json!({
                 "subtype": "text",
                 "rect": Self::root_rect(&t),
@@ -1722,13 +1851,17 @@ impl AnnotationCapability {
         promise::spawn(async move {
             let t = this.thread_of(&r)?;
             let members = Self::thread_member_refs(&t);
-            let blocked: Vec<Value> = members.iter().filter(|m| !this.deletable_one(m)).cloned().collect();
+            let blocked: Vec<Value> =
+                members.iter().filter(|m| !this.deletable_one(m)).cloned().collect();
             if !blocked.is_empty() {
                 return Ok(ThreadDeleteResult {
                     deleted: Vec::new(),
                     failed: blocked
                         .into_iter()
-                        .map(|r| ThreadDeleteFailure { ref_: r, error: Error::new("delete not permitted") })
+                        .map(|r| ThreadDeleteFailure {
+                            ref_: r,
+                            error: Error::new("delete not permitted"),
+                        })
                         .collect(),
                 });
             }
@@ -1773,7 +1906,11 @@ impl AnnotationCapability {
     }
 
     /// `links.set(ref, target)`: resolves when the children are committed.
-    pub fn links_set(&self, r: &AnnotationRef, target: epdf_annotation_core::PdfLinkTarget) -> Promise<()> {
+    pub fn links_set(
+        &self,
+        r: &AnnotationRef,
+        target: epdf_annotation_core::PdfLinkTarget,
+    ) -> Promise<()> {
         self.schedule_link_sync(&ref_key(r), LinkIntent::Target(Some(target)))
     }
 
@@ -1819,7 +1956,8 @@ impl AnnotationCapability {
         let value_of = |a: &Annot, key: PropKey| -> Option<Value> {
             if key == PropKey::Link && a.subtype != "link" {
                 return Some(
-                    link_of(&m, &a.id).map_or(Value::Null, |t| serde_json::to_value(t).unwrap_or_default()),
+                    link_of(&m, &a.id)
+                        .map_or(Value::Null, |t| serde_json::to_value(t).unwrap_or_default()),
                 );
             }
             read_prop(a, key).map(|v| serde_json::to_value(v).unwrap_or_default())
@@ -1883,15 +2021,22 @@ impl AnnotationCapability {
                 blend: None,
             });
         }
-        self.0.caches.borrow_mut().items.insert(
-            pon,
-            ItemsCache { model: m, ghost: g, zoom, rotation, v: v.clone() },
-        );
+        self.0
+            .caches
+            .borrow_mut()
+            .items
+            .insert(pon, ItemsCache { model: m, ghost: g, zoom, rotation, v: v.clone() });
         v
     }
 
     /// `chrome(pon, scale, rotation, zoom)` (host).
-    pub fn chrome(&self, pon: PageObjectNumber, scale: Option<f64>, rotation: Option<f64>, zoom: Option<f64>) -> Vec<ChromeNode> {
+    pub fn chrome(
+        &self,
+        pon: PageObjectNumber,
+        scale: Option<f64>,
+        rotation: Option<f64>,
+        zoom: Option<f64>,
+    ) -> Vec<ChromeNode> {
         let m = self.model();
         let cs = self.chrome_settings_rc();
         if let Some(c) = self.0.caches.borrow().chrome.get(&pon)
@@ -1913,15 +2058,21 @@ impl AnnotationCapability {
         if !cs.guides.enabled {
             v.retain(|n| !matches!(n, ChromeNode::RotateGuides { .. }));
         }
-        self.0.caches.borrow_mut().chrome.insert(
-            pon,
-            ChromeCache { model: m, cs, scale, rotation, zoom, v: v.clone() },
-        );
+        self.0
+            .caches
+            .borrow_mut()
+            .chrome
+            .insert(pon, ChromeCache { model: m, cs, scale, rotation, zoom, v: v.clone() });
         v
     }
 
     /// `selectionAnchor(scale, rotation, zoom)` (host).
-    pub fn selection_anchor(&self, scale: Option<f64>, rotation: Option<f64>, zoom: Option<f64>) -> Option<SelectionAnchor> {
+    pub fn selection_anchor(
+        &self,
+        scale: Option<f64>,
+        rotation: Option<f64>,
+        zoom: Option<f64>,
+    ) -> Option<SelectionAnchor> {
         let m = self.model();
         let cs = self.chrome_settings_rc();
         if let Some(c) = self.0.caches.borrow().anchor.as_ref()
@@ -1955,7 +2106,17 @@ impl AnnotationCapability {
         self.model().selected.clone()
     }
 
-    fn hit(&self, pon: PageObjectNumber, point: Point, scale: Option<f64>, rotation: Option<f64>, zoom: Option<f64>, boost: f64, inert: bool) -> Target {
+    #[allow(clippy::too_many_arguments)]
+    fn hit(
+        &self,
+        pon: PageObjectNumber,
+        point: Point,
+        scale: Option<f64>,
+        rotation: Option<f64>,
+        zoom: Option<f64>,
+        boost: f64,
+        inert: bool,
+    ) -> Target {
         let m = self.model();
         let inert = if inert { self.inert_ids_at(pon) } else { None };
         hit_test(
@@ -1972,7 +2133,15 @@ impl AnnotationCapability {
 
     /// `hitKind(...)` (host): what is under a content point.
     #[allow(clippy::too_many_arguments)]
-    pub fn hit_kind(&self, pon: PageObjectNumber, point: Point, scale: Option<f64>, rotation: Option<f64>, zoom: Option<f64>, touch: Option<bool>) -> &'static str {
+    pub fn hit_kind(
+        &self,
+        pon: PageObjectNumber,
+        point: Point,
+        scale: Option<f64>,
+        rotation: Option<f64>,
+        zoom: Option<f64>,
+        touch: Option<bool>,
+    ) -> &'static str {
         match self.hit(pon, point, scale, rotation, zoom, Self::grab_boost(touch), true) {
             Target::Handle { .. } => "handle",
             Target::Rotate { .. } => "rotate",
@@ -1983,17 +2152,33 @@ impl AnnotationCapability {
     }
 
     /// `claimsTouchAt(...)` (host): touch consent.
-    pub fn claims_touch_at(&self, pon: PageObjectNumber, point: Point, scale: Option<f64>, rotation: Option<f64>, zoom: Option<f64>) -> bool {
+    pub fn claims_touch_at(
+        &self,
+        pon: PageObjectNumber,
+        point: Point,
+        scale: Option<f64>,
+        rotation: Option<f64>,
+        zoom: Option<f64>,
+    ) -> bool {
         let m = self.model();
         match self.hit(pon, point, scale, rotation, zoom, TOUCH_GRAB_BOOST, true) {
             Target::Handle { .. } | Target::Rotate { .. } | Target::GroupHandle { .. } => true,
-            Target::Annot { id } => m.selected.contains(&id) && m.selected.iter().all(|s| can_move(&m, s)),
+            Target::Annot { id } => {
+                m.selected.contains(&id) && m.selected.iter().all(|s| can_move(&m, s))
+            }
             Target::Empty => false,
         }
     }
 
     /// `cursorAt(...)` (host).
-    pub fn cursor_at(&self, pon: PageObjectNumber, point: Point, scale: Option<f64>, rotation: Option<f64>, zoom: Option<f64>) -> Option<String> {
+    pub fn cursor_at(
+        &self,
+        pon: PageObjectNumber,
+        point: Point,
+        scale: Option<f64>,
+        rotation: Option<f64>,
+        zoom: Option<f64>,
+    ) -> Option<String> {
         let m = self.model();
         let inert = self.inert_ids_at(pon);
         cursor_at(
@@ -2027,7 +2212,11 @@ impl AnnotationCapability {
     }
 
     /// `behaviorFor(a)` (host).
-    pub fn behavior_for(&self, subtype: &str, r: Option<&AnnotationRef>) -> Option<Rc<dyn Behavior>> {
+    pub fn behavior_for(
+        &self,
+        subtype: &str,
+        r: Option<&AnnotationRef>,
+    ) -> Option<Rc<dyn Behavior>> {
         let behaviors = self.0.behaviors.borrow().clone();
         behaviors.into_iter().find(|b| b.matches(subtype, r) && b.engaged())
     }
@@ -2056,9 +2245,12 @@ impl AnnotationCapability {
                 continue;
             }
             let actions = data.and_then(|d| get(d, "actions"));
-            let activate = actions.and_then(|x| get(x, "activate")).filter(|v| truthy(Some(v))).cloned();
-            let ref_ = a.ref_.clone().or_else(|| data.and_then(|d| get(d, "ref")).and_then(ref_from));
-            let root = |k: &str| truthy(actions.and_then(|x| get(x, k)).and_then(|t| get(t, "root")));
+            let activate =
+                actions.and_then(|x| get(x, "activate")).filter(|v| truthy(Some(v))).cloned();
+            let ref_ =
+                a.ref_.clone().or_else(|| data.and_then(|d| get(d, "ref")).and_then(ref_from));
+            let root =
+                |k: &str| truthy(actions.and_then(|x| get(x, k)).and_then(|t| get(t, "root")));
             let (enter, exit) = (root("cursorEnter"), root("cursorExit"));
             v.push(LinkNavItem {
                 id: id.clone(),
@@ -2080,7 +2272,8 @@ impl AnnotationCapability {
         let mut parts: Vec<String> = Vec::new();
         for id in &m.order {
             let Some(a) = m.by_id.get(id) else { continue };
-            if a.pon != pon || a.source != Source::Baked || a.ref_.is_none() || is_substrate_only(a) {
+            if a.pon != pon || a.source != Source::Baked || a.ref_.is_none() || is_substrate_only(a)
+            {
                 continue;
             }
             parts.push(format!(
@@ -2105,20 +2298,32 @@ impl AnnotationCapability {
 
     /// `appearances(pon, scale, signal)` (host): the baked `/AP` images, `[]`
     /// on any failure. `page(pon)` refuses an unknown page synchronously.
-    pub fn appearances(&self, pon: PageObjectNumber, scale: f64, signal: Option<AbortSignal>) -> Result<Promise<Value>, Error> {
+    pub fn appearances(
+        &self,
+        pon: PageObjectNumber,
+        scale: f64,
+        signal: Option<AbortSignal>,
+    ) -> Result<Promise<Value>, Error> {
         let Some(doc) = self.doc() else { return Ok(Promise::resolved(json!([]))) };
-        let task = Self::page_call(&doc, pon, "renderAppearanceImages", vec![json!({ "scale": num_json(scale) })])?;
+        let task = Self::page_call(
+            &doc,
+            pon,
+            "renderAppearanceImages",
+            vec![json!({ "scale": num_json(scale) })],
+        )?;
         if let Some(signal) = signal {
             if signal.aborted() {
                 task.abort(signal.reason().map(|r| r.to_canonical()));
             } else {
                 let t = task.clone();
-                signal.on_abort(Rc::new(move |reason: &Error| t.abort(Some(reason.to_canonical()))));
+                signal
+                    .on_abort(Rc::new(move |reason: &Error| t.abort(Some(reason.to_canonical()))));
             }
         }
         let (out, resolver) = Promise::pending();
         then(task, move |result| match result {
-            Ok(r) => resolver.resolve(get(&r, "appearances").cloned().unwrap_or_else(epdf_kernel::undefined)),
+            Ok(r) => resolver
+                .resolve(get(&r, "appearances").cloned().unwrap_or_else(epdf_kernel::undefined)),
             Err(_) => resolver.resolve(json!([])),
         });
         Ok(out)
@@ -2131,7 +2336,17 @@ impl AnnotationCapability {
 
     /// `editPointer(...)` (host).
     #[allow(clippy::too_many_arguments)]
-    pub fn edit_pointer(&self, phase: Phase, pon: PageObjectNumber, point: Point, shift: bool, scale: Option<f64>, rotation: Option<f64>, zoom: Option<f64>, touch: Option<bool>) {
+    pub fn edit_pointer(
+        &self,
+        phase: Phase,
+        pon: PageObjectNumber,
+        point: Point,
+        shift: bool,
+        scale: Option<f64>,
+        rotation: Option<f64>,
+        zoom: Option<f64>,
+        touch: Option<bool>,
+    ) {
         let input = PointerInput {
             pon,
             point,
@@ -2149,7 +2364,16 @@ impl AnnotationCapability {
 
     /// `marqueePointer(...)` (host).
     #[allow(clippy::too_many_arguments)]
-    pub fn marquee_pointer(&self, phase: Phase, pon: PageObjectNumber, point: Point, shift: bool, _scale: Option<f64>, rotation: Option<f64>, zoom: Option<f64>) {
+    pub fn marquee_pointer(
+        &self,
+        phase: Phase,
+        pon: PageObjectNumber,
+        point: Point,
+        shift: bool,
+        _scale: Option<f64>,
+        rotation: Option<f64>,
+        zoom: Option<f64>,
+    ) {
         let input = PointerInput {
             pon,
             point,
@@ -2167,7 +2391,15 @@ impl AnnotationCapability {
 
     /// `createPointer(tool, phase, pon, point, finish, displayRotation)`
     /// (host): inert without create authority.
-    pub fn create_pointer(&self, tool: &str, phase: Phase, pon: PageObjectNumber, point: Point, finish: bool, display_rotation: Option<f64>) {
+    pub fn create_pointer(
+        &self,
+        tool: &str,
+        phase: Phase,
+        pon: PageObjectNumber,
+        point: Point,
+        finish: bool,
+        display_rotation: Option<f64>,
+    ) {
         if !self.allows_create() {
             return;
         }
@@ -2217,7 +2449,11 @@ impl AnnotationCapability {
 
     /// `markupFromSelection(subtype, preset)`: one markup per selected page,
     /// then clear the selection.
-    pub fn markup_from_selection(&self, subtype: &str, preset: Option<&str>) -> Result<bool, Error> {
+    pub fn markup_from_selection(
+        &self,
+        subtype: &str,
+        preset: Option<&str>,
+    ) -> Result<bool, Error> {
         if !self.allows_create() {
             return Ok(false);
         }
@@ -2247,7 +2483,13 @@ impl AnnotationCapability {
     }
 
     /// `createMarkup(subtype, pon, quads, preset)` (host).
-    pub fn create_markup(&self, subtype: &str, pon: PageObjectNumber, quads: Vec<TextQuad>, preset: Option<&str>) {
+    pub fn create_markup(
+        &self,
+        subtype: &str,
+        pon: PageObjectNumber,
+        quads: Vec<TextQuad>,
+        preset: Option<&str>,
+    ) {
         if !self.allows_create() {
             return;
         }
@@ -2269,15 +2511,31 @@ impl AnnotationCapability {
     }
 
     /// `createReplaceText(pon, quads, anchor, preset)` (host).
-    pub fn create_replace_text(&self, pon: PageObjectNumber, quads: Vec<TextQuad>, anchor: TextEndAnchor, preset: Option<&str>) {
+    pub fn create_replace_text(
+        &self,
+        pon: PageObjectNumber,
+        quads: Vec<TextQuad>,
+        anchor: TextEndAnchor,
+        preset: Option<&str>,
+    ) {
         if !self.allows_create() {
             return;
         }
-        self.apply(Msg::CreateReplaceText { pon, quads, anchor, preset: preset.map(str::to_string) });
+        self.apply(Msg::CreateReplaceText {
+            pon,
+            quads,
+            anchor,
+            preset: preset.map(str::to_string),
+        });
     }
 
     /// `previewMarkup(subtype, quadsByPage, preset)` (host).
-    pub fn preview_markup(&self, subtype: &str, quads_by_page: Record<Vec<TextQuad>>, preset: Option<&str>) {
+    pub fn preview_markup(
+        &self,
+        subtype: &str,
+        quads_by_page: Record<Vec<TextQuad>>,
+        preset: Option<&str>,
+    ) {
         self.apply(Msg::SetMarkupPreview {
             subtype: subtype.to_string(),
             quads_by_page,
@@ -2378,7 +2636,8 @@ impl AnnotationCapability {
             if members.iter().any(|a| a.pon != pon) {
                 return Ok(());
             }
-            let index = |a: &Annot| m.order.iter().position(|id| *id == a.id).map_or(-1.0, |i| i as f64);
+            let index =
+                |a: &Annot| m.order.iter().position(|id| *id == a.id).map_or(-1.0, |i| i as f64);
             let mut ordered = members.clone();
             ordered.sort_by(|a, b| {
                 (index(a) - index(b)).partial_cmp(&0.0).unwrap_or(std::cmp::Ordering::Equal)
@@ -2405,7 +2664,8 @@ impl AnnotationCapability {
                 .filter(|a| a.ref_.is_some() && a.data.is_some() && a.group.is_some())
                 .cloned()
                 .collect();
-            let writes = subs.into_iter().map(|a| this.write_relationship(a, None, false)).collect();
+            let writes =
+                subs.into_iter().map(|a| this.write_relationship(a, None, false)).collect();
             promise::all(writes).await?;
             Ok(())
         })
@@ -2421,7 +2681,10 @@ impl AnnotationCapability {
         if members.iter().any(|a| a.pon != members[0].pon) {
             return false;
         }
-        if !members.iter().all(|a| a.ref_.as_ref().is_some_and(|r| self.allows_mutation("update", r))) {
+        if !members
+            .iter()
+            .all(|a| a.ref_.as_ref().is_some_and(|r| self.allows_mutation("update", r)))
+        {
             return false;
         }
         let mut keys: Vec<Option<Id>> = Vec::new();
@@ -2443,7 +2706,9 @@ impl AnnotationCapability {
             .filter(|a| a.group.is_some())
             .collect();
         !subs.is_empty()
-            && subs.iter().all(|a| a.ref_.as_ref().is_some_and(|r| self.allows_mutation("update", r)))
+            && subs
+                .iter()
+                .all(|a| a.ref_.as_ref().is_some_and(|r| self.allows_mutation("update", r)))
     }
 
     /// `ensurePage(pon)` (host): a no-op since whole-document hydration.
@@ -2458,8 +2723,12 @@ impl AnnotationCapability {
                 let call = Self::page_call(&doc, pon, "list", Vec::new())?;
                 let snap = await_engine(call).await?;
                 let m = this.model();
-                let stale: Vec<Id> =
-                    m.order.iter().filter(|id| m.by_id.get(*id).is_some_and(|a| a.pon == pon)).cloned().collect();
+                let stale: Vec<Id> = m
+                    .order
+                    .iter()
+                    .filter(|id| m.by_id.get(*id).is_some_and(|a| a.pon == pon))
+                    .cloned()
+                    .collect();
                 if !stale.is_empty() {
                     this.apply(Msg::Remove { ids: stale });
                 }
@@ -2517,7 +2786,14 @@ impl AnnotationCapability {
     }
 
     /// `beginTextEditAt(...)` (host): whether a free-text box was opened.
-    pub fn begin_text_edit_at(&self, pon: PageObjectNumber, point: Point, scale: Option<f64>, rotation: Option<f64>, zoom: Option<f64>) -> bool {
+    pub fn begin_text_edit_at(
+        &self,
+        pon: PageObjectNumber,
+        point: Point,
+        scale: Option<f64>,
+        rotation: Option<f64>,
+        zoom: Option<f64>,
+    ) -> bool {
         let m = self.model();
         let id = match self.hit(pon, point, scale, rotation, zoom, 1.0, false) {
             Target::Annot { id } | Target::Handle { id, .. } => Some(id),
@@ -2597,19 +2873,26 @@ impl AnnotationCapability {
 
     /// `commitScriptEffects(entries)` (host): the actions plane's document
     /// commit door. Per entry, stop on failure; reconciles its own model.
-    pub fn commit_script_effects(&self, entries: Vec<AnnotCommitEntry>) -> Promise<AnnotCommitResult> {
+    pub fn commit_script_effects(
+        &self,
+        entries: Vec<AnnotCommitEntry>,
+    ) -> Promise<AnnotCommitResult> {
         let this = self.clone();
         promise::spawn(async move {
-            let entry_result = |n: f64, status: AnnotCommitStatus, error: Option<String>| AnnotCommitResultEntry {
-                annot_object_number: n,
-                status,
-                error,
+            let entry_result = |n: f64, status: AnnotCommitStatus, error: Option<String>| {
+                AnnotCommitResultEntry { annot_object_number: n, status, error }
             };
             let Some(doc) = this.doc() else {
                 return Ok(AnnotCommitResult {
                     results: entries
                         .iter()
-                        .map(|e| entry_result(e.annot_object_number, AnnotCommitStatus::Failed, Some("no document".into())))
+                        .map(|e| {
+                            entry_result(
+                                e.annot_object_number,
+                                AnnotCommitStatus::Failed,
+                                Some("no document".into()),
+                            )
+                        })
                         .collect(),
                 });
             };
@@ -2628,7 +2911,8 @@ impl AnnotationCapability {
                     .as_ref()
                     .map(|a| a.pon)
                     .or(entry.page_object_number.map(|p| p as PageObjectNumber));
-                let mut r: Option<Value> = loaded.as_ref().and_then(|a| a.ref_.as_ref().map(ref_json));
+                let mut r: Option<Value> =
+                    loaded.as_ref().and_then(|a| a.ref_.as_ref().map(ref_json));
                 let mut subtype: Option<String> = loaded.as_ref().map(|a| a.subtype.clone());
                 if (r.is_none() || subtype.as_deref().is_none_or(str::is_empty))
                     && let Some(pon) = pon
@@ -2638,16 +2922,20 @@ impl AnnotationCapability {
                         await_engine(call).await
                     };
                     if let Ok(listed) = listed.await {
-                        let found = get(&listed, "annotations").and_then(Value::as_array).and_then(|list| {
-                            list.iter()
-                                .find(|c| {
-                                    let cr = get(c, "ref");
-                                    cr.and_then(|x| str_of(x, "kind")) == Some("objectNumber")
-                                        && cr.and_then(|x| get(x, "annotObjectNumber")).and_then(Value::as_f64)
-                                            == Some(n)
-                                })
-                                .cloned()
-                        });
+                        let found = get(&listed, "annotations").and_then(Value::as_array).and_then(
+                            |list| {
+                                list.iter()
+                                    .find(|c| {
+                                        let cr = get(c, "ref");
+                                        cr.and_then(|x| str_of(x, "kind")) == Some("objectNumber")
+                                            && cr
+                                                .and_then(|x| get(x, "annotObjectNumber"))
+                                                .and_then(Value::as_f64)
+                                                == Some(n)
+                                    })
+                                    .cloned()
+                            },
+                        );
                         if let Some(dto) = found {
                             r = get(&dto, "ref").cloned();
                             subtype = str_of(&dto, "subtype").map(str::to_string);
@@ -2684,7 +2972,11 @@ impl AnnotationCapability {
                     }
                     Err(error) => {
                         failed = true;
-                        results.push(entry_result(n, AnnotCommitStatus::Failed, Some(error.message)));
+                        results.push(entry_result(
+                            n,
+                            AnnotCommitStatus::Failed,
+                            Some(error.message),
+                        ));
                     }
                 }
             }

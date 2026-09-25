@@ -48,7 +48,10 @@ pub fn register_annotation_effects(
                 .flatten()
                 .filter(|w| f64_of(w, "annotObjectNumber") > 0.0)
                 .map(|w| {
-                    format!("obj:{}", epdf_geometry::js::number_to_string(f64_of(w, "annotObjectNumber")))
+                    format!(
+                        "obj:{}",
+                        epdf_geometry::js::number_to_string(f64_of(w, "annotObjectNumber"))
+                    )
                 })
                 .collect();
             apply(Msg::BumpAp { ids });

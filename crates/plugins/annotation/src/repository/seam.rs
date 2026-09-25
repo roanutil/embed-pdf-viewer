@@ -130,11 +130,7 @@ pub fn box_geom_from_dto(
         Some(u) if truthy_num(rot) => u,
         _ => rect,
     };
-    Geom::Rect {
-        rect: pdf_to_content_rect(bx, crop),
-        ellipse,
-        rot: truthy_num(rot).then_some(rot),
-    }
+    Geom::Rect { rect: pdf_to_content_rect(bx, crop), ellipse, rot: truthy_num(rot).then_some(rot) }
 }
 
 /// `insetPdfRectByRD(r, rd)`.

@@ -41,7 +41,9 @@ fn resolve_now(source: &Value) -> Result<WireResource, Error> {
     }
     match source {
         Value::Null => {
-            return Err(type_error("Cannot destructure property 'data' of 'source' as it is null."));
+            return Err(type_error(
+                "Cannot destructure property 'data' of 'source' as it is null.",
+            ));
         }
         v if epdf_kernel::is_undefined(v) => {
             return Err(type_error(
@@ -54,8 +56,9 @@ fn resolve_now(source: &Value) -> Result<WireResource, Error> {
     let Some(inner) = data.and_then(Bytes::from_json) else {
         return Err(not_a_blob(data.filter(|_| source.is_object())));
     };
-    let non_empty =
-        |k: &str| source.get(k).and_then(Value::as_str).filter(|s| !s.is_empty()).map(str::to_string);
+    let non_empty = |k: &str| {
+        source.get(k).and_then(Value::as_str).filter(|s| !s.is_empty()).map(str::to_string)
+    };
     let name = source.get("name").and_then(Value::as_str).map(str::to_string);
     Ok(WireResource { bytes: inner.0, mime_type: non_empty("mimeType"), name })
 }

@@ -239,9 +239,15 @@ pub fn tool_default_keys(kind: &str) -> Option<&'static [&'static str]> {
         ],
         "highlight" | "underline" | "strikeout" | "squiggly" => &["color", "opacity", "blendMode"],
         "caret" => &["color", "opacity"],
-        "redact" => {
-            &["color", "interiorColor", "opacity", "fontFamily", "fontSize", "fontColor", "textAlign"]
-        }
+        "redact" => &[
+            "color",
+            "interiorColor",
+            "opacity",
+            "fontFamily",
+            "fontSize",
+            "fontColor",
+            "textAlign",
+        ],
         "stamp" => &[],
         "link" => &["link"],
         "text" | "file-attachment" => &["icon", "color", "opacity"],
@@ -299,11 +305,8 @@ pub fn default_tools() -> Vec<AnnotationToolDef> {
         selection: Some(SelectionAuthoring::Markup),
         ..def(id)
     };
-    let noted_flags = AnnotationFlagsPatch {
-        no_zoom: Some(true),
-        no_rotate: Some(true),
-        ..Default::default()
-    };
+    let noted_flags =
+        AnnotationFlagsPatch { no_zoom: Some(true), no_rotate: Some(true), ..Default::default() };
     vec![
         draw("square", json!({ "strokeWidth": 6 }), Some(ClickCreate::boxed(80.0, 60.0, None))),
         draw("circle", json!({ "strokeWidth": 6 }), Some(ClickCreate::boxed(80.0, 60.0, None))),
@@ -312,12 +315,18 @@ pub fn default_tools() -> Vec<AnnotationToolDef> {
         draw("polyline", json!({ "strokeWidth": 6 }), None),
         AnnotationToolDef {
             ink: Some(InkAuthoringOptions { group_strokes_ms: Some(800.0), straighten: None }),
-            ..draw("ink", json!({ "color": "#ef4444", "strokeWidth": 6, "blendMode": "normal" }), None)
+            ..draw(
+                "ink",
+                json!({ "color": "#ef4444", "strokeWidth": 6, "blendMode": "normal" }),
+                None,
+            )
         },
         AnnotationToolDef {
             extends: Some("ink".into()),
             intent: Some("ink-highlight".into()),
-            defaults: patch(json!({ "color": "#ffcd45", "strokeWidth": 14, "blendMode": "multiply" })),
+            defaults: patch(
+                json!({ "color": "#ffcd45", "strokeWidth": 14, "blendMode": "multiply" }),
+            ),
             ink: Some(InkAuthoringOptions {
                 group_strokes_ms: None,
                 straighten: Some(InkStraightenOptions {
@@ -332,7 +341,11 @@ pub fn default_tools() -> Vec<AnnotationToolDef> {
             ..draw(
                 "free-text",
                 json!({ "fontColor": "#ef4444" }),
-                Some(ClickCreate::boxed(180.0, 40.0, Some(epdf_annotation_core::BoxAnchor::TopLeft))),
+                Some(ClickCreate::boxed(
+                    180.0,
+                    40.0,
+                    Some(epdf_annotation_core::BoxAnchor::TopLeft),
+                )),
             )
         },
         AnnotationToolDef {
@@ -572,7 +585,8 @@ impl Resolver {
             .or_else(|| base.map(|b| b.subtype.clone()))
             .unwrap_or_else(|| def.id.clone());
         let mut enables: Vec<String> = Vec::new();
-        for tag in def.enables.clone().or_else(|| base.map(|b| b.enables.clone())).unwrap_or_default()
+        for tag in
+            def.enables.clone().or_else(|| base.map(|b| b.enables.clone())).unwrap_or_default()
         {
             if !enables.contains(&tag) {
                 enables.push(tag);

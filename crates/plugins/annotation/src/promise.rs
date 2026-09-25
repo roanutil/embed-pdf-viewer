@@ -23,7 +23,10 @@ pub async fn await_engine(call: Promise<Value>) -> Result<Value, Error> {
 
 /// `promise.then(onFulfilled, onRejected)` whose handlers return nothing:
 /// they run one turn after it settles.
-pub fn then<T: Clone + 'static>(promise: Promise<T>, handle: impl FnOnce(Result<T, Error>) + 'static) {
+pub fn then<T: Clone + 'static>(
+    promise: Promise<T>,
+    handle: impl FnOnce(Result<T, Error>) + 'static,
+) {
     rt::spawn(async move {
         let result = promise.await;
         handle(result);
@@ -32,7 +35,9 @@ pub fn then<T: Clone + 'static>(promise: Promise<T>, handle: impl FnOnce(Result<
 
 /// `new Promise(...)`-free `async` function: run `body` now to its first
 /// pending await and settle with what it returns.
-pub fn spawn<T: Clone + 'static>(body: impl Future<Output = Result<T, Error>> + 'static) -> Promise<T> {
+pub fn spawn<T: Clone + 'static>(
+    body: impl Future<Output = Result<T, Error>> + 'static,
+) -> Promise<T> {
     Promise::spawn(body)
 }
 

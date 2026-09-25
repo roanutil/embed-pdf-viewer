@@ -29,7 +29,8 @@ pub fn build_text_items(m: &Model, pon: PageObjectNumber, view: Option<ViewEnv>)
             let a = m.by_id.get(&tb.id);
             let t = a.and_then(|a| a.text.clone()).unwrap_or_else(initial_text_style);
             let sw = a.map_or(0.0, |a| a.style.stroke_width);
-            let is_callout = a.is_some_and(|a| matches!(a.geom, Geom::Text { callout: Some(_), .. }));
+            let is_callout =
+                a.is_some_and(|a| matches!(a.geom, Geom::Text { callout: Some(_), .. }));
             let contents = a
                 .and_then(|a| a.data.as_ref())
                 .and_then(|d| get(d, "contents"))

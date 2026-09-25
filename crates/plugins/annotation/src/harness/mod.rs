@@ -18,7 +18,9 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use std::sync::LazyLock;
 
-use epdf_annotation_core::{AnnotationRef, PdfLinkTarget, Phase, Point, Rect, TextEndAnchor, TextQuad, ViewEnv};
+use epdf_annotation_core::{
+    AnnotationRef, PdfLinkTarget, Phase, Point, Rect, TextEndAnchor, TextQuad, ViewEnv,
+};
 use epdf_kernel::rt::Promise;
 use epdf_kernel::signal::AbortSignal;
 use epdf_kernel::{AnyPlugin, AnyToken, Ctx, Error, Token, define, is_undefined, undefined};
@@ -51,7 +53,8 @@ fn controller_named(name: &str) -> AbortSignal {
 #[derive(Clone)]
 pub struct Signals;
 
-pub static SIGNALS: LazyLock<Token<Signals>> = LazyLock::new(|| Token::new("annotation-test/signals"));
+pub static SIGNALS: LazyLock<Token<Signals>> =
+    LazyLock::new(|| Token::new("annotation-test/signals"));
 
 /// The `annotation-lens` test plugin: the `comments` and `links` verbs.
 #[derive(Clone)]
@@ -67,29 +70,116 @@ pub struct Annotation;
 /// The TypeScript object literal's member order (`comments` and `links` are
 /// objects, which this adapter does not print).
 const MEMBERS: &[&str] = &[
-    "create", "armStamp", "disarmStamp", "placeArmedStamp", "requestStampAt", "placeAt",
-    "hasArmedStamp", "ghostHoverAt", "clearGhost", "setPlacementPreview", "clearPlacementPreview",
-    "toolGhost", "armedStampPreview", "stampArmEpoch", "setFilePickerProvider",
-    "downloadAttachment", "tools", "tool", "toolSubtype", "registerTool", "update",
-    "updateSelection", "updateSelectionFlags", "getSelectionFlags", "delete", "canRead",
-    "canCreate", "canEdit", "canDelete", "getSelection", "get", "list", "getSelected",
-    "getSelectionProps", "propsForTool", "pageItems", "chrome", "selectionAnchor",
-    "creationDraftAnchor", "selection", "hitKind", "claimsTouchAt", "cursorAt", "hoverAt",
-    "behaviorFor", "linkItemsOn", "appearanceEpoch", "bakeScale", "appearances", "toContentBox",
-    "editPointer", "marqueePointer", "createPointer", "finishCreationDraft", "finishInkDraft",
-    "cancelCreationDraft", "markupFromSelection", "createMarkup", "createCaret",
-    "createReplaceText", "previewMarkup", "clearMarkupPreview", "setDefaults", "currentDefaults",
-    "setSnap", "snapSettings", "setChrome", "chromeSettings", "deleteSelection", "deselect",
-    "select", "pruneEngagedSelection", "cancel", "rotateSelection90", "resetSelectionRotation",
-    "group", "ungroup", "canGroup", "canUngroup", "ensurePage", "reloadPage", "hydration",
-    "ensureHydrated", "rehydrate", "deliverRemoteAnnotationEvent", "textItems", "currentEditing",
-    "beginTextEdit", "beginTextEditAt", "setContents", "endTextEdit", "commitScriptEffects",
+    "create",
+    "armStamp",
+    "disarmStamp",
+    "placeArmedStamp",
+    "requestStampAt",
+    "placeAt",
+    "hasArmedStamp",
+    "ghostHoverAt",
+    "clearGhost",
+    "setPlacementPreview",
+    "clearPlacementPreview",
+    "toolGhost",
+    "armedStampPreview",
+    "stampArmEpoch",
+    "setFilePickerProvider",
+    "downloadAttachment",
+    "tools",
+    "tool",
+    "toolSubtype",
+    "registerTool",
+    "update",
+    "updateSelection",
+    "updateSelectionFlags",
+    "getSelectionFlags",
+    "delete",
+    "canRead",
+    "canCreate",
+    "canEdit",
+    "canDelete",
+    "getSelection",
+    "get",
+    "list",
+    "getSelected",
+    "getSelectionProps",
+    "propsForTool",
+    "pageItems",
+    "chrome",
+    "selectionAnchor",
+    "creationDraftAnchor",
+    "selection",
+    "hitKind",
+    "claimsTouchAt",
+    "cursorAt",
+    "hoverAt",
+    "behaviorFor",
+    "linkItemsOn",
+    "appearanceEpoch",
+    "bakeScale",
+    "appearances",
+    "toContentBox",
+    "editPointer",
+    "marqueePointer",
+    "createPointer",
+    "finishCreationDraft",
+    "finishInkDraft",
+    "cancelCreationDraft",
+    "markupFromSelection",
+    "createMarkup",
+    "createCaret",
+    "createReplaceText",
+    "previewMarkup",
+    "clearMarkupPreview",
+    "setDefaults",
+    "currentDefaults",
+    "setSnap",
+    "snapSettings",
+    "setChrome",
+    "chromeSettings",
+    "deleteSelection",
+    "deselect",
+    "select",
+    "pruneEngagedSelection",
+    "cancel",
+    "rotateSelection90",
+    "resetSelectionRotation",
+    "group",
+    "ungroup",
+    "canGroup",
+    "canUngroup",
+    "ensurePage",
+    "reloadPage",
+    "hydration",
+    "ensureHydrated",
+    "rehydrate",
+    "deliverRemoteAnnotationEvent",
+    "textItems",
+    "currentEditing",
+    "beginTextEdit",
+    "beginTextEditAt",
+    "setContents",
+    "endTextEdit",
+    "commitScriptEffects",
     "registerBehavior",
 ];
 
 const LENS_MEMBERS: &[&str] = &[
-    "threads", "thread", "hydration", "rehydrate", "reply", "edit", "setStatus", "setMarked",
-    "remove", "removeThread", "permissionsFor", "linksOf", "linksSet", "linksClear",
+    "threads",
+    "thread",
+    "hydration",
+    "rehydrate",
+    "reply",
+    "edit",
+    "setStatus",
+    "setMarked",
+    "remove",
+    "removeThread",
+    "permissionsFor",
+    "linksOf",
+    "linksSet",
+    "linksClear",
 ];
 
 // ── argument decoding ─────────────────────────────────────────────────────────
@@ -152,9 +242,13 @@ fn out_opt<T: Serialize>(value: Option<T>) -> Outcome {
 
 /// A typed promise as the JSON promise a trace records, settling in the
 /// same moment.
-fn untyped<T: Clone + 'static>(promise: Promise<T>, json: impl Fn(&T) -> Value + 'static) -> Outcome {
+fn untyped<T: Clone + 'static>(
+    promise: Promise<T>,
+    json: impl Fn(&T) -> Value + 'static,
+) -> Outcome {
     let (out, resolver) = Promise::pending();
-    promise.on_settle(move |result| resolver.settle(result.as_ref().map(&json).map_err(Clone::clone)));
+    promise
+        .on_settle(move |result| resolver.settle(result.as_ref().map(&json).map_err(Clone::clone)));
     Outcome::Promise(out)
 }
 
@@ -200,16 +294,21 @@ impl Behavior for ScriptedBehavior {
         &self.id
     }
     fn matches(&self, subtype: &str, r: Option<&AnnotationRef>) -> bool {
-        let arg = json!({ "subtype": subtype, "ref": r.map_or(Value::Null, |r| to_value(r)) });
-        self.matches.as_ref().is_some_and(|c| epdf_plugin_interaction::harness::answer_truthy(c.call(vec![arg])))
+        let arg = json!({ "subtype": subtype, "ref": r.map_or(Value::Null, to_value) });
+        self.matches
+            .as_ref()
+            .is_some_and(|c| epdf_plugin_interaction::harness::answer_truthy(c.call(vec![arg])))
     }
     fn engaged(&self) -> bool {
-        self.engaged.as_ref().is_some_and(|c| epdf_plugin_interaction::harness::answer_truthy(c.call(Vec::new())))
+        self.engaged
+            .as_ref()
+            .is_some_and(|c| epdf_plugin_interaction::harness::answer_truthy(c.call(Vec::new())))
     }
 }
 
 fn scripted_behavior(spec: &Value, h: &Harness) -> ScriptedBehavior {
-    let member = |name: &str| spec.get(name).filter(|v| v.get("$fn").is_some()).map(|v| h.callback(v));
+    let member =
+        |name: &str| spec.get(name).filter(|v| v.get("$fn").is_some()).map(|v| h.callback(v));
     ScriptedBehavior {
         id: spec.get("id").and_then(Value::as_str).unwrap_or_default().to_string(),
         spec: spec.clone(),
@@ -220,19 +319,27 @@ fn scripted_behavior(spec: &Value, h: &Harness) -> ScriptedBehavior {
 
 /// The behavior object as the TypeScript prints it: its function members as
 /// fresh refs, in the spec's member order.
-fn behavior_json(b: &Rc<dyn Behavior>, registry: &Rc<RefCell<Vec<(Rc<dyn Behavior>, Rc<ScriptedBehavior>)>>>, h: &Harness) -> Value {
-    let Some((_, scripted)) = registry.borrow().iter().find(|(x, _)| Rc::ptr_eq(x, b)).cloned() else {
+fn behavior_json(
+    b: &Rc<dyn Behavior>,
+    registry: &Rc<RefCell<Vec<(Rc<dyn Behavior>, Rc<ScriptedBehavior>)>>>,
+    h: &Harness,
+) -> Value {
+    let Some((_, scripted)) = registry.borrow().iter().find(|(x, _)| Rc::ptr_eq(x, b)).cloned()
+    else {
         return json!({ "id": b.id() });
     };
     let mut out = Map::new();
     for (key, value) in scripted.spec.as_object().into_iter().flatten() {
         if value.get("$fn").is_some() {
             let callback = h.callback(value);
-            out.insert(key.clone(), h.register_fn(Rc::new(move |args| match callback.call(args) {
-                Answer::Returns(v) => Outcome::Returned(v),
-                Answer::Throws(e) => Outcome::Threw(e),
-                Answer::Promise(p) => Outcome::Promise(p),
-            })));
+            out.insert(
+                key.clone(),
+                h.register_fn(Rc::new(move |args| match callback.call(args) {
+                    Answer::Returns(v) => Outcome::Returned(v),
+                    Answer::Throws(e) => Outcome::Threw(e),
+                    Answer::Promise(p) => Outcome::Promise(p),
+                })),
+            );
         } else {
             out.insert(key.clone(), value.clone());
         }
@@ -258,11 +365,19 @@ fn hover_arg(v: Option<&Value>) -> Result<Option<HoverAt>, Error> {
     }))
 }
 
-fn call_capability(cap: &AnnotationCapability, method: &str, args: &[Value], h: &Harness) -> Result<Outcome, Error> {
+fn call_capability(
+    cap: &AnnotationCapability,
+    method: &str,
+    args: &[Value],
+    h: &Harness,
+) -> Result<Outcome, Error> {
     let point = |i: usize| -> Result<Point, Error> { decode(args, i) };
     let r = |i: usize| -> Result<AnnotationRef, Error> { decode(args, i) };
     Ok(match method {
-        "create" => untyped(cap.create(pon(args, 0), present(args, 1).cloned().unwrap_or(Value::Null)), Clone::clone),
+        "create" => untyped(
+            cap.create(pon(args, 0), present(args, 1).cloned().unwrap_or(Value::Null)),
+            Clone::clone,
+        ),
         "armStamp" => unit(cap.arm_stamp(decode(args, 0)?)),
         "disarmStamp" => {
             cap.disarm_stamp();
@@ -290,14 +405,16 @@ fn call_capability(cap: &AnnotationCapability, method: &str, args: &[Value], h: 
             Outcome::undefined()
         }
         "toolGhost" => out_opt(cap.tool_ghost(pon(args, 0))),
-        "armedStampPreview" => Outcome::Returned(cap.armed_stamp_preview().map_or(Value::Null, |p| {
-            let mut o = Map::new();
-            o.insert("bytes".into(), epdf_kernel::bytes::Bytes(p.bytes).to_json());
-            if let Some(m) = p.mime_type {
-                o.insert("mimeType".into(), json!(m));
-            }
-            Value::Object(o)
-        })),
+        "armedStampPreview" => {
+            Outcome::Returned(cap.armed_stamp_preview().map_or(Value::Null, |p| {
+                let mut o = Map::new();
+                o.insert("bytes".into(), epdf_kernel::bytes::Bytes(p.bytes).to_json());
+                if let Some(m) = p.mime_type {
+                    o.insert("mimeType".into(), json!(m));
+                }
+                Value::Object(o)
+            }))
+        }
         "stampArmEpoch" => out(&cap.stamp_arm_epoch()),
         "setFilePickerProvider" => {
             let provider = present(args, 0).filter(|v| v.get("$fn").is_some()).map(|spec| {
@@ -310,7 +427,9 @@ fn call_capability(cap: &AnnotationCapability, method: &str, args: &[Value], h: 
             Outcome::undefined()
         }
         "downloadAttachment" => untyped(cap.download_attachment(r(0)?), Clone::clone),
-        "tools" => Outcome::Returned(Value::Array(cap.tools().iter().map(|t| t.to_json()).collect())),
+        "tools" => {
+            Outcome::Returned(Value::Array(cap.tools().iter().map(|t| t.to_json()).collect()))
+        }
         "tool" => Outcome::Returned(cap.tool(&text(args, 0)).map_or(Value::Null, |t| t.to_json())),
         "toolSubtype" => out(&cap.tool_subtype(&text(args, 0))),
         "registerTool" => unregister_ref(h, cap.register_tool(decode(args, 0)?)?),
@@ -323,7 +442,9 @@ fn call_capability(cap: &AnnotationCapability, method: &str, args: &[Value], h: 
             cap.update_selection_flags(decode(args, 0)?);
             Outcome::undefined()
         }
-        "getSelectionFlags" => Outcome::Returned(cap.get_selection_flags().map_or(Value::Null, Value::Object)),
+        "getSelectionFlags" => {
+            Outcome::Returned(cap.get_selection_flags().map_or(Value::Null, Value::Object))
+        }
         "delete" => unit(cap.delete(r(0)?)),
         "canRead" => out(&cap.can_read()),
         "canCreate" => out(&cap.can_create()),
@@ -336,8 +457,12 @@ fn call_capability(cap: &AnnotationCapability, method: &str, args: &[Value], h: 
         "getSelectionProps" => out(&cap.get_selection_props()),
         "propsForTool" => out(&cap.props_for_tool(&text(args, 0))),
         "pageItems" => out(&cap.page_items(pon(args, 0), view_arg(args, 1)?)),
-        "chrome" => out(&cap.chrome(pon(args, 0), opt_num(args, 1), opt_num(args, 2), opt_num(args, 3))),
-        "selectionAnchor" => out_opt(cap.selection_anchor(opt_num(args, 0), opt_num(args, 1), opt_num(args, 2))),
+        "chrome" => {
+            out(&cap.chrome(pon(args, 0), opt_num(args, 1), opt_num(args, 2), opt_num(args, 3)))
+        }
+        "selectionAnchor" => {
+            out_opt(cap.selection_anchor(opt_num(args, 0), opt_num(args, 1), opt_num(args, 2)))
+        }
         "creationDraftAnchor" => out_opt(cap.creation_draft_anchor()),
         "selection" => out(&cap.selection()),
         "hitKind" => out(&cap.hit_kind(
@@ -348,12 +473,20 @@ fn call_capability(cap: &AnnotationCapability, method: &str, args: &[Value], h: 
             opt_num(args, 4),
             opt_bool(args, 5),
         )),
-        "claimsTouchAt" => {
-            out(&cap.claims_touch_at(pon(args, 0), point(1)?, opt_num(args, 2), opt_num(args, 3), opt_num(args, 4)))
-        }
-        "cursorAt" => {
-            out_opt(cap.cursor_at(pon(args, 0), point(1)?, opt_num(args, 2), opt_num(args, 3), opt_num(args, 4)))
-        }
+        "claimsTouchAt" => out(&cap.claims_touch_at(
+            pon(args, 0),
+            point(1)?,
+            opt_num(args, 2),
+            opt_num(args, 3),
+            opt_num(args, 4),
+        )),
+        "cursorAt" => out_opt(cap.cursor_at(
+            pon(args, 0),
+            point(1)?,
+            opt_num(args, 2),
+            opt_num(args, 3),
+            opt_num(args, 4),
+        )),
         "hoverAt" => {
             cap.hover_at(hover_arg(present(args, 0))?);
             Outcome::undefined()
@@ -429,7 +562,9 @@ fn call_capability(cap: &AnnotationCapability, method: &str, args: &[Value], h: 
             cap.cancel_creation_draft();
             Outcome::undefined()
         }
-        "markupFromSelection" => out(&cap.markup_from_selection(&text(args, 0), opt_text(args, 1).as_deref())?),
+        "markupFromSelection" => {
+            out(&cap.markup_from_selection(&text(args, 0), opt_text(args, 1).as_deref())?)
+        }
         "createMarkup" => {
             let quads: Vec<TextQuad> = decode(args, 2)?;
             cap.create_markup(&text(args, 0), pon(args, 1), quads, opt_text(args, 3).as_deref());
@@ -478,7 +613,10 @@ fn call_capability(cap: &AnnotationCapability, method: &str, args: &[Value], h: 
             Outcome::undefined()
         }
         "select" => {
-            let add = present(args, 1).and_then(|o| o.get("add")).filter(|v| !is_undefined(v)).map(|v| crate::value::truthy(Some(v)));
+            let add = present(args, 1)
+                .and_then(|o| o.get("add"))
+                .filter(|v| !is_undefined(v))
+                .map(|v| crate::value::truthy(Some(v)));
             cap.select(&r(0)?, add);
             Outcome::undefined()
         }
@@ -538,7 +676,7 @@ fn call_capability(cap: &AnnotationCapability, method: &str, args: &[Value], h: 
             cap.end_text_edit();
             Outcome::undefined()
         }
-        "commitScriptEffects" => untyped(cap.commit_script_effects(decode(args, 0)?), |r| to_value(r)),
+        "commitScriptEffects" => untyped(cap.commit_script_effects(decode(args, 0)?), to_value),
         "registerBehavior" => {
             let spec = present(args, 0).cloned().unwrap_or(Value::Null);
             let scripted = Rc::new(scripted_behavior(&spec, h));
@@ -554,8 +692,12 @@ fn call_lens(lens: &Lens, method: &str, args: &[Value]) -> Result<Outcome, Error
     let cap = lens.ctx.get(&ANNOTATION)?;
     let r = |i: usize| -> Result<AnnotationRef, Error> { decode(args, i) };
     Ok(match method {
-        "threads" => Outcome::Returned(Value::Array(cap.comment_threads().iter().map(|t| t.to_json()).collect())),
-        "thread" => Outcome::Returned(cap.comment_thread(&r(0)?).map_or(Value::Null, |t| t.to_json())),
+        "threads" => Outcome::Returned(Value::Array(
+            cap.comment_threads().iter().map(|t| t.to_json()).collect(),
+        )),
+        "thread" => {
+            Outcome::Returned(cap.comment_thread(&r(0)?).map_or(Value::Null, |t| t.to_json()))
+        }
         "hydration" => out(&cap.hydration()),
         "rehydrate" => unit(cap.rehydrate()),
         "reply" => untyped(cap.comment_reply(r(0)?, text(args, 1)), Clone::clone),
@@ -625,7 +767,13 @@ impl HarnessPlugin for Annotation {
         vec![ANNOTATION.any().clone(), LENS.any().clone(), SIGNALS.any().clone()]
     }
 
-    fn call(&self, capability: &Rc<dyn Any>, method: &str, args: Vec<Value>, h: &Harness) -> Option<Outcome> {
+    fn call(
+        &self,
+        capability: &Rc<dyn Any>,
+        method: &str,
+        args: Vec<Value>,
+        h: &Harness,
+    ) -> Option<Outcome> {
         if let Some(cap) = capability.downcast_ref::<AnnotationCapability>() {
             return Some(from_result(call_capability(cap, method, &args, h)));
         }
@@ -636,7 +784,8 @@ impl HarnessPlugin for Annotation {
         Some(match method {
             "abort" => {
                 let name = present(&args, 0).and_then(Value::as_str).unwrap_or_default();
-                controller_named(name).abort(Error::named("AbortError", "This operation was aborted"));
+                controller_named(name)
+                    .abort(Error::named("AbortError", "This operation was aborted"));
                 Outcome::undefined()
             }
             other => not_a_function(other),

@@ -16,7 +16,8 @@ use crate::value::{
 };
 
 fn quads_from_dto(quad_points: Option<&Value>, crop: PdfRect) -> Vec<TextQuad> {
-    let content = |q: &Value, k: &str| -> Point { pdf_to_content_point(pdf_point_of(get(q, k)), crop) };
+    let content =
+        |q: &Value, k: &str| -> Point { pdf_to_content_point(pdf_point_of(get(q, k)), crop) };
     quad_points
         .and_then(Value::as_array)
         .map(|qs| {
@@ -151,7 +152,8 @@ pub fn caret_draft_extras(a: &Annot) -> Wire {
     if a.intent == Some(Intent::Replace) {
         out.insert("intent".into(), json!("replace"));
     }
-    if let Some(contents) = a.data.as_ref().and_then(|d| get(d, "contents")).filter(|c| !c.is_null())
+    if let Some(contents) =
+        a.data.as_ref().and_then(|d| get(d, "contents")).filter(|c| !c.is_null())
     {
         out.insert("contents".into(), contents.clone());
     }
@@ -163,7 +165,11 @@ pub fn redact_ingest(d: &Value, crop: PdfRect) -> IngestSlice {
     let geom = if has_quads {
         Geom::Quads { quads: quads_from_dto(get(d, "quadPoints"), crop) }
     } else {
-        Geom::Rect { rect: pdf_to_content_rect(pdf_rect_of(get(d, "rect")), crop), ellipse: false, rot: None }
+        Geom::Rect {
+            rect: pdf_to_content_rect(pdf_rect_of(get(d, "rect")), crop),
+            ellipse: false,
+            rot: None,
+        }
     };
     let mut slice = IngestSlice::geom(geom);
     slice.text = Some(TextStyle {
