@@ -20,6 +20,7 @@ pub mod bytes;
 pub mod engine;
 pub mod error;
 pub mod event_hook;
+pub mod js;
 pub mod kernel;
 pub mod plan;
 pub mod plugin;

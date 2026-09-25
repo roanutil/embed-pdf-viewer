@@ -26,7 +26,8 @@ impl<T: Serialize + 'static> Action for T {
         }
     }
     fn to_json(&self) -> Value {
-        serde_json::to_value(self).unwrap_or(Value::Null)
+        // NaN and the infinities as canonical JSON spells them, not `null`.
+        crate::js::to_value(self)
     }
     fn as_any(&self) -> &dyn Any {
         self

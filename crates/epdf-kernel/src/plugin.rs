@@ -517,7 +517,7 @@ impl<S: Serialize + 'static, A: Action> PluginBuilder<S, A> {
         };
         let to_json: SliceJson = Rc::new(|state: &dyn Any| {
             if let Some(state) = state.downcast_ref::<S>() {
-                serde_json::to_value(state).unwrap_or(Value::Null)
+                crate::js::to_value(state)
             } else if let Some(value) = state.downcast_ref::<Value>() {
                 value.clone()
             } else {

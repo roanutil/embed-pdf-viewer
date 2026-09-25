@@ -1,4 +1,5 @@
-//! Serde across canonical JSON, for function suites.
+//! Serde across canonical JSON: the kernel prints actions and state with
+//! it, and the conformance harness reads vector arguments with it.
 //!
 //! `serde_json` cannot carry `NaN` or the infinities: it serializes them as
 //! `null` and refuses to read them. Canonical JSON spells them
@@ -293,15 +294,15 @@ impl<C: ser::SerializeStructVariant> ser::SerializeStructVariant for Compound<C>
 
 /// Deserialize from canonical JSON: `{"$number": ..}` reads as a float and
 /// `{"$undefined": true}` as an absent value (`None` for an `Option`).
-pub fn from_value<T: DeserializeOwned>(value: &Value) -> Result<T, epdf_kernel::Error> {
+pub fn from_value<T: DeserializeOwned>(value: &Value) -> Result<T, crate::Error> {
     T::deserialize(JsDeserializer(value))
-        .map_err(|e| epdf_kernel::Error::new(format!("[js] cannot decode {value}: {e}")))
+        .map_err(|e| crate::Error::new(format!("[js] cannot decode {value}: {e}")))
 }
 
 /// Argument `index` of a function case. A missing trailing argument is
 /// `undefined`, as in a JavaScript call.
-pub fn arg<T: DeserializeOwned>(args: &[Value], index: usize) -> Result<T, epdf_kernel::Error> {
-    let undefined = epdf_kernel::undefined();
+pub fn arg<T: DeserializeOwned>(args: &[Value], index: usize) -> Result<T, crate::Error> {
+    let undefined = crate::undefined();
     from_value(args.get(index).unwrap_or(&undefined))
 }
 
@@ -335,7 +336,7 @@ fn special_number(map: &Map<String, Value>) -> Option<f64> {
 }
 
 fn is_absent(value: &Value) -> bool {
-    value.is_null() || epdf_kernel::is_undefined(value)
+    value.is_null() || crate::is_undefined(value)
 }
 
 #[derive(Clone, Copy)]
@@ -363,7 +364,7 @@ impl<'de> de::Deserializer<'de> for JsDeserializer<'_> {
                 if let Some(n) = special_number(map) {
                     return visitor.visit_f64(n);
                 }
-                if epdf_kernel::is_undefined(self.0) {
+                if crate::is_undefined(self.0) {
                     return visitor.visit_unit();
                 }
                 visitor.visit_map(Entries { iter: map.iter(), value: None })

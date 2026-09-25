@@ -13,7 +13,8 @@
 pub mod canonical;
 pub mod fake_engine;
 pub mod harness;
-pub mod js;
+/// Moved to the kernel, which prints actions and state with it.
+pub use epdf_kernel::js;
 pub mod probe;
 pub mod scenario;
 

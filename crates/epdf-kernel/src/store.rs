@@ -191,7 +191,7 @@ impl Store {
         for (key, slice) in slices.iter() {
             plugins.insert(key.clone(), (slice.to_json)(slice.state.as_ref()));
         }
-        serde_json::json!({ "core": serde_json::to_value(&*self.core()).unwrap(), "plugins": plugins })
+        serde_json::json!({ "core": crate::js::to_value(&*self.core()), "plugins": plugins })
     }
 
     /// One slice as canonical JSON.
