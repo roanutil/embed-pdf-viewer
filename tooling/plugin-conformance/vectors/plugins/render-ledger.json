@@ -1,0 +1,893 @@
+{
+  "schemaVersion": 1,
+  "kind": "function",
+  "describes": "packages/plugin/render/src/{reducer,effects}.ts: the epoch ledger and the event→pages map.",
+  "cases": [
+    {
+      "name": "initialRenderState/empty-ledgers",
+      "fn": "initialRenderState",
+      "args": [],
+      "outcome": {
+        "returned": {
+          "contentEpochs": {},
+          "annotatedEpochs": {},
+          "paintVersions": {}
+        }
+      }
+    },
+    {
+      "name": "renderReducer/annotations-bump",
+      "fn": "renderReducer",
+      "args": [
+        {
+          "contentEpochs": {},
+          "annotatedEpochs": {},
+          "paintVersions": {}
+        },
+        {
+          "type": "INVALIDATE",
+          "scope": "annotations",
+          "pons": [
+            11
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "changed": true,
+          "state": {
+            "contentEpochs": {},
+            "annotatedEpochs": {
+              "11": 1
+            },
+            "paintVersions": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "renderReducer/annotations-bump-seeded",
+      "fn": "renderReducer",
+      "args": [
+        {
+          "contentEpochs": {
+            "11": 2
+          },
+          "annotatedEpochs": {
+            "11": 1,
+            "22": 4
+          },
+          "paintVersions": {
+            "33": 7
+          }
+        },
+        {
+          "type": "INVALIDATE",
+          "scope": "annotations",
+          "pons": [
+            11,
+            22,
+            44
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "changed": true,
+          "state": {
+            "contentEpochs": {
+              "11": 2
+            },
+            "annotatedEpochs": {
+              "11": 2,
+              "22": 5,
+              "44": 1
+            },
+            "paintVersions": {
+              "33": 7
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "renderReducer/content-bump",
+      "fn": "renderReducer",
+      "args": [
+        {
+          "contentEpochs": {
+            "11": 2
+          },
+          "annotatedEpochs": {
+            "11": 1,
+            "22": 4
+          },
+          "paintVersions": {
+            "33": 7
+          }
+        },
+        {
+          "type": "INVALIDATE",
+          "scope": "content",
+          "pons": [
+            11,
+            33
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "changed": true,
+          "state": {
+            "contentEpochs": {
+              "11": 3,
+              "33": 1
+            },
+            "annotatedEpochs": {
+              "11": 1,
+              "22": 4
+            },
+            "paintVersions": {
+              "33": 7
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "renderReducer/duplicate-pons-bump-twice",
+      "fn": "renderReducer",
+      "args": [
+        {
+          "contentEpochs": {
+            "11": 2
+          },
+          "annotatedEpochs": {
+            "11": 1,
+            "22": 4
+          },
+          "paintVersions": {
+            "33": 7
+          }
+        },
+        {
+          "type": "INVALIDATE",
+          "scope": "content",
+          "pons": [
+            11,
+            11
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "changed": true,
+          "state": {
+            "contentEpochs": {
+              "11": 4
+            },
+            "annotatedEpochs": {
+              "11": 1,
+              "22": 4
+            },
+            "paintVersions": {
+              "33": 7
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "renderReducer/empty-pons-is-a-no-op",
+      "fn": "renderReducer",
+      "args": [
+        {
+          "contentEpochs": {
+            "11": 2
+          },
+          "annotatedEpochs": {
+            "11": 1,
+            "22": 4
+          },
+          "paintVersions": {
+            "33": 7
+          }
+        },
+        {
+          "type": "INVALIDATE",
+          "scope": "content",
+          "pons": []
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "changed": false,
+          "state": {
+            "contentEpochs": {
+              "11": 2
+            },
+            "annotatedEpochs": {
+              "11": 1,
+              "22": 4
+            },
+            "paintVersions": {
+              "33": 7
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "renderReducer/empty-pons-annotations-no-op",
+      "fn": "renderReducer",
+      "args": [
+        {
+          "contentEpochs": {
+            "11": 2
+          },
+          "annotatedEpochs": {
+            "11": 1,
+            "22": 4
+          },
+          "paintVersions": {
+            "33": 7
+          }
+        },
+        {
+          "type": "INVALIDATE",
+          "scope": "annotations",
+          "pons": []
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "changed": false,
+          "state": {
+            "contentEpochs": {
+              "11": 2
+            },
+            "annotatedEpochs": {
+              "11": 1,
+              "22": 4
+            },
+            "paintVersions": {
+              "33": 7
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "renderReducer/unknown-action-no-op",
+      "fn": "renderReducer",
+      "args": [
+        {
+          "contentEpochs": {
+            "11": 2
+          },
+          "annotatedEpochs": {
+            "11": 1,
+            "22": 4
+          },
+          "paintVersions": {
+            "33": 7
+          }
+        },
+        {
+          "type": "OTHER"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "changed": false,
+          "state": {
+            "contentEpochs": {
+              "11": 2
+            },
+            "annotatedEpochs": {
+              "11": 1,
+              "22": 4
+            },
+            "paintVersions": {
+              "33": 7
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "renderReducer/paint-advanced",
+      "fn": "renderReducer",
+      "args": [
+        {
+          "contentEpochs": {
+            "11": 2
+          },
+          "annotatedEpochs": {
+            "11": 1,
+            "22": 4
+          },
+          "paintVersions": {
+            "33": 7
+          }
+        },
+        {
+          "type": "PAINT_ADVANCED",
+          "pon": 33
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "changed": true,
+          "state": {
+            "contentEpochs": {
+              "11": 2
+            },
+            "annotatedEpochs": {
+              "11": 1,
+              "22": 4
+            },
+            "paintVersions": {
+              "33": 8
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "renderReducer/paint-advanced-new-pon",
+      "fn": "renderReducer",
+      "args": [
+        {
+          "contentEpochs": {
+            "11": 2
+          },
+          "annotatedEpochs": {
+            "11": 1,
+            "22": 4
+          },
+          "paintVersions": {
+            "33": 7
+          }
+        },
+        {
+          "type": "PAINT_ADVANCED",
+          "pon": 5
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "changed": true,
+          "state": {
+            "contentEpochs": {
+              "11": 2
+            },
+            "annotatedEpochs": {
+              "11": 1,
+              "22": 4
+            },
+            "paintVersions": {
+              "5": 1,
+              "33": 7
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "annotatedPons/annotation.created",
+      "fn": "annotatedPons",
+      "args": [
+        {
+          "type": "annotation.created",
+          "pageObjectNumber": 22
+        },
+        [
+          11,
+          22,
+          33
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          22
+        ]
+      }
+    },
+    {
+      "name": "annotatedPons/annotation.updated",
+      "fn": "annotatedPons",
+      "args": [
+        {
+          "type": "annotation.updated",
+          "pageObjectNumber": 22
+        },
+        [
+          11,
+          22,
+          33
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          22
+        ]
+      }
+    },
+    {
+      "name": "annotatedPons/annotation.deleted",
+      "fn": "annotatedPons",
+      "args": [
+        {
+          "type": "annotation.deleted",
+          "pageObjectNumber": 22
+        },
+        [
+          11,
+          22,
+          33
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          22
+        ]
+      }
+    },
+    {
+      "name": "annotatedPons/annotation.moved",
+      "fn": "annotatedPons",
+      "args": [
+        {
+          "type": "annotation.moved",
+          "pageObjectNumber": 22
+        },
+        [
+          11,
+          22,
+          33
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          22
+        ]
+      }
+    },
+    {
+      "name": "annotatedPons/form.valueChanged",
+      "fn": "annotatedPons",
+      "args": [
+        {
+          "type": "form.valueChanged",
+          "changedWidgets": [
+            {
+              "annotObjectNumber": 5,
+              "pageObjectNumber": 11
+            },
+            {
+              "annotObjectNumber": 5,
+              "pageObjectNumber": 33
+            },
+            {
+              "annotObjectNumber": 5,
+              "pageObjectNumber": 11
+            }
+          ]
+        },
+        [
+          11,
+          22,
+          33
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          11,
+          33,
+          11
+        ]
+      }
+    },
+    {
+      "name": "annotatedPons/form.valueChanged/none",
+      "fn": "annotatedPons",
+      "args": [
+        {
+          "type": "form.valueChanged",
+          "changedWidgets": []
+        },
+        [
+          11,
+          22,
+          33
+        ]
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "annotatedPons/form.effectsApplied",
+      "fn": "annotatedPons",
+      "args": [
+        {
+          "type": "form.effectsApplied",
+          "changedWidgets": [
+            {
+              "annotObjectNumber": 5,
+              "pageObjectNumber": 11
+            },
+            {
+              "annotObjectNumber": 5,
+              "pageObjectNumber": 33
+            },
+            {
+              "annotObjectNumber": 5,
+              "pageObjectNumber": 11
+            }
+          ]
+        },
+        [
+          11,
+          22,
+          33
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          11,
+          33,
+          11
+        ]
+      }
+    },
+    {
+      "name": "annotatedPons/form.effectsApplied/none",
+      "fn": "annotatedPons",
+      "args": [
+        {
+          "type": "form.effectsApplied",
+          "changedWidgets": []
+        },
+        [
+          11,
+          22,
+          33
+        ]
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "annotatedPons/form.fieldDeleted",
+      "fn": "annotatedPons",
+      "args": [
+        {
+          "type": "form.fieldDeleted",
+          "removedWidgets": [
+            {
+              "annotObjectNumber": 5,
+              "pageObjectNumber": 22
+            }
+          ]
+        },
+        [
+          11,
+          22,
+          33
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          22
+        ]
+      }
+    },
+    {
+      "name": "annotatedPons/form.fieldCreated",
+      "fn": "annotatedPons",
+      "args": [
+        {
+          "type": "form.fieldCreated",
+          "field": {
+            "widgets": [
+              {
+                "annotObjectNumber": 5,
+                "pageObjectNumber": 11
+              },
+              {
+                "annotObjectNumber": 5,
+                "pageObjectNumber": 22
+              }
+            ]
+          }
+        },
+        [
+          11,
+          22,
+          33
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          11,
+          22
+        ]
+      }
+    },
+    {
+      "name": "annotatedPons/form.fieldUpdated",
+      "fn": "annotatedPons",
+      "args": [
+        {
+          "type": "form.fieldUpdated",
+          "field": {
+            "widgets": [
+              {
+                "annotObjectNumber": 5,
+                "pageObjectNumber": 11
+              },
+              {
+                "annotObjectNumber": 5,
+                "pageObjectNumber": 22
+              }
+            ]
+          }
+        },
+        [
+          11,
+          22,
+          33
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          11,
+          22
+        ]
+      }
+    },
+    {
+      "name": "annotatedPons/form.widgetAttached",
+      "fn": "annotatedPons",
+      "args": [
+        {
+          "type": "form.widgetAttached",
+          "field": {
+            "widgets": [
+              {
+                "annotObjectNumber": 5,
+                "pageObjectNumber": 11
+              },
+              {
+                "annotObjectNumber": 5,
+                "pageObjectNumber": 22
+              }
+            ]
+          }
+        },
+        [
+          11,
+          22,
+          33
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          11,
+          22
+        ]
+      }
+    },
+    {
+      "name": "annotatedPons/form.widgetDetached",
+      "fn": "annotatedPons",
+      "args": [
+        {
+          "type": "form.widgetDetached",
+          "field": {
+            "widgets": [
+              {
+                "annotObjectNumber": 5,
+                "pageObjectNumber": 11
+              },
+              {
+                "annotObjectNumber": 5,
+                "pageObjectNumber": 22
+              }
+            ]
+          }
+        },
+        [
+          11,
+          22,
+          33
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          11,
+          22
+        ]
+      }
+    },
+    {
+      "name": "annotatedPons/form.imported",
+      "fn": "annotatedPons",
+      "args": [
+        {
+          "type": "form.imported"
+        },
+        [
+          11,
+          22,
+          33
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          11,
+          22,
+          33
+        ]
+      }
+    },
+    {
+      "name": "annotatedPons/form.imported/no-pages",
+      "fn": "annotatedPons",
+      "args": [
+        {
+          "type": "form.imported"
+        },
+        []
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "annotatedPons/form.repaired",
+      "fn": "annotatedPons",
+      "args": [
+        {
+          "type": "form.repaired"
+        },
+        [
+          11,
+          22,
+          33
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          11,
+          22,
+          33
+        ]
+      }
+    },
+    {
+      "name": "annotatedPons/form.repaired/no-pages",
+      "fn": "annotatedPons",
+      "args": [
+        {
+          "type": "form.repaired"
+        },
+        []
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "annotatedPons/pages.rotated",
+      "fn": "annotatedPons",
+      "args": [
+        {
+          "type": "pages.rotated",
+          "pageObjectNumber": 11
+        },
+        [
+          11,
+          22,
+          33
+        ]
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "annotatedPons/pages.moved",
+      "fn": "annotatedPons",
+      "args": [
+        {
+          "type": "pages.moved",
+          "pageObjectNumber": 11
+        },
+        [
+          11,
+          22,
+          33
+        ]
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "annotatedPons/pages.deleted",
+      "fn": "annotatedPons",
+      "args": [
+        {
+          "type": "pages.deleted",
+          "pageObjectNumber": 11
+        },
+        [
+          11,
+          22,
+          33
+        ]
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "annotatedPons/metadata.updated",
+      "fn": "annotatedPons",
+      "args": [
+        {
+          "type": "metadata.updated",
+          "pageObjectNumber": 11
+        },
+        [
+          11,
+          22,
+          33
+        ]
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "annotatedPons/redaction.applied",
+      "fn": "annotatedPons",
+      "args": [
+        {
+          "type": "redaction.applied",
+          "pageObjectNumber": 11
+        },
+        [
+          11,
+          22,
+          33
+        ]
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "annotatedPons/unknown",
+      "fn": "annotatedPons",
+      "args": [
+        {
+          "type": "unknown",
+          "pageObjectNumber": 11
+        },
+        [
+          11,
+          22,
+          33
+        ]
+      ],
+      "outcome": {
+        "returned": []
+      }
+    }
+  ]
+}

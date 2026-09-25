@@ -1,7 +1,7 @@
 {
   "total": {
-    "statements": "9586/9600",
-    "branches": "2259/2305"
+    "statements": "11589/11613",
+    "branches": "2680/2743"
   },
   "files": {
     "packages/core/acrojs/src/actions.ts": {
@@ -428,6 +428,112 @@
     },
     "packages/plugin/page-edit/src/types.ts": {
       "statements": "95/95",
+      "branches": "0/0",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/render/src/capability.ts": {
+      "statements": "242/243",
+      "branches": "78/88",
+      "uncoveredLines": [
+        127
+      ],
+      "uncoveredBranches": [
+        "126:37#0",
+        "38:72#0",
+        "48:59#0",
+        "80:21#0",
+        "116:54#0",
+        "154:16#0",
+        "166:26#0",
+        "180:16#0",
+        "196:35#0",
+        "239:46#0"
+      ]
+    },
+    "packages/plugin/render/src/contract.ts": {
+      "statements": "16/16",
+      "branches": "0/0",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/render/src/effects.ts": {
+      "statements": "84/84",
+      "branches": "28/30",
+      "uncoveredLines": [],
+      "uncoveredBranches": [
+        "66:12#0",
+        "67:41#0"
+      ]
+    },
+    "packages/plugin/render/src/index.ts": {
+      "statements": "9/9",
+      "branches": "0/0",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/render/src/paint-plan.ts": {
+      "statements": "194/194",
+      "branches": "29/29",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/render/src/raster-store.ts": {
+      "statements": "175/179",
+      "branches": "52/54",
+      "uncoveredLines": [
+        82,
+        83,
+        87,
+        88
+      ],
+      "uncoveredBranches": [
+        "106:21#0",
+        "178:16#0"
+      ]
+    },
+    "packages/plugin/render/src/reducer.ts": {
+      "statements": "34/34",
+      "branches": "13/13",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/render/src/render.plugin.ts": {
+      "statements": "28/28",
+      "branches": "3/3",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/render/src/strategy.ts": {
+      "statements": "123/123",
+      "branches": "40/40",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/render/src/tile-manager.ts": {
+      "statements": "689/694",
+      "branches": "149/152",
+      "uncoveredLines": [
+        606,
+        607,
+        608,
+        609,
+        610
+      ],
+      "uncoveredBranches": [
+        "524:50#0",
+        "573:50#0",
+        "586:85#0"
+      ]
+    },
+    "packages/plugin/render/src/tiles.ts": {
+      "statements": "186/186",
+      "branches": "29/29",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/render/src/types.ts": {
+      "statements": "223/223",
       "branches": "0/0",
       "uncoveredLines": [],
       "uncoveredBranches": []
