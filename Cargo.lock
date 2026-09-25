@@ -333,6 +333,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "epdf-plugin-annotation"
+version = "0.0.0"
+dependencies = [
+ "epdf-acrojs",
+ "epdf-annotation-core",
+ "epdf-geometry",
+ "epdf-kernel",
+ "epdf-plugin-actions",
+ "epdf-plugin-interaction",
+ "epdf-plugin-render",
+ "epdf-plugin-selection",
+ "plugin-conformance",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "epdf-plugin-commands"
 version = "0.0.0"
 dependencies = [
