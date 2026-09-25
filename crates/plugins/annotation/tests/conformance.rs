@@ -25,6 +25,11 @@ fn crud_matches_the_typescript() {
 }
 
 #[test]
+fn comments_and_links_match_the_typescript() {
+    scenarios("plugins/annotation-comments.json");
+}
+
+#[test]
 fn repository_matches_the_typescript() {
     assert_suite(
         "plugins/annotation-repository.json",
