@@ -1,0 +1,2217 @@
+{
+  "schemaVersion": 1,
+  "kind": "function",
+  "describes": "packages/plugin/selection: selection handle geometry and the handle drag session.",
+  "cases": [
+    {
+      "name": "HANDLE_HEAD/px",
+      "fn": "HANDLE_HEAD",
+      "args": [],
+      "outcome": {
+        "returned": 12
+      }
+    },
+    {
+      "name": "HANDLE_BAR/px",
+      "fn": "HANDLE_BAR",
+      "args": [],
+      "outcome": {
+        "returned": 2
+      }
+    },
+    {
+      "name": "HANDLE_PAD/px",
+      "fn": "HANDLE_PAD",
+      "args": [],
+      "outcome": {
+        "returned": 14
+      }
+    },
+    {
+      "name": "selectionHandleGeom/scaled-upright-start-1",
+      "fn": "selectionHandleGeom",
+      "args": [
+        {
+          "matrices": {
+            "1": [
+              2,
+              0,
+              0,
+              2,
+              100,
+              50
+            ]
+          }
+        },
+        {
+          "pon": 1,
+          "glyphQuad": {
+            "upperStart": {
+              "x": 10,
+              "y": 20
+            },
+            "upperEnd": {
+              "x": 16,
+              "y": 20
+            },
+            "lowerStart": {
+              "x": 10,
+              "y": 32
+            },
+            "lowerEnd": {
+              "x": 16,
+              "y": 32
+            }
+          },
+          "advance": 1
+        },
+        "start"
+      ],
+      "outcome": {
+        "returned": {
+          "bar": {
+            "from": {
+              "x": 120,
+              "y": 90
+            },
+            "to": {
+              "x": 120,
+              "y": 114
+            }
+          },
+          "length": 24,
+          "rotation": 0,
+          "upright": true,
+          "head": {
+            "x": 120,
+            "y": 84
+          }
+        }
+      }
+    },
+    {
+      "name": "selectionHandleGeom/scaled-turned-start-1",
+      "fn": "selectionHandleGeom",
+      "args": [
+        {
+          "matrices": {
+            "1": [
+              2,
+              0,
+              0,
+              2,
+              100,
+              50
+            ]
+          }
+        },
+        {
+          "pon": 1,
+          "glyphQuad": {
+            "upperStart": {
+              "x": 20,
+              "y": 40
+            },
+            "upperEnd": {
+              "x": 20,
+              "y": 34
+            },
+            "lowerStart": {
+              "x": 32,
+              "y": 40
+            },
+            "lowerEnd": {
+              "x": 32,
+              "y": 34
+            }
+          },
+          "advance": 1
+        },
+        "start"
+      ],
+      "outcome": {
+        "returned": {
+          "bar": {
+            "from": {
+              "x": 140,
+              "y": 130
+            },
+            "to": {
+              "x": 164,
+              "y": 130
+            }
+          },
+          "length": 24,
+          "rotation": -90,
+          "upright": false,
+          "head": {
+            "x": 134,
+            "y": 130
+          }
+        }
+      }
+    },
+    {
+      "name": "selectionHandleGeom/tilted-upright-start-1",
+      "fn": "selectionHandleGeom",
+      "args": [
+        {
+          "matrices": {
+            "1": [
+              0.9999998750000026,
+              0.0004999999791666669,
+              -0.0004999999791666669,
+              0.9999998750000026,
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "pon": 1,
+          "glyphQuad": {
+            "upperStart": {
+              "x": 10,
+              "y": 20
+            },
+            "upperEnd": {
+              "x": 16,
+              "y": 20
+            },
+            "lowerStart": {
+              "x": 10,
+              "y": 32
+            },
+            "lowerEnd": {
+              "x": 16,
+              "y": 32
+            }
+          },
+          "advance": 1
+        },
+        "start"
+      ],
+      "outcome": {
+        "returned": {
+          "bar": {
+            "from": {
+              "x": 9.989998750416692,
+              "y": 20.00499749979172
+            },
+            "to": {
+              "x": 9.983998750666693,
+              "y": 32.00499599979175
+            }
+          },
+          "length": 12,
+          "rotation": 0.028647889756555855,
+          "upright": true,
+          "head": {
+            "x": 9.992998750291692,
+            "y": 14.004998249791704
+          }
+        }
+      }
+    },
+    {
+      "name": "selectionHandleGeom/tilted-turned-start-1",
+      "fn": "selectionHandleGeom",
+      "args": [
+        {
+          "matrices": {
+            "1": [
+              0.9999998750000026,
+              0.0004999999791666669,
+              -0.0004999999791666669,
+              0.9999998750000026,
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "pon": 1,
+          "glyphQuad": {
+            "upperStart": {
+              "x": 20,
+              "y": 40
+            },
+            "upperEnd": {
+              "x": 20,
+              "y": 34
+            },
+            "lowerStart": {
+              "x": 32,
+              "y": 40
+            },
+            "lowerEnd": {
+              "x": 32,
+              "y": 34
+            }
+          },
+          "advance": 1
+        },
+        "start"
+      ],
+      "outcome": {
+        "returned": {
+          "bar": {
+            "from": {
+              "x": 19.979997500833385,
+              "y": 40.00999499958344
+            },
+            "to": {
+              "x": 31.979996000833417,
+              "y": 40.01599499933344
+            }
+          },
+          "length": 12,
+          "rotation": -89.97135211024347,
+          "upright": false,
+          "head": {
+            "x": 13.979998250833368,
+            "y": 40.00699499970844
+          }
+        }
+      }
+    },
+    {
+      "name": "selectionHandleGeom/rotated-upright-start-1",
+      "fn": "selectionHandleGeom",
+      "args": [
+        {
+          "matrices": {
+            "1": [
+              0,
+              1,
+              -1,
+              0,
+              500,
+              0
+            ]
+          }
+        },
+        {
+          "pon": 1,
+          "glyphQuad": {
+            "upperStart": {
+              "x": 10,
+              "y": 20
+            },
+            "upperEnd": {
+              "x": 16,
+              "y": 20
+            },
+            "lowerStart": {
+              "x": 10,
+              "y": 32
+            },
+            "lowerEnd": {
+              "x": 16,
+              "y": 32
+            }
+          },
+          "advance": 1
+        },
+        "start"
+      ],
+      "outcome": {
+        "returned": {
+          "bar": {
+            "from": {
+              "x": 480,
+              "y": 10
+            },
+            "to": {
+              "x": 468,
+              "y": 10
+            }
+          },
+          "length": 12,
+          "rotation": 90,
+          "upright": false,
+          "head": {
+            "x": 486,
+            "y": 10
+          }
+        }
+      }
+    },
+    {
+      "name": "selectionHandleGeom/rotated-turned-start-1",
+      "fn": "selectionHandleGeom",
+      "args": [
+        {
+          "matrices": {
+            "1": [
+              0,
+              1,
+              -1,
+              0,
+              500,
+              0
+            ]
+          }
+        },
+        {
+          "pon": 1,
+          "glyphQuad": {
+            "upperStart": {
+              "x": 20,
+              "y": 40
+            },
+            "upperEnd": {
+              "x": 20,
+              "y": 34
+            },
+            "lowerStart": {
+              "x": 32,
+              "y": 40
+            },
+            "lowerEnd": {
+              "x": 32,
+              "y": 34
+            }
+          },
+          "advance": 1
+        },
+        "start"
+      ],
+      "outcome": {
+        "returned": {
+          "bar": {
+            "from": {
+              "x": 460,
+              "y": 20
+            },
+            "to": {
+              "x": 460,
+              "y": 32
+            }
+          },
+          "length": 12,
+          "rotation": 0,
+          "upright": true,
+          "head": {
+            "x": 460,
+            "y": 14
+          }
+        }
+      }
+    },
+    {
+      "name": "selectionHandleGeom/none-upright-start-1",
+      "fn": "selectionHandleGeom",
+      "args": [
+        {
+          "matrices": {}
+        },
+        {
+          "pon": 1,
+          "glyphQuad": {
+            "upperStart": {
+              "x": 10,
+              "y": 20
+            },
+            "upperEnd": {
+              "x": 16,
+              "y": 20
+            },
+            "lowerStart": {
+              "x": 10,
+              "y": 32
+            },
+            "lowerEnd": {
+              "x": 16,
+              "y": 32
+            }
+          },
+          "advance": 1
+        },
+        "start"
+      ],
+      "outcome": {
+        "returned": null
+      }
+    },
+    {
+      "name": "selectionHandleGeom/none-turned-start-1",
+      "fn": "selectionHandleGeom",
+      "args": [
+        {
+          "matrices": {}
+        },
+        {
+          "pon": 1,
+          "glyphQuad": {
+            "upperStart": {
+              "x": 20,
+              "y": 40
+            },
+            "upperEnd": {
+              "x": 20,
+              "y": 34
+            },
+            "lowerStart": {
+              "x": 32,
+              "y": 40
+            },
+            "lowerEnd": {
+              "x": 32,
+              "y": 34
+            }
+          },
+          "advance": 1
+        },
+        "start"
+      ],
+      "outcome": {
+        "returned": null
+      }
+    },
+    {
+      "name": "selectionHandleGeom/scaled-upright-start--1",
+      "fn": "selectionHandleGeom",
+      "args": [
+        {
+          "matrices": {
+            "1": [
+              2,
+              0,
+              0,
+              2,
+              100,
+              50
+            ]
+          }
+        },
+        {
+          "pon": 1,
+          "glyphQuad": {
+            "upperStart": {
+              "x": 10,
+              "y": 20
+            },
+            "upperEnd": {
+              "x": 16,
+              "y": 20
+            },
+            "lowerStart": {
+              "x": 10,
+              "y": 32
+            },
+            "lowerEnd": {
+              "x": 16,
+              "y": 32
+            }
+          },
+          "advance": -1
+        },
+        "start"
+      ],
+      "outcome": {
+        "returned": {
+          "bar": {
+            "from": {
+              "x": 132,
+              "y": 90
+            },
+            "to": {
+              "x": 132,
+              "y": 114
+            }
+          },
+          "length": 24,
+          "rotation": 0,
+          "upright": true,
+          "head": {
+            "x": 132,
+            "y": 84
+          }
+        }
+      }
+    },
+    {
+      "name": "selectionHandleGeom/scaled-turned-start--1",
+      "fn": "selectionHandleGeom",
+      "args": [
+        {
+          "matrices": {
+            "1": [
+              2,
+              0,
+              0,
+              2,
+              100,
+              50
+            ]
+          }
+        },
+        {
+          "pon": 1,
+          "glyphQuad": {
+            "upperStart": {
+              "x": 20,
+              "y": 40
+            },
+            "upperEnd": {
+              "x": 20,
+              "y": 34
+            },
+            "lowerStart": {
+              "x": 32,
+              "y": 40
+            },
+            "lowerEnd": {
+              "x": 32,
+              "y": 34
+            }
+          },
+          "advance": -1
+        },
+        "start"
+      ],
+      "outcome": {
+        "returned": {
+          "bar": {
+            "from": {
+              "x": 140,
+              "y": 118
+            },
+            "to": {
+              "x": 164,
+              "y": 118
+            }
+          },
+          "length": 24,
+          "rotation": -90,
+          "upright": false,
+          "head": {
+            "x": 134,
+            "y": 118
+          }
+        }
+      }
+    },
+    {
+      "name": "selectionHandleGeom/tilted-upright-start--1",
+      "fn": "selectionHandleGeom",
+      "args": [
+        {
+          "matrices": {
+            "1": [
+              0.9999998750000026,
+              0.0004999999791666669,
+              -0.0004999999791666669,
+              0.9999998750000026,
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "pon": 1,
+          "glyphQuad": {
+            "upperStart": {
+              "x": 10,
+              "y": 20
+            },
+            "upperEnd": {
+              "x": 16,
+              "y": 20
+            },
+            "lowerStart": {
+              "x": 10,
+              "y": 32
+            },
+            "lowerEnd": {
+              "x": 16,
+              "y": 32
+            }
+          },
+          "advance": -1
+        },
+        "start"
+      ],
+      "outcome": {
+        "returned": {
+          "bar": {
+            "from": {
+              "x": 15.989998000416708,
+              "y": 20.00799749966672
+            },
+            "to": {
+              "x": 15.983998000666709,
+              "y": 32.007995999666754
+            }
+          },
+          "length": 12.000000000000004,
+          "rotation": 0.028647889756555855,
+          "upright": true,
+          "head": {
+            "x": 15.992998000291708,
+            "y": 14.007998249666702
+          }
+        }
+      }
+    },
+    {
+      "name": "selectionHandleGeom/tilted-turned-start--1",
+      "fn": "selectionHandleGeom",
+      "args": [
+        {
+          "matrices": {
+            "1": [
+              0.9999998750000026,
+              0.0004999999791666669,
+              -0.0004999999791666669,
+              0.9999998750000026,
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "pon": 1,
+          "glyphQuad": {
+            "upperStart": {
+              "x": 20,
+              "y": 40
+            },
+            "upperEnd": {
+              "x": 20,
+              "y": 34
+            },
+            "lowerStart": {
+              "x": 32,
+              "y": 40
+            },
+            "lowerEnd": {
+              "x": 32,
+              "y": 34
+            }
+          },
+          "advance": -1
+        },
+        "start"
+      ],
+      "outcome": {
+        "returned": {
+          "bar": {
+            "from": {
+              "x": 19.982997500708386,
+              "y": 34.009995749583425
+            },
+            "to": {
+              "x": 31.982996000708418,
+              "y": 34.01599574933342
+            }
+          },
+          "length": 12,
+          "rotation": -89.97135211024347,
+          "upright": false,
+          "head": {
+            "x": 13.98299825070837,
+            "y": 34.00699574970842
+          }
+        }
+      }
+    },
+    {
+      "name": "selectionHandleGeom/rotated-upright-start--1",
+      "fn": "selectionHandleGeom",
+      "args": [
+        {
+          "matrices": {
+            "1": [
+              0,
+              1,
+              -1,
+              0,
+              500,
+              0
+            ]
+          }
+        },
+        {
+          "pon": 1,
+          "glyphQuad": {
+            "upperStart": {
+              "x": 10,
+              "y": 20
+            },
+            "upperEnd": {
+              "x": 16,
+              "y": 20
+            },
+            "lowerStart": {
+              "x": 10,
+              "y": 32
+            },
+            "lowerEnd": {
+              "x": 16,
+              "y": 32
+            }
+          },
+          "advance": -1
+        },
+        "start"
+      ],
+      "outcome": {
+        "returned": {
+          "bar": {
+            "from": {
+              "x": 480,
+              "y": 16
+            },
+            "to": {
+              "x": 468,
+              "y": 16
+            }
+          },
+          "length": 12,
+          "rotation": 90,
+          "upright": false,
+          "head": {
+            "x": 486,
+            "y": 16
+          }
+        }
+      }
+    },
+    {
+      "name": "selectionHandleGeom/rotated-turned-start--1",
+      "fn": "selectionHandleGeom",
+      "args": [
+        {
+          "matrices": {
+            "1": [
+              0,
+              1,
+              -1,
+              0,
+              500,
+              0
+            ]
+          }
+        },
+        {
+          "pon": 1,
+          "glyphQuad": {
+            "upperStart": {
+              "x": 20,
+              "y": 40
+            },
+            "upperEnd": {
+              "x": 20,
+              "y": 34
+            },
+            "lowerStart": {
+              "x": 32,
+              "y": 40
+            },
+            "lowerEnd": {
+              "x": 32,
+              "y": 34
+            }
+          },
+          "advance": -1
+        },
+        "start"
+      ],
+      "outcome": {
+        "returned": {
+          "bar": {
+            "from": {
+              "x": 466,
+              "y": 20
+            },
+            "to": {
+              "x": 466,
+              "y": 32
+            }
+          },
+          "length": 12,
+          "rotation": 0,
+          "upright": true,
+          "head": {
+            "x": 466,
+            "y": 14
+          }
+        }
+      }
+    },
+    {
+      "name": "selectionHandleGeom/none-upright-start--1",
+      "fn": "selectionHandleGeom",
+      "args": [
+        {
+          "matrices": {}
+        },
+        {
+          "pon": 1,
+          "glyphQuad": {
+            "upperStart": {
+              "x": 10,
+              "y": 20
+            },
+            "upperEnd": {
+              "x": 16,
+              "y": 20
+            },
+            "lowerStart": {
+              "x": 10,
+              "y": 32
+            },
+            "lowerEnd": {
+              "x": 16,
+              "y": 32
+            }
+          },
+          "advance": -1
+        },
+        "start"
+      ],
+      "outcome": {
+        "returned": null
+      }
+    },
+    {
+      "name": "selectionHandleGeom/none-turned-start--1",
+      "fn": "selectionHandleGeom",
+      "args": [
+        {
+          "matrices": {}
+        },
+        {
+          "pon": 1,
+          "glyphQuad": {
+            "upperStart": {
+              "x": 20,
+              "y": 40
+            },
+            "upperEnd": {
+              "x": 20,
+              "y": 34
+            },
+            "lowerStart": {
+              "x": 32,
+              "y": 40
+            },
+            "lowerEnd": {
+              "x": 32,
+              "y": 34
+            }
+          },
+          "advance": -1
+        },
+        "start"
+      ],
+      "outcome": {
+        "returned": null
+      }
+    },
+    {
+      "name": "selectionHandleGeom/scaled-upright-end-1",
+      "fn": "selectionHandleGeom",
+      "args": [
+        {
+          "matrices": {
+            "1": [
+              2,
+              0,
+              0,
+              2,
+              100,
+              50
+            ]
+          }
+        },
+        {
+          "pon": 1,
+          "glyphQuad": {
+            "upperStart": {
+              "x": 10,
+              "y": 20
+            },
+            "upperEnd": {
+              "x": 16,
+              "y": 20
+            },
+            "lowerStart": {
+              "x": 10,
+              "y": 32
+            },
+            "lowerEnd": {
+              "x": 16,
+              "y": 32
+            }
+          },
+          "advance": 1
+        },
+        "end"
+      ],
+      "outcome": {
+        "returned": {
+          "bar": {
+            "from": {
+              "x": 132,
+              "y": 90
+            },
+            "to": {
+              "x": 132,
+              "y": 114
+            }
+          },
+          "length": 24,
+          "rotation": 0,
+          "upright": true,
+          "head": {
+            "x": 132,
+            "y": 120
+          }
+        }
+      }
+    },
+    {
+      "name": "selectionHandleGeom/scaled-turned-end-1",
+      "fn": "selectionHandleGeom",
+      "args": [
+        {
+          "matrices": {
+            "1": [
+              2,
+              0,
+              0,
+              2,
+              100,
+              50
+            ]
+          }
+        },
+        {
+          "pon": 1,
+          "glyphQuad": {
+            "upperStart": {
+              "x": 20,
+              "y": 40
+            },
+            "upperEnd": {
+              "x": 20,
+              "y": 34
+            },
+            "lowerStart": {
+              "x": 32,
+              "y": 40
+            },
+            "lowerEnd": {
+              "x": 32,
+              "y": 34
+            }
+          },
+          "advance": 1
+        },
+        "end"
+      ],
+      "outcome": {
+        "returned": {
+          "bar": {
+            "from": {
+              "x": 140,
+              "y": 118
+            },
+            "to": {
+              "x": 164,
+              "y": 118
+            }
+          },
+          "length": 24,
+          "rotation": -90,
+          "upright": false,
+          "head": {
+            "x": 170,
+            "y": 118
+          }
+        }
+      }
+    },
+    {
+      "name": "selectionHandleGeom/tilted-upright-end-1",
+      "fn": "selectionHandleGeom",
+      "args": [
+        {
+          "matrices": {
+            "1": [
+              0.9999998750000026,
+              0.0004999999791666669,
+              -0.0004999999791666669,
+              0.9999998750000026,
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "pon": 1,
+          "glyphQuad": {
+            "upperStart": {
+              "x": 10,
+              "y": 20
+            },
+            "upperEnd": {
+              "x": 16,
+              "y": 20
+            },
+            "lowerStart": {
+              "x": 10,
+              "y": 32
+            },
+            "lowerEnd": {
+              "x": 16,
+              "y": 32
+            }
+          },
+          "advance": 1
+        },
+        "end"
+      ],
+      "outcome": {
+        "returned": {
+          "bar": {
+            "from": {
+              "x": 15.989998000416708,
+              "y": 20.00799749966672
+            },
+            "to": {
+              "x": 15.983998000666709,
+              "y": 32.007995999666754
+            }
+          },
+          "length": 12.000000000000004,
+          "rotation": 0.028647889756555855,
+          "upright": true,
+          "head": {
+            "x": 15.98099800079171,
+            "y": 38.00799524966677
+          }
+        }
+      }
+    },
+    {
+      "name": "selectionHandleGeom/tilted-turned-end-1",
+      "fn": "selectionHandleGeom",
+      "args": [
+        {
+          "matrices": {
+            "1": [
+              0.9999998750000026,
+              0.0004999999791666669,
+              -0.0004999999791666669,
+              0.9999998750000026,
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "pon": 1,
+          "glyphQuad": {
+            "upperStart": {
+              "x": 20,
+              "y": 40
+            },
+            "upperEnd": {
+              "x": 20,
+              "y": 34
+            },
+            "lowerStart": {
+              "x": 32,
+              "y": 40
+            },
+            "lowerEnd": {
+              "x": 32,
+              "y": 34
+            }
+          },
+          "advance": 1
+        },
+        "end"
+      ],
+      "outcome": {
+        "returned": {
+          "bar": {
+            "from": {
+              "x": 19.982997500708386,
+              "y": 34.009995749583425
+            },
+            "to": {
+              "x": 31.982996000708418,
+              "y": 34.01599574933342
+            }
+          },
+          "length": 12,
+          "rotation": -89.97135211024347,
+          "upright": false,
+          "head": {
+            "x": 37.982995250708434,
+            "y": 34.018995749208415
+          }
+        }
+      }
+    },
+    {
+      "name": "selectionHandleGeom/rotated-upright-end-1",
+      "fn": "selectionHandleGeom",
+      "args": [
+        {
+          "matrices": {
+            "1": [
+              0,
+              1,
+              -1,
+              0,
+              500,
+              0
+            ]
+          }
+        },
+        {
+          "pon": 1,
+          "glyphQuad": {
+            "upperStart": {
+              "x": 10,
+              "y": 20
+            },
+            "upperEnd": {
+              "x": 16,
+              "y": 20
+            },
+            "lowerStart": {
+              "x": 10,
+              "y": 32
+            },
+            "lowerEnd": {
+              "x": 16,
+              "y": 32
+            }
+          },
+          "advance": 1
+        },
+        "end"
+      ],
+      "outcome": {
+        "returned": {
+          "bar": {
+            "from": {
+              "x": 480,
+              "y": 16
+            },
+            "to": {
+              "x": 468,
+              "y": 16
+            }
+          },
+          "length": 12,
+          "rotation": 90,
+          "upright": false,
+          "head": {
+            "x": 462,
+            "y": 16
+          }
+        }
+      }
+    },
+    {
+      "name": "selectionHandleGeom/rotated-turned-end-1",
+      "fn": "selectionHandleGeom",
+      "args": [
+        {
+          "matrices": {
+            "1": [
+              0,
+              1,
+              -1,
+              0,
+              500,
+              0
+            ]
+          }
+        },
+        {
+          "pon": 1,
+          "glyphQuad": {
+            "upperStart": {
+              "x": 20,
+              "y": 40
+            },
+            "upperEnd": {
+              "x": 20,
+              "y": 34
+            },
+            "lowerStart": {
+              "x": 32,
+              "y": 40
+            },
+            "lowerEnd": {
+              "x": 32,
+              "y": 34
+            }
+          },
+          "advance": 1
+        },
+        "end"
+      ],
+      "outcome": {
+        "returned": {
+          "bar": {
+            "from": {
+              "x": 466,
+              "y": 20
+            },
+            "to": {
+              "x": 466,
+              "y": 32
+            }
+          },
+          "length": 12,
+          "rotation": 0,
+          "upright": true,
+          "head": {
+            "x": 466,
+            "y": 38
+          }
+        }
+      }
+    },
+    {
+      "name": "selectionHandleGeom/none-upright-end-1",
+      "fn": "selectionHandleGeom",
+      "args": [
+        {
+          "matrices": {}
+        },
+        {
+          "pon": 1,
+          "glyphQuad": {
+            "upperStart": {
+              "x": 10,
+              "y": 20
+            },
+            "upperEnd": {
+              "x": 16,
+              "y": 20
+            },
+            "lowerStart": {
+              "x": 10,
+              "y": 32
+            },
+            "lowerEnd": {
+              "x": 16,
+              "y": 32
+            }
+          },
+          "advance": 1
+        },
+        "end"
+      ],
+      "outcome": {
+        "returned": null
+      }
+    },
+    {
+      "name": "selectionHandleGeom/none-turned-end-1",
+      "fn": "selectionHandleGeom",
+      "args": [
+        {
+          "matrices": {}
+        },
+        {
+          "pon": 1,
+          "glyphQuad": {
+            "upperStart": {
+              "x": 20,
+              "y": 40
+            },
+            "upperEnd": {
+              "x": 20,
+              "y": 34
+            },
+            "lowerStart": {
+              "x": 32,
+              "y": 40
+            },
+            "lowerEnd": {
+              "x": 32,
+              "y": 34
+            }
+          },
+          "advance": 1
+        },
+        "end"
+      ],
+      "outcome": {
+        "returned": null
+      }
+    },
+    {
+      "name": "selectionHandleGeom/scaled-upright-end--1",
+      "fn": "selectionHandleGeom",
+      "args": [
+        {
+          "matrices": {
+            "1": [
+              2,
+              0,
+              0,
+              2,
+              100,
+              50
+            ]
+          }
+        },
+        {
+          "pon": 1,
+          "glyphQuad": {
+            "upperStart": {
+              "x": 10,
+              "y": 20
+            },
+            "upperEnd": {
+              "x": 16,
+              "y": 20
+            },
+            "lowerStart": {
+              "x": 10,
+              "y": 32
+            },
+            "lowerEnd": {
+              "x": 16,
+              "y": 32
+            }
+          },
+          "advance": -1
+        },
+        "end"
+      ],
+      "outcome": {
+        "returned": {
+          "bar": {
+            "from": {
+              "x": 120,
+              "y": 90
+            },
+            "to": {
+              "x": 120,
+              "y": 114
+            }
+          },
+          "length": 24,
+          "rotation": 0,
+          "upright": true,
+          "head": {
+            "x": 120,
+            "y": 120
+          }
+        }
+      }
+    },
+    {
+      "name": "selectionHandleGeom/scaled-turned-end--1",
+      "fn": "selectionHandleGeom",
+      "args": [
+        {
+          "matrices": {
+            "1": [
+              2,
+              0,
+              0,
+              2,
+              100,
+              50
+            ]
+          }
+        },
+        {
+          "pon": 1,
+          "glyphQuad": {
+            "upperStart": {
+              "x": 20,
+              "y": 40
+            },
+            "upperEnd": {
+              "x": 20,
+              "y": 34
+            },
+            "lowerStart": {
+              "x": 32,
+              "y": 40
+            },
+            "lowerEnd": {
+              "x": 32,
+              "y": 34
+            }
+          },
+          "advance": -1
+        },
+        "end"
+      ],
+      "outcome": {
+        "returned": {
+          "bar": {
+            "from": {
+              "x": 140,
+              "y": 130
+            },
+            "to": {
+              "x": 164,
+              "y": 130
+            }
+          },
+          "length": 24,
+          "rotation": -90,
+          "upright": false,
+          "head": {
+            "x": 170,
+            "y": 130
+          }
+        }
+      }
+    },
+    {
+      "name": "selectionHandleGeom/tilted-upright-end--1",
+      "fn": "selectionHandleGeom",
+      "args": [
+        {
+          "matrices": {
+            "1": [
+              0.9999998750000026,
+              0.0004999999791666669,
+              -0.0004999999791666669,
+              0.9999998750000026,
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "pon": 1,
+          "glyphQuad": {
+            "upperStart": {
+              "x": 10,
+              "y": 20
+            },
+            "upperEnd": {
+              "x": 16,
+              "y": 20
+            },
+            "lowerStart": {
+              "x": 10,
+              "y": 32
+            },
+            "lowerEnd": {
+              "x": 16,
+              "y": 32
+            }
+          },
+          "advance": -1
+        },
+        "end"
+      ],
+      "outcome": {
+        "returned": {
+          "bar": {
+            "from": {
+              "x": 9.989998750416692,
+              "y": 20.00499749979172
+            },
+            "to": {
+              "x": 9.983998750666693,
+              "y": 32.00499599979175
+            }
+          },
+          "length": 12,
+          "rotation": 0.028647889756555855,
+          "upright": true,
+          "head": {
+            "x": 9.980998750791693,
+            "y": 38.00499524979177
+          }
+        }
+      }
+    },
+    {
+      "name": "selectionHandleGeom/tilted-turned-end--1",
+      "fn": "selectionHandleGeom",
+      "args": [
+        {
+          "matrices": {
+            "1": [
+              0.9999998750000026,
+              0.0004999999791666669,
+              -0.0004999999791666669,
+              0.9999998750000026,
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "pon": 1,
+          "glyphQuad": {
+            "upperStart": {
+              "x": 20,
+              "y": 40
+            },
+            "upperEnd": {
+              "x": 20,
+              "y": 34
+            },
+            "lowerStart": {
+              "x": 32,
+              "y": 40
+            },
+            "lowerEnd": {
+              "x": 32,
+              "y": 34
+            }
+          },
+          "advance": -1
+        },
+        "end"
+      ],
+      "outcome": {
+        "returned": {
+          "bar": {
+            "from": {
+              "x": 19.979997500833385,
+              "y": 40.00999499958344
+            },
+            "to": {
+              "x": 31.979996000833417,
+              "y": 40.01599499933344
+            }
+          },
+          "length": 12,
+          "rotation": -89.97135211024347,
+          "upright": false,
+          "head": {
+            "x": 37.97999525083343,
+            "y": 40.01899499920843
+          }
+        }
+      }
+    },
+    {
+      "name": "selectionHandleGeom/rotated-upright-end--1",
+      "fn": "selectionHandleGeom",
+      "args": [
+        {
+          "matrices": {
+            "1": [
+              0,
+              1,
+              -1,
+              0,
+              500,
+              0
+            ]
+          }
+        },
+        {
+          "pon": 1,
+          "glyphQuad": {
+            "upperStart": {
+              "x": 10,
+              "y": 20
+            },
+            "upperEnd": {
+              "x": 16,
+              "y": 20
+            },
+            "lowerStart": {
+              "x": 10,
+              "y": 32
+            },
+            "lowerEnd": {
+              "x": 16,
+              "y": 32
+            }
+          },
+          "advance": -1
+        },
+        "end"
+      ],
+      "outcome": {
+        "returned": {
+          "bar": {
+            "from": {
+              "x": 480,
+              "y": 10
+            },
+            "to": {
+              "x": 468,
+              "y": 10
+            }
+          },
+          "length": 12,
+          "rotation": 90,
+          "upright": false,
+          "head": {
+            "x": 462,
+            "y": 10
+          }
+        }
+      }
+    },
+    {
+      "name": "selectionHandleGeom/rotated-turned-end--1",
+      "fn": "selectionHandleGeom",
+      "args": [
+        {
+          "matrices": {
+            "1": [
+              0,
+              1,
+              -1,
+              0,
+              500,
+              0
+            ]
+          }
+        },
+        {
+          "pon": 1,
+          "glyphQuad": {
+            "upperStart": {
+              "x": 20,
+              "y": 40
+            },
+            "upperEnd": {
+              "x": 20,
+              "y": 34
+            },
+            "lowerStart": {
+              "x": 32,
+              "y": 40
+            },
+            "lowerEnd": {
+              "x": 32,
+              "y": 34
+            }
+          },
+          "advance": -1
+        },
+        "end"
+      ],
+      "outcome": {
+        "returned": {
+          "bar": {
+            "from": {
+              "x": 460,
+              "y": 20
+            },
+            "to": {
+              "x": 460,
+              "y": 32
+            }
+          },
+          "length": 12,
+          "rotation": 0,
+          "upright": true,
+          "head": {
+            "x": 460,
+            "y": 38
+          }
+        }
+      }
+    },
+    {
+      "name": "selectionHandleGeom/none-upright-end--1",
+      "fn": "selectionHandleGeom",
+      "args": [
+        {
+          "matrices": {}
+        },
+        {
+          "pon": 1,
+          "glyphQuad": {
+            "upperStart": {
+              "x": 10,
+              "y": 20
+            },
+            "upperEnd": {
+              "x": 16,
+              "y": 20
+            },
+            "lowerStart": {
+              "x": 10,
+              "y": 32
+            },
+            "lowerEnd": {
+              "x": 16,
+              "y": 32
+            }
+          },
+          "advance": -1
+        },
+        "end"
+      ],
+      "outcome": {
+        "returned": null
+      }
+    },
+    {
+      "name": "selectionHandleGeom/none-turned-end--1",
+      "fn": "selectionHandleGeom",
+      "args": [
+        {
+          "matrices": {}
+        },
+        {
+          "pon": 1,
+          "glyphQuad": {
+            "upperStart": {
+              "x": 20,
+              "y": 40
+            },
+            "upperEnd": {
+              "x": 20,
+              "y": 34
+            },
+            "lowerStart": {
+              "x": 32,
+              "y": 40
+            },
+            "lowerEnd": {
+              "x": 32,
+              "y": 34
+            }
+          },
+          "advance": -1
+        },
+        "end"
+      ],
+      "outcome": {
+        "returned": null
+      }
+    },
+    {
+      "name": "selectionHandleGeom/degenerate-cell",
+      "fn": "selectionHandleGeom",
+      "args": [
+        {
+          "matrices": {
+            "1": [
+              2,
+              0,
+              0,
+              2,
+              100,
+              50
+            ]
+          }
+        },
+        {
+          "pon": 1,
+          "glyphQuad": {
+            "upperStart": {
+              "x": 5,
+              "y": 5
+            },
+            "upperEnd": {
+              "x": 5,
+              "y": 5
+            },
+            "lowerStart": {
+              "x": 5,
+              "y": 5
+            },
+            "lowerEnd": {
+              "x": 5,
+              "y": 5
+            }
+          },
+          "advance": 1
+        },
+        "start"
+      ],
+      "outcome": {
+        "returned": null
+      }
+    },
+    {
+      "name": "selectionHandleGeom/half-projected",
+      "fn": "selectionHandleGeom",
+      "args": [
+        {
+          "matrices": {
+            "1": [
+              2,
+              0,
+              0,
+              2,
+              100,
+              50
+            ]
+          }
+        },
+        {
+          "pon": 2,
+          "glyphQuad": {
+            "upperStart": {
+              "x": 10,
+              "y": 20
+            },
+            "upperEnd": {
+              "x": 16,
+              "y": 20
+            },
+            "lowerStart": {
+              "x": 10,
+              "y": 32
+            },
+            "lowerEnd": {
+              "x": 16,
+              "y": 32
+            }
+          },
+          "advance": 1
+        },
+        "end"
+      ],
+      "outcome": {
+        "returned": null
+      }
+    },
+    {
+      "name": "handleDrag/untouched-press-settles-nothing",
+      "fn": "handleDrag",
+      "args": [
+        {
+          "pages": [
+            {
+              "pon": 1,
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 100,
+                "height": 100
+              }
+            }
+          ]
+        },
+        {
+          "pon": 1,
+          "glyphQuad": {
+            "upperStart": {
+              "x": 10,
+              "y": 20
+            },
+            "upperEnd": {
+              "x": 16,
+              "y": 20
+            },
+            "lowerStart": {
+              "x": 10,
+              "y": 32
+            },
+            "lowerEnd": {
+              "x": 16,
+              "y": 32
+            }
+          },
+          "advance": 1
+        },
+        1,
+        [
+          true
+        ],
+        [
+          "end"
+        ]
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "handleDrag/moves-extend-and-end-commits",
+      "fn": "handleDrag",
+      "args": [
+        {
+          "pages": [
+            {
+              "pon": 1,
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 100,
+                "height": 100
+              }
+            },
+            {
+              "pon": 2,
+              "rect": {
+                "x": 0,
+                "y": 110,
+                "width": 100,
+                "height": 100
+              }
+            }
+          ]
+        },
+        {
+          "pon": 1,
+          "glyphQuad": {
+            "upperStart": {
+              "x": 20,
+              "y": 40
+            },
+            "upperEnd": {
+              "x": 20,
+              "y": 34
+            },
+            "lowerStart": {
+              "x": 32,
+              "y": 40
+            },
+            "lowerEnd": {
+              "x": 32,
+              "y": 34
+            }
+          },
+          "advance": -1
+        },
+        1,
+        [
+          true
+        ],
+        [
+          {
+            "x": 40,
+            "y": 30
+          },
+          {
+            "x": 50,
+            "y": 120
+          },
+          {
+            "x": 50,
+            "y": 105
+          },
+          "end"
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "beginAt": [
+              1,
+              {
+                "x": 26,
+                "y": 37
+              }
+            ],
+            "answer": true
+          },
+          {
+            "extendTo": [
+              1,
+              {
+                "x": 40,
+                "y": 30
+              }
+            ]
+          },
+          {
+            "extendTo": [
+              2,
+              {
+                "x": 50,
+                "y": 10
+              }
+            ]
+          },
+          {
+            "extendTo": [
+              2,
+              {
+                "x": 50,
+                "y": -5
+              }
+            ]
+          },
+          {
+            "end": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "handleDrag/begin-refused-then-accepted",
+      "fn": "handleDrag",
+      "args": [
+        {
+          "pages": [
+            {
+              "pon": 1,
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 100,
+                "height": 100
+              }
+            }
+          ]
+        },
+        {
+          "pon": 1,
+          "glyphQuad": {
+            "upperStart": {
+              "x": 10,
+              "y": 20
+            },
+            "upperEnd": {
+              "x": 16,
+              "y": 20
+            },
+            "lowerStart": {
+              "x": 10,
+              "y": 32
+            },
+            "lowerEnd": {
+              "x": 16,
+              "y": 32
+            }
+          },
+          "advance": 1
+        },
+        1,
+        [
+          false,
+          true
+        ],
+        [
+          {
+            "x": 1,
+            "y": 1
+          },
+          "end",
+          {
+            "x": 2,
+            "y": 2
+          },
+          {
+            "x": 3,
+            "y": 3
+          },
+          "end"
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "beginAt": [
+              1,
+              {
+                "x": 13,
+                "y": 26
+              }
+            ],
+            "answer": false
+          },
+          {
+            "beginAt": [
+              1,
+              {
+                "x": 13,
+                "y": 26
+              }
+            ],
+            "answer": true
+          },
+          {
+            "extendTo": [
+              1,
+              {
+                "x": 2,
+                "y": 2
+              }
+            ]
+          },
+          {
+            "extendTo": [
+              1,
+              {
+                "x": 3,
+                "y": 3
+              }
+            ]
+          },
+          {
+            "end": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "handleDrag/gap-with-no-home-page",
+      "fn": "handleDrag",
+      "args": [
+        {
+          "pages": []
+        },
+        {
+          "pon": 1,
+          "glyphQuad": {
+            "upperStart": {
+              "x": 10,
+              "y": 20
+            },
+            "upperEnd": {
+              "x": 16,
+              "y": 20
+            },
+            "lowerStart": {
+              "x": 10,
+              "y": 32
+            },
+            "lowerEnd": {
+              "x": 16,
+              "y": 32
+            }
+          },
+          "advance": 1
+        },
+        3,
+        [
+          true
+        ],
+        [
+          {
+            "x": 1,
+            "y": 1
+          },
+          "end"
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "beginAt": [
+              1,
+              {
+                "x": 13,
+                "y": 26
+              }
+            ],
+            "answer": true
+          },
+          {
+            "end": []
+          }
+        ]
+      }
+    }
+  ]
+}
