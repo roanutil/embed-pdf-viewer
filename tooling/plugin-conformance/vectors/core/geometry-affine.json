@@ -1,0 +1,2636 @@
+{
+  "schemaVersion": 1,
+  "kind": "function",
+  "describes": "packages/core/geometry: Mat2D compose, invert, apply*, builders and matrixToCss.",
+  "cases": [
+    {
+      "name": "identity/six-numbers",
+      "fn": "identity",
+      "args": [],
+      "outcome": {
+        "returned": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "name": "translate/basic",
+      "fn": "translate",
+      "args": [
+        5,
+        -3
+      ],
+      "outcome": {
+        "returned": [
+          1,
+          0,
+          0,
+          1,
+          5,
+          -3
+        ]
+      }
+    },
+    {
+      "name": "translate/zero",
+      "fn": "translate",
+      "args": [
+        0,
+        0
+      ],
+      "outcome": {
+        "returned": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "name": "translate/nan",
+      "fn": "translate",
+      "args": [
+        {
+          "$number": "NaN"
+        },
+        {
+          "$number": "Infinity"
+        }
+      ],
+      "outcome": {
+        "returned": [
+          1,
+          0,
+          0,
+          1,
+          {
+            "$number": "NaN"
+          },
+          {
+            "$number": "Infinity"
+          }
+        ]
+      }
+    },
+    {
+      "name": "scale/basic",
+      "fn": "scale",
+      "args": [
+        2,
+        3
+      ],
+      "outcome": {
+        "returned": [
+          2,
+          0,
+          0,
+          3,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "name": "scale/zero",
+      "fn": "scale",
+      "args": [
+        0,
+        -1
+      ],
+      "outcome": {
+        "returned": [
+          0,
+          0,
+          0,
+          -1,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "name": "rotate/zero",
+      "fn": "rotate",
+      "args": [
+        0
+      ],
+      "outcome": {
+        "returned": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "name": "rotate/half-pi",
+      "fn": "rotate",
+      "args": [
+        1.5707963267948966
+      ],
+      "outcome": {
+        "returned": [
+          6.123233995736766e-17,
+          1,
+          -1,
+          6.123233995736766e-17,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "name": "rotate/pi",
+      "fn": "rotate",
+      "args": [
+        3.141592653589793
+      ],
+      "outcome": {
+        "returned": [
+          -1,
+          1.2246467991473532e-16,
+          -1.2246467991473532e-16,
+          -1,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "name": "rotate/0.7",
+      "fn": "rotate",
+      "args": [
+        0.7
+      ],
+      "outcome": {
+        "returned": [
+          0.7648421872844885,
+          0.644217687237691,
+          -0.644217687237691,
+          0.7648421872844885,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "name": "rotate/negative",
+      "fn": "rotate",
+      "args": [
+        -1.2345
+      ],
+      "outcome": {
+        "returned": [
+          0.32999315767856785,
+          -0.9439833239445111,
+          0.9439833239445111,
+          0.32999315767856785,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "name": "rotate/large",
+      "fn": "rotate",
+      "args": [
+        1000
+      ],
+      "outcome": {
+        "returned": [
+          0.5623790762907029,
+          0.8268795405320025,
+          -0.8268795405320025,
+          0.5623790762907029,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "name": "rotate/nan",
+      "fn": "rotate",
+      "args": [
+        {
+          "$number": "NaN"
+        }
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "$number": "NaN"
+          },
+          {
+            "$number": "NaN"
+          },
+          {
+            "$number": "NaN"
+          },
+          {
+            "$number": "NaN"
+          },
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "name": "rotate/infinity",
+      "fn": "rotate",
+      "args": [
+        {
+          "$number": "Infinity"
+        }
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "$number": "NaN"
+          },
+          {
+            "$number": "NaN"
+          },
+          {
+            "$number": "NaN"
+          },
+          {
+            "$number": "NaN"
+          },
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "name": "rotateAbout/pivot",
+      "fn": "rotateAbout",
+      "args": [
+        {
+          "x": 10,
+          "y": 20
+        },
+        1.2345
+      ],
+      "outcome": {
+        "returned": [
+          0.32999315767856785,
+          0.9439833239445111,
+          -0.9439833239445111,
+          0.32999315767856785,
+          25.579734902104544,
+          3.96030360698353
+        ]
+      }
+    },
+    {
+      "name": "rotateAbout/origin",
+      "fn": "rotateAbout",
+      "args": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        1.5707963267948966
+      ],
+      "outcome": {
+        "returned": [
+          6.123233995736766e-17,
+          1,
+          -1,
+          6.123233995736766e-17,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "name": "rotateAbout/negative-pivot",
+      "fn": "rotateAbout",
+      "args": [
+        {
+          "x": -3,
+          "y": 4
+        },
+        -0.7
+      ],
+      "outcome": {
+        "returned": [
+          0.7648421872844885,
+          -0.644217687237691,
+          0.644217687237691,
+          0.7648421872844885,
+          -3.2823441870972987,
+          -0.9920218108510266
+        ]
+      }
+    },
+    {
+      "name": "rotateAbout/zero-angle",
+      "fn": "rotateAbout",
+      "args": [
+        {
+          "x": 5,
+          "y": 5
+        },
+        0
+      ],
+      "outcome": {
+        "returned": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "name": "scaleAbout/anchor",
+      "fn": "scaleAbout",
+      "args": [
+        {
+          "x": 10,
+          "y": 10
+        },
+        2,
+        2
+      ],
+      "outcome": {
+        "returned": [
+          2,
+          0,
+          0,
+          2,
+          -10,
+          -10
+        ]
+      }
+    },
+    {
+      "name": "scaleAbout/anisotropic",
+      "fn": "scaleAbout",
+      "args": [
+        {
+          "x": -4,
+          "y": 7
+        },
+        0.5,
+        3
+      ],
+      "outcome": {
+        "returned": [
+          0.5,
+          0,
+          0,
+          3,
+          -2,
+          -14
+        ]
+      }
+    },
+    {
+      "name": "scaleAbout/mirror",
+      "fn": "scaleAbout",
+      "args": [
+        {
+          "x": 3,
+          "y": 3
+        },
+        -1,
+        1
+      ],
+      "outcome": {
+        "returned": [
+          -1,
+          0,
+          0,
+          1,
+          6,
+          0
+        ]
+      }
+    },
+    {
+      "name": "scaleAbout/collapse",
+      "fn": "scaleAbout",
+      "args": [
+        {
+          "x": 1,
+          "y": 2
+        },
+        0,
+        0
+      ],
+      "outcome": {
+        "returned": [
+          0,
+          0,
+          0,
+          0,
+          1,
+          2
+        ]
+      }
+    },
+    {
+      "name": "angleOf/identity",
+      "fn": "angleOf",
+      "args": [
+        [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ]
+      ],
+      "outcome": {
+        "returned": 0
+      }
+    },
+    {
+      "name": "angleOf/rotate-0.7",
+      "fn": "angleOf",
+      "args": [
+        [
+          0.7648421872844885,
+          0.644217687237691,
+          -0.644217687237691,
+          0.7648421872844885,
+          0,
+          0
+        ]
+      ],
+      "outcome": {
+        "returned": 0.7
+      }
+    },
+    {
+      "name": "angleOf/quarter",
+      "fn": "angleOf",
+      "args": [
+        [
+          0,
+          1,
+          -1,
+          0,
+          0,
+          0
+        ]
+      ],
+      "outcome": {
+        "returned": 1.5707963267948966
+      }
+    },
+    {
+      "name": "angleOf/half",
+      "fn": "angleOf",
+      "args": [
+        [
+          -1,
+          0,
+          0,
+          -1,
+          0,
+          0
+        ]
+      ],
+      "outcome": {
+        "returned": 3.141592653589793
+      }
+    },
+    {
+      "name": "angleOf/three-quarter",
+      "fn": "angleOf",
+      "args": [
+        [
+          0,
+          -1,
+          1,
+          0,
+          0,
+          0
+        ]
+      ],
+      "outcome": {
+        "returned": -1.5707963267948966
+      }
+    },
+    {
+      "name": "angleOf/zero-matrix",
+      "fn": "angleOf",
+      "args": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "outcome": {
+        "returned": 0
+      }
+    },
+    {
+      "name": "angleOf/scaled",
+      "fn": "angleOf",
+      "args": [
+        [
+          2,
+          2,
+          -2,
+          2,
+          9,
+          9
+        ]
+      ],
+      "outcome": {
+        "returned": 0.7853981633974483
+      }
+    },
+    {
+      "name": "angleOf/nan",
+      "fn": "angleOf",
+      "args": [
+        [
+          {
+            "$number": "NaN"
+          },
+          1,
+          0,
+          1,
+          0,
+          0
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "$number": "NaN"
+        }
+      }
+    },
+    {
+      "name": "angleOf/negative-a",
+      "fn": "angleOf",
+      "args": [
+        [
+          -1,
+          -0.0001,
+          0,
+          1,
+          0,
+          0
+        ]
+      ],
+      "outcome": {
+        "returned": -3.1414926535901264
+      }
+    },
+    {
+      "name": "compose/identity-left",
+      "fn": "compose",
+      "args": [
+        [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0,
+          2,
+          5,
+          7
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          2,
+          0,
+          0,
+          2,
+          5,
+          7
+        ]
+      }
+    },
+    {
+      "name": "compose/identity-right",
+      "fn": "compose",
+      "args": [
+        [
+          2,
+          0,
+          0,
+          2,
+          5,
+          7
+        ],
+        [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          2,
+          0,
+          0,
+          2,
+          5,
+          7
+        ]
+      }
+    },
+    {
+      "name": "compose/m1-m2",
+      "fn": "compose",
+      "args": [
+        [
+          2,
+          0,
+          0,
+          2,
+          5,
+          7
+        ],
+        [
+          0,
+          1,
+          -1,
+          0,
+          3,
+          4
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          0,
+          2,
+          -2,
+          0,
+          11,
+          15
+        ]
+      }
+    },
+    {
+      "name": "compose/m2-m1",
+      "fn": "compose",
+      "args": [
+        [
+          0,
+          1,
+          -1,
+          0,
+          3,
+          4
+        ],
+        [
+          2,
+          0,
+          0,
+          2,
+          5,
+          7
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          0,
+          2,
+          -2,
+          0,
+          -4,
+          9
+        ]
+      }
+    },
+    {
+      "name": "compose/m2-m3",
+      "fn": "compose",
+      "args": [
+        [
+          0,
+          1,
+          -1,
+          0,
+          3,
+          4
+        ],
+        [
+          1,
+          0,
+          0,
+          -1,
+          10,
+          20
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          0,
+          1,
+          1,
+          0,
+          -17,
+          14
+        ]
+      }
+    },
+    {
+      "name": "compose/skew-skew",
+      "fn": "compose",
+      "args": [
+        [
+          1.2,
+          0.3,
+          -0.7,
+          0.9,
+          11,
+          -4
+        ],
+        [
+          1.2,
+          0.3,
+          -0.7,
+          0.9,
+          11,
+          -4
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          1.23,
+          0.63,
+          -1.47,
+          0.6000000000000001,
+          27,
+          -4.300000000000001
+        ]
+      }
+    },
+    {
+      "name": "compose/skew-shear",
+      "fn": "compose",
+      "args": [
+        [
+          1.2,
+          0.3,
+          -0.7,
+          0.9,
+          11,
+          -4
+        ],
+        [
+          1,
+          0,
+          0.5,
+          1,
+          0,
+          0
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          1.2,
+          0.3,
+          -0.09999999999999998,
+          1.05,
+          11,
+          -4
+        ]
+      }
+    },
+    {
+      "name": "compose/shear-skew",
+      "fn": "compose",
+      "args": [
+        [
+          1,
+          0,
+          0.5,
+          1,
+          0,
+          0
+        ],
+        [
+          1.2,
+          0.3,
+          -0.7,
+          0.9,
+          11,
+          -4
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          1.3499999999999999,
+          0.3,
+          -0.24999999999999994,
+          0.9,
+          9,
+          -4
+        ]
+      }
+    },
+    {
+      "name": "compose/every-slot",
+      "fn": "compose",
+      "args": [
+        [
+          2,
+          3,
+          5,
+          7,
+          11,
+          13
+        ],
+        [
+          17,
+          19,
+          23,
+          29,
+          31,
+          37
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          129,
+          184,
+          191,
+          272,
+          258,
+          365
+        ]
+      }
+    },
+    {
+      "name": "compose/every-slot-reversed",
+      "fn": "compose",
+      "args": [
+        [
+          17,
+          19,
+          23,
+          29,
+          31,
+          37
+        ],
+        [
+          2,
+          3,
+          5,
+          7,
+          11,
+          13
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          103,
+          125,
+          246,
+          298,
+          517,
+          623
+        ]
+      }
+    },
+    {
+      "name": "compose/nan-propagates",
+      "fn": "compose",
+      "args": [
+        [
+          {
+            "$number": "NaN"
+          },
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0,
+          2,
+          5,
+          7
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "$number": "NaN"
+          },
+          0,
+          {
+            "$number": "NaN"
+          },
+          2,
+          {
+            "$number": "NaN"
+          },
+          7
+        ]
+      }
+    },
+    {
+      "name": "compose/infinity-times-zero",
+      "fn": "compose",
+      "args": [
+        [
+          {
+            "$number": "Infinity"
+          },
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1,
+          0,
+          0
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "$number": "NaN"
+          },
+          0,
+          {
+            "$number": "NaN"
+          },
+          1,
+          {
+            "$number": "NaN"
+          },
+          0
+        ]
+      }
+    },
+    {
+      "name": "invert/identity",
+      "fn": "invert",
+      "args": [
+        [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "name": "invert/translate",
+      "fn": "invert",
+      "args": [
+        [
+          1,
+          0,
+          0,
+          1,
+          5,
+          -3
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          1,
+          0,
+          0,
+          1,
+          -5,
+          3
+        ]
+      }
+    },
+    {
+      "name": "invert/scale-translate",
+      "fn": "invert",
+      "args": [
+        [
+          2,
+          0,
+          0,
+          2,
+          5,
+          7
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          0.5,
+          0,
+          0,
+          0.5,
+          -2.5,
+          -3.5
+        ]
+      }
+    },
+    {
+      "name": "invert/quarter-turn",
+      "fn": "invert",
+      "args": [
+        [
+          0,
+          1,
+          -1,
+          0,
+          3,
+          4
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          0,
+          -1,
+          1,
+          0,
+          -4,
+          3
+        ]
+      }
+    },
+    {
+      "name": "invert/flip",
+      "fn": "invert",
+      "args": [
+        [
+          1,
+          0,
+          0,
+          -1,
+          10,
+          20
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          1,
+          0,
+          0,
+          -1,
+          -10,
+          20
+        ]
+      }
+    },
+    {
+      "name": "invert/skew",
+      "fn": "invert",
+      "args": [
+        [
+          1.2,
+          0.3,
+          -0.7,
+          0.9,
+          11,
+          -4
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          0.6976744186046512,
+          -0.23255813953488372,
+          0.5426356589147286,
+          0.9302325581395349,
+          -5.503875968992249,
+          6.279069767441861
+        ]
+      }
+    },
+    {
+      "name": "invert/every-slot",
+      "fn": "invert",
+      "args": [
+        [
+          2,
+          3,
+          5,
+          7,
+          11,
+          13
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          -7,
+          3,
+          5,
+          -2,
+          12,
+          -7
+        ]
+      }
+    },
+    {
+      "name": "invert/every-slot-b",
+      "fn": "invert",
+      "args": [
+        [
+          3,
+          -2,
+          7,
+          5,
+          -11,
+          13
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          0.1724137931034483,
+          0.06896551724137931,
+          -0.2413793103448276,
+          0.10344827586206896,
+          5.03448275862069,
+          -0.5862068965517242
+        ]
+      }
+    },
+    {
+      "name": "invert/singular-zero",
+      "fn": "invert",
+      "args": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "Error",
+            "message": "Mat2D.invert: non-invertible matrix (det = 0)"
+          }
+        }
+      }
+    },
+    {
+      "name": "invert/singular-rank-one",
+      "fn": "invert",
+      "args": [
+        [
+          1,
+          2,
+          2,
+          4,
+          5,
+          6
+        ]
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "Error",
+            "message": "Mat2D.invert: non-invertible matrix (det = 0)"
+          }
+        }
+      }
+    },
+    {
+      "name": "invert/underflowing-det",
+      "fn": "invert",
+      "args": [
+        [
+          1e-200,
+          0,
+          0,
+          1e-200,
+          0,
+          0
+        ]
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "Error",
+            "message": "Mat2D.invert: non-invertible matrix (det = 0)"
+          }
+        }
+      }
+    },
+    {
+      "name": "invert/nan-det-does-not-throw",
+      "fn": "invert",
+      "args": [
+        [
+          {
+            "$number": "NaN"
+          },
+          0,
+          0,
+          1,
+          0,
+          0
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "$number": "NaN"
+          },
+          {
+            "$number": "NaN"
+          },
+          {
+            "$number": "NaN"
+          },
+          {
+            "$number": "NaN"
+          },
+          {
+            "$number": "NaN"
+          },
+          {
+            "$number": "NaN"
+          }
+        ]
+      }
+    },
+    {
+      "name": "invert/infinite",
+      "fn": "invert",
+      "args": [
+        [
+          {
+            "$number": "Infinity"
+          },
+          0,
+          0,
+          1,
+          0,
+          0
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          0,
+          0,
+          0,
+          {
+            "$number": "NaN"
+          },
+          0,
+          {
+            "$number": "NaN"
+          }
+        ]
+      }
+    },
+    {
+      "name": "invert/tiny-but-invertible",
+      "fn": "invert",
+      "args": [
+        [
+          1e-150,
+          0,
+          0,
+          1e-150,
+          1,
+          1
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          1e+150,
+          0,
+          0,
+          1e+150,
+          -1e+150,
+          -1e+150
+        ]
+      }
+    },
+    {
+      "name": "invert/negative-det",
+      "fn": "invert",
+      "args": [
+        [
+          0,
+          1,
+          1,
+          0,
+          2,
+          3
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          0,
+          1,
+          1,
+          0,
+          -3,
+          -2
+        ]
+      }
+    },
+    {
+      "name": "applyPoint/translate",
+      "fn": "applyPoint",
+      "args": [
+        [
+          1,
+          0,
+          0,
+          1,
+          5,
+          -3
+        ],
+        {
+          "x": 1,
+          "y": 2
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 6,
+          "y": -1
+        }
+      }
+    },
+    {
+      "name": "applyPoint/scale",
+      "fn": "applyPoint",
+      "args": [
+        [
+          2,
+          0,
+          0,
+          3,
+          0,
+          0
+        ],
+        {
+          "x": 4,
+          "y": 5
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 8,
+          "y": 15
+        }
+      }
+    },
+    {
+      "name": "applyPoint/every-slot",
+      "fn": "applyPoint",
+      "args": [
+        [
+          2,
+          3,
+          5,
+          7,
+          11,
+          13
+        ],
+        {
+          "x": 17,
+          "y": 19
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 140,
+          "y": 197
+        }
+      }
+    },
+    {
+      "name": "applyPoint/skew",
+      "fn": "applyPoint",
+      "args": [
+        [
+          1.2,
+          0.3,
+          -0.7,
+          0.9,
+          11,
+          -4
+        ],
+        {
+          "x": -3.5,
+          "y": 8.25
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 1.0250000000000004,
+          "y": 2.375
+        }
+      }
+    },
+    {
+      "name": "applyPoint/nan-point",
+      "fn": "applyPoint",
+      "args": [
+        [
+          2,
+          0,
+          0,
+          2,
+          5,
+          7
+        ],
+        {
+          "x": {
+            "$number": "NaN"
+          },
+          "y": 1
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": {
+            "$number": "NaN"
+          },
+          "y": {
+            "$number": "NaN"
+          }
+        }
+      }
+    },
+    {
+      "name": "applyPoint/infinite-point",
+      "fn": "applyPoint",
+      "args": [
+        [
+          0,
+          1,
+          -1,
+          0,
+          3,
+          4
+        ],
+        {
+          "x": {
+            "$number": "Infinity"
+          },
+          "y": 1
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": {
+            "$number": "NaN"
+          },
+          "y": {
+            "$number": "Infinity"
+          }
+        }
+      }
+    },
+    {
+      "name": "applyRect/translate",
+      "fn": "applyRect",
+      "args": [
+        [
+          1,
+          0,
+          0,
+          1,
+          5,
+          -3
+        ],
+        {
+          "x": 1,
+          "y": 2,
+          "width": 3,
+          "height": 4
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 6,
+          "y": -1,
+          "width": 3,
+          "height": 4
+        }
+      }
+    },
+    {
+      "name": "applyRect/quarter-turn",
+      "fn": "applyRect",
+      "args": [
+        [
+          0,
+          1,
+          -1,
+          0,
+          3,
+          4
+        ],
+        {
+          "x": 0,
+          "y": 0,
+          "width": 100,
+          "height": 200
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": -197,
+          "y": 4,
+          "width": 200,
+          "height": 100
+        }
+      }
+    },
+    {
+      "name": "applyRect/half-turn",
+      "fn": "applyRect",
+      "args": [
+        [
+          -1,
+          0,
+          0,
+          -1,
+          0,
+          0
+        ],
+        {
+          "x": 1,
+          "y": 2,
+          "width": 3,
+          "height": 4
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": -4,
+          "y": -6,
+          "width": 3,
+          "height": 4
+        }
+      }
+    },
+    {
+      "name": "applyRect/three-quarter-turn",
+      "fn": "applyRect",
+      "args": [
+        [
+          0,
+          -1,
+          1,
+          0,
+          0,
+          0
+        ],
+        {
+          "x": 1,
+          "y": 2,
+          "width": 3,
+          "height": 4
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 2,
+          "y": -4,
+          "width": 4,
+          "height": 3
+        }
+      }
+    },
+    {
+      "name": "applyRect/flip",
+      "fn": "applyRect",
+      "args": [
+        [
+          1,
+          0,
+          0,
+          -1,
+          10,
+          20
+        ],
+        {
+          "x": -50,
+          "y": -30,
+          "width": 100,
+          "height": 200
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": -40,
+          "y": -150,
+          "width": 100,
+          "height": 200
+        }
+      }
+    },
+    {
+      "name": "applyRect/shear",
+      "fn": "applyRect",
+      "args": [
+        [
+          1,
+          0,
+          0.5,
+          1,
+          0,
+          0
+        ],
+        {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 0,
+          "y": 0,
+          "width": 15,
+          "height": 10
+        }
+      }
+    },
+    {
+      "name": "applyRect/skew",
+      "fn": "applyRect",
+      "args": [
+        [
+          1.2,
+          0.3,
+          -0.7,
+          0.9,
+          11,
+          -4
+        ],
+        {
+          "x": 2,
+          "y": -3,
+          "width": 7,
+          "height": 5
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 12,
+          "y": -6.1,
+          "width": 11.899999999999999,
+          "height": 6.6
+        }
+      }
+    },
+    {
+      "name": "applyRect/negative-shear",
+      "fn": "applyRect",
+      "args": [
+        [
+          1,
+          0.5,
+          -0.5,
+          1,
+          0,
+          0
+        ],
+        {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": -5,
+          "y": 0,
+          "width": 15,
+          "height": 15
+        }
+      }
+    },
+    {
+      "name": "applyRect/shear-y-only",
+      "fn": "applyRect",
+      "args": [
+        [
+          1,
+          -0.5,
+          0,
+          1,
+          0,
+          0
+        ],
+        {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 0,
+          "y": -5,
+          "width": 10,
+          "height": 15
+        }
+      }
+    },
+    {
+      "name": "applyRect/inverted-rect",
+      "fn": "applyRect",
+      "args": [
+        [
+          2,
+          0,
+          0,
+          2,
+          5,
+          7
+        ],
+        {
+          "x": 10,
+          "y": 10,
+          "width": -5,
+          "height": -5
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 15,
+          "y": 17,
+          "width": 10,
+          "height": 10
+        }
+      }
+    },
+    {
+      "name": "applyRect/nan-rect",
+      "fn": "applyRect",
+      "args": [
+        [
+          2,
+          0,
+          0,
+          2,
+          5,
+          7
+        ],
+        {
+          "x": 0,
+          "y": 0,
+          "width": {
+            "$number": "NaN"
+          },
+          "height": 1
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": {
+            "$number": "NaN"
+          },
+          "y": {
+            "$number": "NaN"
+          },
+          "width": {
+            "$number": "NaN"
+          },
+          "height": {
+            "$number": "NaN"
+          }
+        }
+      }
+    },
+    {
+      "name": "applyRect/nan-y",
+      "fn": "applyRect",
+      "args": [
+        [
+          2,
+          0,
+          0,
+          2,
+          5,
+          7
+        ],
+        {
+          "x": 0,
+          "y": {
+            "$number": "NaN"
+          },
+          "width": 1,
+          "height": 1
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": {
+            "$number": "NaN"
+          },
+          "y": {
+            "$number": "NaN"
+          },
+          "width": {
+            "$number": "NaN"
+          },
+          "height": {
+            "$number": "NaN"
+          }
+        }
+      }
+    },
+    {
+      "name": "applyRect/nan-matrix-offset",
+      "fn": "applyRect",
+      "args": [
+        [
+          1,
+          0,
+          0,
+          1,
+          0,
+          {
+            "$number": "NaN"
+          }
+        ],
+        {
+          "x": 0,
+          "y": 0,
+          "width": 1,
+          "height": 1
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 0,
+          "y": {
+            "$number": "NaN"
+          },
+          "width": 1,
+          "height": {
+            "$number": "NaN"
+          }
+        }
+      }
+    },
+    {
+      "name": "applyRect/infinite",
+      "fn": "applyRect",
+      "args": [
+        [
+          2,
+          0,
+          0,
+          2,
+          5,
+          7
+        ],
+        {
+          "x": 0,
+          "y": 0,
+          "width": {
+            "$number": "Infinity"
+          },
+          "height": 1
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 5,
+          "y": {
+            "$number": "NaN"
+          },
+          "width": {
+            "$number": "Infinity"
+          },
+          "height": {
+            "$number": "NaN"
+          }
+        }
+      }
+    },
+    {
+      "name": "applyQuad/quarter-turn",
+      "fn": "applyQuad",
+      "args": [
+        [
+          0,
+          1,
+          -1,
+          0,
+          200,
+          0
+        ],
+        {
+          "p1": {
+            "x": 0,
+            "y": 200
+          },
+          "p2": {
+            "x": 100,
+            "y": 200
+          },
+          "p3": {
+            "x": 100,
+            "y": 0
+          },
+          "p4": {
+            "x": 0,
+            "y": 0
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "p1": {
+            "x": 0,
+            "y": 0
+          },
+          "p2": {
+            "x": 0,
+            "y": 100
+          },
+          "p3": {
+            "x": 200,
+            "y": 100
+          },
+          "p4": {
+            "x": 200,
+            "y": 0
+          }
+        }
+      }
+    },
+    {
+      "name": "applyQuad/shear",
+      "fn": "applyQuad",
+      "args": [
+        [
+          1,
+          0,
+          0.5,
+          1,
+          0,
+          0
+        ],
+        {
+          "p1": {
+            "x": 0,
+            "y": 0
+          },
+          "p2": {
+            "x": 10,
+            "y": 0
+          },
+          "p3": {
+            "x": 10,
+            "y": 10
+          },
+          "p4": {
+            "x": 0,
+            "y": 10
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "p1": {
+            "x": 0,
+            "y": 0
+          },
+          "p2": {
+            "x": 10,
+            "y": 0
+          },
+          "p3": {
+            "x": 15,
+            "y": 10
+          },
+          "p4": {
+            "x": 5,
+            "y": 10
+          }
+        }
+      }
+    },
+    {
+      "name": "applyQuad/every-slot",
+      "fn": "applyQuad",
+      "args": [
+        [
+          2,
+          3,
+          5,
+          7,
+          11,
+          13
+        ],
+        {
+          "p1": {
+            "x": 1,
+            "y": 2
+          },
+          "p2": {
+            "x": 3,
+            "y": 4
+          },
+          "p3": {
+            "x": 5,
+            "y": 6
+          },
+          "p4": {
+            "x": 7,
+            "y": 8
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "p1": {
+            "x": 23,
+            "y": 30
+          },
+          "p2": {
+            "x": 37,
+            "y": 50
+          },
+          "p3": {
+            "x": 51,
+            "y": 70
+          },
+          "p4": {
+            "x": 65,
+            "y": 90
+          }
+        }
+      }
+    },
+    {
+      "name": "matrixToCss/identity",
+      "fn": "matrixToCss",
+      "args": [
+        [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ]
+      ],
+      "outcome": {
+        "returned": "matrix(1, 0, 0, 1, 0, 0)"
+      }
+    },
+    {
+      "name": "matrixToCss/quarter-turn",
+      "fn": "matrixToCss",
+      "args": [
+        [
+          0,
+          1,
+          -1,
+          0,
+          200,
+          0
+        ]
+      ],
+      "outcome": {
+        "returned": "matrix(0, 1, -1, 0, 200, 0)"
+      }
+    },
+    {
+      "name": "matrixToCss/mixed",
+      "fn": "matrixToCss",
+      "args": [
+        [
+          1.5,
+          -0.25,
+          3e-7,
+          0,
+          1e+21,
+          -1234.5
+        ]
+      ],
+      "outcome": {
+        "returned": "matrix(1.5, -0.25, 3e-7, 0, 1e+21, -1234.5)"
+      }
+    },
+    {
+      "name": "matrixToCss/number-integers",
+      "fn": "matrixToCss",
+      "args": [
+        [
+          1,
+          -1,
+          3,
+          0.14285714285714285,
+          0,
+          1
+        ]
+      ],
+      "outcome": {
+        "returned": "matrix(1, -1, 3, 0.14285714285714285, 0, 1)"
+      }
+    },
+    {
+      "name": "matrixToCss/number-negative-zero",
+      "fn": "matrixToCss",
+      "args": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "outcome": {
+        "returned": "matrix(0, 0, 0, 0, 0, 1)"
+      }
+    },
+    {
+      "name": "matrixToCss/number-tenth",
+      "fn": "matrixToCss",
+      "args": [
+        [
+          0.1,
+          -0.1,
+          0.30000000000000004,
+          0.014285714285714287,
+          0,
+          1
+        ]
+      ],
+      "outcome": {
+        "returned": "matrix(0.1, -0.1, 0.30000000000000004, 0.014285714285714287, 0, 1)"
+      }
+    },
+    {
+      "name": "matrixToCss/number-sum-imprecise",
+      "fn": "matrixToCss",
+      "args": [
+        [
+          0.30000000000000004,
+          -0.30000000000000004,
+          0.9000000000000001,
+          0.042857142857142864,
+          0,
+          1
+        ]
+      ],
+      "outcome": {
+        "returned": "matrix(0.30000000000000004, -0.30000000000000004, 0.9000000000000001, 0.042857142857142864, 0, 1)"
+      }
+    },
+    {
+      "name": "matrixToCss/number-third",
+      "fn": "matrixToCss",
+      "args": [
+        [
+          0.3333333333333333,
+          -0.3333333333333333,
+          1,
+          0.047619047619047616,
+          0,
+          1
+        ]
+      ],
+      "outcome": {
+        "returned": "matrix(0.3333333333333333, -0.3333333333333333, 1, 0.047619047619047616, 0, 1)"
+      }
+    },
+    {
+      "name": "matrixToCss/number-micro",
+      "fn": "matrixToCss",
+      "args": [
+        [
+          0.000001,
+          -0.000001,
+          0.000003,
+          1.4285714285714285e-7,
+          0,
+          1
+        ]
+      ],
+      "outcome": {
+        "returned": "matrix(0.000001, -0.000001, 0.000003, 1.4285714285714285e-7, 0, 1)"
+      }
+    },
+    {
+      "name": "matrixToCss/number-below-micro",
+      "fn": "matrixToCss",
+      "args": [
+        [
+          1e-7,
+          -1e-7,
+          3e-7,
+          1.4285714285714284e-8,
+          0,
+          1
+        ]
+      ],
+      "outcome": {
+        "returned": "matrix(1e-7, -1e-7, 3e-7, 1.4285714285714284e-8, 0, 1)"
+      }
+    },
+    {
+      "name": "matrixToCss/number-small-sci",
+      "fn": "matrixToCss",
+      "args": [
+        [
+          1.5e-10,
+          -1.5e-10,
+          4.5e-10,
+          2.142857142857143e-11,
+          0,
+          1
+        ]
+      ],
+      "outcome": {
+        "returned": "matrix(1.5e-10, -1.5e-10, 4.5e-10, 2.142857142857143e-11, 0, 1)"
+      }
+    },
+    {
+      "name": "matrixToCss/number-smallest-subnormal",
+      "fn": "matrixToCss",
+      "args": [
+        [
+          5e-324,
+          -5e-324,
+          1.5e-323,
+          0,
+          0,
+          1
+        ]
+      ],
+      "outcome": {
+        "returned": "matrix(5e-324, -5e-324, 1.5e-323, 0, 0, 1)"
+      }
+    },
+    {
+      "name": "matrixToCss/number-min-normal",
+      "fn": "matrixToCss",
+      "args": [
+        [
+          2.2250738585072014e-308,
+          -2.2250738585072014e-308,
+          6.675221575521604e-308,
+          3.17867694072457e-309,
+          0,
+          1
+        ]
+      ],
+      "outcome": {
+        "returned": "matrix(2.2250738585072014e-308, -2.2250738585072014e-308, 6.675221575521604e-308, 3.17867694072457e-309, 0, 1)"
+      }
+    },
+    {
+      "name": "matrixToCss/number-e20",
+      "fn": "matrixToCss",
+      "args": [
+        [
+          100000000000000000000,
+          -100000000000000000000,
+          300000000000000000000,
+          14285714285714287000,
+          0,
+          1
+        ]
+      ],
+      "outcome": {
+        "returned": "matrix(100000000000000000000, -100000000000000000000, 300000000000000000000, 14285714285714287000, 0, 1)"
+      }
+    },
+    {
+      "name": "matrixToCss/number-e21",
+      "fn": "matrixToCss",
+      "args": [
+        [
+          1e+21,
+          -1e+21,
+          3e+21,
+          142857142857142860000,
+          0,
+          1
+        ]
+      ],
+      "outcome": {
+        "returned": "matrix(1e+21, -1e+21, 3e+21, 142857142857142860000, 0, 1)"
+      }
+    },
+    {
+      "name": "matrixToCss/number-big-digits",
+      "fn": "matrixToCss",
+      "args": [
+        [
+          123456789012345680000,
+          -123456789012345680000,
+          370370367037037100000,
+          17636684144620812000,
+          0,
+          1
+        ]
+      ],
+      "outcome": {
+        "returned": "matrix(123456789012345680000, -123456789012345680000, 370370367037037100000, 17636684144620812000, 0, 1)"
+      }
+    },
+    {
+      "name": "matrixToCss/number-big-sci",
+      "fn": "matrixToCss",
+      "args": [
+        [
+          1.2345e+25,
+          -1.2345e+25,
+          3.7035e+25,
+          1.7635714285714285e+24,
+          0,
+          1
+        ]
+      ],
+      "outcome": {
+        "returned": "matrix(1.2345e+25, -1.2345e+25, 3.7035e+25, 1.7635714285714285e+24, 0, 1)"
+      }
+    },
+    {
+      "name": "matrixToCss/number-max",
+      "fn": "matrixToCss",
+      "args": [
+        [
+          1.7976931348623157e+308,
+          -1.7976931348623157e+308,
+          {
+            "$number": "Infinity"
+          },
+          2.5681330498033083e+307,
+          0,
+          1
+        ]
+      ],
+      "outcome": {
+        "returned": "matrix(1.7976931348623157e+308, -1.7976931348623157e+308, Infinity, 2.5681330498033083e+307, 0, 1)"
+      }
+    },
+    {
+      "name": "matrixToCss/number-nan",
+      "fn": "matrixToCss",
+      "args": [
+        [
+          {
+            "$number": "NaN"
+          },
+          {
+            "$number": "NaN"
+          },
+          {
+            "$number": "NaN"
+          },
+          {
+            "$number": "NaN"
+          },
+          0,
+          1
+        ]
+      ],
+      "outcome": {
+        "returned": "matrix(NaN, NaN, NaN, NaN, 0, 1)"
+      }
+    },
+    {
+      "name": "matrixToCss/number-infinity",
+      "fn": "matrixToCss",
+      "args": [
+        [
+          {
+            "$number": "Infinity"
+          },
+          {
+            "$number": "-Infinity"
+          },
+          {
+            "$number": "Infinity"
+          },
+          {
+            "$number": "Infinity"
+          },
+          0,
+          1
+        ]
+      ],
+      "outcome": {
+        "returned": "matrix(Infinity, -Infinity, Infinity, Infinity, 0, 1)"
+      }
+    },
+    {
+      "name": "matrixToCss/number-negative-infinity",
+      "fn": "matrixToCss",
+      "args": [
+        [
+          {
+            "$number": "-Infinity"
+          },
+          {
+            "$number": "Infinity"
+          },
+          {
+            "$number": "-Infinity"
+          },
+          {
+            "$number": "-Infinity"
+          },
+          0,
+          1
+        ]
+      ],
+      "outcome": {
+        "returned": "matrix(-Infinity, Infinity, -Infinity, -Infinity, 0, 1)"
+      }
+    },
+    {
+      "name": "matrixToCss/number-negative-fraction",
+      "fn": "matrixToCss",
+      "args": [
+        [
+          -12.5,
+          12.5,
+          -37.5,
+          -1.7857142857142858,
+          0,
+          1
+        ]
+      ],
+      "outcome": {
+        "returned": "matrix(-12.5, 12.5, -37.5, -1.7857142857142858, 0, 1)"
+      }
+    },
+    {
+      "name": "matrixToCss/number-cos-half-pi",
+      "fn": "matrixToCss",
+      "args": [
+        [
+          6.123233995736766e-17,
+          -6.123233995736766e-17,
+          1.8369701987210297e-16,
+          8.747477136766808e-18,
+          0,
+          1
+        ]
+      ],
+      "outcome": {
+        "returned": "matrix(6.123233995736766e-17, -6.123233995736766e-17, 1.8369701987210297e-16, 8.747477136766808e-18, 0, 1)"
+      }
+    },
+    {
+      "name": "matrixToCss/number-precise",
+      "fn": "matrixToCss",
+      "args": [
+        [
+          0.30000000000000004,
+          -0.30000000000000004,
+          0.9000000000000001,
+          0.042857142857142864,
+          0,
+          1
+        ]
+      ],
+      "outcome": {
+        "returned": "matrix(0.30000000000000004, -0.30000000000000004, 0.9000000000000001, 0.042857142857142864, 0, 1)"
+      }
+    },
+    {
+      "name": "matrixToCss/number-long-int",
+      "fn": "matrixToCss",
+      "args": [
+        [
+          9007199254740992,
+          -9007199254740992,
+          27021597764222976,
+          1286742750677284.5,
+          0,
+          1
+        ]
+      ],
+      "outcome": {
+        "returned": "matrix(9007199254740992, -9007199254740992, 27021597764222976, 1286742750677284.5, 0, 1)"
+      }
+    },
+    {
+      "name": "matrixToCss/number-mixed",
+      "fn": "matrixToCss",
+      "args": [
+        [
+          1234.5678,
+          -1234.5678,
+          3703.7034000000003,
+          176.36682857142858,
+          0,
+          1
+        ]
+      ],
+      "outcome": {
+        "returned": "matrix(1234.5678, -1234.5678, 3703.7034000000003, 176.36682857142858, 0, 1)"
+      }
+    },
+    {
+      "name": "matrixToCss/number-e-7-digits",
+      "fn": "matrixToCss",
+      "args": [
+        [
+          1.2345678e-7,
+          -1.2345678e-7,
+          3.7037033999999996e-7,
+          1.7636682857142857e-8,
+          0,
+          1
+        ]
+      ],
+      "outcome": {
+        "returned": "matrix(1.2345678e-7, -1.2345678e-7, 3.7037033999999996e-7, 1.7636682857142857e-8, 0, 1)"
+      }
+    },
+    {
+      "name": "matrixToCss/number-e21-digits",
+      "fn": "matrixToCss",
+      "args": [
+        [
+          1.5e+21,
+          -1.5e+21,
+          4.5e+21,
+          214285714285714280000,
+          0,
+          1
+        ]
+      ],
+      "outcome": {
+        "returned": "matrix(1.5e+21, -1.5e+21, 4.5e+21, 214285714285714280000, 0, 1)"
+      }
+    },
+    {
+      "name": "matrixToCss/number-e-6-digits",
+      "fn": "matrixToCss",
+      "args": [
+        [
+          0.0000012345,
+          -0.0000012345,
+          0.0000037035,
+          1.7635714285714285e-7,
+          0,
+          1
+        ]
+      ],
+      "outcome": {
+        "returned": "matrix(0.0000012345, -0.0000012345, 0.0000037035, 1.7635714285714285e-7, 0, 1)"
+      }
+    }
+  ]
+}

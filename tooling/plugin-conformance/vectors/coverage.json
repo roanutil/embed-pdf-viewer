@@ -1,9 +1,15 @@
 {
   "total": {
-    "statements": "1782/1833",
-    "branches": "368/397"
+    "statements": "2583/2634",
+    "branches": "461/490"
   },
   "files": {
+    "packages/core/geometry/src/index.ts": {
+      "statements": "801/801",
+      "branches": "93/93",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
     "packages/core/main/src/context.ts": {
       "statements": "122/123",
       "branches": "30/33",
