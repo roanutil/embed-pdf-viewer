@@ -1,0 +1,551 @@
+{
+  "schemaVersion": 1,
+  "kind": "function",
+  "describes": "packages/core/main: docInfoEquals, docInfoListEquals and createEventHook.",
+  "cases": [
+    {
+      "name": "equal",
+      "fn": "docInfoEquals",
+      "args": [
+        {
+          "id": "a",
+          "status": "ready",
+          "pageCount": 3
+        },
+        {
+          "id": "a",
+          "status": "ready",
+          "pageCount": 3
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "id-differs",
+      "fn": "docInfoEquals",
+      "args": [
+        {
+          "id": "a",
+          "status": "ready",
+          "pageCount": 3
+        },
+        {
+          "id": "b",
+          "status": "ready",
+          "pageCount": 3
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "name-differs",
+      "fn": "docInfoEquals",
+      "args": [
+        {
+          "id": "a",
+          "status": "ready",
+          "pageCount": 3,
+          "name": "A"
+        },
+        {
+          "id": "a",
+          "status": "ready",
+          "pageCount": 3,
+          "name": "B"
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "name-absent-vs-present",
+      "fn": "docInfoEquals",
+      "args": [
+        {
+          "id": "a",
+          "status": "ready",
+          "pageCount": 3
+        },
+        {
+          "id": "a",
+          "status": "ready",
+          "pageCount": 3,
+          "name": "A"
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "status-differs",
+      "fn": "docInfoEquals",
+      "args": [
+        {
+          "id": "a",
+          "status": "ready",
+          "pageCount": 3
+        },
+        {
+          "id": "a",
+          "status": "loading",
+          "pageCount": 3
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "page-count-differs",
+      "fn": "docInfoEquals",
+      "args": [
+        {
+          "id": "a",
+          "status": "ready",
+          "pageCount": 3
+        },
+        {
+          "id": "a",
+          "status": "ready",
+          "pageCount": 4
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "password-provided-differs",
+      "fn": "docInfoEquals",
+      "args": [
+        {
+          "id": "a",
+          "status": "ready",
+          "pageCount": 3,
+          "passwordProvided": true
+        },
+        {
+          "id": "a",
+          "status": "ready",
+          "pageCount": 3,
+          "passwordProvided": false
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "password-provided-absent-vs-false",
+      "fn": "docInfoEquals",
+      "args": [
+        {
+          "id": "a",
+          "status": "ready",
+          "pageCount": 3
+        },
+        {
+          "id": "a",
+          "status": "ready",
+          "pageCount": 3,
+          "passwordProvided": false
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "lists-equal",
+      "fn": "docInfoListEquals",
+      "args": [
+        [
+          {
+            "id": "a",
+            "status": "ready",
+            "pageCount": 3
+          },
+          {
+            "id": "b",
+            "status": "ready",
+            "pageCount": 3
+          }
+        ],
+        [
+          {
+            "id": "a",
+            "status": "ready",
+            "pageCount": 3
+          },
+          {
+            "id": "b",
+            "status": "ready",
+            "pageCount": 3
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "lists-empty",
+      "fn": "docInfoListEquals",
+      "args": [
+        [],
+        []
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "lists-length-differs",
+      "fn": "docInfoListEquals",
+      "args": [
+        [
+          {
+            "id": "a",
+            "status": "ready",
+            "pageCount": 3
+          }
+        ],
+        [
+          {
+            "id": "a",
+            "status": "ready",
+            "pageCount": 3
+          },
+          {
+            "id": "b",
+            "status": "ready",
+            "pageCount": 3
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "lists-order-differs",
+      "fn": "docInfoListEquals",
+      "args": [
+        [
+          {
+            "id": "a",
+            "status": "ready",
+            "pageCount": 3
+          },
+          {
+            "id": "b",
+            "status": "ready",
+            "pageCount": 3
+          }
+        ],
+        [
+          {
+            "id": "b",
+            "status": "ready",
+            "pageCount": 3
+          },
+          {
+            "id": "a",
+            "status": "ready",
+            "pageCount": 3
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "lists-one-member-differs",
+      "fn": "docInfoListEquals",
+      "args": [
+        [
+          {
+            "id": "a",
+            "status": "ready",
+            "pageCount": 3
+          }
+        ],
+        [
+          {
+            "id": "a",
+            "status": "error",
+            "pageCount": 3
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "list-is-itself",
+      "fn": "docInfoListEqualsItself",
+      "args": [
+        [
+          {
+            "id": "a",
+            "status": "ready",
+            "pageCount": 3
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "hook-fans-out-in-order",
+      "fn": "eventHookScript",
+      "args": [
+        [
+          {
+            "op": "on",
+            "id": "a"
+          },
+          {
+            "op": "on",
+            "id": "b"
+          },
+          {
+            "op": "emit",
+            "event": 1
+          }
+        ],
+        true
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "emit": 1
+          },
+          {
+            "id": "a",
+            "event": 1
+          },
+          {
+            "id": "b",
+            "event": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "hook-unsubscribe-and-twice",
+      "fn": "eventHookScript",
+      "args": [
+        [
+          {
+            "op": "on",
+            "id": "a"
+          },
+          {
+            "op": "on",
+            "id": "b"
+          },
+          {
+            "op": "offTwice",
+            "id": "a"
+          },
+          {
+            "op": "emit",
+            "event": 2
+          }
+        ],
+        true
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "emit": 2
+          },
+          {
+            "id": "b",
+            "event": 2
+          }
+        ]
+      }
+    },
+    {
+      "name": "hook-snapshot-per-emit",
+      "covers": "A listener added during an emit is not called by that emit, and is by the next.",
+      "fn": "eventHookScript",
+      "args": [
+        [
+          {
+            "op": "onAdd",
+            "id": "a",
+            "adds": "late"
+          },
+          {
+            "op": "emit",
+            "event": 1
+          },
+          {
+            "op": "emit",
+            "event": 2
+          }
+        ],
+        true
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "emit": 1
+          },
+          {
+            "id": "a",
+            "event": 1
+          },
+          {
+            "emit": 2
+          },
+          {
+            "id": "a",
+            "event": 2
+          },
+          {
+            "id": "late",
+            "event": 2
+          }
+        ]
+      }
+    },
+    {
+      "name": "hook-isolates-a-throwing-listener",
+      "fn": "eventHookScript",
+      "args": [
+        [
+          {
+            "op": "onThrow",
+            "id": "bad",
+            "message": "listener broke"
+          },
+          {
+            "op": "on",
+            "id": "good"
+          },
+          {
+            "op": "emit",
+            "event": "x"
+          }
+        ],
+        true
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "emit": "x"
+          },
+          {
+            "id": "bad",
+            "event": "x"
+          },
+          {
+            "error": "listener broke"
+          },
+          {
+            "id": "good",
+            "event": "x"
+          }
+        ]
+      }
+    },
+    {
+      "name": "hook-swallows-without-a-sink",
+      "fn": "eventHookScript",
+      "args": [
+        [
+          {
+            "op": "onThrow",
+            "id": "bad",
+            "message": "listener broke"
+          },
+          {
+            "op": "on",
+            "id": "good"
+          },
+          {
+            "op": "emit",
+            "event": "x"
+          }
+        ],
+        false
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "emit": "x"
+          },
+          {
+            "id": "bad",
+            "event": "x"
+          },
+          {
+            "id": "good",
+            "event": "x"
+          }
+        ]
+      }
+    },
+    {
+      "name": "hook-dispose",
+      "covers": "After dispose nothing is delivered, on() returns an inert unsubscribe, and unsubscribing a pre-dispose listener is harmless.",
+      "fn": "eventHookScript",
+      "args": [
+        [
+          {
+            "op": "on",
+            "id": "a"
+          },
+          {
+            "op": "dispose"
+          },
+          {
+            "op": "emit",
+            "event": 1
+          },
+          {
+            "op": "on",
+            "id": "b"
+          },
+          {
+            "op": "emit",
+            "event": 2
+          },
+          {
+            "op": "off",
+            "id": "a"
+          },
+          {
+            "op": "off",
+            "id": "b"
+          }
+        ],
+        true
+      ],
+      "outcome": {
+        "returned": [
+          "disposed",
+          {
+            "emit": 1
+          },
+          {
+            "emit": 2
+          }
+        ]
+      }
+    }
+  ]
+}

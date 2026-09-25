@@ -676,6 +676,162 @@ const cases: ScenarioCase[] = [
     ],
     steps: [start, cap('thrower', 'dispatch', [{ type: 'SET', state: { $undefined: true } }])],
   },
+  {
+    name: 'close-during-init-then-init-fails',
+    covers:
+      'An init that rejects after close() won is still a cancellation, not a failure: no error tab, nothing reported.',
+    plugins: [probe(docProbe('alpha', { init: { defer: 'init' } }))],
+    engine: { documents: { a: doc() } },
+    steps: [start, open(bytes('a')), docs('close', 'a'), fail('init', 'init broke late'), ...listing],
+  },
+  {
+    name: 'an-abort-error-from-the-engine-reads-as-cancelled',
+    covers:
+      'An engine call rejecting with AbortError when nobody closed the tab: the open rejects as cancelled and the tab stays loading, which is what isAbortLike does to an abort the kernel did not start.',
+    plugins: [],
+    engine: { documents: { a: doc({ responses: [{ path: 'pages.list', error: { name: 'AbortError', message: 'worker aborted' } }] }) } },
+    steps: [start, open(bytes('a')), ...listing],
+  },
+  {
+    name: 'an-abort-error-after-unlock-reads-as-cancelled',
+    covers: 'The same rule past the password.',
+    plugins: [],
+    engine: {
+      documents: {
+        a: doc({
+          security: { passwordPrompt: { state: 'required' } },
+          responses: [
+            { path: 'security.unlock', value: {} },
+            { path: 'pages.list', error: { name: 'AbortError', message: 'worker aborted' } },
+          ],
+        }),
+      },
+    },
+    steps: [start, open(bytes('a')), docs('unlock', 'a', { password: 'p' }), ...listing],
+  },
+  {
+    name: 'plain-promise-engine-late-handle',
+    covers:
+      'An engine whose calls cannot be aborted: close() does not wait for the open, and the handle that lands afterwards is closed through the disposed scope rather than leaked.',
+    plugins: [probe(docProbe('alpha'))],
+    engine: { plainPromises: true, documents: { a: doc() }, responses: [{ path: 'open', defer: 'open-a' }] },
+    steps: [start, open(bytes('a')), docs('close', 'a'), ...listing, settle('open-a', { $document: 'a' })],
+  },
+  {
+    name: 'rekey-keeps-another-active-tab',
+    covers: 'Re-keying a ticket that is not the active tab leaves the active tab alone.',
+    plugins: [],
+    engine: { documents: { a: doc(), real: doc() } },
+    steps: [
+      start,
+      open(bytes('a')),
+      open({ $fn: 'source', defer: 'fetch' }, { activate: false }),
+      docs('activeId'),
+      settle('fetch', bytes('real')),
+      ...listing,
+    ],
+  },
+  {
+    name: 'close-joins-a-close-in-flight',
+    covers: 'A second close while the first is still disposing returns the same close.',
+    plugins: [probe(docProbe('alpha', { effects: { cleanup: { defer: 'teardown' } } }))],
+    engine: { documents: { a: doc() } },
+    steps: [start, open(bytes('a')), docs('close', 'a'), docs('close', 'a'), settle('teardown')],
+  },
+  {
+    name: 'close-during-rollback-reports-the-failure',
+    covers:
+      'close() arriving while a failed open is still rolling back joins that operation, and the real failure it rejects with is reported.',
+    plugins: [],
+    engine: {
+      documents: {
+        a: doc({
+          responses: [
+            { path: 'pages.list', error: { name: 'EngineError', message: 'no pages', code: 'Format' } },
+            { path: 'close', defer: 'handle-close' },
+          ],
+        }),
+      },
+    },
+    steps: [start, open(bytes('a')), docs('close', 'a'), settle('handle-close'), ...listing],
+  },
+  {
+    name: 'page-event-before-commit',
+    covers: 'A page mutation event that arrives during bring-up, before the document is published, changes nothing.',
+    plugins: [probe(docProbe('alpha', { init: { defer: 'init' } }))],
+    engine: { documents: { a: doc({ pages: [page(1, 0)] }) } },
+    steps: [
+      start,
+      open(bytes('a')),
+      { op: 'emit', doc: 'a', event: { type: 'pages.rotated', layout: { pageCount: 1, pages: [{ ...page(1, 0), rotation: 90 }] } } },
+      settle('init'),
+      docs('get', 'a'),
+    ],
+  },
+  {
+    name: 'try-get-across-scopes',
+    covers:
+      "A document plugin's tryGet resolves a workspace capability; a workspace plugin's tryGet of a document capability is null while the active document is still loading; allows() is false for a loading document.",
+    plugins: [probe({ id: 'ws', token: 'ws' }), probe(docProbe('alpha')), probe(docProbe('beta'))],
+    engine: { documents: { a: doc({ security: { allows: '*' } }), b: doc({ security: { allows: '*' } }) }, responses: [{ path: 'open', args: [bytes('b'), {}], defer: 'open-b' }] },
+    steps: [
+      start,
+      open(bytes('a')),
+      cap('beta', 'tryGet', ['ws'], 'a'),
+      open(bytes('b')),
+      cap('ws', 'tryGet', ['alpha']),
+      cap('ws', 'handleFor', []),
+      cap('ws', 'document'),
+      docs('allows', 'doc.print'),
+      docs('allows', 'doc.print', 'a'),
+      settle('open-b', { $document: 'b' }),
+      cap('ws', 'tryGet', ['alpha']),
+    ],
+  },
+  {
+    name: 'a-capability-outlives-its-document',
+    covers:
+      "A capability kept after its document closed: dispatch reaches no slice and does nothing, state reads undefined, and document() falls back to the meta staged at bring-up.",
+    plugins: [probe(docProbe('alpha', { effects: undefined, init: undefined }))],
+    engine: { documents: { a: doc() } },
+    steps: [
+      start,
+      open(bytes('a')),
+      kernel('capability', { $token: 'alpha' }, 'a'),
+      docs('close', 'a'),
+      { op: 'call', target: { ref: 0 }, args: [{ type: 'SET', state: { n: 9 } }] },
+      { op: 'call', target: { ref: 1 } },
+      { op: 'call', target: { ref: 2 } },
+    ],
+  },
+  {
+    name: 'a-listener-dispatching-mid-pass',
+    covers:
+      'A state watcher that dispatches from inside its handler: the store finishes the pass it is in, then runs another, so listener order stays deterministic.',
+    plugins: [
+      probe({ id: 'relay', token: 'relay', reduce: { SET: 'replace', MERGE: 'merge' }, effects: { watchState: true, watchDispatchOnce: { type: 'MERGE', state: { relayed: true } } } }),
+      probe({ id: 'after', token: 'after', effects: { watchActive: true } }),
+    ],
+    steps: [start, cap('relay', 'dispatch', [{ type: 'SET', state: { n: 1 } }]), cap('relay', 'state')],
+  },
+  {
+    name: 'a-plugin-with-no-reducer',
+    covers: 'A plugin without a reducer keeps its initial state whatever it dispatches.',
+    plugins: [probe({ id: 'inert', token: 'inert', reduce: null, initialState: { fixed: true } })],
+    steps: [start, cap('inert', 'dispatch', [{ type: 'SET', state: {} }]), cap('inert', 'state')],
+  },
+  {
+    name: 'destroy-during-the-last-init',
+    covers: 'destroy() while the last workspace init is pending: start stops before running any effects.',
+    plugins: [probe({ id: 'only', token: 'only', init: { defer: 'init' }, effects: {} })],
+    steps: [start, destroy, settle('init'), kernel('status')],
+  },
+  {
+    name: 'destroy-during-a-start-that-fails',
+    covers: 'destroy() while start is pending, and start then fails: destroy reports the failure, since the kernel was not already failed when destroy began.',
+    plugins: [probe({ id: 'only', token: 'only', init: { defer: 'init' } })],
+    steps: [start, destroy, fail('init', 'boot failed late'), kernel('status')],
+  },
 ];
 
 export const suites: Suite[] = [

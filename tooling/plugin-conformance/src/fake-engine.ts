@@ -83,6 +83,8 @@ export interface FakeEngineSpec {
    *  `{"$document": key}` to hand out a handle. Absent: `open` hands out the
    *  document whose key is the input's `id`. */
   readonly responses?: readonly ResponseSpec[];
+  /** Answer every call with a plain `Promise` that has no `abort`. */
+  readonly plainPromises?: boolean;
 }
 
 export type EngineLogEntry =
@@ -154,10 +156,7 @@ export function createFakeEngine(
     const args = rawArgs.map((arg) => canonical(arg));
     const index = log.length;
     log.push(pon === undefined ? { doc, path, args } : { doc, path, pon, args });
-    return new AbortablePromise<unknown>((resolve, reject, _progress, signal) => {
-      signal.addEventListener('abort', () => {
-        log.push({ abort: index, reason: canonical((signal.reason as { reason?: unknown })?.reason) });
-      });
+    const executor = (resolve: (value: unknown) => void, reject: (error: unknown) => void) => {
       const entry = match(table, path, pon, args);
       if (!entry) {
         if (fallback) {
@@ -178,6 +177,15 @@ export function createFakeEngine(
       }
       if (entry.error) reject(makeError(entry.error));
       else resolve(map(decode(entry.value)));
+    };
+    // A plain-promise engine is what the kernel's race exists for: a call
+    // nobody can abort, whose late result still has to be released.
+    if (spec.plainPromises) return new Promise<unknown>(executor) as AbortablePromise<unknown>;
+    return new AbortablePromise<unknown>((resolve, reject, _progress, signal) => {
+      signal.addEventListener('abort', () => {
+        log.push({ abort: index, reason: canonical((signal.reason as { reason?: unknown })?.reason) });
+      });
+      executor(resolve, reject);
     });
   }
 

@@ -257,6 +257,8 @@ fn build(config: &Value, h: &Harness) -> Result<AnyPlugin, Error> {
                 let listened = listened.clone();
                 let at = where_of(&fx);
                 let ctx = fx.ctx.clone();
+                let relay = std::cell::RefCell::new(effects.get("watchDispatchOnce").cloned());
+                let dispatcher = fx.ctx.clone();
                 fx.watch(
                     move || ctx.state_any(),
                     // `Object.is` on the state object.
@@ -266,6 +268,10 @@ fn build(config: &Value, h: &Harness) -> Result<AnyPlugin, Error> {
                         _ => false,
                     },
                     move |next, previous| {
+                        let action = relay.borrow_mut().take();
+                        if let Some(action) = action {
+                            dispatcher.dispatch_any(&action);
+                        }
                         let show = |v: &Option<SliceState>| match v {
                             Some(s) => s.downcast_ref::<Value>().cloned().unwrap_or(Value::Null),
                             None => epdf_kernel::undefined(),

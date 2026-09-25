@@ -32221,6 +32221,6389 @@
           }
         }
       ]
+    },
+    {
+      "name": "close-during-init-then-init-fails",
+      "covers": "An init that rejects after close() won is still a cancellation, not a failure: no error tab, nothing reported.",
+      "plugins": [
+        {
+          "factory": "probe",
+          "config": {
+            "id": "alpha",
+            "scope": "document",
+            "token": "alpha",
+            "initialState": {
+              "n": 0
+            },
+            "reduce": {
+              "SET": "replace",
+              "MERGE": "merge",
+              "SAME": "same"
+            },
+            "init": {
+              "defer": "init"
+            },
+            "effects": {
+              "onAction": [
+                "@@core/document-added",
+                "@@core/active-changed"
+              ],
+              "cleanup": true,
+              "watchState": true
+            }
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "close",
+          "args": [
+            "a"
+          ]
+        },
+        {
+          "op": "settle",
+          "label": "init",
+          "error": {
+            "name": "Error",
+            "message": "init broke late"
+          }
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "list",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "order",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "count",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "activeId",
+          "args": []
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [
+            {
+              "fn": "alpha.init",
+              "args": [
+                "a"
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {
+                "a": {
+                  "id": "a",
+                  "status": "loading"
+                }
+              },
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "alpha::a": {
+                "n": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-removed"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "alpha::a": {
+                "n": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "rejected": {
+                "$error": {
+                  "name": "CancelledError",
+                  "message": "[kernel] cancelled: closed while opening: a"
+                }
+              }
+            },
+            {
+              "promise": 2,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "close",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 0
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "returned": []
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "returned": []
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "returned": 0
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "returned": null
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "an-abort-error-from-the-engine-reads-as-cancelled",
+      "covers": "An engine call rejecting with AbortError when nobody closed the tab: the open rejects as cancelled and the tab stays loading, which is what isAbortLike does to an abort the kernel did not start.",
+      "plugins": [],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ],
+            "responses": [
+              {
+                "path": "pages.list",
+                "error": {
+                  "name": "AbortError",
+                  "message": "worker aborted"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "list",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "order",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "count",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "activeId",
+          "args": []
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "rejected": {
+                "$error": {
+                  "name": "CancelledError",
+                  "message": "[kernel] cancelled: closed while opening: a"
+                }
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {
+                "a": {
+                  "id": "a",
+                  "status": "loading"
+                }
+              },
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "returned": [
+              {
+                "id": "a",
+                "status": "loading",
+                "pageCount": 0
+              }
+            ]
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {
+                "a": {
+                  "id": "a",
+                  "status": "loading"
+                }
+              },
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "returned": [
+              "a"
+            ]
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {
+                "a": {
+                  "id": "a",
+                  "status": "loading"
+                }
+              },
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "returned": 1
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {
+                "a": {
+                  "id": "a",
+                  "status": "loading"
+                }
+              },
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "returned": "a"
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {
+                "a": {
+                  "id": "a",
+                  "status": "loading"
+                }
+              },
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "an-abort-error-after-unlock-reads-as-cancelled",
+      "covers": "The same rule past the password.",
+      "plugins": [],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ],
+            "security": {
+              "passwordPrompt": {
+                "state": "required"
+              }
+            },
+            "responses": [
+              {
+                "path": "security.unlock",
+                "value": {}
+              },
+              {
+                "path": "pages.list",
+                "error": {
+                  "name": "AbortError",
+                  "message": "worker aborted"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "unlock",
+          "args": [
+            "a",
+            {
+              "password": "p"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "list",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "order",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "count",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "activeId",
+          "args": []
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-locked"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {
+                "a": {
+                  "id": "a",
+                  "status": "locked",
+                  "passwordProvided": false
+                }
+              },
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "rejected": {
+                "$error": {
+                  "name": "CancelledError",
+                  "message": "[kernel] cancelled: closed while opening: a"
+                }
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "security.unlock",
+              "args": [
+                {
+                  "password": "p"
+                }
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {
+                "a": {
+                  "id": "a",
+                  "status": "locked",
+                  "passwordProvided": false
+                }
+              },
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "returned": [
+              {
+                "id": "a",
+                "status": "locked",
+                "pageCount": 0,
+                "passwordProvided": false
+              }
+            ]
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {
+                "a": {
+                  "id": "a",
+                  "status": "locked",
+                  "passwordProvided": false
+                }
+              },
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "returned": [
+              "a"
+            ]
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {
+                "a": {
+                  "id": "a",
+                  "status": "locked",
+                  "passwordProvided": false
+                }
+              },
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "returned": 1
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {
+                "a": {
+                  "id": "a",
+                  "status": "locked",
+                  "passwordProvided": false
+                }
+              },
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "returned": "a"
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {
+                "a": {
+                  "id": "a",
+                  "status": "locked",
+                  "passwordProvided": false
+                }
+              },
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "plain-promise-engine-late-handle",
+      "covers": "An engine whose calls cannot be aborted: close() does not wait for the open, and the handle that lands afterwards is closed through the disposed scope rather than leaked.",
+      "plugins": [
+        {
+          "factory": "probe",
+          "config": {
+            "id": "alpha",
+            "scope": "document",
+            "token": "alpha",
+            "initialState": {
+              "n": 0
+            },
+            "reduce": {
+              "SET": "replace",
+              "MERGE": "merge",
+              "SAME": "same"
+            },
+            "init": true,
+            "effects": {
+              "onAction": [
+                "@@core/document-added",
+                "@@core/active-changed"
+              ],
+              "cleanup": true,
+              "watchState": true
+            }
+          }
+        }
+      ],
+      "engine": {
+        "plainPromises": true,
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "responses": [
+          {
+            "path": "open",
+            "defer": "open-a"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "close",
+          "args": [
+            "a"
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "list",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "order",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "count",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "activeId",
+          "args": []
+        },
+        {
+          "op": "settle",
+          "label": "open-a",
+          "value": {
+            "$document": "a"
+          }
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {
+                "a": {
+                  "id": "a",
+                  "status": "loading"
+                }
+              },
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "rejected": {
+                "$error": {
+                  "name": "CancelledError",
+                  "message": "[kernel] cancelled: closed while opening: a"
+                }
+              }
+            },
+            {
+              "promise": 2,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-removed"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": []
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": []
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": 0
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": null
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "close",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 0
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "rekey-keeps-another-active-tab",
+      "covers": "Re-keying a ticket that is not the active tab leaves the active tab alone.",
+      "plugins": [],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          },
+          "real": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "$fn": "source",
+              "defer": "fetch"
+            },
+            {
+              "activate": false
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "activeId",
+          "args": []
+        },
+        {
+          "op": "settle",
+          "label": "fetch",
+          "value": {
+            "kind": "bytes",
+            "id": "real",
+            "bytes": {
+              "$bytes": ""
+            }
+          }
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "list",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "order",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "count",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "activeId",
+          "args": []
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "pageObjectNumber": 1,
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "source",
+              "args": [
+                {
+                  "$signal": {
+                    "aborted": false
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "pageObjectNumber": 1,
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {
+                "pending:1": {
+                  "id": "pending:1",
+                  "status": "loading"
+                }
+              },
+              "order": [
+                "a",
+                "pending:1"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": "a"
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "pageObjectNumber": 1,
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {
+                "pending:1": {
+                  "id": "pending:1",
+                  "status": "loading"
+                }
+              },
+              "order": [
+                "a",
+                "pending:1"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": "real"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/order-changed"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "real",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "real",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "real": {
+              "subscribers": 1
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "pageObjectNumber": 1,
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                },
+                "real": {
+                  "id": "real",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "pageObjectNumber": 1,
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a",
+                "real"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "real": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": [
+              {
+                "id": "a",
+                "status": "ready",
+                "pageCount": 1
+              },
+              {
+                "id": "real",
+                "status": "ready",
+                "pageCount": 1
+              }
+            ]
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "pageObjectNumber": 1,
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                },
+                "real": {
+                  "id": "real",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "pageObjectNumber": 1,
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a",
+                "real"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "real": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": [
+              "a",
+              "real"
+            ]
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "pageObjectNumber": 1,
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                },
+                "real": {
+                  "id": "real",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "pageObjectNumber": 1,
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a",
+                "real"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "real": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": 2
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "pageObjectNumber": 1,
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                },
+                "real": {
+                  "id": "real",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "pageObjectNumber": 1,
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a",
+                "real"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "real": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": "a"
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "pageObjectNumber": 1,
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                },
+                "real": {
+                  "id": "real",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "pageObjectNumber": 1,
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a",
+                "real"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "close-joins-a-close-in-flight",
+      "covers": "A second close while the first is still disposing returns the same close.",
+      "plugins": [
+        {
+          "factory": "probe",
+          "config": {
+            "id": "alpha",
+            "scope": "document",
+            "token": "alpha",
+            "initialState": {
+              "n": 0
+            },
+            "reduce": {
+              "SET": "replace",
+              "MERGE": "merge",
+              "SAME": "same"
+            },
+            "init": true,
+            "effects": {
+              "cleanup": {
+                "defer": "teardown"
+              }
+            }
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "close",
+          "args": [
+            "a"
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "close",
+          "args": [
+            "a"
+          ]
+        },
+        {
+          "op": "settle",
+          "label": "teardown"
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [
+            {
+              "fn": "alpha.init",
+              "args": [
+                "a"
+              ]
+            },
+            {
+              "fn": "alpha.effects",
+              "args": [
+                "a"
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "pageObjectNumber": 1,
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "alpha::a": {
+                "n": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-removed"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "alpha.teardown",
+              "args": [
+                "a"
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "alpha::a": {
+                "n": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 3
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "alpha::a": {
+                "n": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": {
+                "$undefined": true
+              }
+            },
+            {
+              "promise": 3,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "close",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 0
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "close-during-rollback-reports-the-failure",
+      "covers": "close() arriving while a failed open is still rolling back joins that operation, and the real failure it rejects with is reported.",
+      "plugins": [],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ],
+            "responses": [
+              {
+                "path": "pages.list",
+                "error": {
+                  "name": "EngineError",
+                  "message": "no pages",
+                  "code": "Format"
+                }
+              },
+              {
+                "path": "close",
+                "defer": "handle-close"
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "close",
+          "args": [
+            "a"
+          ]
+        },
+        {
+          "op": "settle",
+          "label": "handle-close"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "list",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "order",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "count",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "activeId",
+          "args": []
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "close",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {
+                "a": {
+                  "id": "a",
+                  "status": "loading"
+                }
+              },
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-removed"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "rejected": {
+                "$error": {
+                  "name": "EngineError",
+                  "message": "no pages",
+                  "code": "Format"
+                }
+              }
+            },
+            {
+              "promise": 2,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-open-failed"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [
+            {
+              "$error": {
+                "name": "EngineError",
+                "message": "no pages",
+                "code": "Format"
+              }
+            }
+          ],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 0
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {
+                "a": {
+                  "id": "a",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "EngineError",
+                      "message": "no pages",
+                      "code": "Format"
+                    }
+                  }
+                }
+              },
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "returned": []
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {
+                "a": {
+                  "id": "a",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "EngineError",
+                      "message": "no pages",
+                      "code": "Format"
+                    }
+                  }
+                }
+              },
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "returned": []
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {
+                "a": {
+                  "id": "a",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "EngineError",
+                      "message": "no pages",
+                      "code": "Format"
+                    }
+                  }
+                }
+              },
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "returned": 0
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {
+                "a": {
+                  "id": "a",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "EngineError",
+                      "message": "no pages",
+                      "code": "Format"
+                    }
+                  }
+                }
+              },
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "returned": null
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {
+                "a": {
+                  "id": "a",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "EngineError",
+                      "message": "no pages",
+                      "code": "Format"
+                    }
+                  }
+                }
+              },
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "page-event-before-commit",
+      "covers": "A page mutation event that arrives during bring-up, before the document is published, changes nothing.",
+      "plugins": [
+        {
+          "factory": "probe",
+          "config": {
+            "id": "alpha",
+            "scope": "document",
+            "token": "alpha",
+            "initialState": {
+              "n": 0
+            },
+            "reduce": {
+              "SET": "replace",
+              "MERGE": "merge",
+              "SAME": "same"
+            },
+            "init": {
+              "defer": "init"
+            },
+            "effects": {
+              "onAction": [
+                "@@core/document-added",
+                "@@core/active-changed"
+              ],
+              "cleanup": true,
+              "watchState": true
+            }
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "emit",
+          "doc": "a",
+          "event": {
+            "type": "pages.rotated",
+            "layout": {
+              "pageCount": 1,
+              "pages": [
+                {
+                  "index": 0,
+                  "pageObjectNumber": 1,
+                  "label": null,
+                  "size": {
+                    "width": 600,
+                    "height": 800
+                  },
+                  "rotation": 90,
+                  "userUnit": 1,
+                  "boxes": {
+                    "media": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 600,
+                      "top": 800
+                    },
+                    "crop": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 600,
+                      "top": 800
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        {
+          "op": "settle",
+          "label": "init"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "get",
+          "args": [
+            "a"
+          ]
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [
+            {
+              "fn": "alpha.init",
+              "args": [
+                "a"
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {
+                "a": {
+                  "id": "a",
+                  "status": "loading"
+                }
+              },
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "alpha::a": {
+                "n": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {
+                "a": {
+                  "id": "a",
+                  "status": "loading"
+                }
+              },
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "alpha::a": {
+                "n": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "alpha.effects",
+              "args": [
+                "a"
+              ]
+            },
+            {
+              "fn": "alpha.onAction",
+              "args": [
+                "a",
+                {
+                  "type": "@@core/document-added"
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "pageObjectNumber": 1,
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "alpha::a": {
+                "n": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "id": "a",
+              "status": "ready",
+              "pageCount": 1
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "pageObjectNumber": 1,
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "alpha::a": {
+                "n": 0
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "try-get-across-scopes",
+      "covers": "A document plugin's tryGet resolves a workspace capability; a workspace plugin's tryGet of a document capability is null while the active document is still loading; allows() is false for a loading document.",
+      "plugins": [
+        {
+          "factory": "probe",
+          "config": {
+            "id": "ws",
+            "token": "ws"
+          }
+        },
+        {
+          "factory": "probe",
+          "config": {
+            "id": "alpha",
+            "scope": "document",
+            "token": "alpha",
+            "initialState": {
+              "n": 0
+            },
+            "reduce": {
+              "SET": "replace",
+              "MERGE": "merge",
+              "SAME": "same"
+            },
+            "init": true,
+            "effects": {
+              "onAction": [
+                "@@core/document-added",
+                "@@core/active-changed"
+              ],
+              "cleanup": true,
+              "watchState": true
+            }
+          }
+        },
+        {
+          "factory": "probe",
+          "config": {
+            "id": "beta",
+            "scope": "document",
+            "token": "beta",
+            "initialState": {
+              "n": 0
+            },
+            "reduce": {
+              "SET": "replace",
+              "MERGE": "merge",
+              "SAME": "same"
+            },
+            "init": true,
+            "effects": {
+              "onAction": [
+                "@@core/document-added",
+                "@@core/active-changed"
+              ],
+              "cleanup": true,
+              "watchState": true
+            }
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ],
+            "security": {
+              "allows": "*"
+            }
+          },
+          "b": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ],
+            "security": {
+              "allows": "*"
+            }
+          }
+        },
+        "responses": [
+          {
+            "path": "open",
+            "args": [
+              {
+                "kind": "bytes",
+                "id": "b",
+                "bytes": {
+                  "$bytes": ""
+                }
+              },
+              {}
+            ],
+            "defer": "open-b"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "beta",
+            "doc": "a"
+          },
+          "method": "tryGet",
+          "args": [
+            "ws"
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "b",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "ws"
+          },
+          "method": "tryGet",
+          "args": [
+            "alpha"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "ws"
+          },
+          "method": "handleFor",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "ws"
+          },
+          "method": "document",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "allows",
+          "args": [
+            "doc.print"
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "allows",
+          "args": [
+            "doc.print",
+            "a"
+          ]
+        },
+        {
+          "op": "settle",
+          "label": "open-b",
+          "value": {
+            "$document": "b"
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "ws"
+          },
+          "method": "tryGet",
+          "args": [
+            "alpha"
+          ]
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "ws": {}
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [
+            {
+              "fn": "alpha.init",
+              "args": [
+                "a"
+              ]
+            },
+            {
+              "fn": "beta.init",
+              "args": [
+                "a"
+              ]
+            },
+            {
+              "fn": "alpha.effects",
+              "args": [
+                "a"
+              ]
+            },
+            {
+              "fn": "beta.effects",
+              "args": [
+                "a"
+              ]
+            },
+            {
+              "fn": "alpha.onAction",
+              "args": [
+                "a",
+                {
+                  "type": "@@core/document-added"
+                }
+              ]
+            },
+            {
+              "fn": "beta.onAction",
+              "args": [
+                "a",
+                {
+                  "type": "@@core/document-added"
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "pageObjectNumber": 1,
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "ws": {},
+              "alpha::a": {
+                "n": 0
+              },
+              "beta::a": {
+                "n": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "beta.capability",
+              "args": [
+                "a"
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": true
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "pageObjectNumber": 1,
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "ws": {},
+              "alpha::a": {
+                "n": 0
+              },
+              "beta::a": {
+                "n": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "b",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "pageObjectNumber": 1,
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {
+                "b": {
+                  "id": "b",
+                  "status": "loading"
+                }
+              },
+              "order": [
+                "a",
+                "b"
+              ],
+              "activeId": "b"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "ws": {},
+              "alpha::a": {
+                "n": 0
+              },
+              "beta::a": {
+                "n": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": false
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "pageObjectNumber": 1,
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {
+                "b": {
+                  "id": "b",
+                  "status": "loading"
+                }
+              },
+              "order": [
+                "a",
+                "b"
+              ],
+              "activeId": "b"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "ws": {},
+              "alpha::a": {
+                "n": 0
+              },
+              "beta::a": {
+                "n": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": null
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "pageObjectNumber": 1,
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {
+                "b": {
+                  "id": "b",
+                  "status": "loading"
+                }
+              },
+              "order": [
+                "a",
+                "b"
+              ],
+              "activeId": "b"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "ws": {},
+              "alpha::a": {
+                "n": 0
+              },
+              "beta::a": {
+                "n": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": null
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "pageObjectNumber": 1,
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {
+                "b": {
+                  "id": "b",
+                  "status": "loading"
+                }
+              },
+              "order": [
+                "a",
+                "b"
+              ],
+              "activeId": "b"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "ws": {},
+              "alpha::a": {
+                "n": 0
+              },
+              "beta::a": {
+                "n": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": false
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "pageObjectNumber": 1,
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {
+                "b": {
+                  "id": "b",
+                  "status": "loading"
+                }
+              },
+              "order": [
+                "a",
+                "b"
+              ],
+              "activeId": "b"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "ws": {},
+              "alpha::a": {
+                "n": 0
+              },
+              "beta::a": {
+                "n": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": true
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "pageObjectNumber": 1,
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {
+                "b": {
+                  "id": "b",
+                  "status": "loading"
+                }
+              },
+              "order": [
+                "a",
+                "b"
+              ],
+              "activeId": "b"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "ws": {},
+              "alpha::a": {
+                "n": 0
+              },
+              "beta::a": {
+                "n": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": "b"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": "b",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [
+            {
+              "fn": "alpha.init",
+              "args": [
+                "b"
+              ]
+            },
+            {
+              "fn": "beta.init",
+              "args": [
+                "b"
+              ]
+            },
+            {
+              "fn": "alpha.effects",
+              "args": [
+                "b"
+              ]
+            },
+            {
+              "fn": "beta.effects",
+              "args": [
+                "b"
+              ]
+            },
+            {
+              "fn": "alpha.onAction",
+              "args": [
+                "a",
+                {
+                  "type": "@@core/document-added"
+                }
+              ]
+            },
+            {
+              "fn": "beta.onAction",
+              "args": [
+                "a",
+                {
+                  "type": "@@core/document-added"
+                }
+              ]
+            },
+            {
+              "fn": "alpha.onAction",
+              "args": [
+                "b",
+                {
+                  "type": "@@core/document-added"
+                }
+              ]
+            },
+            {
+              "fn": "beta.onAction",
+              "args": [
+                "b",
+                {
+                  "type": "@@core/document-added"
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "pageObjectNumber": 1,
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                },
+                "b": {
+                  "id": "b",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "pageObjectNumber": 1,
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a",
+                "b"
+              ],
+              "activeId": "b"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "ws": {},
+              "alpha::a": {
+                "n": 0
+              },
+              "beta::a": {
+                "n": 0
+              },
+              "alpha::b": {
+                "n": 0
+              },
+              "beta::b": {
+                "n": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "alpha.capability",
+              "args": [
+                "b"
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "b": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": true
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "pageObjectNumber": 1,
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                },
+                "b": {
+                  "id": "b",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "pageObjectNumber": 1,
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a",
+                "b"
+              ],
+              "activeId": "b"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "ws": {},
+              "alpha::a": {
+                "n": 0
+              },
+              "beta::a": {
+                "n": 0
+              },
+              "alpha::b": {
+                "n": 0
+              },
+              "beta::b": {
+                "n": 0
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "a-capability-outlives-its-document",
+      "covers": "A capability kept after its document closed: dispatch reaches no slice and does nothing, state reads undefined, and document() falls back to the meta staged at bring-up.",
+      "plugins": [
+        {
+          "factory": "probe",
+          "config": {
+            "id": "alpha",
+            "scope": "document",
+            "token": "alpha",
+            "initialState": {
+              "n": 0
+            },
+            "reduce": {
+              "SET": "replace",
+              "MERGE": "merge",
+              "SAME": "same"
+            }
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "capability",
+          "args": [
+            {
+              "$token": "alpha"
+            },
+            "a"
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "close",
+          "args": [
+            "a"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "ref": 0
+          },
+          "args": [
+            {
+              "type": "SET",
+              "state": {
+                "n": 9
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "ref": 1
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "ref": 2
+          }
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "pageObjectNumber": 1,
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "alpha::a": {
+                "n": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "alpha.capability",
+              "args": [
+                "a"
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "dispatch": {
+                "$ref": 0
+              },
+              "state": {
+                "$ref": 1
+              },
+              "document": {
+                "$ref": 2
+              },
+              "core": {
+                "$ref": 3
+              },
+              "documentId": {
+                "$ref": 4
+              },
+              "handleId": {
+                "$ref": 5
+              },
+              "handleFor": {
+                "$ref": 6
+              },
+              "get": {
+                "$ref": 7
+              },
+              "tryGet": {
+                "$ref": 8
+              },
+              "forDocument": {
+                "$ref": 9
+              },
+              "cleanup": {
+                "$ref": 10
+              }
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "pageObjectNumber": 1,
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "alpha::a": {
+                "n": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-removed"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "close",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "alpha::a",
+              "action": {
+                "type": "SET",
+                "state": {
+                  "n": 9
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "returned": {
+              "id": "a",
+              "pageCount": 1,
+              "pages": [
+                {
+                  "index": 0,
+                  "pageObjectNumber": 1,
+                  "label": null,
+                  "size": {
+                    "width": 600,
+                    "height": 800
+                  },
+                  "rotation": 0,
+                  "userUnit": 1,
+                  "boxes": {
+                    "media": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 600,
+                      "top": 800
+                    },
+                    "crop": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 600,
+                      "top": 800
+                    }
+                  }
+                }
+              ],
+              "revision": 0,
+              "renderPolicy": {
+                "kind": "continuous"
+              }
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "a-listener-dispatching-mid-pass",
+      "covers": "A state watcher that dispatches from inside its handler: the store finishes the pass it is in, then runs another, so listener order stays deterministic.",
+      "plugins": [
+        {
+          "factory": "probe",
+          "config": {
+            "id": "relay",
+            "token": "relay",
+            "reduce": {
+              "SET": "replace",
+              "MERGE": "merge"
+            },
+            "effects": {
+              "watchState": true,
+              "watchDispatchOnce": {
+                "type": "MERGE",
+                "state": {
+                  "relayed": true
+                }
+              }
+            }
+          }
+        },
+        {
+          "factory": "probe",
+          "config": {
+            "id": "after",
+            "token": "after",
+            "effects": {
+              "watchActive": true
+            }
+          }
+        }
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "relay"
+          },
+          "method": "dispatch",
+          "args": [
+            {
+              "type": "SET",
+              "state": {
+                "n": 1
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "relay"
+          },
+          "method": "state",
+          "args": []
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "relay.effects",
+              "args": [
+                null
+              ]
+            },
+            {
+              "fn": "after.effects",
+              "args": [
+                null
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "relay": {},
+              "after": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "relay",
+              "action": {
+                "type": "SET",
+                "state": {
+                  "n": 1
+                }
+              }
+            },
+            {
+              "slice": "relay",
+              "action": {
+                "type": "MERGE",
+                "state": {
+                  "relayed": true
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "relay.watchState",
+              "args": [
+                null,
+                {
+                  "n": 1
+                },
+                {}
+              ]
+            },
+            {
+              "fn": "relay.watchState",
+              "args": [
+                null,
+                {
+                  "n": 1,
+                  "relayed": true
+                },
+                {
+                  "n": 1
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "relay": {
+                "n": 1,
+                "relayed": true
+              },
+              "after": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "n": 1,
+              "relayed": true
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "relay": {
+                "n": 1,
+                "relayed": true
+              },
+              "after": {}
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "a-plugin-with-no-reducer",
+      "covers": "A plugin without a reducer keeps its initial state whatever it dispatches.",
+      "plugins": [
+        {
+          "factory": "probe",
+          "config": {
+            "id": "inert",
+            "token": "inert",
+            "reduce": null,
+            "initialState": {
+              "fixed": true
+            }
+          }
+        }
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "inert"
+          },
+          "method": "dispatch",
+          "args": [
+            {
+              "type": "SET",
+              "state": {}
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "inert"
+          },
+          "method": "state",
+          "args": []
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "inert": {
+                "fixed": true
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "inert",
+              "action": {
+                "type": "SET",
+                "state": {}
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "inert": {
+                "fixed": true
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "fixed": true
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "inert": {
+                "fixed": true
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "destroy-during-the-last-init",
+      "covers": "destroy() while the last workspace init is pending: start stops before running any effects.",
+      "plugins": [
+        {
+          "factory": "probe",
+          "config": {
+            "id": "only",
+            "token": "only",
+            "init": {
+              "defer": "init"
+            },
+            "effects": {}
+          }
+        }
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "destroy"
+        },
+        {
+          "op": "settle",
+          "label": "init"
+        },
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "status",
+          "args": []
+        }
+      ],
+      "trace": [
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "only.init",
+              "args": [
+                null
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "starting",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "only": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "destroying",
+          "engineState": {},
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "only": {}
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            },
+            {
+              "promise": 1,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "destroyed",
+          "engineState": {},
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "destroyed",
+          "engineState": {},
+          "outcome": {
+            "returned": "destroyed"
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {}
+          }
+        }
+      ]
+    },
+    {
+      "name": "destroy-during-a-start-that-fails",
+      "covers": "destroy() while start is pending, and start then fails: destroy reports the failure, since the kernel was not already failed when destroy began.",
+      "plugins": [
+        {
+          "factory": "probe",
+          "config": {
+            "id": "only",
+            "token": "only",
+            "init": {
+              "defer": "init"
+            }
+          }
+        }
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "destroy"
+        },
+        {
+          "op": "settle",
+          "label": "init",
+          "error": {
+            "name": "Error",
+            "message": "boot failed late"
+          }
+        },
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "status",
+          "args": []
+        }
+      ],
+      "trace": [
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "only.init",
+              "args": [
+                null
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "starting",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "only": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "destroying",
+          "engineState": {},
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "only": {}
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "rejected": {
+                "$error": {
+                  "name": "Error",
+                  "message": "boot failed late"
+                }
+              }
+            },
+            {
+              "promise": 1,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [
+            {
+              "$error": {
+                "name": "Error",
+                "message": "boot failed late"
+              }
+            }
+          ],
+          "status": "destroyed",
+          "engineState": {},
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "destroyed",
+          "engineState": {},
+          "outcome": {
+            "returned": "destroyed"
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {}
+          }
+        }
+      ]
     }
   ]
 }

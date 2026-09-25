@@ -7,7 +7,7 @@
 
 use std::collections::BTreeMap;
 
-use serde::{Serialize, Serializer};
+use serde::{Deserialize, Serialize, Serializer};
 use serde_json::Value;
 
 use crate::error::Error;
@@ -80,7 +80,7 @@ pub struct CoreState {
     pub active_id: Option<String>,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum DocStatus {
     Loading,
@@ -90,7 +90,7 @@ pub enum DocStatus {
 }
 
 /// One tab as `documents.list()` reports it.
-#[derive(Clone, Debug, PartialEq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DocInfo {
     pub id: String,
@@ -98,7 +98,7 @@ pub struct DocInfo {
     pub name: Option<String>,
     pub status: DocStatus,
     pub page_count: u32,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub password_provided: Option<bool>,
 }
 
@@ -126,6 +126,22 @@ impl DocInfo {
             password_provided: meta.password_provided,
         }
     }
+}
+
+/// `docInfoEquals`: field-wise, the one definition every adapter's reactive
+/// `docs` read keys on.
+pub fn doc_info_equals(a: &DocInfo, b: &DocInfo) -> bool {
+    a.id == b.id
+        && a.name == b.name
+        && a.status == b.status
+        && a.page_count == b.page_count
+        && a.password_provided == b.password_provided
+}
+
+/// `docInfoListEquals`: the same list object is equal without a look.
+pub fn doc_info_list_equals(a: &[DocInfo], b: &[DocInfo]) -> bool {
+    std::ptr::eq(a, b)
+        || (a.len() == b.len() && a.iter().zip(b).all(|(x, y)| doc_info_equals(x, y)))
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]

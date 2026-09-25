@@ -155,17 +155,22 @@ impl FakeEngine {
         };
         let engine = Rc::downgrade(self);
         let aborter = resolver.clone();
-        let promise = promise.with_abort(move |reason| {
-            if aborter.promise().is_settled() {
-                return;
-            }
-            if let Some(engine) = engine.upgrade() {
-                engine.state.borrow_mut().log.push(
+        let plain = self.spec.get("plainPromises").and_then(Value::as_bool) == Some(true);
+        let promise = if plain {
+            promise
+        } else {
+            promise.with_abort(move |reason| {
+                if aborter.promise().is_settled() {
+                    return;
+                }
+                if let Some(engine) = engine.upgrade() {
+                    engine.state.borrow_mut().log.push(
                     json!({ "abort": index, "reason": reason.clone().unwrap_or_else(undefined) }),
                 );
-            }
-            aborter.reject(Error::abort(reason));
-        });
+                }
+                aborter.reject(Error::abort(reason));
+            })
+        };
         match self.matching(table, path, pon, &args) {
             None => match fallback {
                 Some(fallback) => settle(fallback()),

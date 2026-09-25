@@ -39,8 +39,9 @@ export interface ProbeConfig {
   readonly initialState?: unknown;
   /** Per action type: `replace` (state becomes `action.state`), `merge`
    *  (`{...state, ...action.state}`) or `same` (return the state object: no
-   *  change). Unlisted types return the state object. */
-  readonly reduce?: Readonly<Record<string, 'replace' | 'merge' | 'same'>>;
+   *  change). Unlisted types return the state object. `null` gives the
+   *  plugin no reducer at all. */
+  readonly reduce?: Readonly<Record<string, 'replace' | 'merge' | 'same'>> | null;
   readonly init?: ProbeStep | true;
   readonly effects?: {
     readonly throws?: ErrorSpec;
@@ -50,12 +51,15 @@ export interface ProbeConfig {
     readonly watchActive?: boolean;
     /** Log changes to this probe's own state, compared by reference. */
     readonly watchState?: boolean;
+    /** The first time the state watch fires, dispatch this action from
+     *  inside the handler: a listener re-entering the store mid-pass. */
+    readonly watchDispatchOnce?: Action & { readonly state?: unknown };
     /** Make the watch and action handlers throw after logging. */
     readonly listenerThrows?: ErrorSpec;
     /** Register a teardown that logs, and finishes as described. */
     readonly cleanup?: ProbeStep | true;
     /** Dispatch this action when the effect is set up. */
-    readonly dispatch?: Action;
+    readonly dispatch?: Action & { readonly state?: unknown };
   };
   /** Throw while building the capability. */
   readonly capabilityThrows?: ErrorSpec;
@@ -87,12 +91,15 @@ export function probePlugin(config: ProbeConfig, env: PluginEnv): AnyPlugin {
     requires: config.requires?.map((t) => probeToken(t, config.requiresHint?.[t])),
     optional: config.optional?.map((t) => probeToken(t)),
     initialState: config.initialState === undefined ? undefined : () => structuredClone(config.initialState),
-    reduce: (state: unknown, action: Action & { state?: unknown }) => {
-      const rule = config.reduce?.[action.type];
-      if (rule === 'replace') return action.state;
-      if (rule === 'merge') return { ...(state as object), ...(action.state as object) };
-      return state;
-    },
+    reduce:
+      config.reduce === null
+        ? undefined
+        : (state: unknown, action: Action & { state?: unknown }) => {
+            const rule = config.reduce?.[action.type];
+            if (rule === 'replace') return action.state;
+            if (rule === 'merge') return { ...(state as object), ...(action.state as object) };
+            return state;
+          },
     capability: token
       ? (ctx: PluginContext<unknown>) => {
           log(`${name}.capability`, [where(ctx)]);
@@ -138,9 +145,17 @@ export function probePlugin(config: ProbeConfig, env: PluginEnv): AnyPlugin {
             );
           }
           if (effects.watchState) {
+            let relay = effects.watchDispatchOnce;
             ctx.watch(
               () => ctx.getState(),
-              (next, previous) => listened('watchState', [where(ctx), next, previous]),
+              (next, previous) => {
+                if (relay) {
+                  const action = relay;
+                  relay = undefined;
+                  ctx.dispatch(action);
+                }
+                listened('watchState', [where(ctx), next, previous]);
+              },
             );
           }
           if (effects.cleanup) {
