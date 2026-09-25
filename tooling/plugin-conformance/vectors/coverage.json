@@ -1,7 +1,7 @@
 {
   "total": {
-    "statements": "13495/13521",
-    "branches": "3042/3123"
+    "statements": "16512/16544",
+    "branches": "3767/3876"
   },
   "files": {
     "packages/core/acrojs/src/actions.ts": {
@@ -70,7 +70,7 @@
     },
     "packages/core/main/src/kernel.ts": {
       "statements": "844/844",
-      "branches": "269/275",
+      "branches": "270/276",
       "uncoveredLines": [],
       "uncoveredBranches": [
         "179:22#0",
@@ -116,7 +116,7 @@
     },
     "packages/core/stage/src/index.ts": {
       "statements": "919/919",
-      "branches": "195/195",
+      "branches": "196/196",
       "uncoveredLines": [],
       "uncoveredBranches": []
     },
@@ -172,7 +172,7 @@
     },
     "packages/plugin/actions/src/capability.ts": {
       "statements": "1604/1615",
-      "branches": "573/601",
+      "branches": "575/603",
       "uncoveredLines": [
         329,
         330,
@@ -216,6 +216,12 @@
         "1377:73#0",
         "1430:61#0"
       ]
+    },
+    "packages/plugin/actions/src/contract.ts": {
+      "statements": "33/33",
+      "branches": "0/0",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
     },
     "packages/plugin/actions/src/host-contract.ts": {
       "statements": "21/21",
@@ -351,7 +357,7 @@
     },
     "packages/plugin/interaction/src/capability.ts": {
       "statements": "173/173",
-      "branches": "75/75",
+      "branches": "74/74",
       "uncoveredLines": [],
       "uncoveredBranches": []
     },
@@ -709,6 +715,118 @@
     },
     "packages/plugin/shell/src/types.ts": {
       "statements": "75/75",
+      "branches": "0/0",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/stage/src/capability.ts": {
+      "statements": "1568/1573",
+      "branches": "555/577",
+      "uncoveredLines": [
+        82,
+        876,
+        877,
+        878,
+        889
+      ],
+      "uncoveredBranches": [
+        "81:43#0",
+        "102:29#0",
+        "104:37#0",
+        "173:32#0",
+        "235:26#0",
+        "248:49#0",
+        "280:62#0",
+        "295:62#0",
+        "804:25#0",
+        "870:34#0",
+        "888:57#0",
+        "1093:37#0",
+        "1101:23#0",
+        "1109:81#0",
+        "1112:25#0",
+        "1114:36#0",
+        "1206:60#0",
+        "1367:25#0",
+        "1414:27#0",
+        "1482:18#0",
+        "1491:24#0",
+        "1448:27#0"
+      ]
+    },
+    "packages/plugin/stage/src/contract.ts": {
+      "statements": "39/39",
+      "branches": "0/0",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/stage/src/destination.ts": {
+      "statements": "122/122",
+      "branches": "34/34",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/stage/src/effects.ts": {
+      "statements": "68/68",
+      "branches": "20/22",
+      "uncoveredLines": [],
+      "uncoveredBranches": [
+        "29:26#0",
+        "59:22#0"
+      ]
+    },
+    "packages/plugin/stage/src/index.ts": {
+      "statements": "16/16",
+      "branches": "0/0",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/stage/src/motion.ts": {
+      "statements": "85/85",
+      "branches": "12/12",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/stage/src/reducer.ts": {
+      "statements": "60/61",
+      "branches": "19/20",
+      "uncoveredLines": [
+        59
+      ],
+      "uncoveredBranches": [
+        "58:4#0"
+      ]
+    },
+    "packages/plugin/stage/src/responsive.ts": {
+      "statements": "81/81",
+      "branches": "35/35",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/stage/src/scroll-handler.ts": {
+      "statements": "62/62",
+      "branches": "17/17",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/stage/src/settings.ts": {
+      "statements": "107/107",
+      "branches": "11/11",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/stage/src/stage.plugin.ts": {
+      "statements": "109/109",
+      "branches": "19/22",
+      "uncoveredLines": [],
+      "uncoveredBranches": [
+        "70:36#0",
+        "85:37#0",
+        "87:22#0"
+      ]
+    },
+    "packages/plugin/stage/src/types.ts": {
+      "statements": "667/667",
       "branches": "0/0",
       "uncoveredLines": [],
       "uncoveredBranches": []
