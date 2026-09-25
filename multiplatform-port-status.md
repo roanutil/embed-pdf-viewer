@@ -4,8 +4,14 @@ What is ported, what pins it, and what is left. `multiplatform-port-order.md`
 is the plan; this is where the plan actually got to. Regenerate nothing from
 this file: every claim below points at a test you can run.
 
-Run everything with `cargo test --workspace`, which is 58 suites at the time of
-writing, plus `cargo clippy --workspace --all-targets -- -D warnings`.
+Run everything with `cargo test --workspace`, which is 66 suites at the time
+of writing, plus `cargo clippy --workspace --all-targets -- -D warnings`.
+
+Every group from G0 through G15 now has a Rust implementation. What is left
+is listed under "Not started" below, and it is three things: a form-JavaScript
+applier that depends on a capability rather than on a port, the event
+DELIVERY that the port order keeps in TypeScript, and a handful of behaviours
+this corpus cannot distinguish, each documented where it lives.
 
 ## Done, and pinned to the TypeScript by vectors
 
@@ -73,9 +79,12 @@ them as verified, not as pinned.
 | cross-cutting | rotation normalization | `tests/rotation_normalization.rs` |
 | cross-cutting | cancel traces | `tests/cancel_traces.rs` |
 
-## Not started
+## Not started, and what each gap actually is
 
-Phase 2 is done: every read group from G2 through G9 is ported and gated.
+Phase 2 is done: every read group from G2 through G9 is ported and gated. So
+are G10 through G15. What follows is the residue: one operation that is not a
+port, one layer the plan keeps in TypeScript, and a set of behaviours the
+corpus cannot tell apart.
 
 G10 is done. The save landed earlier, the session authority is G3's
 `SessionAuthority`, and `finishMutation` with the event vocabulary is in
