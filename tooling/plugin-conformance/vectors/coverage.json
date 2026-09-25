@@ -1,9 +1,143 @@
 {
   "total": {
-    "statements": "4748/4760",
-    "branches": "1047/1059"
+    "statements": "11195/11216",
+    "branches": "3064/3094"
   },
   "files": {
+    "packages/core/annotation/src/anchor.ts": {
+      "statements": "196/196",
+      "branches": "50/50",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/core/annotation/src/cloudy.ts": {
+      "statements": "561/570",
+      "branches": "119/130",
+      "uncoveredLines": [
+        111,
+        112,
+        113,
+        291,
+        292,
+        293,
+        294,
+        295,
+        296
+      ],
+      "uncoveredBranches": [
+        "66:61#0",
+        "67:59#0",
+        "110:19#0",
+        "132:19#0",
+        "232:20#0",
+        "290:22#0",
+        "311:56#0",
+        "347:26#0",
+        "359:17#0",
+        "428:23#0",
+        "453:22#0"
+      ]
+    },
+    "packages/core/annotation/src/endings.ts": {
+      "statements": "160/160",
+      "branches": "33/33",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/core/annotation/src/flags.ts": {
+      "statements": "88/88",
+      "branches": "30/30",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/core/annotation/src/geometry.ts": {
+      "statements": "1458/1458",
+      "branches": "545/548",
+      "uncoveredLines": [],
+      "uncoveredBranches": [
+        "411:51#0",
+        "668:22#0",
+        "1118:47#0"
+      ]
+    },
+    "packages/core/annotation/src/group.ts": {
+      "statements": "98/98",
+      "branches": "38/38",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/core/annotation/src/hit.ts": {
+      "statements": "298/298",
+      "branches": "110/110",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/core/annotation/src/ink.ts": {
+      "statements": "39/39",
+      "branches": "14/14",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/core/annotation/src/kinds.ts": {
+      "statements": "574/574",
+      "branches": "10/10",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/core/annotation/src/links.ts": {
+      "statements": "34/34",
+      "branches": "11/11",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/core/annotation/src/placement.ts": {
+      "statements": "122/122",
+      "branches": "32/32",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/core/annotation/src/plane.ts": {
+      "statements": "62/62",
+      "branches": "17/17",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/core/annotation/src/props.ts": {
+      "statements": "193/193",
+      "branches": "77/77",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/core/annotation/src/scene.ts": {
+      "statements": "273/273",
+      "branches": "89/89",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/core/annotation/src/snap.ts": {
+      "statements": "117/117",
+      "branches": "38/38",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/core/annotation/src/update.ts": {
+      "statements": "1572/1572",
+      "branches": "584/586",
+      "uncoveredLines": [],
+      "uncoveredBranches": [
+        "1195:63#0",
+        "1361:16#0"
+      ]
+    },
+    "packages/core/annotation/src/view.ts": {
+      "statements": "602/602",
+      "branches": "220/222",
+      "uncoveredLines": [],
+      "uncoveredBranches": [
+        "358:43#0",
+        "571:15#0"
+      ]
+    },
     "packages/core/geometry/src/index.ts": {
       "statements": "801/801",
       "branches": "93/93",
