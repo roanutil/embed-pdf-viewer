@@ -1,0 +1,23 @@
+[package]
+name = "epdf-plugin-interaction"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+description = "packages/plugin/interaction in Rust: the pointer hub (tools, prioritized handlers, gesture capture, cursor claims, touch pre-flight) and the platform feedback seam."
+
+[lib]
+crate-type = ["rlib"]
+
+[features]
+# The conformance adapter (`harness` module). On by default so `cargo test`
+# replays the vectors with no flags; a host that ships the plugin turns it
+# off with `default-features = false`.
+default = ["harness"]
+harness = ["dep:plugin-conformance"]
+
+[dependencies]
+epdf-kernel = { path = "../../epdf-kernel" }
+epdf-geometry = { path = "../geometry", default-features = false }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["float_roundtrip"] }
+plugin-conformance = { path = "../../plugin-conformance", optional = true }
