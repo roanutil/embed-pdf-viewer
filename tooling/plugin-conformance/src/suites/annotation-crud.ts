@@ -356,6 +356,57 @@ const cases: ScenarioCase[] = [
       call('cancelCreationDraft'),
     ],
   },
+  {
+    name: 'memoized-selectors-and-edges',
+    covers:
+      'The memoized selectors answer from cache while their inputs are unchanged and recompute on a view change; pointer intents carry zoom and display rotation; an unknown page has no page box; endTextEdit with nothing open is a plain end; a free-text with null contents flushes an empty string; a flags or props write on a draft that has no ref yet sends nothing.',
+    plugins: PLUGINS,
+    engine: {
+      documents: {
+        a: doc([
+          hydrate({ 1: [square(1), freeText(2, { contents: null, rect: { left: 300, bottom: 300, right: 400, top: 400 } }), link(3, { target: null })] }),
+          { path: 'page.annotations.update', pon: 1, value: updated(freeText(2, { contents: null })) },
+          { path: 'page.annotations.create', pon: 1, defer: 'draft' },
+        ]),
+      },
+    },
+    snapshot: SNAP,
+    steps: [
+      ...boot,
+      call('pageItems', [1]),
+      call('pageItems', [1]),
+      call('pageItems', [1, { zoom: 2, rotation: 0 }]),
+      call('pageItems', [1, { zoom: 3, rotation: 0 }]),
+      call('pageItems', [1, { zoom: 3, rotation: 90 }]),
+      call('textItems', [1]),
+      call('textItems', [1]),
+      call('textItems', [1, { zoom: 2, rotation: 0 }]),
+      call('textItems', [1, { zoom: 2, rotation: 90 }]),
+      call('linkItemsOn', [1]),
+      call('linkItemsOn', [1]),
+      call('getSelectionFlags'),
+      call('getSelectionFlags'),
+      call('getSelectionProps'),
+      call('getSelectionProps'),
+      call('creationDraftAnchor'),
+      call('creationDraftAnchor'),
+      call('hitKind', [7, { x: 1, y: 1 }]),
+      call('editPointer', ['down', 1, { x: 100, y: 100 }, false, 2, 90, 1.5]),
+      call('editPointer', ['up', 1, { x: 100, y: 100 }, false, 2, 90, 1.5]),
+      call('marqueePointer', ['down', 1, { x: 5, y: 5 }, false, 2, 90, 1.5]),
+      call('marqueePointer', ['move', 1, { x: 50, y: 50 }, false, 2, 90, 1.5]),
+      call('marqueePointer', ['up', 1, { x: 50, y: 50 }, true]),
+      call('endTextEdit'),
+      call('beginTextEdit', [objRef(2)]),
+      call('endTextEdit'),
+      call('createPointer', ['square', 'down', 1, { x: 100, y: 500 }]),
+      call('createPointer', ['square', 'up', 1, { x: 180, y: 560 }]),
+      call('updateSelectionFlags', [{ locked: true }]),
+      call('updateSelection', [{ color: '#000000' }]),
+      settle('draft', created(square(30))),
+    ],
+    allowUnmatched: false,
+  },
 ];
 
 function FLAGS_LOCKED() {
@@ -365,7 +416,6 @@ function FLAGS_HIDDEN() {
   return { ...FLAGS_LOCKED(), locked: false, hidden: true };
 }
 
-void settle;
 
 export const suites: Suite[] = [
   {

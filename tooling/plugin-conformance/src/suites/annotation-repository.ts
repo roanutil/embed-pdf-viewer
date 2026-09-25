@@ -100,6 +100,7 @@ const DTOS: [string, Dto, typeof CROP][] = [
   ['caret', caret(30, { intent: 'replace', contents: 'new words' }), CROP],
   ['caret-rotated', caret(31, { rotation: 90, unrotatedRect: { left: 86, bottom: 746, right: 94, top: 754 } }), CROP],
   ['redact-area', redact(32), CROP],
+  ['redact-no-fill', redact(51, { interiorColor: null }), CROP],
   ['redact-text', redact(33, { quadPoints: markup('x', 0).quadPoints, overlayText: 'REDACTED', repeat: true }), CROP],
   ['text', textNote(34), CROP],
   ['text-reply', textNote(35, { inReplyTo: objRef(34), replyType: 'reply', contents: 'a reply' }), CROP],
@@ -308,7 +309,7 @@ cases.push(
 for (const label of ['square-rotated', 'callout', 'highlight', 'line', 'ink', 'redact-text']) {
   cases.push(c('linkChildRects', label, annotOf(label)));
 }
-for (const label of ['square', 'polygon-cloudy', 'ink', 'free-text', 'highlight', 'caret', 'redact-area', 'text', 'widget-text', 'widget-checkbox', 'unsupported']) {
+for (const label of ['square', 'polygon-cloudy', 'ink', 'free-text', 'highlight', 'caret', 'redact-area', 'redact-no-fill', 'text', 'widget-text', 'widget-checkbox', 'unsupported']) {
   const found = DTOS.find(([l]) => l === label)!;
   cases.push(c('styleFromDTO', label, found[1]));
 }

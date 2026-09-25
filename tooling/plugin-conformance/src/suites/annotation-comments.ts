@@ -72,13 +72,36 @@ const cases: ScenarioCase[] = [
     plugins: WITH_LENS,
     engine: {
       documents: {
-        a: doc([hydrate({ 1: [square(1, { contents: 'a' })], 2: page2() })], { pages: [layout(0, 1), layout(1, 2)] }),
+        a: doc(
+          [
+            {
+              path: 'annotations.listRawAll',
+              value: {
+                pages: [
+                  {
+                    pageState: { pageObjectNumber: 1 },
+                    annotations: [
+                      square(1, { contents: 'a' }),
+                      square(2, { contents: 'tie one' }),
+                      square(3, { contents: 'tie two' }),
+                      square(4, { contents: 'lost page', pageObjectNumber: 9, ref: objRef(4, 9) }),
+                      square(5, { contents: 'lost page too', pageObjectNumber: 8, ref: objRef(5, 8) }),
+                    ],
+                  },
+                  { pageState: { pageObjectNumber: 2 }, annotations: page2() },
+                ],
+              },
+            },
+          ],
+          { pages: [layout(0, 1), layout(1, 2)] },
+        ),
       },
     },
     snapshot: 'none',
     steps: [
       ...boot,
       call('deliverRemoteAnnotationEvent', [{ type: 'annotation.moved', pageObjectNumber: 1, origin: { kind: 'remote', serverId: 1 }, moved: [square(9, { pageObjectNumber: 1, contents: 'z' })] }]),
+      call('rehydrate'),
       lens('threads'),
     ],
   },
@@ -202,7 +225,7 @@ const cases: ScenarioCase[] = [
     engine: {
       documents: {
         a: doc([
-          hydrate({ 1: [square(1), link(9, { target: { kind: 'uri', uri: 'https://own' } })] }),
+          hydrate({ 1: [square(1), link(9, { target: { kind: 'uri', uri: 'https://own' } }), link(10, { target: null })] }),
           { path: 'page.annotations.create', pon: 1, times: 1, value: created(link(20, { inReplyTo: objRef(1), replyType: 'group', target: { kind: 'uri', uri: 'https://a' } })) },
           { path: 'page.annotations.update', pon: 1, times: 1, value: updated(link(20, { inReplyTo: objRef(1), replyType: 'group', target: { kind: 'uri', uri: 'https://b' } })) },
           { path: 'page.annotations.update', pon: 1, times: 1, value: updated(link(20, { inReplyTo: objRef(1), replyType: 'group', target: { kind: 'uri', uri: 'https://b' } })) },
@@ -223,6 +246,7 @@ const cases: ScenarioCase[] = [
       lens('linksOf', [objRef(1)]),
       lens('linksOf', [objRef(9)]),
       lens('linksOf', [objRef(99)]),
+      lens('linksOf', [objRef(10)]),
       lens('linksSet', [objRef(9), { kind: 'uri', uri: 'https://x' }]),
       lens('linksSet', [objRef(99), { kind: 'uri', uri: 'https://x' }]),
       call('linkItemsOn', [1]),

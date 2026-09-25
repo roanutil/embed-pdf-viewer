@@ -85,7 +85,7 @@ const cases: ScenarioCase[] = [
       documents: {
         a: doc(
           [
-            hydrate({ 1: [square(1), square(2, grouped(2, 1)), square(3)] }),
+            hydrate({ 1: [square(1, { userId: 'u1', groupId: 'g1' }), square(2, { ...grouped(2, 1), userId: 'u2' }), square(3, { groupId: 'g2' })] }),
             { path: 'page.annotations.update', pon: 1, error: { name: 'EngineError', message: 'nope', code: 'Refused' } },
           ],
           { security: { allows: '*', allowsAnnotationMutation: { update: false, delete: true } } },

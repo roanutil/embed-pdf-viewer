@@ -2938,6 +2938,561 @@
       }
     },
     {
+      "name": "buildToolRegistry/own-flags",
+      "fn": "buildToolRegistry",
+      "args": [
+        [
+          {
+            "id": "locked-box",
+            "subtype": "square",
+            "flags": {
+              "locked": true
+            }
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "$map": [
+            [
+              "square",
+              {
+                "id": "square",
+                "subtype": "square",
+                "preset": "square",
+                "propsKind": "square",
+                "cursor": "crosshair",
+                "enables": {
+                  "$set": [
+                    "annotation-draw",
+                    "annotation-edit"
+                  ]
+                },
+                "defaults": {
+                  "strokeWidth": 6
+                },
+                "upright": false,
+                "clickCreate": {
+                  "width": 80,
+                  "height": 60
+                },
+                "ghost": false
+              }
+            ],
+            [
+              "circle",
+              {
+                "id": "circle",
+                "subtype": "circle",
+                "preset": "circle",
+                "propsKind": "circle",
+                "cursor": "crosshair",
+                "enables": {
+                  "$set": [
+                    "annotation-draw",
+                    "annotation-edit"
+                  ]
+                },
+                "defaults": {
+                  "strokeWidth": 6
+                },
+                "upright": false,
+                "clickCreate": {
+                  "width": 80,
+                  "height": 60
+                },
+                "ghost": false
+              }
+            ],
+            [
+              "line",
+              {
+                "id": "line",
+                "subtype": "line",
+                "preset": "line",
+                "propsKind": "line",
+                "cursor": "crosshair",
+                "enables": {
+                  "$set": [
+                    "annotation-draw",
+                    "annotation-edit"
+                  ]
+                },
+                "defaults": {
+                  "strokeWidth": 6
+                },
+                "upright": false,
+                "clickCreate": {
+                  "length": 80
+                },
+                "ghost": false
+              }
+            ],
+            [
+              "polygon",
+              {
+                "id": "polygon",
+                "subtype": "polygon",
+                "preset": "polygon",
+                "propsKind": "polygon",
+                "cursor": "crosshair",
+                "enables": {
+                  "$set": [
+                    "annotation-draw",
+                    "annotation-edit"
+                  ]
+                },
+                "defaults": {
+                  "strokeWidth": 6
+                },
+                "upright": false,
+                "clickCreate": false,
+                "ghost": false
+              }
+            ],
+            [
+              "polyline",
+              {
+                "id": "polyline",
+                "subtype": "polyline",
+                "preset": "polyline",
+                "propsKind": "polyline",
+                "cursor": "crosshair",
+                "enables": {
+                  "$set": [
+                    "annotation-draw",
+                    "annotation-edit"
+                  ]
+                },
+                "defaults": {
+                  "strokeWidth": 6
+                },
+                "upright": false,
+                "clickCreate": false,
+                "ghost": false
+              }
+            ],
+            [
+              "ink",
+              {
+                "id": "ink",
+                "subtype": "ink",
+                "preset": "ink",
+                "propsKind": "ink",
+                "cursor": "crosshair",
+                "enables": {
+                  "$set": [
+                    "annotation-draw",
+                    "annotation-edit"
+                  ]
+                },
+                "defaults": {
+                  "color": "#ef4444",
+                  "strokeWidth": 6,
+                  "blendMode": "normal"
+                },
+                "ink": {
+                  "groupStrokesMs": 800
+                },
+                "upright": false,
+                "clickCreate": false,
+                "ghost": false
+              }
+            ],
+            [
+              "ink-highlight",
+              {
+                "id": "ink-highlight",
+                "subtype": "ink",
+                "preset": "ink-highlight",
+                "propsKind": "ink",
+                "cursor": "crosshair",
+                "enables": {
+                  "$set": [
+                    "annotation-draw",
+                    "annotation-edit"
+                  ]
+                },
+                "defaults": {
+                  "color": "#ffcd45",
+                  "strokeWidth": 14,
+                  "blendMode": "multiply"
+                },
+                "intent": "ink-highlight",
+                "ink": {
+                  "groupStrokesMs": 800,
+                  "straighten": {
+                    "deviationThreshold": 0.15,
+                    "axisSnapDegrees": 15
+                  }
+                },
+                "upright": false,
+                "clickCreate": false,
+                "ghost": false
+              }
+            ],
+            [
+              "free-text",
+              {
+                "id": "free-text",
+                "subtype": "free-text",
+                "preset": "free-text",
+                "propsKind": "free-text",
+                "cursor": "crosshair",
+                "enables": {
+                  "$set": [
+                    "annotation-draw",
+                    "annotation-edit"
+                  ]
+                },
+                "defaults": {
+                  "fontColor": "#ef4444"
+                },
+                "upright": true,
+                "clickCreate": {
+                  "width": 180,
+                  "height": 40,
+                  "anchor": "top-left"
+                },
+                "ghost": false
+              }
+            ],
+            [
+              "free-text-callout",
+              {
+                "id": "free-text-callout",
+                "subtype": "free-text-callout",
+                "preset": "free-text-callout",
+                "propsKind": "free-text",
+                "cursor": "crosshair",
+                "enables": {
+                  "$set": [
+                    "annotation-draw",
+                    "annotation-edit"
+                  ]
+                },
+                "defaults": {
+                  "strokeWidth": 6,
+                  "lineEndings": {
+                    "end": "open-arrow"
+                  }
+                },
+                "upright": true,
+                "clickCreate": false,
+                "ghost": false
+              }
+            ],
+            [
+              "highlight",
+              {
+                "id": "highlight",
+                "subtype": "highlight",
+                "preset": "highlight",
+                "propsKind": "highlight",
+                "cursor": "default",
+                "enables": {
+                  "$set": [
+                    "text-select",
+                    "annotation-edit"
+                  ]
+                },
+                "defaults": {
+                  "color": "#ffe16a",
+                  "blendMode": "multiply"
+                },
+                "selection": {
+                  "kind": "markup"
+                },
+                "upright": false,
+                "clickCreate": false,
+                "ghost": false
+              }
+            ],
+            [
+              "redact",
+              {
+                "id": "redact",
+                "subtype": "redact",
+                "preset": "redact",
+                "propsKind": "redact",
+                "cursor": "crosshair",
+                "enables": {
+                  "$set": [
+                    "text-select",
+                    "annotation-draw",
+                    "annotation-edit"
+                  ]
+                },
+                "defaults": {
+                  "color": "#e44234",
+                  "interiorColor": "#000000",
+                  "fontColor": "#ffffff",
+                  "opacity": 1
+                },
+                "selection": {
+                  "kind": "markup"
+                },
+                "upright": false,
+                "clickCreate": false,
+                "ghost": false
+              }
+            ],
+            [
+              "underline",
+              {
+                "id": "underline",
+                "subtype": "underline",
+                "preset": "underline",
+                "propsKind": "underline",
+                "cursor": "default",
+                "enables": {
+                  "$set": [
+                    "text-select",
+                    "annotation-edit"
+                  ]
+                },
+                "defaults": {
+                  "color": "#ef4444"
+                },
+                "selection": {
+                  "kind": "markup"
+                },
+                "upright": false,
+                "clickCreate": false,
+                "ghost": false
+              }
+            ],
+            [
+              "strikeout",
+              {
+                "id": "strikeout",
+                "subtype": "strikeout",
+                "preset": "strikeout",
+                "propsKind": "strikeout",
+                "cursor": "default",
+                "enables": {
+                  "$set": [
+                    "text-select",
+                    "annotation-edit"
+                  ]
+                },
+                "defaults": {
+                  "color": "#ef4444"
+                },
+                "selection": {
+                  "kind": "markup"
+                },
+                "upright": false,
+                "clickCreate": false,
+                "ghost": false
+              }
+            ],
+            [
+              "squiggly",
+              {
+                "id": "squiggly",
+                "subtype": "squiggly",
+                "preset": "squiggly",
+                "propsKind": "squiggly",
+                "cursor": "default",
+                "enables": {
+                  "$set": [
+                    "text-select",
+                    "annotation-edit"
+                  ]
+                },
+                "defaults": {
+                  "color": "#ef4444"
+                },
+                "selection": {
+                  "kind": "markup"
+                },
+                "upright": false,
+                "clickCreate": false,
+                "ghost": false
+              }
+            ],
+            [
+              "insert-text",
+              {
+                "id": "insert-text",
+                "subtype": "caret",
+                "preset": "caret",
+                "propsKind": "caret",
+                "cursor": "default",
+                "enables": {
+                  "$set": [
+                    "text-select",
+                    "annotation-edit"
+                  ]
+                },
+                "defaults": {
+                  "color": "#ef4444"
+                },
+                "selection": {
+                  "kind": "text-edit",
+                  "operation": "insert"
+                },
+                "upright": false,
+                "clickCreate": false,
+                "ghost": false
+              }
+            ],
+            [
+              "replace-text",
+              {
+                "id": "replace-text",
+                "subtype": "strikeout",
+                "preset": "replace-text",
+                "propsKind": "strikeout",
+                "cursor": "default",
+                "enables": {
+                  "$set": [
+                    "text-select",
+                    "annotation-edit"
+                  ]
+                },
+                "defaults": {
+                  "color": "#ef4444"
+                },
+                "selection": {
+                  "kind": "text-edit",
+                  "operation": "replace"
+                },
+                "upright": false,
+                "clickCreate": false,
+                "ghost": false
+              }
+            ],
+            [
+              "stamp",
+              {
+                "id": "stamp",
+                "subtype": "stamp",
+                "preset": "stamp",
+                "propsKind": "stamp",
+                "cursor": "copy",
+                "enables": {
+                  "$set": [
+                    "annotation-place",
+                    "annotation-edit"
+                  ]
+                },
+                "source": {
+                  "kind": "prompt",
+                  "accept": "image/png,image/jpeg,application/pdf"
+                },
+                "upright": true,
+                "clickCreate": false,
+                "ghost": {
+                  "mode": "footprint"
+                }
+              }
+            ],
+            [
+              "link",
+              {
+                "id": "link",
+                "subtype": "link",
+                "preset": "link",
+                "propsKind": "link",
+                "cursor": "crosshair",
+                "enables": {
+                  "$set": [
+                    "annotation-draw",
+                    "annotation-edit"
+                  ]
+                },
+                "upright": false,
+                "clickCreate": false,
+                "ghost": false
+              }
+            ],
+            [
+              "note",
+              {
+                "id": "note",
+                "subtype": "text",
+                "preset": "note",
+                "propsKind": "text",
+                "cursor": "crosshair",
+                "enables": {
+                  "$set": [
+                    "annotation-place",
+                    "annotation-edit"
+                  ]
+                },
+                "defaults": {
+                  "icon": "comment",
+                  "color": "#facc15"
+                },
+                "flags": {
+                  "noZoom": true,
+                  "noRotate": true
+                },
+                "upright": true,
+                "clickCreate": false,
+                "ghost": {
+                  "mode": "footprint"
+                }
+              }
+            ],
+            [
+              "attachment",
+              {
+                "id": "attachment",
+                "subtype": "file-attachment",
+                "preset": "attachment",
+                "propsKind": "file-attachment",
+                "cursor": "copy",
+                "enables": {
+                  "$set": [
+                    "annotation-place",
+                    "annotation-edit"
+                  ]
+                },
+                "defaults": {
+                  "icon": "paperclip",
+                  "color": "#facc15"
+                },
+                "flags": {
+                  "noZoom": true,
+                  "noRotate": true
+                },
+                "source": {
+                  "kind": "prompt"
+                },
+                "upright": true,
+                "clickCreate": false,
+                "ghost": {
+                  "mode": "footprint"
+                }
+              }
+            ],
+            [
+              "locked-box",
+              {
+                "id": "locked-box",
+                "subtype": "square",
+                "preset": "locked-box",
+                "propsKind": "square",
+                "cursor": "crosshair",
+                "enables": {
+                  "$set": []
+                },
+                "flags": {
+                  "locked": true
+                },
+                "upright": false,
+                "clickCreate": false,
+                "ghost": false
+              }
+            ]
+          ]
+        }
+      }
+    },
+    {
       "name": "buildToolRegistry/self-extends",
       "fn": "buildToolRegistry",
       "args": [

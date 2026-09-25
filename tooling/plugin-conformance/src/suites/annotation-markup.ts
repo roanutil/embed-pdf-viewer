@@ -83,7 +83,7 @@ const cases: ScenarioCase[] = [
       },
     },
     snapshot: slices,
-    steps: [...boot, ...load, tool('highlight'), ...drag([53, 56], [83, 76]), call('list', [1])],
+    steps: [...boot, ...load, ...drag([53, 56], [77, 56]), sel('hasSelection'), tool('highlight'), ...drag([53, 56], [83, 76]), call('list', [1]), sel('select', [range([1, 0], [1, 4])]), call('markupFromSelection', ['squiggly']), call('createMarkup', ['underline', 1, []])],
   },
   {
     name: 'insert-and-replace-text',

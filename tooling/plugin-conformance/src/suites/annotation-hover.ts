@@ -65,7 +65,7 @@ const cases: ScenarioCase[] = [
     covers:
       'With the actions plugin present, each hover change reports to the shared pump: an annotation with /E or /X trees is a target with per-event flags; drafts, widgets, links and tree-less annotations are not. The pump runs the trees as hover-origin dispatches.',
     plugins: [{ factory: 'interaction' }, { factory: 'actions', config: { openSequence: 'off' } }, { factory: 'annotation' }],
-    engine: { documents: { a: doc([hydrate({ 1: hoverable }), annotationsList, FORMS_EMPTY]) } },
+    engine: { documents: { a: doc([hydrate({ 1: hoverable }), annotationsList, FORMS_EMPTY, { path: 'page.annotations.create', pon: 1, defer: 'draft' }]) } },
     snapshot: 'none',
     steps: [
       ...boot,
@@ -77,6 +77,10 @@ const cases: ScenarioCase[] = [
       hoverAt(401, 25),
       hoverAt(101, 25),
       call('hoverAt', [null]),
+      call('createPointer', ['square', 'down', 1, { x: 100, y: 500 }]),
+      call('createPointer', ['square', 'up', 1, { x: 180, y: 560 }]),
+      hoverAt(100, 530),
+      hoverAt(140, 530),
     ],
   },
   {

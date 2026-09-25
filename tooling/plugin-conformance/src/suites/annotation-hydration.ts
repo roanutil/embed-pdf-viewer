@@ -106,6 +106,7 @@ const cases: ScenarioCase[] = [
       emit({ type: 'annotation.deleted', pageObjectNumber: 1, origin: { kind: 'remote' }, deleted: { kind: 'objectNumber', value: 3 } }),
       emit({ type: 'annotation.created', pageObjectNumber: 1, origin: LOCAL, created: square(8) }),
       emit({ type: 'metadata.updated', metadata: {} }),
+      call('deliverRemoteAnnotationEvent', [{ type: 'annotation.created', pageObjectNumber: 1, created: square(20) }]),
       settle('all', snapshot(seed, 10)),
       call('list', [1]),
       call('list', [2]),

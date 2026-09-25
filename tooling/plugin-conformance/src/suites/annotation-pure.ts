@@ -45,6 +45,7 @@ cases.push(
   ]),
   c('buildToolRegistry', 'custom-kind', [{ id: 'widget-sig', subtype: 'widget-signature', defaults: { opacity: 0.5, bogus: 1 } }]),
   c('buildToolRegistry', 'bare-id', [{ id: 'mystery' }]),
+  c('buildToolRegistry', 'own-flags', [{ id: 'locked-box', subtype: 'square', flags: { locked: true } }]),
   c('buildToolRegistry', 'self-extends', [{ id: 'loop', extends: 'loop', subtype: 'square' }]),
   c('buildToolRegistry', 'cycle', [
     { id: 'a', extends: 'b', subtype: 'square' },

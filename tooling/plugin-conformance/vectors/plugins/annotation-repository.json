@@ -6164,6 +6164,188 @@
       }
     },
     {
+      "name": "fromDTO/redact-no-fill",
+      "fn": "fromDTO",
+      "args": [
+        {
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 51
+          },
+          "pageObjectNumber": 1,
+          "index": 51,
+          "identityQuality": "durable",
+          "nm": null,
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "rect": {
+            "left": 100,
+            "bottom": 600,
+            "right": 200,
+            "top": 700
+          },
+          "contents": null,
+          "subject": null,
+          "author": null,
+          "created": null,
+          "modified": null,
+          "blendMode": "normal",
+          "inReplyTo": null,
+          "replyType": null,
+          "subtype": "redact",
+          "color": {
+            "r": 239,
+            "g": 68,
+            "b": 68
+          },
+          "interiorColor": null,
+          "opacity": 1,
+          "quadPoints": [],
+          "overlayText": null,
+          "repeat": false,
+          "fontFamily": "helvetica",
+          "fontSize": 0,
+          "fontColor": {
+            "r": 255,
+            "g": 255,
+            "b": 255
+          },
+          "textAlign": "center"
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        },
+        "baked"
+      ],
+      "outcome": {
+        "returned": {
+          "id": "obj:51",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 51
+          },
+          "pon": 1,
+          "subtype": "redact",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "baked",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 51
+            },
+            "pageObjectNumber": 1,
+            "index": 51,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 100,
+              "bottom": 600,
+              "right": 200,
+              "top": 700
+            },
+            "contents": null,
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "redact",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "interiorColor": null,
+            "opacity": 1,
+            "quadPoints": [],
+            "overlayText": null,
+            "repeat": false,
+            "fontFamily": "helvetica",
+            "fontSize": 0,
+            "fontColor": {
+              "r": 255,
+              "g": 255,
+              "b": 255
+            },
+            "textAlign": "center"
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": null,
+            "strokeWidth": 1.5,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "rect",
+            "rect": {
+              "x": 100,
+              "y": 100,
+              "width": 100,
+              "height": 100
+            },
+            "ellipse": false
+          },
+          "text": {
+            "fontFamily": "helvetica",
+            "fontSize": 0,
+            "fontColor": "#ffffff",
+            "textAlign": "center"
+          },
+          "apBox": {
+            "x": 100,
+            "y": 100,
+            "width": 100,
+            "height": 100
+          }
+        }
+      }
+    },
+    {
       "name": "fromDTO/redact-text",
       "fn": "fromDTO",
       "args": [
@@ -24954,6 +25136,454 @@
             "g": 0,
             "b": 0
           },
+          "opacity": 1,
+          "fontFamily": "helvetica",
+          "fontSize": 0,
+          "fontColor": {
+            "r": 255,
+            "g": 255,
+            "b": 255
+          },
+          "textAlign": "center",
+          "nm": "00000000-0000-4000-8000-000000000001",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          }
+        }
+      }
+    },
+    {
+      "name": "toPatch/redact-no-fill",
+      "fn": "toPatch",
+      "args": [
+        {
+          "id": "obj:51",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 51
+          },
+          "pon": 1,
+          "subtype": "redact",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "vector",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 51
+            },
+            "pageObjectNumber": 1,
+            "index": 51,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 100,
+              "bottom": 600,
+              "right": 200,
+              "top": 700
+            },
+            "contents": null,
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "redact",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "interiorColor": null,
+            "opacity": 1,
+            "quadPoints": [],
+            "overlayText": null,
+            "repeat": false,
+            "fontFamily": "helvetica",
+            "fontSize": 0,
+            "fontColor": {
+              "r": 255,
+              "g": 255,
+              "b": 255
+            },
+            "textAlign": "center"
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": null,
+            "strokeWidth": 1.5,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "rect",
+            "rect": {
+              "x": 100,
+              "y": 100,
+              "width": 100,
+              "height": 100
+            },
+            "ellipse": false
+          },
+          "text": {
+            "fontFamily": "helvetica",
+            "fontSize": 0,
+            "fontColor": "#ffffff",
+            "textAlign": "center"
+          },
+          "apBox": {
+            "x": 100,
+            "y": 100,
+            "width": 100,
+            "height": 100
+          }
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "redact",
+          "rect": {
+            "left": 100,
+            "bottom": 600,
+            "right": 200,
+            "top": 700
+          },
+          "color": {
+            "r": 239,
+            "g": 68,
+            "b": 68
+          },
+          "interiorColor": null,
+          "opacity": 1,
+          "fontFamily": "helvetica",
+          "fontSize": 0,
+          "fontColor": {
+            "r": 255,
+            "g": 255,
+            "b": 255
+          },
+          "textAlign": "center"
+        }
+      }
+    },
+    {
+      "name": "toScopedPatch/redact-no-fill/geometry",
+      "fn": "toScopedPatch",
+      "args": [
+        {
+          "id": "obj:51",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 51
+          },
+          "pon": 1,
+          "subtype": "redact",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "vector",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 51
+            },
+            "pageObjectNumber": 1,
+            "index": 51,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 100,
+              "bottom": 600,
+              "right": 200,
+              "top": 700
+            },
+            "contents": null,
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "redact",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "interiorColor": null,
+            "opacity": 1,
+            "quadPoints": [],
+            "overlayText": null,
+            "repeat": false,
+            "fontFamily": "helvetica",
+            "fontSize": 0,
+            "fontColor": {
+              "r": 255,
+              "g": 255,
+              "b": 255
+            },
+            "textAlign": "center"
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": null,
+            "strokeWidth": 1.5,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "rect",
+            "rect": {
+              "x": 100,
+              "y": 100,
+              "width": 100,
+              "height": 100
+            },
+            "ellipse": false
+          },
+          "text": {
+            "fontFamily": "helvetica",
+            "fontSize": 0,
+            "fontColor": "#ffffff",
+            "textAlign": "center"
+          },
+          "apBox": {
+            "x": 100,
+            "y": 100,
+            "width": 100,
+            "height": 100
+          }
+        },
+        {
+          "kind": "geometry"
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "redact",
+          "rect": {
+            "left": 100,
+            "bottom": 600,
+            "right": 200,
+            "top": 700
+          }
+        }
+      }
+    },
+    {
+      "name": "toCreateDraft/redact-no-fill",
+      "fn": "toCreateDraft",
+      "args": [
+        {
+          "id": "obj:51",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 51
+          },
+          "pon": 1,
+          "subtype": "redact",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "vector",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 51
+            },
+            "pageObjectNumber": 1,
+            "index": 51,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 100,
+              "bottom": 600,
+              "right": 200,
+              "top": 700
+            },
+            "contents": null,
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "redact",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "interiorColor": null,
+            "opacity": 1,
+            "quadPoints": [],
+            "overlayText": null,
+            "repeat": false,
+            "fontFamily": "helvetica",
+            "fontSize": 0,
+            "fontColor": {
+              "r": 255,
+              "g": 255,
+              "b": 255
+            },
+            "textAlign": "center"
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": null,
+            "strokeWidth": 1.5,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "rect",
+            "rect": {
+              "x": 100,
+              "y": 100,
+              "width": 100,
+              "height": 100
+            },
+            "ellipse": false
+          },
+          "text": {
+            "fontFamily": "helvetica",
+            "fontSize": 0,
+            "fontColor": "#ffffff",
+            "textAlign": "center"
+          },
+          "apBox": {
+            "x": 100,
+            "y": 100,
+            "width": 100,
+            "height": 100
+          }
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "redact",
+          "rect": {
+            "left": 100,
+            "bottom": 600,
+            "right": 200,
+            "top": 700
+          },
+          "color": {
+            "r": 239,
+            "g": 68,
+            "b": 68
+          },
+          "interiorColor": null,
           "opacity": 1,
           "fontFamily": "helvetica",
           "fontSize": 0,
@@ -71161,6 +71791,80 @@
         "returned": {
           "color": "#ef4444",
           "interiorColor": "#000000",
+          "strokeWidth": 1.5,
+          "opacity": 1,
+          "blendMode": "normal",
+          "border": {
+            "kind": "solid"
+          }
+        }
+      }
+    },
+    {
+      "name": "styleFromDTO/redact-no-fill",
+      "fn": "styleFromDTO",
+      "args": [
+        {
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 51
+          },
+          "pageObjectNumber": 1,
+          "index": 51,
+          "identityQuality": "durable",
+          "nm": null,
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "rect": {
+            "left": 100,
+            "bottom": 600,
+            "right": 200,
+            "top": 700
+          },
+          "contents": null,
+          "subject": null,
+          "author": null,
+          "created": null,
+          "modified": null,
+          "blendMode": "normal",
+          "inReplyTo": null,
+          "replyType": null,
+          "subtype": "redact",
+          "color": {
+            "r": 239,
+            "g": 68,
+            "b": 68
+          },
+          "interiorColor": null,
+          "opacity": 1,
+          "quadPoints": [],
+          "overlayText": null,
+          "repeat": false,
+          "fontFamily": "helvetica",
+          "fontSize": 0,
+          "fontColor": {
+            "r": 255,
+            "g": 255,
+            "b": 255
+          },
+          "textAlign": "center"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "color": "#ef4444",
+          "interiorColor": null,
           "strokeWidth": 1.5,
           "opacity": 1,
           "blendMode": "normal",

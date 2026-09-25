@@ -13431,6 +13431,69 @@
           }
         },
         {
+          "op": "call",
+          "target": {
+            "token": "annotation",
+            "doc": "a"
+          },
+          "method": "deliverRemoteAnnotationEvent",
+          "args": [
+            {
+              "type": "annotation.created",
+              "pageObjectNumber": 1,
+              "created": {
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1,
+                  "annotObjectNumber": 20
+                },
+                "pageObjectNumber": 1,
+                "index": 20,
+                "identityQuality": "durable",
+                "nm": null,
+                "flags": {
+                  "invisible": false,
+                  "hidden": false,
+                  "print": true,
+                  "noZoom": false,
+                  "noRotate": false,
+                  "noView": false,
+                  "readOnly": false,
+                  "locked": false,
+                  "toggleNoView": false,
+                  "lockedContents": false
+                },
+                "rect": {
+                  "left": 100,
+                  "bottom": 600,
+                  "right": 200,
+                  "top": 700
+                },
+                "contents": null,
+                "subject": null,
+                "author": null,
+                "created": null,
+                "modified": null,
+                "blendMode": "normal",
+                "inReplyTo": null,
+                "replyType": null,
+                "subtype": "square",
+                "color": {
+                  "r": 239,
+                  "g": 68,
+                  "b": 68
+                },
+                "interiorColor": null,
+                "opacity": 1,
+                "strokeWidth": 2,
+                "borderStyle": "solid",
+                "cloudyIntensity": null,
+                "rectDifferences": null
+              }
+            }
+          ]
+        },
+        {
           "op": "settle",
           "label": "all",
           "value": {
@@ -15402,6 +15465,138 @@
         },
         {
           "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "annotation::a": {
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                },
+                "hydration": {
+                  "status": "loading"
+                },
+                "chrome": {
+                  "accent": "#3858e9",
+                  "outline": {
+                    "style": "solid",
+                    "width": 1
+                  },
+                  "handles": {
+                    "size": 8,
+                    "hitSize": 24,
+                    "fill": "#ffffff"
+                  },
+                  "knob": {
+                    "size": 10,
+                    "hitSize": 24,
+                    "offset": 32,
+                    "stalk": true,
+                    "fill": "#ffffff"
+                  },
+                  "guides": {
+                    "enabled": true,
+                    "style": "solid",
+                    "width": 1,
+                    "axisOpacity": 0.35,
+                    "indicatorOpacity": 0.8
+                  }
+                },
+                "toolGhost": null,
+                "stampArmEpoch": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
           "actions": [
             {
               "slice": "annotation::a",
@@ -17202,6 +17397,507 @@
             {
               "slice": "annotation::a",
               "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {
+                    "obj:1": {
+                      "id": "obj:1",
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1,
+                        "annotObjectNumber": 1
+                      },
+                      "pon": 1,
+                      "subtype": "square",
+                      "flags": {
+                        "invisible": false,
+                        "hidden": false,
+                        "print": true,
+                        "noZoom": false,
+                        "noRotate": false,
+                        "noView": false,
+                        "readOnly": false,
+                        "locked": false,
+                        "toggleNoView": false,
+                        "lockedContents": false
+                      },
+                      "source": "baked",
+                      "data": {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1,
+                          "annotObjectNumber": 1
+                        },
+                        "pageObjectNumber": 1,
+                        "index": 1,
+                        "identityQuality": "durable",
+                        "nm": null,
+                        "flags": {
+                          "invisible": false,
+                          "hidden": false,
+                          "print": true,
+                          "noZoom": false,
+                          "noRotate": false,
+                          "noView": false,
+                          "readOnly": false,
+                          "locked": false,
+                          "toggleNoView": false,
+                          "lockedContents": false
+                        },
+                        "rect": {
+                          "left": 100,
+                          "bottom": 600,
+                          "right": 200,
+                          "top": 700
+                        },
+                        "contents": null,
+                        "subject": null,
+                        "author": null,
+                        "created": null,
+                        "modified": null,
+                        "blendMode": "normal",
+                        "inReplyTo": null,
+                        "replyType": null,
+                        "subtype": "square",
+                        "color": {
+                          "r": 239,
+                          "g": 68,
+                          "b": 68
+                        },
+                        "interiorColor": null,
+                        "opacity": 1,
+                        "strokeWidth": 2,
+                        "borderStyle": "solid",
+                        "cloudyIntensity": null,
+                        "rectDifferences": null
+                      },
+                      "style": {
+                        "color": "#ef4444",
+                        "interiorColor": null,
+                        "strokeWidth": 2,
+                        "opacity": 1,
+                        "blendMode": "normal",
+                        "border": {
+                          "kind": "solid"
+                        }
+                      },
+                      "geom": {
+                        "t": "rect",
+                        "rect": {
+                          "x": 100,
+                          "y": 100,
+                          "width": 100,
+                          "height": 100
+                        },
+                        "ellipse": false
+                      },
+                      "apBox": {
+                        "x": 100,
+                        "y": 100,
+                        "width": 100,
+                        "height": 100
+                      },
+                      "authority": {
+                        "update": true,
+                        "delete": true
+                      },
+                      "apVersion": 0
+                    },
+                    "obj:2": {
+                      "id": "obj:2",
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1,
+                        "annotObjectNumber": 2
+                      },
+                      "pon": 1,
+                      "subtype": "square",
+                      "flags": {
+                        "invisible": false,
+                        "hidden": false,
+                        "print": true,
+                        "noZoom": false,
+                        "noRotate": false,
+                        "noView": false,
+                        "readOnly": false,
+                        "locked": false,
+                        "toggleNoView": false,
+                        "lockedContents": false
+                      },
+                      "source": "baked",
+                      "data": {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1,
+                          "annotObjectNumber": 2
+                        },
+                        "pageObjectNumber": 1,
+                        "index": 2,
+                        "identityQuality": "durable",
+                        "nm": null,
+                        "flags": {
+                          "invisible": false,
+                          "hidden": false,
+                          "print": true,
+                          "noZoom": false,
+                          "noRotate": false,
+                          "noView": false,
+                          "readOnly": false,
+                          "locked": false,
+                          "toggleNoView": false,
+                          "lockedContents": false
+                        },
+                        "rect": {
+                          "left": 100,
+                          "bottom": 600,
+                          "right": 200,
+                          "top": 700
+                        },
+                        "contents": "new",
+                        "subject": null,
+                        "author": null,
+                        "created": null,
+                        "modified": null,
+                        "blendMode": "normal",
+                        "inReplyTo": null,
+                        "replyType": null,
+                        "subtype": "square",
+                        "color": {
+                          "r": 239,
+                          "g": 68,
+                          "b": 68
+                        },
+                        "interiorColor": null,
+                        "opacity": 1,
+                        "strokeWidth": 2,
+                        "borderStyle": "solid",
+                        "cloudyIntensity": null,
+                        "rectDifferences": null
+                      },
+                      "style": {
+                        "color": "#ef4444",
+                        "interiorColor": null,
+                        "strokeWidth": 2,
+                        "opacity": 1,
+                        "blendMode": "normal",
+                        "border": {
+                          "kind": "solid"
+                        }
+                      },
+                      "geom": {
+                        "t": "rect",
+                        "rect": {
+                          "x": 100,
+                          "y": 100,
+                          "width": 100,
+                          "height": 100
+                        },
+                        "ellipse": false
+                      },
+                      "apBox": {
+                        "x": 100,
+                        "y": 100,
+                        "width": 100,
+                        "height": 100
+                      },
+                      "authority": {
+                        "update": true,
+                        "delete": true
+                      },
+                      "apVersion": 0
+                    },
+                    "obj:7": {
+                      "id": "obj:7",
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1,
+                        "annotObjectNumber": 7
+                      },
+                      "pon": 1,
+                      "subtype": "square",
+                      "flags": {
+                        "invisible": false,
+                        "hidden": false,
+                        "print": true,
+                        "noZoom": false,
+                        "noRotate": false,
+                        "noView": false,
+                        "readOnly": false,
+                        "locked": false,
+                        "toggleNoView": false,
+                        "lockedContents": false
+                      },
+                      "source": "baked",
+                      "data": {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1,
+                          "annotObjectNumber": 7
+                        },
+                        "pageObjectNumber": 1,
+                        "index": 7,
+                        "identityQuality": "durable",
+                        "nm": null,
+                        "flags": {
+                          "invisible": false,
+                          "hidden": false,
+                          "print": true,
+                          "noZoom": false,
+                          "noRotate": false,
+                          "noView": false,
+                          "readOnly": false,
+                          "locked": false,
+                          "toggleNoView": false,
+                          "lockedContents": false
+                        },
+                        "rect": {
+                          "left": 100,
+                          "bottom": 600,
+                          "right": 200,
+                          "top": 700
+                        },
+                        "contents": null,
+                        "subject": null,
+                        "author": null,
+                        "created": null,
+                        "modified": null,
+                        "blendMode": "normal",
+                        "inReplyTo": null,
+                        "replyType": null,
+                        "subtype": "square",
+                        "color": {
+                          "r": 239,
+                          "g": 68,
+                          "b": 68
+                        },
+                        "interiorColor": null,
+                        "opacity": 1,
+                        "strokeWidth": 2,
+                        "borderStyle": "solid",
+                        "cloudyIntensity": null,
+                        "rectDifferences": null
+                      },
+                      "style": {
+                        "color": "#ef4444",
+                        "interiorColor": null,
+                        "strokeWidth": 2,
+                        "opacity": 1,
+                        "blendMode": "normal",
+                        "border": {
+                          "kind": "solid"
+                        }
+                      },
+                      "geom": {
+                        "t": "rect",
+                        "rect": {
+                          "x": 100,
+                          "y": 100,
+                          "width": 100,
+                          "height": 100
+                        },
+                        "ellipse": false
+                      },
+                      "apBox": {
+                        "x": 100,
+                        "y": 100,
+                        "width": 100,
+                        "height": 100
+                      },
+                      "authority": {
+                        "update": true,
+                        "delete": true
+                      },
+                      "apVersion": 1
+                    },
+                    "obj:20": {
+                      "id": "obj:20",
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1,
+                        "annotObjectNumber": 20
+                      },
+                      "pon": 1,
+                      "subtype": "square",
+                      "flags": {
+                        "invisible": false,
+                        "hidden": false,
+                        "print": true,
+                        "noZoom": false,
+                        "noRotate": false,
+                        "noView": false,
+                        "readOnly": false,
+                        "locked": false,
+                        "toggleNoView": false,
+                        "lockedContents": false
+                      },
+                      "source": "baked",
+                      "data": {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1,
+                          "annotObjectNumber": 20
+                        },
+                        "pageObjectNumber": 1,
+                        "index": 20,
+                        "identityQuality": "durable",
+                        "nm": null,
+                        "flags": {
+                          "invisible": false,
+                          "hidden": false,
+                          "print": true,
+                          "noZoom": false,
+                          "noRotate": false,
+                          "noView": false,
+                          "readOnly": false,
+                          "locked": false,
+                          "toggleNoView": false,
+                          "lockedContents": false
+                        },
+                        "rect": {
+                          "left": 100,
+                          "bottom": 600,
+                          "right": 200,
+                          "top": 700
+                        },
+                        "contents": null,
+                        "subject": null,
+                        "author": null,
+                        "created": null,
+                        "modified": null,
+                        "blendMode": "normal",
+                        "inReplyTo": null,
+                        "replyType": null,
+                        "subtype": "square",
+                        "color": {
+                          "r": 239,
+                          "g": 68,
+                          "b": 68
+                        },
+                        "interiorColor": null,
+                        "opacity": 1,
+                        "strokeWidth": 2,
+                        "borderStyle": "solid",
+                        "cloudyIntensity": null,
+                        "rectDifferences": null
+                      },
+                      "style": {
+                        "color": "#ef4444",
+                        "interiorColor": null,
+                        "strokeWidth": 2,
+                        "opacity": 1,
+                        "blendMode": "normal",
+                        "border": {
+                          "kind": "solid"
+                        }
+                      },
+                      "geom": {
+                        "t": "rect",
+                        "rect": {
+                          "x": 100,
+                          "y": 100,
+                          "width": 100,
+                          "height": 100
+                        },
+                        "ellipse": false
+                      },
+                      "apBox": {
+                        "x": 100,
+                        "y": 100,
+                        "width": 100,
+                        "height": 100
+                      },
+                      "authority": {
+                        "update": true,
+                        "delete": true
+                      },
+                      "apVersion": 1
+                    }
+                  },
+                  "order": [
+                    "obj:1",
+                    "obj:2",
+                    "obj:7",
+                    "obj:20"
+                  ],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
                 "type": "SET_HYDRATION",
                 "hydration": {
                   "status": "complete"
@@ -17531,12 +18227,116 @@
                         "delete": true
                       },
                       "apVersion": 1
+                    },
+                    "obj:20": {
+                      "id": "obj:20",
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1,
+                        "annotObjectNumber": 20
+                      },
+                      "pon": 1,
+                      "subtype": "square",
+                      "flags": {
+                        "invisible": false,
+                        "hidden": false,
+                        "print": true,
+                        "noZoom": false,
+                        "noRotate": false,
+                        "noView": false,
+                        "readOnly": false,
+                        "locked": false,
+                        "toggleNoView": false,
+                        "lockedContents": false
+                      },
+                      "source": "baked",
+                      "data": {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1,
+                          "annotObjectNumber": 20
+                        },
+                        "pageObjectNumber": 1,
+                        "index": 20,
+                        "identityQuality": "durable",
+                        "nm": null,
+                        "flags": {
+                          "invisible": false,
+                          "hidden": false,
+                          "print": true,
+                          "noZoom": false,
+                          "noRotate": false,
+                          "noView": false,
+                          "readOnly": false,
+                          "locked": false,
+                          "toggleNoView": false,
+                          "lockedContents": false
+                        },
+                        "rect": {
+                          "left": 100,
+                          "bottom": 600,
+                          "right": 200,
+                          "top": 700
+                        },
+                        "contents": null,
+                        "subject": null,
+                        "author": null,
+                        "created": null,
+                        "modified": null,
+                        "blendMode": "normal",
+                        "inReplyTo": null,
+                        "replyType": null,
+                        "subtype": "square",
+                        "color": {
+                          "r": 239,
+                          "g": 68,
+                          "b": 68
+                        },
+                        "interiorColor": null,
+                        "opacity": 1,
+                        "strokeWidth": 2,
+                        "borderStyle": "solid",
+                        "cloudyIntensity": null,
+                        "rectDifferences": null
+                      },
+                      "style": {
+                        "color": "#ef4444",
+                        "interiorColor": null,
+                        "strokeWidth": 2,
+                        "opacity": 1,
+                        "blendMode": "normal",
+                        "border": {
+                          "kind": "solid"
+                        }
+                      },
+                      "geom": {
+                        "t": "rect",
+                        "rect": {
+                          "x": 100,
+                          "y": 100,
+                          "width": 100,
+                          "height": 100
+                        },
+                        "ellipse": false
+                      },
+                      "apBox": {
+                        "x": 100,
+                        "y": 100,
+                        "width": 100,
+                        "height": 100
+                      },
+                      "authority": {
+                        "update": true,
+                        "delete": true
+                      },
+                      "apVersion": 1
                     }
                   },
                   "order": [
                     "obj:1",
                     "obj:2",
-                    "obj:7"
+                    "obj:7",
+                    "obj:20"
                   ],
                   "selected": [],
                   "hovered": null,
@@ -17767,6 +18567,55 @@
                 },
                 "pageObjectNumber": 1,
                 "index": 7,
+                "identityQuality": "durable",
+                "nm": null,
+                "flags": {
+                  "invisible": false,
+                  "hidden": false,
+                  "print": true,
+                  "noZoom": false,
+                  "noRotate": false,
+                  "noView": false,
+                  "readOnly": false,
+                  "locked": false,
+                  "toggleNoView": false,
+                  "lockedContents": false
+                },
+                "rect": {
+                  "left": 100,
+                  "bottom": 600,
+                  "right": 200,
+                  "top": 700
+                },
+                "contents": null,
+                "subject": null,
+                "author": null,
+                "created": null,
+                "modified": null,
+                "blendMode": "normal",
+                "inReplyTo": null,
+                "replyType": null,
+                "subtype": "square",
+                "color": {
+                  "r": 239,
+                  "g": 68,
+                  "b": 68
+                },
+                "interiorColor": null,
+                "opacity": 1,
+                "strokeWidth": 2,
+                "borderStyle": "solid",
+                "cloudyIntensity": null,
+                "rectDifferences": null
+              },
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1,
+                  "annotObjectNumber": 20
+                },
+                "pageObjectNumber": 1,
+                "index": 20,
                 "identityQuality": "durable",
                 "nm": null,
                 "flags": {
@@ -18123,12 +18972,116 @@
                         "delete": true
                       },
                       "apVersion": 1
+                    },
+                    "obj:20": {
+                      "id": "obj:20",
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1,
+                        "annotObjectNumber": 20
+                      },
+                      "pon": 1,
+                      "subtype": "square",
+                      "flags": {
+                        "invisible": false,
+                        "hidden": false,
+                        "print": true,
+                        "noZoom": false,
+                        "noRotate": false,
+                        "noView": false,
+                        "readOnly": false,
+                        "locked": false,
+                        "toggleNoView": false,
+                        "lockedContents": false
+                      },
+                      "source": "baked",
+                      "data": {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1,
+                          "annotObjectNumber": 20
+                        },
+                        "pageObjectNumber": 1,
+                        "index": 20,
+                        "identityQuality": "durable",
+                        "nm": null,
+                        "flags": {
+                          "invisible": false,
+                          "hidden": false,
+                          "print": true,
+                          "noZoom": false,
+                          "noRotate": false,
+                          "noView": false,
+                          "readOnly": false,
+                          "locked": false,
+                          "toggleNoView": false,
+                          "lockedContents": false
+                        },
+                        "rect": {
+                          "left": 100,
+                          "bottom": 600,
+                          "right": 200,
+                          "top": 700
+                        },
+                        "contents": null,
+                        "subject": null,
+                        "author": null,
+                        "created": null,
+                        "modified": null,
+                        "blendMode": "normal",
+                        "inReplyTo": null,
+                        "replyType": null,
+                        "subtype": "square",
+                        "color": {
+                          "r": 239,
+                          "g": 68,
+                          "b": 68
+                        },
+                        "interiorColor": null,
+                        "opacity": 1,
+                        "strokeWidth": 2,
+                        "borderStyle": "solid",
+                        "cloudyIntensity": null,
+                        "rectDifferences": null
+                      },
+                      "style": {
+                        "color": "#ef4444",
+                        "interiorColor": null,
+                        "strokeWidth": 2,
+                        "opacity": 1,
+                        "blendMode": "normal",
+                        "border": {
+                          "kind": "solid"
+                        }
+                      },
+                      "geom": {
+                        "t": "rect",
+                        "rect": {
+                          "x": 100,
+                          "y": 100,
+                          "width": 100,
+                          "height": 100
+                        },
+                        "ellipse": false
+                      },
+                      "apBox": {
+                        "x": 100,
+                        "y": 100,
+                        "width": 100,
+                        "height": 100
+                      },
+                      "authority": {
+                        "update": true,
+                        "delete": true
+                      },
+                      "apVersion": 1
                     }
                   },
                   "order": [
                     "obj:1",
                     "obj:2",
-                    "obj:7"
+                    "obj:7",
+                    "obj:20"
                   ],
                   "selected": [],
                   "hovered": null,
@@ -18567,12 +19520,116 @@
                         "delete": true
                       },
                       "apVersion": 1
+                    },
+                    "obj:20": {
+                      "id": "obj:20",
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1,
+                        "annotObjectNumber": 20
+                      },
+                      "pon": 1,
+                      "subtype": "square",
+                      "flags": {
+                        "invisible": false,
+                        "hidden": false,
+                        "print": true,
+                        "noZoom": false,
+                        "noRotate": false,
+                        "noView": false,
+                        "readOnly": false,
+                        "locked": false,
+                        "toggleNoView": false,
+                        "lockedContents": false
+                      },
+                      "source": "baked",
+                      "data": {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1,
+                          "annotObjectNumber": 20
+                        },
+                        "pageObjectNumber": 1,
+                        "index": 20,
+                        "identityQuality": "durable",
+                        "nm": null,
+                        "flags": {
+                          "invisible": false,
+                          "hidden": false,
+                          "print": true,
+                          "noZoom": false,
+                          "noRotate": false,
+                          "noView": false,
+                          "readOnly": false,
+                          "locked": false,
+                          "toggleNoView": false,
+                          "lockedContents": false
+                        },
+                        "rect": {
+                          "left": 100,
+                          "bottom": 600,
+                          "right": 200,
+                          "top": 700
+                        },
+                        "contents": null,
+                        "subject": null,
+                        "author": null,
+                        "created": null,
+                        "modified": null,
+                        "blendMode": "normal",
+                        "inReplyTo": null,
+                        "replyType": null,
+                        "subtype": "square",
+                        "color": {
+                          "r": 239,
+                          "g": 68,
+                          "b": 68
+                        },
+                        "interiorColor": null,
+                        "opacity": 1,
+                        "strokeWidth": 2,
+                        "borderStyle": "solid",
+                        "cloudyIntensity": null,
+                        "rectDifferences": null
+                      },
+                      "style": {
+                        "color": "#ef4444",
+                        "interiorColor": null,
+                        "strokeWidth": 2,
+                        "opacity": 1,
+                        "blendMode": "normal",
+                        "border": {
+                          "kind": "solid"
+                        }
+                      },
+                      "geom": {
+                        "t": "rect",
+                        "rect": {
+                          "x": 100,
+                          "y": 100,
+                          "width": 100,
+                          "height": 100
+                        },
+                        "ellipse": false
+                      },
+                      "apBox": {
+                        "x": 100,
+                        "y": 100,
+                        "width": 100,
+                        "height": 100
+                      },
+                      "authority": {
+                        "update": true,
+                        "delete": true
+                      },
+                      "apVersion": 1
                     }
                   },
                   "order": [
                     "obj:1",
                     "obj:2",
-                    "obj:7"
+                    "obj:7",
+                    "obj:20"
                   ],
                   "selected": [],
                   "hovered": null,

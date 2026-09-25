@@ -18692,7 +18692,9 @@
                           "strokeWidth": 2,
                           "borderStyle": "solid",
                           "cloudyIntensity": null,
-                          "rectDifferences": null
+                          "rectDifferences": null,
+                          "userId": "u1",
+                          "groupId": "g1"
                         },
                         {
                           "ref": {
@@ -18745,7 +18747,8 @@
                           "strokeWidth": 2,
                           "borderStyle": "solid",
                           "cloudyIntensity": null,
-                          "rectDifferences": null
+                          "rectDifferences": null,
+                          "userId": "u2"
                         },
                         {
                           "ref": {
@@ -18794,7 +18797,8 @@
                           "strokeWidth": 2,
                           "borderStyle": "solid",
                           "cloudyIntensity": null,
-                          "rectDifferences": null
+                          "rectDifferences": null,
+                          "groupId": "g2"
                         }
                       ]
                     }
@@ -19706,7 +19710,9 @@
                         "strokeWidth": 2,
                         "borderStyle": "solid",
                         "cloudyIntensity": null,
-                        "rectDifferences": null
+                        "rectDifferences": null,
+                        "userId": "u1",
+                        "groupId": "g1"
                       },
                       "style": {
                         "color": "#ef4444",
@@ -19813,7 +19819,8 @@
                         "strokeWidth": 2,
                         "borderStyle": "solid",
                         "cloudyIntensity": null,
-                        "rectDifferences": null
+                        "rectDifferences": null,
+                        "userId": "u2"
                       },
                       "irt": "obj:1",
                       "group": "obj:1",
@@ -19918,7 +19925,8 @@
                         "strokeWidth": 2,
                         "borderStyle": "solid",
                         "cloudyIntensity": null,
-                        "rectDifferences": null
+                        "rectDifferences": null,
+                        "groupId": "g2"
                       },
                       "style": {
                         "color": "#ef4444",
@@ -20166,7 +20174,9 @@
                         "strokeWidth": 2,
                         "borderStyle": "solid",
                         "cloudyIntensity": null,
-                        "rectDifferences": null
+                        "rectDifferences": null,
+                        "userId": "u1",
+                        "groupId": "g1"
                       },
                       "style": {
                         "color": "#ef4444",
@@ -20273,7 +20283,8 @@
                         "strokeWidth": 2,
                         "borderStyle": "solid",
                         "cloudyIntensity": null,
-                        "rectDifferences": null
+                        "rectDifferences": null,
+                        "userId": "u2"
                       },
                       "irt": "obj:1",
                       "group": "obj:1",
@@ -20378,7 +20389,8 @@
                         "strokeWidth": 2,
                         "borderStyle": "solid",
                         "cloudyIntensity": null,
-                        "rectDifferences": null
+                        "rectDifferences": null,
+                        "groupId": "g2"
                       },
                       "style": {
                         "color": "#ef4444",
@@ -20590,7 +20602,9 @@
                         "strokeWidth": 2,
                         "borderStyle": "solid",
                         "cloudyIntensity": null,
-                        "rectDifferences": null
+                        "rectDifferences": null,
+                        "userId": "u1",
+                        "groupId": "g1"
                       },
                       "style": {
                         "color": "#ef4444",
@@ -20697,7 +20711,8 @@
                         "strokeWidth": 2,
                         "borderStyle": "solid",
                         "cloudyIntensity": null,
-                        "rectDifferences": null
+                        "rectDifferences": null,
+                        "userId": "u2"
                       },
                       "irt": "obj:1",
                       "group": "obj:1",
@@ -20802,7 +20817,8 @@
                         "strokeWidth": 2,
                         "borderStyle": "solid",
                         "cloudyIntensity": null,
-                        "rectDifferences": null
+                        "rectDifferences": null,
+                        "groupId": "g2"
                       },
                       "style": {
                         "color": "#ef4444",
