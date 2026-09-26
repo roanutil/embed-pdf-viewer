@@ -9,14 +9,20 @@
       "args": [
         {
           "kind": "xyz",
-          "pageObjectNumber": 12,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "left": 100,
           "top": 700,
           "zoom": 1.5
         },
         {
           "index": 3,
-          "pageObjectNumber": 12,
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "label": null,
           "size": {
             "width": 612,
@@ -67,14 +73,20 @@
       "args": [
         {
           "kind": "xyz",
-          "pageObjectNumber": 12,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "left": null,
           "top": 700,
           "zoom": 0
         },
         {
           "index": 3,
-          "pageObjectNumber": 12,
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "label": null,
           "size": {
             "width": 612,
@@ -123,14 +135,20 @@
       "args": [
         {
           "kind": "xyz",
-          "pageObjectNumber": 12,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "left": 100,
           "top": null,
           "zoom": null
         },
         {
           "index": 3,
-          "pageObjectNumber": 12,
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "label": null,
           "size": {
             "width": 612,
@@ -179,11 +197,17 @@
       "args": [
         {
           "kind": "xyz",
-          "pageObjectNumber": 12
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          }
         },
         {
           "index": 3,
-          "pageObjectNumber": 12,
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "label": null,
           "size": {
             "width": 612,
@@ -232,14 +256,20 @@
       "args": [
         {
           "kind": "xyz",
-          "pageObjectNumber": 12,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "left": 110,
           "top": 708,
           "zoom": 2
         },
         {
           "index": 3,
-          "pageObjectNumber": 12,
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "label": null,
           "size": {
             "width": 600,
@@ -290,14 +320,20 @@
       "args": [
         {
           "kind": "xyz",
-          "pageObjectNumber": 12,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "left": 100,
           "top": 700,
           "zoom": 1
         },
         {
           "index": 3,
-          "pageObjectNumber": 12,
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "label": null,
           "size": {
             "width": 612,
@@ -348,13 +384,19 @@
       "args": [
         {
           "kind": "xyz",
-          "pageObjectNumber": 12,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "left": 100,
           "top": 700
         },
         {
           "index": 3,
-          "pageObjectNumber": 12,
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "label": null,
           "size": {
             "width": 612,
@@ -403,14 +445,20 @@
       "args": [
         {
           "kind": "xyz",
-          "pageObjectNumber": 12,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "left": 0,
           "top": 0,
           "zoom": -1
         },
         {
           "index": 3,
-          "pageObjectNumber": 12,
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "label": null,
           "size": {
             "width": 612,
@@ -461,11 +509,17 @@
       "args": [
         {
           "kind": "fit",
-          "pageObjectNumber": 12
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          }
         },
         {
           "index": 3,
-          "pageObjectNumber": 12,
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "label": null,
           "size": {
             "width": 612,
@@ -504,11 +558,17 @@
       "args": [
         {
           "kind": "fit",
-          "pageObjectNumber": 12
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          }
         },
         {
           "index": 3,
-          "pageObjectNumber": 12,
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "label": null,
           "size": {
             "width": 612,
@@ -553,12 +613,18 @@
       "args": [
         {
           "kind": "fitH",
-          "pageObjectNumber": 12,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "top": 700
         },
         {
           "index": 3,
-          "pageObjectNumber": 12,
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "label": null,
           "size": {
             "width": 612,
@@ -606,12 +672,18 @@
       "args": [
         {
           "kind": "fitH",
-          "pageObjectNumber": 12,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "top": null
         },
         {
           "index": 3,
-          "pageObjectNumber": 12,
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "label": null,
           "size": {
             "width": 612,
@@ -659,11 +731,17 @@
       "args": [
         {
           "kind": "fitH",
-          "pageObjectNumber": 12
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          }
         },
         {
           "index": 3,
-          "pageObjectNumber": 12,
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "label": null,
           "size": {
             "width": 600,
@@ -711,12 +789,18 @@
       "args": [
         {
           "kind": "fitH",
-          "pageObjectNumber": 12,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "top": 500
         },
         {
           "index": 3,
-          "pageObjectNumber": 12,
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "label": null,
           "size": {
             "width": 600,
@@ -764,12 +848,18 @@
       "args": [
         {
           "kind": "fitV",
-          "pageObjectNumber": 12,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "left": 200
         },
         {
           "index": 3,
-          "pageObjectNumber": 12,
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "label": null,
           "size": {
             "width": 612,
@@ -817,12 +907,18 @@
       "args": [
         {
           "kind": "fitV",
-          "pageObjectNumber": 12,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "left": null
         },
         {
           "index": 3,
-          "pageObjectNumber": 12,
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "label": null,
           "size": {
             "width": 600,
@@ -870,12 +966,18 @@
       "args": [
         {
           "kind": "fitV",
-          "pageObjectNumber": 12,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "left": 200
         },
         {
           "index": 3,
-          "pageObjectNumber": 12,
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "label": null,
           "size": {
             "width": 600,
@@ -923,7 +1025,10 @@
       "args": [
         {
           "kind": "fitR",
-          "pageObjectNumber": 12,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "left": 100,
           "bottom": 200,
           "right": 300,
@@ -931,7 +1036,10 @@
         },
         {
           "index": 3,
-          "pageObjectNumber": 12,
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "label": null,
           "size": {
             "width": 612,
@@ -976,7 +1084,10 @@
       "args": [
         {
           "kind": "fitR",
-          "pageObjectNumber": 12,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "left": 300,
           "bottom": 600,
           "right": 100,
@@ -984,7 +1095,10 @@
         },
         {
           "index": 3,
-          "pageObjectNumber": 12,
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "label": null,
           "size": {
             "width": 600,
@@ -1029,11 +1143,17 @@
       "args": [
         {
           "kind": "fitB",
-          "pageObjectNumber": 12
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          }
         },
         {
           "index": 3,
-          "pageObjectNumber": 12,
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "label": null,
           "size": {
             "width": 612,
@@ -1078,11 +1198,17 @@
       "args": [
         {
           "kind": "fitB",
-          "pageObjectNumber": 12
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          }
         },
         {
           "index": 3,
-          "pageObjectNumber": 12,
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "label": null,
           "size": {
             "width": 612,
@@ -1133,12 +1259,18 @@
       "args": [
         {
           "kind": "fitBH",
-          "pageObjectNumber": 12,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "top": 700
         },
         {
           "index": 3,
-          "pageObjectNumber": 12,
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "label": null,
           "size": {
             "width": 612,
@@ -1192,12 +1324,18 @@
       "args": [
         {
           "kind": "fitBH",
-          "pageObjectNumber": 12,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "top": null
         },
         {
           "index": 3,
-          "pageObjectNumber": 12,
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "label": null,
           "size": {
             "width": 612,
@@ -1251,11 +1389,17 @@
       "args": [
         {
           "kind": "fitBH",
-          "pageObjectNumber": 12
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          }
         },
         {
           "index": 3,
-          "pageObjectNumber": 12,
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "label": null,
           "size": {
             "width": 612,
@@ -1303,12 +1447,18 @@
       "args": [
         {
           "kind": "fitBV",
-          "pageObjectNumber": 12,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "left": 150
         },
         {
           "index": 3,
-          "pageObjectNumber": 12,
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "label": null,
           "size": {
             "width": 600,
@@ -1362,12 +1512,18 @@
       "args": [
         {
           "kind": "fitBV",
-          "pageObjectNumber": 12,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "left": null
         },
         {
           "index": 3,
-          "pageObjectNumber": 12,
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "label": null,
           "size": {
             "width": 612,
@@ -1421,11 +1577,17 @@
       "args": [
         {
           "kind": "fitBV",
-          "pageObjectNumber": 12
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          }
         },
         {
           "index": 3,
-          "pageObjectNumber": 12,
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "label": null,
           "size": {
             "width": 612,
@@ -1473,11 +1635,17 @@
       "args": [
         {
           "kind": "fit",
-          "pageObjectNumber": 12
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          }
         },
         {
           "index": 3,
-          "pageObjectNumber": 12,
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "label": null,
           "size": {
             "width": 612,
@@ -1516,13 +1684,19 @@
       "args": [
         {
           "kind": "xyz",
-          "pageObjectNumber": 12,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "left": 5,
           "top": 6
         },
         {
           "index": 3,
-          "pageObjectNumber": 12,
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 12
+          },
           "label": null,
           "size": {
             "width": 612,
