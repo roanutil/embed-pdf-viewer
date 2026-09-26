@@ -236,12 +236,12 @@ const cases: ScenarioCase[] = [
   {
     name: 'cross-plane-events',
     covers:
-      'redaction.applied reloads each applied page once (skipped results do not); form.valueChanged and form.effectsApplied bump the appearance version of the repainted widgets (object number > 0 only).',
+      'redaction.applied reloads each applied page once (skipped results do not); form.valueChanged and form.effectsApplied bump the appearance version of the repainted widgets (object number > 0 only, so a widget numbered 0 keeps its version).',
     plugins: PLUGINS,
     engine: {
       documents: {
         a: doc([
-          hydrate({ 1: [square(1), widget(5, 'text')] }),
+          hydrate({ 1: [square(1), widget(5, 'text'), widget(0, 'text')] }),
           { path: 'page.annotations.list', pon: 1, value: { annotations: [square(1)] } },
         ]),
       },

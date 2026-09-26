@@ -201,6 +201,7 @@ const ORDERING = [
   t(90, { inReplyTo: objRef(64), contents: 'late index, dated', created: at('9') }),
   t(70, { inReplyTo: objRef(64), contents: 'undated' }),
   t(85, { inReplyTo: objRef(64), contents: 'same date, high index', created: at('8') }),
+  t(86, { inReplyTo: objRef(64), contents: 'same date, same index: input order', created: at('8'), index: 80 }),
   t(80, { inReplyTo: objRef(64), contents: 'same date, low index', created: at('8') }),
   t(81, { inReplyTo: objRef(64), contents: 'undated, high index' }),
   square(65, { contents: 'review default root' }),

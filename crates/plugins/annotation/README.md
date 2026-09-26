@@ -139,6 +139,15 @@ fail, or listed below with the reason no case can kill it.
 | `repository/kinds/quads.rs` | 48 | 0 | 6 | 4 | 2 | 4 |
 | `repository/kinds/shape.rs` | 5 | 0 | 0 | 1 | | |
 | `repository/kinds/stroke.rs` | 22 | 0 | 0 | 5 | | |
+| `effects.rs` | 18 | 0 | 1 | 1 | 1 | |
+| `hover_feed.rs` | 6 | 0 | 1 | 2 | 1 | |
+| `markup.rs` | 7 | 0 | 1 | 0 | 1 | |
+| `placement.rs` | 8 | 0 | 0 | 0 | | |
+| `promise.rs` | 5 | 0 | 0 | 11 | | |
+| `reducer.rs` | 4 | 0 | 0 | 5 | | |
+| `text_item.rs` | 6 | 0 | 0 | 1 | | |
+| `threads.rs` | 54 | 0 | 5 | 7 | 1 | 4 |
+| `value.rs` | 13 | 0 | 0 | 0 | | |
 
 The other files are being run.
 
@@ -158,3 +167,5 @@ The other files are being run.
 | `repository/seam.rs` 126 | the `truthy_num(r)` guard on the rotation in `box_geom_from_dto` to `true` | Equivalent. It only lets a 0 or `NaN` rotation through, and `from_pdf_rotation` turns those into 0 and `NaN`, which the two `truthy_num(rot)` tests below treat as no rotation either way. |
 | `repository/seam.rs` 304 | `content_rect_of` to `Default::default()` | Unobservable. Nothing in the workspace calls it. |
 | `repository/kinds/quads.rs` 85, 88, 91, 94 | `<` to `<=` and `>` to `>=` in `pdf_bounds_of_quads` | Equivalent. On a tie the running bound is replaced by an equal value. |
+| `threads.rs` 130 | `x < y` to `<=` in `chronological` | Equivalent. It sits under `x != y`. |
+| `threads.rs` 141 | `d > 0.0` to `==`, `<` and `>=` | Equivalent. `sort_by` only asks whether the answer is `Less`, and every mutant still answers `Less` exactly when `d < 0`. |
