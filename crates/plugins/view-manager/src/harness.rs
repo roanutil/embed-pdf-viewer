@@ -1,15 +1,25 @@
 //! The conformance adapter: how `crates/plugin-conformance` builds this
 //! plugin from a vector and calls its capability by name, and the function
 //! table the reducer suite calls.
+//!
+//! Two factories. `view-manager` is the plugin as this crate builds it; the
+//! generator installs the TypeScript's through a wrapper that hides `doc`
+//! from the controller's context spread (see the crate README).
+//! `view-manager-as-shipped` is the TypeScript plugin unmodified, whose
+//! spread reads the workspace `doc` getter and throws while the kernel is
+//! constructed. The Rust port has no spread, so this factory reproduces the
+//! read: it reads `cx.doc()` before building the controller, which refuses
+//! the same way.
 
 use std::any::Any;
 use std::rc::Rc;
 
+use epdf_kernel::plugin::{Created, PluginDef};
 use epdf_kernel::{AnyPlugin, AnyToken, Error, is_undefined};
-use plugin_conformance::{FunctionTable, Harness, HarnessPlugin, Outcome, scrub};
+use plugin_conformance::{Answer, FunctionTable, Harness, HarnessPlugin, Outcome, scrub};
 use serde_json::{Value, json};
 
-use crate::types::{ViewManagerAction, ViewManagerState};
+use crate::model::{ViewManagerAction, ViewManagerState};
 use crate::{
     VIEW_MANAGER, ViewManagerCapability, initial_view_manager_state, view_manager_plugin,
     view_manager_reducer,
@@ -19,20 +29,25 @@ pub struct ViewManager;
 
 /// The TypeScript object literal's member order.
 const MEMBERS: &[&str] = &[
-    "list",
-    "order",
-    "get",
-    "focusedViewId",
-    "documentView",
-    "createView",
-    "removeView",
-    "moveView",
-    "setFocused",
+    "listPanes",
+    "getPane",
+    "getPaneOrder",
+    "getFocusedPaneId",
+    "getPaneOfDocument",
+    "createPane",
+    "removePane",
+    "movePane",
+    "setFocusedPane",
+    "splitPane",
     "setActiveDocument",
     "addDocument",
     "removeDocument",
     "moveDocumentWithin",
     "moveDocumentBetween",
+    "onPaneCreated",
+    "onPaneRemoved",
+    "onFocusChanged",
+    "onDocumentMoved",
 ];
 
 fn arg(args: &[Value], i: usize) -> Option<&Value> {
@@ -49,13 +64,61 @@ fn number(value: Option<&Value>) -> Option<f64> {
     })
 }
 
+fn json_of<T: serde::Serialize>(value: &T) -> Value {
+    serde_json::to_value(value).unwrap_or(Value::Null)
+}
+
+/// Subscribe a scripted `$fn` listener; the outcome is the unsubscribe.
+fn listen<E: serde::Serialize>(
+    h: &Harness,
+    spec: Option<&Value>,
+    subscribe: impl FnOnce(Box<dyn Fn(&E) -> Result<(), Error>>) -> epdf_kernel::Unsubscribe,
+) -> Outcome {
+    let callback = h.callback(spec.unwrap_or(&Value::Null));
+    let off = subscribe(Box::new(move |event: &E| match callback.call(vec![json_of(event)]) {
+        Answer::Throws(error) => Err(error),
+        _ => Ok(()),
+    }));
+    Outcome::Returned(h.register_fn(Rc::new(move |_| {
+        off.call();
+        Outcome::undefined()
+    })))
+}
+
+/// The TypeScript plugin as it ships: building its controller reads the
+/// workspace `doc` getter, which throws.
+fn as_shipped() -> AnyPlugin {
+    let plugin = view_manager_plugin();
+    let create = plugin.create.clone().expect("a v3 plugin");
+    Rc::new(PluginDef {
+        id: plugin.id.clone(),
+        token: plugin.token.clone(),
+        scope: plugin.scope,
+        requires: plugin.requires.clone(),
+        optional: plugin.optional.clone(),
+        initial_state: plugin.initial_state.clone(),
+        reducer: plugin.reducer.clone(),
+        to_json: plugin.to_json.clone(),
+        capability: None,
+        init: None,
+        effects: None,
+        create: Some(Rc::new(move |cx| -> Result<Created, Error> {
+            cx.doc()?;
+            create(cx)
+        })),
+    })
+}
+
 impl HarnessPlugin for ViewManager {
     fn factories(&self) -> Vec<&'static str> {
-        vec!["view-manager"]
+        vec!["view-manager", "view-manager-as-shipped"]
     }
 
-    fn build(&self, _factory: &str, _config: &Value, _h: &Harness) -> Result<AnyPlugin, Error> {
-        Ok(view_manager_plugin())
+    fn build(&self, factory: &str, _config: &Value, _h: &Harness) -> Result<AnyPlugin, Error> {
+        Ok(match factory {
+            "view-manager-as-shipped" => as_shipped(),
+            _ => view_manager_plugin(),
+        })
     }
 
     fn tokens(&self) -> Vec<AnyToken> {
@@ -67,46 +130,69 @@ impl HarnessPlugin for ViewManager {
         capability: &Rc<dyn Any>,
         method: &str,
         args: Vec<Value>,
-        _h: &Harness,
+        h: &Harness,
     ) -> Option<Outcome> {
         let cap = capability.downcast_ref::<ViewManagerCapability>()?;
         let text = |i: usize| arg(&args, i).and_then(Value::as_str).unwrap_or_default();
         let returned = |value: Value| Outcome::Returned(value);
+        let done = || Outcome::undefined();
         Some(match method {
-            "list" => returned(json!(cap.list())),
-            "order" => returned(json!(cap.order())),
-            "get" => returned(json!(cap.get(text(0)))),
-            "focusedViewId" => returned(json!(cap.focused_view_id())),
-            "documentView" => returned(json!(cap.document_view(text(0)))),
-            "createView" => returned(json!(cap.create_view())),
-            "removeView"
-            | "moveView"
-            | "setFocused"
-            | "setActiveDocument"
-            | "addDocument"
-            | "removeDocument"
-            | "moveDocumentWithin"
-            | "moveDocumentBetween" => {
-                match method {
-                    "removeView" => cap.remove_view(text(0)),
-                    "moveView" => cap.move_view(text(0), number(arg(&args, 1)).unwrap_or(f64::NAN)),
-                    "setFocused" => cap.set_focused(text(0)),
-                    "setActiveDocument" => {
-                        cap.set_active_document(text(0), arg(&args, 1).and_then(Value::as_str))
-                    }
-                    "addDocument" => cap.add_document(text(0), text(1), number(arg(&args, 2))),
-                    "removeDocument" => cap.remove_document(text(0), text(1)),
-                    "moveDocumentWithin" => cap.move_document_within(
-                        text(0),
-                        text(1),
-                        number(arg(&args, 2)).unwrap_or(f64::NAN),
-                    ),
-                    _ => {
-                        cap.move_document_between(text(0), text(1), text(2), number(arg(&args, 3)))
-                    }
-                }
-                Outcome::undefined()
+            "listPanes" => returned(json_of(&cap.list_panes())),
+            "getPane" => returned(json_of(&cap.get_pane(text(0)))),
+            "getPaneOrder" => returned(json!(cap.get_pane_order())),
+            "getFocusedPaneId" => returned(json!(cap.get_focused_pane_id())),
+            "getPaneOfDocument" => returned(json!(cap.get_pane_of_document(text(0)))),
+            "createPane" => {
+                let ids: Vec<String> = arg(&args, 0)
+                    .map(scrub)
+                    .and_then(|o| o.get("documentIds").and_then(Value::as_array).cloned())
+                    .map(|a| a.iter().filter_map(|v| v.as_str().map(str::to_string)).collect())
+                    .unwrap_or_default();
+                returned(json!(cap.create_pane(&ids)))
             }
+            "removePane" => {
+                let to =
+                    arg(&args, 1).and_then(|o| o.get("moveDocumentsTo")).and_then(Value::as_str);
+                cap.remove_pane(text(0), to);
+                done()
+            }
+            "movePane" => {
+                cap.move_pane(text(0), number(arg(&args, 1)).unwrap_or(f64::NAN));
+                done()
+            }
+            "setFocusedPane" => {
+                cap.set_focused_pane(arg(&args, 0).and_then(Value::as_str));
+                done()
+            }
+            "splitPane" => returned(json!(cap.split_pane(text(0)))),
+            "setActiveDocument" => {
+                cap.set_active_document(text(0), arg(&args, 1).and_then(Value::as_str));
+                done()
+            }
+            "addDocument" => {
+                cap.add_document(text(0), text(1), number(arg(&args, 2)));
+                done()
+            }
+            "removeDocument" => {
+                cap.remove_document(text(0), text(1));
+                done()
+            }
+            "moveDocumentWithin" => {
+                cap.move_document_within(
+                    text(0),
+                    text(1),
+                    number(arg(&args, 2)).unwrap_or(f64::NAN),
+                );
+                done()
+            }
+            "moveDocumentBetween" => {
+                cap.move_document_between(text(0), text(1), text(2), number(arg(&args, 3)));
+                done()
+            }
+            "onPaneCreated" => listen(h, arg(&args, 0), |f| cap.on_pane_created(f)),
+            "onPaneRemoved" => listen(h, arg(&args, 0), |f| cap.on_pane_removed(f)),
+            "onFocusChanged" => listen(h, arg(&args, 0), |f| cap.on_focus_changed(f)),
+            "onDocumentMoved" => listen(h, arg(&args, 0), |f| cap.on_document_moved(f)),
             other => {
                 Outcome::Threw(Error::new(format!("[scenario] \"{other}\" is not a function")))
             }
