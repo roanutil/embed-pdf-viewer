@@ -114,21 +114,39 @@ threshold (the cases sit at 17.6 and 17.7 rather than on `100 * tan(10°)`).
 
 ## Mutation testing
 
-In progress. Each file runs on its own (`scripts/mutants.sh -p epdf-annotation-core --test-package
-epdf-annotation-core --file <file>`); `harness.rs` is excluded and `lib.rs` holds re-exports only.
-A miss is either killed by a new case or listed below with the reason it can't be. "Killed after"
-counts the misses a later case kills, each confirmed by applying the mutant by hand and watching the
-replay fail.
+Every source file but `harness.rs` (excluded in `.cargo/mutants.toml`) and `lib.rs` (re-exports
+only) has been run, one file at a time (`scripts/mutants.sh -p epdf-annotation-core
+--test-package epdf-annotation-core --file <file>`). Of the 98 mutants that survived, 30 are killed
+by cases added afterwards and 68 are equivalent or unreachable, each listed below. "Killed after"
+counts the first group; each of those was confirmed by applying the mutant by hand and watching the
+replay fail, not by a second full run. Timeouts count as caught: each is a mutant that loops
+forever.
 
 | File | Caught | Timeouts | Missed | Unviable | Killed after | Accepted |
 |---|---|---|---|---|---|---|
+| `anchor.rs` | 72 | 0 | 0 | 5 | | |
 | `cloudy.rs` | 632 | 18 | 39 | 1 | 7 | 32 |
+| `endings.rs` | 66 | 0 | 1 | 2 | | 1 |
+| `flags.rs` | 47 | 0 | 0 | 2 | | |
 | `geometry.rs` | 1,156 | 0 | 35 | 20 | 21 | 14 |
+| `group.rs` | 18 | 0 | 0 | 1 | | |
+| `hit.rs` | 94 | 0 | 1 | 5 | | 1 |
+| `ink.rs` | 45 | 0 | 0 | 0 | | |
+| `js.rs` | 149 | 0 | 6 | 11 | | 6 |
+| `kinds.rs` | 33 | 0 | 0 | 17 | | |
+| `links.rs` | 5 | 0 | 0 | 2 | | |
+| `placement.rs` | 63 | 0 | 0 | 2 | | |
+| `plane.rs` | 35 | 0 | 0 | 3 | | |
+| `props.rs` | 40 | 0 | 0 | 21 | | |
+| `scene.rs` | 225 | 3 | 1 | 5 | | 1 |
+| `snap.rs` | 62 | 0 | 0 | 3 | | |
+| `types.rs` | 61 | 0 | 3 | 9 | | 3 |
+| `update.rs` | 468 | 0 | 9 | 31 | 2 | 7 |
+| `view.rs` | 138 | 0 | 3 | 26 | | 3 |
+| Total | 3,409 | 21 | 98 | 166 | 30 | 68 |
 
-Timeouts count as caught: each is a mutant that loops forever.
-
-The 17 files the first pass completed (1,615 caught, 3 timeouts, 30 missed, 145 unviable, before
-`84f73b5ee` and `90be0fb5a` added cases) are being re-run.
+The rows for the 17 files the first pass had already covered are fresh runs, taken after
+`84f73b5ee` and `90be0fb5a` added cases; that pass had counted 30 misses in them, and 24 remain.
 
 ### Accepted misses
 
@@ -169,3 +187,25 @@ shows):
 | 1031 | `\|\|` to `&&` on the ellipse radii in `ending_nodes_hit` | Equivalent. The only ellipse node is the circle ending, placed with rotation 0 from `(-r, -r)` and `(r, r)`, so its radii are always equal. |
 | 1047, 1165 | `>` to `>=` on `len > 2` before a closing edge | Equivalent. With two points the closing edge is the first segment, already tested. |
 | 1191 | `&&` to `\|\|` on `rot` in `geom_handles` | Unreachable by a vector. At `rot` 0 the mutant rotates by 0, which is exact. Only a `NaN` `rot` tells them apart, and every consumer carries the handle's cursor, where the port already differs for a non-finite `rot` (see "Not ported"). |
+
+The other files:
+
+| Line | Mutant | Why no case kills it |
+|---|---|---|
+| `endings.rs` 42 | `a + PI` to `a - PI` for the reversed endings | Equivalent. The two angles are a full turn apart. |
+| `hit.rs` 212 | `selected.len() > 1` to `>=` in `hit_test` | Equivalent. A single selection only reaches the group branch when it isn't selectable, and then it is either not interactive (so not transformable) or of the one kind whose caps say unselectable, whose group caps are all false: the branch returns nothing. |
+| `js.rs` 23 | `-1074` to `1074`, and `\|` to `^`, in `decompose` | Equivalent. A subnormal times `10^digits` is never an exact tie either way, and the fraction never has bit 52 set. |
+| `js.rs` 34 | the `s > 0` guard in `exact_tie` to `false` | Equivalent. The last arm answers `false` for a positive shift too, since `(-s) as u32` wraps far past any trailing-zero count. |
+| `js.rs` 323 | `>` to `>=` in `Record::insert` | Equivalent. Two keys with the same array index are the same key, and that case returns earlier. |
+| `js.rs` 362, 423 | the `Record` and `IdSet` visitors' `expecting` to `Ok(())` | Unobservable. It only writes a decode error message, and no vector holds a malformed record or set. |
+| `scene.rs` 202 | outer `nodes.len() < 400` to `<=` in `layout_redact_label` | Equivalent. The inner loop's own `< 400` guard stops every push. |
+| `types.rs` 614 | delete `!` in `AnnotationPropsPatch::spread`'s key order | Unobservable here. The spread's order only reaches `set_defaults`, whose output is a JSON object (member order isn't compared, and a repeated key collapses on decode); the `props` effect's key list comes from the message's own patch. |
+| `types.rs` 654 | `PatchVisitor::expecting` to `Ok(())` | Unobservable, as for `js.rs` 362. |
+| `types.rs` 888 | the `is_segment()` guard in `segment_policy` to `true` | Equivalent. Its one caller is the line draft, and `click_create_geom` gives a line nothing from a box placement, just as it gets nothing without a policy. |
+| `update.rs` 238 | `same()` to `Default::default()` | Equivalent. `(None, Vec::new())` is the default. |
+| `update.rs` 606 | `delta.abs() < 0.01` to `<=` | Unreachable without a last-bit comparison. The delta is a difference of `atan2` angles; a snapped delta from a still pointer is `arc_to`, which is `x - 180` for an `x` near 180 and so a multiple of 2^-45, never 0.01. |
+| `update.rs` 623 | both `< 1e-4` to `<=` on the group factors | Unreachable. `sx - 1` is a multiple of `ulp(sx)`, at least 2^-53 near 1, and 1e-4 isn't one. |
+| `update.rs` 1021 | the `dr != 0.0 && !dr.is_nan()` guard to `true`, and `&&` to `\|\|` | Equivalent. A `dr` of 0 gives an upright rotation of 0, and a `NaN` one gives `NaN`, which `upright_box` and `rot_of` both treat as 0. |
+| `update.rs` 1405 | `\|\|` to `&&` on the caret box | Equivalent. The caret box is square. |
+| `view.rs` 72 | the `mode.zoom` guard in `eff_style` to `true` | Equivalent. Without `zoom` the anchor scale is 1, so the stroke divides by 1. |
+| `view.rs` 391, 494 | `sel.len() > 1` to `>=` | Equivalent. Both follow a `sel.len() == 1` branch. |
