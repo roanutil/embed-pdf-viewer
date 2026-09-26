@@ -446,7 +446,7 @@ const keystrokeCases: ScenarioCase[] = [
   {
     name: 'keystroke-fault-ladder',
     covers:
-      "An exception in either keystroke pass keeps the typed value with a diagnostic; any other error fails the transaction; a false rc in either pass rejects the value.",
+      "An exception in either keystroke pass keeps the typed value with a diagnostic; any other error fails the transaction; a false rc in either pass rejects the value, keeping the diagnostics so far.",
     plugins: solo({
       sandbox: {
         builds: [
@@ -460,6 +460,8 @@ const keystrokeCases: ScenarioCase[] = [
               rejects('x'),
               out({ event: ev('x') }),
               rejects('x'),
+              exception('typing broke again'),
+              rejects('x'),
             ],
           },
         ],
@@ -467,7 +469,7 @@ const keystrokeCases: ScenarioCase[] = [
     }),
     engine: { documents: { a: doc([list([CODE()]), applyOk()]) } },
     snapshot: 'none',
-    steps: [...boot, commit(2, textValue('42')), commit(2, textValue('43')), commit(2, textValue('44')), commit(2, textValue('45')), commit(2, textValue('46'))],
+    steps: [...boot, commit(2, textValue('42')), commit(2, textValue('43')), commit(2, textValue('44')), commit(2, textValue('45')), commit(2, textValue('46')), commit(2, textValue('47'))],
   },
   {
     name: 'keystroke-trees',
@@ -582,12 +584,12 @@ const calculateCases: ScenarioCase[] = [
   {
     name: 'recalculate-anchors',
     covers:
-      "recalculate() anchors on the first live /CO field, else the first field, and runs with no source; a document with no fields is an honest no-op.",
+      "recalculate() anchors on the first live /CO field, else the first field, and runs with no source; a first-field anchor outside the /CO chain is neither calculated nor formatted; a document with no fields is an honest no-op.",
     plugins: solo({ sandbox: { builds: [{ run: [out({ formEffects: [setValue(4, textValue('9'))] }), out({})] }] } }),
     engine: {
       documents: {
         a: doc([list(CALC_FIELDS.slice(2), {}, [null, ref(99), ref(4)]), applyOk()]),
-        b: doc([list(CALC_FIELDS.slice(3)), applyOk()]),
+        b: doc([list(CALC_FIELDS.slice(2)), applyOk()]),
         c: doc([list([])]),
       },
     },

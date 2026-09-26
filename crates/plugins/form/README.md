@@ -2,16 +2,16 @@
 
 `packages/plugin/form` in Rust: the field plane over the engine's `forms.*` services, the fill
 projection, value writes and reset, interchange, field design with the draw-to-place handler, ISO
-field selection, and the K/V/C/F scripting transaction. All 182 cases in five vector files replay
+field selection, and the K/V/C/F scripting transaction. All 191 cases in five vector files replay
 identically (`cargo test -p epdf-plugin-form`):
 
 | File | Kind | Cases | Covers |
 |---|---|---|---|
-| `vectors/plugins/form-core.json` | function | 85 | `core/model.ts`, `core/fill-items.ts`, the reducer, the tool table, `resolveFieldSelection` and `buildSubmitEntries` |
+| `vectors/plugins/form-core.json` | function | 87 | `core/model.ts`, `core/fill-items.ts`, the reducer, the tool table, `resolveFieldSelection` and `buildSubmitEntries` |
 | `vectors/plugins/form-fill.json` | scenario | 23 | hydration and refresh, widget geometry, the fused fill projection, typed writes and their queue, reset with and without a batch door, interchange, the twins, the reactive effect |
-| `vectors/plugins/form-design.json` | scenario | 22 | tool and behavior registration with and without the annotation plugin, `placeField` and the other design verbs, the place handler as `PointerSample` sequences |
+| `vectors/plugins/form-design.json` | scenario | 24 | tool and behavior registration with and without the annotation plugin, `placeField` and the other design verbs, the place handler as `PointerSample` sequences |
 | `vectors/plugins/form-actions.json` | scenario | 13 | the `reset-form` executor, the submit resolver, the script commit sink, widget activation, the widget event feed |
-| `vectors/plugins/form-scripting.json` | scenario | 39 | the standalone controller (environment, boot, keystroke, validate, calculate, format, effect canonicalisation, budgets, faults) and the capability over the actions realm |
+| `vectors/plugins/form-scripting.json` | scenario | 44 | the standalone controller (environment, boot, keystroke, validate, calculate, format, effect canonicalisation, budgets, faults) and the capability over the actions realm |
 
 The scenario registry runs the real interaction, actions and annotation adapters beside this one.
 
@@ -68,6 +68,15 @@ primitive one by value. Activation reads a loaded annotation through the annotat
 One harness change came with this port: a fake document's `lacks` list removes the optional
 `forms.applyEffects` member (commit `5c6ad7125`). Without it no vector could reach the six branches
 that handle an engine without a batch door.
+
+## Where the port differs in shape
+
+A few malformed DTOs make the TypeScript throw a `TypeError` where the Rust carries on, and no
+vector sends one: a snapshot without `calculationOrder` (read as empty), a form event whose `origin`
+is `null` (ignored), a field without `flags` (not read-only). A non-boolean `flags.readOnly` prints
+as `disabled: true` where the TypeScript's `||` would print the value itself. `writeDone` past the
+end of the field list pads with `null`s, which JSON prints as the TypeScript prints its holes, and
+the index skips them as `forEach` skips holes.
 
 ## Coverage
 

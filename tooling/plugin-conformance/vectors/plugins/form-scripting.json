@@ -17325,7 +17325,7 @@
     },
     {
       "name": "keystroke-fault-ladder",
-      "covers": "An exception in either keystroke pass keeps the typed value with a diagnostic; any other error fails the transaction; a false rc in either pass rejects the value.",
+      "covers": "An exception in either keystroke pass keeps the typed value with a diagnostic; any other error fails the transaction; a false rc in either pass rejects the value, keeping the diagnostics so far.",
       "plugins": [
         {
           "factory": "form-scripting",
@@ -17396,6 +17396,25 @@
                           "change": "",
                           "selStart": 0,
                           "selEnd": 0
+                        }
+                      }
+                    },
+                    {
+                      "output": {
+                        "event": {
+                          "rc": false,
+                          "value": "x",
+                          "change": "",
+                          "selStart": 0,
+                          "selEnd": 0
+                        }
+                      }
+                    },
+                    {
+                      "output": {
+                        "error": {
+                          "kind": "exception",
+                          "message": "typing broke again"
                         }
                       }
                     },
@@ -17705,6 +17724,24 @@
             {
               "type": "text",
               "value": "46"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form-scripting",
+            "doc": "a"
+          },
+          "method": "commit",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "fieldObjectNumber": 2
+            },
+            {
+              "type": "text",
+              "value": "47"
             }
           ]
         }
@@ -18558,6 +18595,173 @@
           },
           "outcome": {
             "promise": 6
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 7,
+              "resolved": {
+                "status": "rejected",
+                "scripted": true,
+                "effectsResult": null,
+                "uiEffects": [],
+                "diagnostics": [
+                  {
+                    "code": "script-error",
+                    "message": "Keystroke script failed (kept the typed value): typing broke again"
+                  }
+                ]
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "forms.list",
+              "args": []
+            }
+          ],
+          "callbacks": [
+            {
+              "fn": "sandbox.run",
+              "args": [
+                0,
+                "ks()",
+                {
+                  "document": {
+                    "id": "a",
+                    "fileName": "a",
+                    "pageCount": 2,
+                    "pageNumber": 0
+                  },
+                  "identity": {
+                    "name": "",
+                    "loginName": "",
+                    "corporation": "",
+                    "email": ""
+                  },
+                  "environment": {
+                    "nowMs": 0,
+                    "utcOffsetMinutes": 0,
+                    "randomSeed": 3804055918
+                  },
+                  "fields": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 2
+                      },
+                      "name": "code",
+                      "family": "text",
+                      "value": "old",
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false
+                    }
+                  ],
+                  "event": {
+                    "kind": "field-keystroke",
+                    "target": {
+                      "kind": "objectNumber",
+                      "fieldObjectNumber": 2
+                    },
+                    "source": {
+                      "kind": "objectNumber",
+                      "fieldObjectNumber": 2
+                    },
+                    "value": "old",
+                    "change": "47",
+                    "selStart": 0,
+                    "selEnd": 3,
+                    "willCommit": false
+                  }
+                },
+                {
+                  "maxExecutionMs": 50,
+                  "maxMemoryBytes": 16777216,
+                  "maxStackBytes": 524288,
+                  "maxEffects": 256,
+                  "maxOutputBytes": 1048576
+                }
+              ]
+            },
+            {
+              "fn": "sandbox.run",
+              "args": [
+                0,
+                "ks()",
+                {
+                  "document": {
+                    "id": "a",
+                    "fileName": "a",
+                    "pageCount": 2,
+                    "pageNumber": 0
+                  },
+                  "identity": {
+                    "name": "",
+                    "loginName": "",
+                    "corporation": "",
+                    "email": ""
+                  },
+                  "environment": {
+                    "nowMs": 0,
+                    "utcOffsetMinutes": 0,
+                    "randomSeed": 3820833537
+                  },
+                  "fields": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 2
+                      },
+                      "name": "code",
+                      "family": "text",
+                      "value": "old",
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false
+                    }
+                  ],
+                  "event": {
+                    "kind": "field-keystroke",
+                    "target": {
+                      "kind": "objectNumber",
+                      "fieldObjectNumber": 2
+                    },
+                    "source": {
+                      "kind": "objectNumber",
+                      "fieldObjectNumber": 2
+                    },
+                    "value": "47",
+                    "change": "",
+                    "selStart": 0,
+                    "selEnd": 0,
+                    "willCommit": true
+                  }
+                },
+                {
+                  "maxExecutionMs": 50,
+                  "maxMemoryBytes": 16777216,
+                  "maxStackBytes": 524288,
+                  "maxEffects": 256,
+                  "maxOutputBytes": 1048576
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 7
           }
         }
       ]
@@ -22983,7 +23187,7 @@
     },
     {
       "name": "recalculate-anchors",
-      "covers": "recalculate() anchors on the first live /CO field, else the first field, and runs with no source; a document with no fields is an honest no-op.",
+      "covers": "recalculate() anchors on the first live /CO field, else the first field, and runs with no source; a first-field anchor outside the /CO chain is neither calculated nor formatted; a document with no fields is an honest no-op.",
       "plugins": [
         {
           "factory": "form-scripting",
@@ -23374,6 +23578,67 @@
                   "formKind": "acroform",
                   "needsAppearances": false,
                   "fields": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 4
+                      },
+                      "fieldObjectNumber": 4,
+                      "name": "total",
+                      "family": "text",
+                      "origin": "acroform",
+                      "flags": {
+                        "readOnly": false,
+                        "required": false,
+                        "noExport": false,
+                        "raw": 0
+                      },
+                      "alternateName": null,
+                      "mappingName": null,
+                      "widgets": [
+                        {
+                          "annotObjectNumber": 104,
+                          "pageObjectNumber": 1
+                        }
+                      ],
+                      "valueEntry": {
+                        "kind": "scalar",
+                        "value": "2"
+                      },
+                      "defaultValueEntry": {
+                        "kind": "none"
+                      },
+                      "value": "2",
+                      "defaultValue": "",
+                      "maxLength": null,
+                      "multiline": false,
+                      "password": false,
+                      "comb": false,
+                      "actions": {
+                        "calculate": {
+                          "root": {
+                            "type": "javascript",
+                            "subtype": "JavaScript",
+                            "script": "total()",
+                            "next": []
+                          },
+                          "incomplete": false,
+                          "warningFlags": 0,
+                          "warnings": []
+                        },
+                        "format": {
+                          "root": {
+                            "type": "javascript",
+                            "subtype": "JavaScript",
+                            "script": "fmt()",
+                            "next": []
+                          },
+                          "incomplete": false,
+                          "warningFlags": 0,
+                          "warnings": []
+                        }
+                      }
+                    },
                     {
                       "ref": {
                         "kind": "objectNumber",
