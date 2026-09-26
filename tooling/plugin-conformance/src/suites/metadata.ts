@@ -12,7 +12,7 @@ registerPlugin('metadata', { factory: () => metadataPlugin(), tokens: [MetadataT
 
 const box = { left: 0, bottom: 0, right: 600, top: 800 };
 const pages = [
-  { index: 0, pageObjectNumber: 1, label: null, size: { width: 600, height: 800 }, rotation: 0, userUnit: 1, boxes: { media: box, crop: box } },
+  { index: 0, ref: { kind: 'objectNumber', pageObjectNumber: 1 }, label: null, size: { width: 600, height: 800 }, rotation: 0, userUnit: 1, boxes: { media: box, crop: box } },
 ];
 const meta = (over: Record<string, unknown> = {}) => ({
   title: null,
@@ -44,11 +44,15 @@ const call = (method: string, args: unknown[] = [], doc = 'a'): Step => ({
 });
 
 const plugins = [{ factory: 'metadata' }];
+/** Engine events carry where they came from; the plugin projects it onto `ChangeOrigin`. */
+const local = { kind: 'local', sessionId: 's1', sub: null };
+const remote = { kind: 'remote', sessionId: 's2', sub: 'u-9' };
+const EDIT = { allows: ['doc.metadata.modify'] };
 
 const cases: ScenarioCase[] = [
   {
     name: 'seeds-from-a-read',
-    covers: 'The effect reads the Info dict once when the document opens and SETs it; current() is null until then.',
+    covers: 'The controller reads the Info dict once when the document connects and sets it; getSnapshot() is null until then.',
     plugins,
     engine: {
       documents: {
@@ -58,9 +62,9 @@ const cases: ScenarioCase[] = [
     steps: [
       start,
       open('a'),
-      call('current'),
+      call('getSnapshot'),
       { op: 'settle', label: 'read', value: meta({ title: 'Report', custom: { Dept: 'Ops' } }) },
-      call('current'),
+      call('getSnapshot'),
     ],
   },
   {
@@ -72,7 +76,7 @@ const cases: ScenarioCase[] = [
         a: doc({ responses: [{ path: 'metadata.read', error: { name: 'EngineError', message: 'closed', code: 'DocClosed' } }] }),
       },
     },
-    steps: [start, open('a'), call('current')],
+    steps: [start, open('a'), call('getSnapshot')],
   },
   {
     name: 'live-updates-from-the-event-stream',
@@ -83,20 +87,22 @@ const cases: ScenarioCase[] = [
     steps: [
       start,
       open('a'),
-      { op: 'emit', doc: 'a', event: { type: 'metadata.updated', metadata: meta({ title: 'Remote edit' }) } },
-      call('current'),
-      { op: 'emit', doc: 'a', event: { type: 'annotations.created', pageObjectNumber: 1 } },
-      call('current'),
+      { op: 'emit', doc: 'a', event: { type: 'metadata.updated', metadata: meta({ title: 'Remote edit' }), origin: remote } },
+      call('getSnapshot'),
+      { op: 'emit', doc: 'a', event: { type: 'annotations.created', page: { kind: 'objectNumber', pageObjectNumber: 1 }, origin: local } },
+      call('getSnapshot'),
       { op: 'call', target: 'documents', method: 'close', args: ['a'] },
     ],
   },
   {
     name: 'update-writes-through-and-sets',
-    covers: 'update(patch) sends the three-state patch to the engine and SETs the metadata its result carries, before the event arrives.',
+    covers:
+      'update(patch) sends the three-state patch to the engine and resolves with its result once the confirmed metadata.updated event has set the snapshot.',
     plugins,
     engine: {
       documents: {
         a: doc({
+          security: EDIT,
           responses: [
             { path: 'metadata.read', value: meta() },
             { path: 'metadata.update', args: [{ title: 'New', author: null }], value: { metadata: meta({ title: 'New' }), cache: null } },
@@ -104,7 +110,14 @@ const cases: ScenarioCase[] = [
         }),
       },
     },
-    steps: [start, open('a'), call('update', [{ title: 'New', author: null }]), call('current')],
+    steps: [
+      start,
+      open('a'),
+      call('update', [{ title: 'New', author: null }]),
+      call('getSnapshot'),
+      { op: 'emit', doc: 'a', event: { type: 'metadata.updated', metadata: meta({ title: 'New' }), origin: local } },
+      call('getSnapshot'),
+    ],
   },
   {
     name: 'update-refused',
@@ -113,6 +126,7 @@ const cases: ScenarioCase[] = [
     engine: {
       documents: {
         a: doc({
+          security: EDIT,
           responses: [
             { path: 'metadata.read', value: meta({ title: 'Kept' }) },
             {
@@ -123,11 +137,11 @@ const cases: ScenarioCase[] = [
         }),
       },
     },
-    steps: [start, open('a'), call('update', [{ title: 'x' }]), call('current')],
+    steps: [start, open('a'), call('update', [{ title: 'x' }]), call('getSnapshot')],
   },
   {
     name: 'reload',
-    covers: 'reload() re-reads and SETs; a failed reload rejects.',
+    covers: 'refresh() re-reads and sets; a failed refresh rejects.',
     plugins,
     engine: {
       documents: {
@@ -140,7 +154,7 @@ const cases: ScenarioCase[] = [
         }),
       },
     },
-    steps: [start, open('a'), call('reload'), call('current'), call('reload'), call('current')],
+    steps: [start, open('a'), call('refresh'), call('getSnapshot'), call('refresh'), call('getSnapshot')],
   },
   {
     name: 'can-edit',

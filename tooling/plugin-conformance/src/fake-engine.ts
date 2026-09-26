@@ -26,6 +26,7 @@
  */
 import {
   AbortablePromise,
+  PermissionDenied,
   type DocumentHandle,
   type Engine,
 } from '@embedpdf/engine-core/runtime';
@@ -122,6 +123,9 @@ export function makeError(spec: ErrorSpec): Error {
   const error = new Error(message);
   error.name = name ?? 'Error';
   Object.assign(error, rest);
+  // The kernel maps engine refusals with `instanceof PermissionDenied`; a
+  // refusal the vector names so is that class, with the members it spells.
+  if (error.name === 'PermissionDenied') Object.setPrototypeOf(error, PermissionDenied.prototype);
   return error;
 }
 
