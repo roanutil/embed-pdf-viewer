@@ -16,8 +16,8 @@
       }
     },
     {
-      "name": "renderReducer/annotations-bump",
-      "fn": "renderReducer",
+      "name": "reduceRender/annotations-bump",
+      "fn": "reduceRender",
       "args": [
         {
           "contentEpochs": {},
@@ -25,9 +25,9 @@
           "paintVersions": {}
         },
         {
-          "type": "INVALIDATE",
+          "type": "invalidate",
           "scope": "annotations",
-          "pons": [
+          "pages": [
             11
           ]
         }
@@ -46,8 +46,8 @@
       }
     },
     {
-      "name": "renderReducer/annotations-bump-seeded",
-      "fn": "renderReducer",
+      "name": "reduceRender/annotations-bump-seeded",
+      "fn": "reduceRender",
       "args": [
         {
           "contentEpochs": {
@@ -62,9 +62,9 @@
           }
         },
         {
-          "type": "INVALIDATE",
+          "type": "invalidate",
           "scope": "annotations",
-          "pons": [
+          "pages": [
             11,
             22,
             44
@@ -91,8 +91,8 @@
       }
     },
     {
-      "name": "renderReducer/content-bump",
-      "fn": "renderReducer",
+      "name": "reduceRender/content-bump",
+      "fn": "reduceRender",
       "args": [
         {
           "contentEpochs": {
@@ -107,9 +107,9 @@
           }
         },
         {
-          "type": "INVALIDATE",
+          "type": "invalidate",
           "scope": "content",
-          "pons": [
+          "pages": [
             11,
             33
           ]
@@ -135,8 +135,8 @@
       }
     },
     {
-      "name": "renderReducer/duplicate-pons-bump-twice",
-      "fn": "renderReducer",
+      "name": "reduceRender/duplicate-pons-bump-twice",
+      "fn": "reduceRender",
       "args": [
         {
           "contentEpochs": {
@@ -151,9 +151,9 @@
           }
         },
         {
-          "type": "INVALIDATE",
+          "type": "invalidate",
           "scope": "content",
-          "pons": [
+          "pages": [
             11,
             11
           ]
@@ -178,8 +178,8 @@
       }
     },
     {
-      "name": "renderReducer/empty-pons-is-a-no-op",
-      "fn": "renderReducer",
+      "name": "reduceRender/empty-pons-is-a-no-op",
+      "fn": "reduceRender",
       "args": [
         {
           "contentEpochs": {
@@ -194,9 +194,9 @@
           }
         },
         {
-          "type": "INVALIDATE",
+          "type": "invalidate",
           "scope": "content",
-          "pons": []
+          "pages": []
         }
       ],
       "outcome": {
@@ -218,8 +218,8 @@
       }
     },
     {
-      "name": "renderReducer/empty-pons-annotations-no-op",
-      "fn": "renderReducer",
+      "name": "reduceRender/empty-pons-annotations-no-op",
+      "fn": "reduceRender",
       "args": [
         {
           "contentEpochs": {
@@ -234,9 +234,9 @@
           }
         },
         {
-          "type": "INVALIDATE",
+          "type": "invalidate",
           "scope": "annotations",
-          "pons": []
+          "pages": []
         }
       ],
       "outcome": {
@@ -258,8 +258,8 @@
       }
     },
     {
-      "name": "renderReducer/unknown-action-no-op",
-      "fn": "renderReducer",
+      "name": "reduceRender/unknown-action-no-op",
+      "fn": "reduceRender",
       "args": [
         {
           "contentEpochs": {
@@ -296,8 +296,8 @@
       }
     },
     {
-      "name": "renderReducer/paint-advanced",
-      "fn": "renderReducer",
+      "name": "reduceRender/paint-advanced",
+      "fn": "reduceRender",
       "args": [
         {
           "contentEpochs": {
@@ -312,8 +312,8 @@
           }
         },
         {
-          "type": "PAINT_ADVANCED",
-          "pon": 33
+          "type": "paintAdvanced",
+          "page": 33
         }
       ],
       "outcome": {
@@ -335,8 +335,8 @@
       }
     },
     {
-      "name": "renderReducer/paint-advanced-new-pon",
-      "fn": "renderReducer",
+      "name": "reduceRender/paint-advanced-new-pon",
+      "fn": "reduceRender",
       "args": [
         {
           "contentEpochs": {
@@ -351,8 +351,8 @@
           }
         },
         {
-          "type": "PAINT_ADVANCED",
-          "pon": 5
+          "type": "paintAdvanced",
+          "page": 5
         }
       ],
       "outcome": {
@@ -380,7 +380,10 @@
       "args": [
         {
           "type": "annotation.created",
-          "pageObjectNumber": 22
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 22
+          }
         },
         [
           11,
@@ -400,7 +403,10 @@
       "args": [
         {
           "type": "annotation.updated",
-          "pageObjectNumber": 22
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 22
+          }
         },
         [
           11,
@@ -420,7 +426,10 @@
       "args": [
         {
           "type": "annotation.deleted",
-          "pageObjectNumber": 22
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 22
+          }
         },
         [
           11,
@@ -440,7 +449,10 @@
       "args": [
         {
           "type": "annotation.moved",
-          "pageObjectNumber": 22
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 22
+          }
         },
         [
           11,
@@ -462,16 +474,49 @@
           "type": "form.valueChanged",
           "changedWidgets": [
             {
+              "ref": {
+                "kind": "objectNumber",
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
+                "annotObjectNumber": 5
+              },
               "annotObjectNumber": 5,
-              "pageObjectNumber": 11
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 11
+              }
             },
             {
+              "ref": {
+                "kind": "objectNumber",
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 33
+                },
+                "annotObjectNumber": 5
+              },
               "annotObjectNumber": 5,
-              "pageObjectNumber": 33
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 33
+              }
             },
             {
+              "ref": {
+                "kind": "objectNumber",
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
+                "annotObjectNumber": 5
+              },
               "annotObjectNumber": 5,
-              "pageObjectNumber": 11
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 11
+              }
             }
           ]
         },
@@ -515,16 +560,49 @@
           "type": "form.effectsApplied",
           "changedWidgets": [
             {
+              "ref": {
+                "kind": "objectNumber",
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
+                "annotObjectNumber": 5
+              },
               "annotObjectNumber": 5,
-              "pageObjectNumber": 11
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 11
+              }
             },
             {
+              "ref": {
+                "kind": "objectNumber",
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 33
+                },
+                "annotObjectNumber": 5
+              },
               "annotObjectNumber": 5,
-              "pageObjectNumber": 33
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 33
+              }
             },
             {
+              "ref": {
+                "kind": "objectNumber",
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
+                "annotObjectNumber": 5
+              },
               "annotObjectNumber": 5,
-              "pageObjectNumber": 11
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 11
+              }
             }
           ]
         },
@@ -568,8 +646,19 @@
           "type": "form.fieldDeleted",
           "removedWidgets": [
             {
+              "ref": {
+                "kind": "objectNumber",
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                },
+                "annotObjectNumber": 5
+              },
               "annotObjectNumber": 5,
-              "pageObjectNumber": 22
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 22
+              }
             }
           ]
         },
@@ -594,12 +683,34 @@
           "field": {
             "widgets": [
               {
+                "ref": {
+                  "kind": "objectNumber",
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 11
+                  },
+                  "annotObjectNumber": 5
+                },
                 "annotObjectNumber": 5,
-                "pageObjectNumber": 11
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                }
               },
               {
+                "ref": {
+                  "kind": "objectNumber",
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 22
+                  },
+                  "annotObjectNumber": 5
+                },
                 "annotObjectNumber": 5,
-                "pageObjectNumber": 22
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                }
               }
             ]
           }
@@ -626,12 +737,34 @@
           "field": {
             "widgets": [
               {
+                "ref": {
+                  "kind": "objectNumber",
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 11
+                  },
+                  "annotObjectNumber": 5
+                },
                 "annotObjectNumber": 5,
-                "pageObjectNumber": 11
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                }
               },
               {
+                "ref": {
+                  "kind": "objectNumber",
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 22
+                  },
+                  "annotObjectNumber": 5
+                },
                 "annotObjectNumber": 5,
-                "pageObjectNumber": 22
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                }
               }
             ]
           }
@@ -658,12 +791,34 @@
           "field": {
             "widgets": [
               {
+                "ref": {
+                  "kind": "objectNumber",
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 11
+                  },
+                  "annotObjectNumber": 5
+                },
                 "annotObjectNumber": 5,
-                "pageObjectNumber": 11
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                }
               },
               {
+                "ref": {
+                  "kind": "objectNumber",
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 22
+                  },
+                  "annotObjectNumber": 5
+                },
                 "annotObjectNumber": 5,
-                "pageObjectNumber": 22
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                }
               }
             ]
           }
@@ -690,12 +845,34 @@
           "field": {
             "widgets": [
               {
+                "ref": {
+                  "kind": "objectNumber",
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 11
+                  },
+                  "annotObjectNumber": 5
+                },
                 "annotObjectNumber": 5,
-                "pageObjectNumber": 11
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                }
               },
               {
+                "ref": {
+                  "kind": "objectNumber",
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 22
+                  },
+                  "annotObjectNumber": 5
+                },
                 "annotObjectNumber": 5,
-                "pageObjectNumber": 22
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                }
               }
             ]
           }
@@ -787,7 +964,10 @@
       "args": [
         {
           "type": "pages.rotated",
-          "pageObjectNumber": 11
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 11
+          }
         },
         [
           11,
@@ -805,7 +985,10 @@
       "args": [
         {
           "type": "pages.moved",
-          "pageObjectNumber": 11
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 11
+          }
         },
         [
           11,
@@ -823,7 +1006,10 @@
       "args": [
         {
           "type": "pages.deleted",
-          "pageObjectNumber": 11
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 11
+          }
         },
         [
           11,
@@ -841,7 +1027,10 @@
       "args": [
         {
           "type": "metadata.updated",
-          "pageObjectNumber": 11
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 11
+          }
         },
         [
           11,
@@ -859,7 +1048,10 @@
       "args": [
         {
           "type": "redaction.applied",
-          "pageObjectNumber": 11
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 11
+          }
         },
         [
           11,
@@ -877,7 +1069,10 @@
       "args": [
         {
           "type": "unknown",
-          "pageObjectNumber": 11
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 11
+          }
         },
         [
           11,

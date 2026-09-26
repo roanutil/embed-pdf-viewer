@@ -20,8 +20,9 @@
  */
 import { createCapabilityToken, type AnyPlugin } from '@embedpdf/core';
 
-import { RenderToken, renderPlugin } from '../../../../packages/plugin/render/src/index';
-import type { RenderCapability, RenderPluginOptions } from '../../../../packages/plugin/render/src/types';
+import { renderPlugin } from '../../../../packages/plugin/render/src/index';
+import { RenderToken, type RenderHostCapability } from '../../../../packages/plugin/render/src/host-contract';
+import type { RenderConfig as RenderPluginOptions } from '../../../../packages/plugin/render/src/contract';
 
 import type { FakeDocumentSpec, ResponseSpec } from '../fake-engine';
 import { registerPlugin, type PluginEnv, type PluginSpec, type ScenarioCase, type Step } from '../scenario';
@@ -45,13 +46,14 @@ console.warn = (...args: unknown[]) => (currentLog ? currentLog('console.warn', 
 console.debug = (...args: unknown[]) =>
   currentLog ? currentLog('console.debug', args) : originalConsole.debug(...args);
 
-const withSignals = (capability: RenderCapability): RenderCapability => ({
+const signalOf = (options: unknown): AbortSignal | undefined => {
+  const spec = (options as { signal?: { $abortSignal?: string } } | undefined)?.signal;
+  return spec?.$abortSignal !== undefined ? controllerNamed(spec.$abortSignal).signal : undefined;
+};
+const withSignals = (capability: RenderHostCapability): RenderHostCapability => ({
   ...capability,
-  renderPage: (pon, options) => {
-    const spec = (options as { signal?: { $abortSignal?: string } }).signal;
-    const signal = spec?.$abortSignal !== undefined ? controllerNamed(spec.$abortSignal).signal : undefined;
-    return capability.renderPage(pon, { ...options, signal });
-  },
+  renderSource: (page, options) => capability.renderSource(page, { ...options, signal: signalOf(options) }),
+  renderPage: (page, options) => capability.renderPage(page, { ...options, signal: signalOf(options) }),
 });
 
 registerPlugin('render', {
@@ -61,7 +63,10 @@ registerPlugin('render', {
     const plugin = renderPlugin((config ?? {}) as RenderPluginOptions) as AnyPlugin;
     return {
       ...plugin,
-      capability: (ctx) => withSignals(plugin.capability!(ctx) as RenderCapability),
+      create: (ctx) => {
+        const { api, connect } = plugin.create!(ctx);
+        return { api: withSignals(api as RenderHostCapability), connect };
+      },
     } as AnyPlugin;
   },
   tokens: [RenderToken],
@@ -80,9 +85,16 @@ registerPlugin('signals', {
 
 // ── fixtures ──────────────────────────────────────────────────────────────────
 
+const pr = (pon: number) => ({ kind: 'objectNumber', pageObjectNumber: pon });
+const LOCAL = { kind: 'local', sessionId: 's1', sub: null };
+const widget = (annotObjectNumber: number, pon: number) => ({
+  ref: { kind: 'objectNumber', page: pr(pon), annotObjectNumber },
+  annotObjectNumber,
+  page: pr(pon),
+});
 const layout = (pon: number, index: number, width: number, height: number) => {
   const box = { left: 0, bottom: 0, right: width, top: height };
-  return { index, pageObjectNumber: pon, label: null, size: { width, height }, rotation: 0, userUnit: 1, boxes: { media: box, crop: box } };
+  return { index, ref: pr(pon), label: null, size: { width, height }, rotation: 0, userUnit: 1, boxes: { media: box, crop: box } };
 };
 const PAGES = [layout(11, 0, 612, 792), layout(22, 1, 792, 612), layout(33, 2, 300, 300)];
 
@@ -123,7 +135,32 @@ const BYTES_HANDLE = { source: { kind: 'bytes', bytes: { $bytes: 'AQID' } } };
 const start: Step = { op: 'call', target: 'kernel', method: 'start' };
 const open = (id = 'a'): Step => ({ op: 'call', target: 'documents', method: 'open', args: [{ kind: 'bytes', id, bytes: { $bytes: '' } }] });
 const close = (id = 'a'): Step => ({ op: 'call', target: 'documents', method: 'close', args: [id] });
-const cap = (method: string, ...args: unknown[]): Step => ({ op: 'call', target: { token: 'render', doc: 'a' }, method, args });
+/** v2 render method → v3 host-lens name. The v2 `renderPage(pon, {scale})`
+ *  rendered the conformed source raster, which is v3's `renderSource`. */
+const RENAMED: Readonly<Record<string, string>> = {
+  renderPage: 'renderSource',
+  renderSourceKey: 'getSourceKey',
+  renderEpoch: 'getRenderEpoch',
+  renderPolicy: 'getRenderPolicy',
+  paintSettings: 'getPaintSettings',
+  tilesFor: 'createViewDemand',
+};
+const PAGE_FIRST = new Set(['renderPage', 'renderSourceKey', 'conformViewport', 'renderEpoch']);
+const v3Args = (method: string, args: readonly unknown[]): unknown[] => {
+  if (PAGE_FIRST.has(method) && typeof args[0] === 'number') return [pr(args[0]), ...args.slice(1)];
+  if (method === 'invalidate' && args[0] && typeof args[0] === 'object' && 'pons' in args[0]) {
+    const { pons, ...rest } = args[0] as { pons: number[] };
+    return [{ ...rest, pages: pons.map(pr) }, ...args.slice(1)];
+  }
+  return [...args];
+};
+const renderCall = (doc: string, method: string, args: readonly unknown[]): Step => ({
+  op: 'call',
+  target: { token: 'render', doc },
+  method: RENAMED[method] ?? method,
+  args: v3Args(method, args),
+});
+const cap = (method: string, ...args: unknown[]): Step => renderCall('a', method, args);
 const settle = (label: string, value: unknown = HANDLE): Step => ({ op: 'settle', label, value });
 const fail = (label: string, message = 'boom'): Step => ({ op: 'settle', label, error: { name: 'EngineError', message, code: 'Unknown' } });
 const settleRange = (from: number, to: number, value: unknown = HANDLE): Step[] =>
@@ -142,27 +179,33 @@ const SNAPSHOT = ['render::a'];
 const tk = (pon: number, width: number, ix: number, iy: number, o: { a?: 0 | 1; e?: number; g?: string } = {}) =>
   `t:${pon}|w${width}|${ix},${iy}|a${o.a ?? 1}|e${o.e ?? 0}|g${o.g ?? '512.1'}`;
 
-/** Ref bookkeeping for `tilesFor` handles: each print registers four refs. */
+/** Ref bookkeeping for view demands: `createViewDemand` prints a handle of
+ *  six members (setDemand, getPlan, markPainted, markUnpainted, release,
+ *  dispose). v2's `plan(pon, demand)` both declared the demand and read the
+ *  plan; v3 splits it into `setDemand` then `getPlan`, so `plan` is two steps. */
 function views() {
   let next = 0;
   const base: Record<string, number> = {};
   return {
     tilesFor(view: string): Step {
       base[view] = next;
-      next += 4;
+      next += 6;
       return cap('tilesFor', view);
     },
-    plan(view: string, pon: number, demand: unknown, opts?: unknown): Step {
-      return { op: 'call', target: { ref: base[view] }, args: opts === undefined ? [pon, demand] : [pon, demand, opts] };
+    plan(view: string, pon: number, demand: unknown, opts?: unknown): Step[] {
+      return [
+        { op: 'call', target: { ref: base[view] }, args: opts === undefined ? [pr(pon), demand] : [pr(pon), demand, opts] },
+        { op: 'call', target: { ref: base[view] + 1 }, args: [pr(pon)] },
+      ];
     },
     painted(view: string, pon: number, key: string): Step {
-      return { op: 'call', target: { ref: base[view] + 1 }, args: [pon, key] };
+      return { op: 'call', target: { ref: base[view] + 2 }, args: [pr(pon), key] };
     },
     unpainted(view: string, pon: number, key: string): Step {
-      return { op: 'call', target: { ref: base[view] + 2 }, args: [pon, key] };
+      return { op: 'call', target: { ref: base[view] + 3 }, args: [pr(pon), key] };
     },
     release(view: string, pon: number): Step {
-      return { op: 'call', target: { ref: base[view] + 3 }, args: [pon] };
+      return { op: 'call', target: { ref: base[view] + 4 }, args: [pr(pon)] };
     },
   };
 }
@@ -577,24 +620,26 @@ const capabilityCases: ScenarioCase[] = [
     steps: [
       start,
       open(),
-      emit({ type: 'annotation.created', pageObjectNumber: 22 }),
-      emit({ type: 'annotation.updated', pageObjectNumber: 22, origin: { kind: 'remote', sessionId: 'x', sub: 'alice', ts: 1, serverId: 7 } }),
-      emit({ type: 'annotation.deleted', pageObjectNumber: 11 }),
-      emit({ type: 'annotation.moved', pageObjectNumber: 33 }),
-      emit({ type: 'form.valueChanged', changedWidgets: [{ annotObjectNumber: 5, pageObjectNumber: 11 }, { annotObjectNumber: 6, pageObjectNumber: 33 }] }),
-      emit({ type: 'form.effectsApplied', changedWidgets: [] }),
-      emit({ type: 'form.fieldDeleted', removedWidgets: [{ annotObjectNumber: 5, pageObjectNumber: 22 }] }),
-      emit({ type: 'form.fieldCreated', field: { widgets: [{ annotObjectNumber: 5, pageObjectNumber: 11 }] } }),
-      emit({ type: 'form.widgetDetached', field: { widgets: [] } }),
-      emit({ type: 'redaction.applied', results: [{ pageObjectNumber: 11, status: 'applied' }, { pageObjectNumber: 22, status: 'skipped' }, { pageObjectNumber: 33, status: 'applied' }] }),
-      emit({ type: 'redaction.applied', results: [{ pageObjectNumber: 22, status: 'failed' }] }),
-      emit({ type: 'metadata.updated', metadata: {} }),
+      emit({ type: 'annotation.created', page: pr(22), origin: LOCAL }),
+      emit({ type: 'annotation.updated', page: pr(22), origin: { kind: 'remote', sessionId: 'x', sub: 'alice', ts: 1, serverId: 7 } }),
+      emit({ type: 'annotation.deleted', page: pr(11), origin: LOCAL }),
+      emit({ type: 'annotation.moved', page: pr(33), origin: LOCAL }),
+      emit({ type: 'form.valueChanged', changedWidgets: [widget(5, 11), widget(6, 33)], origin: LOCAL }),
+      emit({ type: 'form.effectsApplied', changedWidgets: [], origin: LOCAL }),
+      emit({ type: 'form.fieldDeleted', removedWidgets: [widget(5, 22)], origin: LOCAL }),
+      emit({ type: 'form.fieldCreated', field: { widgets: [widget(5, 11)] }, origin: LOCAL }),
+      emit({ type: 'form.widgetDetached', field: { widgets: [] }, origin: LOCAL }),
+      emit({ type: 'redaction.applied', results: [{ page: pr(11), status: 'applied' }, { page: pr(22), status: 'skipped' }, { page: pr(33), status: 'applied' }], origin: LOCAL }),
+      emit({ type: 'redaction.applied', results: [{ page: pr(22), status: 'failed' }], origin: LOCAL }),
+      emit({ type: 'metadata.updated', metadata: {}, origin: LOCAL }),
       emit({
         type: 'pages.deleted',
+        pages: [pr(22)],
+        origin: LOCAL,
         layout: { pageCount: 2, pages: [layout(11, 0, 612, 792), layout(33, 1, 300, 300)] },
       }),
-      emit({ type: 'form.imported' }),
-      emit({ type: 'form.repaired' }),
+      emit({ type: 'form.imported', origin: LOCAL }),
+      emit({ type: 'form.repaired', origin: LOCAL }),
       cap('renderEpoch', 11),
       cap('renderEpoch', 11, false),
       close(),
@@ -646,12 +691,12 @@ const capabilityCases: ScenarioCase[] = [
       open('a'),
       open('b'),
       cap('renderPage', 11, { scale: 1 }),
-      { op: 'call', target: { token: 'render', doc: 'b' }, method: 'renderPage', args: [11, { scale: 1 }] },
-      { op: 'call', target: { token: 'render', doc: 'b' }, method: 'renderSourceKey', args: [11, { scale: 1 }] },
-      { op: 'call', target: { token: 'render', doc: 'b' }, method: 'invalidate', args: [{ pons: [11] }] },
+      renderCall('b', 'renderPage', [11, { scale: 1 }]),
+      renderCall('b', 'renderSourceKey', [11, { scale: 1 }]),
+      renderCall('b', 'invalidate', [{ pons: [11] }]),
       cap('renderEpoch', 11),
       close('a'),
-      { op: 'call', target: { token: 'render', doc: 'b' }, method: 'renderEpoch', args: [11] },
+      renderCall('b', 'renderEpoch', [11]),
     ],
   },
   {
@@ -695,10 +740,10 @@ const tileCases: ScenarioCase[] = [
     undefined,
     doc(),
     (v) => [
-      v.plan('stage', 11, { desiredDeviceWidth: 300 }),
-      v.plan('stage', 11, { desiredDeviceWidth: 640 }),
-      v.plan('stage', 99, DEEP),
-      v.plan('stage', 11, { desiredDeviceWidth: 600, visibleRect: visible(0, 0, 10, 10) }, { includeAnnotations: false }),
+      ...v.plan('stage', 11, { desiredDeviceWidth: 300 }),
+      ...v.plan('stage', 11, { desiredDeviceWidth: 640 }),
+      ...v.plan('stage', 99, DEEP),
+      ...v.plan('stage', 11, { desiredDeviceWidth: 600, visibleRect: visible(0, 0, 10, 10) }, { includeAnnotations: false }),
     ],
   ),
   tileCase(
@@ -706,7 +751,7 @@ const tileCases: ScenarioCase[] = [
     'Under a lattice tiles engage only past 1.25 × the rung the base supplies.',
     undefined,
     doc({ policy: LATTICE }),
-    (v) => [v.plan('stage', 11, { desiredDeviceWidth: 3200 }), v.plan('stage', 11, { desiredDeviceWidth: 3201, visibleRect: visible(0, 0, 50, 50) })],
+    (v) => [...v.plan('stage', 11, { desiredDeviceWidth: 3200 }), ...v.plan('stage', 11, { desiredDeviceWidth: 3201, visibleRect: visible(0, 0, 50, 50) })],
   ),
   tileCase(
     'engages-past-the-budget',
@@ -714,20 +759,20 @@ const tileCases: ScenarioCase[] = [
     debug(),
     doc(),
     (v) => [
-      v.plan('stage', 11, DEEP),
-      v.plan('stage', 11, DEEP),
+      ...v.plan('stage', 11, DEEP),
+      ...v.plan('stage', 11, DEEP),
       ...settleRange(0, 3),
       advance(16),
-      v.plan('stage', 11, DEEP),
-      v.plan('stage', 11, DEEP),
+      ...v.plan('stage', 11, DEEP),
+      ...v.plan('stage', 11, DEEP),
       ...settleRange(4, 8),
       advance(15),
       advance(1),
-      v.plan('stage', 11, DEEP),
+      ...v.plan('stage', 11, DEEP),
       v.painted('stage', 11, tk(11, 4896, 0, 0)),
       v.painted('stage', 11, tk(11, 4896, 0, 0)),
       v.painted('stage', 11, 'no-such-key'),
-      v.plan('stage', 11, DEEP),
+      ...v.plan('stage', 11, DEEP),
       advance(16),
     ],
   ),
@@ -736,7 +781,7 @@ const tileCases: ScenarioCase[] = [
     'Visible tiles fetch nearest the visible center first, ties in row-major order.',
     { tiles: { prefetch: { margin: 0 } } },
     doc(),
-    (v) => [v.plan('stage', 11, demand(4896, visible(10, 20, 300, 200))), v.plan('stage', 22, { desiredDeviceWidth: 6336, visibleRect: visible(400, 100, 150, 150) })],
+    (v) => [...v.plan('stage', 11, demand(4896, visible(10, 20, 300, 200))), ...v.plan('stage', 22, { desiredDeviceWidth: 6336, visibleRect: visible(400, 100, 150, 150) })],
   ),
   tileCase(
     'identity-law-inside-a-rung',
@@ -744,11 +789,11 @@ const tileCases: ScenarioCase[] = [
     undefined,
     doc({ policy: LATTICE }),
     (v) => [
-      v.plan('stage', 11, DEEP),
+      ...v.plan('stage', 11, DEEP),
       ...settleRange(0, 3),
-      v.plan('stage', 11, DEEP),
-      v.plan('stage', 11, { ...DEEP, desiredDeviceWidth: 4400 }),
-      v.plan('stage', 11, { ...DEEP, desiredDeviceWidth: 2449 }),
+      ...v.plan('stage', 11, DEEP),
+      ...v.plan('stage', 11, { ...DEEP, desiredDeviceWidth: 4400 }),
+      ...v.plan('stage', 11, { ...DEEP, desiredDeviceWidth: 2449 }),
     ],
   ),
   tileCase(
@@ -757,17 +802,17 @@ const tileCases: ScenarioCase[] = [
     debug({ settleMs: 0, prefetch: { margin: 0 } }),
     doc({ policy: LATTICE }),
     (v) => [
-      v.plan('stage', 11, DEEP),
+      ...v.plan('stage', 11, DEEP),
       ...settleRange(0, 3),
-      v.plan('stage', 11, DEEP),
+      ...v.plan('stage', 11, DEEP),
       ...[tk(11, 4896, 0, 0), tk(11, 4896, 1, 0), tk(11, 4896, 0, 1), tk(11, 4896, 1, 1)].map((k) => v.painted('stage', 11, k)),
-      v.plan('stage', 11, DEEPER),
+      ...v.plan('stage', 11, DEEPER),
       ...settleRange(4, 7),
-      v.plan('stage', 11, DEEPER),
+      ...v.plan('stage', 11, DEEPER),
       ...[tk(11, 9792, 0, 0), tk(11, 9792, 1, 0), tk(11, 9792, 0, 1)].map((k) => v.painted('stage', 11, k)),
-      v.plan('stage', 11, DEEPER),
+      ...v.plan('stage', 11, DEEPER),
       v.painted('stage', 11, tk(11, 9792, 1, 1)),
-      v.plan('stage', 11, DEEPER),
+      ...v.plan('stage', 11, DEEPER),
     ],
   ),
   tileCase(
@@ -776,15 +821,15 @@ const tileCases: ScenarioCase[] = [
     { tiles: { settleMs: 0, prefetch: { margin: 0 } } },
     doc({ policy: LATTICE }),
     (v) => [
-      v.plan('stage', 11, DEEPER),
+      ...v.plan('stage', 11, DEEPER),
       ...settleRange(0, 3),
-      v.plan('stage', 11, DEEPER),
+      ...v.plan('stage', 11, DEEPER),
       ...[tk(11, 9792, 0, 0), tk(11, 9792, 1, 0), tk(11, 9792, 0, 1), tk(11, 9792, 1, 1)].map((k) => v.painted('stage', 11, k)),
-      v.plan('stage', 11, DEEP),
+      ...v.plan('stage', 11, DEEP),
       ...settleRange(4, 7),
-      v.plan('stage', 11, DEEP),
+      ...v.plan('stage', 11, DEEP),
       ...[tk(11, 4896, 0, 0), tk(11, 4896, 1, 0), tk(11, 4896, 0, 1)].map((k) => v.painted('stage', 11, k)),
-      v.plan('stage', 11, DEEP),
+      ...v.plan('stage', 11, DEEP),
     ],
   ),
   tileCase(
@@ -793,14 +838,14 @@ const tileCases: ScenarioCase[] = [
     { tiles: { prefetch: { margin: 0 } } },
     doc(),
     (v) => [
-      v.plan('stage', 11, DEEP),
+      ...v.plan('stage', 11, DEEP),
       ...settleRange(0, 3),
-      v.plan('stage', 11, { ...DEEP, visibleRect: visible(64, 0, 128, 128) }),
+      ...v.plan('stage', 11, { ...DEEP, visibleRect: visible(64, 0, 128, 128) }),
       settle('r4'),
       settle('r5'),
-      v.plan('stage', 11, { ...DEEP, visibleRect: visible(64, 0, 128, 128) }),
-      v.plan('stage', 11, DEEP),
-      v.plan('stage', 11, DEEP),
+      ...v.plan('stage', 11, { ...DEEP, visibleRect: visible(64, 0, 128, 128) }),
+      ...v.plan('stage', 11, DEEP),
+      ...v.plan('stage', 11, DEEP),
     ],
   ),
   tileCase(
@@ -809,11 +854,11 @@ const tileCases: ScenarioCase[] = [
     { tiles: { prefetch: { margin: 0 } } },
     doc(),
     (v) => [
-      v.plan('stage', 11, DEEP),
-      v.plan('stage', 11, { ...DEEP, visibleRect: visible(448, 448, 128, 128) }),
+      ...v.plan('stage', 11, DEEP),
+      ...v.plan('stage', 11, { ...DEEP, visibleRect: visible(448, 448, 128, 128) }),
       settle('r0'),
       settleRange(4, 7)[0],
-      v.plan('stage', 11, { ...DEEP, visibleRect: visible(448, 448, 128, 128) }),
+      ...v.plan('stage', 11, { ...DEEP, visibleRect: visible(448, 448, 128, 128) }),
     ],
   ),
   tileCase(
@@ -822,15 +867,15 @@ const tileCases: ScenarioCase[] = [
     debug({ settleMs: 100 }),
     doc(),
     (v) => [
-      v.plan('stage', 11, DEEP),
+      ...v.plan('stage', 11, DEEP),
       ...settleRange(0, 3),
-      v.plan('stage', 11, DEEP),
+      ...v.plan('stage', 11, DEEP),
       ...[tk(11, 4896, 0, 0), tk(11, 4896, 1, 0)].map((k) => v.painted('stage', 11, k)),
-      v.plan('stage', 11, demand(5200)),
+      ...v.plan('stage', 11, demand(5200)),
       cap('invalidate', { pons: [11], scope: 'annotations' }),
-      v.plan('stage', 11, DEEP),
+      ...v.plan('stage', 11, DEEP),
       advance(200),
-      v.plan('stage', 11, DEEP, { includeAnnotations: false }),
+      ...v.plan('stage', 11, DEEP, { includeAnnotations: false }),
     ],
   ),
   tileCase(
@@ -839,11 +884,11 @@ const tileCases: ScenarioCase[] = [
     debug(),
     doc(),
     (v) => [
-      v.plan('stage', 11, DEEP),
+      ...v.plan('stage', 11, DEEP),
       ...settleRange(0, 2),
-      v.plan('stage', 11, { desiredDeviceWidth: 1200 }),
-      v.plan('stage', 11, { desiredDeviceWidth: 1200 }),
-      v.plan('stage', 11, DEEP),
+      ...v.plan('stage', 11, { desiredDeviceWidth: 1200 }),
+      ...v.plan('stage', 11, { desiredDeviceWidth: 1200 }),
+      ...v.plan('stage', 11, DEEP),
     ],
   ),
   tileCase(
@@ -852,21 +897,21 @@ const tileCases: ScenarioCase[] = [
     { tiles: { settleMs: 0, prefetch: { margin: 0 } } },
     doc({ policy: LATTICE }),
     (v) => [
-      v.plan('stage', 11, DEEP),
+      ...v.plan('stage', 11, DEEP),
       ...settleRange(0, 3),
-      v.plan('stage', 11, DEEP),
+      ...v.plan('stage', 11, DEEP),
       ...[tk(11, 4896, 0, 0), tk(11, 4896, 1, 0), tk(11, 4896, 0, 1), tk(11, 4896, 1, 1)].map((k) => v.painted('stage', 11, k)),
-      v.plan('stage', 11, DEEPER),
+      ...v.plan('stage', 11, DEEPER),
       ...settleRange(4, 7),
-      v.plan('stage', 11, DEEPER),
+      ...v.plan('stage', 11, DEEPER),
       ...[tk(11, 9792, 0, 0), tk(11, 9792, 1, 0), tk(11, 9792, 0, 1)].map((k) => v.painted('stage', 11, k)),
       v.unpainted('stage', 11, tk(11, 9792, 0, 0)),
       v.unpainted('stage', 11, 'no-such-key'),
       v.unpainted('stage', 99, 'no-such-page'),
       v.painted('stage', 11, tk(11, 9792, 1, 1)),
-      v.plan('stage', 11, DEEPER),
+      ...v.plan('stage', 11, DEEPER),
       v.painted('stage', 11, tk(11, 9792, 0, 0)),
-      v.plan('stage', 11, DEEPER),
+      ...v.plan('stage', 11, DEEPER),
     ],
   ),
   tileCase(
@@ -875,13 +920,13 @@ const tileCases: ScenarioCase[] = [
     debug({ prefetch: { margin: 0 }, settleMs: 0 }),
     doc(),
     (v) => [
-      v.plan('stage', 11, DEEP),
+      ...v.plan('stage', 11, DEEP),
       fail('r0'),
       ...settleRange(1, 3),
       advance(16),
-      v.plan('stage', 11, DEEP),
-      v.plan('stage', 11, DEEPER),
-      v.plan('stage', 11, DEEP),
+      ...v.plan('stage', 11, DEEP),
+      ...v.plan('stage', 11, DEEPER),
+      ...v.plan('stage', 11, DEEP),
     ],
   ),
   tileCase(
@@ -890,19 +935,19 @@ const tileCases: ScenarioCase[] = [
     debug({ prefetch: { margin: 0 } }),
     doc(),
     (v) => [
-      v.plan('stage', 11, demand(4896)),
+      ...v.plan('stage', 11, demand(4896)),
       ...settleRange(0, 3),
-      v.plan('stage', 11, demand(5200)),
+      ...v.plan('stage', 11, demand(5200)),
       advance(100),
-      v.plan('stage', 11, demand(5800)),
-      v.plan('stage', 11, demand(6400)),
+      ...v.plan('stage', 11, demand(5800)),
+      ...v.plan('stage', 11, demand(6400)),
       advance(149),
       advance(1),
       ...settleRange(4, 7),
-      v.plan('stage', 11, demand(6400)),
-      v.plan('stage', 11, demand(6560)),
+      ...v.plan('stage', 11, demand(6400)),
+      ...v.plan('stage', 11, demand(6560)),
       advance(200),
-      v.plan('stage', 11, demand(6560)),
+      ...v.plan('stage', 11, demand(6560)),
     ],
   ),
   tileCase(
@@ -911,11 +956,11 @@ const tileCases: ScenarioCase[] = [
     debug({ prefetch: { margin: 0 } }),
     doc(),
     (v) => [
-      v.plan('stage', 11, demand(4896)),
-      v.plan('stage', 11, demand(5200)),
-      v.plan('stage', 11, demand(5200)),
+      ...v.plan('stage', 11, demand(4896)),
+      ...v.plan('stage', 11, demand(5200)),
+      ...v.plan('stage', 11, demand(5200)),
       advance(500),
-      v.plan('stage', 11, demand(4896)),
+      ...v.plan('stage', 11, demand(4896)),
       advance(500),
     ],
   ),
@@ -924,7 +969,7 @@ const tileCases: ScenarioCase[] = [
     'settleMs 0 disables the gate: a level change fetches at once.',
     { tiles: { settleMs: 0, prefetch: { margin: 0 } } },
     doc(),
-    (v) => [v.plan('stage', 11, demand(4896)), v.plan('stage', 11, demand(5200))],
+    (v) => [...v.plan('stage', 11, demand(4896)), ...v.plan('stage', 11, demand(5200))],
   ),
   tileCase(
     'views-are-isolated',
@@ -932,16 +977,16 @@ const tileCases: ScenarioCase[] = [
     { tiles: { prefetch: { margin: 0 } } },
     doc(),
     (v) => [
-      v.plan('stage', 11, DEEP),
+      ...v.plan('stage', 11, DEEP),
       ...settleRange(0, 3),
-      v.plan('stage', 11, DEEP),
+      ...v.plan('stage', 11, DEEP),
       v.tilesFor('thumbs'),
-      v.plan('thumbs', 11, { desiredDeviceWidth: 200 }),
+      ...v.plan('thumbs', 11, { desiredDeviceWidth: 200 }),
       v.painted('thumbs', 11, tk(11, 4896, 0, 0)),
-      v.plan('stage', 11, DEEP),
-      v.plan('thumbs', 11, DEEP),
+      ...v.plan('stage', 11, DEEP),
+      ...v.plan('thumbs', 11, DEEP),
       v.painted('stage', 11, tk(11, 4896, 0, 0)),
-      v.plan('stage', 11, DEEP),
+      ...v.plan('stage', 11, DEEP),
       v.tilesFor('stage'),
     ],
   ),
@@ -951,14 +996,14 @@ const tileCases: ScenarioCase[] = [
     { tiles: { prefetch: { margin: 0 } } },
     doc(),
     (v) => [
-      v.plan('stage', 11, DEEP),
+      ...v.plan('stage', 11, DEEP),
       v.tilesFor('thumbs'),
-      v.plan('thumbs', 11, DEEP),
+      ...v.plan('thumbs', 11, DEEP),
       v.release('thumbs', 11),
       v.release('thumbs', 11),
       ...settleRange(0, 1),
       v.release('stage', 11),
-      v.plan('stage', 11, DEEP),
+      ...v.plan('stage', 11, DEEP),
     ],
   ),
   tileCase(
@@ -967,11 +1012,11 @@ const tileCases: ScenarioCase[] = [
     { tiles: { prefetch: { margin: 0 } } },
     doc(),
     (v) => [
-      v.plan('stage', 11, demand(4896, visible(0, 0, 512, 384))),
+      ...v.plan('stage', 11, demand(4896, visible(0, 0, 512, 384))),
       ...settleRange(0, 7),
-      v.plan('stage', 11, demand(4896, visible(0, 0, 512, 384))),
-      v.plan('stage', 11, demand(4896, visible(0, 448, 128, 128))),
-      v.plan('stage', 11, demand(4896, visible(0, 0, 512, 384))),
+      ...v.plan('stage', 11, demand(4896, visible(0, 0, 512, 384))),
+      ...v.plan('stage', 11, demand(4896, visible(0, 448, 128, 128))),
+      ...v.plan('stage', 11, demand(4896, visible(0, 0, 512, 384))),
     ],
   ),
   tileCase(
@@ -980,9 +1025,9 @@ const tileCases: ScenarioCase[] = [
     { tiles: { prefetch: { margin: 0 } } },
     doc(),
     (v) => [
-      v.plan('stage', 11, { desiredDeviceWidth: 80_000 }),
-      v.plan('stage', 22, { desiredDeviceWidth: 80_000 }),
-      v.plan('stage', 33, { desiredDeviceWidth: 1000 }),
+      ...v.plan('stage', 11, { desiredDeviceWidth: 80_000 }),
+      ...v.plan('stage', 22, { desiredDeviceWidth: 80_000 }),
+      ...v.plan('stage', 33, { desiredDeviceWidth: 1000 }),
     ],
   ),
   tileCase(
@@ -990,14 +1035,14 @@ const tileCases: ScenarioCase[] = [
     'Under a pyramid the stage-less clamp picks the largest rung that fits, or the smallest when none does.',
     { tiles: { prefetch: { margin: 0 }, size: 256 } },
     doc({ policy: LATTICE }),
-    (v) => [v.plan('stage', 11, { desiredDeviceWidth: 80_000 }), v.plan('stage', 22, { desiredDeviceWidth: 80_000 })],
+    (v) => [...v.plan('stage', 11, { desiredDeviceWidth: 80_000 }), ...v.plan('stage', 22, { desiredDeviceWidth: 80_000 })],
   ),
   tileCase(
     'stage-less-pyramid-smallest-rung',
     'When no pyramid rung fits the stage-less clamp, the smallest rung is used.',
     { tiles: { prefetch: { margin: 0 }, quantize: [4, 8], size: 64 } },
     doc(),
-    (v) => [v.plan('stage', 11, { desiredDeviceWidth: 80_000 })],
+    (v) => [...v.plan('stage', 11, { desiredDeviceWidth: 80_000 })],
   ),
   tileCase(
     'evicted-tile-bytes-refetch',
@@ -1005,14 +1050,14 @@ const tileCases: ScenarioCase[] = [
     { tiles: { prefetch: { margin: 0 } } },
     doc(),
     (v) => [
-      v.plan('stage', 11, DEEP),
+      ...v.plan('stage', 11, DEEP),
       settle('r0', handle(10000, 10000)),
       settle('r1', handle(10000, 10000)),
-      v.plan('stage', 11, DEEP),
+      ...v.plan('stage', 11, DEEP),
       settle('r2'),
       settle('r3'),
-      v.plan('stage', 11, DEEP),
-      v.plan('stage', 11, DEEP),
+      ...v.plan('stage', 11, DEEP),
+      ...v.plan('stage', 11, DEEP),
     ],
   ),
   tileCase(
@@ -1021,13 +1066,13 @@ const tileCases: ScenarioCase[] = [
     { tiles: { prefetch: { margin: 0 } } },
     doc(),
     (v) => [
-      v.plan('stage', 11, DEEP, { includeAnnotations: false }),
+      ...v.plan('stage', 11, DEEP, { includeAnnotations: false }),
       ...settleRange(0, 3),
       v.painted('stage', 11, tk(11, 4896, 0, 0, { a: 0 })),
       cap('invalidate', { pons: [11], scope: 'annotations' }),
-      v.plan('stage', 11, DEEP, { includeAnnotations: false }),
+      ...v.plan('stage', 11, DEEP, { includeAnnotations: false }),
       cap('invalidate', { pons: [11], scope: 'content' }),
-      v.plan('stage', 11, DEEP, { includeAnnotations: false }),
+      ...v.plan('stage', 11, DEEP, { includeAnnotations: false }),
     ],
   ),
   tileCase(
@@ -1035,28 +1080,28 @@ const tileCases: ScenarioCase[] = [
     'An advertised tiles block wins: its scales are the pyramid, its first tile size replaces an unlisted one, and the conformed format rides into tile fetches and keys (whose geometry names the option size).',
     { format: 'png', tiles: { prefetch: { margin: 0 } } },
     doc({ policy: LATTICE_TILES }),
-    (v) => [v.plan('stage', 11, demand(3000, visible(0, 0, 100, 100)))],
+    (v) => [...v.plan('stage', 11, demand(3000, visible(0, 0, 100, 100)))],
   ),
   tileCase(
     'lattice-tiles-block-keeps-a-listed-size',
     'A tile size the tiles block lists is kept.',
     { tiles: { size: 1024, prefetch: { margin: 0 } } },
     doc({ policy: LATTICE_TILES }),
-    (v) => [v.plan('stage', 11, demand(3000, visible(0, 0, 100, 100)))],
+    (v) => [...v.plan('stage', 11, demand(3000, visible(0, 0, 100, 100)))],
   ),
   tileCase(
     'client-tile-ladder',
     'A client tile ladder under continuous snaps levels up its rungs, and tile fetches carry the strategy quality.',
     { tiles: { quantize: [2, 4], prefetch: { margin: 0 } }, quality: 0.5, format: 'webp' },
     doc(),
-    (v) => [v.plan('stage', 11, demand(1800, visible(0, 0, 200, 200))), v.plan('stage', 11, demand(9000, visible(0, 0, 200, 200)))],
+    (v) => [...v.plan('stage', 11, demand(1800, visible(0, 0, 200, 200))), ...v.plan('stage', 11, demand(9000, visible(0, 0, 200, 200)))],
   ),
   tileCase(
     'max-scale-clamps-exact-levels',
     'Exact levels clamp at maxScale × page width.',
     { tiles: { maxScale: 4, prefetch: { margin: 0 } } },
     doc(),
-    (v) => [v.plan('stage', 11, demand(9000, visible(0, 0, 100, 100)))],
+    (v) => [...v.plan('stage', 11, demand(9000, visible(0, 0, 100, 100)))],
   ),
   tileCase(
     'prefetch-ring-velocity-bias',
@@ -1064,9 +1109,9 @@ const tileCases: ScenarioCase[] = [
     undefined,
     doc(),
     (v) => [
-      v.plan('stage', 11, { ...demand(4896, visible(128, 128, 128, 128)), velocity: { dx: 10, dy: -3 } }),
+      ...v.plan('stage', 11, { ...demand(4896, visible(128, 128, 128, 128)), velocity: { dx: 10, dy: -3 } }),
       ...settleRange(0, 3),
-      v.plan('stage', 11, { ...demand(4896, visible(128, 128, 128, 128)), velocity: { dx: 10, dy: -3 } }),
+      ...v.plan('stage', 11, { ...demand(4896, visible(128, 128, 128, 128)), velocity: { dx: 10, dy: -3 } }),
     ],
   ),
   tileCase(
@@ -1075,9 +1120,9 @@ const tileCases: ScenarioCase[] = [
     { tiles: { prefetch: { velocityBias: false, margin: 1 } } },
     doc(),
     (v) => [
-      v.plan('stage', 11, { ...demand(4896, visible(128, 128, 64, 64)), velocity: { dx: 10, dy: 3 } }),
+      ...v.plan('stage', 11, { ...demand(4896, visible(128, 128, 64, 64)), velocity: { dx: 10, dy: 3 } }),
       settle('r0'),
-      v.plan('stage', 11, { ...demand(4896, visible(128, 128, 64, 64)), velocity: { dx: 10, dy: 3 } }),
+      ...v.plan('stage', 11, { ...demand(4896, visible(128, 128, 64, 64)), velocity: { dx: 10, dy: 3 } }),
     ],
   ),
   tileCase(
@@ -1086,14 +1131,14 @@ const tileCases: ScenarioCase[] = [
     debug({ prefetch: { margin: 0 }, settleMs: 0 }),
     doc({ policy: LATTICE }),
     (v) => [
-      v.plan('stage', 11, DEEP),
+      ...v.plan('stage', 11, DEEP),
       ...settleRange(0, 3),
-      v.plan('stage', 11, DEEP),
+      ...v.plan('stage', 11, DEEP),
       v.painted('stage', 11, tk(11, 4896, 0, 0)),
-      v.plan('stage', 11, demand(9792, visible(0, 0, 200, 200))),
+      ...v.plan('stage', 11, demand(9792, visible(0, 0, 200, 200))),
       settle('r4'),
       settle('r5'),
-      v.plan('stage', 11, demand(9792, visible(0, 0, 200, 200))),
+      ...v.plan('stage', 11, demand(9792, visible(0, 0, 200, 200))),
     ],
   ),
   tileCase(
@@ -1102,11 +1147,11 @@ const tileCases: ScenarioCase[] = [
     debug({ settleMs: 0, prefetch: { margin: 0 } }),
     doc({ policy: LATTICE }),
     (v) => [
-      v.plan('stage', 11, DEEP, { includeAnnotations: false }),
+      ...v.plan('stage', 11, DEEP, { includeAnnotations: false }),
       ...settleRange(0, 3),
-      v.plan('stage', 11, DEEP, { includeAnnotations: false }),
+      ...v.plan('stage', 11, DEEP, { includeAnnotations: false }),
       v.painted('stage', 11, tk(11, 4896, 0, 0, { a: 0 })),
-      v.plan('stage', 11, DEEPER, { includeAnnotations: false }),
+      ...v.plan('stage', 11, DEEPER, { includeAnnotations: false }),
       ...settleRange(4, 7),
       v.painted('stage', 11, tk(11, 9792, 0, 0, { a: 0 })),
       v.painted('stage', 11, tk(11, 9792, 1, 0, { a: 0 })),
@@ -1119,7 +1164,7 @@ const tileCases: ScenarioCase[] = [
     'A stage-less demand exactly at the clamp width is not clamped and does not warn.',
     { tiles: { prefetch: { margin: 0 } } },
     doc(),
-    (v) => [v.plan('stage', 11, { desiredDeviceWidth: 3600 }), v.plan('stage', 11, { desiredDeviceWidth: 3601 })],
+    (v) => [...v.plan('stage', 11, { desiredDeviceWidth: 3600 }), ...v.plan('stage', 11, { desiredDeviceWidth: 3601 })],
   ),
   tileCase(
     'permission-denied-tiles',
@@ -1127,11 +1172,11 @@ const tileCases: ScenarioCase[] = [
     debug({ prefetch: { margin: 0 } }),
     doc({ allows: [] }),
     (v) => [
-      v.plan('stage', 11, DEEP),
+      ...v.plan('stage', 11, DEEP),
       advance(16),
-      v.plan('stage', 11, DEEP),
-      v.plan('stage', 11, { desiredDeviceWidth: 300 }),
-      v.plan('stage', 22, { desiredDeviceWidth: 300 }),
+      ...v.plan('stage', 11, DEEP),
+      ...v.plan('stage', 11, { desiredDeviceWidth: 300 }),
+      ...v.plan('stage', 22, { desiredDeviceWidth: 300 }),
     ],
   ),
   tileCase(
@@ -1140,14 +1185,14 @@ const tileCases: ScenarioCase[] = [
     debug({ prefetch: { margin: 0 } }),
     doc(),
     (v) => [
-      v.plan('stage', 11, DEEP),
+      ...v.plan('stage', 11, DEEP),
       ...settleRange(0, 3),
-      v.plan('stage', 11, demand(5200)),
+      ...v.plan('stage', 11, demand(5200)),
       close(),
       advance(200),
       settle('r4'),
       advance(16),
-      v.plan('stage', 11, DEEP),
+      ...v.plan('stage', 11, DEEP),
     ],
   ),
   tileCase(
@@ -1156,14 +1201,14 @@ const tileCases: ScenarioCase[] = [
     { tiles: { prefetch: { margin: 0 } } },
     doc(),
     (v) => [
-      v.plan('stage', 11, DEEP),
+      ...v.plan('stage', 11, DEEP),
       ...settleRange(0, 3),
-      emit({ type: 'pages.rotated', layout: { pageCount: 3, pages: [layout(11, 0, 792, 612), PAGES[1], PAGES[2]] } }),
-      v.plan('stage', 11, DEEP),
+      emit({ type: 'pages.rotated', pages: [pr(11)], origin: LOCAL, layout: { pageCount: 3, pages: [layout(11, 0, 792, 612), PAGES[1], PAGES[2]] } }),
+      ...v.plan('stage', 11, DEEP),
       v.painted('stage', 11, tk(11, 4896, 0, 0)),
-      emit({ type: 'pages.deleted', layout: { pageCount: 2, pages: [PAGES[1], PAGES[2]] } }),
+      emit({ type: 'pages.deleted', pages: [pr(11)], origin: LOCAL, layout: { pageCount: 2, pages: [PAGES[1], PAGES[2]] } }),
       v.painted('stage', 11, tk(11, 4896, 1, 0)),
-      v.plan('stage', 11, DEEP),
+      ...v.plan('stage', 11, DEEP),
     ],
   ),
   tileCase(
@@ -1171,7 +1216,7 @@ const tileCases: ScenarioCase[] = [
     'A page the registry lists but the handle refuses throws out of plan (doc.page inside the fetch), after the entry was recorded and its slot charged.',
     { tiles: { prefetch: { margin: 0 } } },
     doc({ responses: [{ path: 'pages.list', value: { pageCount: 4, pages: [...PAGES, layout(44, 3, 612, 792)] } }] }),
-    (v) => [v.plan('stage', 44, DEEP), v.plan('stage', 44, DEEP), v.plan('stage', 11, DEEP)],
+    (v) => [...v.plan('stage', 44, DEEP), ...v.plan('stage', 44, DEEP), ...v.plan('stage', 11, DEEP)],
   ),
   tileCase(
     'no-bleed',
@@ -1179,11 +1224,11 @@ const tileCases: ScenarioCase[] = [
     { tiles: { bleed: 0, prefetch: { margin: 0 } } },
     doc(),
     (v) => [
-      v.plan('stage', 11, DEEP),
+      ...v.plan('stage', 11, DEEP),
       ...settleRange(0, 3),
-      v.plan('stage', 11, DEEP),
-      v.plan('stage', 11, { desiredDeviceWidth: 500 }),
-      v.plan('stage', 11, DEEP),
+      ...v.plan('stage', 11, DEEP),
+      ...v.plan('stage', 11, { desiredDeviceWidth: 500 }),
+      ...v.plan('stage', 11, DEEP),
     ],
   ),
   tileCase(
@@ -1191,7 +1236,7 @@ const tileCases: ScenarioCase[] = [
     'An explicit engageAt replaces the resolved default.',
     { tiles: { engageAt: 10, prefetch: { margin: 0 } } },
     doc(),
-    (v) => [v.plan('stage', 11, DEEP), v.plan('stage', 11, demand(7000))],
+    (v) => [...v.plan('stage', 11, DEEP), ...v.plan('stage', 11, demand(7000))],
   ),
 ];
 
