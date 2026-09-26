@@ -9,18 +9,18 @@
 import { buildCommentThreads } from '../../../../packages/engine/core/src/runtime';
 import { sniffBinaryMetadata } from '../../../../packages/engine/core/src/resource/binaryMetadata';
 import { buildTextItems } from '../../../../packages/plugin/annotation/src/text-item';
-import { iconPlacementDraft } from '../../../../packages/plugin/annotation/src/placement';
+import { iconPlacementDraft } from '../../../../packages/plugin/annotation/src/write/placement';
 import {
   annotationReducer,
   initialAnnotationState,
   mergeChrome,
   DEFAULT_CHROME,
-} from '../../../../packages/plugin/annotation/src/reducer';
-import { buildToolRegistry, isTouchDirect } from '../../../../packages/plugin/annotation/src/tools';
+} from '../../../../packages/plugin/annotation/src/model';
+import { buildToolRegistry, isTouchDirect } from '../../../../packages/plugin/annotation/src/tools/definitions';
 import { fromDTO } from '../../../../packages/plugin/annotation/src/repository';
 import { initialModel, defaultsFor } from '../../../../packages/core/annotation/src/update';
 
-import { CROP, callout, freeText, objRef, square, textNote, markup, link, widget, base } from './annotation-fixtures';
+import { CROP, callout, freeText, objRef, pr, square, textNote, markup, link, widget, base } from './annotation-fixtures';
 import type { FunctionCase, Suite } from '../vectors';
 
 const c = (fn: string, label: string, ...args: unknown[]): FunctionCase => ({ name: `${fn}/${label}`, fn, args });
@@ -154,9 +154,9 @@ cases.push(
   c('annotationReducer', 'set-chrome', state, { type: 'SET_CHROME', patch: { accent: '#000000', handles: { hitSize: 30 } } }),
   c('annotationReducer', 'set-ghost', state, {
     type: 'SET_TOOL_GHOST',
-    ghost: { pon: 1, box: { x: 1, y: 2, width: 3, height: 4 }, rot: 0, kind: 'image' },
+    ghost: { page: pr(1), box: { x: 1, y: 2, width: 3, height: 4 }, rot: 0, kind: 'image' },
   }),
-  c('annotationReducer', 'stamp-armed', { ...state, stampArmEpoch: 3, toolGhost: { pon: 1, box: { x: 0, y: 0, width: 1, height: 1 }, rot: 0, kind: 'image' } }, { type: 'STAMP_ARM_CHANGED' }),
+  c('annotationReducer', 'stamp-armed', { ...state, stampArmEpoch: 3, toolGhost: { page: pr(1), box: { x: 0, y: 0, width: 1, height: 1 }, rot: 0, kind: 'image' } }, { type: 'STAMP_ARM_CHANGED' }),
 );
 
 // ── comment threads ───────────────────────────────────────────────────────────
@@ -166,7 +166,7 @@ const at = (d: string) => `2024-01-0${d}T00:00:00Z`;
 const THREADS = [
   square(1, { contents: 'root', created: at('1'), nm: 'root-nm' }),
   t(2, { inReplyTo: objRef(1), replyType: 'reply', contents: 'first', created: at('3') }),
-  t(3, { inReplyTo: { kind: 'nm', pageObjectNumber: 1, nm: 'root-nm' }, contents: 'by name', created: at('2') }),
+  t(3, { inReplyTo: { kind: 'nm', page: pr(1), nm: 'root-nm' }, contents: 'by name', created: at('2') }),
   t(4, { inReplyTo: objRef(2), contents: 'nested', modified: at('4') }),
   t(5, { inReplyTo: objRef(1), contents: 'undated' }),
   t(6, { inReplyTo: objRef(1), state: 'accepted', stateModel: 'review', userId: 'u1', modified: at('5') }),
@@ -191,7 +191,7 @@ const THREADS = [
   t(25, { inReplyTo: objRef(1), state: 'none', userId: 'u1' }),
   t(26, { inReplyTo: objRef(1), state: 'unmarked', stateModel: 'marked', userId: 'u2', modified: at('1') }),
 ];
-const nmRef = (nm: string) => ({ kind: 'nm', pageObjectNumber: 1, nm });
+const nmRef = (nm: string) => ({ kind: 'nm', page: pr(1), nm });
 const ORDERING = [
   square(60, { ref: nmRef('first') }),
   square(61, { ref: nmRef('second') }),

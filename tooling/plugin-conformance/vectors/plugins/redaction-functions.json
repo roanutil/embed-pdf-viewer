@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "function",
-  "describes": "packages/plugin/redaction: the reducer, and estimateCollateral and getPending over a stub context.",
+  "describes": "packages/plugin/redaction: the reducer, and estimateCollateral over a stub annotation plane.",
   "cases": [
     {
       "name": "initial-state",
@@ -45,19 +45,31 @@
           "lastResult": {
             "scope": {
               "kind": "pages",
-              "pageObjectNumbers": [
-                1,
-                2
+              "pages": [
+                {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                }
               ]
             },
             "results": [
               {
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "status": "applied",
                 "removedAnnotationCount": 2
               },
               {
-                "pageObjectNumber": 2,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "status": "unchanged",
                 "removedAnnotationCount": 0
               }
@@ -81,19 +93,31 @@
             "lastResult": {
               "scope": {
                 "kind": "pages",
-                "pageObjectNumbers": [
-                  1,
-                  2
+                "pages": [
+                  {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 2
+                  }
                 ]
               },
               "results": [
                 {
-                  "pageObjectNumber": 1,
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
                   "status": "applied",
                   "removedAnnotationCount": 2
                 },
                 {
-                  "pageObjectNumber": 2,
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 2
+                  },
                   "status": "unchanged",
                   "removedAnnotationCount": 0
                 }
@@ -120,19 +144,31 @@
           "result": {
             "scope": {
               "kind": "pages",
-              "pageObjectNumbers": [
-                1,
-                2
+              "pages": [
+                {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                }
               ]
             },
             "results": [
               {
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "status": "applied",
                 "removedAnnotationCount": 2
               },
               {
-                "pageObjectNumber": 2,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "status": "unchanged",
                 "removedAnnotationCount": 0
               }
@@ -152,19 +188,31 @@
             "lastResult": {
               "scope": {
                 "kind": "pages",
-                "pageObjectNumbers": [
-                  1,
-                  2
+                "pages": [
+                  {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 2
+                  }
                 ]
               },
               "results": [
                 {
-                  "pageObjectNumber": 1,
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
                   "status": "applied",
                   "removedAnnotationCount": 2
                 },
                 {
-                  "pageObjectNumber": 2,
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 2
+                  },
                   "status": "unchanged",
                   "removedAnnotationCount": 0
                 }
@@ -187,19 +235,31 @@
           "lastResult": {
             "scope": {
               "kind": "pages",
-              "pageObjectNumbers": [
-                1,
-                2
+              "pages": [
+                {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                }
               ]
             },
             "results": [
               {
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "status": "applied",
                 "removedAnnotationCount": 2
               },
               {
-                "pageObjectNumber": 2,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "status": "unchanged",
                 "removedAnnotationCount": 0
               }
@@ -215,19 +275,31 @@
           "result": {
             "scope": {
               "kind": "pages",
-              "pageObjectNumbers": [
-                1,
-                2
+              "pages": [
+                {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                }
               ]
             },
             "results": [
               {
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "status": "applied",
                 "removedAnnotationCount": 9
               },
               {
-                "pageObjectNumber": 2,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "status": "unchanged",
                 "removedAnnotationCount": 0
               }
@@ -247,19 +319,31 @@
             "lastResult": {
               "scope": {
                 "kind": "pages",
-                "pageObjectNumbers": [
-                  1,
-                  2
+                "pages": [
+                  {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 2
+                  }
                 ]
               },
               "results": [
                 {
-                  "pageObjectNumber": 1,
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
                   "status": "applied",
                   "removedAnnotationCount": 9
                 },
                 {
-                  "pageObjectNumber": 2,
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 2
+                  },
                   "status": "unchanged",
                   "removedAnnotationCount": 0
                 }
@@ -282,19 +366,31 @@
           "lastResult": {
             "scope": {
               "kind": "pages",
-              "pageObjectNumbers": [
-                1,
-                2
+              "pages": [
+                {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                }
               ]
             },
             "results": [
               {
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "status": "applied",
                 "removedAnnotationCount": 2
               },
               {
-                "pageObjectNumber": 2,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "status": "unchanged",
                 "removedAnnotationCount": 0
               }
@@ -319,19 +415,31 @@
             "lastResult": {
               "scope": {
                 "kind": "pages",
-                "pageObjectNumbers": [
-                  1,
-                  2
+                "pages": [
+                  {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 2
+                  }
                 ]
               },
               "results": [
                 {
-                  "pageObjectNumber": 1,
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
                   "status": "applied",
                   "removedAnnotationCount": 2
                 },
                 {
-                  "pageObjectNumber": 2,
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 2
+                  },
                   "status": "unchanged",
                   "removedAnnotationCount": 0
                 }
@@ -354,19 +462,31 @@
           "lastResult": {
             "scope": {
               "kind": "pages",
-              "pageObjectNumbers": [
-                1,
-                2
+              "pages": [
+                {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                }
               ]
             },
             "results": [
               {
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "status": "applied",
                 "removedAnnotationCount": 2
               },
               {
-                "pageObjectNumber": 2,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "status": "unchanged",
                 "removedAnnotationCount": 0
               }
@@ -389,19 +509,31 @@
             "lastResult": {
               "scope": {
                 "kind": "pages",
-                "pageObjectNumbers": [
-                  1,
-                  2
+                "pages": [
+                  {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 2
+                  }
                 ]
               },
               "results": [
                 {
-                  "pageObjectNumber": 1,
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
                   "status": "applied",
                   "removedAnnotationCount": 2
                 },
                 {
-                  "pageObjectNumber": 2,
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 2
+                  },
                   "status": "unchanged",
                   "removedAnnotationCount": 0
                 }
@@ -448,19 +580,31 @@
           "lastResult": {
             "scope": {
               "kind": "pages",
-              "pageObjectNumbers": [
-                1,
-                2
+              "pages": [
+                {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                }
               ]
             },
             "results": [
               {
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "status": "applied",
                 "removedAnnotationCount": 2
               },
               {
-                "pageObjectNumber": 2,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "status": "unchanged",
                 "removedAnnotationCount": 0
               }
@@ -484,19 +628,31 @@
             "lastResult": {
               "scope": {
                 "kind": "pages",
-                "pageObjectNumbers": [
-                  1,
-                  2
+                "pages": [
+                  {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 2
+                  }
                 ]
               },
               "results": [
                 {
-                  "pageObjectNumber": 1,
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
                   "status": "applied",
                   "removedAnnotationCount": 2
                 },
                 {
-                  "pageObjectNumber": 2,
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 2
+                  },
                   "status": "unchanged",
                   "removedAnnotationCount": 0
                 }
@@ -520,10 +676,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 1
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 1,
               "identityQuality": "durable",
               "nm": null,
@@ -580,10 +742,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 2
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 2,
               "identityQuality": "durable",
               "nm": null,
@@ -631,7 +799,10 @@
       ],
       "covers": "Without a document there are no pages, so nothing is counted.",
       "outcome": {
-        "returned": 0
+        "returned": {
+          "count": 0,
+          "refs": []
+        }
       }
     },
     {
@@ -644,10 +815,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 1
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 1,
               "identityQuality": "durable",
               "nm": null,
@@ -705,7 +882,10 @@
         }
       ],
       "outcome": {
-        "returned": 0
+        "returned": {
+          "count": 0,
+          "refs": []
+        }
       }
     },
     {
@@ -723,10 +903,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 1
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 1,
               "identityQuality": "durable",
               "nm": null,
@@ -772,10 +958,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 2
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 2,
               "identityQuality": "durable",
               "nm": null,
@@ -822,7 +1014,10 @@
         }
       ],
       "outcome": {
-        "returned": 0
+        "returned": {
+          "count": 0,
+          "refs": []
+        }
       }
     },
     {
@@ -840,10 +1035,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 1
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 1,
               "identityQuality": "durable",
               "nm": null,
@@ -900,10 +1101,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 2
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 2,
               "identityQuality": "durable",
               "nm": null,
@@ -949,10 +1156,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 3
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 3,
               "identityQuality": "durable",
               "nm": null,
@@ -999,7 +1212,19 @@
         }
       ],
       "outcome": {
-        "returned": 1
+        "returned": {
+          "count": 1,
+          "refs": [
+            {
+              "kind": "objectNumber",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "annotObjectNumber": 2
+            }
+          ]
+        }
       }
     },
     {
@@ -1017,10 +1242,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 1
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 1,
               "identityQuality": "durable",
               "nm": null,
@@ -1077,10 +1308,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 2
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 2,
               "identityQuality": "durable",
               "nm": null,
@@ -1126,10 +1363,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 3
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 3,
               "identityQuality": "durable",
               "nm": null,
@@ -1175,10 +1418,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 4
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 4,
               "identityQuality": "durable",
               "nm": null,
@@ -1226,7 +1475,10 @@
       ],
       "covers": "Intersection needs positive area: shared edges and corners are not collateral.",
       "outcome": {
-        "returned": 0
+        "returned": {
+          "count": 0,
+          "refs": []
+        }
       }
     },
     {
@@ -1244,10 +1496,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 1
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 1,
               "identityQuality": "durable",
               "nm": null,
@@ -1304,10 +1562,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 2
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 2,
               "identityQuality": "durable",
               "nm": null,
@@ -1353,10 +1617,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 3
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 3,
               "identityQuality": "durable",
               "nm": null,
@@ -1403,7 +1673,27 @@
         }
       ],
       "outcome": {
-        "returned": 2
+        "returned": {
+          "count": 2,
+          "refs": [
+            {
+              "kind": "objectNumber",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "annotObjectNumber": 2
+            },
+            {
+              "kind": "objectNumber",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "annotObjectNumber": 3
+            }
+          ]
+        }
       }
     },
     {
@@ -1421,10 +1711,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 1
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 1,
               "identityQuality": "durable",
               "nm": null,
@@ -1481,10 +1777,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 2
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 2,
               "identityQuality": "durable",
               "nm": null,
@@ -1530,10 +1832,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 3
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 3,
               "identityQuality": "durable",
               "nm": null,
@@ -1580,7 +1888,27 @@
         }
       ],
       "outcome": {
-        "returned": 2
+        "returned": {
+          "count": 2,
+          "refs": [
+            {
+              "kind": "objectNumber",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "annotObjectNumber": 2
+            },
+            {
+              "kind": "objectNumber",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "annotObjectNumber": 3
+            }
+          ]
+        }
       }
     },
     {
@@ -1598,10 +1926,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 1
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 1,
               "identityQuality": "durable",
               "nm": null,
@@ -1695,10 +2029,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 2
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 2,
               "identityQuality": "durable",
               "nm": null,
@@ -1744,10 +2084,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 3
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 3,
               "identityQuality": "durable",
               "nm": null,
@@ -1793,10 +2139,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 4
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 4,
               "identityQuality": "durable",
               "nm": null,
@@ -1844,7 +2196,27 @@
       ],
       "covers": "A mark with quads targets the quads’ boxes only, not its /Rect.",
       "outcome": {
-        "returned": 2
+        "returned": {
+          "count": 2,
+          "refs": [
+            {
+              "kind": "objectNumber",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "annotObjectNumber": 2
+            },
+            {
+              "kind": "objectNumber",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "annotObjectNumber": 4
+            }
+          ]
+        }
       }
     },
     {
@@ -1862,10 +2234,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 1
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 1,
               "identityQuality": "durable",
               "nm": null,
@@ -1941,10 +2319,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 2
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 2,
               "identityQuality": "durable",
               "nm": null,
@@ -1990,10 +2374,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 3
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 3,
               "identityQuality": "durable",
               "nm": null,
@@ -2039,10 +2429,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 4
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 4,
               "identityQuality": "durable",
               "nm": null,
@@ -2089,7 +2485,27 @@
         }
       ],
       "outcome": {
-        "returned": 2
+        "returned": {
+          "count": 2,
+          "refs": [
+            {
+              "kind": "objectNumber",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "annotObjectNumber": 2
+            },
+            {
+              "kind": "objectNumber",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "annotObjectNumber": 3
+            }
+          ]
+        }
       }
     },
     {
@@ -2107,10 +2523,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 1
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 1,
               "identityQuality": "durable",
               "nm": null,
@@ -2167,10 +2589,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 2
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 2,
               "identityQuality": "durable",
               "nm": null,
@@ -2227,10 +2655,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 3
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 3,
               "identityQuality": "durable",
               "nm": null,
@@ -2278,7 +2712,19 @@
       ],
       "covers": "An annotation under several marks is one piece of collateral.",
       "outcome": {
-        "returned": 1
+        "returned": {
+          "count": 1,
+          "refs": [
+            {
+              "kind": "objectNumber",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "annotObjectNumber": 3
+            }
+          ]
+        }
       }
     },
     {
@@ -2296,10 +2742,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 1
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 1,
               "identityQuality": "durable",
               "nm": null,
@@ -2356,10 +2808,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 2
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 2,
               "identityQuality": "durable",
               "nm": null,
@@ -2417,7 +2875,10 @@
         }
       ],
       "outcome": {
-        "returned": 0
+        "returned": {
+          "count": 0,
+          "refs": []
+        }
       }
     },
     {
@@ -2435,10 +2896,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 1
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 1,
               "identityQuality": "durable",
               "nm": null,
@@ -2495,10 +2962,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 2
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 2,
               "identityQuality": "durable",
               "nm": null,
@@ -2555,10 +3028,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 3
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 3,
               "identityQuality": "durable",
               "nm": null,
@@ -2604,10 +3083,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 4
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 4,
               "identityQuality": "durable",
               "nm": null,
@@ -2657,7 +3142,19 @@
         ]
       ],
       "outcome": {
-        "returned": 1
+        "returned": {
+          "count": 1,
+          "refs": [
+            {
+              "kind": "objectNumber",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "annotObjectNumber": 4
+            }
+          ]
+        }
       }
     },
     {
@@ -2675,10 +3172,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 1
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 1,
               "identityQuality": "durable",
               "nm": null,
@@ -2735,10 +3238,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 3
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 3,
               "identityQuality": "durable",
               "nm": null,
@@ -2789,7 +3298,10 @@
         ]
       ],
       "outcome": {
-        "returned": 0
+        "returned": {
+          "count": 0,
+          "refs": []
+        }
       }
     },
     {
@@ -2807,10 +3319,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 1
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 1,
               "identityQuality": "durable",
               "nm": null,
@@ -2867,10 +3385,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 3
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 3,
               "identityQuality": "durable",
               "nm": null,
@@ -2918,7 +3442,10 @@
         []
       ],
       "outcome": {
-        "returned": 0
+        "returned": {
+          "count": 0,
+          "refs": []
+        }
       }
     },
     {
@@ -2936,10 +3463,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 1
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 1,
               "identityQuality": "durable",
               "nm": null,
@@ -2996,10 +3529,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 3
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 3,
               "identityQuality": "durable",
               "nm": null,
@@ -3047,7 +3586,19 @@
         null
       ],
       "outcome": {
-        "returned": 1
+        "returned": {
+          "count": 1,
+          "refs": [
+            {
+              "kind": "objectNumber",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "annotObjectNumber": 3
+            }
+          ]
+        }
       }
     },
     {
@@ -3065,10 +3616,16 @@
             {
               "ref": {
                 "kind": "nm",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "nm": "n1"
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 1,
               "identityQuality": "durable",
               "nm": null,
@@ -3125,15 +3682,24 @@
             {
               "ref": {
                 "kind": "index",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "index": 4,
                 "revision": {
                   "docSessionId": "s",
-                  "pageObjectNumber": 1,
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
                   "generation": 2
                 }
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 2,
               "identityQuality": "durable",
               "nm": null,
@@ -3190,10 +3756,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 3
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 3,
               "identityQuality": "durable",
               "nm": null,
@@ -3239,10 +3811,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 4
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 4,
               "identityQuality": "durable",
               "nm": null,
@@ -3292,7 +3870,19 @@
         ]
       ],
       "outcome": {
-        "returned": 1
+        "returned": {
+          "count": 1,
+          "refs": [
+            {
+              "kind": "objectNumber",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "annotObjectNumber": 4
+            }
+          ]
+        }
       }
     },
     {
@@ -3314,10 +3904,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 1
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 1,
               "identityQuality": "durable",
               "nm": null,
@@ -3374,10 +3970,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 2
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 2,
               "identityQuality": "durable",
               "nm": null,
@@ -3425,10 +4027,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 2,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "annotObjectNumber": 3
               },
-              "pageObjectNumber": 2,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 2
+              },
               "index": 3,
               "identityQuality": "durable",
               "nm": null,
@@ -3485,10 +4093,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 2,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "annotObjectNumber": 4
               },
-              "pageObjectNumber": 2,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 2
+              },
               "index": 4,
               "identityQuality": "durable",
               "nm": null,
@@ -3534,10 +4148,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 2,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "annotObjectNumber": 5
               },
-              "pageObjectNumber": 2,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 2
+              },
               "index": 5,
               "identityQuality": "durable",
               "nm": null,
@@ -3585,10 +4205,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 3,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 3
+                },
                 "annotObjectNumber": 6
               },
-              "pageObjectNumber": 3,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 3
+              },
               "index": 6,
               "identityQuality": "durable",
               "nm": null,
@@ -3645,10 +4271,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 3,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 3
+                },
                 "annotObjectNumber": 7
               },
-              "pageObjectNumber": 3,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 3
+              },
               "index": 7,
               "identityQuality": "durable",
               "nm": null,
@@ -3696,7 +4328,27 @@
       ],
       "covers": "Only pages in the document are counted, each against its own marks.",
       "outcome": {
-        "returned": 2
+        "returned": {
+          "count": 2,
+          "refs": [
+            {
+              "kind": "objectNumber",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 2
+              },
+              "annotObjectNumber": 4
+            },
+            {
+              "kind": "objectNumber",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "annotObjectNumber": 2
+            }
+          ]
+        }
       }
     },
     {
@@ -3714,10 +4366,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 1
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 1,
               "identityQuality": "durable",
               "nm": null,
@@ -3774,10 +4432,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 2
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 2,
               "identityQuality": "durable",
               "nm": null,
@@ -3825,10 +4489,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 3
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 3,
               "identityQuality": "durable",
               "nm": null,
@@ -3906,10 +4576,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 4
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 4,
               "identityQuality": "durable",
               "nm": null,
@@ -3956,7 +4632,19 @@
         }
       ],
       "outcome": {
-        "returned": 1
+        "returned": {
+          "count": 1,
+          "refs": [
+            {
+              "kind": "objectNumber",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "annotObjectNumber": 4
+            }
+          ]
+        }
       }
     },
     {
@@ -3974,10 +4662,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 1
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 1,
               "identityQuality": "durable",
               "nm": null,
@@ -4034,10 +4728,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 2
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 2,
               "identityQuality": "durable",
               "nm": null,
@@ -4083,10 +4783,16 @@
             {
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 3
               },
-              "pageObjectNumber": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "index": 3,
               "identityQuality": "durable",
               "nm": null,
@@ -4133,786 +4839,19 @@
         }
       ],
       "outcome": {
-        "returned": 1
-      }
-    },
-    {
-      "name": "pending-no-document",
-      "fn": "getPending",
-      "args": [
-        null,
-        {
-          "1": [
+        "returned": {
+          "count": 1,
+          "refs": [
             {
-              "ref": {
-                "kind": "objectNumber",
-                "pageObjectNumber": 1,
-                "annotObjectNumber": 1
-              },
-              "pageObjectNumber": 1,
-              "index": 1,
-              "identityQuality": "durable",
-              "nm": null,
-              "flags": {
-                "invisible": false,
-                "hidden": false,
-                "print": true,
-                "noZoom": false,
-                "noRotate": false,
-                "noView": false,
-                "readOnly": false,
-                "locked": false,
-                "toggleNoView": false,
-                "lockedContents": false
-              },
-              "rect": {
-                "left": 100,
-                "bottom": 600,
-                "right": 200,
-                "top": 700
-              },
-              "contents": null,
-              "subject": null,
-              "author": null,
-              "created": null,
-              "modified": null,
-              "blendMode": "normal",
-              "inReplyTo": null,
-              "replyType": null,
-              "subtype": "redact",
-              "color": {
-                "r": 239,
-                "g": 68,
-                "b": 68
-              },
-              "interiorColor": {
-                "r": 0,
-                "g": 0,
-                "b": 0
-              },
-              "opacity": 1,
-              "quadPoints": [],
-              "overlayText": null,
-              "repeat": false,
-              "fontFamily": "helvetica",
-              "fontSize": 0,
-              "fontColor": {
-                "r": 255,
-                "g": 255,
-                "b": 255
-              },
-              "textAlign": "center"
-            }
-          ]
-        }
-      ],
-      "outcome": {
-        "returned": []
-      }
-    },
-    {
-      "name": "pending-kinds-ids-and-labels",
-      "fn": "getPending",
-      "covers": "Each redact annotation becomes a pending item: id from its ref (obj:, nm:, idx:), text kind with quads else area, its overlay label, and the page’s display index (-1 when the page has none).",
-      "args": [
-        [
-          {
-            "index": 0,
-            "pageObjectNumber": 1
-          },
-          {
-            "pageObjectNumber": 2
-          },
-          {
-            "index": 5,
-            "pageObjectNumber": 3
-          }
-        ],
-        {
-          "1": [
-            {
-              "ref": {
-                "kind": "objectNumber",
-                "pageObjectNumber": 1,
-                "annotObjectNumber": 1
-              },
-              "pageObjectNumber": 1,
-              "index": 1,
-              "identityQuality": "durable",
-              "nm": null,
-              "flags": {
-                "invisible": false,
-                "hidden": false,
-                "print": true,
-                "noZoom": false,
-                "noRotate": false,
-                "noView": false,
-                "readOnly": false,
-                "locked": false,
-                "toggleNoView": false,
-                "lockedContents": false
-              },
-              "rect": {
-                "left": 100,
-                "bottom": 600,
-                "right": 200,
-                "top": 700
-              },
-              "contents": null,
-              "subject": null,
-              "author": null,
-              "created": null,
-              "modified": null,
-              "blendMode": "normal",
-              "inReplyTo": null,
-              "replyType": null,
-              "subtype": "redact",
-              "color": {
-                "r": 239,
-                "g": 68,
-                "b": 68
-              },
-              "interiorColor": {
-                "r": 0,
-                "g": 0,
-                "b": 0
-              },
-              "opacity": 1,
-              "quadPoints": [],
-              "overlayText": "A",
-              "repeat": false,
-              "fontFamily": "helvetica",
-              "fontSize": 0,
-              "fontColor": {
-                "r": 255,
-                "g": 255,
-                "b": 255
-              },
-              "textAlign": "center"
-            },
-            {
-              "ref": {
-                "kind": "objectNumber",
-                "pageObjectNumber": 1,
-                "annotObjectNumber": 9
-              },
-              "pageObjectNumber": 1,
-              "index": 9,
-              "identityQuality": "durable",
-              "nm": null,
-              "flags": {
-                "invisible": false,
-                "hidden": false,
-                "print": true,
-                "noZoom": false,
-                "noRotate": false,
-                "noView": false,
-                "readOnly": false,
-                "locked": false,
-                "toggleNoView": false,
-                "lockedContents": false
-              },
-              "rect": {
-                "left": 0,
-                "bottom": 0,
-                "right": 1,
-                "top": 1
-              },
-              "contents": null,
-              "subject": null,
-              "author": null,
-              "created": null,
-              "modified": null,
-              "blendMode": "normal",
-              "inReplyTo": null,
-              "replyType": null,
-              "subtype": "square",
-              "color": {
-                "r": 239,
-                "g": 68,
-                "b": 68
-              },
-              "interiorColor": null,
-              "opacity": 1,
-              "strokeWidth": 2,
-              "borderStyle": "solid",
-              "cloudyIntensity": null,
-              "rectDifferences": null
-            },
-            {
-              "ref": {
-                "kind": "nm",
-                "pageObjectNumber": 1,
-                "nm": "x y"
-              },
-              "pageObjectNumber": 1,
-              "index": 2,
-              "identityQuality": "durable",
-              "nm": null,
-              "flags": {
-                "invisible": false,
-                "hidden": false,
-                "print": true,
-                "noZoom": false,
-                "noRotate": false,
-                "noView": false,
-                "readOnly": false,
-                "locked": false,
-                "toggleNoView": false,
-                "lockedContents": false
-              },
-              "rect": {
-                "left": 100,
-                "bottom": 600,
-                "right": 200,
-                "top": 700
-              },
-              "contents": null,
-              "subject": null,
-              "author": null,
-              "created": null,
-              "modified": null,
-              "blendMode": "normal",
-              "inReplyTo": null,
-              "replyType": null,
-              "subtype": "redact",
-              "color": {
-                "r": 239,
-                "g": 68,
-                "b": 68
-              },
-              "interiorColor": {
-                "r": 0,
-                "g": 0,
-                "b": 0
-              },
-              "opacity": 1,
-              "quadPoints": [
-                {
-                  "p1": {
-                    "x": 0,
-                    "y": 1
-                  },
-                  "p2": {
-                    "x": 1,
-                    "y": 1
-                  },
-                  "p3": {
-                    "x": 0,
-                    "y": 0
-                  },
-                  "p4": {
-                    "x": 1,
-                    "y": 0
-                  }
-                }
-              ],
-              "overlayText": null,
-              "repeat": false,
-              "fontFamily": "helvetica",
-              "fontSize": 0,
-              "fontColor": {
-                "r": 255,
-                "g": 255,
-                "b": 255
-              },
-              "textAlign": "center"
-            }
-          ],
-          "2": [
-            {
-              "ref": {
-                "kind": "index",
-                "pageObjectNumber": 2,
-                "index": 0,
-                "revision": {
-                  "docSessionId": "s",
-                  "pageObjectNumber": 2,
-                  "generation": 1
-                }
-              },
-              "pageObjectNumber": 2,
-              "index": 3,
-              "identityQuality": "durable",
-              "nm": null,
-              "flags": {
-                "invisible": false,
-                "hidden": false,
-                "print": true,
-                "noZoom": false,
-                "noRotate": false,
-                "noView": false,
-                "readOnly": false,
-                "locked": false,
-                "toggleNoView": false,
-                "lockedContents": false
-              },
-              "rect": {
-                "left": 100,
-                "bottom": 600,
-                "right": 200,
-                "top": 700
-              },
-              "contents": null,
-              "subject": null,
-              "author": null,
-              "created": null,
-              "modified": null,
-              "blendMode": "normal",
-              "inReplyTo": null,
-              "replyType": null,
-              "subtype": "redact",
-              "color": {
-                "r": 239,
-                "g": 68,
-                "b": 68
-              },
-              "interiorColor": {
-                "r": 0,
-                "g": 0,
-                "b": 0
-              },
-              "opacity": 1,
-              "quadPoints": [],
-              "overlayText": null,
-              "repeat": false,
-              "fontFamily": "helvetica",
-              "fontSize": 0,
-              "fontColor": {
-                "r": 255,
-                "g": 255,
-                "b": 255
-              },
-              "textAlign": "center"
-            }
-          ],
-          "3": [
-            {
-              "ref": {
-                "kind": "objectNumber",
-                "pageObjectNumber": 3,
-                "annotObjectNumber": 1.5
-              },
-              "pageObjectNumber": 3,
-              "index": 4,
-              "identityQuality": "durable",
-              "nm": null,
-              "flags": {
-                "invisible": false,
-                "hidden": false,
-                "print": true,
-                "noZoom": false,
-                "noRotate": false,
-                "noView": false,
-                "readOnly": false,
-                "locked": false,
-                "toggleNoView": false,
-                "lockedContents": false
-              },
-              "rect": {
-                "left": 100,
-                "bottom": 600,
-                "right": 200,
-                "top": 700
-              },
-              "contents": null,
-              "subject": null,
-              "author": null,
-              "created": null,
-              "modified": null,
-              "blendMode": "normal",
-              "inReplyTo": null,
-              "replyType": null,
-              "subtype": "redact",
-              "color": {
-                "r": 239,
-                "g": 68,
-                "b": 68
-              },
-              "interiorColor": {
-                "r": 0,
-                "g": 0,
-                "b": 0
-              },
-              "opacity": 1,
-              "quadPoints": [],
-              "overlayText": null,
-              "repeat": false,
-              "fontFamily": "helvetica",
-              "fontSize": 0,
-              "fontColor": {
-                "r": 255,
-                "g": 255,
-                "b": 255
-              },
-              "textAlign": "center"
-            },
-            {
-              "ref": {
-                "kind": "objectNumber",
-                "pageObjectNumber": 3,
-                "annotObjectNumber": 5
-              },
-              "pageObjectNumber": 3,
-              "index": 5,
-              "identityQuality": "durable",
-              "nm": null,
-              "flags": {
-                "invisible": false,
-                "hidden": false,
-                "print": true,
-                "noZoom": false,
-                "noRotate": false,
-                "noView": false,
-                "readOnly": false,
-                "locked": false,
-                "toggleNoView": false,
-                "lockedContents": false
-              },
-              "rect": {
-                "left": 100,
-                "bottom": 600,
-                "right": 200,
-                "top": 700
-              },
-              "contents": null,
-              "subject": null,
-              "author": null,
-              "created": null,
-              "modified": null,
-              "blendMode": "normal",
-              "inReplyTo": null,
-              "replyType": null,
-              "subtype": "redact",
-              "quadPoints": []
-            }
-          ]
-        }
-      ],
-      "outcome": {
-        "returned": [
-          {
-            "id": "obj:1",
-            "ref": {
               "kind": "objectNumber",
-              "pageObjectNumber": 1,
-              "annotObjectNumber": 1
-            },
-            "pageObjectNumber": 1,
-            "pageIndex": 0,
-            "kind": "area",
-            "overlayText": "A"
-          },
-          {
-            "id": "nm:x y",
-            "ref": {
-              "kind": "nm",
-              "pageObjectNumber": 1,
-              "nm": "x y"
-            },
-            "pageObjectNumber": 1,
-            "pageIndex": 0,
-            "kind": "text",
-            "overlayText": null
-          },
-          {
-            "id": "idx:2:0",
-            "ref": {
-              "kind": "index",
-              "pageObjectNumber": 2,
-              "index": 0,
-              "revision": {
-                "docSessionId": "s",
-                "pageObjectNumber": 2,
-                "generation": 1
-              }
-            },
-            "pageObjectNumber": 2,
-            "pageIndex": -1,
-            "kind": "area",
-            "overlayText": null
-          },
-          {
-            "id": "obj:1.5",
-            "ref": {
-              "kind": "objectNumber",
-              "pageObjectNumber": 3,
-              "annotObjectNumber": 1.5
-            },
-            "pageObjectNumber": 3,
-            "pageIndex": 5,
-            "kind": "area",
-            "overlayText": null
-          },
-          {
-            "id": "obj:5",
-            "ref": {
-              "kind": "objectNumber",
-              "pageObjectNumber": 3,
-              "annotObjectNumber": 5
-            },
-            "pageObjectNumber": 3,
-            "pageIndex": 5,
-            "kind": "area"
-          }
-        ]
-      }
-    },
-    {
-      "name": "pending-unknown-ref-kind",
-      "fn": "getPending",
-      "covers": "A ref of any other kind takes the index spelling, with whatever members it has.",
-      "args": [
-        [
-          {
-            "index": 0,
-            "pageObjectNumber": 1
-          }
-        ],
-        {
-          "1": [
-            {
-              "ref": {
-                "kind": "other",
+              "page": {
+                "kind": "objectNumber",
                 "pageObjectNumber": 1
               },
-              "pageObjectNumber": 1,
-              "index": 1,
-              "identityQuality": "durable",
-              "nm": null,
-              "flags": {
-                "invisible": false,
-                "hidden": false,
-                "print": true,
-                "noZoom": false,
-                "noRotate": false,
-                "noView": false,
-                "readOnly": false,
-                "locked": false,
-                "toggleNoView": false,
-                "lockedContents": false
-              },
-              "rect": {
-                "left": 100,
-                "bottom": 600,
-                "right": 200,
-                "top": 700
-              },
-              "contents": null,
-              "subject": null,
-              "author": null,
-              "created": null,
-              "modified": null,
-              "blendMode": "normal",
-              "inReplyTo": null,
-              "replyType": null,
-              "subtype": "redact",
-              "color": {
-                "r": 239,
-                "g": 68,
-                "b": 68
-              },
-              "interiorColor": {
-                "r": 0,
-                "g": 0,
-                "b": 0
-              },
-              "opacity": 1,
-              "quadPoints": [],
-              "overlayText": null,
-              "repeat": false,
-              "fontFamily": "helvetica",
-              "fontSize": 0,
-              "fontColor": {
-                "r": 255,
-                "g": 255,
-                "b": 255
-              },
-              "textAlign": "center"
-            },
-            {
-              "ref": {
-                "kind": "other",
-                "pageObjectNumber": 1,
-                "index": "z"
-              },
-              "pageObjectNumber": 1,
-              "index": 2,
-              "identityQuality": "durable",
-              "nm": null,
-              "flags": {
-                "invisible": false,
-                "hidden": false,
-                "print": true,
-                "noZoom": false,
-                "noRotate": false,
-                "noView": false,
-                "readOnly": false,
-                "locked": false,
-                "toggleNoView": false,
-                "lockedContents": false
-              },
-              "rect": {
-                "left": 100,
-                "bottom": 600,
-                "right": 200,
-                "top": 700
-              },
-              "contents": null,
-              "subject": null,
-              "author": null,
-              "created": null,
-              "modified": null,
-              "blendMode": "normal",
-              "inReplyTo": null,
-              "replyType": null,
-              "subtype": "redact",
-              "color": {
-                "r": 239,
-                "g": 68,
-                "b": 68
-              },
-              "interiorColor": {
-                "r": 0,
-                "g": 0,
-                "b": 0
-              },
-              "opacity": 1,
-              "quadPoints": [],
-              "overlayText": null,
-              "repeat": false,
-              "fontFamily": "helvetica",
-              "fontSize": 0,
-              "fontColor": {
-                "r": 255,
-                "g": 255,
-                "b": 255
-              },
-              "textAlign": "center"
-            },
-            {
-              "ref": {
-                "kind": "other",
-                "pageObjectNumber": true,
-                "index": [
-                  1,
-                  null,
-                  "a",
-                  [
-                    2,
-                    null
-                  ],
-                  {
-                    "x": 1
-                  }
-                ]
-              },
-              "pageObjectNumber": 1,
-              "index": 3,
-              "identityQuality": "durable",
-              "nm": null,
-              "flags": {
-                "invisible": false,
-                "hidden": false,
-                "print": true,
-                "noZoom": false,
-                "noRotate": false,
-                "noView": false,
-                "readOnly": false,
-                "locked": false,
-                "toggleNoView": false,
-                "lockedContents": false
-              },
-              "rect": {
-                "left": 100,
-                "bottom": 600,
-                "right": 200,
-                "top": 700
-              },
-              "contents": null,
-              "subject": null,
-              "author": null,
-              "created": null,
-              "modified": null,
-              "blendMode": "normal",
-              "inReplyTo": null,
-              "replyType": null,
-              "subtype": "redact",
-              "color": {
-                "r": 239,
-                "g": 68,
-                "b": 68
-              },
-              "interiorColor": {
-                "r": 0,
-                "g": 0,
-                "b": 0
-              },
-              "opacity": 1,
-              "quadPoints": [],
-              "overlayText": null,
-              "repeat": false,
-              "fontFamily": "helvetica",
-              "fontSize": 0,
-              "fontColor": {
-                "r": 255,
-                "g": 255,
-                "b": 255
-              },
-              "textAlign": "center"
+              "annotObjectNumber": 2
             }
           ]
         }
-      ],
-      "outcome": {
-        "returned": [
-          {
-            "id": "idx:1:undefined",
-            "ref": {
-              "kind": "other",
-              "pageObjectNumber": 1
-            },
-            "pageObjectNumber": 1,
-            "pageIndex": 0,
-            "kind": "area",
-            "overlayText": null
-          },
-          {
-            "id": "idx:1:z",
-            "ref": {
-              "kind": "other",
-              "pageObjectNumber": 1,
-              "index": "z"
-            },
-            "pageObjectNumber": 1,
-            "pageIndex": 0,
-            "kind": "area",
-            "overlayText": null
-          },
-          {
-            "id": "idx:true:1,,a,2,,[object Object]",
-            "ref": {
-              "kind": "other",
-              "pageObjectNumber": true,
-              "index": [
-                1,
-                null,
-                "a",
-                [
-                  2,
-                  null
-                ],
-                {
-                  "x": 1
-                }
-              ]
-            },
-            "pageObjectNumber": 1,
-            "pageIndex": 0,
-            "kind": "area",
-            "overlayText": null
-          }
-        ]
       }
     }
   ]

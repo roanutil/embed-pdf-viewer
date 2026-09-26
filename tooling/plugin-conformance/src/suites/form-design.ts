@@ -29,6 +29,8 @@ import {
   text,
   tool,
   widgetAnnot,
+  pr,
+  v3Widget,
 } from './form-fixtures';
 
 const HYDRATE: ResponseSpec = { path: 'annotations.listRawAll', value: { pages: [] } };
@@ -114,10 +116,10 @@ const designCases: ScenarioCase[] = [
       documents: {
         a: doc([
           list([]),
-          { path: 'forms.createField', times: 1, value: { field: radio(40, 'radio_1', [{ annotObjectNumber: 140, pageObjectNumber: 1, onState: 'option1', checked: false }]) } },
+          { path: 'forms.createField', times: 1, value: { field: radio(40, 'radio_1', [v3Widget({ annotObjectNumber: 140, pageObjectNumber: 1, onState: 'option1', checked: false })]) } },
           { path: 'forms.createField', times: 1, value: { field: placed(41, 'combobox_1') } },
           { path: 'forms.createField', times: 1, value: { field: placed(42, 'listbox_1') } },
-          { path: 'forms.createField', value: { field: checkbox(43, 'checkbox_1', false, {}, [{ annotObjectNumber: 143, pageObjectNumber: 2, onState: 'Yes' }]) } },
+          { path: 'forms.createField', value: { field: checkbox(43, 'checkbox_1', false, {}, [v3Widget({ annotObjectNumber: 143, pageObjectNumber: 2, onState: 'Yes' })]) } },
         ]),
       },
     },
@@ -199,7 +201,7 @@ const designCases: ScenarioCase[] = [
       },
     },
     snapshot: 'none',
-    steps: [...boot, call('placeField', [input()]), settle('reload', { annotations: [widgetAnnot(1, 160)] }), anno('get', [{ kind: 'objectNumber', pageObjectNumber: 1, annotObjectNumber: 160 }])],
+    steps: [...boot, call('placeField', [input()]), settle('reload', { annotations: [widgetAnnot(1, 160)] }), anno('get', [{ kind: 'objectNumber', page: pr(1), annotObjectNumber: 160 }])],
   },
   {
     name: 'page-box',

@@ -5,7 +5,7 @@
   "cases": [
     {
       "name": "seeds-from-a-read",
-      "covers": "The effect reads the Info dict once when the document opens and SETs it; current() is null until then.",
+      "covers": "The controller reads the Info dict once when the document connects and sets it; getSnapshot() is null until then.",
       "plugins": [
         {
           "factory": "metadata"
@@ -17,7 +17,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -76,7 +79,7 @@
             "token": "metadata",
             "doc": "a"
           },
-          "method": "current",
+          "method": "getSnapshot",
           "args": []
         },
         {
@@ -103,7 +106,7 @@
             "token": "metadata",
             "doc": "a"
           },
-          "method": "current",
+          "method": "getSnapshot",
           "args": []
         }
       ],
@@ -150,6 +153,12 @@
               "slice": "@@core",
               "action": {
                 "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "metadata::a",
+              "action": {
+                "type": "loading"
               }
             },
             {
@@ -201,11 +210,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -244,7 +257,9 @@
             "plugins": {
               "@@conformance/spy": {},
               "metadata::a": {
-                "metadata": null
+                "status": "loading",
+                "value": null,
+                "revision": 0
               }
             }
           }
@@ -269,11 +284,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -312,7 +331,9 @@
             "plugins": {
               "@@conformance/spy": {},
               "metadata::a": {
-                "metadata": null
+                "status": "loading",
+                "value": null,
+                "revision": 0
               }
             }
           }
@@ -323,7 +344,7 @@
             {
               "slice": "metadata::a",
               "action": {
-                "type": "SET",
+                "type": "set",
                 "metadata": {
                   "title": "Report",
                   "author": null,
@@ -355,11 +376,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -398,7 +423,8 @@
             "plugins": {
               "@@conformance/spy": {},
               "metadata::a": {
-                "metadata": {
+                "status": "ready",
+                "value": {
                   "title": "Report",
                   "author": null,
                   "subject": null,
@@ -411,7 +437,8 @@
                   "custom": {
                     "Dept": "Ops"
                   }
-                }
+                },
+                "revision": 1
               }
             }
           }
@@ -449,11 +476,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -492,7 +523,8 @@
             "plugins": {
               "@@conformance/spy": {},
               "metadata::a": {
-                "metadata": {
+                "status": "ready",
+                "value": {
                   "title": "Report",
                   "author": null,
                   "subject": null,
@@ -505,7 +537,8 @@
                   "custom": {
                     "Dept": "Ops"
                   }
-                }
+                },
+                "revision": 1
               }
             }
           }
@@ -526,7 +559,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -589,7 +625,7 @@
             "token": "metadata",
             "doc": "a"
           },
-          "method": "current",
+          "method": "getSnapshot",
           "args": []
         }
       ],
@@ -639,9 +675,22 @@
               }
             },
             {
+              "slice": "metadata::a",
+              "action": {
+                "type": "loading"
+              }
+            },
+            {
               "slice": "@@core",
               "action": {
                 "type": "@@core/document-added"
+              }
+            },
+            {
+              "slice": "metadata::a",
+              "action": {
+                "type": "error",
+                "forbidden": false
               }
             }
           ],
@@ -687,11 +736,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -730,7 +783,9 @@
             "plugins": {
               "@@conformance/spy": {},
               "metadata::a": {
-                "metadata": null
+                "status": "error",
+                "value": null,
+                "revision": 0
               }
             }
           }
@@ -755,11 +810,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -798,7 +857,9 @@
             "plugins": {
               "@@conformance/spy": {},
               "metadata::a": {
-                "metadata": null
+                "status": "error",
+                "value": null,
+                "revision": 0
               }
             }
           }
@@ -819,7 +880,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -899,6 +963,11 @@
               "modified": null,
               "trapped": "unknown",
               "custom": {}
+            },
+            "origin": {
+              "kind": "remote",
+              "sessionId": "s2",
+              "sub": "u-9"
             }
           }
         },
@@ -908,7 +977,7 @@
             "token": "metadata",
             "doc": "a"
           },
-          "method": "current",
+          "method": "getSnapshot",
           "args": []
         },
         {
@@ -916,7 +985,15 @@
           "doc": "a",
           "event": {
             "type": "annotations.created",
-            "pageObjectNumber": 1
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            "origin": {
+              "kind": "local",
+              "sessionId": "s1",
+              "sub": null
+            }
           }
         },
         {
@@ -925,7 +1002,7 @@
             "token": "metadata",
             "doc": "a"
           },
-          "method": "current",
+          "method": "getSnapshot",
           "args": []
         },
         {
@@ -985,7 +1062,19 @@
             {
               "slice": "metadata::a",
               "action": {
-                "type": "SET",
+                "type": "loading"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            },
+            {
+              "slice": "metadata::a",
+              "action": {
+                "type": "set",
                 "metadata": {
                   "title": "Seed",
                   "author": null,
@@ -998,12 +1087,6 @@
                   "trapped": "unknown",
                   "custom": {}
                 }
-              }
-            },
-            {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
               }
             }
           ],
@@ -1049,11 +1132,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -1092,7 +1179,8 @@
             "plugins": {
               "@@conformance/spy": {},
               "metadata::a": {
-                "metadata": {
+                "status": "ready",
+                "value": {
                   "title": "Seed",
                   "author": null,
                   "subject": null,
@@ -1103,7 +1191,8 @@
                   "modified": null,
                   "trapped": "unknown",
                   "custom": {}
-                }
+                },
+                "revision": 1
               }
             }
           }
@@ -1114,7 +1203,7 @@
             {
               "slice": "metadata::a",
               "action": {
-                "type": "SET",
+                "type": "set",
                 "metadata": {
                   "title": "Remote edit",
                   "author": null,
@@ -1144,11 +1233,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -1187,7 +1280,8 @@
             "plugins": {
               "@@conformance/spy": {},
               "metadata::a": {
-                "metadata": {
+                "status": "ready",
+                "value": {
                   "title": "Remote edit",
                   "author": null,
                   "subject": null,
@@ -1198,7 +1292,8 @@
                   "modified": null,
                   "trapped": "unknown",
                   "custom": {}
-                }
+                },
+                "revision": 2
               }
             }
           }
@@ -1234,11 +1329,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -1277,7 +1376,8 @@
             "plugins": {
               "@@conformance/spy": {},
               "metadata::a": {
-                "metadata": {
+                "status": "ready",
+                "value": {
                   "title": "Remote edit",
                   "author": null,
                   "subject": null,
@@ -1288,7 +1388,8 @@
                   "modified": null,
                   "trapped": "unknown",
                   "custom": {}
-                }
+                },
+                "revision": 2
               }
             }
           }
@@ -1310,11 +1411,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -1353,7 +1458,8 @@
             "plugins": {
               "@@conformance/spy": {},
               "metadata::a": {
-                "metadata": {
+                "status": "ready",
+                "value": {
                   "title": "Remote edit",
                   "author": null,
                   "subject": null,
@@ -1364,7 +1470,8 @@
                   "modified": null,
                   "trapped": "unknown",
                   "custom": {}
-                }
+                },
+                "revision": 2
               }
             }
           }
@@ -1400,11 +1507,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -1443,7 +1554,8 @@
             "plugins": {
               "@@conformance/spy": {},
               "metadata::a": {
-                "metadata": {
+                "status": "ready",
+                "value": {
                   "title": "Remote edit",
                   "author": null,
                   "subject": null,
@@ -1454,7 +1566,8 @@
                   "modified": null,
                   "trapped": "unknown",
                   "custom": {}
-                }
+                },
+                "revision": 2
               }
             }
           }
@@ -1510,7 +1623,7 @@
     },
     {
       "name": "update-writes-through-and-sets",
-      "covers": "update(patch) sends the three-state patch to the engine and SETs the metadata its result carries, before the event arrives.",
+      "covers": "update(patch) sends the three-state patch to the engine and resolves with its result once the confirmed metadata.updated event has set the snapshot.",
       "plugins": [
         {
           "factory": "metadata"
@@ -1522,7 +1635,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -1546,6 +1662,11 @@
                 }
               }
             ],
+            "security": {
+              "allows": [
+                "doc.metadata.modify"
+              ]
+            },
             "responses": [
               {
                 "path": "metadata.read",
@@ -1630,7 +1751,40 @@
             "token": "metadata",
             "doc": "a"
           },
-          "method": "current",
+          "method": "getSnapshot",
+          "args": []
+        },
+        {
+          "op": "emit",
+          "doc": "a",
+          "event": {
+            "type": "metadata.updated",
+            "metadata": {
+              "title": "New",
+              "author": null,
+              "subject": null,
+              "keywords": null,
+              "producer": null,
+              "creator": null,
+              "created": null,
+              "modified": null,
+              "trapped": "unknown",
+              "custom": {}
+            },
+            "origin": {
+              "kind": "local",
+              "sessionId": "s1",
+              "sub": null
+            }
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "metadata",
+            "doc": "a"
+          },
+          "method": "getSnapshot",
           "args": []
         }
       ],
@@ -1682,7 +1836,19 @@
             {
               "slice": "metadata::a",
               "action": {
-                "type": "SET",
+                "type": "loading"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            },
+            {
+              "slice": "metadata::a",
+              "action": {
+                "type": "set",
                 "metadata": {
                   "title": null,
                   "author": null,
@@ -1695,12 +1861,6 @@
                   "trapped": "unknown",
                   "custom": {}
                 }
-              }
-            },
-            {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
               }
             }
           ],
@@ -1746,11 +1906,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -1789,7 +1953,8 @@
             "plugins": {
               "@@conformance/spy": {},
               "metadata::a": {
-                "metadata": {
+                "status": "ready",
+                "value": {
                   "title": null,
                   "author": null,
                   "subject": null,
@@ -1800,40 +1965,15 @@
                   "modified": null,
                   "trapped": "unknown",
                   "custom": {}
-                }
+                },
+                "revision": 1
               }
             }
           }
         },
         {
-          "settled": [
-            {
-              "promise": 2,
-              "resolved": {
-                "$undefined": true
-              }
-            }
-          ],
-          "actions": [
-            {
-              "slice": "metadata::a",
-              "action": {
-                "type": "SET",
-                "metadata": {
-                  "title": "New",
-                  "author": null,
-                  "subject": null,
-                  "keywords": null,
-                  "producer": null,
-                  "creator": null,
-                  "created": null,
-                  "modified": null,
-                  "trapped": "unknown",
-                  "custom": {}
-                }
-              }
-            }
-          ],
+          "settled": [],
+          "actions": [],
           "engine": [
             {
               "doc": "a",
@@ -1862,11 +2002,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -1905,6 +2049,146 @@
             "plugins": {
               "@@conformance/spy": {},
               "metadata::a": {
+                "status": "ready",
+                "value": {
+                  "title": null,
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {}
+                },
+                "revision": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "title": null,
+              "author": null,
+              "subject": null,
+              "keywords": null,
+              "producer": null,
+              "creator": null,
+              "created": null,
+              "modified": null,
+              "trapped": "unknown",
+              "custom": {}
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "metadata::a": {
+                "status": "ready",
+                "value": {
+                  "title": null,
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {}
+                },
+                "revision": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": {
+                "metadata": {
+                  "title": "New",
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {}
+                },
+                "cache": null
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "metadata::a",
+              "action": {
+                "type": "set",
                 "metadata": {
                   "title": "New",
                   "author": null,
@@ -1917,6 +2201,84 @@
                   "trapped": "unknown",
                   "custom": {}
                 }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "metadata::a": {
+                "status": "ready",
+                "value": {
+                  "title": "New",
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {}
+                },
+                "revision": 2
               }
             }
           }
@@ -1952,11 +2314,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -1995,7 +2361,8 @@
             "plugins": {
               "@@conformance/spy": {},
               "metadata::a": {
-                "metadata": {
+                "status": "ready",
+                "value": {
                   "title": "New",
                   "author": null,
                   "subject": null,
@@ -2006,7 +2373,8 @@
                   "modified": null,
                   "trapped": "unknown",
                   "custom": {}
-                }
+                },
+                "revision": 2
               }
             }
           }
@@ -2027,7 +2395,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -2051,6 +2422,11 @@
                 }
               }
             ],
+            "security": {
+              "allows": [
+                "doc.metadata.modify"
+              ]
+            },
             "responses": [
               {
                 "path": "metadata.read",
@@ -2119,7 +2495,7 @@
             "token": "metadata",
             "doc": "a"
           },
-          "method": "current",
+          "method": "getSnapshot",
           "args": []
         }
       ],
@@ -2171,7 +2547,19 @@
             {
               "slice": "metadata::a",
               "action": {
-                "type": "SET",
+                "type": "loading"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            },
+            {
+              "slice": "metadata::a",
+              "action": {
+                "type": "set",
                 "metadata": {
                   "title": "Kept",
                   "author": null,
@@ -2184,12 +2572,6 @@
                   "trapped": "unknown",
                   "custom": {}
                 }
-              }
-            },
-            {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
               }
             }
           ],
@@ -2235,11 +2617,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -2278,7 +2664,8 @@
             "plugins": {
               "@@conformance/spy": {},
               "metadata::a": {
-                "metadata": {
+                "status": "ready",
+                "value": {
                   "title": "Kept",
                   "author": null,
                   "subject": null,
@@ -2289,7 +2676,8 @@
                   "modified": null,
                   "trapped": "unknown",
                   "custom": {}
-                }
+                },
+                "revision": 1
               }
             }
           }
@@ -2300,10 +2688,22 @@
               "promise": 2,
               "rejected": {
                 "$error": {
-                  "name": "PermissionDenied",
+                  "name": "PluginError",
                   "message": "permission denied (local): doc.metadata.modify",
-                  "required": "doc.metadata.modify",
-                  "context": "local"
+                  "code": "permission-denied",
+                  "capability": "metadata",
+                  "details": {
+                    "required": "doc.metadata.modify",
+                    "context": "local"
+                  },
+                  "cause": {
+                    "$error": {
+                      "name": "PermissionDenied",
+                      "message": "permission denied (local): doc.metadata.modify",
+                      "required": "doc.metadata.modify",
+                      "context": "local"
+                    }
+                  }
                 }
               }
             }
@@ -2336,11 +2736,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -2379,7 +2783,8 @@
             "plugins": {
               "@@conformance/spy": {},
               "metadata::a": {
-                "metadata": {
+                "status": "ready",
+                "value": {
                   "title": "Kept",
                   "author": null,
                   "subject": null,
@@ -2390,7 +2795,8 @@
                   "modified": null,
                   "trapped": "unknown",
                   "custom": {}
-                }
+                },
+                "revision": 1
               }
             }
           }
@@ -2426,11 +2832,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -2469,7 +2879,8 @@
             "plugins": {
               "@@conformance/spy": {},
               "metadata::a": {
-                "metadata": {
+                "status": "ready",
+                "value": {
                   "title": "Kept",
                   "author": null,
                   "subject": null,
@@ -2480,7 +2891,8 @@
                   "modified": null,
                   "trapped": "unknown",
                   "custom": {}
-                }
+                },
+                "revision": 1
               }
             }
           }
@@ -2489,7 +2901,7 @@
     },
     {
       "name": "reload",
-      "covers": "reload() re-reads and SETs; a failed reload rejects.",
+      "covers": "refresh() re-reads and sets; a failed refresh rejects.",
       "plugins": [
         {
           "factory": "metadata"
@@ -2501,7 +2913,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -2596,7 +3011,7 @@
             "token": "metadata",
             "doc": "a"
           },
-          "method": "reload",
+          "method": "refresh",
           "args": []
         },
         {
@@ -2605,7 +3020,7 @@
             "token": "metadata",
             "doc": "a"
           },
-          "method": "current",
+          "method": "getSnapshot",
           "args": []
         },
         {
@@ -2614,7 +3029,7 @@
             "token": "metadata",
             "doc": "a"
           },
-          "method": "reload",
+          "method": "refresh",
           "args": []
         },
         {
@@ -2623,7 +3038,7 @@
             "token": "metadata",
             "doc": "a"
           },
-          "method": "current",
+          "method": "getSnapshot",
           "args": []
         }
       ],
@@ -2675,7 +3090,19 @@
             {
               "slice": "metadata::a",
               "action": {
-                "type": "SET",
+                "type": "loading"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            },
+            {
+              "slice": "metadata::a",
+              "action": {
+                "type": "set",
                 "metadata": {
                   "title": "First",
                   "author": null,
@@ -2688,12 +3115,6 @@
                   "trapped": "unknown",
                   "custom": {}
                 }
-              }
-            },
-            {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
               }
             }
           ],
@@ -2739,11 +3160,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -2782,7 +3207,8 @@
             "plugins": {
               "@@conformance/spy": {},
               "metadata::a": {
-                "metadata": {
+                "status": "ready",
+                "value": {
                   "title": "First",
                   "author": null,
                   "subject": null,
@@ -2793,7 +3219,8 @@
                   "modified": null,
                   "trapped": "unknown",
                   "custom": {}
-                }
+                },
+                "revision": 1
               }
             }
           }
@@ -2811,7 +3238,13 @@
             {
               "slice": "metadata::a",
               "action": {
-                "type": "SET",
+                "type": "loading"
+              }
+            },
+            {
+              "slice": "metadata::a",
+              "action": {
+                "type": "set",
                 "metadata": {
                   "title": "Second",
                   "author": null,
@@ -2850,11 +3283,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -2893,7 +3330,8 @@
             "plugins": {
               "@@conformance/spy": {},
               "metadata::a": {
-                "metadata": {
+                "status": "ready",
+                "value": {
                   "title": "Second",
                   "author": null,
                   "subject": null,
@@ -2904,7 +3342,8 @@
                   "modified": null,
                   "trapped": "unknown",
                   "custom": {}
-                }
+                },
+                "revision": 2
               }
             }
           }
@@ -2940,11 +3379,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -2983,7 +3426,8 @@
             "plugins": {
               "@@conformance/spy": {},
               "metadata::a": {
-                "metadata": {
+                "status": "ready",
+                "value": {
                   "title": "Second",
                   "author": null,
                   "subject": null,
@@ -2994,7 +3438,8 @@
                   "modified": null,
                   "trapped": "unknown",
                   "custom": {}
-                }
+                },
+                "revision": 2
               }
             }
           }
@@ -3005,14 +3450,36 @@
               "promise": 3,
               "rejected": {
                 "$error": {
-                  "name": "EngineError",
+                  "name": "PluginError",
                   "message": "gone",
-                  "code": "DocClosed"
+                  "code": "operation-failed",
+                  "capability": "metadata",
+                  "cause": {
+                    "$error": {
+                      "name": "EngineError",
+                      "message": "gone",
+                      "code": "DocClosed"
+                    }
+                  }
                 }
               }
             }
           ],
-          "actions": [],
+          "actions": [
+            {
+              "slice": "metadata::a",
+              "action": {
+                "type": "loading"
+              }
+            },
+            {
+              "slice": "metadata::a",
+              "action": {
+                "type": "error",
+                "forbidden": false
+              }
+            }
+          ],
           "engine": [
             {
               "doc": "a",
@@ -3036,11 +3503,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -3079,7 +3550,8 @@
             "plugins": {
               "@@conformance/spy": {},
               "metadata::a": {
-                "metadata": {
+                "status": "error",
+                "value": {
                   "title": "Second",
                   "author": null,
                   "subject": null,
@@ -3090,7 +3562,8 @@
                   "modified": null,
                   "trapped": "unknown",
                   "custom": {}
-                }
+                },
+                "revision": 2
               }
             }
           }
@@ -3126,11 +3599,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -3169,7 +3646,8 @@
             "plugins": {
               "@@conformance/spy": {},
               "metadata::a": {
-                "metadata": {
+                "status": "error",
+                "value": {
                   "title": "Second",
                   "author": null,
                   "subject": null,
@@ -3180,7 +3658,8 @@
                   "modified": null,
                   "trapped": "unknown",
                   "custom": {}
-                }
+                },
+                "revision": 2
               }
             }
           }
@@ -3201,7 +3680,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -3252,7 +3734,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -3303,7 +3788,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -3474,7 +3962,19 @@
             {
               "slice": "metadata::a",
               "action": {
-                "type": "SET",
+                "type": "loading"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            },
+            {
+              "slice": "metadata::a",
+              "action": {
+                "type": "set",
                 "metadata": {
                   "title": null,
                   "author": null,
@@ -3487,12 +3987,6 @@
                   "trapped": "unknown",
                   "custom": {}
                 }
-              }
-            },
-            {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
               }
             }
           ],
@@ -3538,11 +4032,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -3581,7 +4079,8 @@
             "plugins": {
               "@@conformance/spy": {},
               "metadata::a": {
-                "metadata": {
+                "status": "ready",
+                "value": {
                   "title": null,
                   "author": null,
                   "subject": null,
@@ -3592,7 +4091,8 @@
                   "modified": null,
                   "trapped": "unknown",
                   "custom": {}
-                }
+                },
+                "revision": 1
               }
             }
           }
@@ -3614,7 +4114,19 @@
             {
               "slice": "metadata::b",
               "action": {
-                "type": "SET",
+                "type": "loading"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            },
+            {
+              "slice": "metadata::b",
+              "action": {
+                "type": "set",
                 "metadata": {
                   "title": null,
                   "author": null,
@@ -3627,12 +4139,6 @@
                   "trapped": "unknown",
                   "custom": {}
                 }
-              }
-            },
-            {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
               }
             }
           ],
@@ -3681,11 +4187,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -3716,11 +4226,15 @@
                 },
                 "b": {
                   "id": "b",
+                  "instanceId": "b#2",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -3760,7 +4274,8 @@
             "plugins": {
               "@@conformance/spy": {},
               "metadata::a": {
-                "metadata": {
+                "status": "ready",
+                "value": {
                   "title": null,
                   "author": null,
                   "subject": null,
@@ -3771,10 +4286,12 @@
                   "modified": null,
                   "trapped": "unknown",
                   "custom": {}
-                }
+                },
+                "revision": 1
               },
               "metadata::b": {
-                "metadata": {
+                "status": "ready",
+                "value": {
                   "title": null,
                   "author": null,
                   "subject": null,
@@ -3785,7 +4302,8 @@
                   "modified": null,
                   "trapped": "unknown",
                   "custom": {}
-                }
+                },
+                "revision": 1
               }
             }
           }
@@ -3807,7 +4325,19 @@
             {
               "slice": "metadata::c",
               "action": {
-                "type": "SET",
+                "type": "loading"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            },
+            {
+              "slice": "metadata::c",
+              "action": {
+                "type": "set",
                 "metadata": {
                   "title": null,
                   "author": null,
@@ -3820,12 +4350,6 @@
                   "trapped": "unknown",
                   "custom": {}
                 }
-              }
-            },
-            {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
               }
             }
           ],
@@ -3877,11 +4401,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -3912,11 +4440,15 @@
                 },
                 "b": {
                   "id": "b",
+                  "instanceId": "b#2",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -3947,11 +4479,15 @@
                 },
                 "c": {
                   "id": "c",
+                  "instanceId": "c#3",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -3992,7 +4528,8 @@
             "plugins": {
               "@@conformance/spy": {},
               "metadata::a": {
-                "metadata": {
+                "status": "ready",
+                "value": {
                   "title": null,
                   "author": null,
                   "subject": null,
@@ -4003,10 +4540,12 @@
                   "modified": null,
                   "trapped": "unknown",
                   "custom": {}
-                }
+                },
+                "revision": 1
               },
               "metadata::b": {
-                "metadata": {
+                "status": "ready",
+                "value": {
                   "title": null,
                   "author": null,
                   "subject": null,
@@ -4017,10 +4556,12 @@
                   "modified": null,
                   "trapped": "unknown",
                   "custom": {}
-                }
+                },
+                "revision": 1
               },
               "metadata::c": {
-                "metadata": {
+                "status": "ready",
+                "value": {
                   "title": null,
                   "author": null,
                   "subject": null,
@@ -4031,7 +4572,8 @@
                   "modified": null,
                   "trapped": "unknown",
                   "custom": {}
-                }
+                },
+                "revision": 1
               }
             }
           }
@@ -4062,11 +4604,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -4097,11 +4643,15 @@
                 },
                 "b": {
                   "id": "b",
+                  "instanceId": "b#2",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -4132,11 +4682,15 @@
                 },
                 "c": {
                   "id": "c",
+                  "instanceId": "c#3",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -4177,7 +4731,8 @@
             "plugins": {
               "@@conformance/spy": {},
               "metadata::a": {
-                "metadata": {
+                "status": "ready",
+                "value": {
                   "title": null,
                   "author": null,
                   "subject": null,
@@ -4188,10 +4743,12 @@
                   "modified": null,
                   "trapped": "unknown",
                   "custom": {}
-                }
+                },
+                "revision": 1
               },
               "metadata::b": {
-                "metadata": {
+                "status": "ready",
+                "value": {
                   "title": null,
                   "author": null,
                   "subject": null,
@@ -4202,10 +4759,12 @@
                   "modified": null,
                   "trapped": "unknown",
                   "custom": {}
-                }
+                },
+                "revision": 1
               },
               "metadata::c": {
-                "metadata": {
+                "status": "ready",
+                "value": {
                   "title": null,
                   "author": null,
                   "subject": null,
@@ -4216,7 +4775,8 @@
                   "modified": null,
                   "trapped": "unknown",
                   "custom": {}
-                }
+                },
+                "revision": 1
               }
             }
           }
@@ -4247,11 +4807,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -4282,11 +4846,15 @@
                 },
                 "b": {
                   "id": "b",
+                  "instanceId": "b#2",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -4317,11 +4885,15 @@
                 },
                 "c": {
                   "id": "c",
+                  "instanceId": "c#3",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -4362,7 +4934,8 @@
             "plugins": {
               "@@conformance/spy": {},
               "metadata::a": {
-                "metadata": {
+                "status": "ready",
+                "value": {
                   "title": null,
                   "author": null,
                   "subject": null,
@@ -4373,10 +4946,12 @@
                   "modified": null,
                   "trapped": "unknown",
                   "custom": {}
-                }
+                },
+                "revision": 1
               },
               "metadata::b": {
-                "metadata": {
+                "status": "ready",
+                "value": {
                   "title": null,
                   "author": null,
                   "subject": null,
@@ -4387,10 +4962,12 @@
                   "modified": null,
                   "trapped": "unknown",
                   "custom": {}
-                }
+                },
+                "revision": 1
               },
               "metadata::c": {
-                "metadata": {
+                "status": "ready",
+                "value": {
                   "title": null,
                   "author": null,
                   "subject": null,
@@ -4401,7 +4978,8 @@
                   "modified": null,
                   "trapped": "unknown",
                   "custom": {}
-                }
+                },
+                "revision": 1
               }
             }
           }
@@ -4432,11 +5010,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -4467,11 +5049,15 @@
                 },
                 "b": {
                   "id": "b",
+                  "instanceId": "b#2",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -4502,11 +5088,15 @@
                 },
                 "c": {
                   "id": "c",
+                  "instanceId": "c#3",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -4547,7 +5137,8 @@
             "plugins": {
               "@@conformance/spy": {},
               "metadata::a": {
-                "metadata": {
+                "status": "ready",
+                "value": {
                   "title": null,
                   "author": null,
                   "subject": null,
@@ -4558,10 +5149,12 @@
                   "modified": null,
                   "trapped": "unknown",
                   "custom": {}
-                }
+                },
+                "revision": 1
               },
               "metadata::b": {
-                "metadata": {
+                "status": "ready",
+                "value": {
                   "title": null,
                   "author": null,
                   "subject": null,
@@ -4572,10 +5165,12 @@
                   "modified": null,
                   "trapped": "unknown",
                   "custom": {}
-                }
+                },
+                "revision": 1
               },
               "metadata::c": {
-                "metadata": {
+                "status": "ready",
+                "value": {
                   "title": null,
                   "author": null,
                   "subject": null,
@@ -4586,7 +5181,8 @@
                   "modified": null,
                   "trapped": "unknown",
                   "custom": {}
-                }
+                },
+                "revision": 1
               }
             }
           }

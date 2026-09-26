@@ -25,7 +25,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locale",
+          "method": "getLocale",
           "args": []
         },
         {
@@ -33,7 +33,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "dir",
+          "method": "getDirection",
           "args": []
         },
         {
@@ -41,7 +41,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "loading",
+          "method": "getLoadingLocale",
           "args": []
         },
         {
@@ -49,7 +49,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locales",
+          "method": "listLocales",
           "args": []
         },
         {
@@ -92,7 +92,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locale",
+          "method": "getLocale",
           "args": []
         },
         {
@@ -100,7 +100,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "dir",
+          "method": "getDirection",
           "args": []
         },
         {
@@ -108,7 +108,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "loading",
+          "method": "getLoadingLocale",
           "args": []
         },
         {
@@ -116,7 +116,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locales",
+          "method": "listLocales",
           "args": []
         }
       ],
@@ -577,7 +577,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -690,7 +693,7 @@
             "token": "i18n",
             "doc": "a"
           },
-          "method": "locale"
+          "method": "getLocale"
         },
         {
           "op": "call",
@@ -790,7 +793,14 @@
           }
         },
         {
-          "settled": [],
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
           "actions": [
             {
               "slice": "i18n",
@@ -804,139 +814,6 @@
           "callbacks": [],
           "reports": [],
           "status": "created",
-          "engineState": {},
-          "outcome": {
-            "returned": {
-              "$undefined": true
-            }
-          },
-          "state": {
-            "core": {
-              "documents": {},
-              "pending": {},
-              "order": [],
-              "activeId": null
-            },
-            "plugins": {
-              "@@conformance/spy": {},
-              "i18n": {
-                "locale": "en",
-                "fallbackLocale": "en",
-                "locales": {
-                  "en": {
-                    "code": "en",
-                    "name": "English",
-                    "translations": {
-                      "commands": {
-                        "zoom": {
-                          "in": "Zoom In",
-                          "out": "Zoom Out"
-                        },
-                        "save": "Save"
-                      },
-                      "zoomLevel": "Zoom Level ({level}%)",
-                      "pages": {
-                        "one": "{count} page",
-                        "other": "{count} pages"
-                      },
-                      "greeting": "Hello {name}, you have {count} {unknown}"
-                    }
-                  },
-                  "es": {
-                    "code": "es",
-                    "name": "Español",
-                    "translations": {
-                      "commands": {
-                        "save": "Guardar"
-                      },
-                      "pages": {
-                        "one": "{count} página",
-                        "other": "{count} páginas"
-                      }
-                    }
-                  }
-                },
-                "loading": null
-              }
-            }
-          }
-        },
-        {
-          "settled": [],
-          "actions": [],
-          "engine": [],
-          "callbacks": [],
-          "reports": [],
-          "status": "created",
-          "engineState": {},
-          "outcome": {
-            "returned": "Save"
-          },
-          "state": {
-            "core": {
-              "documents": {},
-              "pending": {},
-              "order": [],
-              "activeId": null
-            },
-            "plugins": {
-              "@@conformance/spy": {},
-              "i18n": {
-                "locale": "en",
-                "fallbackLocale": "en",
-                "locales": {
-                  "en": {
-                    "code": "en",
-                    "name": "English",
-                    "translations": {
-                      "commands": {
-                        "zoom": {
-                          "in": "Zoom In",
-                          "out": "Zoom Out"
-                        },
-                        "save": "Save"
-                      },
-                      "zoomLevel": "Zoom Level ({level}%)",
-                      "pages": {
-                        "one": "{count} page",
-                        "other": "{count} pages"
-                      },
-                      "greeting": "Hello {name}, you have {count} {unknown}"
-                    }
-                  },
-                  "es": {
-                    "code": "es",
-                    "name": "Español",
-                    "translations": {
-                      "commands": {
-                        "save": "Guardar"
-                      },
-                      "pages": {
-                        "one": "{count} página",
-                        "other": "{count} páginas"
-                      }
-                    }
-                  }
-                },
-                "loading": null
-              }
-            }
-          }
-        },
-        {
-          "settled": [
-            {
-              "promise": 0,
-              "resolved": {
-                "$undefined": true
-              }
-            }
-          ],
-          "actions": [],
-          "engine": [],
-          "callbacks": [],
-          "reports": [],
-          "status": "started",
           "engineState": {},
           "outcome": {
             "promise": 0
@@ -998,7 +875,7 @@
           "engine": [],
           "callbacks": [],
           "reports": [],
-          "status": "started",
+          "status": "created",
           "engineState": {},
           "outcome": {
             "returned": "Save"
@@ -1058,6 +935,137 @@
           "settled": [
             {
               "promise": 1,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "en",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "es": {
+                    "code": "es",
+                    "name": "Español",
+                    "translations": {
+                      "commands": {
+                        "save": "Guardar"
+                      },
+                      "pages": {
+                        "one": "{count} página",
+                        "other": "{count} páginas"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": "Save"
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "en",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "es": {
+                    "code": "es",
+                    "name": "Español",
+                    "translations": {
+                      "commands": {
+                        "save": "Guardar"
+                      },
+                      "pages": {
+                        "one": "{count} página",
+                        "other": "{count} páginas"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
               "resolved": "a"
             }
           ],
@@ -1105,18 +1113,22 @@
             }
           },
           "outcome": {
-            "promise": 1
+            "promise": 2
           },
           "state": {
             "core": {
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -1197,7 +1209,14 @@
           }
         },
         {
-          "settled": [],
+          "settled": [
+            {
+              "promise": 3,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
           "actions": [
             {
               "slice": "i18n",
@@ -1217,20 +1236,22 @@
             }
           },
           "outcome": {
-            "returned": {
-              "$undefined": true
-            }
+            "promise": 3
           },
           "state": {
             "core": {
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -1330,11 +1351,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -1434,11 +1459,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -1521,7 +1550,7 @@
         {
           "settled": [
             {
-              "promise": 2,
+              "promise": 4,
               "resolved": {
                 "$undefined": true
               }
@@ -1551,7 +1580,7 @@
             }
           },
           "outcome": {
-            "promise": 2
+            "promise": 4
           },
           "state": {
             "core": {
@@ -1673,7 +1702,7 @@
         {
           "settled": [
             {
-              "promise": 3,
+              "promise": 5,
               "resolved": {
                 "$undefined": true
               }
@@ -1690,7 +1719,7 @@
             }
           },
           "outcome": {
-            "promise": 3
+            "promise": 5
           },
           "state": {
             "core": {
@@ -3147,7 +3176,14 @@
           }
         },
         {
-          "settled": [],
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
           "actions": [
             {
               "slice": "i18n",
@@ -3163,9 +3199,7 @@
           "status": "started",
           "engineState": {},
           "outcome": {
-            "returned": {
-              "$undefined": true
-            }
+            "promise": 1
           },
           "state": {
             "core": {
@@ -3547,7 +3581,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locale",
+          "method": "getLocale",
           "args": []
         },
         {
@@ -3555,7 +3589,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "dir",
+          "method": "getDirection",
           "args": []
         },
         {
@@ -3563,7 +3597,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "loading",
+          "method": "getLoadingLocale",
           "args": []
         },
         {
@@ -3571,7 +3605,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locales",
+          "method": "listLocales",
           "args": []
         },
         {
@@ -3589,7 +3623,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "dir",
+          "method": "getDirection",
           "args": []
         },
         {
@@ -3607,7 +3641,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "dir",
+          "method": "getDirection",
           "args": []
         },
         {
@@ -3625,7 +3659,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locale",
+          "method": "getLocale",
           "args": []
         },
         {
@@ -3633,7 +3667,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "dir",
+          "method": "getDirection",
           "args": []
         },
         {
@@ -3641,7 +3675,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "loading",
+          "method": "getLoadingLocale",
           "args": []
         },
         {
@@ -3649,7 +3683,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locales",
+          "method": "listLocales",
           "args": []
         }
       ],
@@ -4058,7 +4092,14 @@
           }
         },
         {
-          "settled": [],
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
           "actions": [
             {
               "slice": "i18n",
@@ -4074,9 +4115,7 @@
           "status": "created",
           "engineState": {},
           "outcome": {
-            "returned": {
-              "$undefined": true
-            }
+            "promise": 0
           },
           "state": {
             "core": {
@@ -4248,7 +4287,14 @@
           }
         },
         {
-          "settled": [],
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
           "actions": [
             {
               "slice": "i18n",
@@ -4264,9 +4310,7 @@
           "status": "created",
           "engineState": {},
           "outcome": {
-            "returned": {
-              "$undefined": true
-            }
+            "promise": 1
           },
           "state": {
             "core": {
@@ -4454,9 +4498,7 @@
           "status": "created",
           "engineState": {},
           "outcome": {
-            "returned": {
-              "$undefined": true
-            }
+            "promise": 2
           },
           "state": {
             "core": {
@@ -5007,7 +5049,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locale",
+          "method": "getLocale",
           "args": []
         },
         {
@@ -5015,7 +5057,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "dir",
+          "method": "getDirection",
           "args": []
         },
         {
@@ -5023,7 +5065,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "loading",
+          "method": "getLoadingLocale",
           "args": []
         },
         {
@@ -5031,7 +5073,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locales",
+          "method": "listLocales",
           "args": []
         },
         {
@@ -5059,7 +5101,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locale",
+          "method": "getLocale",
           "args": []
         }
       ],
@@ -5134,7 +5176,14 @@
           }
         },
         {
-          "settled": [],
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
           "actions": [
             {
               "slice": "i18n",
@@ -5150,9 +5199,7 @@
           "status": "started",
           "engineState": {},
           "outcome": {
-            "returned": {
-              "$undefined": true
-            }
+            "promise": 1
           },
           "state": {
             "core": {
@@ -5467,7 +5514,14 @@
           }
         },
         {
-          "settled": [],
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
           "actions": [
             {
               "slice": "i18n",
@@ -5483,9 +5537,7 @@
           "status": "started",
           "engineState": {},
           "outcome": {
-            "returned": {
-              "$undefined": true
-            }
+            "promise": 2
           },
           "state": {
             "core": {
@@ -5539,7 +5591,14 @@
           }
         },
         {
-          "settled": [],
+          "settled": [
+            {
+              "promise": 3,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
           "actions": [
             {
               "slice": "i18n",
@@ -5555,9 +5614,7 @@
           "status": "started",
           "engineState": {},
           "outcome": {
-            "returned": {
-              "$undefined": true
-            }
+            "promise": 3
           },
           "state": {
             "core": {
@@ -5779,7 +5836,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locale",
+          "method": "getLocale",
           "args": []
         }
       ],
@@ -5841,65 +5898,19 @@
           }
         },
         {
-          "settled": [],
-          "actions": [],
-          "engine": [],
-          "callbacks": [
+          "settled": [
             {
-              "fn": "console.warn",
-              "args": [
-                "[i18n] unknown locale \"de\" — not registered and no loader configured"
-              ]
-            }
-          ],
-          "reports": [],
-          "status": "started",
-          "engineState": {},
-          "outcome": {
-            "returned": {
-              "$undefined": true
-            }
-          },
-          "state": {
-            "core": {
-              "documents": {},
-              "pending": {},
-              "order": [],
-              "activeId": null
-            },
-            "plugins": {
-              "@@conformance/spy": {},
-              "i18n": {
-                "locale": "en",
-                "fallbackLocale": "en",
-                "locales": {
-                  "en": {
-                    "code": "en",
-                    "name": "English",
-                    "translations": {
-                      "commands": {
-                        "zoom": {
-                          "in": "Zoom In",
-                          "out": "Zoom Out"
-                        },
-                        "save": "Save"
-                      },
-                      "zoomLevel": "Zoom Level ({level}%)",
-                      "pages": {
-                        "one": "{count} page",
-                        "other": "{count} pages"
-                      },
-                      "greeting": "Hello {name}, you have {count} {unknown}"
-                    }
-                  }
-                },
-                "loading": null
+              "promise": 1,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "unknown locale 'de' — not registered and no loader configured",
+                  "code": "not-found",
+                  "capability": "i18n"
+                }
               }
             }
-          }
-        },
-        {
-          "settled": [],
+          ],
           "actions": [],
           "engine": [],
           "callbacks": [],
@@ -5907,9 +5918,7 @@
           "status": "started",
           "engineState": {},
           "outcome": {
-            "returned": {
-              "$undefined": true
-            }
+            "promise": 1
           },
           "state": {
             "core": {
@@ -5950,24 +5959,27 @@
           }
         },
         {
-          "settled": [],
-          "actions": [],
-          "engine": [],
-          "callbacks": [
+          "settled": [
             {
-              "fn": "console.warn",
-              "args": [
-                "[i18n] unknown locale \"it\" — not registered and no loader configured"
-              ]
+              "promise": 2,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "unknown locale 'de' — not registered and no loader configured",
+                  "code": "not-found",
+                  "capability": "i18n"
+                }
+              }
             }
           ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {},
           "outcome": {
-            "returned": {
-              "$undefined": true
-            }
+            "promise": 2
           },
           "state": {
             "core": {
@@ -6008,24 +6020,88 @@
           }
         },
         {
-          "settled": [],
-          "actions": [],
-          "engine": [],
-          "callbacks": [
+          "settled": [
             {
-              "fn": "console.warn",
-              "args": [
-                "[i18n] unknown locale \"\" — not registered and no loader configured"
-              ]
+              "promise": 3,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "unknown locale 'it' — not registered and no loader configured",
+                  "code": "not-found",
+                  "capability": "i18n"
+                }
+              }
             }
           ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {},
           "outcome": {
-            "returned": {
-              "$undefined": true
+            "promise": 3
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "en",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  }
+                },
+                "loading": null
+              }
             }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 4,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "unknown locale '' — not registered and no loader configured",
+                  "code": "not-found",
+                  "capability": "i18n"
+                }
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 4
           },
           "state": {
             "core": {
@@ -6174,7 +6250,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locale",
+          "method": "getLocale",
           "args": []
         },
         {
@@ -6182,7 +6258,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "dir",
+          "method": "getDirection",
           "args": []
         },
         {
@@ -6190,7 +6266,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "loading",
+          "method": "getLoadingLocale",
           "args": []
         },
         {
@@ -6198,7 +6274,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locales",
+          "method": "listLocales",
           "args": []
         },
         {
@@ -6248,7 +6324,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locale",
+          "method": "getLocale",
           "args": []
         },
         {
@@ -6256,7 +6332,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "dir",
+          "method": "getDirection",
           "args": []
         },
         {
@@ -6264,7 +6340,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "loading",
+          "method": "getLoadingLocale",
           "args": []
         },
         {
@@ -6272,7 +6348,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locales",
+          "method": "listLocales",
           "args": []
         },
         {
@@ -6310,7 +6386,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locale",
+          "method": "getLocale",
           "args": []
         }
       ],
@@ -6393,9 +6469,7 @@
           "status": "started",
           "engineState": {},
           "outcome": {
-            "returned": {
-              "$undefined": true
-            }
+            "promise": 1
           },
           "state": {
             "core": {
@@ -6645,7 +6719,19 @@
           }
         },
         {
-          "settled": [],
+          "settled": [
+            {
+              "promise": 1,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "switching to 'ar' was superseded",
+                  "code": "operation-cancelled",
+                  "capability": "i18n"
+                }
+              }
+            }
+          ],
           "actions": [
             {
               "slice": "i18n",
@@ -6661,9 +6747,7 @@
           "status": "started",
           "engineState": {},
           "outcome": {
-            "returned": {
-              "$undefined": true
-            }
+            "promise": 2
           },
           "state": {
             "core": {
@@ -6753,7 +6837,14 @@
           }
         },
         {
-          "settled": [],
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
           "actions": [
             {
               "slice": "i18n",
@@ -7197,7 +7288,14 @@
           }
         },
         {
-          "settled": [],
+          "settled": [
+            {
+              "promise": 3,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
           "actions": [
             {
               "slice": "i18n",
@@ -7213,9 +7311,7 @@
           "status": "started",
           "engineState": {},
           "outcome": {
-            "returned": {
-              "$undefined": true
-            }
+            "promise": 3
           },
           "state": {
             "core": {
@@ -7274,7 +7370,14 @@
           }
         },
         {
-          "settled": [],
+          "settled": [
+            {
+              "promise": 4,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
           "actions": [
             {
               "slice": "i18n",
@@ -7290,9 +7393,7 @@
           "status": "started",
           "engineState": {},
           "outcome": {
-            "returned": {
-              "$undefined": true
-            }
+            "promise": 4
           },
           "state": {
             "core": {
@@ -7526,7 +7627,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locale",
+          "method": "getLocale",
           "args": []
         },
         {
@@ -7534,7 +7635,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "dir",
+          "method": "getDirection",
           "args": []
         },
         {
@@ -7542,7 +7643,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "loading",
+          "method": "getLoadingLocale",
           "args": []
         },
         {
@@ -7550,7 +7651,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locales",
+          "method": "listLocales",
           "args": []
         },
         {
@@ -7598,7 +7699,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locale",
+          "method": "getLocale",
           "args": []
         },
         {
@@ -7606,7 +7707,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "dir",
+          "method": "getDirection",
           "args": []
         },
         {
@@ -7614,7 +7715,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "loading",
+          "method": "getLoadingLocale",
           "args": []
         },
         {
@@ -7622,7 +7723,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locales",
+          "method": "listLocales",
           "args": []
         }
       ],
@@ -7718,9 +7819,7 @@
           "status": "started",
           "engineState": {},
           "outcome": {
-            "returned": {
-              "$undefined": true
-            }
+            "promise": 1
           },
           "state": {
             "core": {
@@ -7774,7 +7873,25 @@
           }
         },
         {
-          "settled": [],
+          "settled": [
+            {
+              "promise": 1,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "switching to 'ar' was superseded",
+                  "code": "operation-cancelled",
+                  "capability": "i18n"
+                }
+              }
+            },
+            {
+              "promise": 2,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
           "actions": [
             {
               "slice": "i18n",
@@ -7790,9 +7907,7 @@
           "status": "started",
           "engineState": {},
           "outcome": {
-            "returned": {
-              "$undefined": true
-            }
+            "promise": 2
           },
           "state": {
             "core": {
@@ -8314,9 +8429,7 @@
           "status": "started",
           "engineState": {},
           "outcome": {
-            "returned": {
-              "$undefined": true
-            }
+            "promise": 3
           },
           "state": {
             "core": {
@@ -8388,24 +8501,27 @@
           }
         },
         {
-          "settled": [],
-          "actions": [],
-          "engine": [],
-          "callbacks": [
+          "settled": [
             {
-              "fn": "console.warn",
-              "args": [
-                "[i18n] unknown locale \"fr\" — not registered and no loader configured"
-              ]
+              "promise": 4,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "unknown locale 'fr' — not registered and no loader configured",
+                  "code": "not-found",
+                  "capability": "i18n"
+                }
+              }
             }
           ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {},
           "outcome": {
-            "returned": {
-              "$undefined": true
-            }
+            "promise": 4
           },
           "state": {
             "core": {
@@ -8477,7 +8593,25 @@
           }
         },
         {
-          "settled": [],
+          "settled": [
+            {
+              "promise": 3,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "switching to 'he' was superseded",
+                  "code": "operation-cancelled",
+                  "capability": "i18n"
+                }
+              }
+            },
+            {
+              "promise": 5,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
           "actions": [
             {
               "slice": "i18n",
@@ -8493,9 +8627,7 @@
           "status": "started",
           "engineState": {},
           "outcome": {
-            "returned": {
-              "$undefined": true
-            }
+            "promise": 5
           },
           "state": {
             "core": {
@@ -8588,9 +8720,7 @@
           "status": "started",
           "engineState": {},
           "outcome": {
-            "returned": {
-              "$undefined": true
-            }
+            "promise": 6
           },
           "state": {
             "core": {
@@ -9080,7 +9210,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "loading",
+          "method": "getLoadingLocale",
           "args": []
         },
         {
@@ -9102,7 +9232,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locale",
+          "method": "getLocale",
           "args": []
         },
         {
@@ -9110,7 +9240,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "dir",
+          "method": "getDirection",
           "args": []
         },
         {
@@ -9118,7 +9248,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "loading",
+          "method": "getLoadingLocale",
           "args": []
         },
         {
@@ -9126,7 +9256,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locales",
+          "method": "listLocales",
           "args": []
         },
         {
@@ -9156,7 +9286,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locale",
+          "method": "getLocale",
           "args": []
         },
         {
@@ -9164,7 +9294,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "dir",
+          "method": "getDirection",
           "args": []
         },
         {
@@ -9172,7 +9302,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "loading",
+          "method": "getLoadingLocale",
           "args": []
         },
         {
@@ -9180,7 +9310,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locales",
+          "method": "listLocales",
           "args": []
         }
       ],
@@ -9263,9 +9393,7 @@
           "status": "started",
           "engineState": {},
           "outcome": {
-            "returned": {
-              "$undefined": true
-            }
+            "promise": 1
           },
           "state": {
             "core": {
@@ -9306,7 +9434,19 @@
           }
         },
         {
-          "settled": [],
+          "settled": [
+            {
+              "promise": 1,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "switching to 'ar' was superseded",
+                  "code": "operation-cancelled",
+                  "capability": "i18n"
+                }
+              }
+            }
+          ],
           "actions": [
             {
               "slice": "i18n",
@@ -9327,9 +9467,7 @@
           "status": "started",
           "engineState": {},
           "outcome": {
-            "returned": {
-              "$undefined": true
-            }
+            "promise": 2
           },
           "state": {
             "core": {
@@ -9419,7 +9557,14 @@
           }
         },
         {
-          "settled": [],
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
           "actions": [
             {
               "slice": "i18n",
@@ -10253,7 +10398,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locale",
+          "method": "getLocale",
           "args": []
         },
         {
@@ -10261,7 +10406,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "dir",
+          "method": "getDirection",
           "args": []
         },
         {
@@ -10269,7 +10414,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "loading",
+          "method": "getLoadingLocale",
           "args": []
         },
         {
@@ -10277,7 +10422,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locales",
+          "method": "listLocales",
           "args": []
         },
         {
@@ -10313,7 +10458,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locale",
+          "method": "getLocale",
           "args": []
         },
         {
@@ -10321,7 +10466,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "dir",
+          "method": "getDirection",
           "args": []
         },
         {
@@ -10329,7 +10474,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "loading",
+          "method": "getLoadingLocale",
           "args": []
         },
         {
@@ -10337,7 +10482,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locales",
+          "method": "listLocales",
           "args": []
         },
         {
@@ -10367,7 +10512,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locale",
+          "method": "getLocale",
           "args": []
         },
         {
@@ -10375,7 +10520,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "dir",
+          "method": "getDirection",
           "args": []
         },
         {
@@ -10383,7 +10528,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "loading",
+          "method": "getLoadingLocale",
           "args": []
         },
         {
@@ -10391,7 +10536,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locales",
+          "method": "listLocales",
           "args": []
         }
       ],
@@ -10453,7 +10598,24 @@
           }
         },
         {
-          "settled": [],
+          "settled": [
+            {
+              "promise": 1,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "locale 'ar' failed to load",
+                  "code": "operation-failed",
+                  "capability": "i18n",
+                  "details": {
+                    "code": "operation-failed",
+                    "message": "offline",
+                    "capability": "i18n"
+                  }
+                }
+              }
+            }
+          ],
           "actions": [
             {
               "slice": "i18n",
@@ -10481,9 +10643,7 @@
           "status": "started",
           "engineState": {},
           "outcome": {
-            "returned": {
-              "$undefined": true
-            }
+            "promise": 1
           },
           "state": {
             "core": {
@@ -10760,9 +10920,7 @@
           "status": "started",
           "engineState": {},
           "outcome": {
-            "returned": {
-              "$undefined": true
-            }
+            "promise": 2
           },
           "state": {
             "core": {
@@ -10803,7 +10961,19 @@
           }
         },
         {
-          "settled": [],
+          "settled": [
+            {
+              "promise": 2,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "switching to 'he' was superseded",
+                  "code": "operation-cancelled",
+                  "capability": "i18n"
+                }
+              }
+            }
+          ],
           "actions": [
             {
               "slice": "i18n",
@@ -10824,9 +10994,7 @@
           "status": "started",
           "engineState": {},
           "outcome": {
-            "returned": {
-              "$undefined": true
-            }
+            "promise": 3
           },
           "state": {
             "core": {
@@ -11136,7 +11304,14 @@
           }
         },
         {
-          "settled": [],
+          "settled": [
+            {
+              "promise": 3,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
           "actions": [
             {
               "slice": "i18n",
@@ -11564,7 +11739,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locale",
+          "method": "getLocale",
           "args": []
         },
         {
@@ -11572,7 +11747,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "dir",
+          "method": "getDirection",
           "args": []
         },
         {
@@ -11580,7 +11755,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "loading",
+          "method": "getLoadingLocale",
           "args": []
         },
         {
@@ -11588,7 +11763,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locales",
+          "method": "listLocales",
           "args": []
         },
         {
@@ -11611,7 +11786,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locale",
+          "method": "getLocale",
           "args": []
         },
         {
@@ -11619,7 +11794,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "dir",
+          "method": "getDirection",
           "args": []
         },
         {
@@ -11627,7 +11802,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "loading",
+          "method": "getLoadingLocale",
           "args": []
         },
         {
@@ -11635,7 +11810,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locales",
+          "method": "listLocales",
           "args": []
         },
         {
@@ -11675,7 +11850,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locale",
+          "method": "getLocale",
           "args": []
         },
         {
@@ -11683,7 +11858,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "dir",
+          "method": "getDirection",
           "args": []
         },
         {
@@ -11691,7 +11866,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "loading",
+          "method": "getLoadingLocale",
           "args": []
         },
         {
@@ -11699,7 +11874,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locales",
+          "method": "listLocales",
           "args": []
         },
         {
@@ -12789,7 +12964,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locale",
+          "method": "getLocale",
           "args": []
         },
         {
@@ -12797,7 +12972,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "dir",
+          "method": "getDirection",
           "args": []
         },
         {
@@ -12805,7 +12980,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "loading",
+          "method": "getLoadingLocale",
           "args": []
         },
         {
@@ -12813,7 +12988,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locales",
+          "method": "listLocales",
           "args": []
         },
         {
@@ -13224,7 +13399,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locale",
+          "method": "getLocale",
           "args": []
         },
         {
@@ -13232,7 +13407,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "dir",
+          "method": "getDirection",
           "args": []
         },
         {
@@ -13240,7 +13415,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "loading",
+          "method": "getLoadingLocale",
           "args": []
         },
         {
@@ -13248,7 +13423,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locales",
+          "method": "listLocales",
           "args": []
         }
       ],
@@ -13310,7 +13485,14 @@
           }
         },
         {
-          "settled": [],
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
           "actions": [
             {
               "slice": "i18n",
@@ -13354,9 +13536,7 @@
           "status": "started",
           "engineState": {},
           "outcome": {
-            "returned": {
-              "$undefined": true
-            }
+            "promise": 1
           },
           "state": {
             "core": {
@@ -13732,7 +13912,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locale",
+          "method": "getLocale",
           "args": []
         },
         {
@@ -13740,7 +13920,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "dir",
+          "method": "getDirection",
           "args": []
         },
         {
@@ -13748,7 +13928,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "loading",
+          "method": "getLoadingLocale",
           "args": []
         },
         {
@@ -13756,7 +13936,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locales",
+          "method": "listLocales",
           "args": []
         },
         {
@@ -13774,7 +13954,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locale",
+          "method": "getLocale",
           "args": []
         },
         {
@@ -13782,7 +13962,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "dir",
+          "method": "getDirection",
           "args": []
         },
         {
@@ -13790,7 +13970,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "loading",
+          "method": "getLoadingLocale",
           "args": []
         },
         {
@@ -13798,7 +13978,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locales",
+          "method": "listLocales",
           "args": []
         }
       ],
@@ -13860,7 +14040,14 @@
           }
         },
         {
-          "settled": [],
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
           "actions": [
             {
               "slice": "i18n",
@@ -13912,9 +14099,7 @@
           "status": "started",
           "engineState": {},
           "outcome": {
-            "returned": {
-              "$undefined": true
-            }
+            "promise": 1
           },
           "state": {
             "core": {
@@ -14260,7 +14445,14 @@
           }
         },
         {
-          "settled": [],
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
           "actions": [
             {
               "slice": "i18n",
@@ -14312,9 +14504,7 @@
           "status": "started",
           "engineState": {},
           "outcome": {
-            "returned": {
-              "$undefined": true
-            }
+            "promise": 2
           },
           "state": {
             "core": {
@@ -14722,7 +14912,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locale",
+          "method": "getLocale",
           "args": []
         },
         {
@@ -14730,7 +14920,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "dir",
+          "method": "getDirection",
           "args": []
         },
         {
@@ -14738,7 +14928,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "loading",
+          "method": "getLoadingLocale",
           "args": []
         },
         {
@@ -14746,7 +14936,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locales",
+          "method": "listLocales",
           "args": []
         }
       ],
@@ -14836,9 +15026,7 @@
           "status": "started",
           "engineState": {},
           "outcome": {
-            "returned": {
-              "$undefined": true
-            }
+            "promise": 1
           },
           "state": {
             "core": {
@@ -15141,7 +15329,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locale",
+          "method": "getLocale",
           "args": []
         },
         {
@@ -15149,7 +15337,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "dir",
+          "method": "getDirection",
           "args": []
         },
         {
@@ -15157,7 +15345,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "loading",
+          "method": "getLoadingLocale",
           "args": []
         },
         {
@@ -15165,7 +15353,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locales",
+          "method": "listLocales",
           "args": []
         },
         {
@@ -15559,7 +15747,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locale",
+          "method": "getLocale",
           "args": []
         },
         {
@@ -15567,7 +15755,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "dir",
+          "method": "getDirection",
           "args": []
         },
         {
@@ -15575,7 +15763,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "loading",
+          "method": "getLoadingLocale",
           "args": []
         },
         {
@@ -15583,7 +15771,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locales",
+          "method": "listLocales",
           "args": []
         },
         {
@@ -15596,7 +15784,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locale",
+          "method": "getLocale",
           "args": []
         },
         {
@@ -15604,7 +15792,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "dir",
+          "method": "getDirection",
           "args": []
         },
         {
@@ -15612,7 +15800,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "loading",
+          "method": "getLoadingLocale",
           "args": []
         },
         {
@@ -15620,7 +15808,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locales",
+          "method": "listLocales",
           "args": []
         },
         {
@@ -15648,7 +15836,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locale",
+          "method": "getLocale",
           "args": []
         },
         {
@@ -15656,7 +15844,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "dir",
+          "method": "getDirection",
           "args": []
         },
         {
@@ -15664,7 +15852,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "loading",
+          "method": "getLoadingLocale",
           "args": []
         },
         {
@@ -15672,7 +15860,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locales",
+          "method": "listLocales",
           "args": []
         }
       ],
@@ -16152,7 +16340,14 @@
           }
         },
         {
-          "settled": [],
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
           "actions": [
             {
               "slice": "i18n",
@@ -16168,9 +16363,7 @@
           "status": "started",
           "engineState": {},
           "outcome": {
-            "returned": {
-              "$undefined": true
-            }
+            "promise": 1
           },
           "state": {
             "core": {
@@ -16227,9 +16420,7 @@
           "status": "started",
           "engineState": {},
           "outcome": {
-            "returned": {
-              "$undefined": true
-            }
+            "promise": 2
           },
           "state": {
             "core": {
@@ -16596,7 +16787,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locales",
+          "method": "listLocales",
           "args": []
         },
         {
@@ -16614,7 +16805,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locale",
+          "method": "getLocale",
           "args": []
         },
         {
@@ -16622,7 +16813,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "dir",
+          "method": "getDirection",
           "args": []
         },
         {
@@ -16630,7 +16821,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "loading",
+          "method": "getLoadingLocale",
           "args": []
         },
         {
@@ -16638,7 +16829,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locales",
+          "method": "listLocales",
           "args": []
         },
         {
@@ -16665,7 +16856,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locale",
+          "method": "getLocale",
           "args": []
         },
         {
@@ -16673,7 +16864,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "dir",
+          "method": "getDirection",
           "args": []
         },
         {
@@ -16681,7 +16872,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "loading",
+          "method": "getLoadingLocale",
           "args": []
         },
         {
@@ -16689,7 +16880,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locales",
+          "method": "listLocales",
           "args": []
         },
         {
@@ -16832,7 +17023,7 @@
           "engineState": {},
           "outcome": {
             "returned": {
-              "$undefined": true
+              "$ref": 0
             }
           },
           "state": {
@@ -16931,7 +17122,7 @@
           "engineState": {},
           "outcome": {
             "returned": {
-              "$undefined": true
+              "$ref": 1
             }
           },
           "state": {
@@ -17129,7 +17320,14 @@
           }
         },
         {
-          "settled": [],
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
           "actions": [
             {
               "slice": "i18n",
@@ -17145,9 +17343,7 @@
           "status": "started",
           "engineState": {},
           "outcome": {
-            "returned": {
-              "$undefined": true
-            }
+            "promise": 1
           },
           "state": {
             "core": {
@@ -17640,7 +17836,7 @@
           "engineState": {},
           "outcome": {
             "returned": {
-              "$undefined": true
+              "$ref": 2
             }
           },
           "state": {
@@ -18219,7 +18415,7 @@
           "engineState": {},
           "outcome": {
             "returned": {
-              "$undefined": true
+              "$ref": 3
             }
           },
           "state": {
@@ -18471,7 +18667,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locale",
+          "method": "getLocale",
           "args": []
         },
         {
@@ -18479,7 +18675,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "dir",
+          "method": "getDirection",
           "args": []
         },
         {
@@ -18487,7 +18683,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "loading",
+          "method": "getLoadingLocale",
           "args": []
         },
         {
@@ -18495,7 +18691,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locales",
+          "method": "listLocales",
           "args": []
         }
       ],
@@ -18578,9 +18774,7 @@
           "status": "started",
           "engineState": {},
           "outcome": {
-            "returned": {
-              "$undefined": true
-            }
+            "promise": 1
           },
           "state": {
             "core": {
@@ -18623,7 +18817,7 @@
         {
           "settled": [
             {
-              "promise": 1,
+              "promise": 2,
               "resolved": {
                 "$undefined": true
               }
@@ -18636,7 +18830,7 @@
           "status": "destroyed",
           "engineState": {},
           "outcome": {
-            "promise": 1
+            "promise": 2
           },
           "state": {
             "core": {
@@ -18649,7 +18843,14 @@
           }
         },
         {
-          "settled": [],
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
           "actions": [
             {
               "slice": "i18n",
@@ -18674,11 +18875,27 @@
                   }
                 }
               }
+            },
+            {
+              "slice": "i18n",
+              "action": {
+                "type": "I18N/SET_LOCALE",
+                "locale": "ar"
+              }
             }
           ],
           "engine": [],
           "callbacks": [],
-          "reports": [],
+          "reports": [
+            {
+              "$error": {
+                "name": "PluginError",
+                "message": "dispatch of \"I18N/REGISTER_LOCALE\" after the instance closed (i18n#2); dropped",
+                "code": "instance-closed",
+                "capability": "i18n"
+              }
+            }
+          ],
           "status": "destroyed",
           "engineState": {},
           "state": {
@@ -18890,7 +19107,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locale",
+          "method": "getLocale",
           "args": []
         },
         {
@@ -18898,7 +19115,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "dir",
+          "method": "getDirection",
           "args": []
         },
         {
@@ -18906,7 +19123,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "loading",
+          "method": "getLoadingLocale",
           "args": []
         },
         {
@@ -18914,7 +19131,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locales",
+          "method": "listLocales",
           "args": []
         },
         {
@@ -18942,7 +19159,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locale",
+          "method": "getLocale",
           "args": []
         },
         {
@@ -18950,7 +19167,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "dir",
+          "method": "getDirection",
           "args": []
         },
         {
@@ -18958,7 +19175,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "loading",
+          "method": "getLoadingLocale",
           "args": []
         },
         {
@@ -18966,7 +19183,7 @@
           "target": {
             "token": "i18n"
           },
-          "method": "locales",
+          "method": "listLocales",
           "args": []
         }
       ],
@@ -19028,7 +19245,14 @@
           }
         },
         {
-          "settled": [],
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
           "actions": [
             {
               "slice": "i18n",
@@ -19044,9 +19268,7 @@
           "status": "started",
           "engineState": {},
           "outcome": {
-            "returned": {
-              "$undefined": true
-            }
+            "promise": 1
           },
           "state": {
             "core": {
@@ -19339,7 +19561,14 @@
           }
         },
         {
-          "settled": [],
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
           "actions": [
             {
               "slice": "i18n",
@@ -19355,9 +19584,7 @@
           "status": "started",
           "engineState": {},
           "outcome": {
-            "returned": {
-              "$undefined": true
-            }
+            "promise": 2
           },
           "state": {
             "core": {

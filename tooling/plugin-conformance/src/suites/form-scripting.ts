@@ -44,7 +44,10 @@ import {
   text,
   tree,
   widgetAnnot,
+  standalonePlugins,
   type StandaloneConfig,
+  pr,
+  v3Widget,
 } from './form-fixtures';
 
 // ── sandbox answers ───────────────────────────────────────────────────────────
@@ -68,7 +71,7 @@ const kvcf = (over: Record<string, unknown>) => ({ actions: over });
 const K = (script = 'AFNumber_Keystroke(2)') => tree(js(script));
 
 /** A standalone driver case: the driver over document `a`. */
-const solo = (config: Partial<StandaloneConfig> & { sandbox: StandaloneConfig['sandbox'] }) => [{ factory: 'form-scripting', config }];
+const solo = (config: Partial<StandaloneConfig> & { sandbox: StandaloneConfig['sandbox'] }) => standalonePlugins(config);
 const commit = (n: number, value: unknown) => standalone('commit', [ref(n), value]);
 const applyOk = (count = 8): ResponseSpec => ({ path: 'forms.applyEffects', value: effectsOk(count) });
 
@@ -134,8 +137,8 @@ const environmentCases: ScenarioCase[] = [
 
 const CHECK = checkbox(4, 'agree', true, kvcf({ validate: tree(js('v()')) }));
 const RADIO = radio(5, 'size', [
-  { annotObjectNumber: 105, pageObjectNumber: 1, onState: 'S', checked: false },
-  { annotObjectNumber: 106, pageObjectNumber: 1, onState: 'M', checked: false },
+  v3Widget({ annotObjectNumber: 105, pageObjectNumber: 1, onState: 'S', checked: false }),
+  v3Widget({ annotObjectNumber: 106, pageObjectNumber: 1, onState: 'M', checked: false }),
 ], kvcf({ validate: tree(js('v()')) }));
 const COMBO = combobox(6, 'colour', 'r', kvcf({ validate: tree(js('v()')) }));
 const LIST = listbox(7, 'colours', ['r'], kvcf({ validate: tree(js('v()')) }));
@@ -144,7 +147,7 @@ const VALUE_FIELDS = [NAME, CHECK, RADIO, COMBO, LIST, BUTTON, text(9, 'plain', 
 const PLAIN_VALUE_FIELDS = [
   NAME,
   checkbox(4, 'agree', true),
-  radio(5, 'size', [{ annotObjectNumber: 105, pageObjectNumber: 1, onState: 'S', checked: false }]),
+  radio(5, 'size', [v3Widget({ annotObjectNumber: 105, pageObjectNumber: 1, onState: 'S', checked: false })]),
   combobox(6, 'colour', 'r'),
   listbox(7, 'colours', ['r']),
   BUTTON,
@@ -811,8 +814,8 @@ const observe: Step[] = [
 ];
 
 const REF_CANDIDATES = [
-  { ...widgetAnnot(1, 109, undefined, { actions: { activate: tree(js('nm()')) } }), ref: { kind: 'nm', pageObjectNumber: 1, nm: 'n1' } },
-  { ...widgetAnnot(1, 110, undefined, { actions: { activate: tree(js('index()')) } }), ref: { kind: 'index', pageObjectNumber: 1, index: 3, revision: 'r1' } },
+  { ...widgetAnnot(1, 109, undefined, { actions: { activate: tree(js('nm()')) } }), ref: { kind: 'nm', page: pr(1), nm: 'n1' } },
+  { ...widgetAnnot(1, 110, undefined, { actions: { activate: tree(js('index()')) } }), ref: { kind: 'index', page: pr(1), index: 3, revision: 'r1' } },
 ];
 
 const capabilityCases: ScenarioCase[] = [
@@ -897,8 +900,8 @@ const capabilityCases: ScenarioCase[] = [
           annotations(1, [widgetAnnot(1, 108), widgetAnnot(1, 109)], { times: 1 }),
           annotations(1, [
             widgetAnnot(1, 108, undefined, { actions: { activate: tree(js('click()')) } }),
-            { ...widgetAnnot(1, 109), ref: { kind: 'nm', pageObjectNumber: 1, nm: 'n1' } },
-            { ...widgetAnnot(1, 110), ref: { kind: 'index', pageObjectNumber: 1, index: 3, revision: 'r1' } },
+            { ...widgetAnnot(1, 109), ref: { kind: 'nm', page: pr(1), nm: 'n1' } },
+            { ...widgetAnnot(1, 110), ref: { kind: 'index', page: pr(1), index: 3, revision: 'r1' } },
             { ...widgetAnnot(1, 111), subtype: 'square' },
           ]),
           applyOk(),
@@ -910,9 +913,9 @@ const capabilityCases: ScenarioCase[] = [
       ...boot,
       call('activateWidget', ['obj:8', aref(1, 108)]),
       call('activateWidget', ['obj:8', aref(1, 404)]),
-      call('activateWidget', ['obj:8', { kind: 'nm', pageObjectNumber: 1, nm: 'n1' }]),
-      call('activateWidget', ['obj:8', { kind: 'index', pageObjectNumber: 1, index: 3, revision: 'r1' }]),
-      call('activateWidget', ['obj:8', { kind: 'index', pageObjectNumber: 1, index: 3, revision: 'r2' }]),
+      call('activateWidget', ['obj:8', { kind: 'nm', page: pr(1), nm: 'n1' }]),
+      call('activateWidget', ['obj:8', { kind: 'index', page: pr(1), index: 3, revision: 'r1' }]),
+      call('activateWidget', ['obj:8', { kind: 'index', page: pr(1), index: 3, revision: 'r2' }]),
       call('activateWidget', ['obj:8', aref(1, 111)]),
     ],
   },
@@ -940,11 +943,11 @@ const capabilityCases: ScenarioCase[] = [
     snapshot: 'none',
     steps: [
       ...boot,
-      call('activateWidget', ['obj:8', { kind: 'nm', pageObjectNumber: 1, nm: 'n1' }]),
-      call('activateWidget', ['obj:8', { kind: 'nm', pageObjectNumber: 1, nm: 'n2' }]),
-      call('activateWidget', ['obj:8', { kind: 'index', pageObjectNumber: 1, index: 3, revision: 'r1' }]),
-      call('activateWidget', ['obj:8', { kind: 'index', pageObjectNumber: 1, index: 4, revision: 'r1' }]),
-      call('activateWidget', ['obj:8', { kind: 'index', pageObjectNumber: 1, index: 3, revision: 'r2' }]),
+      call('activateWidget', ['obj:8', { kind: 'nm', page: pr(1), nm: 'n1' }]),
+      call('activateWidget', ['obj:8', { kind: 'nm', page: pr(1), nm: 'n2' }]),
+      call('activateWidget', ['obj:8', { kind: 'index', page: pr(1), index: 3, revision: 'r1' }]),
+      call('activateWidget', ['obj:8', { kind: 'index', page: pr(1), index: 4, revision: 'r1' }]),
+      call('activateWidget', ['obj:8', { kind: 'index', page: pr(1), index: 3, revision: 'r2' }]),
       call('activateWidget', ['obj:8', aref(2, 108)]),
     ],
   },
@@ -961,7 +964,7 @@ const capabilityCases: ScenarioCase[] = [
             value: {
               pages: [
                 {
-                  pageState: { pageObjectNumber: 1 },
+                  pageState: { page: pr(1) },
                   annotations: [
                     widgetAnnot(1, 108, undefined, { actions: { activate: tree(js('click()')) } }),
                     widgetAnnot(1, 109, undefined, { actions: { cursorEnter: tree(null) } }),
@@ -1001,7 +1004,7 @@ const capabilityCases: ScenarioCase[] = [
     plugins: scripted(null),
     engine: {
       documents: {
-        a: doc([list([AMOUNT, TOTAL], {}, [ref(3)]), annotations(1, []), { path: 'forms.setValue', value: { changedWidgets: [{ annotObjectNumber: 102, pageObjectNumber: 1 }] } }]),
+        a: doc([list([AMOUNT, TOTAL], {}, [ref(3)]), annotations(1, []), { path: 'forms.setValue', value: { changedWidgets: [v3Widget({ annotObjectNumber: 102, pageObjectNumber: 1 })] } }]),
       },
     },
     snapshot: 'none',

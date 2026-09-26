@@ -6,8 +6,9 @@
  * document keeps its own surfaces, and there is no shell before a document
  * opens or after it closes.
  */
-import { initialShellState, shellPlugin, shellReducer, ShellToken } from '../../../../packages/plugin/shell/src/index';
-import type { ShellAction, ShellState } from '../../../../packages/plugin/shell/src/types';
+import { shellPlugin, ShellToken } from '../../../../packages/plugin/shell/src/index';
+import { initialShellState, shellReducer } from '../../../../packages/plugin/shell/src/model';
+import type { ShellAction, ShellState } from '../../../../packages/plugin/shell/src/model';
 
 import type { FakeDocumentSpec } from '../fake-engine';
 import { registerPlugin, type ScenarioCase, type Step } from '../scenario';
@@ -21,7 +22,7 @@ const reduce = (state: ShellState, action: ShellAction) => {
   const next = shellReducer(state, action);
   return { same: next === state, next };
 };
-const initial = () => initialShellState;
+const initial = () => initialShellState();
 
 const s = (over: Partial<ShellState> = {}): ShellState => ({ surfaces: {}, openMenus: [], ...over });
 const two: ShellState = s({
@@ -68,7 +69,7 @@ const reducerCases: FunctionCase[] = [
 // ── scenarios ─────────────────────────────────────────────────────────────────
 
 const box = { left: 0, bottom: 0, right: 600, top: 800 };
-const pages = [{ index: 0, pageObjectNumber: 1, label: null, size: { width: 600, height: 800 }, rotation: 0, userUnit: 1, boxes: { media: box, crop: box } }];
+const pages = [{ index: 0, ref: { kind: 'objectNumber', pageObjectNumber: 1 }, label: null, size: { width: 600, height: 800 }, rotation: 0, userUnit: 1, boxes: { media: box, crop: box } }];
 const doc = (over: Partial<FakeDocumentSpec> = {}): FakeDocumentSpec => ({ pages, ...over });
 
 const start: Step = { op: 'call', target: 'kernel', method: 'start' };
@@ -87,9 +88,9 @@ const shell = (method: string, args: unknown[] = [], doc: string | null = 'a'): 
 });
 const reads = (doc = 'a', id = 'left'): Step[] => [
   shell('isOpen', [id], doc),
-  shell('surfaceProps', [id], doc),
-  shell('openSurfaces', [], doc),
-  shell('openMenus', [], doc),
+  shell('getSurface', [id], doc),
+  shell('listOpenSurfaces', [], doc),
+  shell('listOpenMenus', [], doc),
   shell('isMenuOpen', ['file'], doc),
 ];
 
@@ -120,19 +121,19 @@ const cases: ScenarioCase[] = [
       ...reads('a', 'right'),
       shell('isOpen', ['left']),
       shell('open', ['right', { props: { tab: 'outline' } }]),
-      shell('surfaceProps', ['right']),
+      shell('getSurface', ['right']),
       shell('open', ['modal', { exclusive: '' }]),
       shell('close', ['right']),
       shell('close', ['right']),
-      shell('surfaceProps', ['right']),
-      shell('openSurfaces'),
+      shell('getSurface', ['right']),
+      shell('listOpenSurfaces'),
       shell('toggle', ['left', { exclusive: 'side', props: { n: 1 } }]),
       shell('toggle', ['right', { exclusive: 'side' }]),
       shell('toggle', ['right']),
       shell('toggle', ['2', {}]),
-      shell('openSurfaces'),
+      shell('listOpenSurfaces'),
       shell('isOpen', ['constructor']),
-      shell('surfaceProps', ['toString']),
+      shell('getSurface', ['toString']),
       shell('close', ['nope']),
     ],
   },
@@ -150,13 +151,13 @@ const cases: ScenarioCase[] = [
       ...reads(),
       shell('toggleMenu', ['file']),
       shell('toggleMenu', ['view']),
-      shell('openMenus'),
+      shell('listOpenMenus'),
       shell('closeMenu', ['nope']),
       shell('closeMenu', ['edit']),
       shell('isMenuOpen', ['edit']),
       shell('closeAllMenus'),
       shell('closeAllMenus'),
-      shell('openMenus'),
+      shell('listOpenMenus'),
     ],
   },
   {
@@ -172,9 +173,9 @@ const cases: ScenarioCase[] = [
       shell('openMenu', ['file'], 'b'),
       ...reads('a'),
       ...reads('b'),
-      shell('openSurfaces', [], null),
+      shell('listOpenSurfaces', [], null),
       { op: 'call', target: 'documents', method: 'setActive', args: ['a'] },
-      shell('openSurfaces', [], null),
+      shell('listOpenSurfaces', [], null),
       close('a'),
       shell('isOpen', ['left'], 'a'),
       shell('isMenuOpen', ['file'], 'b'),

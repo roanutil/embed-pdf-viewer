@@ -26,6 +26,7 @@
  */
 import {
   AbortablePromise,
+  PermissionDenied,
   type DocumentHandle,
   type Engine,
 } from '@embedpdf/engine-core/runtime';
@@ -92,6 +93,10 @@ export interface FakeEngineSpec {
   readonly responses?: readonly ResponseSpec[];
   /** Answer every call with a plain `Promise` that has no `abort`. */
   readonly plainPromises?: boolean;
+  /** The document an `open` falls back to when no table entry answers it and
+   *  no document is keyed by the input's `id`: a plugin that opens scratch
+   *  documents under ids it mints (stamp's asset engine) gets this one. */
+  readonly defaultDocument?: string;
 }
 
 export type EngineLogEntry =
@@ -100,6 +105,8 @@ export type EngineLogEntry =
 
 interface Pending {
   readonly label: string;
+  /** An engine call's settlement, as opposed to a scripted callback's. */
+  readonly engine?: boolean;
   readonly resolve: (value: unknown) => void;
   readonly reject: (error: unknown) => void;
 }
@@ -122,6 +129,16 @@ export function makeError(spec: ErrorSpec): Error {
   const error = new Error(message);
   error.name = name ?? 'Error';
   Object.assign(error, rest);
+  return error;
+}
+
+/** An error the fake ENGINE rejects with. The kernel maps engine refusals by
+ *  `instanceof PermissionDenied`, and a real engine throws that class, so a
+ *  refusal the table names `PermissionDenied` is one, with the members it
+ *  spells. Errors a vector hands in as arguments (`$error`) stay plain. */
+export function makeEngineError(spec: ErrorSpec): Error {
+  const error = makeError(spec);
+  if (error.name === 'PermissionDenied') Object.setPrototypeOf(error, PermissionDenied.prototype);
   return error;
 }
 
@@ -179,10 +196,10 @@ export function createFakeEngine(
         return;
       }
       if (entry.defer !== undefined) {
-        pending.push({ label: entry.defer, resolve: (value) => resolve(map(value)), reject });
+        pending.push({ label: entry.defer, engine: true, resolve: (value) => resolve(map(value)), reject });
         return;
       }
-      if (entry.error) reject(makeError(entry.error));
+      if (entry.error) reject(makeEngineError(entry.error));
       else resolve(map(decode(entry.value)));
     };
     // A plain-promise engine is what the kernel's race exists for: a call
@@ -316,10 +333,9 @@ export function createFakeEngine(
         undefined,
         args,
         () => {
-          if (typeof inputId !== 'string' || !spec.documents?.[inputId]) {
-            throw makeError({ name: 'FakeEngineUnmatched', message: 'no document for open' });
-          }
-          return { $document: inputId };
+          if (typeof inputId === 'string' && spec.documents?.[inputId]) return { $document: inputId };
+          if (spec.defaultDocument !== undefined) return { $document: spec.defaultDocument };
+          throw makeError({ name: 'FakeEngineUnmatched', message: 'no document for open' });
         },
         (value) => {
           const key = (value as { $document?: unknown } | null)?.$document;
@@ -344,7 +360,7 @@ export function createFakeEngine(
       const index = pending.findIndex((p) => p.label === label);
       if (index < 0) return false;
       const [entry] = pending.splice(index, 1);
-      if (outcome.error) entry.reject(makeError(outcome.error));
+      if (outcome.error) entry.reject(entry.engine ? makeEngineError(outcome.error) : makeError(outcome.error));
       else entry.resolve(decode(outcome.value));
       return true;
     },

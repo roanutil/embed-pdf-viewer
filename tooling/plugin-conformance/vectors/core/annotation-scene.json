@@ -13854,7 +13854,22 @@
         }
       ],
       "outcome": {
-        "returned": []
+        "returned": [
+          {
+            "kind": "rect",
+            "rect": {
+              "x": 51,
+              "y": 51,
+              "width": 118,
+              "height": 38
+            },
+            "paint": {
+              "stroke": "#e5484d",
+              "width": 2,
+              "opacity": 1
+            }
+          }
+        ]
       }
     },
     {
@@ -13899,7 +13914,28 @@
         }
       ],
       "outcome": {
-        "returned": []
+        "returned": [
+          {
+            "kind": "rect",
+            "rect": {
+              "x": 51,
+              "y": 51,
+              "width": 118,
+              "height": 38
+            },
+            "paint": {
+              "fill": "#00ff00",
+              "stroke": "#e5484d",
+              "width": 2,
+              "opacity": 0.4,
+              "dash": [
+                3,
+                2
+              ],
+              "blend": "multiply"
+            }
+          }
+        ]
       }
     },
     {
@@ -13941,7 +13977,24 @@
         }
       ],
       "outcome": {
-        "returned": []
+        "returned": [
+          {
+            "kind": "rect",
+            "rect": {
+              "x": 51,
+              "y": 51,
+              "width": 118,
+              "height": 38
+            },
+            "paint": {
+              "fill": "#0000ff",
+              "stroke": "#e5484d",
+              "width": 2,
+              "opacity": 1,
+              "join": "round"
+            }
+          }
+        ]
       }
     },
     {
@@ -13982,7 +14035,23 @@
         }
       ],
       "outcome": {
-        "returned": []
+        "returned": [
+          {
+            "kind": "rect",
+            "rect": {
+              "x": 50,
+              "y": 50,
+              "width": 120,
+              "height": 40
+            },
+            "paint": {
+              "fill": "",
+              "stroke": "#e5484d",
+              "width": 0,
+              "opacity": 1
+            }
+          }
+        ]
       }
     },
     {
@@ -14024,7 +14093,35 @@
         }
       ],
       "outcome": {
-        "returned": []
+        "returned": [
+          {
+            "kind": "poly",
+            "points": [
+              {
+                "x": 129,
+                "y": 11
+              },
+              {
+                "x": 129,
+                "y": 129
+              },
+              {
+                "x": 91.00000000000001,
+                "y": 129
+              },
+              {
+                "x": 91,
+                "y": 11.000000000000007
+              }
+            ],
+            "closed": true,
+            "paint": {
+              "stroke": "#e5484d",
+              "width": 2,
+              "opacity": 1
+            }
+          }
+        ]
       }
     },
     {
@@ -14070,7 +14167,41 @@
         }
       ],
       "outcome": {
-        "returned": []
+        "returned": [
+          {
+            "kind": "poly",
+            "points": [
+              {
+                "x": 129,
+                "y": 11
+              },
+              {
+                "x": 129,
+                "y": 129
+              },
+              {
+                "x": 91.00000000000001,
+                "y": 129
+              },
+              {
+                "x": 91,
+                "y": 11.000000000000007
+              }
+            ],
+            "closed": true,
+            "paint": {
+              "fill": "#00ff00",
+              "stroke": "#e5484d",
+              "width": 2,
+              "opacity": 0.4,
+              "dash": [
+                3,
+                2
+              ],
+              "blend": "multiply"
+            }
+          }
+        ]
       }
     },
     {
@@ -14113,7 +14244,37 @@
         }
       ],
       "outcome": {
-        "returned": []
+        "returned": [
+          {
+            "kind": "poly",
+            "points": [
+              {
+                "x": 129,
+                "y": 11
+              },
+              {
+                "x": 129,
+                "y": 129
+              },
+              {
+                "x": 91.00000000000001,
+                "y": 129
+              },
+              {
+                "x": 91,
+                "y": 11.000000000000007
+              }
+            ],
+            "closed": true,
+            "paint": {
+              "fill": "#0000ff",
+              "stroke": "#e5484d",
+              "width": 2,
+              "opacity": 1,
+              "join": "round"
+            }
+          }
+        ]
       }
     },
     {
@@ -14155,7 +14316,36 @@
         }
       ],
       "outcome": {
-        "returned": []
+        "returned": [
+          {
+            "kind": "poly",
+            "points": [
+              {
+                "x": 130,
+                "y": 10
+              },
+              {
+                "x": 130,
+                "y": 130
+              },
+              {
+                "x": 90.00000000000001,
+                "y": 130
+              },
+              {
+                "x": 90,
+                "y": 10.000000000000007
+              }
+            ],
+            "closed": true,
+            "paint": {
+              "fill": "",
+              "stroke": "#e5484d",
+              "width": 0,
+              "opacity": 1
+            }
+          }
+        ]
       }
     },
     {
@@ -14197,7 +14387,35 @@
         }
       ],
       "outcome": {
-        "returned": []
+        "returned": [
+          {
+            "kind": "poly",
+            "points": [
+              {
+                "x": 70.8665781565055,
+                "y": 21.93155614315033
+              },
+              {
+                "x": 169.8297051740655,
+                "y": 86.19896227492353
+              },
+              {
+                "x": 149.1334218434945,
+                "y": 118.06844385684965
+              },
+              {
+                "x": 50.17029482593447,
+                "y": 53.80103772507644
+              }
+            ],
+            "closed": true,
+            "paint": {
+              "stroke": "#e5484d",
+              "width": 2,
+              "opacity": 1
+            }
+          }
+        ]
       }
     },
     {
@@ -14243,7 +14461,41 @@
         }
       ],
       "outcome": {
-        "returned": []
+        "returned": [
+          {
+            "kind": "poly",
+            "points": [
+              {
+                "x": 70.8665781565055,
+                "y": 21.93155614315033
+              },
+              {
+                "x": 169.8297051740655,
+                "y": 86.19896227492353
+              },
+              {
+                "x": 149.1334218434945,
+                "y": 118.06844385684965
+              },
+              {
+                "x": 50.17029482593447,
+                "y": 53.80103772507644
+              }
+            ],
+            "closed": true,
+            "paint": {
+              "fill": "#00ff00",
+              "stroke": "#e5484d",
+              "width": 2,
+              "opacity": 0.4,
+              "dash": [
+                3,
+                2
+              ],
+              "blend": "multiply"
+            }
+          }
+        ]
       }
     },
     {
@@ -14286,7 +14538,37 @@
         }
       ],
       "outcome": {
-        "returned": []
+        "returned": [
+          {
+            "kind": "poly",
+            "points": [
+              {
+                "x": 70.8665781565055,
+                "y": 21.93155614315033
+              },
+              {
+                "x": 169.8297051740655,
+                "y": 86.19896227492353
+              },
+              {
+                "x": 149.1334218434945,
+                "y": 118.06844385684965
+              },
+              {
+                "x": 50.17029482593447,
+                "y": 53.80103772507644
+              }
+            ],
+            "closed": true,
+            "paint": {
+              "fill": "#0000ff",
+              "stroke": "#e5484d",
+              "width": 2,
+              "opacity": 1,
+              "join": "round"
+            }
+          }
+        ]
       }
     },
     {
@@ -14328,7 +14610,36 @@
         }
       ],
       "outcome": {
-        "returned": []
+        "returned": [
+          {
+            "kind": "poly",
+            "points": [
+              {
+                "x": 70.5725466235751,
+                "y": 20.54824654018988
+              },
+              {
+                "x": 171.213014777026,
+                "y": 85.90493074199313
+              },
+              {
+                "x": 149.42745337642492,
+                "y": 119.4517534598101
+              },
+              {
+                "x": 48.78698522297402,
+                "y": 54.095069258006845
+              }
+            ],
+            "closed": true,
+            "paint": {
+              "fill": "",
+              "stroke": "#e5484d",
+              "width": 0,
+              "opacity": 1
+            }
+          }
+        ]
       }
     },
     {
@@ -14754,6 +15065,21 @@
             ],
             "closed": false,
             "paint": {
+              "stroke": "#e5484d",
+              "width": 0,
+              "opacity": 1
+            }
+          },
+          {
+            "kind": "rect",
+            "rect": {
+              "x": 100,
+              "y": 100,
+              "width": 120,
+              "height": 40
+            },
+            "paint": {
+              "fill": "",
               "stroke": "#e5484d",
               "width": 0,
               "opacity": 1
@@ -15218,6 +15544,21 @@
               }
             ],
             "closed": true,
+            "paint": {
+              "fill": "",
+              "stroke": "#e5484d",
+              "width": 0,
+              "opacity": 1
+            }
+          },
+          {
+            "kind": "rect",
+            "rect": {
+              "x": 100,
+              "y": 100,
+              "width": 120,
+              "height": 40
+            },
             "paint": {
               "fill": "",
               "stroke": "#e5484d",
@@ -15697,6 +16038,34 @@
               "width": 0,
               "opacity": 1
             }
+          },
+          {
+            "kind": "poly",
+            "points": [
+              {
+                "x": 180,
+                "y": 60
+              },
+              {
+                "x": 180,
+                "y": 180
+              },
+              {
+                "x": 140,
+                "y": 180
+              },
+              {
+                "x": 140,
+                "y": 60.000000000000014
+              }
+            ],
+            "closed": true,
+            "paint": {
+              "fill": "",
+              "stroke": "#e5484d",
+              "width": 0,
+              "opacity": 1
+            }
           }
         ]
       }
@@ -16147,6 +16516,21 @@
               "width": 0,
               "opacity": 1
             }
+          },
+          {
+            "kind": "rect",
+            "rect": {
+              "x": 100,
+              "y": 100,
+              "width": 120,
+              "height": 40
+            },
+            "paint": {
+              "fill": "",
+              "stroke": "#e5484d",
+              "width": 0,
+              "opacity": 1
+            }
           }
         ]
       }
@@ -16476,6 +16860,21 @@
             ],
             "closed": false,
             "paint": {
+              "stroke": "#e5484d",
+              "width": 0,
+              "opacity": 1
+            }
+          },
+          {
+            "kind": "rect",
+            "rect": {
+              "x": 100,
+              "y": 100,
+              "width": 120,
+              "height": 40
+            },
+            "paint": {
+              "fill": "",
               "stroke": "#e5484d",
               "width": 0,
               "opacity": 1
@@ -16907,6 +17306,21 @@
             ],
             "closed": false,
             "paint": {
+              "stroke": "#e5484d",
+              "width": 0,
+              "opacity": 1
+            }
+          },
+          {
+            "kind": "rect",
+            "rect": {
+              "x": 100,
+              "y": 100,
+              "width": 120,
+              "height": 40
+            },
+            "paint": {
+              "fill": "",
               "stroke": "#e5484d",
               "width": 0,
               "opacity": 1

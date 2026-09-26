@@ -33,6 +33,8 @@ import {
   text,
   tree,
   widgetAnnot,
+  pr,
+  v3Widget,
 } from './form-fixtures';
 
 const OFF = { openSequence: 'off' };
@@ -221,10 +223,10 @@ const sinkCases: ScenarioCase[] = [
             path: 'forms.applyEffects',
             times: 1,
             value: effectsOk(2, [
-              { annotObjectNumber: 101, pageObjectNumber: 1 },
-              { annotObjectNumber: 102, pageObjectNumber: 2 },
-              { annotObjectNumber: 103, pageObjectNumber: 1 },
-              { annotObjectNumber: 0, pageObjectNumber: 0 },
+              v3Widget({ annotObjectNumber: 101, pageObjectNumber: 1 }),
+              v3Widget({ annotObjectNumber: 102, pageObjectNumber: 2 }),
+              v3Widget({ annotObjectNumber: 103, pageObjectNumber: 1 }),
+              v3Widget({ annotObjectNumber: 0, pageObjectNumber: 0 }),
             ]),
           },
           { path: 'forms.applyEffects', error: { name: 'PermissionDenied', message: 'permission denied: doc.forms.fill', required: 'doc.forms.fill' } },
@@ -247,7 +249,7 @@ const sinkCases: ScenarioCase[] = [
     plugins: WITH_ACTIONS,
     engine: {
       documents: {
-        a: doc([list(FIELDS), { path: 'forms.applyEffects', value: effectsOk(1, [{ annotObjectNumber: 101, pageObjectNumber: 1 }]) }]),
+        a: doc([list(FIELDS), { path: 'forms.applyEffects', value: effectsOk(1, [v3Widget({ annotObjectNumber: 101, pageObjectNumber: 1 })]) }]),
       },
     },
     snapshot: 'none',
@@ -352,7 +354,7 @@ const widgetCases: ScenarioCase[] = [
             value: {
               pages: [
                 {
-                  pageState: { pageObjectNumber: 1 },
+                  pageState: { page: pr(1) },
                   annotations: [
                     activation(1, 101, { cursorExit: tree(resetNode([byName('other')])) }),
                     widgetAnnot(1, 102),

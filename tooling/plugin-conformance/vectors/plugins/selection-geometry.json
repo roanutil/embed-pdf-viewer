@@ -51284,24 +51284,27 @@
           "segments": {},
           "loaded": {},
           "highlightHidden": false,
-          "selecting": false
+          "gestureActive": false
         }
       }
     },
     {
-      "name": "selectionReducer/page-loaded",
-      "fn": "selectionReducer",
+      "name": "reduceSelection/page-loaded",
+      "fn": "reduceSelection",
       "args": [
         {
           "selection": null,
           "segments": {},
           "loaded": {},
           "highlightHidden": false,
-          "selecting": false
+          "gestureActive": false
         },
         {
-          "type": "PAGE_LOADED",
-          "pon": 3
+          "type": "pageLoaded",
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 3
+          }
         }
       ],
       "outcome": {
@@ -51312,13 +51315,13 @@
             "3": true
           },
           "highlightHidden": false,
-          "selecting": false
+          "gestureActive": false
         }
       }
     },
     {
-      "name": "selectionReducer/page-loaded-again",
-      "fn": "selectionReducer",
+      "name": "reduceSelection/page-loaded-again",
+      "fn": "reduceSelection",
       "args": [
         {
           "selection": null,
@@ -51327,11 +51330,14 @@
             "3": true
           },
           "highlightHidden": false,
-          "selecting": false
+          "gestureActive": false
         },
         {
-          "type": "PAGE_LOADED",
-          "pon": 3
+          "type": "pageLoaded",
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 3
+          }
         }
       ],
       "outcome": {
@@ -51342,30 +51348,37 @@
             "3": true
           },
           "highlightHidden": false,
-          "selecting": false
+          "gestureActive": false
         }
       }
     },
     {
-      "name": "selectionReducer/set",
-      "fn": "selectionReducer",
+      "name": "reduceSelection/set",
+      "fn": "reduceSelection",
       "args": [
         {
           "selection": null,
           "segments": {},
           "loaded": {},
           "highlightHidden": false,
+          "gestureActive": false,
           "selecting": true
         },
         {
-          "type": "SET",
+          "type": "set",
           "selection": {
             "anchor": {
-              "pon": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "glyph": 0
             },
             "focus": {
-              "pon": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "glyph": 2
             }
           },
@@ -51406,11 +51419,17 @@
         "returned": {
           "selection": {
             "anchor": {
-              "pon": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "glyph": 0
             },
             "focus": {
-              "pon": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "glyph": 2
             }
           },
@@ -51447,32 +51466,39 @@
           },
           "loaded": {},
           "highlightHidden": false,
+          "gestureActive": false,
           "selecting": true
         }
       }
     },
     {
-      "name": "selectionReducer/clear",
-      "fn": "selectionReducer",
+      "name": "reduceSelection/clear",
+      "fn": "reduceSelection",
       "args": [
         {
           "selection": {
             "anchor": {
-              "pon": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "glyph": 0
             },
             "focus": {
-              "pon": 1,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               "glyph": 0
             }
           },
           "segments": {},
           "loaded": {},
           "highlightHidden": false,
-          "selecting": false
+          "gestureActive": false
         },
         {
-          "type": "CLEAR"
+          "type": "clear"
         }
       ],
       "outcome": {
@@ -51481,13 +51507,13 @@
           "segments": {},
           "loaded": {},
           "highlightHidden": false,
-          "selecting": false
+          "gestureActive": false
         }
       }
     },
     {
-      "name": "selectionReducer/clear-segments-only",
-      "fn": "selectionReducer",
+      "name": "reduceSelection/clear-segments-only",
+      "fn": "reduceSelection",
       "args": [
         {
           "selection": null,
@@ -51496,10 +51522,10 @@
           },
           "loaded": {},
           "highlightHidden": false,
-          "selecting": false
+          "gestureActive": false
         },
         {
-          "type": "CLEAR"
+          "type": "clear"
         }
       ],
       "outcome": {
@@ -51508,23 +51534,23 @@
           "segments": {},
           "loaded": {},
           "highlightHidden": false,
-          "selecting": false
+          "gestureActive": false
         }
       }
     },
     {
-      "name": "selectionReducer/clear-empty",
-      "fn": "selectionReducer",
+      "name": "reduceSelection/clear-empty",
+      "fn": "reduceSelection",
       "args": [
         {
           "selection": null,
           "segments": {},
           "loaded": {},
           "highlightHidden": false,
-          "selecting": false
+          "gestureActive": false
         },
         {
-          "type": "CLEAR"
+          "type": "clear"
         }
       ],
       "outcome": {
@@ -51533,23 +51559,23 @@
           "segments": {},
           "loaded": {},
           "highlightHidden": false,
-          "selecting": false
+          "gestureActive": false
         }
       }
     },
     {
-      "name": "selectionReducer/hide",
-      "fn": "selectionReducer",
+      "name": "reduceSelection/hide",
+      "fn": "reduceSelection",
       "args": [
         {
           "selection": null,
           "segments": {},
           "loaded": {},
           "highlightHidden": false,
-          "selecting": false
+          "gestureActive": false
         },
         {
-          "type": "SET_HIGHLIGHT_HIDDEN",
+          "type": "setHighlightHidden",
           "hidden": true
         }
       ],
@@ -51559,23 +51585,23 @@
           "segments": {},
           "loaded": {},
           "highlightHidden": true,
-          "selecting": false
+          "gestureActive": false
         }
       }
     },
     {
-      "name": "selectionReducer/hide-again",
-      "fn": "selectionReducer",
+      "name": "reduceSelection/hide-again",
+      "fn": "reduceSelection",
       "args": [
         {
           "selection": null,
           "segments": {},
           "loaded": {},
           "highlightHidden": true,
-          "selecting": false
+          "gestureActive": false
         },
         {
-          "type": "SET_HIGHLIGHT_HIDDEN",
+          "type": "setHighlightHidden",
           "hidden": true
         }
       ],
@@ -51585,24 +51611,24 @@
           "segments": {},
           "loaded": {},
           "highlightHidden": true,
-          "selecting": false
+          "gestureActive": false
         }
       }
     },
     {
-      "name": "selectionReducer/selecting",
-      "fn": "selectionReducer",
+      "name": "reduceSelection/selecting",
+      "fn": "reduceSelection",
       "args": [
         {
           "selection": null,
           "segments": {},
           "loaded": {},
           "highlightHidden": false,
-          "selecting": false
+          "gestureActive": false
         },
         {
-          "type": "SET_SELECTING",
-          "selecting": true
+          "type": "setGestureActive",
+          "active": true
         }
       ],
       "outcome": {
@@ -51611,24 +51637,24 @@
           "segments": {},
           "loaded": {},
           "highlightHidden": false,
-          "selecting": true
+          "gestureActive": true
         }
       }
     },
     {
-      "name": "selectionReducer/selecting-again",
-      "fn": "selectionReducer",
+      "name": "reduceSelection/selecting-again",
+      "fn": "reduceSelection",
       "args": [
         {
           "selection": null,
           "segments": {},
           "loaded": {},
           "highlightHidden": false,
-          "selecting": false
+          "gestureActive": false
         },
         {
-          "type": "SET_SELECTING",
-          "selecting": false
+          "type": "setGestureActive",
+          "active": false
         }
       ],
       "outcome": {
@@ -51637,7 +51663,7 @@
           "segments": {},
           "loaded": {},
           "highlightHidden": false,
-          "selecting": false
+          "gestureActive": false
         }
       }
     },

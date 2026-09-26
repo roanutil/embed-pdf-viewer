@@ -23,7 +23,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 11,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
                 "label": null,
                 "size": {
                   "width": 612,
@@ -48,7 +51,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 22,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                },
                 "label": null,
                 "size": {
                   "width": 792,
@@ -73,7 +79,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 33,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 33
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -940,7 +949,7 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPolicy",
+          "method": "getRenderPolicy",
           "args": []
         },
         {
@@ -949,7 +958,7 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "paintSettings",
+          "method": "getPaintSettings",
           "args": []
         },
         {
@@ -958,9 +967,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderSourceKey",
+          "method": "getSourceKey",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.5
             }
@@ -972,9 +984,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderSourceKey",
+          "method": "getSourceKey",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.5,
               "includeAnnotations": false
@@ -987,9 +1002,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderSourceKey",
+          "method": "getSourceKey",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.5,
               "includeAnnotations": null
@@ -1002,9 +1020,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderSourceKey",
+          "method": "getSourceKey",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 1.53
             }
@@ -1016,9 +1037,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderSourceKey",
+          "method": "getSourceKey",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 8
             }
@@ -1030,9 +1054,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderSourceKey",
+          "method": "getSourceKey",
           "args": [
-            22,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 22
+            },
             {
               "scale": 1
             }
@@ -1044,9 +1071,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderSourceKey",
+          "method": "getSourceKey",
           "args": [
-            33,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 33
+            },
             {
               "scale": 1
             }
@@ -1058,9 +1088,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderSourceKey",
+          "method": "getSourceKey",
           "args": [
-            33,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 33
+            },
             {
               "scale": 0.001
             }
@@ -1072,9 +1105,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderSourceKey",
+          "method": "getSourceKey",
           "args": [
-            33,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 33
+            },
             {
               "scale": 0.5025
             }
@@ -1088,7 +1124,10 @@
           },
           "method": "conformViewport",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             0.5
           ]
         },
@@ -1100,7 +1139,10 @@
           },
           "method": "conformViewport",
           "args": [
-            22,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 22
+            },
             2.5
           ]
         },
@@ -1112,7 +1154,10 @@
           },
           "method": "conformViewport",
           "args": [
-            33,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 33
+            },
             0
           ]
         },
@@ -1122,9 +1167,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderEpoch",
+          "method": "getRenderEpoch",
           "args": [
-            11
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            }
           ]
         },
         {
@@ -1133,9 +1181,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderEpoch",
+          "method": "getRenderEpoch",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             false
           ]
         }
@@ -1697,7 +1748,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 11,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
                 "label": null,
                 "size": {
                   "width": 612,
@@ -1722,7 +1776,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 22,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                },
                 "label": null,
                 "size": {
                   "width": 792,
@@ -1747,7 +1804,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 33,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 33
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -2603,9 +2663,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderSourceKey",
+          "method": "getSourceKey",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.1
             }
@@ -2617,9 +2680,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderSourceKey",
+          "method": "getSourceKey",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.5
             }
@@ -2631,9 +2697,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderSourceKey",
+          "method": "getSourceKey",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 1
             }
@@ -2645,9 +2714,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderSourceKey",
+          "method": "getSourceKey",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 8
             }
@@ -2661,7 +2733,10 @@
           },
           "method": "conformViewport",
           "args": [
-            22,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 22
+            },
             1
           ]
         },
@@ -2671,7 +2746,7 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "paintSettings",
+          "method": "getPaintSettings",
           "args": []
         }
       ],
@@ -2882,7 +2957,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 11,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
                 "label": null,
                 "size": {
                   "width": 612,
@@ -2907,7 +2985,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 22,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                },
                 "label": null,
                 "size": {
                   "width": 792,
@@ -2932,7 +3013,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 33,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 33
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -3788,9 +3872,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderSourceKey",
+          "method": "getSourceKey",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.1
             }
@@ -3802,9 +3889,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderSourceKey",
+          "method": "getSourceKey",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 8
             }
@@ -3941,7 +4031,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 11,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
                 "label": null,
                 "size": {
                   "width": 612,
@@ -3966,7 +4059,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 22,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                },
                 "label": null,
                 "size": {
                   "width": 792,
@@ -3991,7 +4087,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 33,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 33
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -4873,7 +4972,7 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPolicy",
+          "method": "getRenderPolicy",
           "args": []
         },
         {
@@ -4882,9 +4981,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderSourceKey",
+          "method": "getSourceKey",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 1
             }
@@ -4896,9 +4998,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderSourceKey",
+          "method": "getSourceKey",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 1.2
             }
@@ -4910,9 +5015,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderSourceKey",
+          "method": "getSourceKey",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 1.5
             }
@@ -4924,9 +5032,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderSourceKey",
+          "method": "getSourceKey",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 2.2
             }
@@ -4938,9 +5049,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderSourceKey",
+          "method": "getSourceKey",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 8
             }
@@ -4952,9 +5066,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderSourceKey",
+          "method": "getSourceKey",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.1
             }
@@ -4968,7 +5085,10 @@
           },
           "method": "conformViewport",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             2
           ]
         },
@@ -4980,7 +5100,10 @@
           },
           "method": "conformViewport",
           "args": [
-            33,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 33
+            },
             1
           ]
         }
@@ -5265,7 +5388,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 11,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
                 "label": null,
                 "size": {
                   "width": 612,
@@ -5290,7 +5416,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 22,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                },
                 "label": null,
                 "size": {
                   "width": 792,
@@ -5315,7 +5444,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 33,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 33
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -6199,7 +6331,10 @@
           },
           "method": "conformViewport",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             8
           ]
         },
@@ -6211,7 +6346,10 @@
           },
           "method": "conformViewport",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             0.5
           ]
         },
@@ -6221,9 +6359,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderSourceKey",
+          "method": "getSourceKey",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 1
             }
@@ -6391,7 +6532,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 11,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
                 "label": null,
                 "size": {
                   "width": 612,
@@ -6416,7 +6560,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 22,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                },
                 "label": null,
                 "size": {
                   "width": 792,
@@ -6441,7 +6588,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 33,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 33
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -7323,9 +7473,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderSourceKey",
+          "method": "getSourceKey",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 1
             }
@@ -7337,9 +7490,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderSourceKey",
+          "method": "getSourceKey",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 2
             }
@@ -7351,9 +7507,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 1
             }
@@ -7566,7 +7725,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 11,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
                 "label": null,
                 "size": {
                   "width": 612,
@@ -7591,7 +7753,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 22,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                },
                 "label": null,
                 "size": {
                   "width": 792,
@@ -7616,7 +7781,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 33,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 33
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -8472,9 +8640,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderSourceKey",
+          "method": "getSourceKey",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.5
             }
@@ -8486,9 +8657,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.5,
               "includeAnnotations": false
@@ -8647,7 +8821,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 11,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
                 "label": null,
                 "size": {
                   "width": 612,
@@ -8672,7 +8849,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 22,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                },
                 "label": null,
                 "size": {
                   "width": 792,
@@ -8697,7 +8877,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 33,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 33
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -9593,9 +9776,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderSourceKey",
+          "method": "getSourceKey",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 1
             }
@@ -9607,9 +9793,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 1
             }
@@ -9767,7 +9956,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 11,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
                 "label": null,
                 "size": {
                   "width": 612,
@@ -9792,7 +9984,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 22,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                },
                 "label": null,
                 "size": {
                   "width": 792,
@@ -9817,7 +10012,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 33,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 33
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -10701,9 +10899,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 1.2
             }
@@ -10715,9 +10916,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 1.5
             }
@@ -10737,9 +10941,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 1.3
             }
@@ -10751,9 +10958,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 1.3,
               "includeAnnotations": false
@@ -10778,9 +10988,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            22,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 22
+            },
             {
               "scale": 0.2
             }
@@ -10792,9 +11005,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            22,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 22
+            },
             {
               "scale": 0.2
             }
@@ -10811,9 +11027,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            22,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 22
+            },
             {
               "scale": 0.2
             }
@@ -11268,7 +11487,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 11,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
                 "label": null,
                 "size": {
                   "width": 612,
@@ -11293,7 +11515,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 22,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                },
                 "label": null,
                 "size": {
                   "width": 792,
@@ -11318,7 +11543,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 33,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 33
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -12174,9 +12402,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.5
             }
@@ -12188,9 +12419,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.5
             }
@@ -12211,9 +12445,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.5
             }
@@ -12355,9 +12592,17 @@
               "promise": 2,
               "rejected": {
                 "$error": {
-                  "name": "EngineError",
+                  "name": "PluginError",
                   "message": "render failed",
-                  "code": "Unknown"
+                  "code": "operation-failed",
+                  "capability": "render",
+                  "cause": {
+                    "$error": {
+                      "name": "EngineError",
+                      "message": "render failed",
+                      "code": "Unknown"
+                    }
+                  }
                 }
               }
             },
@@ -12365,9 +12610,17 @@
               "promise": 3,
               "rejected": {
                 "$error": {
-                  "name": "EngineError",
+                  "name": "PluginError",
                   "message": "render failed",
-                  "code": "Unknown"
+                  "code": "operation-failed",
+                  "capability": "render",
+                  "cause": {
+                    "$error": {
+                      "name": "EngineError",
+                      "message": "render failed",
+                      "code": "Unknown"
+                    }
+                  }
                 }
               }
             }
@@ -12460,7 +12713,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 11,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
                 "label": null,
                 "size": {
                   "width": 612,
@@ -12485,7 +12741,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 22,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                },
                 "label": null,
                 "size": {
                   "width": 792,
@@ -12510,7 +12769,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 33,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 33
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -13366,9 +13628,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.5,
               "signal": {
@@ -13383,9 +13648,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.5
             }
@@ -13547,8 +13815,16 @@
               "promise": 2,
               "rejected": {
                 "$error": {
-                  "name": "AbortError",
-                  "message": "This operation was aborted"
+                  "name": "PluginError",
+                  "message": "operation cancelled",
+                  "code": "operation-cancelled",
+                  "capability": "render",
+                  "cause": {
+                    "$error": {
+                      "name": "AbortError",
+                      "message": "This operation was aborted"
+                    }
+                  }
                 }
               }
             }
@@ -13633,7 +13909,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 11,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
                 "label": null,
                 "size": {
                   "width": 612,
@@ -13658,7 +13937,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 22,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                },
                 "label": null,
                 "size": {
                   "width": 792,
@@ -13683,7 +13965,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 33,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 33
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -14539,9 +14824,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.5,
               "signal": {
@@ -14556,9 +14844,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.5,
               "signal": {
@@ -14601,9 +14892,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.5
             }
@@ -14745,8 +15039,16 @@
               "promise": 2,
               "rejected": {
                 "$error": {
-                  "name": "AbortError",
-                  "message": "This operation was aborted"
+                  "name": "PluginError",
+                  "message": "operation cancelled",
+                  "code": "operation-cancelled",
+                  "capability": "render",
+                  "cause": {
+                    "$error": {
+                      "name": "AbortError",
+                      "message": "This operation was aborted"
+                    }
+                  }
                 }
               }
             }
@@ -14773,8 +15075,16 @@
               "promise": 3,
               "rejected": {
                 "$error": {
-                  "name": "AbortError",
-                  "message": "This operation was aborted"
+                  "name": "PluginError",
+                  "message": "operation cancelled",
+                  "code": "operation-cancelled",
+                  "capability": "render",
+                  "cause": {
+                    "$error": {
+                      "name": "AbortError",
+                      "message": "This operation was aborted"
+                    }
+                  }
                 }
               }
             }
@@ -14784,10 +15094,7 @@
             {
               "abort": 2,
               "reason": {
-                "$error": {
-                  "name": "AbortError",
-                  "message": "This operation was aborted"
-                }
+                "$undefined": true
               }
             }
           ],
@@ -14895,7 +15202,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 11,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
                 "label": null,
                 "size": {
                   "width": 612,
@@ -14920,7 +15230,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 22,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                },
                 "label": null,
                 "size": {
                   "width": 792,
@@ -14945,7 +15258,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 33,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 33
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -15811,9 +16127,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.5,
               "signal": {
@@ -15828,9 +16147,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.5
             }
@@ -15850,9 +16172,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.5,
               "signal": {
@@ -15960,8 +16285,16 @@
               "promise": 2,
               "rejected": {
                 "$error": {
-                  "name": "AbortError",
-                  "message": "This operation was aborted"
+                  "name": "PluginError",
+                  "message": "operation cancelled",
+                  "code": "operation-cancelled",
+                  "capability": "render",
+                  "cause": {
+                    "$error": {
+                      "name": "AbortError",
+                      "message": "This operation was aborted"
+                    }
+                  }
                 }
               }
             }
@@ -16038,8 +16371,16 @@
               "promise": 4,
               "rejected": {
                 "$error": {
-                  "name": "AbortError",
-                  "message": "This operation was aborted"
+                  "name": "PluginError",
+                  "message": "operation cancelled",
+                  "code": "operation-cancelled",
+                  "capability": "render",
+                  "cause": {
+                    "$error": {
+                      "name": "AbortError",
+                      "message": "This operation was aborted"
+                    }
+                  }
                 }
               }
             }
@@ -16083,7 +16424,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 11,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
                 "label": null,
                 "size": {
                   "width": 612,
@@ -16108,7 +16452,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 22,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                },
                 "label": null,
                 "size": {
                   "width": 792,
@@ -16133,7 +16480,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 33,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 33
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -16989,9 +17339,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.5,
               "signal": {
@@ -17024,9 +17377,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.5,
               "signal": {
@@ -17051,9 +17407,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.5
             }
@@ -17295,7 +17654,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 11,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
                 "label": null,
                 "size": {
                   "width": 612,
@@ -17320,7 +17682,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 22,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                },
                 "label": null,
                 "size": {
                   "width": 792,
@@ -17345,7 +17710,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 33,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 33
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -18201,9 +18569,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.5,
               "signal": {
@@ -18343,9 +18714,17 @@
               "promise": 2,
               "rejected": {
                 "$error": {
-                  "name": "EngineError",
+                  "name": "PluginError",
                   "message": "boom",
-                  "code": "Unknown"
+                  "code": "operation-failed",
+                  "capability": "render",
+                  "cause": {
+                    "$error": {
+                      "name": "EngineError",
+                      "message": "boom",
+                      "code": "Unknown"
+                    }
+                  }
                 }
               }
             }
@@ -18401,7 +18780,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 11,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
                 "label": null,
                 "size": {
                   "width": 612,
@@ -18426,7 +18808,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 22,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                },
                 "label": null,
                 "size": {
                   "width": 792,
@@ -18451,7 +18836,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 33,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 33
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -19307,9 +19695,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.5
             }
@@ -19329,9 +19720,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.6
             }
@@ -19351,9 +19745,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.5
             }
@@ -19365,9 +19762,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.6
             }
@@ -19387,9 +19787,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.7
             }
@@ -19409,9 +19812,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.7
             }
@@ -19423,9 +19829,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.5
             }
@@ -19815,7 +20224,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 11,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
                 "label": null,
                 "size": {
                   "width": 612,
@@ -19840,7 +20252,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 22,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                },
                 "label": null,
                 "size": {
                   "width": 792,
@@ -19865,7 +20280,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 33,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 33
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -20721,9 +21139,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.5
             }
@@ -20743,9 +21164,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.6
             }
@@ -20765,9 +21189,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.7
             }
@@ -20787,9 +21214,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.6
             }
@@ -20801,9 +21231,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.5
             }
@@ -21117,7 +21550,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 11,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
                 "label": null,
                 "size": {
                   "width": 612,
@@ -21142,7 +21578,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 22,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                },
                 "label": null,
                 "size": {
                   "width": 792,
@@ -21167,7 +21606,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 33,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 33
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -22023,9 +22465,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.5
             }
@@ -22045,9 +22490,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.6
             }
@@ -22067,9 +22515,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.5
             }
@@ -22081,9 +22532,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.7
             }
@@ -22103,9 +22557,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.5
             }
@@ -22117,9 +22574,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.8
             }
@@ -22139,9 +22599,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.7
             }
@@ -22153,9 +22616,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.6
             }
@@ -22576,7 +23042,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 11,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
                 "label": null,
                 "size": {
                   "width": 612,
@@ -22601,7 +23070,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 22,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                },
                 "label": null,
                 "size": {
                   "width": 792,
@@ -22626,7 +23098,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 33,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 33
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -23482,9 +23957,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.5
             }
@@ -23496,9 +23974,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.6
             }
@@ -23518,9 +23999,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.8
             }
@@ -23540,9 +24024,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.5
             }
@@ -23554,9 +24041,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.6
             }
@@ -23576,9 +24066,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.6
             }
@@ -23906,7 +24399,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 11,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
                 "label": null,
                 "size": {
                   "width": 612,
@@ -23931,7 +24427,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 22,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                },
                 "label": null,
                 "size": {
                   "width": 792,
@@ -23956,7 +24455,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 33,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 33
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -24821,9 +25323,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 1
             }
@@ -24835,9 +25340,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            99,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 99
+            },
             {
               "scale": 1
             }
@@ -24849,9 +25357,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderSourceKey",
+          "method": "getSourceKey",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 1
             }
@@ -24954,10 +25465,13 @@
               "promise": 2,
               "rejected": {
                 "$error": {
-                  "name": "PermissionDenied",
-                  "message": "permission denied (render.renderPage): doc.render",
-                  "required": "doc.render",
-                  "context": "render.renderPage"
+                  "name": "PluginError",
+                  "message": "render.renderSource requires doc.render",
+                  "code": "permission-denied",
+                  "capability": "render",
+                  "details": {
+                    "required": "doc.render"
+                  }
                 }
               }
             }
@@ -24982,10 +25496,13 @@
               "promise": 3,
               "rejected": {
                 "$error": {
-                  "name": "PermissionDenied",
-                  "message": "permission denied (render.renderPage): doc.render",
-                  "required": "doc.render",
-                  "context": "render.renderPage"
+                  "name": "PluginError",
+                  "message": "render.renderSource requires doc.render",
+                  "code": "permission-denied",
+                  "capability": "render",
+                  "details": {
+                    "required": "doc.render"
+                  }
                 }
               }
             }
@@ -25040,7 +25557,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 11,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
                 "label": null,
                 "size": {
                   "width": 612,
@@ -25065,7 +25585,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 22,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                },
                 "label": null,
                 "size": {
                   "width": 792,
@@ -25090,7 +25613,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 33,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 33
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -25955,9 +26481,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            33,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 33
+            },
             {
               "scale": 1
             }
@@ -26107,7 +26636,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 11,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
                 "label": null,
                 "size": {
                   "width": 612,
@@ -26132,7 +26664,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 22,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                },
                 "label": null,
                 "size": {
                   "width": 792,
@@ -26157,7 +26692,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 33,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 33
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -27013,9 +27551,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            99,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 99
+            },
             {
               "scale": 1
             }
@@ -27027,9 +27568,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderSourceKey",
+          "method": "getSourceKey",
           "args": [
-            99,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 99
+            },
             {
               "scale": 1
             }
@@ -27043,7 +27587,10 @@
           },
           "method": "conformViewport",
           "args": [
-            99,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 99
+            },
             1
           ]
         }
@@ -27123,6 +27670,34 @@
           }
         },
         {
+          "settled": [
+            {
+              "promise": 2,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "page 99 is not in this document",
+                  "code": "not-found",
+                  "capability": "render"
+                }
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 2
+          }
+        },
+        {
           "settled": [],
           "actions": [],
           "engine": [],
@@ -27137,8 +27712,10 @@
           "outcome": {
             "threw": {
               "$error": {
-                "name": "Error",
-                "message": "render: unknown page object number 99"
+                "name": "PluginError",
+                "message": "page 99 is not in this document",
+                "code": "not-found",
+                "capability": "render"
               }
             }
           }
@@ -27158,29 +27735,10 @@
           "outcome": {
             "threw": {
               "$error": {
-                "name": "Error",
-                "message": "render: unknown page object number 99"
-              }
-            }
-          }
-        },
-        {
-          "settled": [],
-          "actions": [],
-          "engine": [],
-          "callbacks": [],
-          "reports": [],
-          "status": "started",
-          "engineState": {
-            "a": {
-              "subscribers": 2
-            }
-          },
-          "outcome": {
-            "threw": {
-              "$error": {
-                "name": "Error",
-                "message": "render: unknown page object number 99"
+                "name": "PluginError",
+                "message": "page 99 is not in this document",
+                "code": "not-found",
+                "capability": "render"
               }
             }
           }
@@ -27207,7 +27765,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 11,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
                 "label": null,
                 "size": {
                   "width": 612,
@@ -27232,7 +27793,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 22,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                },
                 "label": null,
                 "size": {
                   "width": 792,
@@ -27257,7 +27821,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 33,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 33
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -27289,7 +27856,10 @@
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 11,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 11
+                      },
                       "label": null,
                       "size": {
                         "width": 612,
@@ -27314,7 +27884,10 @@
                     },
                     {
                       "index": 1,
-                      "pageObjectNumber": 22,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 22
+                      },
                       "label": null,
                       "size": {
                         "width": 792,
@@ -27339,7 +27912,10 @@
                     },
                     {
                       "index": 2,
-                      "pageObjectNumber": 33,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 33
+                      },
                       "label": null,
                       "size": {
                         "width": 300,
@@ -27364,7 +27940,10 @@
                     },
                     {
                       "index": 3,
-                      "pageObjectNumber": 44,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 44
+                      },
                       "label": null,
                       "size": {
                         "width": 100,
@@ -28221,9 +28800,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderSourceKey",
+          "method": "getSourceKey",
           "args": [
-            44,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 44
+            },
             {
               "scale": 1
             }
@@ -28235,9 +28817,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            44,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 44
+            },
             {
               "scale": 1
             }
@@ -28249,9 +28834,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            44,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 44
+            },
             {
               "scale": 1
             }
@@ -28349,7 +28937,26 @@
           }
         },
         {
-          "settled": [],
+          "settled": [
+            {
+              "promise": 2,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "no page 44",
+                  "code": "not-found",
+                  "capability": "render",
+                  "cause": {
+                    "$error": {
+                      "name": "EngineError",
+                      "message": "no page 44",
+                      "code": "NotFound"
+                    }
+                  }
+                }
+              }
+            }
+          ],
           "actions": [],
           "engine": [],
           "callbacks": [],
@@ -28361,17 +28968,30 @@
             }
           },
           "outcome": {
-            "threw": {
-              "$error": {
-                "name": "EngineError",
-                "message": "no page 44",
-                "code": "NotFound"
-              }
-            }
+            "promise": 2
           }
         },
         {
-          "settled": [],
+          "settled": [
+            {
+              "promise": 3,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "no page 44",
+                  "code": "not-found",
+                  "capability": "render",
+                  "cause": {
+                    "$error": {
+                      "name": "EngineError",
+                      "message": "no page 44",
+                      "code": "NotFound"
+                    }
+                  }
+                }
+              }
+            }
+          ],
           "actions": [],
           "engine": [],
           "callbacks": [],
@@ -28383,13 +29003,7 @@
             }
           },
           "outcome": {
-            "threw": {
-              "$error": {
-                "name": "EngineError",
-                "message": "no page 44",
-                "code": "NotFound"
-              }
-            }
+            "promise": 3
           }
         }
       ]
@@ -28414,7 +29028,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 11,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
                 "label": null,
                 "size": {
                   "width": 612,
@@ -28439,7 +29056,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 22,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                },
                 "label": null,
                 "size": {
                   "width": 792,
@@ -28464,7 +29084,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 33,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 33
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -29322,9 +29945,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderSourceKey",
+          "method": "getSourceKey",
           "args": [
-            22,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 22
+            },
             {
               "scale": 0.5
             }
@@ -29339,10 +29965,13 @@
           "method": "invalidate",
           "args": [
             {
-              "pons": [
-                22
-              ],
-              "scope": "content"
+              "scope": "content",
+              "pages": [
+                {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                }
+              ]
             }
           ]
         },
@@ -29352,9 +29981,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderEpoch",
+          "method": "getRenderEpoch",
           "args": [
-            22,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 22
+            },
             false
           ]
         },
@@ -29364,9 +29996,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderEpoch",
+          "method": "getRenderEpoch",
           "args": [
-            22,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 22
+            },
             true
           ]
         },
@@ -29379,10 +30014,13 @@
           "method": "invalidate",
           "args": [
             {
-              "pons": [
-                22
-              ],
-              "scope": "annotations"
+              "scope": "annotations",
+              "pages": [
+                {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                }
+              ]
             }
           ]
         },
@@ -29392,9 +30030,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderEpoch",
+          "method": "getRenderEpoch",
           "args": [
-            22,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 22
+            },
             false
           ]
         },
@@ -29404,9 +30045,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderEpoch",
+          "method": "getRenderEpoch",
           "args": [
-            22
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 22
+            }
           ]
         },
         {
@@ -29415,9 +30059,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderSourceKey",
+          "method": "getSourceKey",
           "args": [
-            22,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 22
+            },
             {
               "scale": 0.5
             }
@@ -29429,9 +30076,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderSourceKey",
+          "method": "getSourceKey",
           "args": [
-            22,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 22
+            },
             {
               "scale": 0.5,
               "includeAnnotations": false
@@ -29480,7 +30130,7 @@
           "method": "invalidate",
           "args": [
             {
-              "pons": []
+              "pages": []
             }
           ]
         },
@@ -29493,10 +30143,19 @@
           "method": "invalidate",
           "args": [
             {
-              "pons": [
-                11,
-                11,
-                99
+              "pages": [
+                {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
+                {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
+                {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 99
+                }
               ]
             }
           ]
@@ -29507,9 +30166,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderEpoch",
+          "method": "getRenderEpoch",
           "args": [
-            11
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            }
           ]
         },
         {
@@ -29518,9 +30180,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderEpoch",
+          "method": "getRenderEpoch",
           "args": [
-            99,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 99
+            },
             false
           ]
         }
@@ -29642,9 +30307,9 @@
             {
               "slice": "render::a",
               "action": {
-                "type": "INVALIDATE",
+                "type": "invalidate",
                 "scope": "content",
-                "pons": [
+                "pages": [
                   22
                 ]
               }
@@ -29736,9 +30401,9 @@
             {
               "slice": "render::a",
               "action": {
-                "type": "INVALIDATE",
+                "type": "invalidate",
                 "scope": "annotations",
-                "pons": [
+                "pages": [
                   22
                 ]
               }
@@ -29894,9 +30559,9 @@
             {
               "slice": "render::a",
               "action": {
-                "type": "INVALIDATE",
+                "type": "invalidate",
                 "scope": "content",
-                "pons": [
+                "pages": [
                   11,
                   22,
                   33
@@ -29940,9 +30605,9 @@
             {
               "slice": "render::a",
               "action": {
-                "type": "INVALIDATE",
+                "type": "invalidate",
                 "scope": "content",
-                "pons": [
+                "pages": [
                   11,
                   22,
                   33
@@ -29986,9 +30651,9 @@
             {
               "slice": "render::a",
               "action": {
-                "type": "INVALIDATE",
+                "type": "invalidate",
                 "scope": "annotations",
-                "pons": [
+                "pages": [
                   11,
                   22,
                   33
@@ -30069,9 +30734,9 @@
             {
               "slice": "render::a",
               "action": {
-                "type": "INVALIDATE",
+                "type": "invalidate",
                 "scope": "content",
-                "pons": [
+                "pages": [
                   11,
                   11,
                   99
@@ -30202,7 +30867,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 11,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
                 "label": null,
                 "size": {
                   "width": 612,
@@ -30227,7 +30895,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 22,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                },
                 "label": null,
                 "size": {
                   "width": 792,
@@ -30252,7 +30923,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 33,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 33
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -31109,7 +31783,15 @@
           "doc": "a",
           "event": {
             "type": "annotation.created",
-            "pageObjectNumber": 22
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 22
+            },
+            "origin": {
+              "kind": "local",
+              "sessionId": "s1",
+              "sub": null
+            }
           }
         },
         {
@@ -31117,7 +31799,10 @@
           "doc": "a",
           "event": {
             "type": "annotation.updated",
-            "pageObjectNumber": 22,
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 22
+            },
             "origin": {
               "kind": "remote",
               "sessionId": "x",
@@ -31132,7 +31817,15 @@
           "doc": "a",
           "event": {
             "type": "annotation.deleted",
-            "pageObjectNumber": 11
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
+            "origin": {
+              "kind": "local",
+              "sessionId": "s1",
+              "sub": null
+            }
           }
         },
         {
@@ -31140,7 +31833,15 @@
           "doc": "a",
           "event": {
             "type": "annotation.moved",
-            "pageObjectNumber": 33
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 33
+            },
+            "origin": {
+              "kind": "local",
+              "sessionId": "s1",
+              "sub": null
+            }
           }
         },
         {
@@ -31150,14 +31851,41 @@
             "type": "form.valueChanged",
             "changedWidgets": [
               {
+                "ref": {
+                  "kind": "objectNumber",
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 11
+                  },
+                  "annotObjectNumber": 5
+                },
                 "annotObjectNumber": 5,
-                "pageObjectNumber": 11
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                }
               },
               {
+                "ref": {
+                  "kind": "objectNumber",
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 33
+                  },
+                  "annotObjectNumber": 6
+                },
                 "annotObjectNumber": 6,
-                "pageObjectNumber": 33
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 33
+                }
               }
-            ]
+            ],
+            "origin": {
+              "kind": "local",
+              "sessionId": "s1",
+              "sub": null
+            }
           }
         },
         {
@@ -31165,7 +31893,12 @@
           "doc": "a",
           "event": {
             "type": "form.effectsApplied",
-            "changedWidgets": []
+            "changedWidgets": [],
+            "origin": {
+              "kind": "local",
+              "sessionId": "s1",
+              "sub": null
+            }
           }
         },
         {
@@ -31175,10 +31908,26 @@
             "type": "form.fieldDeleted",
             "removedWidgets": [
               {
+                "ref": {
+                  "kind": "objectNumber",
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 22
+                  },
+                  "annotObjectNumber": 5
+                },
                 "annotObjectNumber": 5,
-                "pageObjectNumber": 22
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                }
               }
-            ]
+            ],
+            "origin": {
+              "kind": "local",
+              "sessionId": "s1",
+              "sub": null
+            }
           }
         },
         {
@@ -31189,10 +31938,26 @@
             "field": {
               "widgets": [
                 {
+                  "ref": {
+                    "kind": "objectNumber",
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 11
+                    },
+                    "annotObjectNumber": 5
+                  },
                   "annotObjectNumber": 5,
-                  "pageObjectNumber": 11
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 11
+                  }
                 }
               ]
+            },
+            "origin": {
+              "kind": "local",
+              "sessionId": "s1",
+              "sub": null
             }
           }
         },
@@ -31203,6 +31968,11 @@
             "type": "form.widgetDetached",
             "field": {
               "widgets": []
+            },
+            "origin": {
+              "kind": "local",
+              "sessionId": "s1",
+              "sub": null
             }
           }
         },
@@ -31213,18 +31983,32 @@
             "type": "redaction.applied",
             "results": [
               {
-                "pageObjectNumber": 11,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
                 "status": "applied"
               },
               {
-                "pageObjectNumber": 22,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                },
                 "status": "skipped"
               },
               {
-                "pageObjectNumber": 33,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 33
+                },
                 "status": "applied"
               }
-            ]
+            ],
+            "origin": {
+              "kind": "local",
+              "sessionId": "s1",
+              "sub": null
+            }
           }
         },
         {
@@ -31234,10 +32018,18 @@
             "type": "redaction.applied",
             "results": [
               {
-                "pageObjectNumber": 22,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                },
                 "status": "failed"
               }
-            ]
+            ],
+            "origin": {
+              "kind": "local",
+              "sessionId": "s1",
+              "sub": null
+            }
           }
         },
         {
@@ -31245,7 +32037,12 @@
           "doc": "a",
           "event": {
             "type": "metadata.updated",
-            "metadata": {}
+            "metadata": {},
+            "origin": {
+              "kind": "local",
+              "sessionId": "s1",
+              "sub": null
+            }
           }
         },
         {
@@ -31253,12 +32050,26 @@
           "doc": "a",
           "event": {
             "type": "pages.deleted",
+            "pages": [
+              {
+                "kind": "objectNumber",
+                "pageObjectNumber": 22
+              }
+            ],
+            "origin": {
+              "kind": "local",
+              "sessionId": "s1",
+              "sub": null
+            },
             "layout": {
               "pageCount": 2,
               "pages": [
                 {
                   "index": 0,
-                  "pageObjectNumber": 11,
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 11
+                  },
                   "label": null,
                   "size": {
                     "width": 612,
@@ -31283,7 +32094,10 @@
                 },
                 {
                   "index": 1,
-                  "pageObjectNumber": 33,
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 33
+                  },
                   "label": null,
                   "size": {
                     "width": 300,
@@ -31314,14 +32128,24 @@
           "op": "emit",
           "doc": "a",
           "event": {
-            "type": "form.imported"
+            "type": "form.imported",
+            "origin": {
+              "kind": "local",
+              "sessionId": "s1",
+              "sub": null
+            }
           }
         },
         {
           "op": "emit",
           "doc": "a",
           "event": {
-            "type": "form.repaired"
+            "type": "form.repaired",
+            "origin": {
+              "kind": "local",
+              "sessionId": "s1",
+              "sub": null
+            }
           }
         },
         {
@@ -31330,9 +32154,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderEpoch",
+          "method": "getRenderEpoch",
           "args": [
-            11
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            }
           ]
         },
         {
@@ -31341,9 +32168,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderEpoch",
+          "method": "getRenderEpoch",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             false
           ]
         },
@@ -31448,9 +32278,9 @@
             {
               "slice": "render::a",
               "action": {
-                "type": "INVALIDATE",
+                "type": "invalidate",
                 "scope": "annotations",
-                "pons": [
+                "pages": [
                   22
                 ]
               }
@@ -31483,9 +32313,9 @@
             {
               "slice": "render::a",
               "action": {
-                "type": "INVALIDATE",
+                "type": "invalidate",
                 "scope": "annotations",
-                "pons": [
+                "pages": [
                   22
                 ]
               }
@@ -31518,9 +32348,9 @@
             {
               "slice": "render::a",
               "action": {
-                "type": "INVALIDATE",
+                "type": "invalidate",
                 "scope": "annotations",
-                "pons": [
+                "pages": [
                   11
                 ]
               }
@@ -31554,9 +32384,9 @@
             {
               "slice": "render::a",
               "action": {
-                "type": "INVALIDATE",
+                "type": "invalidate",
                 "scope": "annotations",
-                "pons": [
+                "pages": [
                   33
                 ]
               }
@@ -31591,9 +32421,9 @@
             {
               "slice": "render::a",
               "action": {
-                "type": "INVALIDATE",
+                "type": "invalidate",
                 "scope": "annotations",
-                "pons": [
+                "pages": [
                   11,
                   33
                 ]
@@ -31655,9 +32485,9 @@
             {
               "slice": "render::a",
               "action": {
-                "type": "INVALIDATE",
+                "type": "invalidate",
                 "scope": "annotations",
-                "pons": [
+                "pages": [
                   22
                 ]
               }
@@ -31692,9 +32522,9 @@
             {
               "slice": "render::a",
               "action": {
-                "type": "INVALIDATE",
+                "type": "invalidate",
                 "scope": "annotations",
-                "pons": [
+                "pages": [
                   11
                 ]
               }
@@ -31755,9 +32585,9 @@
             {
               "slice": "render::a",
               "action": {
-                "type": "INVALIDATE",
+                "type": "invalidate",
                 "scope": "content",
-                "pons": [
+                "pages": [
                   11,
                   33
                 ]
@@ -31890,9 +32720,9 @@
             {
               "slice": "render::a",
               "action": {
-                "type": "INVALIDATE",
+                "type": "invalidate",
                 "scope": "annotations",
-                "pons": [
+                "pages": [
                   11,
                   33
                 ]
@@ -31931,9 +32761,9 @@
             {
               "slice": "render::a",
               "action": {
-                "type": "INVALIDATE",
+                "type": "invalidate",
                 "scope": "annotations",
-                "pons": [
+                "pages": [
                   11,
                   33
                 ]
@@ -32094,7 +32924,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 11,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
                 "label": null,
                 "size": {
                   "width": 612,
@@ -32119,7 +32952,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 22,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                },
                 "label": null,
                 "size": {
                   "width": 792,
@@ -32144,7 +32980,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 33,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 33
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -33000,9 +33839,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderSourceKey",
+          "method": "getSourceKey",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 2
             }
@@ -33014,9 +33856,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderSourceKey",
+          "method": "getSourceKey",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 8
             }
@@ -33030,7 +33875,10 @@
           },
           "method": "conformViewport",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             16
           ]
         },
@@ -33040,7 +33888,7 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "paintSettings",
+          "method": "getPaintSettings",
           "args": []
         },
         {
@@ -33049,7 +33897,7 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "tilesFor",
+          "method": "createViewDemand",
           "args": [
             "stage"
           ]
@@ -33238,24 +34086,37 @@
           },
           "outcome": {
             "returned": {
-              "plan": {
+              "setDemand": {
                 "$ref": 0
               },
-              "painted": {
+              "getPlan": {
                 "$ref": 1
               },
-              "unpainted": {
+              "markPainted": {
                 "$ref": 2
               },
-              "release": {
+              "markUnpainted": {
                 "$ref": 3
+              },
+              "release": {
+                "$ref": 4
+              },
+              "dispose": {
+                "$ref": 5
               }
             }
           }
         },
         {
           "settled": [],
-          "actions": [],
+          "actions": [
+            {
+              "slice": "render::a",
+              "action": {
+                "type": "paintAdvanced"
+              }
+            }
+          ],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -33267,10 +34128,7 @@
           },
           "outcome": {
             "returned": {
-              "engaged": false,
-              "paint": [],
-              "fetching": [],
-              "stamp": "empty"
+              "$undefined": true
             }
           }
         }
@@ -33302,7 +34160,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 11,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
                 "label": null,
                 "size": {
                   "width": 612,
@@ -33327,7 +34188,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 22,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                },
                 "label": null,
                 "size": {
                   "width": 792,
@@ -33352,7 +34216,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 33,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 33
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -34208,9 +35075,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderSourceKey",
+          "method": "getSourceKey",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 8
             }
@@ -34222,9 +35092,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderSourceKey",
+          "method": "getSourceKey",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 20
             }
@@ -34371,7 +35244,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 11,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
                 "label": null,
                 "size": {
                   "width": 612,
@@ -34396,7 +35272,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 22,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                },
                 "label": null,
                 "size": {
                   "width": 792,
@@ -34421,7 +35300,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 33,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 33
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -35277,7 +36159,7 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "paintSettings",
+          "method": "getPaintSettings",
           "args": []
         }
       ],
@@ -35396,7 +36278,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 11,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
                 "label": null,
                 "size": {
                   "width": 612,
@@ -35421,7 +36306,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 22,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                },
                 "label": null,
                 "size": {
                   "width": 792,
@@ -35446,7 +36334,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 33,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 33
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -36285,7 +37176,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 11,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
                 "label": null,
                 "size": {
                   "width": 612,
@@ -36310,7 +37204,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 22,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                },
                 "label": null,
                 "size": {
                   "width": 792,
@@ -36335,7 +37232,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 33,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 33
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -37234,9 +38134,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 1
             }
@@ -37248,9 +38151,12 @@
             "token": "render",
             "doc": "b"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 1
             }
@@ -37262,9 +38168,12 @@
             "token": "render",
             "doc": "b"
           },
-          "method": "renderSourceKey",
+          "method": "getSourceKey",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 1
             }
@@ -37279,8 +38188,11 @@
           "method": "invalidate",
           "args": [
             {
-              "pons": [
-                11
+              "pages": [
+                {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                }
               ]
             }
           ]
@@ -37291,9 +38203,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderEpoch",
+          "method": "getRenderEpoch",
           "args": [
-            11
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            }
           ]
         },
         {
@@ -37310,9 +38225,12 @@
             "token": "render",
             "doc": "b"
           },
-          "method": "renderEpoch",
+          "method": "getRenderEpoch",
           "args": [
-            11
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            }
           ]
         }
       ],
@@ -37613,9 +38531,9 @@
             {
               "slice": "render::b",
               "action": {
-                "type": "INVALIDATE",
+                "type": "invalidate",
                 "scope": "content",
-                "pons": [
+                "pages": [
                   11
                 ]
               }
@@ -37693,6 +38611,17 @@
         {
           "settled": [
             {
+              "promise": 3,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "document instance a#1 was closed",
+                  "code": "instance-closed",
+                  "capability": "render"
+                }
+              }
+            },
+            {
               "promise": 5,
               "resolved": {
                 "$undefined": true
@@ -37708,6 +38637,15 @@
             }
           ],
           "engine": [
+            {
+              "abort": 5,
+              "reason": {
+                "$error": {
+                  "name": "CancelledError",
+                  "message": "[kernel] cancelled: closed while opening: a"
+                }
+              }
+            },
             {
               "doc": "a",
               "path": "close",
@@ -37792,7 +38730,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 11,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
                 "label": null,
                 "size": {
                   "width": 612,
@@ -37817,7 +38758,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 22,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                },
                 "label": null,
                 "size": {
                   "width": 792,
@@ -37842,7 +38786,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 33,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 33
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -38698,9 +39645,12 @@
             "token": "render",
             "doc": "a"
           },
-          "method": "renderPage",
+          "method": "renderSource",
           "args": [
-            11,
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 11
+            },
             {
               "scale": 0.5
             }
@@ -38831,6 +39781,17 @@
         {
           "settled": [
             {
+              "promise": 2,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "document instance a#1 was closed",
+                  "code": "instance-closed",
+                  "capability": "render"
+                }
+              }
+            },
+            {
               "promise": 3,
               "resolved": {
                 "$undefined": true
@@ -38846,6 +39807,15 @@
             }
           ],
           "engine": [
+            {
+              "abort": 2,
+              "reason": {
+                "$error": {
+                  "name": "CancelledError",
+                  "message": "[kernel] cancelled: closed while opening: a"
+                }
+              }
+            },
             {
               "doc": "a",
               "path": "close",
@@ -38865,15 +39835,7 @@
           }
         },
         {
-          "settled": [
-            {
-              "promise": 2,
-              "resolved": {
-                "width": 512,
-                "height": 512
-              }
-            }
-          ],
+          "settled": [],
           "actions": [],
           "engine": [],
           "callbacks": [],

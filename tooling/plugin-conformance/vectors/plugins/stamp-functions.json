@@ -29,7 +29,7 @@
           "library": {
             "id": "L",
             "name": "Library L",
-            "storage": "canonical-pdf",
+            "kind": "stamps",
             "assetIds": []
           }
         }
@@ -42,7 +42,7 @@
               "L": {
                 "id": "L",
                 "name": "Library L",
-                "storage": "canonical-pdf",
+                "kind": "stamps",
                 "assetIds": []
               }
             },
@@ -63,7 +63,7 @@
             "L": {
               "id": "L",
               "name": "Library L",
-              "storage": "canonical-pdf",
+              "kind": "stamps",
               "assetIds": [
                 "a",
                 "b"
@@ -82,24 +82,30 @@
               "libraryId": "L",
               "kind": "stamp",
               "name": "Asset a",
+              "label": "Asset a",
               "size": {
                 "width": 200,
                 "height": 100
               },
-              "format": "pdf",
-              "pageObjectNumber": 100
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 100
+              }
             },
             "b": {
               "id": "b",
               "libraryId": "L",
               "kind": "signature",
               "name": "Asset b",
+              "label": "Asset b",
               "size": {
                 "width": 200,
                 "height": 100
               },
-              "format": "pdf",
-              "pageObjectNumber": 101,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 101
+              },
               "subject": "S",
               "categories": [
                 "x"
@@ -112,7 +118,7 @@
           "library": {
             "id": "M",
             "name": "Library M",
-            "storage": "loose",
+            "kind": "signatures",
             "assetIds": []
           }
         }
@@ -125,7 +131,7 @@
               "L": {
                 "id": "L",
                 "name": "Library L",
-                "storage": "canonical-pdf",
+                "kind": "stamps",
                 "assetIds": [
                   "a",
                   "b"
@@ -137,7 +143,7 @@
               "M": {
                 "id": "M",
                 "name": "Library M",
-                "storage": "loose",
+                "kind": "signatures",
                 "assetIds": []
               }
             },
@@ -151,24 +157,30 @@
                 "libraryId": "L",
                 "kind": "stamp",
                 "name": "Asset a",
+                "label": "Asset a",
                 "size": {
                   "width": 200,
                   "height": 100
                 },
-                "format": "pdf",
-                "pageObjectNumber": 100
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 100
+                }
               },
               "b": {
                 "id": "b",
                 "libraryId": "L",
                 "kind": "signature",
                 "name": "Asset b",
+                "label": "Asset b",
                 "size": {
                   "width": 200,
                   "height": 100
                 },
-                "format": "pdf",
-                "pageObjectNumber": 101,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 101
+                },
                 "subject": "S",
                 "categories": [
                   "x"
@@ -188,7 +200,7 @@
             "L": {
               "id": "L",
               "name": "Library L",
-              "storage": "canonical-pdf",
+              "kind": "stamps",
               "assetIds": [
                 "a",
                 "b"
@@ -200,7 +212,7 @@
             "M": {
               "id": "M",
               "name": "Library M",
-              "storage": "loose",
+              "kind": "signatures",
               "assetIds": [
                 "c"
               ]
@@ -216,24 +228,30 @@
               "libraryId": "L",
               "kind": "stamp",
               "name": "Asset a",
+              "label": "Asset a",
               "size": {
                 "width": 200,
                 "height": 100
               },
-              "format": "pdf",
-              "pageObjectNumber": 100
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 100
+              }
             },
             "b": {
               "id": "b",
               "libraryId": "L",
               "kind": "signature",
               "name": "Asset b",
+              "label": "Asset b",
               "size": {
                 "width": 200,
                 "height": 100
               },
-              "format": "pdf",
-              "pageObjectNumber": 101,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 101
+              },
               "subject": "S",
               "categories": [
                 "x"
@@ -244,11 +262,15 @@
               "libraryId": "M",
               "kind": "stamp",
               "name": "Asset c",
+              "label": "Asset c",
               "size": {
                 "width": 200,
                 "height": 100
               },
-              "format": "png"
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 102
+              }
             }
           }
         },
@@ -257,7 +279,7 @@
           "library": {
             "id": "L",
             "name": "Replacement",
-            "storage": "canonical-pdf",
+            "kind": "stamps",
             "assetIds": []
           }
         }
@@ -271,13 +293,13 @@
               "L": {
                 "id": "L",
                 "name": "Replacement",
-                "storage": "canonical-pdf",
+                "kind": "stamps",
                 "assetIds": []
               },
               "M": {
                 "id": "M",
                 "name": "Library M",
-                "storage": "loose",
+                "kind": "signatures",
                 "assetIds": [
                   "c"
                 ]
@@ -294,24 +316,30 @@
                 "libraryId": "L",
                 "kind": "stamp",
                 "name": "Asset a",
+                "label": "Asset a",
                 "size": {
                   "width": 200,
                   "height": 100
                 },
-                "format": "pdf",
-                "pageObjectNumber": 100
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 100
+                }
               },
               "b": {
                 "id": "b",
                 "libraryId": "L",
                 "kind": "signature",
                 "name": "Asset b",
+                "label": "Asset b",
                 "size": {
                   "width": 200,
                   "height": 100
                 },
-                "format": "pdf",
-                "pageObjectNumber": 101,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 101
+                },
                 "subject": "S",
                 "categories": [
                   "x"
@@ -322,11 +350,15 @@
                 "libraryId": "M",
                 "kind": "stamp",
                 "name": "Asset c",
+                "label": "Asset c",
                 "size": {
                   "width": 200,
                   "height": 100
                 },
-                "format": "png"
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 102
+                }
               }
             }
           }
@@ -342,7 +374,7 @@
             "L": {
               "id": "L",
               "name": "Library L",
-              "storage": "canonical-pdf",
+              "kind": "stamps",
               "assetIds": [
                 "a",
                 "b"
@@ -354,7 +386,7 @@
             "M": {
               "id": "M",
               "name": "Library M",
-              "storage": "loose",
+              "kind": "signatures",
               "assetIds": [
                 "c"
               ]
@@ -370,24 +402,30 @@
               "libraryId": "L",
               "kind": "stamp",
               "name": "Asset a",
+              "label": "Asset a",
               "size": {
                 "width": 200,
                 "height": 100
               },
-              "format": "pdf",
-              "pageObjectNumber": 100
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 100
+              }
             },
             "b": {
               "id": "b",
               "libraryId": "L",
               "kind": "signature",
               "name": "Asset b",
+              "label": "Asset b",
               "size": {
                 "width": 200,
                 "height": 100
               },
-              "format": "pdf",
-              "pageObjectNumber": 101,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 101
+              },
               "subject": "S",
               "categories": [
                 "x"
@@ -398,11 +436,15 @@
               "libraryId": "M",
               "kind": "stamp",
               "name": "Asset c",
+              "label": "Asset c",
               "size": {
                 "width": 200,
                 "height": 100
               },
-              "format": "png"
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 102
+              }
             }
           }
         },
@@ -420,7 +462,7 @@
               "M": {
                 "id": "M",
                 "name": "Library M",
-                "storage": "loose",
+                "kind": "signatures",
                 "assetIds": [
                   "c"
                 ]
@@ -435,11 +477,15 @@
                 "libraryId": "M",
                 "kind": "stamp",
                 "name": "Asset c",
+                "label": "Asset c",
                 "size": {
                   "width": 200,
                   "height": 100
                 },
-                "format": "png"
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 102
+                }
               }
             }
           }
@@ -455,7 +501,7 @@
             "L": {
               "id": "L",
               "name": "Library L",
-              "storage": "canonical-pdf",
+              "kind": "stamps",
               "assetIds": [
                 "a",
                 "b"
@@ -467,7 +513,7 @@
             "M": {
               "id": "M",
               "name": "Library M",
-              "storage": "loose",
+              "kind": "signatures",
               "assetIds": [
                 "c"
               ]
@@ -483,24 +529,30 @@
               "libraryId": "L",
               "kind": "stamp",
               "name": "Asset a",
+              "label": "Asset a",
               "size": {
                 "width": 200,
                 "height": 100
               },
-              "format": "pdf",
-              "pageObjectNumber": 100
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 100
+              }
             },
             "b": {
               "id": "b",
               "libraryId": "L",
               "kind": "signature",
               "name": "Asset b",
+              "label": "Asset b",
               "size": {
                 "width": 200,
                 "height": 100
               },
-              "format": "pdf",
-              "pageObjectNumber": 101,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 101
+              },
               "subject": "S",
               "categories": [
                 "x"
@@ -511,11 +563,15 @@
               "libraryId": "M",
               "kind": "stamp",
               "name": "Asset c",
+              "label": "Asset c",
               "size": {
                 "width": 200,
                 "height": 100
               },
-              "format": "png"
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 102
+              }
             }
           }
         },
@@ -533,7 +589,7 @@
               "L": {
                 "id": "L",
                 "name": "Library L",
-                "storage": "canonical-pdf",
+                "kind": "stamps",
                 "assetIds": [
                   "a",
                   "b"
@@ -545,7 +601,7 @@
               "M": {
                 "id": "M",
                 "name": "Library M",
-                "storage": "loose",
+                "kind": "signatures",
                 "assetIds": [
                   "c"
                 ]
@@ -561,24 +617,30 @@
                 "libraryId": "L",
                 "kind": "stamp",
                 "name": "Asset a",
+                "label": "Asset a",
                 "size": {
                   "width": 200,
                   "height": 100
                 },
-                "format": "pdf",
-                "pageObjectNumber": 100
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 100
+                }
               },
               "b": {
                 "id": "b",
                 "libraryId": "L",
                 "kind": "signature",
                 "name": "Asset b",
+                "label": "Asset b",
                 "size": {
                   "width": 200,
                   "height": 100
                 },
-                "format": "pdf",
-                "pageObjectNumber": 101,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 101
+                },
                 "subject": "S",
                 "categories": [
                   "x"
@@ -589,11 +651,15 @@
                 "libraryId": "M",
                 "kind": "stamp",
                 "name": "Asset c",
+                "label": "Asset c",
                 "size": {
                   "width": 200,
                   "height": 100
                 },
-                "format": "png"
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 102
+                }
               }
             }
           }
@@ -609,7 +675,7 @@
             "M": {
               "id": "M",
               "name": "Library M",
-              "storage": "canonical-pdf",
+              "kind": "stamps",
               "assetIds": [
                 "gone",
                 "c"
@@ -625,24 +691,30 @@
               "libraryId": "M",
               "kind": "stamp",
               "name": "Asset c",
+              "label": "Asset c",
               "size": {
                 "width": 200,
                 "height": 100
               },
-              "format": "pdf",
-              "pageObjectNumber": 100
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 100
+              }
             },
             "stray": {
               "id": "stray",
               "libraryId": "L",
               "kind": "stamp",
               "name": "Asset stray",
+              "label": "Asset stray",
               "size": {
                 "width": 200,
                 "height": 100
               },
-              "format": "pdf",
-              "pageObjectNumber": 100
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 100
+              }
             }
           }
         },
@@ -664,12 +736,15 @@
                 "libraryId": "L",
                 "kind": "stamp",
                 "name": "Asset stray",
+                "label": "Asset stray",
                 "size": {
                   "width": 200,
                   "height": 100
                 },
-                "format": "pdf",
-                "pageObjectNumber": 100
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 100
+                }
               }
             }
           }
@@ -685,7 +760,7 @@
             "L": {
               "id": "L",
               "name": "Library L",
-              "storage": "canonical-pdf",
+              "kind": "stamps",
               "assetIds": [
                 "a",
                 "b"
@@ -697,7 +772,7 @@
             "M": {
               "id": "M",
               "name": "Library M",
-              "storage": "loose",
+              "kind": "signatures",
               "assetIds": [
                 "c"
               ]
@@ -714,24 +789,30 @@
               "libraryId": "L",
               "kind": "stamp",
               "name": "Asset a",
+              "label": "Asset a",
               "size": {
                 "width": 200,
                 "height": 100
               },
-              "format": "pdf",
-              "pageObjectNumber": 100
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 100
+              }
             },
             "b": {
               "id": "b",
               "libraryId": "L",
               "kind": "signature",
               "name": "Asset b",
+              "label": "Asset b",
               "size": {
                 "width": 200,
                 "height": 100
               },
-              "format": "pdf",
-              "pageObjectNumber": 101,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 101
+              },
               "subject": "S",
               "categories": [
                 "x"
@@ -742,11 +823,15 @@
               "libraryId": "M",
               "kind": "stamp",
               "name": "Asset c",
+              "label": "Asset c",
               "size": {
                 "width": 200,
                 "height": 100
               },
-              "format": "png"
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 102
+              }
             }
           }
         },
@@ -764,7 +849,7 @@
               "M": {
                 "id": "M",
                 "name": "Library M",
-                "storage": "loose",
+                "kind": "signatures",
                 "assetIds": [
                   "c"
                 ]
@@ -779,11 +864,15 @@
                 "libraryId": "M",
                 "kind": "stamp",
                 "name": "Asset c",
+                "label": "Asset c",
                 "size": {
                   "width": 200,
                   "height": 100
                 },
-                "format": "png"
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 102
+                }
               }
             }
           }
@@ -799,7 +888,7 @@
             "L": {
               "id": "L",
               "name": "Library L",
-              "storage": "canonical-pdf",
+              "kind": "stamps",
               "assetIds": [
                 "a",
                 "b"
@@ -811,7 +900,7 @@
             "M": {
               "id": "M",
               "name": "Library M",
-              "storage": "loose",
+              "kind": "signatures",
               "assetIds": [
                 "c"
               ]
@@ -827,24 +916,30 @@
               "libraryId": "L",
               "kind": "stamp",
               "name": "Asset a",
+              "label": "Asset a",
               "size": {
                 "width": 200,
                 "height": 100
               },
-              "format": "pdf",
-              "pageObjectNumber": 100
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 100
+              }
             },
             "b": {
               "id": "b",
               "libraryId": "L",
               "kind": "signature",
               "name": "Asset b",
+              "label": "Asset b",
               "size": {
                 "width": 200,
                 "height": 100
               },
-              "format": "pdf",
-              "pageObjectNumber": 101,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 101
+              },
               "subject": "S",
               "categories": [
                 "x"
@@ -855,11 +950,15 @@
               "libraryId": "M",
               "kind": "stamp",
               "name": "Asset c",
+              "label": "Asset c",
               "size": {
                 "width": 200,
                 "height": 100
               },
-              "format": "png"
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 102
+              }
             }
           }
         },
@@ -870,12 +969,15 @@
             "libraryId": "M",
             "kind": "stamp",
             "name": "Asset d",
+            "label": "JPEG",
             "size": {
               "width": 200,
               "height": 100
             },
-            "format": "jpeg",
-            "pageObjectNumber": 100
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 100
+            }
           }
         }
       ],
@@ -887,7 +989,7 @@
               "L": {
                 "id": "L",
                 "name": "Library L",
-                "storage": "canonical-pdf",
+                "kind": "stamps",
                 "assetIds": [
                   "a",
                   "b"
@@ -899,7 +1001,7 @@
               "M": {
                 "id": "M",
                 "name": "Library M",
-                "storage": "loose",
+                "kind": "signatures",
                 "assetIds": [
                   "c",
                   "d"
@@ -916,24 +1018,30 @@
                 "libraryId": "L",
                 "kind": "stamp",
                 "name": "Asset a",
+                "label": "Asset a",
                 "size": {
                   "width": 200,
                   "height": 100
                 },
-                "format": "pdf",
-                "pageObjectNumber": 100
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 100
+                }
               },
               "b": {
                 "id": "b",
                 "libraryId": "L",
                 "kind": "signature",
                 "name": "Asset b",
+                "label": "Asset b",
                 "size": {
                   "width": 200,
                   "height": 100
                 },
-                "format": "pdf",
-                "pageObjectNumber": 101,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 101
+                },
                 "subject": "S",
                 "categories": [
                   "x"
@@ -944,23 +1052,30 @@
                 "libraryId": "M",
                 "kind": "stamp",
                 "name": "Asset c",
+                "label": "Asset c",
                 "size": {
                   "width": 200,
                   "height": 100
                 },
-                "format": "png"
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 102
+                }
               },
               "d": {
                 "id": "d",
                 "libraryId": "M",
                 "kind": "stamp",
                 "name": "Asset d",
+                "label": "JPEG",
                 "size": {
                   "width": 200,
                   "height": 100
                 },
-                "format": "jpeg",
-                "pageObjectNumber": 100
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 100
+                }
               }
             }
           }
@@ -976,7 +1091,7 @@
             "L": {
               "id": "L",
               "name": "Library L",
-              "storage": "canonical-pdf",
+              "kind": "stamps",
               "assetIds": [
                 "a",
                 "b"
@@ -988,7 +1103,7 @@
             "M": {
               "id": "M",
               "name": "Library M",
-              "storage": "loose",
+              "kind": "signatures",
               "assetIds": [
                 "c"
               ]
@@ -1004,24 +1119,30 @@
               "libraryId": "L",
               "kind": "stamp",
               "name": "Asset a",
+              "label": "Asset a",
               "size": {
                 "width": 200,
                 "height": 100
               },
-              "format": "pdf",
-              "pageObjectNumber": 100
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 100
+              }
             },
             "b": {
               "id": "b",
               "libraryId": "L",
               "kind": "signature",
               "name": "Asset b",
+              "label": "Asset b",
               "size": {
                 "width": 200,
                 "height": 100
               },
-              "format": "pdf",
-              "pageObjectNumber": 101,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 101
+              },
               "subject": "S",
               "categories": [
                 "x"
@@ -1032,11 +1153,15 @@
               "libraryId": "M",
               "kind": "stamp",
               "name": "Asset c",
+              "label": "Asset c",
               "size": {
                 "width": 200,
                 "height": 100
               },
-              "format": "png"
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 102
+              }
             }
           }
         },
@@ -1047,12 +1172,15 @@
             "libraryId": "nope",
             "kind": "stamp",
             "name": "Asset d",
+            "label": "Asset d",
             "size": {
               "width": 200,
               "height": 100
             },
-            "format": "pdf",
-            "pageObjectNumber": 100
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 100
+            }
           }
         }
       ],
@@ -1065,7 +1193,7 @@
               "L": {
                 "id": "L",
                 "name": "Library L",
-                "storage": "canonical-pdf",
+                "kind": "stamps",
                 "assetIds": [
                   "a",
                   "b"
@@ -1077,7 +1205,7 @@
               "M": {
                 "id": "M",
                 "name": "Library M",
-                "storage": "loose",
+                "kind": "signatures",
                 "assetIds": [
                   "c"
                 ]
@@ -1093,24 +1221,30 @@
                 "libraryId": "L",
                 "kind": "stamp",
                 "name": "Asset a",
+                "label": "Asset a",
                 "size": {
                   "width": 200,
                   "height": 100
                 },
-                "format": "pdf",
-                "pageObjectNumber": 100
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 100
+                }
               },
               "b": {
                 "id": "b",
                 "libraryId": "L",
                 "kind": "signature",
                 "name": "Asset b",
+                "label": "Asset b",
                 "size": {
                   "width": 200,
                   "height": 100
                 },
-                "format": "pdf",
-                "pageObjectNumber": 101,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 101
+                },
                 "subject": "S",
                 "categories": [
                   "x"
@@ -1121,11 +1255,15 @@
                 "libraryId": "M",
                 "kind": "stamp",
                 "name": "Asset c",
+                "label": "Asset c",
                 "size": {
                   "width": 200,
                   "height": 100
                 },
-                "format": "png"
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 102
+                }
               }
             }
           }
@@ -1141,7 +1279,7 @@
             "L": {
               "id": "L",
               "name": "Library L",
-              "storage": "canonical-pdf",
+              "kind": "stamps",
               "assetIds": [
                 "a",
                 "b"
@@ -1160,24 +1298,30 @@
               "libraryId": "L",
               "kind": "stamp",
               "name": "Asset a",
+              "label": "Asset a",
               "size": {
                 "width": 200,
                 "height": 100
               },
-              "format": "pdf",
-              "pageObjectNumber": 100
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 100
+              }
             },
             "b": {
               "id": "b",
               "libraryId": "L",
               "kind": "signature",
               "name": "Asset b",
+              "label": "Asset b",
               "size": {
                 "width": 200,
                 "height": 100
               },
-              "format": "pdf",
-              "pageObjectNumber": 101,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 101
+              },
               "subject": "S",
               "categories": [
                 "x"
@@ -1192,12 +1336,15 @@
             "libraryId": "L",
             "kind": "stamp",
             "name": "Again",
+            "label": "Asset a",
             "size": {
               "width": 200,
               "height": 100
             },
-            "format": "pdf",
-            "pageObjectNumber": 100
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 100
+            }
           }
         }
       ],
@@ -1210,7 +1357,7 @@
               "L": {
                 "id": "L",
                 "name": "Library L",
-                "storage": "canonical-pdf",
+                "kind": "stamps",
                 "assetIds": [
                   "a",
                   "b",
@@ -1230,24 +1377,30 @@
                 "libraryId": "L",
                 "kind": "stamp",
                 "name": "Again",
+                "label": "Asset a",
                 "size": {
                   "width": 200,
                   "height": 100
                 },
-                "format": "pdf",
-                "pageObjectNumber": 100
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 100
+                }
               },
               "b": {
                 "id": "b",
                 "libraryId": "L",
                 "kind": "signature",
                 "name": "Asset b",
+                "label": "Asset b",
                 "size": {
                   "width": 200,
                   "height": 100
                 },
-                "format": "pdf",
-                "pageObjectNumber": 101,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 101
+                },
                 "subject": "S",
                 "categories": [
                   "x"
@@ -1267,7 +1420,7 @@
             "L": {
               "id": "L",
               "name": "Library L",
-              "storage": "canonical-pdf",
+              "kind": "stamps",
               "assetIds": [
                 "a",
                 "b"
@@ -1279,7 +1432,7 @@
             "M": {
               "id": "M",
               "name": "Library M",
-              "storage": "loose",
+              "kind": "signatures",
               "assetIds": [
                 "c"
               ]
@@ -1295,24 +1448,30 @@
               "libraryId": "L",
               "kind": "stamp",
               "name": "Asset a",
+              "label": "Asset a",
               "size": {
                 "width": 200,
                 "height": 100
               },
-              "format": "pdf",
-              "pageObjectNumber": 100
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 100
+              }
             },
             "b": {
               "id": "b",
               "libraryId": "L",
               "kind": "signature",
               "name": "Asset b",
+              "label": "Asset b",
               "size": {
                 "width": 200,
                 "height": 100
               },
-              "format": "pdf",
-              "pageObjectNumber": 101,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 101
+              },
               "subject": "S",
               "categories": [
                 "x"
@@ -1323,11 +1482,15 @@
               "libraryId": "M",
               "kind": "stamp",
               "name": "Asset c",
+              "label": "Asset c",
               "size": {
                 "width": 200,
                 "height": 100
               },
-              "format": "png"
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 102
+              }
             }
           }
         },
@@ -1344,7 +1507,7 @@
               "L": {
                 "id": "L",
                 "name": "Library L",
-                "storage": "canonical-pdf",
+                "kind": "stamps",
                 "assetIds": [
                   "b"
                 ],
@@ -1355,7 +1518,7 @@
               "M": {
                 "id": "M",
                 "name": "Library M",
-                "storage": "loose",
+                "kind": "signatures",
                 "assetIds": [
                   "c"
                 ]
@@ -1371,12 +1534,15 @@
                 "libraryId": "L",
                 "kind": "signature",
                 "name": "Asset b",
+                "label": "Asset b",
                 "size": {
                   "width": 200,
                   "height": 100
                 },
-                "format": "pdf",
-                "pageObjectNumber": 101,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 101
+                },
                 "subject": "S",
                 "categories": [
                   "x"
@@ -1387,11 +1553,15 @@
                 "libraryId": "M",
                 "kind": "stamp",
                 "name": "Asset c",
+                "label": "Asset c",
                 "size": {
                   "width": 200,
                   "height": 100
                 },
-                "format": "png"
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 102
+                }
               }
             }
           }
@@ -1407,7 +1577,7 @@
             "L": {
               "id": "L",
               "name": "Library L",
-              "storage": "canonical-pdf",
+              "kind": "stamps",
               "assetIds": [
                 "a",
                 "b"
@@ -1419,7 +1589,7 @@
             "M": {
               "id": "M",
               "name": "Library M",
-              "storage": "loose",
+              "kind": "signatures",
               "assetIds": [
                 "c"
               ]
@@ -1435,24 +1605,30 @@
               "libraryId": "L",
               "kind": "stamp",
               "name": "Asset a",
+              "label": "Asset a",
               "size": {
                 "width": 200,
                 "height": 100
               },
-              "format": "pdf",
-              "pageObjectNumber": 100
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 100
+              }
             },
             "b": {
               "id": "b",
               "libraryId": "L",
               "kind": "signature",
               "name": "Asset b",
+              "label": "Asset b",
               "size": {
                 "width": 200,
                 "height": 100
               },
-              "format": "pdf",
-              "pageObjectNumber": 101,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 101
+              },
               "subject": "S",
               "categories": [
                 "x"
@@ -1463,11 +1639,15 @@
               "libraryId": "M",
               "kind": "stamp",
               "name": "Asset c",
+              "label": "Asset c",
               "size": {
                 "width": 200,
                 "height": 100
               },
-              "format": "png"
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 102
+              }
             }
           }
         },
@@ -1485,7 +1665,7 @@
               "L": {
                 "id": "L",
                 "name": "Library L",
-                "storage": "canonical-pdf",
+                "kind": "stamps",
                 "assetIds": [
                   "a",
                   "b"
@@ -1497,7 +1677,7 @@
               "M": {
                 "id": "M",
                 "name": "Library M",
-                "storage": "loose",
+                "kind": "signatures",
                 "assetIds": [
                   "c"
                 ]
@@ -1513,24 +1693,30 @@
                 "libraryId": "L",
                 "kind": "stamp",
                 "name": "Asset a",
+                "label": "Asset a",
                 "size": {
                   "width": 200,
                   "height": 100
                 },
-                "format": "pdf",
-                "pageObjectNumber": 100
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 100
+                }
               },
               "b": {
                 "id": "b",
                 "libraryId": "L",
                 "kind": "signature",
                 "name": "Asset b",
+                "label": "Asset b",
                 "size": {
                   "width": 200,
                   "height": 100
                 },
-                "format": "pdf",
-                "pageObjectNumber": 101,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 101
+                },
                 "subject": "S",
                 "categories": [
                   "x"
@@ -1541,11 +1727,15 @@
                 "libraryId": "M",
                 "kind": "stamp",
                 "name": "Asset c",
+                "label": "Asset c",
                 "size": {
                   "width": 200,
                   "height": 100
                 },
-                "format": "png"
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 102
+                }
               }
             }
           }
@@ -1561,7 +1751,7 @@
             "M": {
               "id": "M",
               "name": "Library M",
-              "storage": "canonical-pdf",
+              "kind": "stamps",
               "assetIds": [
                 "gone",
                 "c"
@@ -1577,24 +1767,30 @@
               "libraryId": "M",
               "kind": "stamp",
               "name": "Asset c",
+              "label": "Asset c",
               "size": {
                 "width": 200,
                 "height": 100
               },
-              "format": "pdf",
-              "pageObjectNumber": 100
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 100
+              }
             },
             "stray": {
               "id": "stray",
               "libraryId": "L",
               "kind": "stamp",
               "name": "Asset stray",
+              "label": "Asset stray",
               "size": {
                 "width": 200,
                 "height": 100
               },
-              "format": "pdf",
-              "pageObjectNumber": 100
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 100
+              }
             }
           }
         },
@@ -1612,7 +1808,7 @@
               "M": {
                 "id": "M",
                 "name": "Library M",
-                "storage": "canonical-pdf",
+                "kind": "stamps",
                 "assetIds": [
                   "gone",
                   "c"
@@ -1628,12 +1824,15 @@
                 "libraryId": "M",
                 "kind": "stamp",
                 "name": "Asset c",
+                "label": "Asset c",
                 "size": {
                   "width": 200,
                   "height": 100
                 },
-                "format": "pdf",
-                "pageObjectNumber": 100
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 100
+                }
               }
             }
           }
@@ -1649,7 +1848,7 @@
             "L": {
               "id": "L",
               "name": "Library L",
-              "storage": "canonical-pdf",
+              "kind": "stamps",
               "assetIds": [
                 "a",
                 "b"
@@ -1661,7 +1860,7 @@
             "M": {
               "id": "M",
               "name": "Library M",
-              "storage": "loose",
+              "kind": "signatures",
               "assetIds": [
                 "c"
               ]
@@ -1677,24 +1876,30 @@
               "libraryId": "L",
               "kind": "stamp",
               "name": "Asset a",
+              "label": "Asset a",
               "size": {
                 "width": 200,
                 "height": 100
               },
-              "format": "pdf",
-              "pageObjectNumber": 100
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 100
+              }
             },
             "b": {
               "id": "b",
               "libraryId": "L",
               "kind": "signature",
               "name": "Asset b",
+              "label": "Asset b",
               "size": {
                 "width": 200,
                 "height": 100
               },
-              "format": "pdf",
-              "pageObjectNumber": 101,
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 101
+              },
               "subject": "S",
               "categories": [
                 "x"
@@ -1705,11 +1910,15 @@
               "libraryId": "M",
               "kind": "stamp",
               "name": "Asset c",
+              "label": "Asset c",
               "size": {
                 "width": 200,
                 "height": 100
               },
-              "format": "png"
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 102
+              }
             }
           }
         },
@@ -1726,7 +1935,7 @@
               "L": {
                 "id": "L",
                 "name": "Library L",
-                "storage": "canonical-pdf",
+                "kind": "stamps",
                 "assetIds": [
                   "a",
                   "b"
@@ -1738,7 +1947,7 @@
               "M": {
                 "id": "M",
                 "name": "Library M",
-                "storage": "loose",
+                "kind": "signatures",
                 "assetIds": [
                   "c"
                 ]
@@ -1754,24 +1963,30 @@
                 "libraryId": "L",
                 "kind": "stamp",
                 "name": "Asset a",
+                "label": "Asset a",
                 "size": {
                   "width": 200,
                   "height": 100
                 },
-                "format": "pdf",
-                "pageObjectNumber": 100
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 100
+                }
               },
               "b": {
                 "id": "b",
                 "libraryId": "L",
                 "kind": "signature",
                 "name": "Asset b",
+                "label": "Asset b",
                 "size": {
                   "width": 200,
                   "height": 100
                 },
-                "format": "pdf",
-                "pageObjectNumber": 101,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 101
+                },
                 "subject": "S",
                 "categories": [
                   "x"
@@ -1782,11 +1997,15 @@
                 "libraryId": "M",
                 "kind": "stamp",
                 "name": "Asset c",
+                "label": "Asset c",
                 "size": {
                   "width": 200,
                   "height": 100
                 },
-                "format": "png"
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 102
+                }
               }
             }
           }

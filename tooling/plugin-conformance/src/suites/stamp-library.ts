@@ -27,6 +27,7 @@ import {
   stamp,
   start,
   str,
+  withWorkshop,
 } from './stamp-fixtures';
 
 const TWO = [assetPage(0, 100), assetPage(1, 101)];
@@ -49,11 +50,11 @@ const importing: ScenarioCase[] = [
       stamp('assets'),
       stamp('assets', ['nope']),
       stamp('assets', ['']),
-      stamp('asset', ['stamp-0-2']),
+      stamp('asset', ['stamp-lib-0-1:Stamp1']),
       stamp('asset', ['nope']),
-      stamp('assetBytes', ['stamp-0-3']),
+      stamp('assetBytes', ['stamp-lib-0-1:Stamp2']),
       stamp('assetBytes', ['nope']),
-      stamp('assetPreview', ['stamp-0-2']),
+      stamp('assetPreview', ['stamp-lib-0-1:Stamp1']),
       stamp('assetPreview', ['nope']),
       stamp('libraryBytes', ['stamp-lib-0-1']),
       stamp('libraryBytes', ['nope']),
@@ -75,7 +76,7 @@ const importing: ScenarioCase[] = [
           },
           page: {
             100: {
-              Id: str('approved-stamp'),
+              Id: str('review-library:Approved'),
               Name: str('Approved'),
               Kind: nm('Signature'),
               Subject: str('Approval signature'),
@@ -274,8 +275,8 @@ const ids: ScenarioCase[] = [
     plugins: STAMP(),
     engine: {
       documents: {
-        lib: assetDoc(ONE, { catalog: { Id: str('shared-library') }, page: { 100: { Id: str('shared-asset') } } }),
-        clash: assetDoc(ONE, { catalog: { Id: str('stamp-lib-0-4') }, page: { 100: { Id: str('stamp-0-5') } } }),
+        lib: assetDoc(ONE, { catalog: { Id: str('shared-library') }, page: { 100: { Id: str('shared-library:Stamp1') } } }),
+        clash: assetDoc(ONE, { catalog: { Id: str('stamp-lib-0-4') }, page: { 100: { Id: str('stamp-lib-0-4:Stamp1') } } }),
       },
       responses: opens('lib', 'lib', 'clash', 'lib'),
     },
@@ -390,11 +391,16 @@ const engines: ScenarioCase[] = [
   },
 ];
 
+/** Every case can create and extend libraries: the workshop document
+ *  answers the opens a case does not name (see stamp-fixtures.ts). */
+const workshop = (cases: ScenarioCase[]): ScenarioCase[] =>
+  cases.map((c) => ({ ...c, engine: withWorkshop(c.engine as never) }));
+
 export const suites: Suite[] = [
   {
     kind: 'scenario',
     file: 'plugins/stamp-library.json',
     describes: 'packages/plugin/stamp: importing canonical PDF libraries, PieceInfo metadata, ids, the asset engine port and its failures.',
-    cases: [...importing, ...failures, ...ids, ...engines],
+    cases: workshop([...importing, ...failures, ...ids, ...engines]),
   },
 ];

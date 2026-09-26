@@ -17,7 +17,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -81,7 +84,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "activeTool",
+          "method": "getActiveTool",
           "args": []
         },
         {
@@ -90,7 +93,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "activeToolId",
+          "method": "getActiveToolId",
           "args": []
         },
         {
@@ -99,7 +102,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "cursor",
+          "method": "getCursor",
           "args": []
         },
         {
@@ -108,7 +111,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "tools",
+          "method": "listTools",
           "args": []
         }
       ],
@@ -201,11 +204,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -245,6 +252,8 @@
               "@@conformance/spy": {},
               "interaction::a": {
                 "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "default"
               }
             }
@@ -264,41 +273,74 @@
           },
           "outcome": {
             "returned": {
-              "activeTool": {
+              "getActiveTool": {
                 "$ref": 0
               },
-              "activeToolId": {
+              "getActiveToolId": {
                 "$ref": 1
               },
-              "cursor": {
+              "getDefaultToolId": {
                 "$ref": 2
               },
-              "tools": {
+              "listTools": {
                 "$ref": 3
               },
-              "activateTool": {
+              "getTool": {
                 "$ref": 4
               },
-              "onToolChange": {
+              "hasTool": {
                 "$ref": 5
               },
-              "registerTool": {
+              "activeToolEnables": {
                 "$ref": 6
               },
-              "setToolCursor": {
+              "activateTool": {
                 "$ref": 7
               },
-              "registerHandler": {
+              "activateDefaultTool": {
                 "$ref": 8
               },
-              "setCursor": {
+              "pushTool": {
                 "$ref": 9
               },
-              "wouldClaimTouch": {
+              "popTool": {
                 "$ref": 10
               },
-              "dispatch": {
+              "setToolCursor": {
                 "$ref": 11
+              },
+              "registerTool": {
+                "$ref": 12
+              },
+              "onToolChanged": {
+                "$ref": 13
+              },
+              "onGestureStarted": {
+                "$ref": 14
+              },
+              "onGestureEnded": {
+                "$ref": 15
+              },
+              "onGestureCancelled": {
+                "$ref": 16
+              },
+              "registerHandler": {
+                "$ref": 17
+              },
+              "claimCursor": {
+                "$ref": 18
+              },
+              "getCursor": {
+                "$ref": 19
+              },
+              "onCursorChanged": {
+                "$ref": 20
+              },
+              "wouldClaimTouch": {
+                "$ref": 21
+              },
+              "dispatchPointer": {
+                "$ref": 22
               }
             }
           },
@@ -307,11 +349,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -351,6 +397,8 @@
               "@@conformance/spy": {},
               "interaction::a": {
                 "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "default"
               }
             }
@@ -388,11 +436,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -432,6 +484,8 @@
               "@@conformance/spy": {},
               "interaction::a": {
                 "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "default"
               }
             }
@@ -457,11 +511,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -501,6 +559,8 @@
               "@@conformance/spy": {},
               "interaction::a": {
                 "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "default"
               }
             }
@@ -526,11 +586,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -570,6 +634,8 @@
               "@@conformance/spy": {},
               "interaction::a": {
                 "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "default"
               }
             }
@@ -622,11 +688,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -666,6 +736,8 @@
               "@@conformance/spy": {},
               "interaction::a": {
                 "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "default"
               }
             }
@@ -690,7 +762,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -746,7 +821,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "activeToolId",
+          "method": "getActiveToolId",
           "args": []
         },
         {
@@ -755,7 +830,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "activeTool",
+          "method": "getActiveTool",
           "args": []
         },
         {
@@ -764,7 +839,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "cursor",
+          "method": "getCursor",
           "args": []
         }
       ],
@@ -848,6 +923,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pan",
+                "defaultToolId": "pan",
+                "toolStack": [],
                 "cursor": "default"
               }
             }
@@ -872,6 +949,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pan",
+                "defaultToolId": "pan",
+                "toolStack": [],
                 "cursor": "default"
               }
             }
@@ -908,6 +987,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pan",
+                "defaultToolId": "pan",
+                "toolStack": [],
                 "cursor": "default"
               }
             }
@@ -932,6 +1013,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pan",
+                "defaultToolId": "pan",
+                "toolStack": [],
                 "cursor": "default"
               }
             }
@@ -956,7 +1039,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -1012,7 +1098,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "activeTool",
+          "method": "getActiveTool",
           "args": []
         },
         {
@@ -1055,7 +1141,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "down",
@@ -1070,7 +1156,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -1085,7 +1174,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "move",
@@ -1100,7 +1189,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -1190,6 +1282,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "ghost",
+                "defaultToolId": "ghost",
+                "toolStack": [],
                 "cursor": "default"
               }
             }
@@ -1220,6 +1314,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "ghost",
+                "defaultToolId": "ghost",
+                "toolStack": [],
                 "cursor": "default"
               }
             }
@@ -1246,6 +1342,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "ghost",
+                "defaultToolId": "ghost",
+                "toolStack": [],
                 "cursor": "default"
               }
             }
@@ -1285,6 +1383,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "ghost",
+                "defaultToolId": "ghost",
+                "toolStack": [],
                 "cursor": "default"
               }
             }
@@ -1324,6 +1424,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "ghost",
+                "defaultToolId": "ghost",
+                "toolStack": [],
                 "cursor": "default"
               }
             }
@@ -1345,7 +1447,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -1412,7 +1517,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "onToolChange",
+          "method": "onToolChanged",
           "args": [
             {
               "$fn": "first"
@@ -1425,7 +1530,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "onToolChange",
+          "method": "onToolChanged",
           "args": [
             {
               "$fn": "second"
@@ -1449,7 +1554,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "activeToolId",
+          "method": "getActiveToolId",
           "args": []
         },
         {
@@ -1458,7 +1563,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "cursor",
+          "method": "getCursor",
           "args": []
         },
         {
@@ -1578,6 +1683,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "default"
               }
             }
@@ -1598,8 +1705,10 @@
           "outcome": {
             "threw": {
               "$error": {
-                "name": "Error",
-                "message": "[interaction] unknown tool 'nope'"
+                "name": "PluginError",
+                "message": "unknown tool 'nope'",
+                "code": "not-found",
+                "capability": "interaction"
               }
             }
           },
@@ -1607,6 +1716,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "default"
               }
             }
@@ -1633,6 +1744,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "default"
               }
             }
@@ -1659,6 +1772,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "default"
               }
             }
@@ -1686,11 +1801,47 @@
           "callbacks": [
             {
               "fn": "first",
-              "args": []
+              "args": [
+                {
+                  "toolId": "pan",
+                  "previousToolId": "pointer",
+                  "tool": {
+                    "id": "pan",
+                    "cursor": "grab",
+                    "gapCursor": "grab",
+                    "enables": {
+                      "$set": [
+                        "scroll",
+                        "annotation-edit",
+                        "form-fill",
+                        "link-nav"
+                      ]
+                    }
+                  }
+                }
+              ]
             },
             {
               "fn": "second",
-              "args": []
+              "args": [
+                {
+                  "toolId": "pan",
+                  "previousToolId": "pointer",
+                  "tool": {
+                    "id": "pan",
+                    "cursor": "grab",
+                    "gapCursor": "grab",
+                    "enables": {
+                      "$set": [
+                        "scroll",
+                        "annotation-edit",
+                        "form-fill",
+                        "link-nav"
+                      ]
+                    }
+                  }
+                }
+              ]
             }
           ],
           "reports": [],
@@ -1709,6 +1860,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pan",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "grab"
               }
             }
@@ -1733,6 +1886,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pan",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "grab"
               }
             }
@@ -1757,6 +1912,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pan",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "grab"
               }
             }
@@ -1777,11 +1934,47 @@
           "callbacks": [
             {
               "fn": "first",
-              "args": []
+              "args": [
+                {
+                  "toolId": "pan",
+                  "previousToolId": "pan",
+                  "tool": {
+                    "id": "pan",
+                    "cursor": "grab",
+                    "gapCursor": "grab",
+                    "enables": {
+                      "$set": [
+                        "scroll",
+                        "annotation-edit",
+                        "form-fill",
+                        "link-nav"
+                      ]
+                    }
+                  }
+                }
+              ]
             },
             {
               "fn": "second",
-              "args": []
+              "args": [
+                {
+                  "toolId": "pan",
+                  "previousToolId": "pan",
+                  "tool": {
+                    "id": "pan",
+                    "cursor": "grab",
+                    "gapCursor": "grab",
+                    "enables": {
+                      "$set": [
+                        "scroll",
+                        "annotation-edit",
+                        "form-fill",
+                        "link-nav"
+                      ]
+                    }
+                  }
+                }
+              ]
             }
           ],
           "reports": [],
@@ -1800,6 +1993,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pan",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "grab"
               }
             }
@@ -1818,12 +2013,16 @@
             }
           },
           "outcome": {
-            "returned": true
+            "returned": {
+              "$undefined": true
+            }
           },
           "state": {
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pan",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "grab"
               }
             }
@@ -1842,12 +2041,16 @@
             }
           },
           "outcome": {
-            "returned": false
+            "returned": {
+              "$undefined": true
+            }
           },
           "state": {
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pan",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "grab"
               }
             }
@@ -1875,7 +2078,25 @@
           "callbacks": [
             {
               "fn": "second",
-              "args": []
+              "args": [
+                {
+                  "toolId": "pointer",
+                  "previousToolId": "pan",
+                  "tool": {
+                    "id": "pointer",
+                    "cursor": "default",
+                    "enables": {
+                      "$set": [
+                        "text-select",
+                        "annotation-edit",
+                        "annotation-marquee",
+                        "form-fill",
+                        "link-nav"
+                      ]
+                    }
+                  }
+                }
+              ]
             }
           ],
           "reports": [],
@@ -1894,6 +2115,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "default"
               }
             }
@@ -1915,7 +2138,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -2037,7 +2263,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "down",
@@ -2052,7 +2278,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -2067,7 +2296,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "move",
@@ -2082,7 +2311,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -2097,7 +2329,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "up",
@@ -2112,7 +2344,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -2127,7 +2362,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "move",
@@ -2142,7 +2377,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -2319,7 +2557,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -2363,7 +2604,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -2407,7 +2651,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -2487,7 +2734,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -2512,7 +2762,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -2551,7 +2804,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -2718,7 +2974,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "down",
@@ -2733,7 +2989,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -2748,7 +3007,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "move",
@@ -2763,7 +3022,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -2778,7 +3040,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "up",
@@ -2793,7 +3055,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -2808,7 +3073,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "down",
@@ -2823,7 +3088,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -2838,7 +3106,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "move",
@@ -2853,7 +3121,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -2868,7 +3139,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "up",
@@ -2883,7 +3154,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -3096,7 +3370,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -3121,7 +3398,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -3165,7 +3445,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -3209,7 +3492,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -3307,7 +3593,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -3332,7 +3621,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -3357,7 +3649,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -3455,7 +3750,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -3480,7 +3778,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -3505,7 +3806,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -3562,7 +3866,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -3752,7 +4059,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "down",
@@ -3767,7 +4074,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -3782,7 +4092,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "move",
@@ -3797,7 +4107,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -4046,7 +4359,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -4071,7 +4387,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -4096,7 +4415,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -4121,7 +4443,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -4237,7 +4562,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -4262,7 +4590,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -4287,7 +4618,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -4312,7 +4646,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -4351,7 +4688,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -4490,7 +4830,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "down",
@@ -4505,7 +4845,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -4520,7 +4863,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "up",
@@ -4535,7 +4878,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -4561,7 +4907,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "down",
@@ -4576,7 +4922,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -4591,7 +4940,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "move",
@@ -4606,7 +4955,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -4783,7 +5135,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -4827,7 +5182,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -4940,7 +5298,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -4984,7 +5345,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -5023,7 +5387,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -5124,7 +5491,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "down",
@@ -5139,7 +5506,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -5154,7 +5524,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "move",
@@ -5169,7 +5539,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -5184,7 +5557,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "up",
@@ -5199,7 +5572,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -5214,7 +5590,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "move",
@@ -5229,7 +5605,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -5406,7 +5785,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -5522,7 +5904,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -5561,7 +5946,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -5716,7 +6104,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "down",
@@ -5731,7 +6119,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -5746,7 +6137,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "cancel",
@@ -5761,7 +6152,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -5776,7 +6170,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "move",
@@ -5791,7 +6185,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -5806,7 +6203,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "down",
@@ -5821,7 +6218,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -5836,7 +6236,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "cancel",
@@ -5851,7 +6251,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -5866,7 +6269,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "down",
@@ -5881,7 +6284,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -5896,7 +6302,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "cancel",
@@ -5911,7 +6317,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -5926,7 +6335,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "move",
@@ -5941,7 +6350,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -5956,7 +6368,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "cancel",
@@ -5971,7 +6383,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -6184,7 +6599,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -6228,7 +6646,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -6326,7 +6747,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -6424,7 +6848,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -6449,7 +6876,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -6493,7 +6923,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -6591,7 +7024,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -6616,7 +7052,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -6641,7 +7080,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -6757,7 +7199,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -6814,7 +7259,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -6909,7 +7357,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "down",
@@ -6924,7 +7372,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -6939,7 +7390,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "down",
@@ -6954,7 +7405,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -6969,7 +7423,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "move",
@@ -6984,7 +7438,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -6999,7 +7456,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "up",
@@ -7014,7 +7471,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -7155,7 +7615,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -7217,7 +7680,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -7279,7 +7745,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -7336,7 +7805,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -7499,7 +7971,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "down",
@@ -7515,7 +7987,10 @@
               },
               "source": "lens-a",
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -7530,7 +8005,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "down",
@@ -7546,7 +8021,10 @@
               },
               "source": "lens-c",
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -7561,7 +8039,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "down",
@@ -7576,7 +8054,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -7591,7 +8072,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "move",
@@ -7607,7 +8088,10 @@
               },
               "source": "lens-b",
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -7803,7 +8287,10 @@
                   },
                   "source": "lens-a",
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -7829,7 +8316,10 @@
                   },
                   "source": "lens-a",
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -7892,7 +8382,10 @@
                   },
                   "source": "lens-c",
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -7990,7 +8483,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -8015,7 +8511,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -8040,7 +8539,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -8121,7 +8623,10 @@
                   },
                   "source": "lens-b",
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -8147,7 +8652,10 @@
                   },
                   "source": "lens-b",
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -8186,7 +8694,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -8308,7 +8819,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "down",
@@ -8323,7 +8834,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -8345,7 +8859,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "move",
@@ -8360,7 +8874,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -8375,7 +8892,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "up",
@@ -8390,7 +8907,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -8446,7 +8966,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "down",
@@ -8461,7 +8981,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -8483,7 +9006,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "move",
@@ -8498,7 +9021,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -8513,7 +9039,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "up",
@@ -8528,7 +9054,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -8705,7 +9234,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -8785,7 +9317,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -8919,7 +9454,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -8981,7 +9519,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -9025,7 +9566,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -9064,7 +9608,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -9192,7 +9739,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "down",
@@ -9208,7 +9755,10 @@
               },
               "source": "lens-b",
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -9223,7 +9773,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "down",
@@ -9239,7 +9789,10 @@
               },
               "source": "lens-a",
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -9261,7 +9814,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "down",
@@ -9277,7 +9830,10 @@
               },
               "source": "lens-a",
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -9292,7 +9848,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "down",
@@ -9308,7 +9864,10 @@
               },
               "source": "lens-b",
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -9468,7 +10027,10 @@
                   },
                   "source": "lens-b",
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -9531,7 +10093,10 @@
                   },
                   "source": "lens-a",
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -9630,7 +10195,10 @@
                   },
                   "source": "lens-b",
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -9669,7 +10237,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -9759,7 +10330,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "down",
@@ -9774,7 +10345,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -9789,7 +10363,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "setCursor",
+          "method": "claimCursor",
           "args": [
             "hover",
             "text",
@@ -9813,7 +10387,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "move",
@@ -9828,7 +10402,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -9843,7 +10420,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "up",
@@ -9858,7 +10435,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -9873,7 +10453,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "cursor",
+          "method": "getCursor",
           "args": []
         }
       ],
@@ -9957,6 +10537,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "default"
               }
             }
@@ -9983,6 +10565,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "default"
               }
             }
@@ -10027,7 +10611,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -10053,6 +10640,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "default"
               }
             }
@@ -10087,6 +10676,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "text"
               }
             }
@@ -10128,6 +10719,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pan",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "grab"
               }
             }
@@ -10172,7 +10765,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -10198,6 +10794,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pan",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "grab"
               }
             }
@@ -10224,6 +10822,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pan",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "grab"
               }
             }
@@ -10248,6 +10848,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pan",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "grab"
               }
             }
@@ -10269,7 +10871,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -10325,7 +10930,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "setCursor",
+          "method": "claimCursor",
           "args": [
             "a",
             "text",
@@ -10338,7 +10943,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "setCursor",
+          "method": "claimCursor",
           "args": [
             "b",
             "move",
@@ -10351,7 +10956,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "setCursor",
+          "method": "claimCursor",
           "args": [
             "b",
             "move",
@@ -10364,7 +10969,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "setCursor",
+          "method": "claimCursor",
           "args": [
             "b",
             "grabbing",
@@ -10377,7 +10982,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "setCursor",
+          "method": "claimCursor",
           "args": [
             "c",
             "crosshair"
@@ -10389,7 +10994,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "setCursor",
+          "method": "claimCursor",
           "args": [
             "a",
             null
@@ -10401,7 +11006,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "setCursor",
+          "method": "claimCursor",
           "args": [
             "b",
             null
@@ -10413,7 +11018,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "setCursor",
+          "method": "claimCursor",
           "args": [
             "c",
             "crosshair",
@@ -10426,7 +11031,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "setCursor",
+          "method": "claimCursor",
           "args": [
             "c",
             null
@@ -10438,7 +11043,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "setCursor",
+          "method": "claimCursor",
           "args": [
             "never",
             null
@@ -10450,7 +11055,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "cursor",
+          "method": "getCursor",
           "args": []
         }
       ],
@@ -10534,6 +11139,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "default"
               }
             }
@@ -10568,6 +11175,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "text"
               }
             }
@@ -10594,6 +11203,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "text"
               }
             }
@@ -10628,6 +11239,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "move"
               }
             }
@@ -10662,6 +11275,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "text"
               }
             }
@@ -10688,6 +11303,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "text"
               }
             }
@@ -10722,6 +11339,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "grabbing"
               }
             }
@@ -10756,6 +11375,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "crosshair"
               }
             }
@@ -10782,6 +11403,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "crosshair"
               }
             }
@@ -10816,6 +11439,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "default"
               }
             }
@@ -10842,6 +11467,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "default"
               }
             }
@@ -10866,6 +11493,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "default"
               }
             }
@@ -10890,7 +11519,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -10946,7 +11578,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "move",
@@ -10961,7 +11593,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -10976,7 +11611,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "move",
@@ -10991,7 +11626,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -11006,7 +11644,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "move",
@@ -11059,7 +11697,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "move",
@@ -11082,7 +11720,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "down",
@@ -11097,7 +11735,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -11112,7 +11753,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "up",
@@ -11127,7 +11768,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -11142,7 +11786,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "move",
@@ -11157,7 +11801,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 1,
                   "y": 2
@@ -11175,7 +11822,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "move",
@@ -11273,6 +11920,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pan",
+                "defaultToolId": "pan",
+                "toolStack": [],
                 "cursor": "default"
               }
             }
@@ -11307,6 +11956,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pan",
+                "defaultToolId": "pan",
+                "toolStack": [],
                 "cursor": "grab"
               }
             }
@@ -11333,6 +11984,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pan",
+                "defaultToolId": "pan",
+                "toolStack": [],
                 "cursor": "grab"
               }
             }
@@ -11359,6 +12012,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pan",
+                "defaultToolId": "pan",
+                "toolStack": [],
                 "cursor": "grab"
               }
             }
@@ -11385,6 +12040,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pan",
+                "defaultToolId": "pan",
+                "toolStack": [],
                 "cursor": "grab"
               }
             }
@@ -11426,6 +12083,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "ink",
+                "defaultToolId": "pan",
+                "toolStack": [],
                 "cursor": "default"
               }
             }
@@ -11452,6 +12111,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "ink",
+                "defaultToolId": "pan",
+                "toolStack": [],
                 "cursor": "default"
               }
             }
@@ -11486,6 +12147,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "ink",
+                "defaultToolId": "pan",
+                "toolStack": [],
                 "cursor": "crosshair"
               }
             }
@@ -11512,6 +12175,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "ink",
+                "defaultToolId": "pan",
+                "toolStack": [],
                 "cursor": "crosshair"
               }
             }
@@ -11538,6 +12203,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "ink",
+                "defaultToolId": "pan",
+                "toolStack": [],
                 "cursor": "crosshair"
               }
             }
@@ -11572,6 +12239,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "ink",
+                "defaultToolId": "pan",
+                "toolStack": [],
                 "cursor": "default"
               }
             }
@@ -11593,7 +12262,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -11665,7 +12337,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "move",
@@ -11680,7 +12352,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -11695,7 +12370,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "setCursor",
+          "method": "claimCursor",
           "args": [
             "hover",
             "text",
@@ -11708,7 +12383,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "setCursor",
+          "method": "claimCursor",
           "args": [
             "hover",
             "move",
@@ -11721,7 +12396,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "setCursor",
+          "method": "claimCursor",
           "args": [
             "hover",
             "copy",
@@ -11734,7 +12409,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "setCursor",
+          "method": "claimCursor",
           "args": [
             "hover",
             null
@@ -11746,7 +12421,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "move",
@@ -11769,7 +12444,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "move",
@@ -11784,7 +12459,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -11836,7 +12514,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "move",
@@ -11859,7 +12537,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "move",
@@ -11874,7 +12552,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -11889,7 +12570,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "cursor",
+          "method": "getCursor",
           "args": []
         }
       ],
@@ -11973,6 +12654,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "default"
               }
             }
@@ -11999,6 +12682,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "default"
               }
             }
@@ -12033,6 +12718,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "url(p.svg) 0 0, default"
               }
             }
@@ -12067,6 +12754,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "url(t.svg) 4 4, text"
               }
             }
@@ -12101,6 +12790,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "move"
               }
             }
@@ -12135,6 +12826,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "copy"
               }
             }
@@ -12169,6 +12862,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "url(p.svg) 0 0, default"
               }
             }
@@ -12203,6 +12898,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "default"
               }
             }
@@ -12237,6 +12934,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "url(p.svg) 0 0, default"
               }
             }
@@ -12263,6 +12962,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "url(p.svg) 0 0, default"
               }
             }
@@ -12297,6 +12998,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "default"
               }
             }
@@ -12338,6 +13041,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pan",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "url(h.svg) 0 0, grab"
               }
             }
@@ -12372,6 +13077,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pan",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "grab"
               }
             }
@@ -12406,6 +13113,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pan",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "url(h.svg) 0 0, grab"
               }
             }
@@ -12430,6 +13139,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pan",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "url(h.svg) 0 0, grab"
               }
             }
@@ -12451,7 +13162,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -12530,7 +13244,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "tools",
+          "method": "listTools",
           "args": []
         },
         {
@@ -12549,6 +13263,9 @@
                   "text-select"
                 ]
               }
+            },
+            {
+              "replace": true
             }
           ]
         },
@@ -12558,7 +13275,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "tools",
+          "method": "listTools",
           "args": []
         },
         {
@@ -12592,7 +13309,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "move",
@@ -12607,7 +13324,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -12622,7 +13342,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "cursor",
+          "method": "getCursor",
           "args": []
         },
         {
@@ -12652,7 +13372,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "activeTool",
+          "method": "getActiveTool",
           "args": []
         },
         {
@@ -12661,7 +13381,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "tools",
+          "method": "listTools",
           "args": []
         },
         {
@@ -12700,6 +13420,9 @@
               "enables": {
                 "$set": []
               }
+            },
+            {
+              "replace": true
             }
           ]
         },
@@ -12728,6 +13451,9 @@
               "enables": {
                 "$set": []
               }
+            },
+            {
+              "replace": true
             }
           ]
         },
@@ -12760,7 +13486,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "cursor",
+          "method": "getCursor",
           "args": []
         },
         {
@@ -12776,7 +13502,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "tools",
+          "method": "listTools",
           "args": []
         }
       ],
@@ -12860,6 +13586,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "default"
               }
             }
@@ -12886,6 +13614,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "default"
               }
             }
@@ -12949,6 +13679,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "default"
               }
             }
@@ -12975,6 +13707,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "default"
               }
             }
@@ -13034,6 +13768,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "default"
               }
             }
@@ -13075,6 +13811,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "ink",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "not-allowed"
               }
             }
@@ -13101,6 +13839,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "ink",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "not-allowed"
               }
             }
@@ -13135,6 +13875,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "ink",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "url(i.svg) 0 0, crosshair"
               }
             }
@@ -13159,6 +13901,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "ink",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "url(i.svg) 0 0, crosshair"
               }
             }
@@ -13185,6 +13929,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "ink",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "url(i.svg) 0 0, crosshair"
               }
             }
@@ -13211,6 +13957,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "ink",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "url(i.svg) 0 0, crosshair"
               }
             }
@@ -13241,6 +13989,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "ink",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "url(i.svg) 0 0, crosshair"
               }
             }
@@ -13288,6 +14038,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "ink",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "url(i.svg) 0 0, crosshair"
               }
             }
@@ -13329,6 +14081,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pan",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "url(g.svg) 0 0, grab"
               }
             }
@@ -13349,8 +14103,10 @@
           "outcome": {
             "threw": {
               "$error": {
-                "name": "Error",
-                "message": "[interaction] unknown tool 'ink'"
+                "name": "PluginError",
+                "message": "unknown tool 'ink'",
+                "code": "not-found",
+                "capability": "interaction"
               }
             }
           },
@@ -13358,6 +14114,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pan",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "url(g.svg) 0 0, grab"
               }
             }
@@ -13384,6 +14142,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "pan",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "url(g.svg) 0 0, grab"
               }
             }
@@ -13425,6 +14185,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "ink",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "crosshair"
               }
             }
@@ -13451,6 +14213,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "ink",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "crosshair"
               }
             }
@@ -13492,6 +14256,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "ink",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "cell"
               }
             }
@@ -13518,6 +14284,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "ink",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "cell"
               }
             }
@@ -13542,6 +14310,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "ink",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "cell"
               }
             }
@@ -13568,6 +14338,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "ink",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "cell"
               }
             }
@@ -13608,6 +14380,13 @@
                     "link-nav"
                   ]
                 }
+              },
+              {
+                "id": "ink",
+                "cursor": "cell",
+                "enables": {
+                  "$set": []
+                }
               }
             ]
           },
@@ -13615,6 +14394,8 @@
             "plugins": {
               "interaction::a": {
                 "activeToolId": "ink",
+                "defaultToolId": "pointer",
+                "toolStack": [],
                 "cursor": "cell"
               }
             }
@@ -13636,7 +14417,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -13706,7 +14490,10 @@
               },
               "pointerType": "touch",
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -13906,7 +14693,10 @@
               "pointerType": "touch",
               "clickCount": 1,
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -13938,7 +14728,10 @@
               "pointerType": "touch",
               "source": "lens-b",
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -13971,7 +14764,10 @@
               "source": "lens-a",
               "gesture": "long-press",
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -13986,7 +14782,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "move",
@@ -14001,7 +14797,10 @@
                 "meta": false
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 5,
                   "y": 6
@@ -14268,7 +15067,10 @@
                   "pointerType": "touch",
                   "clickCount": 1,
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -14295,7 +15097,10 @@
                   "pointerType": "touch",
                   "clickCount": 1,
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -14393,7 +15198,10 @@
                   "pointerType": "touch",
                   "source": "lens-b",
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -14420,7 +15228,10 @@
                   "pointerType": "touch",
                   "source": "lens-b",
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -14537,7 +15348,10 @@
                   "source": "lens-a",
                   "gesture": "long-press",
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -14565,7 +15379,10 @@
                   "source": "lens-a",
                   "gesture": "long-press",
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -14679,7 +15496,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -14704,7 +15524,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -14729,7 +15552,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -14754,7 +15580,10 @@
                     "meta": false
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 5,
                       "y": 6
@@ -14793,7 +15622,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -14881,7 +15713,7 @@
             "token": "interaction",
             "doc": "a"
           },
-          "method": "dispatch",
+          "method": "dispatchPointer",
           "args": [
             {
               "phase": "down",
@@ -14907,7 +15739,10 @@
                 }
               },
               "page": {
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "point": {
                   "x": 1.5,
                   "y": -2
@@ -15058,7 +15893,10 @@
                     "$function": true
                   },
                   "page": {
-                    "pon": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "point": {
                       "x": 1.5,
                       "y": -2
@@ -15100,7 +15938,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -15275,7 +16116,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,

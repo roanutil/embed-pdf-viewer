@@ -30,40 +30,46 @@
  *     options to build. The QuickJS default does not port, so `enabled`
  *     without a sandbox spec is refused.
  */
-import { definePlugin, type AnyPlugin, type PluginContext } from '@embedpdf/core';
+import { register } from 'node:module';
+
+import { definePlugin, type AnyPlugin } from '@embedpdf/core';
 import type { Engine } from '@embedpdf/engine-core/runtime';
 
-import { initialStampState, stampReducer } from '../../../../packages/plugin/stamp/src/reducer';
+import { initialStampState, stampReducer } from '../../../../packages/plugin/stamp/src/model';
 import { stampPlugin } from '../../../../packages/plugin/stamp/src/stamp.plugin';
-import { StampToken } from '../../../../packages/plugin/stamp/src/types';
-import type {
-  StampAction,
-  StampCapability,
-  StampConfig,
-  StampScriptingOptions,
-  StampState,
-} from '../../../../packages/plugin/stamp/src/types';
-import type { FormScriptingOptions } from '../../../../packages/plugin/form/src/types';
+import { StampToken } from '../../../../packages/plugin/stamp/src/host-contract';
+import type { StampConfig, StampHostCapability } from '../../../../packages/plugin/stamp/src/host-contract';
+import type { StampAction, StampState } from '../../../../packages/plugin/stamp/src/model';
+import { ActionsToken } from '../../../../packages/plugin/actions/src/contract';
+import { ActionsToken as ActionsHostToken } from '../../../../packages/plugin/actions/src/host-contract';
+import { AnnotationToken } from '../../../../packages/plugin/annotation/src/contract';
 
 import { makeError, type ErrorSpec, type FakeDocumentSpec, type ResponseSpec } from '../fake-engine';
 import { registerPlugin, type PluginEnv, type Step } from '../scenario';
 import type { Suite } from '../vectors';
-import { scriptedCallback, scriptedSandboxFactory, type AnswerSpec, type SandboxSpec } from './acrojs';
+import { scriptedCallback, type AnswerSpec, type SandboxSpec } from './acrojs';
+import './actions';
 import { layout as pageLayout } from './annotation-fixtures';
 
 export const suites: Suite[] = [];
 
 // ── fresh capability instances ────────────────────────────────────────────────
 
-type CapabilityModule = typeof import('../../../../packages/plugin/stamp/src/capability');
+// The id counter lives in `services/asset-engine.ts`, which the controller
+// reaches through several imports. A resolve hook carries the instance query
+// from the controller down the whole stamp source tree, so each instance is
+// a private copy of it, counter included.
+register(new URL('../loader/instance-hook.mjs', import.meta.url));
 
-const CAPABILITY = new URL('../../../../packages/plugin/stamp/src/capability.ts', import.meta.url).href;
+type ControllerModule = typeof import('../../../../packages/plugin/stamp/src/controller');
+
+const CONTROLLER = new URL('../../../../packages/plugin/stamp/src/controller.ts', import.meta.url).href;
 const POOL_SIZE = 160;
-const pool: CapabilityModule[] = await Promise.all(
-  Array.from({ length: POOL_SIZE }, (_, i) => import(`${CAPABILITY}?instance=${i}`) as Promise<CapabilityModule>),
+const pool: ControllerModule[] = await Promise.all(
+  Array.from({ length: POOL_SIZE }, (_, i) => import(`${CONTROLLER}?stamp-instance=${i}`) as Promise<ControllerModule>),
 );
 let nextInstance = 0;
-const freshCapability = (): CapabilityModule => {
+const freshCapability = (): ControllerModule => {
   const instance = pool[nextInstance++];
   if (!instance) throw new Error(`[stamp suite] more than ${POOL_SIZE} stamp cases: raise POOL_SIZE`);
   return instance;
@@ -94,7 +100,7 @@ export interface StampScriptingSpec {
   readonly now?: Scripted;
   readonly utcOffsetMinutes?: Scripted;
   readonly randomSeed?: Scripted;
-  readonly budget?: FormScriptingOptions['budget'];
+  readonly budget?: unknown;
   readonly onUiEffect?: Scripted;
   readonly onDiagnostic?: Scripted;
   readonly onError?: Scripted;
@@ -110,6 +116,10 @@ export type AssetEngineSpec =
 export interface StampSpec {
   readonly assetEngine?: AssetEngineSpec;
   readonly previewWidth?: number;
+  readonly dynamic?: boolean;
+  /** v2's `config.scripting`. v3 evaluates dynamic stamps in a realm the
+   *  target document's actions plugin mints, so this now configures that
+   *  plugin (see PLACEMENT), and the observers subscribe to its hooks. */
   readonly scripting?: StampScriptingSpec;
 }
 
@@ -124,52 +134,74 @@ function assetEngineOf(spec: AssetEngineSpec, engine: Engine, env: PluginEnv): S
   };
 }
 
-function scriptingOf(spec: StampScriptingSpec, env: PluginEnv): StampScriptingOptions {
-  if (spec.enabled && spec.sandbox === undefined) {
-    throw new Error('[stamp suite] scripting.enabled needs a scripted sandbox: the QuickJS default does not port');
-  }
-  const fn = <T>(s: Scripted | undefined) =>
-    s === undefined ? undefined : (scriptedCallback(s.$fn, s, env) as (...args: unknown[]) => T);
-  const identity = spec.identity;
-  return {
-    enabled: spec.enabled && spec.sandbox !== null,
-    ...(spec.sandbox ? { sandboxFactory: scriptedSandboxFactory(spec.sandbox, env) } : {}),
-    ...(identity === undefined
-      ? {}
-      : { identity: '$fn' in identity ? fn<Record<string, string>>(identity as Scripted) : identity }),
-    ...(spec.fileName ? { fileName: fn<string>(spec.fileName) } : {}),
-    ...(spec.now ? { now: fn<number>(spec.now) } : {}),
-    ...(spec.utcOffsetMinutes ? { utcOffsetMinutes: fn<number>(spec.utcOffsetMinutes) } : {}),
-    ...(spec.randomSeed ? { randomSeed: fn<number>(spec.randomSeed) } : {}),
-    ...(spec.budget ? { budget: spec.budget } : {}),
-    ...(spec.onUiEffect ? { onUiEffect: fn<void>(spec.onUiEffect) } : {}),
-    ...(spec.onDiagnostic ? { onDiagnostic: fn<void>(spec.onDiagnostic) } : {}),
-    ...(spec.onError ? { onError: fn<void>(spec.onError) } : {}),
-  } as StampScriptingOptions;
-}
-
 function configOf(spec: StampSpec, engine: Engine, env: PluginEnv): StampConfig {
   return {
     ...(spec.assetEngine !== undefined ? { assetEngine: assetEngineOf(spec.assetEngine, engine, env) } : {}),
     ...(spec.previewWidth !== undefined ? { previewWidth: spec.previewWidth } : {}),
-    ...(spec.scripting !== undefined ? { scripting: scriptingOf(spec.scripting, env) } : {}),
+    ...(spec.dynamic !== undefined ? { dynamic: spec.dynamic } : {}),
   };
 }
+
+/** v2's scripting observers, over the v3 doors a detached realm's results
+ *  reach: alerts through the actions UI adapter (the only UI effect a
+ *  detached realm surfaces), diagnostics and errors through its script hooks. */
+interface ObserverSpec {
+  readonly onUiEffect?: Scripted;
+  readonly onDiagnostic?: Scripted;
+  readonly onError?: Scripted;
+}
+registerPlugin('stamp-observers', {
+  factory: (config, env) => {
+    const spec = (config ?? {}) as ObserverSpec;
+    const fn = (s: Scripted) => scriptedCallback(s.$fn, s, env) as (...args: unknown[]) => void;
+    return definePlugin({
+      id: 'stamp-observers',
+      scope: 'document',
+      requires: [ActionsHostToken],
+      effects: (ctx) => {
+        const actions = ctx.get(ActionsHostToken);
+        if (spec.onUiEffect) {
+          const onUiEffect = fn(spec.onUiEffect);
+          ctx.cleanup(
+            actions.setUiAdapter({
+              openUri: () => {},
+              print: () => {},
+              alert: (message, opts) => onUiEffect({ kind: 'alert', message, ...opts }),
+            }),
+          );
+        }
+        if (spec.onDiagnostic) ctx.cleanup(actions.onScriptDiagnostic(fn(spec.onDiagnostic)));
+        if (spec.onError) ctx.cleanup(actions.onScriptError(fn(spec.onError)));
+      },
+    }) as AnyPlugin;
+  },
+});
+
+/** The actions plugin carrying a v2 scripting spec as its javascript config. */
+export const scriptingActions = (spec: StampScriptingSpec) => {
+  const { onUiEffect, onDiagnostic, onError, ...javascript } = spec;
+  const observers = { onUiEffect, onDiagnostic, onError };
+  const any = Object.values(observers).some((v) => v !== undefined);
+  return [
+    { factory: 'actions', config: { openSequence: 'off', javascript } },
+    ...(any ? [{ factory: 'stamp-observers', config: JSON.parse(JSON.stringify(observers)) }] : []),
+  ];
+};
 
 registerPlugin('stamp', {
   factory: (config, env) => {
     stampLog = env.log;
     const instance = freshCapability();
     const spec = (config ?? {}) as StampSpec;
-    // `stamp.plugin.ts`, over this case's own capability module.
-    return definePlugin<StampState, StampAction, StampCapability>({
+    // `stamp.plugin.ts`, over this case's own controller module.
+    return definePlugin<StampState, StampAction, StampHostCapability>({
       id: 'stamp',
       token: StampToken,
       scope: 'workspace',
+      optional: [AnnotationToken, ActionsToken],
       initialState: initialStampState,
       reduce: stampReducer,
-      capability: (ctx: PluginContext<StampState, StampAction>) =>
-        instance.createStampCapability(ctx, configOf(spec, ctx.engine, env)),
+      create: (ctx) => ({ api: instance.createStampController(ctx as never, configOf(spec, ctx.engine, env)) }),
     }) as AnyPlugin;
   },
   tokens: [StampToken],
@@ -246,7 +278,24 @@ export interface AssetDocOptions {
   /** The page registry, when it differs from the listed pages. */
   readonly registry?: readonly unknown[];
   readonly download?: string;
+  /** The document's `/Title`; absent reads null. */
+  readonly title?: string;
+  /** The `/Names /Pages` registry `pages.list` reports; absent is none. */
+  readonly namedPages?: readonly unknown[];
 }
+
+const META = (title: string | null) => ({
+  title,
+  author: null,
+  subject: null,
+  keywords: null,
+  producer: null,
+  creator: null,
+  created: null,
+  modified: null,
+  trapped: 'unknown',
+  custom: {},
+});
 
 /** A library PDF the asset engine opens: pieceInfo on the catalog and every
  *  page, and answers for every call an import makes. */
@@ -256,19 +305,57 @@ export const assetDoc = (pages: readonly ReturnType<typeof assetPage>[], o: Asse
   pages: o.registry ?? pages,
   responses: [
     ...(o.responses ?? []),
-    { path: 'pages.list', value: { pageCount: pages.length, pages } },
+    { path: 'pages.list', value: { pageCount: pages.length, pages, namedPages: o.namedPages ?? [] } },
+    { path: 'metadata.read', value: META(o.title ?? null) },
+    { path: 'metadata.update' },
+    { path: 'pages.setName' },
+    { path: 'pages.removeName' },
     { path: 'pieceInfo.read', value: o.catalog ? pieceInfo(o.catalog) : null },
     ...pages.map((p) => ({
       path: 'page.pieceInfo.read',
-      pon: p.pageObjectNumber,
-      value: o.page?.[p.pageObjectNumber] ? pieceInfo(o.page[p.pageObjectNumber]) : null,
+      pon: p.ref.pageObjectNumber,
+      value: o.page?.[p.ref.pageObjectNumber] ? pieceInfo(o.page[p.ref.pageObjectNumber]) : null,
     })),
     { path: 'pieceInfo.update' },
     { path: 'page.pieceInfo.update' },
-    ...pages.map((p) => ({ path: 'pages.extract', args: [[p.pageObjectNumber]], value: pdf(`page-${p.pageObjectNumber}`) })),
-    ...pages.map((p) => ({ path: 'page.render.image', pon: p.pageObjectNumber, value: image(p.pageObjectNumber) })),
+    ...pages.map((p) => ({ path: 'pages.extract', args: [[{ kind: 'objectNumber', pageObjectNumber: p.ref.pageObjectNumber }]], value: pdf(`page-${p.ref.pageObjectNumber}`) })),
+    ...pages.map((p) => ({ path: 'page.render.image', pon: p.ref.pageObjectNumber, value: image(p.ref.pageObjectNumber) })),
     { path: 'download', value: pdf(o.download ?? 'canonical') },
   ],
+});
+
+/** The page a library edit inserts (a raster's blank page, a PDF's page). */
+export const WORKSHOP_PAGE = 900;
+
+/**
+ * The document every library edit opens when the case does not name one:
+ * the blank seed of a new library, and the canonical copy an append reopens.
+ * It answers each library-editing call the same way every time: its registry
+ * is the seed's unregistered blank (pon 3) and the page an insert adds
+ * (WORKSHOP_PAGE, 300 x 120), which is what the insert answers.
+ */
+export const workshopDoc = (): FakeDocumentSpec => {
+  const pages = [assetPage(0, 3, 612, 792), assetPage(1, WORKSHOP_PAGE, 300, 120)];
+  const added = { kind: 'objectNumber', pageObjectNumber: WORKSHOP_PAGE };
+  const layout = { pageCount: pages.length, pages, namedPages: [] };
+  return assetDoc(pages, {
+    responses: [
+      { path: 'pages.insert', value: { insertedPages: [added], layout, cache: null } },
+      { path: 'pages.insertBlank', value: { insertedPages: [added], layout, cache: null } },
+      { path: 'page.annotations.create', value: { created: null } },
+      { path: 'pages.flatten', value: { results: [{ page: added, status: 'applied' }], pages: [added], cache: null } },
+      { path: 'pages.delete', value: { layout, cache: null } },
+      { path: 'forms.list', value: { formKind: 'none', needsAppearances: false, fields: [], calculationOrder: [] } },
+    ],
+    download: 'workshop',
+  });
+};
+
+/** A case's engine with the workshop document as the open fallback. */
+export const withWorkshop = <E extends { documents?: Record<string, FakeDocumentSpec> }>(engine?: E) => ({
+  ...(engine ?? {}),
+  documents: { ...(engine?.documents ?? {}), workshop: workshopDoc() },
+  defaultDocument: 'workshop',
 });
 
 /** Engine-level `open` answers, consumed in order: each hands out that
@@ -286,11 +373,25 @@ export const openDoc = (id = 'a'): Step => ({
   method: 'open',
   args: [{ kind: 'bytes', id, bytes: { $bytes: '' } }],
 });
+/** v2 stamp method → v3 name. `libraries`/`assets` were list reads;
+ *  `libraryBytes` is the async `exportLibrary`. */
+const RENAMED: Readonly<Record<string, string>> = {
+  libraries: 'listLibraries',
+  library: 'getLibrary',
+  asset: 'getAsset',
+  assetPreview: 'getAssetPreview',
+  assetBytes: 'readAssetBytes',
+  libraryBytes: 'exportLibrary',
+  importLibraryPdf: 'importLibrary',
+  addAsset: 'createAsset',
+  removeAsset: 'deleteAsset',
+  removeLibrary: 'deleteLibrary',
+};
 export const stamp = (method: string, args: unknown[] = []): Step => ({
   op: 'call',
   target: { token: 'stamp' },
-  method,
-  args,
+  method: method === 'assets' ? 'listAssets' : (RENAMED[method] ?? method),
+  args: method === 'assets' && typeof args[0] === 'string' ? [{ libraryId: args[0] }] : args,
 });
 export const settle = (label: string, value?: unknown): Step =>
   value === undefined ? { op: 'settle', label } : { op: 'settle', label, value };
@@ -306,9 +407,13 @@ export const engineError = (code: string, message: string): ErrorSpec => ({ name
 /** The stamp plugin alone, with a config. */
 export const STAMP = (config?: StampSpec) => [config === undefined ? { factory: 'stamp' } : { factory: 'stamp', config }];
 /** The placement registry: interaction, annotation and form beside stamp. */
-export const PLACEMENT = (config?: StampSpec) => [
-  { factory: 'interaction' },
-  { factory: 'annotation' },
-  { factory: 'form' },
-  ...STAMP(config),
-];
+export const PLACEMENT = (config?: StampSpec) => {
+  const { scripting, ...rest } = config ?? {};
+  return [
+    { factory: 'interaction' },
+    { factory: 'annotation' },
+    { factory: 'form' },
+    ...(scripting ? scriptingActions(scripting) : []),
+    ...STAMP(config === undefined ? undefined : rest),
+  ];
+};

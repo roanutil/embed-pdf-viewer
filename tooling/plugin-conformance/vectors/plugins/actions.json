@@ -11,10 +11,16 @@
           "scope": "activate",
           "ref": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1,
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
             "annotObjectNumber": 1
           },
-          "pon": 1
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          }
         }
       ],
       "outcome": {
@@ -32,10 +38,16 @@
           "event": "cursorEnter",
           "ref": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1,
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
             "annotObjectNumber": 1
           },
-          "pon": 1
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          }
         }
       ],
       "outcome": {
@@ -54,10 +66,16 @@
           "event": "cursorExit",
           "ref": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1,
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
             "annotObjectNumber": 1
           },
-          "pon": 1
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          }
         }
       ],
       "outcome": {
@@ -76,10 +94,16 @@
           "event": "mouseDown",
           "ref": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1,
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
             "annotObjectNumber": 1
           },
-          "pon": 1
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          }
         }
       ],
       "outcome": {
@@ -98,10 +122,16 @@
           "event": "mouseUp",
           "ref": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1,
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
             "annotObjectNumber": 1
           },
-          "pon": 1
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          }
         }
       ],
       "outcome": {
@@ -120,10 +150,16 @@
           "event": "focus",
           "ref": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1,
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
             "annotObjectNumber": 1
           },
-          "pon": 1
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          }
         }
       ],
       "outcome": {
@@ -142,10 +178,16 @@
           "event": "blur",
           "ref": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1,
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
             "annotObjectNumber": 1
           },
-          "pon": 1
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          }
         }
       ],
       "outcome": {
@@ -162,7 +204,10 @@
         {
           "scope": "page",
           "event": "open",
-          "pon": 1
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          }
         }
       ],
       "outcome": {
@@ -179,7 +224,10 @@
         {
           "scope": "page",
           "event": "close",
-          "pon": 1
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          }
         }
       ],
       "outcome": {
@@ -196,7 +244,10 @@
         {
           "scope": "page",
           "event": "visible",
-          "pon": 1
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          }
         }
       ],
       "outcome": {
@@ -213,7 +264,10 @@
         {
           "scope": "page",
           "event": "invisible",
-          "pon": 1
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          }
         }
       ],
       "outcome": {
@@ -321,16 +375,22 @@
     },
     {
       "name": "origin-of-0",
-      "fn": "originOf",
+      "fn": "triggerOriginOf",
       "args": [
         {
           "scope": "activate",
           "ref": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1,
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
             "annotObjectNumber": 1
           },
-          "pon": 1
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          }
         }
       ],
       "outcome": {
@@ -339,17 +399,23 @@
     },
     {
       "name": "origin-of-1",
-      "fn": "originOf",
+      "fn": "triggerOriginOf",
       "args": [
         {
           "scope": "annotation",
           "event": "cursorEnter",
           "ref": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1,
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
             "annotObjectNumber": 1
           },
-          "pon": 1
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          }
         }
       ],
       "outcome": {
@@ -358,17 +424,23 @@
     },
     {
       "name": "origin-of-2",
-      "fn": "originOf",
+      "fn": "triggerOriginOf",
       "args": [
         {
           "scope": "annotation",
           "event": "cursorExit",
           "ref": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1,
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
             "annotObjectNumber": 1
           },
-          "pon": 1
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          }
         }
       ],
       "outcome": {
@@ -377,17 +449,23 @@
     },
     {
       "name": "origin-of-3",
-      "fn": "originOf",
+      "fn": "triggerOriginOf",
       "args": [
         {
           "scope": "annotation",
           "event": "mouseDown",
           "ref": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1,
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
             "annotObjectNumber": 1
           },
-          "pon": 1
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          }
         }
       ],
       "outcome": {
@@ -396,17 +474,23 @@
     },
     {
       "name": "origin-of-4",
-      "fn": "originOf",
+      "fn": "triggerOriginOf",
       "args": [
         {
           "scope": "annotation",
           "event": "mouseUp",
           "ref": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1,
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
             "annotObjectNumber": 1
           },
-          "pon": 1
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          }
         }
       ],
       "outcome": {
@@ -415,17 +499,23 @@
     },
     {
       "name": "origin-of-5",
-      "fn": "originOf",
+      "fn": "triggerOriginOf",
       "args": [
         {
           "scope": "annotation",
           "event": "focus",
           "ref": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1,
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
             "annotObjectNumber": 1
           },
-          "pon": 1
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          }
         }
       ],
       "outcome": {
@@ -434,17 +524,23 @@
     },
     {
       "name": "origin-of-6",
-      "fn": "originOf",
+      "fn": "triggerOriginOf",
       "args": [
         {
           "scope": "annotation",
           "event": "blur",
           "ref": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1,
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
             "annotObjectNumber": 1
           },
-          "pon": 1
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          }
         }
       ],
       "outcome": {
@@ -453,12 +549,15 @@
     },
     {
       "name": "origin-of-7",
-      "fn": "originOf",
+      "fn": "triggerOriginOf",
       "args": [
         {
           "scope": "page",
           "event": "open",
-          "pon": 1
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          }
         }
       ],
       "outcome": {
@@ -467,12 +566,15 @@
     },
     {
       "name": "origin-of-8",
-      "fn": "originOf",
+      "fn": "triggerOriginOf",
       "args": [
         {
           "scope": "page",
           "event": "close",
-          "pon": 1
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          }
         }
       ],
       "outcome": {
@@ -481,12 +583,15 @@
     },
     {
       "name": "origin-of-9",
-      "fn": "originOf",
+      "fn": "triggerOriginOf",
       "args": [
         {
           "scope": "page",
           "event": "visible",
-          "pon": 1
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          }
         }
       ],
       "outcome": {
@@ -495,12 +600,15 @@
     },
     {
       "name": "origin-of-10",
-      "fn": "originOf",
+      "fn": "triggerOriginOf",
       "args": [
         {
           "scope": "page",
           "event": "invisible",
-          "pon": 1
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          }
         }
       ],
       "outcome": {
@@ -509,7 +617,7 @@
     },
     {
       "name": "origin-of-11",
-      "fn": "originOf",
+      "fn": "triggerOriginOf",
       "args": [
         {
           "scope": "document",
@@ -522,7 +630,7 @@
     },
     {
       "name": "origin-of-12",
-      "fn": "originOf",
+      "fn": "triggerOriginOf",
       "args": [
         {
           "scope": "document",
@@ -535,7 +643,7 @@
     },
     {
       "name": "origin-of-13",
-      "fn": "originOf",
+      "fn": "triggerOriginOf",
       "args": [
         {
           "scope": "document",
@@ -548,7 +656,7 @@
     },
     {
       "name": "origin-of-14",
-      "fn": "originOf",
+      "fn": "triggerOriginOf",
       "args": [
         {
           "scope": "document",
@@ -561,7 +669,7 @@
     },
     {
       "name": "origin-of-15",
-      "fn": "originOf",
+      "fn": "triggerOriginOf",
       "args": [
         {
           "scope": "document",
@@ -574,7 +682,7 @@
     },
     {
       "name": "origin-of-16",
-      "fn": "originOf",
+      "fn": "triggerOriginOf",
       "args": [
         {
           "scope": "document",

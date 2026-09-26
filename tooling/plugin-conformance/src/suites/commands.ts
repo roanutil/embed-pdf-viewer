@@ -25,22 +25,23 @@
  * `<name>:uses` after the function's own call. A use's `args` are decoded
  * the same way, so a use can register a command.
  */
+import '../probe';
+import { commandsPlugin, resolvedCommandsEqual } from '../../../../packages/plugin/commands/src/index';
 import {
-  commandsPlugin,
-  commandsReducer,
   CommandsToken,
+  commandsReducer,
   initialCommandsState,
-  resolvedCommandsEqual,
-} from '../../../../packages/plugin/commands/src/index';
-import { registerCommand, type CommandRegistry } from '../../../../packages/plugin/commands/src/capability';
+  registerCommand,
+  type CommandRegistry,
+} from '../../../../packages/plugin/commands/src/internal';
 import type {
-  CommandCtx,
+  CommandContext as CommandCtx,
   CommandDef,
   CommandsAction,
   CommandsConfig,
   CommandsState,
   ResolvedCommand,
-} from '../../../../packages/plugin/commands/src/types';
+} from '../../../../packages/plugin/commands/src/host-contract';
 
 import { makeError, type FakeDocumentSpec } from '../fake-engine';
 import { registerPlugin, tokenNamed, type FnSpec, type PluginEnv, type ScenarioCase, type Step } from '../scenario';
@@ -54,7 +55,14 @@ interface Use {
   readonly core?: string;
   readonly call?: string;
   readonly args?: readonly unknown[];
+  /** Keep the call's returned function (a command remover) under this name. */
+  readonly remember?: string;
+  /** Call the function kept under this name. */
+  readonly forget?: string;
 }
+
+/** Removers kept by `remember` uses, per case (the factory resets it). */
+let remembered = new Map<string, () => void>();
 
 interface CommandFnSpec extends FnSpec {
   readonly uses?: readonly Use[];
@@ -72,6 +80,11 @@ function decodeCommandValue(value: unknown, env: PluginEnv): unknown {
 }
 
 function runUse(use: Use, ctx: CommandCtx, env: PluginEnv): unknown {
+  if (use.forget !== undefined) {
+    const remove = remembered.get(use.forget);
+    if (!remove) return { threw: new Error(`nothing remembered as ${use.forget}`) };
+    return { returned: remove() };
+  }
   if (use.core !== undefined) return { returned: (ctx.core() as unknown as Record<string, unknown>)[use.core] };
   let capability: Record<string, (...args: unknown[]) => unknown> | null;
   try {
@@ -86,7 +99,9 @@ function runUse(use: Use, ctx: CommandCtx, env: PluginEnv): unknown {
   if (use.call === undefined) return { returned: 'resolved' };
   try {
     const args = (use.args ?? []).map((arg) => decodeCommandValue(arg, env));
-    return { returned: capability[use.call](...args) };
+    const returned = capability[use.call](...args);
+    if (use.remember !== undefined) remembered.set(use.remember, returned as () => void);
+    return { returned };
   } catch (error) {
     return { threw: error };
   }
@@ -112,6 +127,7 @@ function commandFn(spec: CommandFnSpec, env: PluginEnv): (ctx: CommandCtx) => un
 
 registerPlugin('commands', {
   factory: (raw, env) => {
+    remembered = new Map();
     if (raw === undefined) return commandsPlugin();
     return commandsPlugin(decodeCommandValue(raw, env) as CommandsConfig);
   },
@@ -235,7 +251,7 @@ const pluginCases: FunctionCase[] = [
 // ── scenarios ─────────────────────────────────────────────────────────────────
 
 const box = { left: 0, bottom: 0, right: 600, top: 800 };
-const pages = [{ index: 0, pageObjectNumber: 1, label: null, size: { width: 600, height: 800 }, rotation: 0, userUnit: 1, boxes: { media: box, crop: box } }];
+const pages = [{ index: 0, ref: { kind: 'objectNumber', pageObjectNumber: 1 }, label: null, size: { width: 600, height: 800 }, rotation: 0, userUnit: 1, boxes: { media: box, crop: box } }];
 const doc = (over: Partial<FakeDocumentSpec> = {}): FakeDocumentSpec => ({ pages, ...over });
 
 const start: Step = { op: 'call', target: 'kernel', method: 'start' };
@@ -296,44 +312,43 @@ const cases: ScenarioCase[] = [
     steps: [
       { op: 'call', target: 'kernel', method: 'capability', args: [{ $token: 'commands' }] },
       { op: 'call', target: 'kernel', method: 'scopeOf', args: [{ $token: 'commands' }] },
-      cmd('ids'),
-      cmd('disabledCategories'),
+      cmd('listCommandIds'),
+      cmd('getDisabledCategories'),
       start,
-      cmd('ids'),
-      { op: 'call', target: { ref: 3 } },
-      { op: 'call', target: { ref: 9 } },
+      cmd('listCommandIds'),
+      { op: 'call', target: { ref: 4 } },
+      { op: 'call', target: { ref: 11 } },
     ],
   },
   {
     name: 'registry',
     covers:
-      'Config commands register in order; register appends and throws on a duplicate or an unparsable shortcut (registering nothing); unregister removes (a missing id is a no-op), and re-registering moves an id to the end; has, ids and menuTarget read the registry.',
+      'Config commands register in order; registerCommand appends and throws on a duplicate or an unparsable shortcut (registering nothing); its remover removes (a second call is a no-op), and re-registering moves an id to the end; hasCommand, listCommandIds and getMenuTarget read the registry.',
     plugins: [commands([vdef('b', { menu: 'zoom' }), vdef('a', { shortcut: 'Mod+A' })])],
     steps: [
-      cmd('ids'),
-      cmd('has', 'a'),
-      cmd('has', 'z'),
-      cmd('register', vdef('c', { shortcut: ['Ctrl+C', 'Meta+C'] })),
-      cmd('ids'),
-      cmd('register', vdef('a', { labelKey: 'again' })),
-      cmd('register', vdef('d', { shortcut: ['Ctrl+D', 'Hyper+D'] })),
-      cmd('has', 'd'),
-      cmd('register', vdef('e', { shortcut: 'Nope+E' })),
-      cmd('ids'),
-      cmd('unregister', 'b'),
-      cmd('unregister', 'b'),
-      cmd('unregister', 'missing'),
-      cmd('has', 'b'),
-      cmd('register', vdef('b')),
-      cmd('ids'),
-      cmd('menuTarget', 'b'),
-      cmd('register', vdef('m', { menu: 'file' })),
-      cmd('menuTarget', 'm'),
-      cmd('menuTarget', 'nope'),
-      cmd('register', vdef('', { labelKey: 'empty id' })),
-      cmd('has', ''),
-      cmd('resolve', ''),
-      cmd('ids'),
+      cmd('listCommandIds'),
+      cmd('hasCommand', 'a'),
+      cmd('hasCommand', 'z'),
+      cmd('registerCommand', vdef('c', { shortcut: ['Ctrl+C', 'Meta+C'] })),
+      cmd('listCommandIds'),
+      cmd('registerCommand', vdef('a', { labelKey: 'again' })),
+      cmd('registerCommand', vdef('d', { shortcut: ['Ctrl+D', 'Hyper+D'] })),
+      cmd('hasCommand', 'd'),
+      cmd('registerCommand', vdef('e', { shortcut: 'Nope+E' })),
+      cmd('listCommandIds'),
+      { op: 'call', target: { ref: 0 } },
+      { op: 'call', target: { ref: 0 } },
+      cmd('hasCommand', 'c'),
+      cmd('registerCommand', vdef('c')),
+      cmd('listCommandIds'),
+      cmd('getMenuTarget', 'b'),
+      cmd('registerCommand', vdef('m', { menu: 'file' })),
+      cmd('getMenuTarget', 'm'),
+      cmd('getMenuTarget', 'nope'),
+      cmd('registerCommand', vdef('', { labelKey: 'empty id' })),
+      cmd('hasCommand', ''),
+      cmd('resolveCommand', ''),
+      cmd('listCommandIds'),
     ],
   },
   {
@@ -352,16 +367,16 @@ const cases: ScenarioCase[] = [
     ],
     engine: { documents: { a: doc() } },
     steps: [
-      cmd('resolve', 'plain'),
-      cmd('resolve', 'full'),
-      cmd('resolve', 'many'),
-      cmd('resolve', 'missing'),
-      cmd('resolve', 'panel'),
+      cmd('resolveCommand', 'plain'),
+      cmd('resolveCommand', 'full'),
+      cmd('resolveCommand', 'many'),
+      cmd('resolveCommand', 'missing'),
+      cmd('resolveCommand', 'panel'),
       start,
       open('a'),
-      cmd('resolve', 'panel-object'),
-      cmd('resolve', 'modal'),
-      cmd('resolve', 'full', 'a'),
+      cmd('resolveCommand', 'panel-object'),
+      cmd('resolveCommand', 'modal'),
+      cmd('resolveCommand', 'full', 'a'),
     ],
   },
   {
@@ -380,16 +395,16 @@ const cases: ScenarioCase[] = [
     ],
     engine: { documents: { a: doc(), b: doc() } },
     steps: [
-      cmd('resolve', 'd'),
+      cmd('resolveCommand', 'd'),
       start,
       open('a'),
       open('b'),
-      cmd('resolve', 'd'),
-      cmd('resolve', 'd', 'a'),
-      cmd('resolve', 'd', 'zzz'),
-      cmd('resolve', 'd', ''),
-      cmd('resolve', 'd', null),
-      cmd('resolve', 'missing', 'a'),
+      cmd('resolveCommand', 'd'),
+      cmd('resolveCommand', 'd', 'a'),
+      cmd('resolveCommand', 'd', 'zzz'),
+      cmd('resolveCommand', 'd', ''),
+      cmd('resolveCommand', 'd', null),
+      cmd('resolveCommand', 'missing', 'a'),
     ],
   },
   {
@@ -407,7 +422,7 @@ const cases: ScenarioCase[] = [
         }),
       ]),
     ],
-    steps: [cmd('resolve', 't'), cmd('execute', 't'), cmd('search', 't')],
+    steps: [cmd('resolveCommand', 't'), cmd('execute', 't'), cmd('searchCommands', 't')],
   },
   {
     name: 'icon-accent',
@@ -425,7 +440,7 @@ const cases: ScenarioCase[] = [
         vdef('absent'),
       ]),
     ],
-    steps: ['both', 'primary', 'secondary', 'empty', 'null', 'undefined', 'throws', 'absent'].map((id) => cmd('resolve', id)),
+    steps: ['both', 'primary', 'secondary', 'empty', 'null', 'undefined', 'throws', 'absent'].map((id) => cmd('resolveCommand', id)),
   },
   {
     name: 'categories',
@@ -442,25 +457,25 @@ const cases: ScenarioCase[] = [
       ),
     ],
     steps: [
-      cmd('disabledCategories'),
+      cmd('getDisabledCategories'),
       cmd('isCategoryDisabled', 'pro'),
       cmd('isCategoryDisabled', 'free'),
-      cmd('resolve', 'pro'),
+      cmd('resolveCommand', 'pro'),
       cmd('execute', 'pro'),
-      cmd('search', ''),
+      cmd('searchCommands', ''),
       cmd('disableCategory', 'pro'),
       cmd('disableCategory', 'beta'),
-      cmd('resolve', 'both'),
+      cmd('resolveCommand', 'both'),
       cmd('execute', 'both'),
       cmd('enableCategory', 'pro'),
       cmd('enableCategory', 'pro'),
-      cmd('resolve', 'pro'),
+      cmd('resolveCommand', 'pro'),
       cmd('execute', 'pro'),
       cmd('setDisabledCategories', ['free', 'free']),
-      cmd('disabledCategories'),
-      cmd('resolve', 'both'),
+      cmd('getDisabledCategories'),
+      cmd('resolveCommand', 'both'),
       cmd('enableCategory', 'free'),
-      cmd('disabledCategories'),
+      cmd('getDisabledCategories'),
       cmd('execute', 'both'),
       cmd('setDisabledCategories', []),
       cmd('execute', 'none'),
@@ -480,16 +495,16 @@ const cases: ScenarioCase[] = [
       ]),
     ],
     steps: [
-      cmd('resolve', 'zoom:in'),
-      cmd('resolve', 'missing'),
-      cmd('resolve', 'missing'),
-      cmd('search', 'zoom'),
+      cmd('resolveCommand', 'zoom:in'),
+      cmd('resolveCommand', 'missing'),
+      cmd('resolveCommand', 'missing'),
+      cmd('searchCommands', 'zoom'),
       i18n('setLocale', 'es'),
-      cmd('resolve', 'zoom:in'),
-      cmd('resolve', 'print'),
-      cmd('search', 'acer'),
-      cmd('search', 'zoom'),
-      cmd('search', 'print'),
+      cmd('resolveCommand', 'zoom:in'),
+      cmd('resolveCommand', 'print'),
+      cmd('searchCommands', 'acer'),
+      cmd('searchCommands', 'zoom'),
+      cmd('searchCommands', 'print'),
     ],
   },
   {
@@ -514,23 +529,23 @@ const cases: ScenarioCase[] = [
     ],
     engine: { documents: { a: doc(), b: doc() } },
     steps: [
-      cmd('resolve', 'menu'),
+      cmd('resolveCommand', 'menu'),
       start,
       open('a'),
       open('b'),
       setActive('a'),
-      ...['menu', 'panel', 'panel-object', 'modal', 'menu-and-panel', 'panel-and-modal', 'empty-menu', 'empty-modal', 'empty-panel', 'override', 'none'].map((id) => cmd('resolve', id)),
+      ...['menu', 'panel', 'panel-object', 'modal', 'menu-and-panel', 'panel-and-modal', 'empty-menu', 'empty-modal', 'empty-panel', 'override', 'none'].map((id) => cmd('resolveCommand', id)),
       shell('openMenu', ['file']),
       shell('open', ['search']),
       shell('open', ['print']),
       shell('open', ['']),
       shell('open', ['thumbs']),
-      ...['menu', 'panel', 'panel-object', 'modal', 'menu-and-panel', 'panel-and-modal', 'empty-menu', 'empty-modal', 'empty-panel', 'override', 'none'].map((id) => cmd('resolve', id)),
-      cmd('resolve', 'menu', 'b'),
-      cmd('resolve', 'panel', 'b'),
+      ...['menu', 'panel', 'panel-object', 'modal', 'menu-and-panel', 'panel-and-modal', 'empty-menu', 'empty-modal', 'empty-panel', 'override', 'none'].map((id) => cmd('resolveCommand', id)),
+      cmd('resolveCommand', 'menu', 'b'),
+      cmd('resolveCommand', 'panel', 'b'),
       shell('closeMenu', ['file']),
-      cmd('resolve', 'menu-and-panel'),
-      cmd('resolve', 'menu', 'zzz'),
+      cmd('resolveCommand', 'menu-and-panel'),
+      cmd('resolveCommand', 'menu', 'zzz'),
     ],
   },
   {
@@ -574,10 +589,10 @@ const cases: ScenarioCase[] = [
       cmd('execute', 'empty-panel'),
       cmd('execute', 'none'),
       cmd('execute', 'missing'),
-      cmd('execute', 'panel-object', 'b'),
-      cmd('execute', 'menu', 'zzz'),
-      shell('openSurfaces', [], 'a'),
-      shell('openSurfaces', [], 'b'),
+      cmd('execute', 'panel-object', { documentId: 'b' }),
+      cmd('execute', 'menu', { documentId: 'zzz' }),
+      shell('listOpenSurfaces', [], 'a'),
+      shell('listOpenSurfaces', [], 'b'),
     ],
   },
   {
@@ -604,8 +619,8 @@ const cases: ScenarioCase[] = [
       cmd('execute', 'disabled'),
       cmd('execute', 'hidden'),
       cmd('execute', 'runs'),
-      cmd('execute', 'runs', 'a'),
-      shell('openMenus', [], 'a'),
+      cmd('execute', 'runs', { documentId: 'a' }),
+      shell('listOpenMenus', [], 'a'),
       cmd('execute', 'throws'),
       cmd('execute', 'rejects'),
       cmd('execute', 'defers'),
@@ -626,9 +641,9 @@ const cases: ScenarioCase[] = [
           run: fn('probe.run', {
             uses: [
               { get: 'shell', call: 'isOpen', args: ['left'] },
-              { tryGet: 'shell', call: 'openMenus' },
+              { tryGet: 'shell', call: 'listOpenMenus' },
               { get: 'shell' },
-              { get: 'i18n', call: 'locale' },
+              { get: 'i18n', call: 'getLocale' },
               { tryGet: 'i18n', call: 't', args: ['commands.zoomIn'] },
               { get: 'nope' },
               { tryGet: 'nope' },
@@ -652,13 +667,13 @@ const cases: ScenarioCase[] = [
       open('a'),
       open('b'),
       cmd('execute', 'probe'),
-      cmd('execute', 'probe', 'a'),
-      cmd('execute', 'probe', ''),
-      cmd('execute', 'probe', 'zzz'),
+      cmd('execute', 'probe', { documentId: 'a' }),
+      cmd('execute', 'probe', { documentId: '' }),
+      cmd('execute', 'probe', { documentId: 'zzz' }),
       open('slow'),
-      cmd('execute', 'probe', 'slow'),
+      cmd('execute', 'probe', { documentId: 'slow' }),
       { op: 'settle', label: 'open-slow', value: { $document: 'slow' } },
-      cmd('execute', 'probe', 'slow'),
+      cmd('execute', 'probe', { documentId: 'slow' }),
     ],
   },
   {
@@ -671,15 +686,15 @@ const cases: ScenarioCase[] = [
       open('a'),
       open('b'),
       cmd('execute', 'panel'),
-      cmd('resolve', 'panel'),
+      cmd('resolveCommand', 'panel'),
       setActive('a'),
-      cmd('resolve', 'panel'),
+      cmd('resolveCommand', 'panel'),
       cmd('execute', 'panel'),
-      cmd('resolve', 'panel'),
+      cmd('resolveCommand', 'panel'),
       close('a'),
-      cmd('resolve', 'panel'),
+      cmd('resolveCommand', 'panel'),
       close('b'),
-      cmd('resolve', 'panel'),
+      cmd('resolveCommand', 'panel'),
       cmd('execute', 'panel'),
     ],
   },
@@ -698,28 +713,27 @@ const cases: ScenarioCase[] = [
       ], ['pro']),
     ],
     steps: [
-      cmd('search', ''),
-      cmd('search', '   '),
-      cmd('search', 'zoom'),
-      cmd('search', '  ZOOM\t\n'),
-      cmd('search', 'zoom:o'),
-      cmd('search', 'Zoom:O'),
-      cmd('search', 'Out'),
-      cmd('search', ':'),
-      cmd('search', 'über'),
-      cmd('search', 'STRASSE'),
-      cmd('search', 'straße'),
-      cmd('search', 'nothing'),
-      cmd('search', '﻿find '),
+      cmd('searchCommands', ''),
+      cmd('searchCommands', '   '),
+      cmd('searchCommands', 'zoom'),
+      cmd('searchCommands', '  ZOOM\t\n'),
+      cmd('searchCommands', 'zoom:o'),
+      cmd('searchCommands', 'Zoom:O'),
+      cmd('searchCommands', 'Out'),
+      cmd('searchCommands', ':'),
+      cmd('searchCommands', 'über'),
+      cmd('searchCommands', 'STRASSE'),
+      cmd('searchCommands', 'straße'),
+      cmd('searchCommands', 'nothing'),
+      cmd('searchCommands', '﻿find '),
     ],
   },
   {
     name: 'match-stroke',
     covers:
-      'matchStroke returns the first command, in registry order, any of whose shortcuts matches the stroke on the given platform, and null when none does; it ignores enablement.',
+      'matchStroke returns the first command, in registry order, any of whose shortcuts matches the stroke on the given platform, and null when none does; it ignores enablement. The palette is registered last through the capability, so its remover can take it out.',
     plugins: [
       commands([
-        vdef('palette', { shortcut: 'Mod+K', enabled: no('palette.enabled') }),
         vdef('zoom:in', { shortcut: ['Mod+=', 'Mod+Shift+=', 'Ctrl+NumpadAdd'] }),
         vdef('other-k', { shortcut: 'Ctrl+K' }),
         vdef('escape', { shortcut: 'Escape' }),
@@ -727,6 +741,7 @@ const cases: ScenarioCase[] = [
       ]),
     ],
     steps: [
+      cmd('registerCommand', vdef('palette', { shortcut: 'Mod+K', enabled: no('palette.enabled') })),
       cmd('matchStroke', stroke('k', { metaKey: true }), mac),
       cmd('matchStroke', stroke('k', { ctrlKey: true }), mac),
       cmd('matchStroke', stroke('k', { ctrlKey: true }), pc),
@@ -738,9 +753,9 @@ const cases: ScenarioCase[] = [
       cmd('matchStroke', stroke('Escape', { code: 'Escape' }), pc),
       cmd('matchStroke', stroke('Escape', { shiftKey: true }), pc),
       cmd('matchStroke', stroke('x'), pc),
-      cmd('unregister', 'palette'),
+      { op: 'call', target: { ref: 0 } },
       cmd('matchStroke', stroke('k', { ctrlKey: true }), pc),
-      cmd('register', vdef('palette', { shortcut: 'Mod+K' })),
+      cmd('registerCommand', vdef('palette', { shortcut: 'Mod+K' })),
       cmd('matchStroke', stroke('k', { ctrlKey: true }), pc),
       cmd('matchStroke', stroke('k', { metaKey: true }), mac),
     ],
@@ -751,7 +766,7 @@ const cases: ScenarioCase[] = [
     plugins: [{ factory: 'commands' }],
     engine: { documents: { a: doc() } },
     steps: [
-      cmd('register', {
+      cmd('registerCommand', {
         id: 'live',
         labelKey: 'live',
         icon: 'bolt',
@@ -765,13 +780,13 @@ const cases: ScenarioCase[] = [
       open('a'),
       cmd('execute', 'live'),
       cmd('execute', 'live'),
-      cmd('resolve', 'live'),
+      cmd('resolveCommand', 'live'),
     ],
   },
   {
     name: 're-entrant-registry',
     covers:
-      'A command function may use the commands capability itself: a run that executes another command, and a visible derivation that, mid-search, unregisters a command not yet visited (skipped) and registers a new one (visited, as a Map iteration does); the second time, the registration is a duplicate.',
+      'A command function may use the commands capability itself: a run that executes another command, and a visible derivation that, mid-search, removes a command not yet visited and registers a new one; the second time, the registration is a duplicate. Commands a derivation removes are registered through the capability by a setup command, which keeps their removers.',
     plugins: [
       commands([
         vdef('first', {
@@ -779,63 +794,83 @@ const cases: ScenarioCase[] = [
           visible: fn('first.visible', {
             returns: true,
             uses: [
-              { get: 'commands', call: 'unregister', args: ['second'] },
-              { get: 'commands', call: 'register', args: [{ id: 'late', labelKey: 'x late', visible: { $fn: 'late.visible', returns: true } }] },
-              { get: 'commands', call: 'ids' },
+              { forget: 'second' },
+              { get: 'commands', call: 'registerCommand', args: [{ id: 'late', labelKey: 'x late', visible: { $fn: 'late.visible', returns: true } }] },
+              { get: 'commands', call: 'listCommandIds' },
             ],
           }),
         }),
-        vdef('second', { labelKey: 'x second', visible: yes('second.visible') }),
-        vdef('third', { labelKey: 'x third', visible: yes('third.visible') }),
         vdef('chain', { run: fn('chain.run', { uses: [{ get: 'commands', call: 'execute', args: ['target'] }] }) }),
         vdef('target', { run: fn('target.run') }),
+        // Registers `second` and `third` through the capability, keeping the
+        // remover of `second` for `first.visible` to call.
+        vdef('setup', {
+          run: fn('setup.run', {
+            uses: [
+              { remember: 'second', get: 'commands', call: 'registerCommand', args: [{ id: 'second', labelKey: 'x second', visible: { $fn: 'second.visible', returns: true } }] },
+              { get: 'commands', call: 'registerCommand', args: [{ id: 'third', labelKey: 'x third', visible: { $fn: 'third.visible', returns: true } }] },
+            ],
+          }),
+        }),
       ]),
     ],
-    steps: [cmd('search', 'x'), cmd('ids'), cmd('search', 'x'), cmd('execute', 'chain')],
+    steps: [cmd('execute', 'setup'), cmd('searchCommands', 'x'), cmd('listCommandIds'), cmd('searchCommands', 'x'), cmd('execute', 'chain')],
   },
   {
     name: 'unregister-behind-a-search',
-    covers: 'A derivation that unregisters a command the search already visited changes nothing about the rest of the walk: every later command is still visited once.',
+    covers: 'A derivation that removes a command the search already visited changes nothing about the rest of the walk: every later command is still visited once. The commands are registered by a setup command, which keeps the remover of `a`.',
     plugins: [
       commands([
-        vdef('a', { visible: yes('a.visible') }),
-        vdef('b', { visible: fn('b.visible', { returns: true, uses: [{ get: 'commands', call: 'unregister', args: ['a'] }] }) }),
-        vdef('c', { visible: yes('c.visible') }),
-        vdef('d', { visible: yes('d.visible') }),
+        vdef('setup', {
+          run: fn('setup.run', {
+            uses: [
+              { remember: 'a', get: 'commands', call: 'registerCommand', args: [{ id: 'a', labelKey: 'a', visible: { $fn: 'a.visible', returns: true } }] },
+              {
+                get: 'commands',
+                call: 'registerCommand',
+                args: [{ id: 'b', labelKey: 'b', visible: { $fn: 'b.visible', returns: true, uses: [{ forget: 'a' }] } }],
+              },
+              { get: 'commands', call: 'registerCommand', args: [{ id: 'c', labelKey: 'c', visible: { $fn: 'c.visible', returns: true } }] },
+              { get: 'commands', call: 'registerCommand', args: [{ id: 'd', labelKey: 'd', visible: { $fn: 'd.visible', returns: true } }] },
+            ],
+          }),
+        }),
       ]),
     ],
-    steps: [cmd('search', ''), cmd('ids'), cmd('search', '')],
+    steps: [cmd('execute', 'setup'), cmd('searchCommands', ''), cmd('listCommandIds'), cmd('searchCommands', '')],
   },
   {
     name: 'after-destroy',
     covers:
       'A capability reference kept past destroy still reads and changes the registry and matches strokes, but everything that reads the slice throws the TypeError of reading a member of the missing state; category intents dispatch into nothing.',
-    plugins: [withI18n, withShell, commands([vdef('menu', { labelKey: 'commands.zoomIn', menu: 'file', shortcut: 'Mod+M', run: fn('menu.run', { uses: [{ tryGet: 'i18n', call: 'locale' }, { core: 'activeId' }] }) })])],
+    plugins: [withI18n, withShell, commands([vdef('menu', { labelKey: 'commands.zoomIn', menu: 'file', shortcut: 'Mod+M', run: fn('menu.run', { uses: [{ tryGet: 'i18n', call: 'getLocale' }, { core: 'activeId' }] }) })])],
     engine: { documents: { a: doc() } },
     steps: [
       { op: 'call', target: 'kernel', method: 'capability', args: [{ $token: 'commands' }] },
       start,
       open('a'),
-      { op: 'call', target: { ref: 4 }, args: ['menu'] },
-      { op: 'call', target: { ref: 7 }, args: ['menu'] },
+      { op: 'call', target: { ref: 5 }, args: ['menu'] },
+      { op: 'call', target: { ref: 9 }, args: ['menu'] },
       destroy,
-      { op: 'call', target: { ref: 3 } },
+      { op: 'call', target: { ref: 4 } },
       { op: 'call', target: { ref: 2 }, args: ['menu'] },
-      { op: 'call', target: { ref: 6 }, args: ['menu'] },
-      { op: 'call', target: { ref: 8 }, args: [stroke('m', { ctrlKey: true }), pc] },
+      { op: 'call', target: { ref: 19 }, args: ['menu'] },
+      { op: 'call', target: { ref: 18 }, args: [stroke('m', { ctrlKey: true }), pc] },
       { op: 'call', target: { ref: 0 }, args: [vdef('late')] },
-      { op: 'call', target: { ref: 1 }, args: ['menu'] },
-      { op: 'call', target: { ref: 3 } },
-      { op: 'call', target: { ref: 4 }, args: ['late'] },
-      { op: 'call', target: { ref: 4 }, args: ['missing'] },
-      { op: 'call', target: { ref: 7 }, args: ['late'] },
-      { op: 'call', target: { ref: 7 }, args: ['missing'] },
-      { op: 'call', target: { ref: 5 }, args: [''] },
-      { op: 'call', target: { ref: 9 } },
-      { op: 'call', target: { ref: 10 }, args: ['x'] },
-      { op: 'call', target: { ref: 11 }, args: ['x'] },
+      { op: 'call', target: { ref: 4 } },
+      { op: 'call', target: { ref: 5 }, args: ['late'] },
+      { op: 'call', target: { ref: 5 }, args: ['missing'] },
+      { op: 'call', target: { ref: 9 }, args: ['late'] },
+      { op: 'call', target: { ref: 9 }, args: ['missing'] },
+      { op: 'call', target: { ref: 7 }, args: [''] },
+      { op: 'call', target: { ref: 11 } },
       { op: 'call', target: { ref: 12 }, args: ['x'] },
-      { op: 'call', target: { ref: 13 }, args: [['x']] },
+      { op: 'call', target: { ref: 13 }, args: ['x'] },
+      { op: 'call', target: { ref: 14 }, args: ['x'] },
+      { op: 'call', target: { ref: 15 }, args: [['x']] },
+      // ref 20 is the remover the `late` registration returned.
+      { op: 'call', target: { ref: 20 } },
+      { op: 'call', target: { ref: 4 } },
     ],
   },
 ];
@@ -848,7 +883,7 @@ export const suites: Suite[] = [
       'packages/plugin/commands: commandsReducer and initialCommandsState (`same` is reference identity), resolvedCommandsEqual, registerCommand, and what commandsPlugin(config) builds.',
     functions: {
       commandsReducer: reduce,
-      initialCommandsState: () => initialCommandsState,
+      initialCommandsState: () => initialCommandsState(),
       resolvedCommandsEqual,
       resolvedCommandsEqualSelf: equalSelf,
       registerCommand: register,

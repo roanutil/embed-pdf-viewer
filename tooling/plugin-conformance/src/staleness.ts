@@ -19,6 +19,9 @@ const rows: [string, string, string][] = [];
 const log = console.log;
 const error = console.error;
 
+// Import every module before emitting any: scenario suites register the
+// factories other suites name, as generate.ts relies on.
+const loaded: Suite[] = [];
 for (const file of (await readdir(suitesDir)).filter((f) => f.endsWith('.ts')).sort()) {
   let suites: Suite[] | undefined;
   try {
@@ -27,23 +30,21 @@ for (const file of (await readdir(suitesDir)).filter((f) => f.endsWith('.ts')).s
     rows.push(['no-import', file, String((e as Error).message).split('\n')[0]]);
     continue;
   }
-  if (!suites) {
-    rows.push(['no-import', file, 'exports no suites']);
-    continue;
-  }
-  for (const suite of suites) {
-    process.exitCode = 0;
-    console.log = () => {};
-    console.error = () => {};
-    try {
-      await emit([suite], true);
-      rows.push([process.exitCode ? 'stale' : 'unchanged', suite.file, '']);
-    } catch (e) {
-      rows.push(['throws', suite.file, String((e as Error).message).split('\n')[0]]);
-    } finally {
-      console.log = log;
-      console.error = error;
-    }
+  if (!suites) rows.push(['no-import', file, 'exports no suites']);
+  else loaded.push(...suites);
+}
+for (const suite of loaded) {
+  process.exitCode = 0;
+  console.log = () => {};
+  console.error = () => {};
+  try {
+    await emit([suite], true);
+    rows.push([process.exitCode ? 'stale' : 'unchanged', suite.file, '']);
+  } catch (e) {
+    rows.push(['throws', suite.file, String((e as Error).message).split('\n')[0]]);
+  } finally {
+    console.log = log;
+    console.error = error;
   }
 }
 process.exitCode = 0;

@@ -20,7 +20,10 @@
             "meta": false
           },
           "page": {
-            "pon": 1,
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
             "point": {
               "x": 5,
               "y": 6
@@ -59,7 +62,10 @@
             "meta": false
           },
           "page": {
-            "pon": 2,
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 2
+            },
             "point": {
               "x": 3,
               "y": 4
@@ -95,7 +101,10 @@
             "meta": false
           },
           "page": {
-            "pon": 2,
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 2
+            },
             "point": {
               "x": 3,
               "y": 4
@@ -129,7 +138,10 @@
             "meta": false
           },
           "page": {
-            "pon": 3,
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 3
+            },
             "point": {
               "x": 7,
               "y": 8
@@ -162,7 +174,10 @@
             "meta": false
           },
           "page": {
-            "pon": 3,
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 3
+            },
             "point": {
               "x": 7,
               "y": 8
@@ -192,7 +207,10 @@
             "meta": false
           },
           "page": {
-            "pon": 3,
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 3
+            },
             "point": {
               "x": 7,
               "y": 8
@@ -307,6 +325,8 @@
       "outcome": {
         "returned": {
           "activeToolId": "pointer",
+          "defaultToolId": "pointer",
+          "toolStack": [],
           "cursor": "default"
         }
       }
@@ -322,16 +342,20 @@
       "outcome": {
         "returned": {
           "activeToolId": "pan",
+          "defaultToolId": "pan",
+          "toolStack": [],
           "cursor": "default"
         }
       }
     },
     {
-      "name": "interactionReducer/set-tool",
-      "fn": "interactionReducer",
+      "name": "reduceInteraction/set-tool",
+      "fn": "reduceInteraction",
       "args": [
         {
           "activeToolId": "pointer",
+          "defaultToolId": "pointer",
+          "toolStack": [],
           "cursor": "default"
         },
         {
@@ -342,16 +366,20 @@
       "outcome": {
         "returned": {
           "activeToolId": "pan",
+          "defaultToolId": "pointer",
+          "toolStack": [],
           "cursor": "default"
         }
       }
     },
     {
-      "name": "interactionReducer/set-same-tool",
-      "fn": "interactionReducer",
+      "name": "reduceInteraction/set-same-tool",
+      "fn": "reduceInteraction",
       "args": [
         {
           "activeToolId": "pan",
+          "defaultToolId": "pointer",
+          "toolStack": [],
           "cursor": "grab"
         },
         {
@@ -362,16 +390,20 @@
       "outcome": {
         "returned": {
           "activeToolId": "pan",
+          "defaultToolId": "pointer",
+          "toolStack": [],
           "cursor": "grab"
         }
       }
     },
     {
-      "name": "interactionReducer/set-cursor",
-      "fn": "interactionReducer",
+      "name": "reduceInteraction/set-cursor",
+      "fn": "reduceInteraction",
       "args": [
         {
           "activeToolId": "pan",
+          "defaultToolId": "pointer",
+          "toolStack": [],
           "cursor": "grab"
         },
         {
@@ -382,16 +414,20 @@
       "outcome": {
         "returned": {
           "activeToolId": "pan",
+          "defaultToolId": "pointer",
+          "toolStack": [],
           "cursor": "grabbing"
         }
       }
     },
     {
-      "name": "interactionReducer/set-same-cursor",
-      "fn": "interactionReducer",
+      "name": "reduceInteraction/set-same-cursor",
+      "fn": "reduceInteraction",
       "args": [
         {
           "activeToolId": "pan",
+          "defaultToolId": "pointer",
+          "toolStack": [],
           "cursor": "grab"
         },
         {
@@ -402,6 +438,8 @@
       "outcome": {
         "returned": {
           "activeToolId": "pan",
+          "defaultToolId": "pointer",
+          "toolStack": [],
           "cursor": "grab"
         }
       }

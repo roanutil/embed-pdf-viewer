@@ -18,9 +18,10 @@
  *   `seq`); the factory turns it into a function that logs its call and
  *   answers as the spec says, which is what `$fn` means everywhere else.
  */
-import { i18nPlugin, I18nToken, interpolate, negotiateLocale, translate } from '../../../../packages/plugin/i18n/src/index';
-import { i18nReducer, initialI18nState } from '../../../../packages/plugin/i18n/src/reducer';
-import type { I18nAction, I18nConfig, I18nState, Locale } from '../../../../packages/plugin/i18n/src/types';
+import { i18nPlugin, interpolate, negotiateLocale, translate } from '../../../../packages/plugin/i18n/src/index';
+import { I18nToken, i18nReducer, initialI18nState } from '../../../../packages/plugin/i18n/src/internal';
+import type { I18nConfig, Locale } from '../../../../packages/plugin/i18n/src/contract';
+import type { I18nAction, I18nState } from '../../../../packages/plugin/i18n/src/model';
 
 import { makeError, type ErrorSpec } from '../fake-engine';
 import { registerPlugin, type FnSpec, type PluginEnv, type ScenarioCase, type Step } from '../scenario';
@@ -311,7 +312,7 @@ const start: Step = { op: 'call', target: 'kernel', method: 'start' };
 const destroy: Step = { op: 'call', target: 'kernel', method: 'destroy' };
 const i18n = (method: string, ...args: unknown[]): Step => ({ op: 'call', target: { token: 'i18n' }, method, args });
 const t = (key: string, options?: unknown): Step => i18n('t', ...(options === undefined ? [key] : [key, options]));
-const reads: Step[] = [i18n('locale'), i18n('dir'), i18n('loading'), i18n('locales')];
+const reads: Step[] = [i18n('getLocale'), i18n('getDirection'), i18n('getLoadingLocale'), i18n('listLocales')];
 const settle = (label: string, value?: unknown): Step => ({ op: 'settle', label, value });
 const fail = (label: string, message: string): Step => ({ op: 'settle', label, error: { name: 'Error', message } });
 const open = (id: string): Step => ({
@@ -321,7 +322,7 @@ const open = (id: string): Step => ({
   args: [{ kind: 'bytes', id, bytes: { $bytes: '' } }],
 });
 const box = { left: 0, bottom: 0, right: 600, top: 800 };
-const page = { index: 0, pageObjectNumber: 1, label: null, size: { width: 600, height: 800 }, rotation: 0, userUnit: 1, boxes: { media: box, crop: box } };
+const page = { index: 0, ref: { kind: 'objectNumber', pageObjectNumber: 1 }, label: null, size: { width: 600, height: 800 }, rotation: 0, userUnit: 1, boxes: { media: box, crop: box } };
 
 const plugin = (config?: unknown) => [config === undefined ? { factory: 'i18n' } : { factory: 'i18n', config }];
 const loader = (name: string, answer: Omit<FnSpec, '$fn'>): FnSpec => ({ $fn: name, ...answer });
@@ -348,7 +349,7 @@ const scenarios: ScenarioCase[] = [
       open('a'),
       i18n('setLocale', 'es'),
       t('commands.save'),
-      { op: 'call', target: { token: 'i18n', doc: 'a' }, method: 'locale' },
+      { op: 'call', target: { token: 'i18n', doc: 'a' }, method: 'getLocale' },
       { op: 'call', target: 'documents', method: 'close', args: ['a'] },
       t('commands.zoom.in'),
       destroy,
@@ -389,19 +390,19 @@ const scenarios: ScenarioCase[] = [
       locale: 'ar',
       loaders: { '3': loader('load-3', { resolves: { ...fr, code: '3' } }), en: loader('load-en', { resolves: en }), fr: loader('load-fr', { resolves: fr }), he: loader('load-he', { resolves: he }) },
     }),
-    steps: [...reads, i18n('setLocale', 'en'), i18n('dir'), i18n('setLocale', '7'), i18n('dir'), i18n('setLocale', 'he'), ...reads],
+    steps: [...reads, i18n('setLocale', 'en'), i18n('getDirection'), i18n('setLocale', '7'), i18n('getDirection'), i18n('setLocale', 'he'), ...reads],
   },
   {
     name: 'set-locale-registered',
     covers: 'setLocale(code) for a registered pack dispatches SET_LOCALE; the same locale again is dispatched and changes nothing.',
     plugins: plugin({ locales: [en, es] }),
-    steps: [start, i18n('setLocale', 'es'), ...reads, i18n('setLocale', 'es'), i18n('setLocale', 'en'), i18n('locale')],
+    steps: [start, i18n('setLocale', 'es'), ...reads, i18n('setLocale', 'es'), i18n('setLocale', 'en'), i18n('getLocale')],
   },
   {
     name: 'set-locale-unknown-warns-once',
     covers: 'An unregistered code with no loader dispatches nothing and warns once per code.',
     plugins: plugin({ locales: [en], loaders: { ar: loader('load-ar', { resolves: ar }) } }),
-    steps: [start, i18n('setLocale', 'de'), i18n('setLocale', 'de'), i18n('setLocale', 'it'), i18n('setLocale', ''), i18n('locale')],
+    steps: [start, i18n('setLocale', 'de'), i18n('setLocale', 'de'), i18n('setLocale', 'it'), i18n('setLocale', ''), i18n('getLocale')],
   },
   {
     name: 'lazy-switch',
@@ -419,7 +420,7 @@ const scenarios: ScenarioCase[] = [
       t('commands.save'),
       i18n('setLocale', 'en'),
       i18n('setLocale', 'ar'),
-      i18n('locale'),
+      i18n('getLocale'),
     ],
   },
   {
@@ -444,7 +445,7 @@ const scenarios: ScenarioCase[] = [
     name: 'lazy-two-in-flight',
     covers: 'Two lazy switches in flight: both loaders run, the first to land only registers, the wanted one registers and switches.',
     plugins: plugin({ locales: [en], loaders: { ar: loader('load-ar', { defer: 'ar' }), he: loader('load-he', { defer: 'he' }) } }),
-    steps: [start, i18n('setLocale', 'ar'), i18n('setLocale', 'he'), i18n('loading'), settle('he', he), ...reads, settle('ar', ar), ...reads],
+    steps: [start, i18n('setLocale', 'ar'), i18n('setLocale', 'he'), i18n('getLoadingLocale'), settle('he', he), ...reads, settle('ar', ar), ...reads],
   },
   {
     name: 'lazy-failure',
@@ -521,7 +522,7 @@ const scenarios: ScenarioCase[] = [
       start,
       i18n('registerLocale', ar),
       i18n('registerLocale', he),
-      i18n('locales'),
+      i18n('listLocales'),
       i18n('setLocale', 'he'),
       ...reads,
       i18n('registerLocale', { ...he, name: 'Hebrew', dir: 'ltr', translations: { commands: { save: 'Save (he)' } } }),

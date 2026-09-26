@@ -23,15 +23,96 @@
  */
 import { definePlugin, type AnyPlugin, type CapabilityToken } from '@embedpdf/core';
 
-import { InteractionToken } from '../../../../packages/plugin/interaction/src/index';
-import { StageToken, createScrollHandler, stagePlugin } from '../../../../packages/plugin/stage/src/index';
+import { InteractionToken } from '../../../../packages/plugin/interaction/src/host-contract';
+import { createScrollHandler, stagePlugin } from '../../../../packages/plugin/stage/src/index';
+import { StageToken, type StageHostCapability } from '../../../../packages/plugin/stage/src/host-contract';
 import type { StagePluginOptions } from '../../../../packages/plugin/stage/src/stage.plugin';
-import type { ResponsiveRule, Scheduler, StageCapability } from '../../../../packages/plugin/stage/src/types';
+import type { ResponsiveRule, Scheduler, StageCapability } from '../../../../packages/plugin/stage/src/contract';
 
 import type { FakeDocumentSpec, FakeEngineSpec, ResponseSpec } from '../fake-engine';
 import { registerPlugin, type PluginEnv, type ScenarioCase, type Step } from '../scenario';
 import type { Suite } from '../vectors';
 import { scriptedCallback, type AnswerSpec } from './acrojs';
+
+// ── the v3 surface ────────────────────────────────────────────────────────────
+
+const LOCAL = { kind: 'local', sessionId: 's1', sub: null };
+
+/** v2 stage method → v3 name. */
+const RENAMED: Readonly<Record<string, string>> = {
+  camera: 'getCamera',
+  viewport: 'getViewportSize',
+  scrollMetrics: 'getScrollMetrics',
+  visiblePages: 'listVisiblePages',
+  currentPage: 'getCurrentPageIndex',
+  currentItemPages: 'listCurrentItemPages',
+  pageRect: 'getPageFrame',
+  pageAt: 'getPageAt',
+  pointOnPage: 'viewportToPage',
+  pageRectToScreen: 'pageRectToViewport',
+  toScreen: 'worldToViewport',
+  toWorld: 'viewportToWorld',
+  viewRotation: 'getViewRotation',
+  zoomLevel: 'getZoomLevel',
+  zoomMode: 'getZoomMode',
+  viewpoint: 'getViewpoint',
+  settings: 'getSettings',
+  viewState: 'getViewState',
+  setViewport: 'setViewportSize',
+  cameraInMotion: 'isMoving',
+  automatic: 'fitAutomatic',
+  goToPage: 'goToPageIndex',
+  reveal: 'revealIndex',
+  next: 'nextPage',
+  prev: 'previousPage',
+  lensId: 'getLensId',
+  update: 'updateSettings',
+  setResponsive: 'setResponsiveRules',
+  matches: 'matchesRule',
+  activeRules: 'listActiveRules',
+  rotateView: 'rotateViewBy',
+};
+/** v2 per-setting reads, which v3 folds into `getSettings`. */
+const SETTING_READS = new Set([
+  'flow', 'layout', 'spread', 'sizing', 'columns', 'bounded', 'padding', 'gap', 'pageFrame',
+  'fitAlign', 'arrivalAlign', 'zoomAlign', 'anchorAlign', 'direction', 'scrollBehavior',
+]);
+/** v2 per-setting writers without a v3 twin: `updateSettings({key})`. */
+const SETTING_WRITES: Readonly<Record<string, string>> = {
+  setColumns: 'columns',
+  setBounded: 'bounded',
+  setPadding: 'padding',
+  setGap: 'gap',
+  setPageFrame: 'pageFrame',
+  setFitAlign: 'fitAlign',
+  setArrivalAlign: 'arrivalAlign',
+  setZoomAlign: 'zoomAlign',
+  setAnchorAlign: 'anchorAlign',
+  setDirection: 'direction',
+  setScrollBehavior: 'scrollBehavior',
+};
+/** Methods whose first argument was a page object number and is now a PageRef. */
+const PAGE_FIRST = new Set(['pageRect', 'pointOnPage', 'pageToWorld', 'pageRectToScreen']);
+
+/**
+ * A call on a stage lens, written against the v2 names the cases were
+ * authored in and emitted against the v3 surface. `pages` and `pageCount`
+ * left the stage: they read the kernel's page registry for that document.
+ */
+export function stageStep(lens: string, doc: string, method: string, args: readonly unknown[]): Step {
+  if (method === 'pages' || method === 'pageCount') {
+    return { op: 'call', target: 'documents', method: 'listPages', args: [doc] };
+  }
+  const target = { token: lens, doc };
+  if (SETTING_READS.has(method)) return { op: 'call', target, method: 'getSettings', args: [] };
+  if (method in SETTING_WRITES) {
+    return { op: 'call', target, method: 'updateSettings', args: [{ [SETTING_WRITES[method]]: args[0] }] };
+  }
+  const out = PAGE_FIRST.has(method) && typeof args[0] === 'number'
+    ? [{ kind: 'objectNumber', pageObjectNumber: args[0] }, ...args.slice(1)]
+    : [...args];
+  return { op: 'call', target, method: RENAMED[method] ?? method, args: out };
+}
 
 // ── the factories ─────────────────────────────────────────────────────────────
 
@@ -70,8 +151,8 @@ type HarnessConfig = Omit<StagePluginOptions, 'id' | 'token' | 'scheduler' | 're
   readonly responsive?: readonly HarnessRule[];
 };
 
-const lensToken = (env: PluginEnv, lens: string | undefined): CapabilityToken<StageCapability> =>
-  (lens === undefined ? StageToken : env.token(lens)) as CapabilityToken<StageCapability>;
+const lensToken = (env: PluginEnv, lens: string | undefined): CapabilityToken<StageHostCapability> =>
+  (lens === undefined ? StageToken : env.token(lens)) as CapabilityToken<StageHostCapability>;
 
 function stageOptions(config: HarnessConfig | undefined, env: PluginEnv): StagePluginOptions {
   const { lens, frames: wantsFrames, responsive, ...settings } = config ?? {};
@@ -115,7 +196,7 @@ registerPlugin('stage-scroll', {
         const stage = ctx.get(token);
         const hub = ctx.get(InteractionToken);
         const handler = createScrollHandler(stage, hub, panFallback === undefined ? {} : { panFallback });
-        ctx.cleanup(hub.registerHandler(handler, { source: stage.lensId() }));
+        ctx.cleanup(hub.registerHandler(handler, { source: stage.getLensId() }));
       },
     }) as AnyPlugin;
   },
@@ -124,9 +205,10 @@ registerPlugin('stage-scroll', {
 // ── fixtures ──────────────────────────────────────────────────────────────────
 
 const crop = (w: number, h: number) => ({ left: 0, bottom: 0, right: w, top: h });
+const pr = (pon: number) => ({ kind: 'objectNumber', pageObjectNumber: pon });
 const page = (pon: number, index: number, w = 600, h = 800, over: Record<string, unknown> = {}) => ({
   index,
-  pageObjectNumber: pon,
+  ref: pr(pon),
   label: null,
   size: { width: w, height: h },
   rotation: 0,
@@ -150,13 +232,8 @@ const engine = (pages: unknown[] = FIVE, over: Partial<FakeDocumentSpec> = {}): 
 const start: Step = { op: 'call', target: 'kernel', method: 'start' };
 const open: Step = { op: 'call', target: 'documents', method: 'open', args: [{ kind: 'bytes', id: 'a', bytes: { $bytes: '' } }] };
 const close: Step = { op: 'call', target: 'documents', method: 'close', args: ['a'] };
-const st = (method: string, ...args: unknown[]): Step => ({ op: 'call', target: { token: 'stage', doc: 'a' }, method, args });
-const lensCall = (lens: string, method: string, ...args: unknown[]): Step => ({
-  op: 'call',
-  target: { token: lens, doc: 'a' },
-  method,
-  args,
-});
+const st = (method: string, ...args: unknown[]): Step => stageStep('stage', 'a', method, args);
+const lensCall = (lens: string, method: string, ...args: unknown[]): Step => stageStep(lens, 'a', method, args);
 const vp = (width: number, height: number): Step => st('setViewport', { width, height });
 const advance = (ms: number): Step => ({ op: 'advance', ms });
 const emit = (event: unknown): Step => ({ op: 'emit', doc: 'a', event });
@@ -224,7 +301,20 @@ const SELECTORS = [
   'activeRules',
   'cameraInMotion',
 ];
-const readAll = (): Step[] => SELECTORS.map((m) => st(m));
+/** One read per v3 selector: the per-setting reads all became `getSettings`,
+ *  and `pageCount`/`pages` left the stage for the kernel's page registry. */
+const readAll = (): Step[] => {
+  const seen = new Set<string>();
+  const steps: Step[] = [];
+  for (const m of SELECTORS) {
+    const step = st(m);
+    const key = JSON.stringify(step);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    steps.push(step);
+  }
+  return steps;
+};
 
 // ── placement and selectors ───────────────────────────────────────────────────
 
@@ -1292,7 +1382,7 @@ const motionCases: ScenarioCase[] = [
 
 // ── effects, actions and interaction ──────────────────────────────────────────
 
-const layoutEvent = (type: string, pages: unknown[]) => ({ type, layout: { pageCount: pages.length, pages } });
+const layoutEvent = (type: string, pages: unknown[]) => ({ type, pages: [], origin: LOCAL, layout: { pageCount: pages.length, pages } });
 
 const FORMS_EMPTY: ResponseSpec = { path: 'forms.list', value: { formKind: 'none', needsAppearances: false, fields: [], calculationOrder: [] } };
 const ANNOTS_EMPTY: ResponseSpec = { path: 'page.annotations.list', value: { annotations: [] } };
@@ -1313,7 +1403,7 @@ const sample = (phase: string, x: number, y: number, onPage: boolean) => ({
   phase,
   viewport: { x, y },
   modifiers: mods,
-  ...(onPage ? { page: { pon: 1, point: { x: 1, y: 1 } } } : {}),
+  ...(onPage ? { page: { ref: pr(1), point: { x: 1, y: 1 } } } : {}),
   source: 'stage',
 });
 
@@ -1335,7 +1425,7 @@ const feedCases: ScenarioCase[] = [
       emit(layoutEvent('pages.deleted', [page(1, 0), page(3, 1)])),
       st('pageCount'),
       st('pages'),
-      emit({ type: 'annotations.created', pageObjectNumber: 1 }),
+      emit({ type: 'annotations.created', page: pr(1), origin: LOCAL }),
       close,
     ],
     snapshot: SNAP,
@@ -1348,10 +1438,10 @@ const feedCases: ScenarioCase[] = [
     engine: withActions(FIVE),
     steps: [
       ...boot,
-      act('execute', tree(goto({ kind: 'xyz', pageObjectNumber: 3, left: 100, top: 700, zoom: 2 })), USER),
+      act('execute', tree(goto({ kind: 'xyz', page: pr(3), left: 100, top: 700, zoom: 2 })), USER),
       st('currentPage'),
-      act('execute', tree(goto({ kind: 'fit', pageObjectNumber: 5 })), USER),
-      act('execute', tree(goto({ kind: 'fitH', pageObjectNumber: 99, top: 10 })), USER),
+      act('execute', tree(goto({ kind: 'fit', page: pr(5) })), USER),
+      act('execute', tree(goto({ kind: 'fitH', page: pr(99), top: 10 })), USER),
       act('execute', tree(named('FirstPage')), USER),
       act('execute', tree(named('NextPage')), USER),
       act('execute', tree(named('NextPage')), USER),
@@ -1370,7 +1460,7 @@ const feedCases: ScenarioCase[] = [
     engine: withActions(FIVE),
     steps: [
       ...boot,
-      act('execute', tree(goto({ kind: 'xyz', pageObjectNumber: 3, left: 100, top: 700, zoom: 2 })), USER),
+      act('execute', tree(goto({ kind: 'xyz', page: pr(3), left: 100, top: 700, zoom: 2 })), USER),
       st('cameraInMotion'),
       advance(300),
       act('execute', tree(named('NextPage')), USER),
@@ -1410,7 +1500,7 @@ const feedCases: ScenarioCase[] = [
     covers: 'A lens with its own id registers no executors and feeds no page state, so actions only ever drive the main lens.',
     plugins: [ACTIONS_OFF, { factory: 'stage', config: { lens: 'stage-thumbs', viewUnitsPerPoint: 1 } }],
     engine: withActions(FIVE),
-    steps: [start, open, lensCall('stage-thumbs', 'setViewport', { width: 300, height: 700 }), act('execute', tree(named('NextPage')), USER), act('execute', tree(goto({ kind: 'fit', pageObjectNumber: 2 })), USER)],
+    steps: [start, open, lensCall('stage-thumbs', 'setViewport', { width: 300, height: 700 }), act('execute', tree(named('NextPage')), USER), act('execute', tree(goto({ kind: 'fit', page: pr(2) })), USER)],
     snapshot: ['stage-thumbs::a'],
   },
   {
@@ -1421,37 +1511,37 @@ const feedCases: ScenarioCase[] = [
     engine: engine(),
     steps: [
       ...boot,
-      ix('dispatch', sample('move', 5, 5, false)),
-      ix('cursor'),
-      ix('dispatch', sample('move', 500, 300, true)),
-      ix('cursor'),
-      ix('dispatch', sample('down', 500, 300, true)),
-      ix('dispatch', sample('move', 500, 200, true)),
-      ix('dispatch', sample('up', 500, 200, true)),
+      ix('dispatchPointer', sample('move', 5, 5, false)),
+      ix('getCursor'),
+      ix('dispatchPointer', sample('move', 500, 300, true)),
+      ix('getCursor'),
+      ix('dispatchPointer', sample('down', 500, 300, true)),
+      ix('dispatchPointer', sample('move', 500, 200, true)),
+      ix('dispatchPointer', sample('up', 500, 200, true)),
       st('camera'),
-      ix('dispatch', sample('down', 5, 300, false)),
-      ix('cursor'),
-      ix('dispatch', sample('move', 5, 100, false)),
-      ix('dispatch', sample('move', 25, 50, false)),
-      ix('dispatch', sample('up', 25, 50, false)),
-      ix('cursor'),
+      ix('dispatchPointer', sample('down', 5, 300, false)),
+      ix('getCursor'),
+      ix('dispatchPointer', sample('move', 5, 100, false)),
+      ix('dispatchPointer', sample('move', 25, 50, false)),
+      ix('dispatchPointer', sample('up', 25, 50, false)),
+      ix('getCursor'),
       st('camera'),
       st('currentPage'),
       ix('activateTool', 'pan'),
-      ix('dispatch', sample('move', 5, 5, false)),
-      ix('dispatch', sample('down', 500, 300, true)),
-      ix('dispatch', sample('move', 500, 100, true)),
-      ix('cursor'),
-      ix('dispatch', sample('cancel', 500, 100, true)),
-      ix('cursor'),
+      ix('dispatchPointer', sample('move', 5, 5, false)),
+      ix('dispatchPointer', sample('down', 500, 300, true)),
+      ix('dispatchPointer', sample('move', 500, 100, true)),
+      ix('getCursor'),
+      ix('dispatchPointer', sample('cancel', 500, 100, true)),
+      ix('getCursor'),
       st('camera'),
-      ix('dispatch', sample('move', 5, 5, false)),
+      ix('dispatchPointer', sample('move', 5, 5, false)),
       ix('activateTool', 'pointer'),
-      ix('cursor'),
+      ix('getCursor'),
       ix('registerTool', { id: 'hand', cursor: 'move', enables: { $set: ['scroll'] } }),
       ix('activateTool', 'hand'),
-      ix('dispatch', sample('move', 5, 5, false)),
-      ix('cursor'),
+      ix('dispatchPointer', sample('move', 5, 5, false)),
+      ix('getCursor'),
       ix('activateTool', 'pointer'),
       st('zoomTo', { level: 3 }),
       ix('registerHandler', {
@@ -1462,9 +1552,9 @@ const feedCases: ScenarioCase[] = [
         onMove: { $fn: 'low.onMove' },
         onUp: { $fn: 'low.onUp' },
       }),
-      ix('dispatch', sample('down', 5, 300, false)),
-      ix('dispatch', sample('move', 45, 290, false)),
-      ix('dispatch', sample('up', 45, 290, false)),
+      ix('dispatchPointer', sample('down', 5, 300, false)),
+      ix('dispatchPointer', sample('move', 45, 290, false)),
+      ix('dispatchPointer', sample('up', 45, 290, false)),
       st('camera'),
     ],
     snapshot: SNAP,
@@ -1476,17 +1566,17 @@ const feedCases: ScenarioCase[] = [
     engine: engine(),
     steps: [
       ...boot,
-      ix('dispatch', sample('move', 5, 5, false)),
-      ix('cursor'),
-      ix('dispatch', sample('down', 5, 300, false)),
-      ix('dispatch', sample('move', 5, 100, false)),
-      ix('dispatch', sample('up', 5, 100, false)),
+      ix('dispatchPointer', sample('move', 5, 5, false)),
+      ix('getCursor'),
+      ix('dispatchPointer', sample('down', 5, 300, false)),
+      ix('dispatchPointer', sample('move', 5, 100, false)),
+      ix('dispatchPointer', sample('up', 5, 100, false)),
       st('camera'),
       ix('activateTool', 'pan'),
-      ix('dispatch', sample('move', 5, 5, false)),
-      ix('dispatch', sample('down', 5, 300, true)),
-      ix('dispatch', sample('move', 5, 100, true)),
-      ix('dispatch', sample('up', 5, 100, true)),
+      ix('dispatchPointer', sample('move', 5, 5, false)),
+      ix('dispatchPointer', sample('down', 5, 300, true)),
+      ix('dispatchPointer', sample('move', 5, 100, true)),
+      ix('dispatchPointer', sample('up', 5, 100, true)),
       st('camera'),
     ],
     snapshot: SNAP,

@@ -26,7 +26,7 @@ import {
   springStep,
   zoomLerp,
 } from '../../../../packages/plugin/stage/src/motion';
-import { initialStageState, stageReducer } from '../../../../packages/plugin/stage/src/reducer';
+import { initialStageState, stageReducer } from '../../../../packages/plugin/stage/src/model';
 import {
   boxOf,
   eqSetting,
@@ -43,12 +43,11 @@ import {
 } from '../../../../packages/plugin/stage/src/settings';
 import type {
   ResponsiveRule,
-  StageAction,
   StageBox,
   StageConfig,
   StageSettings,
-  StageState,
-} from '../../../../packages/plugin/stage/src/types';
+} from '../../../../packages/plugin/stage/src/contract';
+import type { StageAction, StageState } from '../../../../packages/plugin/stage/src/model';
 
 import type { FunctionCase, Suite } from '../vectors';
 
@@ -60,7 +59,7 @@ const c = (fn: string, label: string, ...args: unknown[]): FunctionCase => ({ na
 const box = (left: number, bottom: number, right: number, top: number) => ({ left, bottom, right, top });
 const layout = (over: Record<string, unknown> = {}) => ({
   index: 3,
-  pageObjectNumber: 12,
+  ref: { kind: 'objectNumber', pageObjectNumber: 12 },
   label: null,
   size: { width: 612, height: 792 },
   rotation: 0,
@@ -75,35 +74,35 @@ const scaled = layout({ userUnit: 2 });
 const bbox = { x: 50, y: 60, width: 400, height: 500 };
 
 const destinationCases: FunctionCase[] = [
-  c('destinationToReveal', 'xyz-all', { kind: 'xyz', pageObjectNumber: 12, left: 100, top: 700, zoom: 1.5 }, letter),
-  c('destinationToReveal', 'xyz-null-left-zero-zoom', { kind: 'xyz', pageObjectNumber: 12, left: null, top: 700, zoom: 0 }, letter),
-  c('destinationToReveal', 'xyz-null-top', { kind: 'xyz', pageObjectNumber: 12, left: 100, top: null, zoom: null }, letter),
-  c('destinationToReveal', 'xyz-absent', { kind: 'xyz', pageObjectNumber: 12 }, letter),
-  c('destinationToReveal', 'xyz-cropped', { kind: 'xyz', pageObjectNumber: 12, left: 110, top: 708, zoom: 2 }, cropped),
-  c('destinationToReveal', 'xyz-rotated', { kind: 'xyz', pageObjectNumber: 12, left: 100, top: 700, zoom: 1 }, turned),
-  c('destinationToReveal', 'xyz-user-unit', { kind: 'xyz', pageObjectNumber: 12, left: 100, top: 700 }, scaled),
-  c('destinationToReveal', 'xyz-negative-zoom', { kind: 'xyz', pageObjectNumber: 12, left: 0, top: 0, zoom: -1 }, letter),
-  c('destinationToReveal', 'fit', { kind: 'fit', pageObjectNumber: 12 }, letter),
-  c('destinationToReveal', 'fit-with-bbox', { kind: 'fit', pageObjectNumber: 12 }, letter, bbox),
-  c('destinationToReveal', 'fitH', { kind: 'fitH', pageObjectNumber: 12, top: 700 }, letter),
-  c('destinationToReveal', 'fitH-null', { kind: 'fitH', pageObjectNumber: 12, top: null }, letter),
-  c('destinationToReveal', 'fitH-absent-cropped', { kind: 'fitH', pageObjectNumber: 12 }, cropped),
-  c('destinationToReveal', 'fitH-cropped', { kind: 'fitH', pageObjectNumber: 12, top: 500 }, cropped),
-  c('destinationToReveal', 'fitV', { kind: 'fitV', pageObjectNumber: 12, left: 200 }, letter),
-  c('destinationToReveal', 'fitV-null', { kind: 'fitV', pageObjectNumber: 12, left: null }, cropped),
-  c('destinationToReveal', 'fitV-cropped', { kind: 'fitV', pageObjectNumber: 12, left: 200 }, cropped),
-  c('destinationToReveal', 'fitR', { kind: 'fitR', pageObjectNumber: 12, left: 100, bottom: 200, right: 300, top: 600 }, letter),
-  c('destinationToReveal', 'fitR-inverted', { kind: 'fitR', pageObjectNumber: 12, left: 300, bottom: 600, right: 100, top: 200 }, cropped),
-  c('destinationToReveal', 'fitB', { kind: 'fitB', pageObjectNumber: 12 }, letter),
-  c('destinationToReveal', 'fitB-bbox', { kind: 'fitB', pageObjectNumber: 12 }, letter, bbox),
-  c('destinationToReveal', 'fitBH', { kind: 'fitBH', pageObjectNumber: 12, top: 700 }, letter, bbox),
-  c('destinationToReveal', 'fitBH-null-bbox', { kind: 'fitBH', pageObjectNumber: 12, top: null }, letter, bbox),
-  c('destinationToReveal', 'fitBH-absent-page', { kind: 'fitBH', pageObjectNumber: 12 }, letter),
-  c('destinationToReveal', 'fitBV', { kind: 'fitBV', pageObjectNumber: 12, left: 150 }, cropped, bbox),
-  c('destinationToReveal', 'fitBV-null-bbox', { kind: 'fitBV', pageObjectNumber: 12, left: null }, letter, bbox),
-  c('destinationToReveal', 'fitBV-absent-page', { kind: 'fitBV', pageObjectNumber: 12 }, letter),
-  c('destinationToReveal', 'zero-user-unit-throws', { kind: 'fit', pageObjectNumber: 12 }, layout({ userUnit: 0 })),
-  c('destinationToReveal', 'absent-user-unit', { kind: 'xyz', pageObjectNumber: 12, left: 5, top: 6 }, layout({ userUnit: { $undefined: true } })),
+  c('destinationToReveal', 'xyz-all', { kind: 'xyz', page: { kind: 'objectNumber', pageObjectNumber: 12 }, left: 100, top: 700, zoom: 1.5 }, letter),
+  c('destinationToReveal', 'xyz-null-left-zero-zoom', { kind: 'xyz', page: { kind: 'objectNumber', pageObjectNumber: 12 }, left: null, top: 700, zoom: 0 }, letter),
+  c('destinationToReveal', 'xyz-null-top', { kind: 'xyz', page: { kind: 'objectNumber', pageObjectNumber: 12 }, left: 100, top: null, zoom: null }, letter),
+  c('destinationToReveal', 'xyz-absent', { kind: 'xyz', page: { kind: 'objectNumber', pageObjectNumber: 12 } }, letter),
+  c('destinationToReveal', 'xyz-cropped', { kind: 'xyz', page: { kind: 'objectNumber', pageObjectNumber: 12 }, left: 110, top: 708, zoom: 2 }, cropped),
+  c('destinationToReveal', 'xyz-rotated', { kind: 'xyz', page: { kind: 'objectNumber', pageObjectNumber: 12 }, left: 100, top: 700, zoom: 1 }, turned),
+  c('destinationToReveal', 'xyz-user-unit', { kind: 'xyz', page: { kind: 'objectNumber', pageObjectNumber: 12 }, left: 100, top: 700 }, scaled),
+  c('destinationToReveal', 'xyz-negative-zoom', { kind: 'xyz', page: { kind: 'objectNumber', pageObjectNumber: 12 }, left: 0, top: 0, zoom: -1 }, letter),
+  c('destinationToReveal', 'fit', { kind: 'fit', page: { kind: 'objectNumber', pageObjectNumber: 12 } }, letter),
+  c('destinationToReveal', 'fit-with-bbox', { kind: 'fit', page: { kind: 'objectNumber', pageObjectNumber: 12 } }, letter, bbox),
+  c('destinationToReveal', 'fitH', { kind: 'fitH', page: { kind: 'objectNumber', pageObjectNumber: 12 }, top: 700 }, letter),
+  c('destinationToReveal', 'fitH-null', { kind: 'fitH', page: { kind: 'objectNumber', pageObjectNumber: 12 }, top: null }, letter),
+  c('destinationToReveal', 'fitH-absent-cropped', { kind: 'fitH', page: { kind: 'objectNumber', pageObjectNumber: 12 } }, cropped),
+  c('destinationToReveal', 'fitH-cropped', { kind: 'fitH', page: { kind: 'objectNumber', pageObjectNumber: 12 }, top: 500 }, cropped),
+  c('destinationToReveal', 'fitV', { kind: 'fitV', page: { kind: 'objectNumber', pageObjectNumber: 12 }, left: 200 }, letter),
+  c('destinationToReveal', 'fitV-null', { kind: 'fitV', page: { kind: 'objectNumber', pageObjectNumber: 12 }, left: null }, cropped),
+  c('destinationToReveal', 'fitV-cropped', { kind: 'fitV', page: { kind: 'objectNumber', pageObjectNumber: 12 }, left: 200 }, cropped),
+  c('destinationToReveal', 'fitR', { kind: 'fitR', page: { kind: 'objectNumber', pageObjectNumber: 12 }, left: 100, bottom: 200, right: 300, top: 600 }, letter),
+  c('destinationToReveal', 'fitR-inverted', { kind: 'fitR', page: { kind: 'objectNumber', pageObjectNumber: 12 }, left: 300, bottom: 600, right: 100, top: 200 }, cropped),
+  c('destinationToReveal', 'fitB', { kind: 'fitB', page: { kind: 'objectNumber', pageObjectNumber: 12 } }, letter),
+  c('destinationToReveal', 'fitB-bbox', { kind: 'fitB', page: { kind: 'objectNumber', pageObjectNumber: 12 } }, letter, bbox),
+  c('destinationToReveal', 'fitBH', { kind: 'fitBH', page: { kind: 'objectNumber', pageObjectNumber: 12 }, top: 700 }, letter, bbox),
+  c('destinationToReveal', 'fitBH-null-bbox', { kind: 'fitBH', page: { kind: 'objectNumber', pageObjectNumber: 12 }, top: null }, letter, bbox),
+  c('destinationToReveal', 'fitBH-absent-page', { kind: 'fitBH', page: { kind: 'objectNumber', pageObjectNumber: 12 } }, letter),
+  c('destinationToReveal', 'fitBV', { kind: 'fitBV', page: { kind: 'objectNumber', pageObjectNumber: 12 }, left: 150 }, cropped, bbox),
+  c('destinationToReveal', 'fitBV-null-bbox', { kind: 'fitBV', page: { kind: 'objectNumber', pageObjectNumber: 12 }, left: null }, letter, bbox),
+  c('destinationToReveal', 'fitBV-absent-page', { kind: 'fitBV', page: { kind: 'objectNumber', pageObjectNumber: 12 } }, letter),
+  c('destinationToReveal', 'zero-user-unit-throws', { kind: 'fit', page: { kind: 'objectNumber', pageObjectNumber: 12 } }, layout({ userUnit: 0 })),
+  c('destinationToReveal', 'absent-user-unit', { kind: 'xyz', page: { kind: 'objectNumber', pageObjectNumber: 12 }, left: 5, top: 6 }, layout({ userUnit: { $undefined: true } })),
 ];
 
 // ── settings ──────────────────────────────────────────────────────────────────

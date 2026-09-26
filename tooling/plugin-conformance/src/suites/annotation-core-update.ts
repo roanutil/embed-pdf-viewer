@@ -40,6 +40,7 @@ import {
   tqRot,
   v,
   type Fn,
+  pageRef,
 } from './annotation-core-fixtures';
 
 /** Value equality in canonical JSON: member order ignored, `-0` is `0`. */
@@ -69,11 +70,11 @@ const updateFns: Record<string, Fn> = {
   calloutBox: up.calloutBox,
   calloutUprightRot: up.calloutUprightRot,
   annotsInBox: (s: Partial<Model>, pon: number, a: Vec, b: Vec, inert?: Set<Id>, view?: ViewEnv) =>
-    up.annotsInBox(modelOf(s), pon, a, b, inert, view),
+    up.annotsInBox(modelOf(s), pageRef(pon), a, b, inert, view),
   /** One page, many boxes: `[pon, a, b, inert?, view?]` each. */
   annotsInBoxes: (s: Partial<Model>, calls: [number, Vec, Vec, Set<Id>?, ViewEnv?][]) => {
     const m = modelOf(s);
-    return calls.map(([pon, a, b, inert, view]) => up.annotsInBox(m, pon, a, b, inert, view));
+    return calls.map(([pon, a, b, inert, view]) => up.annotsInBox(m, pageRef(pon), a, b, inert, view));
   },
 };
 
@@ -101,7 +102,7 @@ function runOne(s: Partial<Model>, msgs: Msg[]) {
 const PAGE = rc(0, 0, 600, 800);
 type Phase = 'down' | 'move' | 'up';
 const inp = (x: number, y: number, over: Partial<PointerInput> = {}): PointerInput => ({
-  pon: PON,
+  page: pageRef(PON),
   point: v(x, y),
   shift: false,
   ...over,
@@ -145,7 +146,7 @@ const ANNOTS: Annot[] = [
   annot('widget', 'widget-text', gRect(rc(20, 550, 80, 20)), { source: 'baked', text: TEXT }),
   sq('nozoom', rc(560, 700, 30, 30), { flags: flags({ noZoom: true, noRotate: true }) }),
   annot('child', 'link', gRect(rc(100, 100, 80, 60)), { group: 'sq', irt: 'sq', data: { subtype: 'link', target: URI } as never }),
-  sq('other-page', rc(100, 100, 80, 60), { pon: 2 }),
+  sq('other-page', rc(100, 100, 80, 60), { page: pageRef(2) }),
 ];
 const S = (over: Partial<Model> = {}) => start(ANNOTS, over);
 const GROUP = start([
@@ -182,7 +183,7 @@ const RUNS: Case[] = [
   ['edit-move-no-draft', S(), [ed('move', 10, 10)]],
   ['edit-up-no-draft', S(), [ed('up', 10, 10)]],
   ['edit-move-drag', S(), [ed('down', 101, 130), ed('move', 131, 170)]],
-  ['edit-move-foreign-page', S(), [ed('down', 101, 130), ed('move', 131, 170, { pon: 2 })]],
+  ['edit-move-foreign-page', S(), [ed('down', 101, 130), ed('move', 131, 170, { page: pageRef(2) })]],
   ['edit-move-clamped', S(), [ed('down', 101, 130), ed('move', -500, 2000, { pageBox: PAGE })]],
   ['edit-move-shift-no-snap', S(), [ed('down', 101, 130), ed('move', 300, 131, { shift: true })]],
   ['edit-move-snap', S(), [ed('down', 101, 130), ed('move', 299, 131)]],
@@ -191,7 +192,7 @@ const RUNS: Case[] = [
   ['edit-move-snap-page-edge', S(), [ed('down', 101, 130), ed('move', 3, 33, { pageBox: PAGE })]],
   ['edit-move-anchored-view-clamp', S({ selected: ['nozoom'] }), [ed('down', 575, 715), ed('move', 700, 900, { pageBox: PAGE, zoom: 2 })]],
   ['edit-handle-resize', S({ selected: ['sq'] }), [ed('down', 180, 160), ed('move', 220, 200), ed('move', 250, 1000, { pageBox: PAGE })]],
-  ['edit-handle-foreign', S({ selected: ['sq'] }), [ed('down', 180, 160), ed('move', 220, 200, { pon: 2 })]],
+  ['edit-handle-foreign', S({ selected: ['sq'] }), [ed('down', 180, 160), ed('move', 220, 200, { page: pageRef(2) })]],
   ['edit-rotate-move', S({ selected: ['sq'] }), [ed('down', 140, 76), ed('move', 200, 90), ed('move', 200, 90, { shift: true })]],
   ['edit-group-resize-move', S({ selected: ['sq', 'sq2'] }), [ed('down', 380, 160), ed('move', 420, 200)]],
   ['edit-group-resize-iso', S({ selected: ['sq', 'pl'] }), [ed('down', 100, 100), ed('move', 50, 50)]],
@@ -223,13 +224,13 @@ const RUNS: Case[] = [
   ['edit-group-noop', S({ selected: ['sq', 'sq2'] }), editDrag(v(380, 160), v(380, 160))],
   ['edit-group-commit-iso', S({ selected: ['sq', 'pl'] }), editDrag(v(100, 100), v(50, 60))],
   ['edit-group-commit-stamp', S({ selected: ['sq', 'stamp'] }), editDrag(v(530, 440), v(580, 480))],
-  ['edit-move-then-other-page-up', S(), [ed('down', 101, 130), ed('move', 131, 170), ed('up', 0, 0, { pon: 2 })]],
+  ['edit-move-then-other-page-up', S(), [ed('down', 101, 130), ed('move', 131, 170), ed('up', 0, 0, { page: pageRef(2) })]],
   // ── marquee ──
   ['marquee-select', S(), [mq('down', 90, 90), mq('move', 200, 200), mq('up', 200, 200)]],
   ['marquee-clamped', S(), [mq('down', -50, -50, { pageBox: PAGE }), mq('up', 150, 150, { pageBox: PAGE })]],
   ['marquee-shift-toggle', S({ selected: ['sq', 'ink'] }), [mq('down', 90, 90), mq('up', 200, 200, { shift: true })]],
   ['marquee-inert', S(), [mq('down', 90, 90), mq('up', 200, 200, { inert: new Set(['sq']) })]],
-  ['marquee-foreign', S(), [mq('down', 90, 90), mq('move', 200, 200, { pon: 2 }), mq('up', 200, 200, { pon: 2 })]],
+  ['marquee-foreign', S(), [mq('down', 90, 90), mq('move', 200, 200, { page: pageRef(2) }), mq('up', 200, 200, { page: pageRef(2) })]],
   ['marquee-no-draft', S(), [mq('move', 200, 200), mq('up', 200, 200)]],
   ['marquee-groups', GROUP, [mq('down', 240, 90), mq('up', 300, 150)]],
   ['marquee-view', S(), [mq('down', 540, 690), mq('up', 570, 710, { zoom: 2 })]],
@@ -251,7 +252,7 @@ const RUNS: Case[] = [
   ['create-square-flags', {}, drag('square', v(100, 100), v(200, 160), {}, { flags: { noZoom: true, print: false } })],
   ['create-square-preset', { defaults: { cloud: { border: cloudy(2), color: '#0000ff' } } }, drag('square', v(100, 100), v(200, 160), {}, { preset: 'cloud' })],
   ['create-square-clamped', {}, drag('square', v(100, 100), v(900, 900), { pageBox: PAGE })],
-  ['create-square-foreign-move', {}, [cr('square', 'down', 100, 100), cr('square', 'move', 200, 200, { pon: 2 }), cr('square', 'up', 200, 200, { pon: 2 })]],
+  ['create-square-foreign-move', {}, [cr('square', 'down', 100, 100), cr('square', 'move', 200, 200, { page: pageRef(2) }), cr('square', 'up', 200, 200, { page: pageRef(2) })]],
   ['create-square-selects-and-seq', S({ selected: ['sq'], seq: 7 }), drag('square', v(10, 10), v(60, 60))],
   ['create-redact', {}, drag('redact', v(10, 10), v(110, 60))],
   ['create-link', {}, drag('link', v(10, 10), v(110, 60))],
@@ -283,7 +284,7 @@ const RUNS: Case[] = [
   ['create-polyline', { defaults: { polyline: { lineEndings: { start: 'circle' } } } }, [cr('polyline', 'down', 20, 20), cr('polyline', 'down', 90, 45), { t: 'finishCreationDraft' }]],
   ['create-polyline-too-few', {}, [cr('polyline', 'down', 20, 20), { t: 'finishCreationDraft' }]],
   ['create-poly-restart-subtype', {}, [cr('polygon', 'down', 10, 10), cr('polyline', 'down', 20, 20), cr('polyline', 'down', 30, 40), { t: 'finishCreationDraft' }]],
-  ['create-poly-restart-page', {}, [cr('polygon', 'down', 10, 10), cr('polygon', 'down', 20, 20, { pon: 2 }), cr('polygon', 'move', 30, 30, { pon: 2 })]],
+  ['create-poly-restart-page', {}, [cr('polygon', 'down', 10, 10), cr('polygon', 'down', 20, 20, { page: pageRef(2) }), cr('polygon', 'move', 30, 30, { page: pageRef(2) })]],
   ['create-poly-flags', {}, [cr('polygon', 'down', 10, 10, {}, { flags: { locked: true } }), cr('polygon', 'down', 90, 10), cr('polygon', 'down', 40, 90), { t: 'finishCreationDraft' }]],
   ['create-poly-finish-without-draft', {}, [cr('polygon', 'down', 10, 10, { finish: true }), { t: 'finishCreationDraft' }]],
   ['create-poly-up-ignored', {}, [cr('polygon', 'down', 10, 10), cr('polygon', 'up', 50, 50)]],
@@ -305,19 +306,19 @@ const RUNS: Case[] = [
   ['create-callout-up-early', {}, [cr('free-text-callout', 'down', 10, 10), cr('free-text-callout', 'up', 10, 10), cr('free-text-callout', 'down', 60, 70), cr('free-text-callout', 'up', 60, 70)]],
   ['create-callout-upright-90', { defaults: { 'free-text-callout': { lineEndings: { end: 'closed-arrow' } } } }, [cr('free-text-callout', 'down', 10, 10, { upright: true, displayRotation: 90 }), cr('free-text-callout', 'down', 60, 70), cr('free-text-callout', 'down', 100, 80), cr('free-text-callout', 'move', 250, 140), cr('free-text-callout', 'up', 250, 140)]],
   ['create-callout-upright-180-click', {}, [cr('free-text-callout', 'down', 10, 10, { upright: true, displayRotation: 180 }, { flags: { noRotate: true } }), cr('free-text-callout', 'down', 60, 70), cr('free-text-callout', 'down', 100, 80), cr('free-text-callout', 'up', 100, 80)]],
-  ['create-callout-restart-page', {}, [cr('free-text-callout', 'down', 10, 10), cr('free-text-callout', 'down', 60, 70, { pon: 2 })]],
+  ['create-callout-restart-page', {}, [cr('free-text-callout', 'down', 10, 10), cr('free-text-callout', 'down', 60, 70, { page: pageRef(2) })]],
   ['create-callout-move-no-draft', {}, [cr('free-text-callout', 'move', 10, 10), cr('free-text-callout', 'up', 10, 10)]],
   ['create-callout-preset', { defaults: { 'my-callout': { color: '#00ff00' } } }, [cr('free-text-callout', 'down', 10, 10, {}, { preset: 'my-callout' }), cr('free-text-callout', 'down', 60, 70), cr('free-text-callout', 'down', 100, 80), cr('free-text-callout', 'up', 100, 80)]],
   // ── carets, markup, replace-text, preview ──
-  ['create-caret', {}, [{ t: 'createCaret', pon: PON, anchor: { glyphQuad: tq(10, 10, 8, 12), advance: 1 } }]],
-  ['create-caret-rot-flags', {}, [{ t: 'createCaret', pon: PON, anchor: { glyphQuad: tqRot(10, 10, 8, 12, 30), advance: -1 }, flags: { locked: true } }]],
-  ['create-caret-nan', {}, [{ t: 'createCaret', pon: PON, anchor: { glyphQuad: tq(NaN, 10, 8, 12), advance: 1 } }]],
-  ['create-markup', S({ preview: { subtype: 'highlight', preset: 'highlight', byPage: {} } }), [{ t: 'createMarkup', subtype: 'highlight', pon: PON, quads: [tq(10, 10, 100, 12), tq(0, 0, 0, 12), tq(10, 30, 50, 12)] }]],
-  ['create-markup-preset-flags', { defaults: { squiggle2: { color: '#123123' } } }, [{ t: 'createMarkup', subtype: 'squiggly', pon: PON, quads: [tq(10, 10, 100, 12)], preset: 'squiggle2', flags: { print: false } }]],
-  ['create-markup-degenerate', {}, [{ t: 'createMarkup', subtype: 'underline', pon: PON, quads: [tq(0, 0, 0, 12), tq(0, 0, 10, 0)] }]],
-  ['create-replace-text', S({ seq: 3 }), [{ t: 'createReplaceText', pon: PON, quads: [tq(10, 10, 100, 12)], anchor: { glyphQuad: tq(100, 10, 10, 12), advance: 1 } }]],
-  ['create-replace-text-preset', { defaults: { rt: { color: '#0000ff' } } }, [{ t: 'createReplaceText', pon: PON, quads: [tqRot(10, 10, 100, 12, 90)], anchor: { glyphQuad: tqRot(10, 10, 10, 12, 90), advance: -1 }, preset: 'rt' }]],
-  ['create-replace-text-degenerate', {}, [{ t: 'createReplaceText', pon: PON, quads: [], anchor: { glyphQuad: tq(100, 10, 10, 12), advance: 1 } }]],
+  ['create-caret', {}, [{ t: 'createCaret', page: pageRef(PON), anchor: { glyphQuad: tq(10, 10, 8, 12), advance: 1 } }]],
+  ['create-caret-rot-flags', {}, [{ t: 'createCaret', page: pageRef(PON), anchor: { glyphQuad: tqRot(10, 10, 8, 12, 30), advance: -1 }, flags: { locked: true } }]],
+  ['create-caret-nan', {}, [{ t: 'createCaret', page: pageRef(PON), anchor: { glyphQuad: tq(NaN, 10, 8, 12), advance: 1 } }]],
+  ['create-markup', S({ preview: { subtype: 'highlight', preset: 'highlight', byPage: {} } }), [{ t: 'createMarkup', subtype: 'highlight', page: pageRef(PON), quads: [tq(10, 10, 100, 12), tq(0, 0, 0, 12), tq(10, 30, 50, 12)] }]],
+  ['create-markup-preset-flags', { defaults: { squiggle2: { color: '#123123' } } }, [{ t: 'createMarkup', subtype: 'squiggly', page: pageRef(PON), quads: [tq(10, 10, 100, 12)], preset: 'squiggle2', flags: { print: false } }]],
+  ['create-markup-degenerate', {}, [{ t: 'createMarkup', subtype: 'underline', page: pageRef(PON), quads: [tq(0, 0, 0, 12), tq(0, 0, 10, 0)] }]],
+  ['create-replace-text', S({ seq: 3 }), [{ t: 'createReplaceText', page: pageRef(PON), quads: [tq(10, 10, 100, 12)], anchor: { glyphQuad: tq(100, 10, 10, 12), advance: 1 } }]],
+  ['create-replace-text-preset', { defaults: { rt: { color: '#0000ff' } } }, [{ t: 'createReplaceText', page: pageRef(PON), quads: [tqRot(10, 10, 100, 12, 90)], anchor: { glyphQuad: tqRot(10, 10, 10, 12, 90), advance: -1 }, preset: 'rt' }]],
+  ['create-replace-text-degenerate', {}, [{ t: 'createReplaceText', page: pageRef(PON), quads: [], anchor: { glyphQuad: tq(100, 10, 10, 12), advance: 1 } }]],
   ['markup-preview', {}, [{ t: 'setMarkupPreview', subtype: 'highlight', quadsByPage: { 1: [tq(10, 10, 100, 12), tq(0, 0, 0, 1)], 2: [tq(0, 0, 0, 1)], 3: [tq(0, 0, 5, 5)] } }, { t: 'clearMarkupPreview' }, { t: 'clearMarkupPreview' }]],
   ['markup-preview-keys', {}, [{ t: 'setMarkupPreview', subtype: 'underline', preset: 'u', quadsByPage: { b: [tq(0, 0, 5, 5)], 10: [tq(1, 1, 5, 5)], '01': [tq(2, 2, 5, 5)], 1: [tq(3, 3, 5, 5)], '-1': [tq(4, 4, 5, 5)] } as never }]],
   // ── selection ──
@@ -338,7 +339,7 @@ const RUNS: Case[] = [
   ['set-props-link-parent', S({ selected: ['sq', 'ink', 'caret', 'locked'] }), [{ t: 'setProps', patch: { link: URI as never } }]],
   ['set-props-link-parent-clear', S({ selected: ['sq'] }), [{ t: 'setProps', patch: { link: null } }]],
   ['set-props-link-and-color', S({ selected: ['sq'] }), [{ t: 'setProps', patch: { link: URI as never, color: '#0f0f0f' } }]],
-  ['set-props-link-kind', S({ selected: ['link'] }), [{ t: 'setProps', patch: { link: { kind: 'goto', destination: { kind: 'fit', pageObjectNumber: 4 } } as never } }]],
+  ['set-props-link-kind', S({ selected: ['link'] }), [{ t: 'setProps', patch: { link: { kind: 'goto', destination: { kind: 'fit', page: pageRef(4) } } as never } }]],
   ['set-props-link-kind-null', start([annot('lnk', 'link', gRect(rc(0, 0, 10, 10)), { link: null })], { selected: ['lnk'] }), [{ t: 'setProps', patch: { link: null } }]],
   ['set-props-link-kind-unset-to-null', start([annot('lnk', 'link', gRect(rc(0, 0, 10, 10)))], { selected: ['lnk'] }), [{ t: 'setProps', patch: { link: null } }]],
   ['set-props-icon', S({ selected: ['note'] }), [{ t: 'setProps', patch: { icon: 'key' } }, { t: 'setProps', patch: { icon: 'key' } }]],
@@ -372,9 +373,9 @@ const RUNS: Case[] = [
   ['hydrated-bump', GROUP, [{ t: 'hydrated', annots: [sq('p', rc(0, 0, 5, 5)), sq('fresh', rc(1, 1, 5, 5))], bumpAp: true }]],
   ['hydrated-keeps-dragged', S(), [ed('down', 101, 130), ed('move', 131, 170), { t: 'hydrated', annots: [] }]],
   ['hydrated-nothing-reaped', S(), [{ t: 'hydrated', annots: ANNOTS }]],
-  ['created', GROUP, [{ t: 'beginTextEdit', id: 'tmp:1' }, { t: 'created', tempId: 'tmp:1', id: 'c1', ref: { kind: 'nm', pageObjectNumber: PON, nm: 'abc' } }]],
-  ['created-unknown', GROUP, [{ t: 'created', tempId: 'tmp:9', id: 'c1', ref: { kind: 'nm', pageObjectNumber: PON, nm: 'abc' } }]],
-  ['created-index-ref', GROUP, [{ t: 'created', tempId: 'tmp:2', id: 'c2', ref: { kind: 'index', pageObjectNumber: PON, index: 3, revision: { docSessionId: 's', pageObjectNumber: PON, generation: 2 } } }]],
+  ['created', GROUP, [{ t: 'beginTextEdit', id: 'tmp:1' }, { t: 'created', tempId: 'tmp:1', id: 'c1', ref: { kind: 'nm', page: pageRef(PON), nm: 'abc' } }]],
+  ['created-unknown', GROUP, [{ t: 'created', tempId: 'tmp:9', id: 'c1', ref: { kind: 'nm', page: pageRef(PON), nm: 'abc' } }]],
+  ['created-index-ref', GROUP, [{ t: 'created', tempId: 'tmp:2', id: 'c2', ref: { kind: 'index', page: pageRef(PON), index: 3, revision: { docSessionId: 's', page: pageRef(PON), generation: 2 } } }]],
   ['create-failed', GROUP, [{ t: 'createFailed', tempId: 'tmp:2' }]],
   ['upsert', S(), [{ t: 'upsert', annots: [sq('sq', rc(0, 0, 1, 1)), sq('brand-new', rc(0, 0, 3, 3))] }, { t: 'upsert', annots: [sq('sq', rc(0, 0, 2, 2))], bumpAp: true }, { t: 'upsert', annots: [sq('sq', rc(0, 0, 2, 2))], bumpAp: true }]],
   ['upsert-while-dragging', S({ selected: ['sq'] }), [ed('down', 180, 160), { t: 'upsert', annots: [sq('sq', rc(0, 0, 1, 1)), sq('sq2', rc(0, 0, 1, 1))] }]],
@@ -402,9 +403,9 @@ const RUNS: Case[] = [
   ['create-line-short-offset', {}, drag('line', v(100, 100), v(104, 100))],
   ['create-ink-exactly-min', {}, drag('ink', v(10, 10), v(13, 10))],
   ['create-ink-far-dots', {}, [cr('ink', 'down', 10, 10, {}, { deferInkCommit: true }), cr('ink', 'up', 10, 10, {}, { deferInkCommit: true }), cr('ink', 'down', 90, 90, {}, { deferInkCommit: true }), cr('ink', 'up', 90, 90, {}, { deferInkCommit: true }), { t: 'finishInkDraft' }]],
-  ['draft-create-rect-upright-nan', { draft: { g: 'create-rect', subtype: 'square', preset: 'square', pon: PON, from: v(0, 0), to: v(50, 30), ellipse: false, displayRotation: NaN as never, upright: true } }, [cr('square', 'up', 50, 30)]],
-  ['create-markup-degenerate-offset', {}, [{ t: 'createMarkup', subtype: 'underline', pon: PON, quads: [tq(50, 50, 0, 12), tq(50, 50, 10, 0), tq(50, 60, 0, 0)] }]],
-  ['create-replace-text-clears-preview', S({ preview: { subtype: 'highlight', preset: 'highlight', byPage: {} } }), [cr('square', 'down', 1, 1), { t: 'createReplaceText', pon: PON, quads: [tq(10, 10, 100, 12)], anchor: { glyphQuad: tq(100, 10, 10, 12), advance: 1 } }]],
+  ['draft-create-rect-upright-nan', { draft: { g: 'create-rect', subtype: 'square', preset: 'square', page: pageRef(PON), from: v(0, 0), to: v(50, 30), ellipse: false, displayRotation: NaN as never, upright: true } }, [cr('square', 'up', 50, 30)]],
+  ['create-markup-degenerate-offset', {}, [{ t: 'createMarkup', subtype: 'underline', page: pageRef(PON), quads: [tq(50, 50, 0, 12), tq(50, 50, 10, 0), tq(50, 60, 0, 0)] }]],
+  ['create-replace-text-clears-preview', S({ preview: { subtype: 'highlight', preset: 'highlight', byPage: {} } }), [cr('square', 'down', 1, 1), { t: 'createReplaceText', page: pageRef(PON), quads: [tq(10, 10, 100, 12)], anchor: { glyphQuad: tq(100, 10, 10, 12), advance: 1 } }]],
   ['hydrated-empty-hover', S({ hovered: '', editing: '' }), [{ t: 'hydrated', annots: [] }]],
   ['remove-keeps-editing', S({ editing: 'ft' }), [{ t: 'remove', ids: ['sq'] }]],
   ['hydrated-keeps-surviving-hover', S({ hovered: 'sq', editing: 'ft' }), [{ t: 'hydrated', annots: ANNOTS.filter((a) => a.id !== 'ln') }]],
@@ -412,8 +413,8 @@ const RUNS: Case[] = [
   ['create-free-text-click-height-exactly-min', {}, drag('free-text', v(100, 100), v(101, 103))],
   // The collinear skew away from the origin, where both edge vectors must be
   // measured from the upper start for the cross product to come out zero.
-  ['create-markup-collinear-skew-offset', {}, [{ t: 'createMarkup', subtype: 'highlight', pon: PON, quads: [{ upperStart: v(10, 10), upperEnd: v(50, 50), lowerStart: v(20, 20), lowerEnd: v(60, 60) }] }]],
-  ['create-markup-collinear-skew', {},[{ t: 'createMarkup', subtype: 'highlight', pon: PON, quads: [{ upperStart: v(0, 0), upperEnd: v(10, 10), lowerStart: v(5, 5), lowerEnd: v(15, 15) }, { upperStart: v(0, 0), upperEnd: v(10, 0), lowerStart: v(0, 0), lowerEnd: v(10, 0) }] }]],
+  ['create-markup-collinear-skew-offset', {}, [{ t: 'createMarkup', subtype: 'highlight', page: pageRef(PON), quads: [{ upperStart: v(10, 10), upperEnd: v(50, 50), lowerStart: v(20, 20), lowerEnd: v(60, 60) }] }]],
+  ['create-markup-collinear-skew', {},[{ t: 'createMarkup', subtype: 'highlight', page: pageRef(PON), quads: [{ upperStart: v(0, 0), upperEnd: v(10, 10), lowerStart: v(5, 5), lowerEnd: v(15, 15) }, { upperStart: v(0, 0), upperEnd: v(10, 0), lowerStart: v(0, 0), lowerEnd: v(10, 0) }] }]],
   // ── baked kinds flip to vector on an owned edit ──
   ['baked-handle-flips', S({ selected: ['baked'] }), editDrag(v(510, 540), v(530, 560))],
   ['baked-rotate90-flips', S({ selected: ['baked'] }), [{ t: 'rotate90' }]],
@@ -421,25 +422,25 @@ const RUNS: Case[] = [
   ['baked-weird-opaque', start([annot('stamp-ink', 'stamp', gInk([[v(0, 0), v(50, 50)]]), { source: 'baked', apBox: rc(0, 0, 50, 50) })], { selected: ['stamp-ink'] }), [{ t: 'rotate90' }]],
   // ── drafts handed in by the caller (missing ids, no preset) ──
   ['draft-move-missing-member', S({ selected: ['sq'], draft: { g: 'move', ids: ['sq', 'ghost'], start: v(0, 0), delta: v(0, 0), guides: [] } }), [ed('move', 10, 10, { pageBox: PAGE, shift: true })]],
-  ['draft-move-all-missing', S({ draft: { g: 'move', ids: ['ghost'], start: v(0, 0), delta: v(0, 0), guides: [] } }), [ed('move', 10, 10, { pageBox: PAGE, shift: true }), ed('move', 10, 10, { pageBox: PAGE, pon: 7, shift: true })]],
-  ['draft-move-empty-ids', S({ draft: { g: 'move', ids: [], start: v(0, 0), delta: v(0, 0), guides: [] } }), [ed('move', 10, 10, { pon: 7 })]],
+  ['draft-move-all-missing', S({ draft: { g: 'move', ids: ['ghost'], start: v(0, 0), delta: v(0, 0), guides: [] } }), [ed('move', 10, 10, { pageBox: PAGE, shift: true }), ed('move', 10, 10, { pageBox: PAGE, page: pageRef(7), shift: true })]],
+  ['draft-move-empty-ids', S({ draft: { g: 'move', ids: [], start: v(0, 0), delta: v(0, 0), guides: [] } }), [ed('move', 10, 10, { page: pageRef(7) })]],
   ['draft-group-missing-member', S({ selected: ['sq', 'sq2'], draft: { g: 'group', op: 'resize', ids: ['sq', 'ghost', 'sq2'], handle: 'se', anchor: v(100, 100), base: rc(100, 100, 280, 60), cur: rc(100, 100, 280, 60) } }), [ed('move', 420, 200), ed('up', 420, 200)]],
   ['draft-group-ghost-first', S({ draft: { g: 'group', op: 'resize', ids: ['ghost', 'sq'], handle: 'se', anchor: v(100, 100), base: rc(100, 100, 80, 60), cur: rc(100, 100, 80, 60) } }), [ed('move', 420, 200), ed('up', 420, 200)]],
   ['draft-rotate-missing-member', S({ draft: { g: 'rotate', ids: ['sq', 'ghost'], pivot: v(140, 130), start: v(140, 76), cur: v(140, 76) } }), [ed('move', 200, 90), ed('up', 200, 90)]],
-  ['draft-handle-foreign-annot', S({ draft: { g: 'handle', id: 'ghost', handle: 'se', base: gRect(rc(0, 0, 10, 10)), cur: gRect(rc(0, 0, 10, 10)) } }), [ed('move', 20, 20, { pon: 5 })]],
-  ['draft-create-rect-no-preset', { defaults: { square: { color: '#00ff00' } }, draft: { g: 'create-rect', subtype: 'square', pon: PON, from: v(0, 0), to: v(50, 50), ellipse: false } }, [cr('square', 'up', 50, 50)]],
-  ['draft-create-line-no-preset', { draft: { g: 'create-line', subtype: 'line', pon: PON, from: v(0, 0), to: v(50, 50) } }, [cr('line', 'up', 50, 50)]],
-  ['draft-create-ink-no-preset', { draft: { g: 'create-ink', subtype: 'ink', pon: PON, strokes: [[v(0, 0), v(50, 50)]] } }, [{ t: 'finishInkDraft' }]],
-  ['draft-create-poly-no-preset', { draft: { g: 'create-poly', subtype: 'polyline', pon: PON, points: [v(0, 0), v(50, 50)], cur: v(50, 50), closed: false } }, [{ t: 'finishCreationDraft' }]],
-  ['draft-create-callout-no-preset', { draft: { g: 'create-callout', subtype: 'free-text-callout', pon: PON, step: 'box', tip: v(0, 0), cur: v(50, 50), boxFrom: v(50, 50) } }, [cr('free-text-callout', 'up', 50, 50)]],
-  ['draft-create-ink-no-strokes', { draft: { g: 'create-ink', subtype: 'ink', pon: PON, preset: 'ink', strokes: [] } }, [cr('ink', 'up', 1, 1, {}, { straightenInk: { deviationThreshold: 0.1, axisSnapDegrees: 10 } })]],
+  ['draft-handle-foreign-annot', S({ draft: { g: 'handle', id: 'ghost', handle: 'se', base: gRect(rc(0, 0, 10, 10)), cur: gRect(rc(0, 0, 10, 10)) } }), [ed('move', 20, 20, { page: pageRef(5) })]],
+  ['draft-create-rect-no-preset', { defaults: { square: { color: '#00ff00' } }, draft: { g: 'create-rect', subtype: 'square', page: pageRef(PON), from: v(0, 0), to: v(50, 50), ellipse: false } }, [cr('square', 'up', 50, 50)]],
+  ['draft-create-line-no-preset', { draft: { g: 'create-line', subtype: 'line', page: pageRef(PON), from: v(0, 0), to: v(50, 50) } }, [cr('line', 'up', 50, 50)]],
+  ['draft-create-ink-no-preset', { draft: { g: 'create-ink', subtype: 'ink', page: pageRef(PON), strokes: [[v(0, 0), v(50, 50)]] } }, [{ t: 'finishInkDraft' }]],
+  ['draft-create-poly-no-preset', { draft: { g: 'create-poly', subtype: 'polyline', page: pageRef(PON), points: [v(0, 0), v(50, 50)], cur: v(50, 50), closed: false } }, [{ t: 'finishCreationDraft' }]],
+  ['draft-create-callout-no-preset', { draft: { g: 'create-callout', subtype: 'free-text-callout', page: pageRef(PON), step: 'box', tip: v(0, 0), cur: v(50, 50), boxFrom: v(50, 50) } }, [cr('free-text-callout', 'up', 50, 50)]],
+  ['draft-create-ink-no-strokes', { draft: { g: 'create-ink', subtype: 'ink', page: pageRef(PON), preset: 'ink', strokes: [] } }, [cr('ink', 'up', 1, 1, {}, { straightenInk: { deviationThreshold: 0.1, axisSnapDegrees: 10 } })]],
   // ── reconcile keeps relationships across the id swap ──
   ['created-relationships', start([
     annot('tmp:1', 'caret', gCaret(rc(10, 10, 5, 5)), { ref: null }),
     annot('r-irt', 'text', gRect(rc(0, 0, 5, 5)), { irt: 'tmp:1' }),
     annot('r-group', 'strikeout', gQuads([tq(0, 0, 5, 5)]), { group: 'tmp:1', irt: 'other' }),
     annot('r-both', 'strikeout', gQuads([tq(0, 0, 5, 5)]), { group: 'tmp:1', irt: 'tmp:1' }),
-  ], { selected: ['r-irt', 'tmp:1'] }), [{ t: 'created', tempId: 'tmp:1', id: 'final', ref: { kind: 'objectNumber', pageObjectNumber: PON, annotObjectNumber: 9 } }]],
+  ], { selected: ['r-irt', 'tmp:1'] }), [{ t: 'created', tempId: 'tmp:1', id: 'final', ref: { kind: 'objectNumber', page: pageRef(PON), annotObjectNumber: 9 } }]],
   ['set-props-link-null-and-color', S({ selected: ['sq'] }), [{ t: 'setProps', patch: { color: '#0a0a0a', link: null } }]],
   ['marquee-shift-toggle-adds', S({ selected: ['sq'] }), [mq('down', 0, 0), mq('up', 600, 800, { shift: true })]],
   ['create-line-flags', {}, drag('line', v(10, 10), v(90, 40), {}, { flags: { noRotate: true } })],
@@ -497,7 +498,7 @@ updateCases.push(
   c('rotateDraftDelta', 'custom-angles', S({ snap: { ...up.initialModel.snap, rotationAngles: [45, -10], rotationThreshold: 10 } }), rotDraft(v(0, 0), v(0, -10), v(10, -10))),
   c('rotateDraftDelta', 'snap-off', S({ snap: { ...up.initialModel.snap, rotation: false } }), rotDraft(v(0, 0), v(0, -10), v(10, -10))),
 );
-const calloutDraft = (over: object = {}) => ({ g: 'create-callout', subtype: 'free-text-callout', pon: PON, step: 'box', tip: v(10, 10), knee: v(50, 60), cur: v(100, 80), ...over });
+const calloutDraft = (over: object = {}) => ({ g: 'create-callout', subtype: 'free-text-callout', page: pageRef(PON), step: 'box', tip: v(10, 10), knee: v(50, 60), cur: v(100, 80), ...over });
 for (const [label, d] of [
   ['hover', calloutDraft()],
   ['pressed', calloutDraft({ boxFrom: v(100, 80) })],

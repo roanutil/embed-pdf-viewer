@@ -29,6 +29,8 @@ import {
   snapshot,
   text,
   widgetAnnot,
+  v3Widget,
+  pr,
 } from './form-fixtures';
 
 const NAME = text(1, 'name', 'Ada');
@@ -77,7 +79,7 @@ const cases: ScenarioCase[] = [
   {
     name: 'refresh-coalesces-and-forces',
     covers:
-      'A refresh while one is in flight awaits it and returns; refresh(true) awaits it and then reads again. Two forced refreshes both read after the first settles.',
+      'A refresh while a read is in flight queues exactly one more read after it and resolves when that settles; any number of calls during the read coalesce into that one. (v2 forced a read per `refresh(true)`; v3 has no force argument.)',
     plugins: FORM_ONLY,
     engine: {
       documents: {
@@ -92,14 +94,13 @@ const cases: ScenarioCase[] = [
     steps: [
       ...boot,
       call('refresh'),
-      call('refresh', [true]),
-      call('refresh', [true]),
+      call('refresh'),
+      call('refresh'),
       settle('first', snapshot([NAME])),
       settle('second', snapshot([{ ...NAME, value: 'Grace' }])),
-      settle('third', snapshot([{ ...NAME, value: 'Hopper' }])),
       call('snapshot'),
       call('refresh'),
-      settle('third', snapshot([NAME])),
+      settle('third', snapshot([{ ...NAME, value: 'Hopper' }])),
     ],
   },
   {
@@ -216,7 +217,7 @@ const cases: ScenarioCase[] = [
       documents: {
         a: doc([
           list(FIELDS),
-          { path: 'forms.setValue', value: { changedWidgets: [{ annotObjectNumber: 101, pageObjectNumber: 1 }] } },
+          { path: 'forms.setValue', value: { changedWidgets: [v3Widget({ annotObjectNumber: 101, pageObjectNumber: 1 })] } },
         ]),
       },
     },
@@ -280,7 +281,7 @@ const cases: ScenarioCase[] = [
       documents: {
         a: doc([
           list(FIELDS),
-          { path: 'forms.setValue', times: 1, value: { changedWidgets: [{ annotObjectNumber: 101, pageObjectNumber: 1 }] } },
+          { path: 'forms.setValue', times: 1, value: { changedWidgets: [v3Widget({ annotObjectNumber: 101, pageObjectNumber: 1 })] } },
           { path: 'forms.setValue', times: 1, value: { changedWidgets: [] } },
           { path: 'forms.setValue', error: { name: 'EngineError', message: 'nope', code: 'InvalidArg' } },
         ]),
@@ -356,7 +357,7 @@ const cases: ScenarioCase[] = [
       documents: {
         a: doc([
           list(FIELDS),
-          { path: 'forms.setValue', times: 1, value: { changedWidgets: [{ annotObjectNumber: 101, pageObjectNumber: 1 }] } },
+          { path: 'forms.setValue', times: 1, value: { changedWidgets: [v3Widget({ annotObjectNumber: 101, pageObjectNumber: 1 })] } },
           { path: 'forms.setValue', error: { name: 'EngineError', message: 'nope', code: 'InvalidArg' } },
         ]),
       },
@@ -429,9 +430,9 @@ const cases: ScenarioCase[] = [
     steps: [
       ...boot,
       call('ensureGeom', [1]),
-      emit({ type: 'form.valueChanged', origin: { kind: 'remote' }, fields: [] }),
-      emit({ type: 'form.valueChanged', origin: { kind: 'local' }, fields: [] }),
-      emit({ type: 'form.fieldDeleted', origin: { kind: 'local' } }),
+      emit({ type: 'form.valueChanged', origin: { kind: 'remote' }, field: NAME, changedWidgets: [] }),
+      emit({ type: 'form.valueChanged', origin: { kind: 'local' }, field: NAME, changedWidgets: [] }),
+      emit({ type: 'form.fieldDeleted', origin: { kind: 'local' }, deletedFieldObjectNumber: 1, removedWidgets: [] }),
       emit({ type: 'stream.desynced' }),
       emit({ type: 'form.imported' }),
       emit({ type: 'annotations.created', origin: { kind: 'remote' }, pageObjectNumber: 1 }),
@@ -441,7 +442,7 @@ const cases: ScenarioCase[] = [
   {
     name: 'the-effect-refresh-is-latched',
     covers:
-      'While the effect is re-reading, further events are dropped (the latch, not a queue); a failed re-read releases it.',
+      'While the effect is re-reading, further events coalesce into one more read queued after it (v2 dropped them); a failed re-read does not stop the queue.',
     plugins: FORM_ONLY,
     engine: {
       documents: {
@@ -456,12 +457,12 @@ const cases: ScenarioCase[] = [
     snapshot: SNAP,
     steps: [
       ...boot,
-      emit({ type: 'form.valueChanged', origin: { kind: 'remote' } }),
-      emit({ type: 'form.valueChanged', origin: { kind: 'remote' } }),
+      emit({ type: 'form.valueChanged', origin: { kind: 'remote' }, field: NAME, changedWidgets: [] }),
+      emit({ type: 'form.valueChanged', origin: { kind: 'remote' }, field: NAME, changedWidgets: [] }),
       emit({ type: 'stream.desynced' }),
       settle('remote', snapshot([NAME])),
-      emit({ type: 'form.valueChanged', origin: { kind: 'remote' } }),
-      emit({ type: 'form.valueChanged', origin: { kind: 'remote' } }),
+      emit({ type: 'form.valueChanged', origin: { kind: 'remote' }, field: NAME, changedWidgets: [] }),
+      emit({ type: 'form.valueChanged', origin: { kind: 'remote' }, field: NAME, changedWidgets: [] }),
     ],
   },
   {
@@ -496,7 +497,7 @@ const cases: ScenarioCase[] = [
 ];
 
 function aIndex(pon: number, index: number) {
-  return { kind: 'index', pageObjectNumber: pon, index, revision: 1 };
+  return { kind: 'index', page: pr(pon), index, revision: 1 };
 }
 
 export const suites: Suite[] = [

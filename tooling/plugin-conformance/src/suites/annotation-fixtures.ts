@@ -24,9 +24,9 @@
  */
 import { createCapabilityToken, definePlugin, type AnyPlugin } from '@embedpdf/core';
 
-import { AnnotationToken, annotationPlugin } from '../../../../packages/plugin/annotation/src/index';
-import type { AnnotationConfig } from '../../../../packages/plugin/annotation/src/types';
-import type { AnnotationHostCapability } from '../../../../packages/plugin/annotation/src/types';
+import { annotationPlugin } from '../../../../packages/plugin/annotation/src/index';
+import type { AnnotationConfig } from '../../../../packages/plugin/annotation/src/contract';
+import { AnnotationToken, type AnnotationHostCapability } from '../../../../packages/plugin/annotation/src/host-contract';
 
 import type { FakeDocumentSpec, ResponseSpec } from '../fake-engine';
 import { registerPlugin, type PluginEnv, type Step } from '../scenario';
@@ -69,10 +69,10 @@ const controllerNamed = (name: string): AbortController => {
 
 const withSignals = (capability: AnnotationHostCapability): AnnotationHostCapability => ({
   ...capability,
-  appearances: (pon, scale, signal) => {
+  renderAppearances: (page, scale, signal) => {
     const spec = signal as { $abortSignal?: string } | undefined;
     const real = spec?.$abortSignal !== undefined ? controllerNamed(spec.$abortSignal).signal : undefined;
-    return capability.appearances(pon, scale, real);
+    return capability.renderAppearances(page, scale, real);
   },
 });
 
@@ -84,7 +84,10 @@ registerPlugin('annotation', {
     const plugin = annotationPlugin((config ?? {}) as AnnotationConfig) as AnyPlugin;
     return {
       ...plugin,
-      capability: (ctx) => withSignals(plugin.capability!(ctx) as AnnotationHostCapability),
+      create: (ctx) => {
+        const { api, connect } = plugin.create!(ctx);
+        return { api: withSignals(api as AnnotationHostCapability), connect };
+      },
     } as AnyPlugin;
   },
   tokens: [AnnotationToken],
@@ -111,19 +114,23 @@ registerPlugin('annotation-lens', {
       requires: [AnnotationToken],
       capability: (ctx) => {
         const a = () => ctx.get(AnnotationToken);
+        // The v3 names of the comments and links verbs. Hydration and
+        // rehydration moved from the comments lens to the annotation
+        // capability (getHydration, refresh); the lens keeps them so the
+        // cases read the same.
         return {
-          threads: () => a().comments.threads(),
-          thread: (ref: never) => a().comments.thread(ref),
-          hydration: () => a().comments.hydration(),
-          rehydrate: () => a().comments.rehydrate(),
+          listThreads: () => a().comments.listThreads(),
+          getThread: (ref: never) => a().comments.getThread(ref),
+          getHydration: () => ctx.get(AnnotationToken).getHydration(),
+          refresh: () => a().refresh(),
           reply: (ref: never, text: string) => a().comments.reply(ref, text),
-          edit: (ref: never, text: string) => a().comments.edit(ref, text),
+          setText: (ref: never, text: string) => a().comments.setText(ref, text),
           setStatus: (ref: never, state: string) => a().comments.setStatus(ref, state),
           setMarked: (ref: never, marked: boolean) => a().comments.setMarked(ref, marked),
-          remove: (ref: never) => a().comments.remove(ref),
-          removeThread: (ref: never) => a().comments.removeThread(ref),
-          permissionsFor: (ref: never) => a().comments.permissionsFor(ref),
-          linksOf: (ref: never) => a().links.of(ref),
+          delete: (ref: never) => a().comments.delete(ref),
+          deleteThread: (ref: never) => a().comments.deleteThread(ref),
+          getPermissions: (ref: never) => a().comments.getPermissions(ref),
+          linksGet: (ref: never) => a().links.get(ref),
           linksSet: (ref: never, target: never) => a().links.set(ref, target),
           linksClear: (ref: never) => a().links.clear(ref),
         };
@@ -136,9 +143,14 @@ registerPlugin('annotation-lens', {
 
 export const CROP = { left: 0, bottom: 0, right: 600, top: 800 };
 export const CROP2 = { left: 10, bottom: 20, right: 410, top: 520 };
+/** A page address. */
+export const pr = (pon: number) => ({ kind: 'objectNumber', pageObjectNumber: pon });
+/** Where a confirmed engine event came from. */
+export const LOCAL = { kind: 'local', sessionId: 's1', sub: null };
+export const REMOTE = { kind: 'remote', sessionId: 's2', sub: 'u-9' };
 export const layout = (index: number, pon: number, crop = CROP, rotation = 0) => ({
   index,
-  pageObjectNumber: pon,
+  ref: pr(pon),
   label: null,
   size: { width: crop.right - crop.left, height: crop.top - crop.bottom },
   rotation,
@@ -165,15 +177,25 @@ export const FLAGS = (over: Record<string, boolean> = {}) => ({
 export const RED = { r: 239, g: 68, b: 68 };
 export const BLUE = { r: 56, g: 88, b: 233 };
 
-export const objRef = (n: number, pon = 1) => ({ kind: 'objectNumber', pageObjectNumber: pon, annotObjectNumber: n });
+export const objRef = (n: number, pon = 1) => ({ kind: 'objectNumber', page: pr(pon), annotObjectNumber: n });
+/** A form widget as engine events and field records carry it (`formWidget`):
+ *  its annotation ref is null when it has no object number. */
+export const formWidget = (n: number, pon: number | null = 1) => ({
+  ref: n > 0 && pon !== null ? objRef(n, pon) : null,
+  annotObjectNumber: n,
+  page: pon === null ? null : pr(pon),
+});
 
 type Dto = Record<string, unknown>;
 
-export const base = (n: number, subtype: string, over: Dto = {}): Dto => {
-  const pon = (over.pageObjectNumber as number | undefined) ?? 1;
+/** `over.pageObjectNumber` picks the page, as the v2 DTO spelled it; the DTO
+ *  carries it as `page`. */
+export const base = (n: number, subtype: string, overIn: Dto = {}): Dto => {
+  const { pageObjectNumber, ...over } = overIn;
+  const pon = (pageObjectNumber as number | undefined) ?? 1;
   return {
     ref: objRef(n, pon),
-    pageObjectNumber: pon,
+    page: pr(pon),
     index: n,
     identityQuality: 'durable',
     nm: null,
@@ -345,7 +367,7 @@ export const unsupported = (n: number, over: Dto = {}) => base(n, 'unsupported',
 
 export const snapshot = (byPage: Record<number, Dto[]>, auditHead?: number) => ({
   pages: Object.entries(byPage).map(([pon, annotations]) => ({
-    pageState: { pageObjectNumber: Number(pon) },
+    pageState: { page: pr(Number(pon)) },
     annotations,
   })),
   ...(auditHead !== undefined ? { auditHead } : {}),
@@ -376,31 +398,171 @@ export const open = (id = 'a'): Step => ({
   args: [{ kind: 'bytes', id, bytes: { $bytes: '' } }],
 });
 export const boot: Step[] = [start, open()];
-export const call = (method: string, args: unknown[] = [], doc = 'a'): Step => ({
-  op: 'call',
-  target: { token: 'annotation', doc },
-  method,
-  args,
-});
+// ── the v3 surface ────────────────────────────────────────────────────────────
+//
+// The cases are written in the v2 names; these tables emit each call against
+// the v3 surface, so a vector records what v3 is called. A page object number
+// where v3 takes a PageRef is converted at the position the table names.
+
+/** v2 annotation method → [v3 name, index of the page argument or -1]. */
+const ANNOTATION: Readonly<Record<string, readonly [string, number]>> = {
+  create: ['createRaw', 0],
+  get: ['getRaw', -1],
+  getSelected: ['listSelected', -1],
+  selection: ['getSelection', -1],
+  deselect: ['clearSelection', -1],
+  setDefaults: ['setToolDefaults', -1],
+  currentDefaults: ['getToolDefaults', -1],
+  setSnap: ['updateSnapSettings', -1],
+  snapSettings: ['getSnapSettings', -1],
+  setChrome: ['updateChromeSettings', -1],
+  chromeSettings: ['getChromeSettings', -1],
+  propsForTool: ['listPropSpecs', -1],
+  downloadAttachment: ['readAttachment', -1],
+  pageItems: ['listPageItems', 0],
+  chrome: ['listChromeNodes', 0],
+  creationDraftAnchor: ['getCreationDraft', -1],
+  appearanceEpoch: ['getAppearanceEpoch', 0],
+  bakeScale: ['getBakeScale', -1],
+  appearances: ['renderAppearances', 0],
+  toContentBox: ['pdfToPageRect', 0],
+  reloadPage: ['reloadPage', 0],
+  hydration: ['getHydration', -1],
+  rehydrate: ['refresh', -1],
+  deliverRemoteAnnotationEvent: ['deliverRemoteEvent', -1],
+  textItems: ['listTextItems', 0],
+  currentEditing: ['getEditingId', -1],
+  beginTextEditAt: ['beginTextEditAt', 0],
+  setContents: ['draftContents', -1],
+  hitKind: ['getHitKind', 0],
+  claimsTouchAt: ['claimsTouchAt', 0],
+  cursorAt: ['getCursorAt', 0],
+  behaviorFor: ['getBehaviorFor', -1],
+  linkItemsOn: ['listLinkItems', 0],
+  editPointer: ['editPointer', 1],
+  marqueePointer: ['marqueePointer', 1],
+  createPointer: ['createPointer', 2],
+  createMarkup: ['createMarkup', 1],
+  createCaret: ['createCaret', 0],
+  createReplaceText: ['createReplaceText', 0],
+  placeArmedStamp: ['placeArmedStamp', 0],
+  placeAt: ['placeAt', 0],
+  requestStampAt: ['requestStampAt', 0],
+  ghostHoverAt: ['hoverGhostAt', 1],
+  setPlacementPreview: ['setPlacementPreview', 1],
+  toolGhost: ['getToolGhost', 0],
+  armedStampPreview: ['getArmedStampPreview', -1],
+  stampArmEpoch: ['getStampArmEpoch', -1],
+  tools: ['listResolvedTools', -1],
+  tool: ['getResolvedTool', -1],
+  toolSubtype: ['getToolSubtype', -1],
+};
+
+const withPage = (args: readonly unknown[], at: number): unknown[] =>
+  at >= 0 && typeof args[at] === 'number' ? [...args.slice(0, at), pr(args[at] as number), ...args.slice(at + 1)] : [...args];
+
+/** A call on the annotation capability, v2 name in, v3 call out. */
+export function annotationStep(method: string, args: readonly unknown[], doc: string): Step {
+  const target = { token: 'annotation', doc };
+  switch (method) {
+    // `list(pon)` read DTOs per page; `listRaw({page})` is that read.
+    case 'list':
+      return { op: 'call', target, method: 'listRaw', args: args.length ? [{ page: pr(args[0] as number) }] : [] };
+    // Per-page loading gave way to one document-wide hydration.
+    case 'ensurePage':
+      return { op: 'call', target, method: 'ensureHydrated', args: [] };
+    case 'selectionAnchor': {
+      const [scale, rotation, zoom] = args as (number | undefined)[];
+      const view: Record<string, unknown> = {};
+      if (scale !== undefined) view.scale = scale;
+      if (rotation !== undefined) view.rotation = rotation;
+      if (zoom !== undefined) view.zoom = zoom;
+      return { op: 'call', target, method: 'getSelectionAnchor', args: args.length ? [view] : [] };
+    }
+    case 'markupFromSelection':
+      return {
+        op: 'call',
+        target,
+        method: 'createFromSelection',
+        args: args.length > 1 ? [args[0], { preset: args[1] }] : [...args],
+      };
+    case 'deliverRemoteAnnotationEvent':
+      return { op: 'call', target, method: 'deliverRemoteEvent', args: args.map((event) => v3Event(event as Dto)) };
+    case 'rotateSelection90':
+      return { op: 'call', target, method: 'rotateSelectionBy', args: [90] };
+    case 'hoverAt': {
+      const at = args[0] as Record<string, unknown> | null;
+      if (!at || typeof at.pon !== 'number') return { op: 'call', target, method, args: [...args] };
+      const { pon, ...rest } = at;
+      return { op: 'call', target, method, args: [{ page: pr(pon as number), ...rest }] };
+    }
+  }
+  const [name, at] = ANNOTATION[method] ?? [method, -1];
+  return { op: 'call', target, method: name, args: withPage(args, at) };
+}
+
+const LENS: Readonly<Record<string, string>> = {
+  threads: 'listThreads',
+  thread: 'getThread',
+  hydration: 'getHydration',
+  rehydrate: 'refresh',
+  edit: 'setText',
+  remove: 'delete',
+  removeThread: 'deleteThread',
+  permissionsFor: 'getPermissions',
+  linksOf: 'linksGet',
+};
+const INTERACTION: Readonly<Record<string, string>> = {
+  dispatch: 'dispatchPointer',
+  cursor: 'getCursor',
+  tools: 'listTools',
+  activeToolId: 'getActiveToolId',
+  activeTool: 'getActiveTool',
+};
+const SELECTION: Readonly<Record<string, string>> = { ensurePage: 'ensureLoaded', end: 'endGesture', beginAt: 'beginGestureAt' };
+/** `{pon}` → `{page}` in a v2 selection range or position. */
+const rangeOf = (range: unknown): unknown => {
+  if (!range || typeof range !== 'object') return range;
+  const r = range as Record<string, unknown>;
+  if (typeof r.pon === 'number') {
+    const { pon, ...rest } = r;
+    return { page: pr(pon as number), ...rest };
+  }
+  if (r.start && typeof r.start === 'object') return { ...r, start: rangeOf(r.start), end: rangeOf(r.end) };
+  return range;
+};
+
+export const call = (method: string, args: unknown[] = [], doc = 'a'): Step => annotationStep(method, args, doc);
 export const lens = (method: string, args: unknown[] = [], doc = 'a'): Step => ({
   op: 'call',
   target: { token: 'annotation-test/lens', doc },
-  method,
+  method: LENS[method] ?? method,
   args,
 });
 export const ix = (method: string, args: unknown[] = [], doc = 'a'): Step => ({
   op: 'call',
   target: { token: 'interaction', doc },
-  method,
+  method: INTERACTION[method] ?? method,
   args,
 });
 export const sel = (method: string, args: unknown[] = [], doc = 'a'): Step => ({
   op: 'call',
   target: { token: 'selection', doc },
-  method,
-  args,
+  method: SELECTION[method] ?? method,
+  args:
+    method === 'select'
+      ? [rangeOf(args[0]), ...args.slice(1)]
+      : ['ensurePage', 'beginAt', 'extendTo', 'isLoaded', 'selectWordAt', 'selectLineAt'].includes(method) && typeof args[0] === 'number'
+        ? [pr(args[0] as number), ...args.slice(1)]
+        : args,
 });
-export const emit = (event: Dto, doc = 'a'): Step => ({ op: 'emit', doc, event });
+/** A v2 event names its page `pageObjectNumber`; v3 events carry `page`. */
+export const v3Event = (event: Dto): Dto => {
+  if (typeof event.pageObjectNumber !== 'number') return event;
+  const { pageObjectNumber, ...rest } = event;
+  return { ...rest, page: pr(pageObjectNumber as number) };
+};
+export const emit = (event: Dto, doc = 'a'): Step => ({ op: 'emit', doc, event: v3Event(event) });
 export const settle = (label: string, value?: unknown): Step =>
   value === undefined ? { op: 'settle', label } : { op: 'settle', label, value };
 export const fail = (label: string, message = 'refused', name = 'EngineError'): Step => ({
@@ -415,7 +577,7 @@ export const drain: Step = { op: 'drain' };
 export const sample = (phase: string, x: number, y: number, over: Dto = {}, pon = 1) => ({
   phase,
   viewport: { x, y },
-  page: { pon, point: { x, y }, scale: 1 },
+  page: { ref: pr(pon), point: { x, y }, scale: 1 },
   modifiers: { shift: false, alt: false, ctrl: false, meta: false },
   ...over,
 });

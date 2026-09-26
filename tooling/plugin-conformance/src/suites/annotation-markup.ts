@@ -9,7 +9,7 @@
 import type { ScenarioCase, Step } from '../scenario';
 import type { Suite } from '../vectors';
 
-import { SNAP, boot, call, caret, created, doc, hydrate, ix, markup, objRef, sel, tool } from './annotation-fixtures';
+import { SNAP, boot, call, caret, created, doc, hydrate, ix, markup, objRef, pr, sel, tool } from './annotation-fixtures';
 
 const W = 6;
 const H = 12;
@@ -55,7 +55,7 @@ const noMods = { shift: false, alt: false, ctrl: false, meta: false };
 const at = (phase: string, pon: number, x: number, y: number) => ({
   phase,
   viewport: { x, y },
-  page: { pon, point: { x, y } },
+  page: { ref: pr(pon), point: { x, y } },
   modifiers: noMods,
 });
 const ptr = (phase: string, x: number, y: number, pon = 1): Step => ix('dispatch', [at(phase, pon, x, y)]);
@@ -68,7 +68,7 @@ const drag = (from: [number, number], to: [number, number]): Step[] => [
 
 const plugins = [{ factory: 'interaction' }, { factory: 'selection' }, { factory: 'annotation' }];
 const load: Step[] = [sel('ensurePage', [1]), sel('ensurePage', [2])];
-const range = (from: [number, number], to: [number, number]) => ({ start: { pon: from[0], index: from[1] }, end: { pon: to[0], index: to[1] } });
+const range = (from: [number, number], to: [number, number]) => ({ start: { page: pr(from[0]), index: from[1] }, end: { page: pr(to[0]), index: to[1] } });
 const slices = [...SNAP, 'selection::a'];
 
 const cases: ScenarioCase[] = [

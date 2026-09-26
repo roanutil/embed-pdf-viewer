@@ -21,7 +21,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -46,7 +49,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -71,7 +77,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 3,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 3
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -96,7 +105,10 @@
               },
               {
                 "index": 3,
-                "pageObjectNumber": 4,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 4
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -121,7 +133,10 @@
               },
               {
                 "index": 4,
-                "pageObjectNumber": 5,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 5
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -174,7 +189,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "setViewport",
+          "method": "setViewportSize",
           "args": [
             {
               "width": 1000,
@@ -213,7 +228,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "visiblePages",
+          "method": "listVisiblePages",
           "args": []
         },
         {
@@ -243,7 +258,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "cameraInMotion",
+          "method": "isMoving",
           "args": []
         },
         {
@@ -252,7 +267,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "visiblePages",
+          "method": "listVisiblePages",
           "args": []
         }
       ],
@@ -799,7 +814,10 @@
                 "height": 800,
                 "rotation": 0,
                 "contentScale": 1,
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "screenX": 140.00000000000003,
                 "screenY": -101.19999999999997,
                 "transform": {
@@ -849,7 +867,10 @@
                 "height": 800,
                 "rotation": 0,
                 "contentScale": 1,
-                "pon": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "screenX": 140.00000000000003,
                 "screenY": 878.0000000000001,
                 "transform": {
@@ -899,7 +920,10 @@
                 "height": 800,
                 "rotation": 0,
                 "contentScale": 1,
-                "pon": 3,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 3
+                },
                 "screenX": 140.00000000000003,
                 "screenY": 1857.2,
                 "transform": {
@@ -1418,7 +1442,10 @@
                 "height": 800,
                 "rotation": 0,
                 "contentScale": 1,
-                "pon": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "screenX": 68,
                 "screenY": -191,
                 "transform": {
@@ -1468,7 +1495,10 @@
                 "height": 800,
                 "rotation": 0,
                 "contentScale": 1,
-                "pon": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "screenX": 68,
                 "screenY": 984,
                 "transform": {
@@ -1518,7 +1548,10 @@
                 "height": 800,
                 "rotation": 0,
                 "contentScale": 1,
-                "pon": 3,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 3
+                },
                 "screenX": 68,
                 "screenY": 2159,
                 "transform": {
@@ -1641,7 +1674,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -1666,7 +1702,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -1691,7 +1730,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 3,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 3
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -1716,7 +1758,10 @@
               },
               {
                 "index": 3,
-                "pageObjectNumber": 4,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 4
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -1741,7 +1786,10 @@
               },
               {
                 "index": 4,
-                "pageObjectNumber": 5,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 5
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -1794,7 +1842,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "setViewport",
+          "method": "setViewportSize",
           "args": [
             {
               "width": 1000,
@@ -1808,7 +1856,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "goToPage",
+          "method": "goToPageIndex",
           "args": [
             3
           ]
@@ -1819,7 +1867,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "cameraInMotion",
+          "method": "isMoving",
           "args": []
         },
         {
@@ -1828,7 +1876,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "currentPage",
+          "method": "getCurrentPageIndex",
           "args": []
         },
         {
@@ -1853,7 +1901,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "cameraInMotion",
+          "method": "isMoving",
           "args": []
         },
         {
@@ -2971,7 +3019,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -2996,7 +3047,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -3021,7 +3075,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 3,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 3
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -3046,7 +3103,10 @@
               },
               {
                 "index": 3,
-                "pageObjectNumber": 4,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 4
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -3071,7 +3131,10 @@
               },
               {
                 "index": 4,
-                "pageObjectNumber": 5,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 5
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -3124,7 +3187,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "setViewport",
+          "method": "setViewportSize",
           "args": [
             {
               "width": 1000,
@@ -3138,7 +3201,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "next",
+          "method": "nextPage",
           "args": []
         },
         {
@@ -3166,7 +3229,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "cameraInMotion",
+          "method": "isMoving",
           "args": []
         },
         {
@@ -3179,7 +3242,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "next",
+          "method": "nextPage",
           "args": []
         },
         {
@@ -3192,7 +3255,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "setViewport",
+          "method": "setViewportSize",
           "args": [
             {
               "width": 900,
@@ -4257,7 +4320,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -4282,7 +4348,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -4307,7 +4376,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 3,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 3
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -4332,7 +4404,10 @@
               },
               {
                 "index": 3,
-                "pageObjectNumber": 4,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 4
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -4357,7 +4432,10 @@
               },
               {
                 "index": 4,
-                "pageObjectNumber": 5,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 5
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -4410,7 +4488,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "setViewport",
+          "method": "setViewportSize",
           "args": [
             {
               "width": 1000,
@@ -4442,7 +4520,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "currentPage",
+          "method": "getCurrentPageIndex",
           "args": []
         },
         {
@@ -4455,7 +4533,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "currentPage",
+          "method": "getCurrentPageIndex",
           "args": []
         },
         {
@@ -4464,7 +4542,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "reveal",
+          "method": "revealIndex",
           "args": [
             0
           ]
@@ -4479,7 +4557,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "reveal",
+          "method": "revealIndex",
           "args": [
             4,
             {
@@ -4499,7 +4577,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "zoomMode",
+          "method": "getZoomMode",
           "args": []
         },
         {
@@ -6091,7 +6169,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 1200,
@@ -6116,7 +6197,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "label": null,
                 "size": {
                   "width": 1200,
@@ -6169,7 +6253,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "setViewport",
+          "method": "setViewportSize",
           "args": [
             {
               "width": 1000,
@@ -6209,7 +6293,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "zoomLevel",
+          "method": "getZoomLevel",
           "args": []
         },
         {
@@ -7597,7 +7681,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -7622,7 +7709,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -7647,7 +7737,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 3,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 3
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -7672,7 +7765,10 @@
               },
               {
                 "index": 3,
-                "pageObjectNumber": 4,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 4
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -7697,7 +7793,10 @@
               },
               {
                 "index": 4,
-                "pageObjectNumber": 5,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 5
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -7750,7 +7849,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "setViewport",
+          "method": "setViewportSize",
           "args": [
             {
               "width": 1000,
@@ -7780,7 +7879,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "cameraInMotion",
+          "method": "isMoving",
           "args": []
         },
         {
@@ -7789,7 +7888,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "currentPage",
+          "method": "getCurrentPageIndex",
           "args": []
         },
         {
@@ -7807,7 +7906,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "cameraInMotion",
+          "method": "isMoving",
           "args": []
         },
         {
@@ -7837,7 +7936,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "cameraInMotion",
+          "method": "isMoving",
           "args": []
         },
         {
@@ -7858,7 +7957,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "cameraInMotion",
+          "method": "isMoving",
           "args": []
         },
         {
@@ -7891,7 +7990,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "camera",
+          "method": "getCamera",
           "args": []
         },
         {
@@ -7900,7 +7999,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "cameraInMotion",
+          "method": "isMoving",
           "args": []
         },
         {
@@ -10107,7 +10206,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -10132,7 +10234,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -10157,7 +10262,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 3,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 3
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -10182,7 +10290,10 @@
               },
               {
                 "index": 3,
-                "pageObjectNumber": 4,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 4
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -10207,7 +10318,10 @@
               },
               {
                 "index": 4,
-                "pageObjectNumber": 5,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 5
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -10260,7 +10374,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "setViewport",
+          "method": "setViewportSize",
           "args": [
             {
               "width": 1000,
@@ -10354,7 +10468,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "camera",
+          "method": "getCamera",
           "args": []
         },
         {
@@ -10376,7 +10490,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "camera",
+          "method": "getCamera",
           "args": []
         },
         {
@@ -10419,7 +10533,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "cameraInMotion",
+          "method": "isMoving",
           "args": []
         }
       ],
@@ -12330,7 +12444,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -12355,7 +12472,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -12380,7 +12500,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 3,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 3
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -12405,7 +12528,10 @@
               },
               {
                 "index": 3,
-                "pageObjectNumber": 4,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 4
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -12430,7 +12556,10 @@
               },
               {
                 "index": 4,
-                "pageObjectNumber": 5,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 5
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -12483,7 +12612,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "setViewport",
+          "method": "setViewportSize",
           "args": [
             {
               "width": 1000,
@@ -13575,7 +13704,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 2400,
@@ -13628,7 +13760,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "setViewport",
+          "method": "setViewportSize",
           "args": [
             {
               "width": 1000,
@@ -13658,7 +13790,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "camera",
+          "method": "getCamera",
           "args": []
         },
         {
@@ -13671,7 +13803,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "cameraInMotion",
+          "method": "isMoving",
           "args": []
         }
       ],
@@ -15804,7 +15936,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -15829,7 +15964,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -15854,7 +15992,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 3,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 3
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -15879,7 +16020,10 @@
               },
               {
                 "index": 3,
-                "pageObjectNumber": 4,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 4
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -15904,7 +16048,10 @@
               },
               {
                 "index": 4,
-                "pageObjectNumber": 5,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 5
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -15957,7 +16104,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "setViewport",
+          "method": "setViewportSize",
           "args": [
             {
               "width": 1000,
@@ -15987,7 +16134,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "camera",
+          "method": "getCamera",
           "args": []
         },
         {
@@ -16000,7 +16147,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "camera",
+          "method": "getCamera",
           "args": []
         },
         {
@@ -16021,7 +16168,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "cameraInMotion",
+          "method": "isMoving",
           "args": []
         },
         {
@@ -18376,7 +18523,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -18401,7 +18551,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -18426,7 +18579,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 3,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 3
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -18451,7 +18607,10 @@
               },
               {
                 "index": 3,
-                "pageObjectNumber": 4,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 4
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -18476,7 +18635,10 @@
               },
               {
                 "index": 4,
-                "pageObjectNumber": 5,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 5
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -18529,7 +18691,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "setViewport",
+          "method": "setViewportSize",
           "args": [
             {
               "width": 1000,
@@ -18568,7 +18730,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "camera",
+          "method": "getCamera",
           "args": []
         },
         {
@@ -18611,7 +18773,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "camera",
+          "method": "getCamera",
           "args": []
         },
         {
@@ -20168,7 +20330,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 3000,
@@ -20193,7 +20358,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "label": null,
                 "size": {
                   "width": 3000,
@@ -20218,7 +20386,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 3,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 3
+                },
                 "label": null,
                 "size": {
                   "width": 3000,
@@ -20243,7 +20414,10 @@
               },
               {
                 "index": 3,
-                "pageObjectNumber": 4,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 4
+                },
                 "label": null,
                 "size": {
                   "width": 3000,
@@ -20296,7 +20470,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "setViewport",
+          "method": "setViewportSize",
           "args": [
             {
               "width": 1000,
@@ -20326,7 +20500,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "camera",
+          "method": "getCamera",
           "args": []
         },
         {
@@ -20339,7 +20513,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "camera",
+          "method": "getCamera",
           "args": []
         },
         {
@@ -20352,7 +20526,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "camera",
+          "method": "getCamera",
           "args": []
         }
       ],
@@ -21736,7 +21910,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 1200,
@@ -21761,7 +21938,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "label": null,
                 "size": {
                   "width": 1200,
@@ -21814,7 +21994,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "setViewport",
+          "method": "setViewportSize",
           "args": [
             {
               "width": 1000,
@@ -21861,7 +22041,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "camera",
+          "method": "getCamera",
           "args": []
         }
       ],
@@ -22571,7 +22751,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -22596,7 +22779,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -22621,7 +22807,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 3,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 3
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -22646,7 +22835,10 @@
               },
               {
                 "index": 3,
-                "pageObjectNumber": 4,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 4
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -22671,7 +22863,10 @@
               },
               {
                 "index": 4,
-                "pageObjectNumber": 5,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 5
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -22724,7 +22919,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "setViewport",
+          "method": "setViewportSize",
           "args": [
             {
               "width": 1000,
@@ -22738,7 +22933,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "reveal",
+          "method": "revealIndex",
           "args": [
             2,
             {
@@ -22752,7 +22947,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "cameraInMotion",
+          "method": "isMoving",
           "args": []
         },
         {
@@ -23438,7 +23633,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -23463,7 +23661,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -23488,7 +23689,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 3,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 3
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -23513,7 +23717,10 @@
               },
               {
                 "index": 3,
-                "pageObjectNumber": 4,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 4
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -23538,7 +23745,10 @@
               },
               {
                 "index": 4,
-                "pageObjectNumber": 5,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 5
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -23591,7 +23801,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "setViewport",
+          "method": "setViewportSize",
           "args": [
             {
               "width": 1000,
@@ -23605,7 +23815,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "next",
+          "method": "nextPage",
           "args": []
         },
         {
@@ -23618,7 +23828,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "setViewport",
+          "method": "setViewportSize",
           "args": [
             {
               "width": 900,
