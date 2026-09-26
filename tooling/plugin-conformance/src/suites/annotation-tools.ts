@@ -789,6 +789,58 @@ const cases: ScenarioCase[] = [
       call('armStamp', [{ source: null }]),
       call('armStamp', [{ source: { data: 5 } }]),
       call('armStamp', [{ source: { name: 'no-data' } }]),
+      // A falsy preview falls back to the raster's own bytes; a PDF without
+      // one has none. Sizes: an override with a zero side is ignored, a valid
+      // one wins, a target width keeps the aspect. A NaN rotation counts as
+      // none; a tool with upright off ignores a real one.
+      call('armStamp', [{ source: PNG, preview: false }]),
+      call('armedStampPreview'),
+      call('armStamp', [{ source: PDF }]),
+      call('armedStampPreview'),
+      call('armStamp', [{ source: PNG, intrinsicSize: { width: 0, height: 10 } }]),
+      call('placeArmedStamp', [1, { x: 300, y: 300 }]),
+      call('armStamp', [{ source: PNG, intrinsicSize: { width: 10, height: 0 } }]),
+      call('placeArmedStamp', [1, { x: 300, y: 300 }]),
+      call('armStamp', [{ source: PNG, intrinsicSize: { width: 300, height: 100 } }]),
+      call('placeArmedStamp', [1, { x: 300, y: 300 }]),
+      call('armStamp', [{ source: PNG, targetWidth: 80 }]),
+      call('placeArmedStamp', [1, { x: 300, y: 300 }, { $number: 'NaN' }]),
+      call('registerTool', [{ id: 'flat-stamp', extends: 'stamp', upright: false }]),
+      tool('flat-stamp'),
+      call('hasArmedStamp'),
+      call('placeArmedStamp', [1, { x: 300, y: 300 }, 90]),
+    ],
+  },
+  {
+    name: 'placement-rotation-follows-upright',
+    covers:
+      'A click placement counter-rotates only for an upright tool on a rotated page: a NaN display rotation counts as none, and a tool with upright off ignores a real one. Fixed-bytes stamps through requestStampAt, notes through placeAt.',
+    plugins: PLUGINS,
+    engine: {
+      documents: {
+        a: doc([
+          hydrate(),
+          { path: 'page.annotations.create', pon: 1, times: 1, value: created(stamp(95)) },
+          { path: 'page.annotations.create', pon: 1, times: 1, value: created(stamp(96)) },
+          { path: 'page.annotations.create', pon: 1, times: 1, value: created(textNote(97)) },
+          { path: 'page.annotations.create', pon: 1, value: created(textNote(98)) },
+        ]),
+      },
+    },
+    snapshot: 'none',
+    steps: [
+      ...boot,
+      call('registerTool', [{ id: 'approved', extends: 'stamp', source: { kind: 'bytes', source: PNG } }]),
+      tool('approved'),
+      call('requestStampAt', [1, { x: 100, y: 100 }, { $number: 'NaN' }]),
+      call('registerTool', [{ id: 'flat-approved', extends: 'stamp', source: { kind: 'bytes', source: PNG }, upright: false }]),
+      tool('flat-approved'),
+      call('requestStampAt', [1, { x: 200, y: 200 }, 90]),
+      tool('note'),
+      call('placeAt', [1, { x: 300, y: 300 }, { $number: 'NaN' }]),
+      call('registerTool', [{ id: 'flat-note', extends: 'note', upright: false }]),
+      tool('flat-note'),
+      call('placeAt', [1, { x: 400, y: 400 }, 90]),
     ],
   },
   {
