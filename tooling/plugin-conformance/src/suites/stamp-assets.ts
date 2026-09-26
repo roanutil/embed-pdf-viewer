@@ -233,6 +233,27 @@ const canonical: ScenarioCase[] = [
       stamp('libraryBytes', ['stamp-lib-0-1']),
     ],
   },
+  {
+    name: 'a-save-that-answers-nothing',
+    covers:
+      "An engine whose save and extract answer nothing leaves the library with no canonical bytes and the asset with none: the selectors read null, and an append or a removal on that library rejects with Unknown before opening anything.",
+    plugins: STAMP(),
+    engine: {
+      documents: {
+        lib: assetDoc(TWO, { responses: [{ path: 'download' }, { path: 'pages.extract', args: [[100]] }] }),
+      },
+      responses: opens('lib'),
+    },
+    steps: [
+      start,
+      stamp('importLibraryPdf', [PDF]),
+      stamp('libraryBytes', ['stamp-lib-0-1']),
+      stamp('assetBytes', ['stamp-0-2']),
+      stamp('addAsset', [{ libraryId: 'stamp-lib-0-1', name: 'Late', source: PDF }]),
+      stamp('removeAsset', ['stamp-0-2']),
+      stamp('assets'),
+    ],
+  },
 ];
 
 const removal: ScenarioCase[] = [

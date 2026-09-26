@@ -511,6 +511,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "epdf-plugin-stamp"
+version = "0.0.0"
+dependencies = [
+ "epdf-acrojs",
+ "epdf-geometry",
+ "epdf-kernel",
+ "epdf-plugin-annotation",
+ "epdf-plugin-form",
+ "epdf-plugin-interaction",
+ "plugin-conformance",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "epdf-plugin-view-manager"
 version = "0.0.0"
 dependencies = [

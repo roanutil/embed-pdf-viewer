@@ -425,6 +425,22 @@ const dynamic: ScenarioCase[] = [
     ],
   },
   {
+    name: 'a-library-without-canonical-bytes',
+    covers:
+      "When the library's save answered nothing, a dynamic asset evaluates from its own extracted page. An asset whose extraction answered nothing opens an empty copy, and when that copy has no field on its page it arms no bytes, which the annotation plugin refuses.",
+    plugins: PLACEMENT(scripting()),
+    engine: {
+      documents: {
+        a: target(),
+        lib: assetDoc(TWO, { responses: [{ path: 'download' }, { path: 'pages.extract', args: [[101]] }] }),
+        copy: dynamicDoc({ pages: TWO }),
+      },
+      responses: opens('a', 'lib', 'copy', 'copy'),
+    },
+    snapshot: 'none',
+    steps: [start, openDoc('a'), stamp('importLibraryPdf', [PDF]), arm('stamp-0-2'), stamp('disarm', ['a']), arm('stamp-0-3')],
+  },
+  {
     name: 'teardown-destroys-a-factory-engine-once',
     covers: 'A materialization through a factory engine uses the memoized engine, and teardown destroys it.',
     plugins: PLACEMENT({ ...scripting(), assetEngine: 'factory' }),

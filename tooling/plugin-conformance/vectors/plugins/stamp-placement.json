@@ -40637,6 +40637,2733 @@
       ]
     },
     {
+      "name": "a-library-without-canonical-bytes",
+      "covers": "When the library's save answered nothing, a dynamic asset evaluates from its own extracted page. An asset whose extraction answered nothing opens an empty copy, and when that copy has no field on its page it arms no bytes, which the annotation plugin refuses.",
+      "plugins": [
+        {
+          "factory": "interaction"
+        },
+        {
+          "factory": "annotation"
+        },
+        {
+          "factory": "form"
+        },
+        {
+          "factory": "stamp",
+          "config": {
+            "scripting": {
+              "enabled": true,
+              "sandbox": {
+                "builds": [
+                  {
+                    "boot": [
+                      {
+                        "output": {
+                          "formEffects": [
+                            {
+                              "kind": "setValue",
+                              "ref": {
+                                "kind": "objectNumber",
+                                "fieldObjectNumber": 1
+                              },
+                              "value": {
+                                "type": "text",
+                                "value": "2026-07-15"
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ],
+            "security": {
+              "allows": "*",
+              "identity": {
+                "user_id": "alex",
+                "group_id": "EmbedPDF",
+                "display_name": "Alex Morgan"
+              }
+            },
+            "responses": [
+              {
+                "path": "annotations.listRawAll",
+                "value": {
+                  "pages": []
+                }
+              },
+              {
+                "path": "forms.list",
+                "value": {
+                  "formKind": "acroform",
+                  "needsAppearances": false,
+                  "fields": [],
+                  "calculationOrder": []
+                }
+              }
+            ]
+          },
+          "lib": {
+            "services": [
+              "pieceInfo",
+              "page.pieceInfo"
+            ],
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 100,
+                "label": null,
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 200,
+                    "top": 100
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 200,
+                    "top": 100
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "pageObjectNumber": 101,
+                "label": null,
+                "size": {
+                  "width": 201,
+                  "height": 101
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 201,
+                    "top": 101
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 201,
+                    "top": 101
+                  }
+                }
+              }
+            ],
+            "responses": [
+              {
+                "path": "download"
+              },
+              {
+                "path": "pages.extract",
+                "args": [
+                  [
+                    101
+                  ]
+                ]
+              },
+              {
+                "path": "pages.list",
+                "value": {
+                  "pageCount": 2,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "pageObjectNumber": 100,
+                      "label": null,
+                      "size": {
+                        "width": 200,
+                        "height": 100
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 200,
+                          "top": 100
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 200,
+                          "top": 100
+                        }
+                      }
+                    },
+                    {
+                      "index": 1,
+                      "pageObjectNumber": 101,
+                      "label": null,
+                      "size": {
+                        "width": 201,
+                        "height": 101
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 201,
+                          "top": 101
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 201,
+                          "top": 101
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "pieceInfo.read",
+                "value": null
+              },
+              {
+                "path": "page.pieceInfo.read",
+                "pon": 100,
+                "value": null
+              },
+              {
+                "path": "page.pieceInfo.read",
+                "pon": 101,
+                "value": null
+              },
+              {
+                "path": "pieceInfo.update"
+              },
+              {
+                "path": "page.pieceInfo.update"
+              },
+              {
+                "path": "pages.extract",
+                "args": [
+                  [
+                    100
+                  ]
+                ],
+                "value": {
+                  "$bytes": "JVBERi1wYWdlLTEwMA=="
+                }
+              },
+              {
+                "path": "pages.extract",
+                "args": [
+                  [
+                    101
+                  ]
+                ],
+                "value": {
+                  "$bytes": "JVBERi1wYWdlLTEwMQ=="
+                }
+              },
+              {
+                "path": "page.render.image",
+                "pon": 100,
+                "value": {
+                  "contentType": "image/png",
+                  "source": {
+                    "kind": "bytes",
+                    "bytes": {
+                      "$bytes": "cG5nLTEwMA=="
+                    }
+                  }
+                }
+              },
+              {
+                "path": "page.render.image",
+                "pon": 101,
+                "value": {
+                  "contentType": "image/png",
+                  "source": {
+                    "kind": "bytes",
+                    "bytes": {
+                      "$bytes": "cG5nLTEwMQ=="
+                    }
+                  }
+                }
+              },
+              {
+                "path": "download",
+                "value": {
+                  "$bytes": "JVBERi1jYW5vbmljYWw="
+                }
+              }
+            ]
+          },
+          "copy": {
+            "services": [
+              "actions",
+              "pieceInfo",
+              "page.pieceInfo"
+            ],
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 100,
+                "label": null,
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 200,
+                    "top": 100
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 200,
+                    "top": 100
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "pageObjectNumber": 101,
+                "label": null,
+                "size": {
+                  "width": 201,
+                  "height": 101
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 201,
+                    "top": 101
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 201,
+                    "top": 101
+                  }
+                }
+              }
+            ],
+            "responses": [
+              {
+                "path": "pages.list",
+                "value": {
+                  "pageCount": 2,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "pageObjectNumber": 100,
+                      "label": null,
+                      "size": {
+                        "width": 200,
+                        "height": 100
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 200,
+                          "top": 100
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 200,
+                          "top": 100
+                        }
+                      }
+                    },
+                    {
+                      "index": 1,
+                      "pageObjectNumber": 101,
+                      "label": null,
+                      "size": {
+                        "width": 201,
+                        "height": 101
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 201,
+                          "top": 101
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 201,
+                          "top": 101
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "forms.list",
+                "value": {
+                  "formKind": "acroform",
+                  "needsAppearances": false,
+                  "fields": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 1
+                      },
+                      "fieldObjectNumber": 1,
+                      "name": "date",
+                      "family": "text",
+                      "origin": "acroform",
+                      "flags": {
+                        "readOnly": false,
+                        "required": false,
+                        "noExport": false,
+                        "raw": 0
+                      },
+                      "alternateName": null,
+                      "mappingName": null,
+                      "widgets": [
+                        {
+                          "annotObjectNumber": 201,
+                          "pageObjectNumber": 100
+                        }
+                      ],
+                      "valueEntry": {
+                        "kind": "none"
+                      },
+                      "defaultValueEntry": {
+                        "kind": "none"
+                      },
+                      "value": "",
+                      "defaultValue": "",
+                      "maxLength": null,
+                      "multiline": false,
+                      "password": false,
+                      "comb": false
+                    }
+                  ],
+                  "calculationOrder": []
+                }
+              },
+              {
+                "path": "actions.read",
+                "value": {
+                  "nameTreeScripts": [
+                    {
+                      "name": "stamp",
+                      "action": {
+                        "root": {
+                          "type": "javascript",
+                          "subtype": "JavaScript",
+                          "script": "this.getField(\"date\").value = util.printd(...);",
+                          "next": []
+                        },
+                        "incomplete": false,
+                        "warningFlags": 0,
+                        "warnings": []
+                      }
+                    }
+                  ],
+                  "openAction": null,
+                  "openDestination": null
+                }
+              },
+              {
+                "path": "forms.applyEffects",
+                "value": {
+                  "results": [
+                    {
+                      "index": 0,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    }
+                  ],
+                  "changedWidgets": [],
+                  "meta": null
+                }
+              },
+              {
+                "path": "pages.flatten",
+                "value": {
+                  "results": [
+                    {
+                      "pageObjectNumber": 100,
+                      "status": "flattened"
+                    },
+                    {
+                      "pageObjectNumber": 101,
+                      "status": "flattened"
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "pages.extract",
+                "args": [
+                  [
+                    100
+                  ]
+                ],
+                "value": {
+                  "$bytes": "JVBERi1mbGF0LTEwMA=="
+                }
+              },
+              {
+                "path": "pages.extract",
+                "args": [
+                  [
+                    101
+                  ]
+                ],
+                "value": {
+                  "$bytes": "JVBERi1mbGF0LTEwMQ=="
+                }
+              },
+              {
+                "path": "page.render.image",
+                "value": {
+                  "contentType": "image/png",
+                  "source": {
+                    "kind": "bytes",
+                    "bytes": {
+                      "$bytes": "ZmxhdC1wcmV2aWV3"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "responses": [
+          {
+            "path": "open",
+            "times": 1,
+            "value": {
+              "$document": "a"
+            }
+          },
+          {
+            "path": "open",
+            "times": 1,
+            "value": {
+              "$document": "lib"
+            }
+          },
+          {
+            "path": "open",
+            "times": 1,
+            "value": {
+              "$document": "copy"
+            }
+          },
+          {
+            "path": "open",
+            "times": 1,
+            "value": {
+              "$document": "copy"
+            }
+          }
+        ]
+      },
+      "snapshot": "none",
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stamp"
+          },
+          "method": "importLibraryPdf",
+          "args": [
+            {
+              "$bytes": "JVBERi0xLjcKJXN0YW1wIGZpeHR1cmUK"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stamp"
+          },
+          "method": "armAsset",
+          "args": [
+            "a",
+            "stamp-0-2"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stamp"
+          },
+          "method": "disarm",
+          "args": [
+            "a"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stamp"
+          },
+          "method": "armAsset",
+          "args": [
+            "a",
+            "stamp-0-3"
+          ]
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "form-text": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1,
+                      "fontSize": 12
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "form-text": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1,
+                      "fontSize": 12
+                    },
+                    "form-checkbox": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "form-text": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1,
+                      "fontSize": 12
+                    },
+                    "form-checkbox": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1
+                    },
+                    "form-radio": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "form-text": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1,
+                      "fontSize": 12
+                    },
+                    "form-checkbox": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1
+                    },
+                    "form-radio": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1
+                    },
+                    "form-combobox": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1,
+                      "fontSize": 12
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "form-text": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1,
+                      "fontSize": 12
+                    },
+                    "form-checkbox": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1
+                    },
+                    "form-radio": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1
+                    },
+                    "form-combobox": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1,
+                      "fontSize": 12
+                    },
+                    "form-listbox": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1,
+                      "fontSize": 12
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "form::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "snapshot": {
+                    "formKind": "acroform",
+                    "needsAppearances": false,
+                    "fields": [],
+                    "calculationOrder": []
+                  },
+                  "byKey": {},
+                  "byWidget": {},
+                  "writing": {},
+                  "geom": {},
+                  "seq": 1
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_HYDRATION",
+                "hydration": {
+                  "status": "loading"
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "form-text": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1,
+                      "fontSize": 12
+                    },
+                    "form-checkbox": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1
+                    },
+                    "form-radio": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1
+                    },
+                    "form-combobox": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1,
+                      "fontSize": 12
+                    },
+                    "form-listbox": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1,
+                      "fontSize": 12
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_HYDRATION",
+                "hydration": {
+                  "status": "complete"
+                }
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "forms.list",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "annotations.listRawAll",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 1
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": "stamp-lib-0-1"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "stamp",
+              "action": {
+                "type": "LIBRARY_ADDED",
+                "library": {
+                  "id": "stamp-lib-0-1",
+                  "name": "Stamps",
+                  "storage": "canonical-pdf",
+                  "assetIds": []
+                }
+              }
+            },
+            {
+              "slice": "stamp",
+              "action": {
+                "type": "ASSET_ADDED",
+                "asset": {
+                  "id": "stamp-0-2",
+                  "libraryId": "stamp-lib-0-1",
+                  "kind": "stamp",
+                  "name": "Stamp 1",
+                  "size": {
+                    "width": 200,
+                    "height": 100
+                  },
+                  "format": "pdf",
+                  "pageObjectNumber": 100
+                }
+              }
+            },
+            {
+              "slice": "stamp",
+              "action": {
+                "type": "ASSET_ADDED",
+                "asset": {
+                  "id": "stamp-0-3",
+                  "libraryId": "stamp-lib-0-1",
+                  "kind": "stamp",
+                  "name": "Stamp 2",
+                  "size": {
+                    "width": 201,
+                    "height": 101
+                  },
+                  "format": "pdf",
+                  "pageObjectNumber": 101
+                }
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "stamp-import-0-0",
+                  "bytes": {
+                    "$bytes": "JVBERi0xLjcKJXN0YW1wIGZpeHR1cmUK"
+                  }
+                },
+                {
+                  "scope": [
+                    "*"
+                  ]
+                }
+              ]
+            },
+            {
+              "doc": "lib",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "lib",
+              "path": "pieceInfo.read",
+              "args": [
+                "EMBD_StampLibrary"
+              ]
+            },
+            {
+              "doc": "lib",
+              "path": "page.pieceInfo.read",
+              "pon": 100,
+              "args": [
+                "EMBD_Stamp"
+              ]
+            },
+            {
+              "doc": "lib",
+              "path": "page.pieceInfo.read",
+              "pon": 101,
+              "args": [
+                "EMBD_Stamp"
+              ]
+            },
+            {
+              "doc": "lib",
+              "path": "pieceInfo.update",
+              "args": [
+                "EMBD_StampLibrary",
+                {
+                  "Version": 1,
+                  "Id": "stamp-lib-0-1",
+                  "Name": "Stamps",
+                  "Kind": {
+                    "name": "StampLibrary"
+                  },
+                  "Categories": null
+                }
+              ]
+            },
+            {
+              "doc": "lib",
+              "path": "page.pieceInfo.update",
+              "pon": 100,
+              "args": [
+                "EMBD_Stamp",
+                {
+                  "Version": 1,
+                  "Id": "stamp-0-2",
+                  "Name": "Stamp 1",
+                  "Kind": {
+                    "name": "Stamp"
+                  },
+                  "Subject": null,
+                  "Categories": null
+                }
+              ]
+            },
+            {
+              "doc": "lib",
+              "path": "pages.extract",
+              "args": [
+                [
+                  100
+                ]
+              ]
+            },
+            {
+              "doc": "lib",
+              "path": "page.render.image",
+              "pon": 100,
+              "args": [
+                {
+                  "viewport": {
+                    "kind": "width",
+                    "width": 256
+                  },
+                  "background": "transparent",
+                  "includeAnnotations": true,
+                  "format": "png"
+                }
+              ]
+            },
+            {
+              "doc": "lib",
+              "path": "page.pieceInfo.update",
+              "pon": 101,
+              "args": [
+                "EMBD_Stamp",
+                {
+                  "Version": 1,
+                  "Id": "stamp-0-3",
+                  "Name": "Stamp 2",
+                  "Kind": {
+                    "name": "Stamp"
+                  },
+                  "Subject": null,
+                  "Categories": null
+                }
+              ]
+            },
+            {
+              "doc": "lib",
+              "path": "pages.extract",
+              "args": [
+                [
+                  101
+                ]
+              ]
+            },
+            {
+              "doc": "lib",
+              "path": "page.render.image",
+              "pon": 101,
+              "args": [
+                {
+                  "viewport": {
+                    "kind": "width",
+                    "width": 256
+                  },
+                  "background": "transparent",
+                  "includeAnnotations": true,
+                  "format": "png"
+                }
+              ]
+            },
+            {
+              "doc": "lib",
+              "path": "download",
+              "args": []
+            },
+            {
+              "doc": "lib",
+              "path": "close",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            },
+            "lib": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 2
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 3,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "STAMP_ARM_CHANGED"
+              }
+            },
+            {
+              "slice": "interaction::a",
+              "action": {
+                "type": "SET_TOOL",
+                "toolId": "stamp"
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "form-text": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1,
+                      "fontSize": 12
+                    },
+                    "form-checkbox": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1
+                    },
+                    "form-radio": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1
+                    },
+                    "form-combobox": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1,
+                      "fontSize": 12
+                    },
+                    "form-listbox": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1,
+                      "fontSize": 12
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "STAMP_ARM_CHANGED"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "stamp-import-0-4",
+                  "bytes": {
+                    "$bytes": "JVBERi1wYWdlLTEwMA=="
+                  }
+                },
+                {
+                  "scope": [
+                    "*"
+                  ],
+                  "identity": {
+                    "user_id": "alex",
+                    "group_id": "EmbedPDF",
+                    "display_name": "Alex Morgan"
+                  }
+                }
+              ]
+            },
+            {
+              "doc": "copy",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "copy",
+              "path": "forms.list",
+              "args": []
+            },
+            {
+              "doc": "copy",
+              "path": "forms.list",
+              "args": []
+            },
+            {
+              "doc": "copy",
+              "path": "actions.read",
+              "args": []
+            },
+            {
+              "doc": "copy",
+              "path": "forms.applyEffects",
+              "args": [
+                [
+                  {
+                    "kind": "setValue",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "fieldObjectNumber": 1
+                    },
+                    "value": {
+                      "type": "text",
+                      "value": "2026-07-15"
+                    }
+                  }
+                ]
+              ]
+            },
+            {
+              "doc": "copy",
+              "path": "pages.flatten",
+              "args": [
+                [
+                  100
+                ],
+                "display"
+              ]
+            },
+            {
+              "doc": "copy",
+              "path": "pages.extract",
+              "args": [
+                [
+                  100
+                ]
+              ]
+            },
+            {
+              "doc": "copy",
+              "path": "page.render.image",
+              "pon": 100,
+              "args": [
+                {
+                  "viewport": {
+                    "kind": "width",
+                    "width": 256
+                  },
+                  "background": "transparent",
+                  "includeAnnotations": false,
+                  "format": "png"
+                }
+              ]
+            },
+            {
+              "doc": "copy",
+              "path": "close",
+              "args": []
+            }
+          ],
+          "callbacks": [
+            {
+              "fn": "sandbox.factory",
+              "args": [
+                0
+              ]
+            },
+            {
+              "fn": "sandbox.boot",
+              "args": [
+                0,
+                [
+                  "this.getField(\"date\").value = util.printd(...);"
+                ],
+                {
+                  "document": {
+                    "id": "copy",
+                    "fileName": "copy",
+                    "pageCount": 1,
+                    "pageNumber": 0
+                  },
+                  "identity": {
+                    "name": "",
+                    "loginName": "",
+                    "corporation": "",
+                    "email": ""
+                  },
+                  "environment": {
+                    "nowMs": 0,
+                    "utcOffsetMinutes": 0,
+                    "randomSeed": 3528348382
+                  },
+                  "fields": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 1
+                      },
+                      "name": "date",
+                      "family": "text",
+                      "value": null,
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false
+                    }
+                  ],
+                  "event": {
+                    "kind": "name-tree-boot"
+                  }
+                },
+                {
+                  "maxExecutionMs": 50,
+                  "maxMemoryBytes": 16777216,
+                  "maxStackBytes": 524288,
+                  "maxEffects": 256,
+                  "maxOutputBytes": 1048576
+                }
+              ]
+            },
+            {
+              "fn": "sandbox.dispose",
+              "args": [
+                0
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            },
+            "lib": {
+              "subscribers": 0
+            },
+            "copy": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 3
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            },
+            "lib": {
+              "subscribers": 0
+            },
+            "copy": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 4,
+              "rejected": {
+                "$error": {
+                  "name": "TypeError",
+                  "message": "Cannot destructure property 'data' of 'source' as it is undefined."
+                }
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "stamp-import-0-5",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {
+                  "scope": [
+                    "*"
+                  ],
+                  "identity": {
+                    "user_id": "alex",
+                    "group_id": "EmbedPDF",
+                    "display_name": "Alex Morgan"
+                  }
+                }
+              ]
+            },
+            {
+              "doc": "copy",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "copy",
+              "path": "forms.list",
+              "args": []
+            },
+            {
+              "doc": "copy",
+              "path": "close",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            },
+            "lib": {
+              "subscribers": 0
+            },
+            "copy": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 4
+          }
+        }
+      ]
+    },
+    {
       "name": "teardown-destroys-a-factory-engine-once",
       "covers": "A materialization through a factory engine uses the memoized engine, and teardown destroys it.",
       "plugins": [
