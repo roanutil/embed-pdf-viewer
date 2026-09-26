@@ -484,10 +484,25 @@ impl<T: Clone + 'static> Promise<T> {
     }
 
     /// `Promise.race`: settles as the first of `promises` settles.
+    ///
+    /// `Promise.race` reads each input through `Promise.resolve(input).then`.
+    /// A plain promise is returned as it is and reacts one turn after it
+    /// settles. An `AbortablePromise` is a subclass, so `Promise.resolve`
+    /// adopts it as a thenable: one turn for the adoption job, one for its
+    /// reaction, then the race's own reaction.
     pub fn race(promises: Vec<Promise<T>>) -> Promise<T> {
         let (race, resolver) = Promise::pending();
         for promise in promises {
             let resolver = resolver.clone();
+            if promise.is_abortable() {
+                spawn(async move {
+                    tick().await;
+                    let result = promise.await;
+                    tick().await;
+                    resolver.settle(result);
+                });
+                continue;
+            }
             promise.on_settle(move |result| {
                 // `.then(resolve, reject)` runs one turn after settlement.
                 let result = result.clone();

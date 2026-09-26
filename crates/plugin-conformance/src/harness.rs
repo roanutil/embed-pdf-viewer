@@ -85,6 +85,8 @@ pub(crate) struct Inner {
     pub tokens: RefCell<HashMap<String, AnyToken>>,
     pub fake: RefCell<Option<Rc<FakeEngine>>>,
     pub adapters: Vec<Rc<dyn HarnessPlugin>>,
+    /// Plugins built in this run, by id, for a probe's `sameAs`.
+    pub built: RefCell<HashMap<String, AnyPlugin>>,
 }
 
 /// The per-run harness. Cheap to clone.
@@ -103,6 +105,7 @@ impl Harness {
             tokens: RefCell::new(tokens),
             fake: RefCell::new(None),
             adapters,
+            built: RefCell::new(HashMap::new()),
         }))
     }
 

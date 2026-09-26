@@ -10,7 +10,7 @@
 use std::any::Any;
 use std::cell::{Cell, RefCell};
 use std::collections::BTreeMap;
-use std::rc::Rc;
+use std::rc::{Rc, Weak};
 
 use serde_json::Value;
 
@@ -28,12 +28,6 @@ pub type SliceJson = Rc<dyn Fn(&dyn Any) -> Value>;
 /// the pass continues.
 pub type ChangeListener = dyn Fn() -> Result<(), Error>;
 pub type ActionListener = dyn Fn(&dyn Action) -> Result<(), Error>;
-
-struct Slice {
-    state: SliceState,
-    reducer: SliceReducer,
-    to_json: SliceJson,
-}
 
 /// A `Set`-like listener list. Entries are tombstoned rather than removed
 /// while a pass is walking it.
@@ -100,9 +94,87 @@ impl<F: ?Sized> Listeners<F> {
     }
 }
 
+/// A plugin instance's authority over its state slice. Unique per
+/// instance: closing and reopening a document id yields a new lease, and the
+/// old one is revoked at the start of close, so a callback the old instance
+/// retained can never reach the new instance's state. `commit` drops the
+/// action and answers false once revoked; `read` keeps answering the last
+/// state.
+#[derive(Clone)]
+pub struct SliceLease(Rc<LeaseInner>);
+
+struct LeaseInner {
+    key: String,
+    instance_id: String,
+    live: Cell<bool>,
+    state: RefCell<SliceState>,
+    reducer: SliceReducer,
+    to_json: SliceJson,
+    store: Weak<Store>,
+}
+
+impl SliceLease {
+    pub fn key(&self) -> &str {
+        &self.0.key
+    }
+
+    pub fn instance_id(&self) -> &str {
+        &self.0.instance_id
+    }
+
+    pub fn live(&self) -> bool {
+        self.0.live.get()
+    }
+
+    pub fn read(&self) -> SliceState {
+        self.0.state.borrow().clone()
+    }
+
+    /// Run the reducer; notify on a new state; tell action listeners either
+    /// way. False, and nothing happens, once the lease is revoked.
+    pub fn commit(&self, action: &dyn Action) -> bool {
+        if !self.0.live.get() {
+            return false;
+        }
+        let state = self.read();
+        let next = (self.0.reducer)(&state, action);
+        let store = self.0.store.upgrade();
+        if let Some(next) = next {
+            *self.0.state.borrow_mut() = next;
+            if let Some(store) = &store {
+                store.emit_change();
+            }
+        }
+        if let Some(store) = &store {
+            store.emit_action(action);
+        }
+        true
+    }
+
+    pub fn revoke(&self) {
+        if !self.0.live.get() {
+            return;
+        }
+        self.0.live.set(false);
+        let Some(store) = self.0.store.upgrade() else { return };
+        let current =
+            store.leases.borrow().get(&self.0.key).is_some_and(|l| Rc::ptr_eq(&l.0, &self.0));
+        if current {
+            store.leases.borrow_mut().remove(&self.0.key);
+            store.emit_change();
+        }
+    }
+
+    fn json(&self) -> Value {
+        (self.0.to_json)(self.0.state.borrow().as_ref())
+    }
+}
+
 pub struct Store {
+    this: Weak<Store>,
     core: RefCell<Rc<CoreState>>,
-    slices: RefCell<BTreeMap<String, Slice>>,
+    leases: RefCell<BTreeMap<String, SliceLease>>,
+    lease_counter: Cell<u64>,
     change: Listeners<ChangeListener>,
     action: Listeners<ActionListener>,
     emitting: Cell<bool>,
@@ -112,9 +184,11 @@ pub struct Store {
 
 impl Store {
     pub fn new(report: Report) -> Rc<Store> {
-        Rc::new(Store {
+        Rc::new_cyclic(|this| Store {
+            this: this.clone(),
             core: RefCell::new(Rc::new(CoreState::default())),
-            slices: RefCell::new(BTreeMap::new()),
+            leases: RefCell::new(BTreeMap::new()),
+            lease_counter: Cell::new(0),
             change: Listeners::default(),
             action: Listeners::default(),
             emitting: Cell::new(false),
@@ -155,6 +229,38 @@ impl Store {
         (self.report)(error);
     }
 
+    /// Acquire the lease for a slice, revoking any earlier lease under the
+    /// same key. `instance_id` defaults to `<key>#<n>`, counted per store.
+    pub fn lease(
+        &self,
+        key: &str,
+        reducer: SliceReducer,
+        initial: SliceState,
+        to_json: SliceJson,
+        instance_id: Option<String>,
+    ) -> SliceLease {
+        let instance_id = instance_id.unwrap_or_else(|| {
+            self.lease_counter.set(self.lease_counter.get() + 1);
+            format!("{key}#{}", self.lease_counter.get())
+        });
+        let prior = self.leases.borrow().get(key).cloned();
+        if let Some(prior) = prior {
+            prior.revoke();
+        }
+        let lease = SliceLease(Rc::new(LeaseInner {
+            key: key.to_string(),
+            instance_id,
+            live: Cell::new(true),
+            state: RefCell::new(initial),
+            reducer,
+            to_json,
+            store: self.this.clone(),
+        }));
+        self.leases.borrow_mut().insert(key.to_string(), lease.clone());
+        lease
+    }
+
+    /// `registerSlice`, kept for the transition: a lease nobody holds.
     pub fn register_slice(
         &self,
         key: &str,
@@ -162,22 +268,23 @@ impl Store {
         initial: SliceState,
         to_json: SliceJson,
     ) {
-        self.slices
-            .borrow_mut()
-            .insert(key.to_string(), Slice { state: initial, reducer, to_json });
+        self.lease(key, reducer, initial, to_json, None);
     }
 
+    /// `removeSlice`, kept for the transition: revoke the current lease.
     pub fn remove_slice(&self, key: &str) {
-        self.slices.borrow_mut().remove(key);
-        self.emit_change();
+        let lease = self.leases.borrow().get(key).cloned();
+        if let Some(lease) = lease {
+            lease.revoke();
+        }
     }
 
     pub fn get_slice(&self, key: &str) -> Option<SliceState> {
-        self.slices.borrow().get(key).map(|s| s.state.clone())
+        self.leases.borrow().get(key).map(SliceLease::read)
     }
 
     pub fn has_slice(&self, key: &str) -> bool {
-        self.slices.borrow().contains_key(key)
+        self.leases.borrow().contains_key(key)
     }
 
     pub fn core(&self) -> Rc<CoreState> {
@@ -186,32 +293,25 @@ impl Store {
 
     /// `getState()`: the whole tree as canonical JSON.
     pub fn state_json(&self) -> Value {
-        let slices = self.slices.borrow();
+        let leases = self.leases.borrow();
         let mut plugins = serde_json::Map::new();
-        for (key, slice) in slices.iter() {
-            plugins.insert(key.clone(), (slice.to_json)(slice.state.as_ref()));
+        for (key, lease) in leases.iter() {
+            plugins.insert(key.clone(), lease.json());
         }
         serde_json::json!({ "core": crate::js::to_value(&*self.core()), "plugins": plugins })
     }
 
     /// One slice as canonical JSON.
     pub fn slice_json(&self, key: &str) -> Option<Value> {
-        let slices = self.slices.borrow();
-        slices.get(key).map(|slice| (slice.to_json)(slice.state.as_ref()))
+        self.leases.borrow().get(key).map(SliceLease::json)
     }
 
+    /// `dispatchTo`, kept for the transition: commit through the current lease.
     pub fn dispatch_to(&self, key: &str, action: &dyn Action) {
-        let (state, reducer) = match self.slices.borrow().get(key) {
-            Some(slice) => (slice.state.clone(), slice.reducer.clone()),
-            None => return,
-        };
-        if let Some(next) = reducer(&state, action) {
-            if let Some(slice) = self.slices.borrow_mut().get_mut(key) {
-                slice.state = next;
-            }
-            self.emit_change();
+        let lease = self.leases.borrow().get(key).cloned();
+        if let Some(lease) = lease {
+            lease.commit(action);
         }
-        self.emit_action(action);
     }
 
     pub fn set_core(&self, patch: impl FnOnce(&mut CoreState), action: &dyn Action) {
@@ -242,11 +342,15 @@ impl Store {
         })
     }
 
-    /// Kernel-destroy teardown: reset core, drop every slice and listener.
+    /// Kernel-destroy teardown: reset core, revoke every lease, drop every
+    /// listener.
     pub fn destroy(&self) {
         *self.core.borrow_mut() = Rc::new(CoreState::default());
-        let slices = std::mem::take(&mut *self.slices.borrow_mut());
-        drop(slices);
+        let leases: Vec<SliceLease> = self.leases.borrow().values().cloned().collect();
+        for lease in leases {
+            lease.revoke();
+        }
+        self.leases.borrow_mut().clear();
         self.change.clear();
         self.action.clear();
     }

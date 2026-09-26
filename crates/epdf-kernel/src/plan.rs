@@ -26,11 +26,30 @@ impl PluginPlan {
 }
 
 pub fn plan_plugins(plugins: &[Rc<PluginDef>], documents: &AnyToken) -> Result<PluginPlan, Error> {
-    let mut provider = HashMap::new();
+    let mut by_id: HashMap<&str, &Rc<PluginDef>> = HashMap::new();
+    let mut provider: HashMap<AnyToken, Rc<PluginDef>> = HashMap::new();
     let mut scope = HashMap::new();
     scope.insert(documents.clone(), PluginScope::Workspace);
     for plugin in plugins {
-        if let (Some(token), true) = (&plugin.token, plugin.capability.is_some()) {
+        if let Some(prior) = by_id.get(plugin.id.as_str()) {
+            return Err(Error::new(if Rc::ptr_eq(prior, plugin) {
+                format!("[kernel] plugin \"{}\" is installed twice.", plugin.id)
+            } else {
+                format!("[kernel] two different plugins use the id \"{}\".", plugin.id)
+            }));
+        }
+        by_id.insert(&plugin.id, plugin);
+        if let Some(token) = &plugin.token
+            && (plugin.capability.is_some() || plugin.create.is_some())
+        {
+            if let Some(other) = provider.get(token) {
+                return Err(Error::new(format!(
+                    "[kernel] capability \"{}\" is provided by both \"{}\" and \"{}\".",
+                    token.name(),
+                    other.id,
+                    plugin.id
+                )));
+            }
             provider.insert(token.clone(), plugin.clone());
             scope.insert(token.clone(), plugin.scope);
         }
@@ -48,6 +67,16 @@ pub fn plan_plugins(plugins: &[Rc<PluginDef>], documents: &AnyToken) -> Result<P
                     plugin.id,
                     required.name(),
                     fix
+                )));
+            }
+            if plugin.scope != PluginScope::Document
+                && provider.get(required).is_some_and(|p| p.scope == PluginScope::Document)
+            {
+                return Err(Error::new(format!(
+                    "[kernel] workspace plugin \"{}\" requires document-scoped capability \"{}\"; \
+                     resolve it per document with ctx.forDocument() and declare it as optional.",
+                    plugin.id,
+                    required.name()
                 )));
             }
         }
