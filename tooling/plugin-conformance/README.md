@@ -117,8 +117,9 @@ match; `args` compares canonically, and an entry without it matches any argument
 `defer: label`. Page services are `page.<service>.<method>` with the page's object number as `pon`.
 Optional members exist only when `services` lists them: `render`, `actions`, `attachments`,
 `pieceInfo`, `redaction`, `downloadLayer`, `page.pieceInfo`, and `forms.submit` (the Rust side
-answers `DocumentHandle::has` from the same list). `forms.applyEffects` is optional in the contract
-but every shipped engine has it, so it is present unless the document's `lacks` list names it.
+answers `DocumentHandle::has` from the same list). `forms.applyEffects`, `pages.flatten` and
+`pages.extract` are optional in the contract but every shipped engine has them, so each is present
+unless the document's `lacks` list names it.
 
 Four calls have fallbacks: `open` hands out the document whose key is the input's `id`,
 `pages.list` answers from `pages`, `close` and `destroy` resolve. Anything else unanswered rejects

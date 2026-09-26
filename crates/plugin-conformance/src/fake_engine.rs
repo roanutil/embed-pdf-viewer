@@ -333,7 +333,7 @@ impl Engine for AsEngine {
 }
 
 /// Optional contract members every handle has unless its `lacks` names them.
-const DEFAULT_PRESENT: &[&str] = &["forms.applyEffects"];
+const DEFAULT_PRESENT: &[&str] = &["forms.applyEffects", "pages.flatten", "pages.extract"];
 
 struct FakeHandle {
     engine: Rc<FakeEngine>,

@@ -50,7 +50,9 @@ pub trait DocumentHandle {
     fn security(&self) -> Rc<dyn DocumentSecurity>;
     /// Whether an optional member exists: `render`, `actions`,
     /// `attachments`, `pieceInfo`, `redaction`, `downloadLayer`,
-    /// `page.pieceInfo`. The TypeScript feature-detects with
+    /// `page.pieceInfo`, and the members every shipped engine has but the
+    /// contract leaves optional (`forms.applyEffects`, `pages.flatten`,
+    /// `pages.extract`). The TypeScript feature-detects with
     /// `doc.render !== undefined`.
     fn has(&self, member: &str) -> bool;
     /// An asynchronous service call on the document, or on one of its pages

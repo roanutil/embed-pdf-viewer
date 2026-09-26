@@ -71,8 +71,8 @@ export interface FakeDocumentSpec {
    *  and the optional member `forms.submit`. */
   readonly services?: readonly string[];
   /** Optional members present by default that this handle lacks:
-   *  `forms.applyEffects`, which the contract makes optional and every
-   *  shipped engine implements. */
+   *  `forms.applyEffects`, `pages.flatten` and `pages.extract`, which the
+   *  contract makes optional and every shipped engine implements. */
   readonly lacks?: readonly string[];
   readonly capabilities?: unknown;
   readonly security?: SecuritySpec;
@@ -255,7 +255,7 @@ export function createFakeEngine(
         {},
         {
           get: (_target, member) => {
-            if (typeof member !== 'string' || member === 'then') return undefined;
+            if (typeof member !== 'string' || member === 'then' || lacks.has(`pages.${member}`)) return undefined;
             return (...args: unknown[]) =>
               call(id, table, `pages.${member}`, undefined, args, member === 'list'
                 ? () => ({ pageCount: pages.length, pages: decode(pages) })
