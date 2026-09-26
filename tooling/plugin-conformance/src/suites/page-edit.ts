@@ -61,8 +61,8 @@ const answering = [
   ok('pages.rotate'),
   ok('pages.move'),
   ok('pages.delete'),
-  ok('pages.insertBlank', { pages: [pr(99)] }),
-  ok('pages.insert', { pages: [pr(77), pr(78)] }),
+  ok('pages.insertBlank', { insertedPages: [pr(99)] }),
+  ok('pages.insert', { insertedPages: [pr(77), pr(78)] }),
 ];
 
 const cases: ScenarioCase[] = [

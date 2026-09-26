@@ -101,6 +101,8 @@ export type EngineLogEntry =
 
 interface Pending {
   readonly label: string;
+  /** An engine call's settlement, as opposed to a scripted callback's. */
+  readonly engine?: boolean;
   readonly resolve: (value: unknown) => void;
   readonly reject: (error: unknown) => void;
 }
@@ -123,8 +125,15 @@ export function makeError(spec: ErrorSpec): Error {
   const error = new Error(message);
   error.name = name ?? 'Error';
   Object.assign(error, rest);
-  // The kernel maps engine refusals with `instanceof PermissionDenied`; a
-  // refusal the vector names so is that class, with the members it spells.
+  return error;
+}
+
+/** An error the fake ENGINE rejects with. The kernel maps engine refusals by
+ *  `instanceof PermissionDenied`, and a real engine throws that class, so a
+ *  refusal the table names `PermissionDenied` is one, with the members it
+ *  spells. Errors a vector hands in as arguments (`$error`) stay plain. */
+export function makeEngineError(spec: ErrorSpec): Error {
+  const error = makeError(spec);
   if (error.name === 'PermissionDenied') Object.setPrototypeOf(error, PermissionDenied.prototype);
   return error;
 }
@@ -183,10 +192,10 @@ export function createFakeEngine(
         return;
       }
       if (entry.defer !== undefined) {
-        pending.push({ label: entry.defer, resolve: (value) => resolve(map(value)), reject });
+        pending.push({ label: entry.defer, engine: true, resolve: (value) => resolve(map(value)), reject });
         return;
       }
-      if (entry.error) reject(makeError(entry.error));
+      if (entry.error) reject(makeEngineError(entry.error));
       else resolve(map(decode(entry.value)));
     };
     // A plain-promise engine is what the kernel's race exists for: a call
@@ -348,7 +357,7 @@ export function createFakeEngine(
       const index = pending.findIndex((p) => p.label === label);
       if (index < 0) return false;
       const [entry] = pending.splice(index, 1);
-      if (outcome.error) entry.reject(makeError(outcome.error));
+      if (outcome.error) entry.reject(entry.engine ? makeEngineError(outcome.error) : makeError(outcome.error));
       else entry.resolve(decode(outcome.value));
       return true;
     },
