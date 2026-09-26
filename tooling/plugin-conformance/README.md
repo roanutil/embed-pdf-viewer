@@ -134,6 +134,10 @@ Optional members exist only when `services` lists them: `render`, `actions`, `at
 `page.measure`, and `forms.submit` (the Rust side answers `DocumentHandle::has` from the same list). `forms.applyEffects`, `pages.flatten`,
 `pages.extract` and `page.annotations.downloadFile` are optional in the contract but every shipped
 engine has them, so each is present unless the document's `lacks` list names it.
+Every other `pages.*` member (`pages.setName`, `pages.insertBlank`) is present unless `lacks` names
+it, and every other `page.annotations.*` member (`exportAppearance`) is always present, because the
+TypeScript handle answers both services through a proxy. The Rust `has` answers the same way; it
+answered false for them until the stamp port asked.
 
 Four calls have fallbacks: `open` hands out the document whose key is the input's `id`,
 `pages.list` answers from `pages`, `close` and `destroy` resolve. Anything else unanswered rejects
