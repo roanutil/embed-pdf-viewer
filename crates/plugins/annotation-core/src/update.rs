@@ -9,15 +9,15 @@ use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::anchor::{anchor_mode_of, anchored_geom, unanchored_geom};
+use crate::anchor::{anchor_mode_of, anchored_geom, anchored_stroke_width, unanchored_geom};
 use crate::flags::{
     DRAWN_FLAGS, annot_contents_editable, annot_deletable, annot_transformable, merge_flags,
 };
 use crate::geometry::{
     DEFAULT_CHROME_GEOM, ap_size_changed, caret_geom_from_anchor, geom_drag_handle,
     geom_reset_rotation, geom_rotate_about, geom_rotation, geom_scale_about, geom_translate,
-    group_resize_anchor, group_resize_box, group_resize_factors, normalize_deg,
-    quad_intersects_rect, rect_from_points, selection_center, selection_quad, shape_rect_for,
+    geom_visual_bounds, group_resize_anchor, group_resize_box, group_resize_factors, normalize_deg,
+    quad_intersects_rect, rect_from_points, rotate_point, rotated_aabb, shape_rect_for,
     transposed_about_center, union_rect, upright_anchored_rect, upright_rotation,
 };
 use crate::group::{expand_groups, group_members};
@@ -26,18 +26,29 @@ use crate::ink::straighten_ink_stroke;
 use crate::js::{self, IdSet, Nullable, Record};
 use crate::kinds::caps_for;
 use crate::links::link_children_of;
-use crate::placement::{PlacementOptions, click_create_geom, resolve_click_placement};
+use crate::measure::Unavailable;
+use crate::measurement::{DistanceAppearance, MeasurementAppearance, distance_leader_length};
+use crate::measurement_shape::{
+    move_measurement_caption, shape_measurement_readout, transform_measurement_caption,
+};
+use crate::placement::{
+    PlacementOptions, clamp_rect_to_box, click_create_geom, resolve_click_placement,
+};
 use crate::plane::is_substrate_only;
 use crate::props::{
     apply_props_tracked, kind_takes_link, resolve_props, style_from_props, text_style_from_props,
 };
+use crate::richtext::{
+    RichTextDocumentInput, normalize_doc, paragraphs_from_plain_text, plain_text_of,
+};
+use crate::selection::annotation_selection_frame;
 use crate::snap::compute_move_snap;
 use crate::types::{
     Annot, AnnotationFlagsPatch, AnnotationProps, AnnotationPropsPatch, AnnotationRef, BlendMode,
-    Border, CalloutStep, ClickCreate, ClickCreateOption, Draft, Effect, Geom, GroupOp, Id,
-    InkStraightenOptions, Intent, MarkupPreview, Model, Msg, PageObjectNumber, PatchScope, Phase,
-    Point, PointerInput, Rect, RotateDraft, SnapSettings, Source, Style, TextEndAnchor, TextQuad,
-    ViewEnv,
+    Border, CalloutStep, ClickCreate, ClickCreateOption, DistanceStep, Draft, Effect, Geom,
+    GroupOp, Id, InkStraightenOptions, Intent, MarkupPreview, Model, Msg, PageRef, PatchScope,
+    Phase, Point, PointerInput, Rect, RotateDraft, SnapSettings, Source, Style, TextEndAnchor,
+    TextQuad, ViewEnv,
 };
 
 /// The click and drag threshold (content units).
@@ -141,12 +152,32 @@ fn view_of(input: &PointerInput) -> Option<ViewEnv> {
     })
 }
 
+/// Corners of the region a move keeps inside the page: the selection frame,
+/// or a callout's visual bounds (box, leader and arrowhead).
+fn move_clamp_corners(a: &Annot, view: Option<ViewEnv>) -> [Point; 4] {
+    let mode = anchor_mode_of(a);
+    let geom = anchored_geom(&a.geom, mode, view);
+    if geom.is_callout() {
+        let v = geom_visual_bounds(
+            &geom,
+            anchored_stroke_width(a.style.stroke_width, mode, view),
+            Some(&a.style.border),
+        );
+        return [
+            Point { x: v.x, y: v.y },
+            Point { x: v.x + v.width, y: v.y },
+            Point { x: v.x + v.width, y: v.y + v.height },
+            Point { x: v.x, y: v.y + v.height },
+        ];
+    }
+    annotation_selection_frame(a, view).corners
+}
+
 fn union_bounds_of(m: &Model, ids: &[Id], view: Option<ViewEnv>) -> Option<Rect> {
     let mut corners = Vec::new();
     for id in ids {
         let Some(a) = m.by_id.get(id) else { continue };
-        let g = anchored_geom(&a.geom, anchor_mode_of(a), view);
-        corners.extend(selection_quad(&g, a.style.stroke_width, Some(&a.style.border)));
+        corners.extend(move_clamp_corners(a, view));
     }
     (!corners.is_empty()).then(|| union_rect(&corners))
 }
@@ -170,12 +201,9 @@ fn clamp_move_delta(
     }
 }
 
-fn edit_draft_pon(m: &Model, d: &Draft) -> Option<PageObjectNumber> {
-    let id = match d {
-        Draft::Handle { id, .. } => Some(id),
-        _ => d.ids().and_then(|ids| ids.first()),
-    }?;
-    m.by_id.get(id).map(|a| a.pon)
+fn edit_draft_page(m: &Model, d: &Draft) -> Option<PageRef> {
+    let id = d.id().or_else(|| d.ids().and_then(|ids| ids.first()))?;
+    m.by_id.get(id).map(|a| a.page)
 }
 
 /// `JSON.stringify(a) === JSON.stringify(b)`: non-finite numbers print as
@@ -249,6 +277,8 @@ pub fn update(m: &Model, msg: &Msg) -> (Option<Model>, Vec<Effect>) {
         Msg::EditPointer { phase, input } => edit_pointer(m, *phase, input),
         Msg::MarqueePointer { phase, input } => marquee_pointer(m, *phase, input),
         Msg::CreatePointer {
+            measure,
+            capture,
             phase,
             subtype,
             preset,
@@ -269,20 +299,36 @@ pub fn update(m: &Model, msg: &Msg) -> (Option<Model>, Vec<Effect>) {
             straighten_ink.as_ref(),
             *click_create,
             flags.as_ref(),
+            measure.as_ref(),
+            capture.as_deref(),
         ),
         Msg::FinishInkDraft => finish_ink_create(m),
         Msg::FinishCreationDraft => finish_poly_create(m),
-        Msg::CreateCaret { pon, anchor, flags } => create_caret(m, *pon, anchor, flags.as_ref()),
-        Msg::CreateReplaceText { pon, quads, anchor, preset } => {
-            create_replace_text(m, *pon, quads, anchor, preset.as_deref().unwrap_or("replace-text"))
-        }
-        Msg::CreateMarkup { subtype, pon, quads, preset, flags } => create_markup(
+        Msg::CreateCaret { page, anchor, flags } => create_caret(m, *page, anchor, flags.as_ref()),
+        Msg::CreateReplaceText { page, quads, anchor, preset } => create_replace_text(
+            m,
+            *page,
+            quads,
+            anchor,
+            preset.as_deref().unwrap_or("replace-text"),
+        ),
+        Msg::CreateMarkup { subtype, page, quads, preset, flags } => create_markup(
             m,
             subtype,
-            *pon,
+            *page,
             quads,
             preset.as_deref().unwrap_or(subtype),
             flags.as_ref(),
+        ),
+        Msg::CreateAnnot { page, subtype, geom, preset, props, flags, select } => create_annot(
+            m,
+            *page,
+            subtype,
+            geom,
+            preset.as_deref(),
+            props.as_ref(),
+            flags.as_ref(),
+            *select == Some(true),
         ),
         Msg::SetMarkupPreview { subtype, quads_by_page, preset } => {
             set_markup_preview(m, subtype, quads_by_page, preset.as_deref().unwrap_or(subtype))
@@ -391,6 +437,7 @@ pub fn update(m: &Model, msg: &Msg) -> (Option<Model>, Vec<Effect>) {
             }
         }
         Msg::SetText { id, text } => set_text(m, id, text),
+        Msg::SetRichText { id, doc } => set_rich_text(m, id, doc),
         Msg::EndTextEdit => {
             if m.editing.as_ref().is_some_and(|e| !e.is_empty()) {
                 changed(Model { editing: None, ..m.clone() })
@@ -414,8 +461,56 @@ fn set_text(m: &Model, id: &str, text: &str) -> Step {
     let mut next = a.clone();
     // A DTO is an object; the spread of a scalar one is not ported.
     if let Some(Value::Object(data)) = &mut next.data {
+        let free_text = data.get("subtype").and_then(Value::as_str) == Some("free-text");
         data.insert("contents".into(), Value::String(text.into()));
+        if free_text {
+            // `{ ...data.richText, paragraphs }`: the body and any other
+            // member stay.
+            let mut rich = match data.get("richText") {
+                Some(Value::Object(r)) => r.clone(),
+                _ => serde_json::Map::new(),
+            };
+            rich.insert(
+                "paragraphs".into(),
+                serde_json::to_value(paragraphs_from_plain_text(text)).unwrap_or(Value::Null),
+            );
+            data.insert("richText".into(), Value::Object(rich));
+        }
     }
+    changed(Model { by_id: with_annot(m, id, to_vector(next)), ..m.clone() })
+}
+
+/// Apply the editor's rich document: the DTO's body with the input's partial
+/// body layered on, the normalised paragraphs, and `contents` as the plain
+/// projection.
+fn set_rich_text(m: &Model, id: &str, doc: &RichTextDocumentInput) -> Step {
+    let Some(a) = m.by_id.get(id) else {
+        return same();
+    };
+    let Some(Value::Object(data)) = &a.data else {
+        return same();
+    };
+    if data.get("subtype").and_then(Value::as_str) != Some("free-text") {
+        return same();
+    }
+    let normalized = normalize_doc(doc);
+    let mut body = match data.get("richText").and_then(|r| r.get("body")) {
+        Some(Value::Object(b)) => b.clone(),
+        _ => serde_json::Map::new(),
+    };
+    for (k, v) in normalized.body.iter().flatten() {
+        body.insert(k.clone(), v.clone());
+    }
+    let mut rich = serde_json::Map::new();
+    rich.insert("body".into(), Value::Object(body));
+    rich.insert(
+        "paragraphs".into(),
+        serde_json::to_value(&normalized.paragraphs).unwrap_or(Value::Null),
+    );
+    let mut data = data.clone();
+    data.insert("richText".into(), Value::Object(rich));
+    data.insert("contents".into(), Value::String(plain_text_of(&normalized.paragraphs)));
+    let next = Annot { data: Some(Value::Object(data)), ..a.clone() };
     changed(Model { by_id: with_annot(m, id, to_vector(next)), ..m.clone() })
 }
 
@@ -443,7 +538,7 @@ fn edit_down(m: &Model, input: &PointerInput) -> Step {
     let view = view_of(input);
     let hit = hit_test(
         m,
-        input.pon,
+        input.page,
         input.point,
         input.chrome.as_ref().unwrap_or(&DEFAULT_CHROME_GEOM),
         m.hit_margin,
@@ -452,6 +547,14 @@ fn edit_down(m: &Model, input: &PointerInput) -> Step {
         view,
     );
     match hit {
+        Target::Handle { id, handle, .. } if handle == "caption" => {
+            let draft = Draft::Caption { id, start: input.point, delta: Point { x: 0.0, y: 0.0 } };
+            changed(Model { draft: Some(draft), ..m.clone() })
+        }
+        Target::Handle { id, handle, .. } if handle == "leader-start" || handle == "leader-end" => {
+            let draft = Draft::Leader { id, start: input.point, delta: 0.0 };
+            changed(Model { draft: Some(draft), ..m.clone() })
+        }
         Target::Handle { id, handle, .. } => {
             let a = &m.by_id[&id];
             let base = anchored_geom(&a.geom, anchor_mode_of(a), view);
@@ -517,8 +620,8 @@ fn with_draft(m: &Model, draft: Draft) -> Step {
 
 fn edit_move(m: &Model, input: &PointerInput) -> Step {
     let d = m.draft.as_ref().expect("a draft");
-    if let Some(home) = edit_draft_pon(m, d)
-        && input.pon != home
+    if let Some(home) = edit_draft_page(m, d)
+        && input.page.pon() != home.pon()
     {
         return same();
     }
@@ -532,7 +635,7 @@ fn edit_move(m: &Model, input: &PointerInput) -> Step {
             );
         }
         let snap =
-            compute_move_snap(m, ids, input.pon, raw, m.snap.guide_threshold, input.page_box);
+            compute_move_snap(m, ids, input.page, raw, m.snap.guide_threshold, input.page_box);
         let delta = clamp_move_delta(m, ids, snap.delta, input.page_box, view);
         let guides = snap
             .guides
@@ -546,6 +649,20 @@ fn edit_move(m: &Model, input: &PointerInput) -> Step {
     }
     let point = clamp_point_to_box(input.point, input.page_box);
     match d {
+        Draft::Leader { id, start, .. } => {
+            // The TypeScript reads `byId[id]` unguarded here.
+            let geom = &m.by_id[id].geom;
+            let delta = distance_leader_length(geom, point) - distance_leader_length(geom, *start);
+            with_draft(m, Draft::Leader { id: id.clone(), start: *start, delta })
+        }
+        Draft::Caption { id, start, .. } => with_draft(
+            m,
+            Draft::Caption {
+                id: id.clone(),
+                start: *start,
+                delta: Point { x: point.x - start.x, y: point.y - start.y },
+            },
+        ),
         Draft::Handle { id, handle, base, view, .. } => with_draft(
             m,
             Draft::Handle {
@@ -590,12 +707,58 @@ fn edit_up(m: &Model) -> Step {
     let d = m.draft.as_ref().expect("a draft");
     let cleared = || Model { draft: None, ..m.clone() };
     match d {
+        Draft::Leader { id, delta, .. } => {
+            let Some(a) = m.by_id.get(id) else {
+                return changed(cleared());
+            };
+            let Some(MeasurementAppearance::Distance(measure)) = &a.measure else {
+                return changed(cleared());
+            };
+            if *delta == 0.0 {
+                return changed(cleared());
+            }
+            let length = measure.leader.map_or(0.0, |l| l.length) + delta;
+            let updated = Annot {
+                source: Source::Vector,
+                measure: Some(MeasurementAppearance::Distance(measure.with_leader_length(length))),
+                ..a.clone()
+            };
+            let fx = Effect::Patch { id: id.clone(), scope: PatchScope::Leader, ap_changed: false };
+            (Some(Model { draft: None, by_id: with_annot(m, id, updated), ..m.clone() }), vec![fx])
+        }
+        Draft::Caption { id, delta, .. } => {
+            let Some(a) = m.by_id.get(id) else {
+                return changed(cleared());
+            };
+            let Some(measure) = &a.measure else {
+                return changed(cleared());
+            };
+            let moved = delta.x != 0.0 && !delta.x.is_nan() || delta.y != 0.0 && !delta.y.is_nan();
+            if !moved {
+                return changed(cleared());
+            }
+            let updated = Annot {
+                source: Source::Vector,
+                measure: Some(move_measurement_caption(&a.geom, measure, *delta, &a.style)),
+                ..a.clone()
+            };
+            let fx =
+                Effect::Patch { id: id.clone(), scope: PatchScope::Caption, ap_changed: false };
+            (Some(Model { draft: None, by_id: with_annot(m, id, updated), ..m.clone() }), vec![fx])
+        }
         Draft::Handle { id, base, cur, view, .. } => {
             if geom_equal(base, cur) {
                 return changed(cleared());
             }
             let before = &m.by_id[id];
             let stored = unanchored_geom(cur, anchor_mode_of(before), *view);
+            if let Some(MeasurementAppearance::Shape(shape)) = &before.measure
+                && shape.is_polygon()
+                && shape_measurement_readout(&stored, shape).unavailable()
+                    == Some(Unavailable::InvalidGeometry)
+            {
+                return changed(cleared());
+            }
             let a = own_geometry(Annot { geom: stored, ..before.clone() });
             let fx = patch_fx(id, &a, &before.geom);
             (Some(Model { by_id: with_annot(m, id, a), draft: None, ..m.clone() }), vec![fx])
@@ -612,7 +775,10 @@ fn edit_up(m: &Model) -> Step {
                 let Some(a) = by_id.get(id).cloned() else { continue };
                 let geom =
                     commit_view_gesture(&a, rd.view, |g| geom_rotate_about(g, rd.pivot, delta));
-                let next = own_geometry(Annot { geom, ..a.clone() });
+                let measure = transform_measurement_caption(a.measure.as_ref(), |p| {
+                    rotate_point(p, rd.pivot, delta)
+                });
+                let next = own_geometry(Annot { geom, measure, ..a.clone() });
                 fx.push(patch_fx(id, &next, &a.geom));
                 by_id.insert(id.clone(), next);
             }
@@ -629,7 +795,11 @@ fn edit_up(m: &Model) -> Step {
                 let Some(a) = by_id.get(id).cloned() else { continue };
                 let geom =
                     commit_view_gesture(&a, *view, |g| geom_scale_about(g, *anchor, f.sx, f.sy));
-                let next = own_geometry(Annot { geom, ..a.clone() });
+                let measure = transform_measurement_caption(a.measure.as_ref(), |p| Point {
+                    x: anchor.x + (p.x - anchor.x) * f.sx,
+                    y: anchor.y + (p.y - anchor.y) * f.sy,
+                });
+                let next = own_geometry(Annot { geom, measure, ..a.clone() });
                 fx.push(patch_fx(id, &next, &a.geom));
                 by_id.insert(id.clone(), next);
             }
@@ -646,6 +816,10 @@ fn edit_up(m: &Model) -> Step {
                 let a = by_id[id].clone();
                 let moved = Annot {
                     geom: geom_translate(&a.geom, *delta),
+                    measure: transform_measurement_caption(a.measure.as_ref(), |p| Point {
+                        x: p.x + delta.x,
+                        y: p.y + delta.y,
+                    }),
                     ap_box: a.ap_box.map(|r| Rect { x: r.x + delta.x, y: r.y + delta.y, ..r }),
                     ..a
                 };
@@ -665,20 +839,20 @@ fn edit_up(m: &Model) -> Step {
 fn marquee_pointer(m: &Model, phase: Phase, input: &PointerInput) -> Step {
     let point = clamp_point_to_box(input.point, input.page_box);
     if phase == Phase::Down {
-        return with_draft(m, Draft::Marquee { pon: input.pon, from: point, to: point });
+        return with_draft(m, Draft::Marquee { page: input.page, from: point, to: point });
     }
-    let Some(Draft::Marquee { pon, from, .. }) = &m.draft else {
+    let Some(Draft::Marquee { page, from, .. }) = &m.draft else {
         return same();
     };
-    if *pon != input.pon {
+    if page.pon() != input.page.pon() {
         return same();
     }
     if phase == Phase::Move {
-        return with_draft(m, Draft::Marquee { pon: *pon, from: *from, to: point });
+        return with_draft(m, Draft::Marquee { page: *page, from: *from, to: point });
     }
     let hits = expand_groups(
         m,
-        &annots_in_box(m, *pon, *from, point, input.inert.as_ref(), view_of(input)),
+        &annots_in_box(m, *page, *from, point, input.inert.as_ref(), view_of(input)),
     );
     let selected = if input.shift { toggle_selection(&m.selected, &hits) } else { hits };
     changed(Model { selected, draft: None, ..m.clone() })
@@ -709,16 +883,17 @@ fn tmp_id(seq: f64) -> Id {
     format!("tmp:{}", js::number_to_string(seq))
 }
 
-fn fresh_annot(id: Id, pon: PageObjectNumber, subtype: String, geom: Geom, style: Style) -> Annot {
+fn fresh_annot(id: Id, page: PageRef, subtype: String, geom: Geom, style: Style) -> Annot {
     Annot {
         id,
         ref_: None,
-        pon,
+        page,
         subtype,
         geom,
         style,
         text: None,
         label: None,
+        measure: None,
         icon: None,
         flags: DRAWN_FLAGS,
         source: Source::Vector,
@@ -752,6 +927,99 @@ fn commit_created(m: &Model, annot: Annot, editing: Option<Id>, clear_preview: b
     (Some(next), vec![Effect::Create { id }])
 }
 
+/// Distance creation in two stages: the endpoint drag's release advances to
+/// offset placement, and the next click commits.
+fn distance_pointer(
+    m: &Model,
+    phase: Phase,
+    input: &PointerInput,
+    preset: String,
+    measure: Option<&DistanceAppearance>,
+    flags: Option<&AnnotationFlagsPatch>,
+) -> Step {
+    let Some(Draft::CreateDistance { step, page, from, to, measure: draft_measure, .. }) = &m.draft
+    else {
+        let Some(measure) = measure.filter(|_| phase == Phase::Down) else {
+            return same();
+        };
+        let draft = Draft::CreateDistance {
+            step: DistanceStep::Endpoints,
+            subtype: "line".into(),
+            preset,
+            page: input.page,
+            from: input.point,
+            to: input.point,
+            measure: measure.with_leader_length(0.0),
+            flags: flags.copied(),
+        };
+        return changed(Model { selected: Vec::new(), draft: Some(draft), ..m.clone() });
+    };
+    let draft = m.draft.as_ref().expect("a distance draft");
+    if input.page.pon() != page.pon() {
+        return same();
+    }
+    let with = |f: &dyn Fn(&mut Draft)| {
+        let mut next = draft.clone();
+        f(&mut next);
+        next
+    };
+    if *step == DistanceStep::Endpoints {
+        if phase == Phase::Down {
+            return same();
+        }
+        let moved = with(&|d| {
+            if let Draft::CreateDistance { to, .. } = d {
+                *to = input.point;
+            }
+        });
+        if phase == Phase::Move {
+            return with_draft(m, moved);
+        }
+        if js::hypot(input.point.x - from.x, input.point.y - from.y) < MIN_DRAG {
+            return changed(Model { draft: None, ..m.clone() });
+        }
+        let offset = with(&|d| {
+            if let Draft::CreateDistance { to, step, .. } = d {
+                *to = input.point;
+                *step = DistanceStep::Offset;
+            }
+        });
+        return with_draft(m, offset);
+    }
+    if phase == Phase::Up {
+        return same();
+    }
+    let Draft::CreateDistance { preset, flags, .. } = draft else { unreachable!() };
+    let defaults = defaults_for(m, preset);
+    let geom = Geom::Line { a: *from, b: *to, ends: Some(defaults.line_endings), rot: None };
+    let appearance = draft_measure.with_leader_length(distance_leader_length(&geom, input.point));
+    if phase == Phase::Move {
+        let next = with(&|d| {
+            if let Draft::CreateDistance { measure, .. } = d {
+                *measure = appearance.clone();
+            }
+        });
+        return with_draft(m, next);
+    }
+    let id = tmp_id(m.seq + 1.0);
+    let mut style = style_from_props(&defaults);
+    style.interior_color = Some(defaults.interior_color.clone().unwrap_or(defaults.color.clone()));
+    let mut annot = fresh_annot(id.clone(), *page, "line".into(), geom, style);
+    annot.measure = Some(MeasurementAppearance::Distance(appearance));
+    annot.flags = drawn_flags(flags.as_ref());
+    let mut order = m.order.clone();
+    order.push(id.clone());
+    let next = Model {
+        seq: m.seq + 1.0,
+        by_id: with_annot(m, &id, annot),
+        order,
+        selected: vec![id.clone()],
+        draft: None,
+        ..m.clone()
+    };
+    (Some(next), vec![Effect::Create { id }])
+}
+
 #[allow(clippy::too_many_arguments)]
 fn create_pointer(
     m: &Model,
@@ -764,10 +1032,12 @@ fn create_pointer(
     straighten_ink: Option<&InkStraightenOptions>,
     click_create: Option<ClickCreateOption>,
     flags: Option<&AnnotationFlagsPatch>,
+    measure: Option<&MeasurementAppearance>,
+    capture: Option<&str>,
 ) -> Step {
     if phase != Phase::Down
-        && let Some(pon) = m.draft.as_ref().and_then(Draft::pon)
-        && pon != input.pon
+        && let Some(page) = m.draft.as_ref().and_then(Draft::page)
+        && page.pon() != input.page.pon()
     {
         return same();
     }
@@ -776,6 +1046,12 @@ fn create_pointer(
         input.point = clamp_point_to_box(input.point, input.page_box);
     }
     let input = &input;
+    let distance = measure.and_then(MeasurementAppearance::as_distance);
+    if matches!(m.draft, Some(Draft::CreateDistance { .. }))
+        || (distance.is_some() && capture.is_none_or(str::is_empty))
+    {
+        return distance_pointer(m, phase, input, preset, distance, flags);
+    }
     if subtype == "free-text-callout" {
         return callout_pointer(m, phase, input, preset, flags);
     }
@@ -785,35 +1061,23 @@ fn create_pointer(
                 if input.finish == Some(true) {
                     return finish_poly_create(m);
                 }
-                if let Some(Draft::CreatePoly { subtype: s, pon, .. }) = &m.draft
+                if let Some(Draft::CreatePoly { subtype: s, preset: p, page, .. }) = &m.draft
                     && s == subtype
-                    && *pon == input.pon
+                    && p.as_deref() == Some(preset.as_str())
+                    && page.pon() == input.page.pon()
                 {
-                    let Some(Draft::CreatePoly {
-                        subtype, preset, pon, points, closed, flags, ..
-                    }) = m.draft.clone()
-                    else {
-                        unreachable!()
-                    };
-                    let mut points = points;
-                    points.push(input.point);
-                    return with_draft(
-                        m,
-                        Draft::CreatePoly {
-                            subtype,
-                            preset,
-                            pon,
-                            points,
-                            cur: input.point,
-                            closed,
-                            flags,
-                        },
-                    );
+                    let mut next = m.draft.clone().expect("a poly draft");
+                    if let Draft::CreatePoly { points, cur, .. } = &mut next {
+                        points.push(input.point);
+                        *cur = input.point;
+                    }
+                    return with_draft(m, next);
                 }
                 let draft = Draft::CreatePoly {
+                    measure: measure.and_then(MeasurementAppearance::as_shape).cloned(),
                     subtype: subtype.into(),
                     preset: Some(preset),
-                    pon: input.pon,
+                    page: input.page,
                     points: vec![input.point],
                     cur: input.point,
                     closed: subtype == "polygon",
@@ -823,9 +1087,11 @@ fn create_pointer(
             }
             let draft = match subtype {
                 "line" => Some(Draft::CreateLine {
+                    measure: measure.cloned(),
+                    capture: capture.map(str::to_string),
                     subtype: subtype.into(),
                     preset: Some(preset),
-                    pon: input.pon,
+                    page: input.page,
                     from: input.point,
                     to: input.point,
                     click_create,
@@ -835,19 +1101,19 @@ fn create_pointer(
                     Some(Draft::CreateInk {
                         subtype: s,
                         preset: p,
-                        pon,
+                        page,
                         mut strokes,
                         intent: i,
                         flags: f,
                     }) if s == subtype
                         && p.as_deref() == Some(preset.as_str())
-                        && pon == input.pon =>
+                        && page.pon() == input.page.pon() =>
                     {
                         strokes.push(vec![input.point]);
                         Some(Draft::CreateInk {
                             subtype: s,
                             preset: p,
-                            pon,
+                            page,
                             strokes,
                             intent: i,
                             flags: f,
@@ -856,7 +1122,7 @@ fn create_pointer(
                     _ => Some(Draft::CreateInk {
                         subtype: subtype.into(),
                         preset: Some(preset),
-                        pon: input.pon,
+                        page: input.page,
                         strokes: vec![vec![input.point]],
                         intent,
                         flags: flags.copied(),
@@ -868,7 +1134,7 @@ fn create_pointer(
                     Some(Draft::CreateRect {
                         subtype: subtype.into(),
                         preset: Some(preset),
-                        pon: input.pon,
+                        page: input.page,
                         from: input.point,
                         to: input.point,
                         ellipse: subtype == "circle",
@@ -888,65 +1154,25 @@ fn create_pointer(
             }
         }
         Phase::Move => match m.draft.clone() {
-            Some(Draft::CreatePoly { subtype, preset, pon, points, closed, flags, .. }) => {
-                with_draft(
-                    m,
-                    Draft::CreatePoly {
-                        subtype,
-                        preset,
-                        pon,
-                        points,
-                        cur: input.point,
-                        closed,
-                        flags,
-                    },
-                )
+            Some(mut d @ Draft::CreatePoly { .. }) => {
+                if let Draft::CreatePoly { cur, .. } = &mut d {
+                    *cur = input.point;
+                }
+                with_draft(m, d)
             }
-            Some(Draft::CreateRect {
-                subtype,
-                preset,
-                pon,
-                from,
-                ellipse,
-                display_rotation,
-                upright,
-                click_create,
-                flags,
-                ..
-            }) => with_draft(
-                m,
-                Draft::CreateRect {
-                    subtype,
-                    preset,
-                    pon,
-                    from,
-                    to: input.point,
-                    ellipse,
-                    display_rotation,
-                    upright,
-                    click_create,
-                    flags,
-                },
-            ),
-            Some(Draft::CreateLine { subtype, preset, pon, from, click_create, flags, .. }) => {
-                with_draft(
-                    m,
-                    Draft::CreateLine {
-                        subtype,
-                        preset,
-                        pon,
-                        from,
-                        to: input.point,
-                        click_create,
-                        flags,
-                    },
-                )
+            Some(mut d @ (Draft::CreateRect { .. } | Draft::CreateLine { .. })) => {
+                if let Draft::CreateRect { to, .. } | Draft::CreateLine { to, .. } = &mut d {
+                    *to = input.point;
+                }
+                with_draft(m, d)
             }
-            Some(Draft::CreateInk { subtype, preset, pon, mut strokes, intent, flags }) => {
-                if let Some(last) = strokes.last_mut() {
+            Some(mut d @ Draft::CreateInk { .. }) => {
+                if let Draft::CreateInk { strokes, .. } = &mut d
+                    && let Some(last) = strokes.last_mut()
+                {
                     last.push(input.point);
                 }
-                with_draft(m, Draft::CreateInk { subtype, preset, pon, strokes, intent, flags })
+                with_draft(m, d)
             }
             _ => same(),
         },
@@ -963,7 +1189,7 @@ fn create_up(
     let Some(d) = &m.draft else {
         return same();
     };
-    if let Draft::CreateInk { subtype, preset, pon, strokes, intent, flags } = d {
+    if let Draft::CreateInk { subtype, preset, page, strokes, intent, flags } = d {
         let Some(opts) = straighten_ink.filter(|_| !strokes.is_empty()) else {
             return if defer_ink_commit { same() } else { finish_ink_create(m) };
         };
@@ -974,7 +1200,7 @@ fn create_up(
             draft: Some(Draft::CreateInk {
                 subtype: subtype.clone(),
                 preset: preset.clone(),
-                pon: *pon,
+                page: *page,
                 strokes,
                 intent: *intent,
                 flags: *flags,
@@ -988,11 +1214,11 @@ fn create_up(
         let (model, fx) = finish_ink_create(&next);
         return (Some(model.unwrap_or(next)), fx);
     }
-    let (subtype, preset, pon, from, to, click_create, flags, rect_extra) = match d {
+    let (subtype, preset, page, from, to, click_create, flags, rect_extra) = match d {
         Draft::CreateRect {
             subtype,
             preset,
-            pon,
+            page,
             from,
             to,
             ellipse,
@@ -1003,15 +1229,15 @@ fn create_up(
         } => (
             subtype,
             preset,
-            *pon,
+            *page,
             *from,
             *to,
             *click_create,
             *flags,
             Some((*ellipse, *display_rotation, *upright)),
         ),
-        Draft::CreateLine { subtype, preset, pon, from, to, click_create, flags } => {
-            (subtype, preset, *pon, *from, *to, *click_create, *flags, None)
+        Draft::CreateLine { subtype, preset, page, from, to, click_create, flags, .. } => {
+            (subtype, preset, *page, *from, *to, *click_create, *flags, None)
         }
         _ => return same(),
     };
@@ -1071,9 +1297,20 @@ fn create_up(
     let Some(geom) = geom else {
         return changed(Model { draft: None, ..m.clone() });
     };
+    let (line_measure, capture) = match d {
+        Draft::CreateLine { measure, capture, .. } => (measure.clone(), capture.clone()),
+        _ => (None, None),
+    };
+    if let Some(tool) = capture.filter(|c| !c.is_empty()) {
+        return (
+            Some(Model { draft: None, ..m.clone() }),
+            vec![Effect::Captured { tool, page, geom }],
+        );
+    }
     let id = tmp_id(m.seq + 1.0);
     let is_text = matches!(geom, Geom::Text { .. });
-    let mut annot = fresh_annot(id.clone(), pon, subtype.clone(), geom, style);
+    let mut annot = fresh_annot(id.clone(), page, subtype.clone(), geom, style);
+    annot.measure = line_measure;
     if is_text {
         annot.text = Some(text_style_from_props(&def));
     }
@@ -1087,7 +1324,7 @@ fn create_up(
 
 /// Commit all strokes of an ink draft.
 fn finish_ink_create(m: &Model) -> Step {
-    let Some(Draft::CreateInk { subtype, preset, pon, strokes, intent, flags }) = &m.draft else {
+    let Some(Draft::CreateInk { subtype, preset, page, strokes, intent, flags }) = &m.draft else {
         return same();
     };
     let points: Vec<Point> = strokes.concat();
@@ -1102,7 +1339,7 @@ fn finish_ink_create(m: &Model) -> Step {
     let style = style_from_props(&defaults_for(m, preset.as_deref().unwrap_or(subtype)));
     let mut annot = fresh_annot(
         id,
-        *pon,
+        *page,
         subtype.clone(),
         Geom::Ink { strokes: strokes.clone(), rot: None },
         style,
@@ -1128,20 +1365,30 @@ pub struct CalloutDraft {
     pub display_rotation: Option<f64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub upright: Option<bool>,
+    /// The home page's box, captured at the tip click.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub page_box: Option<Rect>,
 }
 
 impl CalloutDraft {
     pub fn of(d: &Draft) -> Option<CalloutDraft> {
         match d {
-            Draft::CreateCallout { cur, box_from, box_to, display_rotation, upright, .. } => {
-                Some(CalloutDraft {
-                    cur: *cur,
-                    box_from: *box_from,
-                    box_to: *box_to,
-                    display_rotation: *display_rotation,
-                    upright: *upright,
-                })
-            }
+            Draft::CreateCallout {
+                cur,
+                box_from,
+                box_to,
+                display_rotation,
+                upright,
+                page_box,
+                ..
+            } => Some(CalloutDraft {
+                cur: *cur,
+                box_from: *box_from,
+                box_to: *box_to,
+                display_rotation: *display_rotation,
+                upright: *upright,
+                page_box: *page_box,
+            }),
             _ => None,
         }
     }
@@ -1162,7 +1409,7 @@ pub fn callout_box(d: &CalloutDraft) -> Rect {
     let rot = callout_upright_rot(d);
     let quarter = rot == 90.0 || rot == 270.0;
     let default_box = |at: Point| {
-        if rot != 0.0 && !rot.is_nan() {
+        let placed = if rot != 0.0 && !rot.is_nan() {
             upright_anchored_rect(
                 at,
                 CALLOUT_BOX_WIDTH,
@@ -1171,7 +1418,8 @@ pub fn callout_box(d: &CalloutDraft) -> Rect {
             )
         } else {
             Rect { x: at.x, y: at.y, width: CALLOUT_BOX_WIDTH, height: CALLOUT_BOX_HEIGHT }
-        }
+        };
+        slide_callout_footprint(placed, rot, d.page_box)
     };
     if let Some(from) = d.box_from {
         let dragged = d.box_to.map(|to| rect_from_points(from, to));
@@ -1183,6 +1431,22 @@ pub fn callout_box(d: &CalloutDraft) -> Rect {
         return default_box(from);
     }
     default_box(d.cur)
+}
+
+/// Shift `rect` so its displayed footprint (the box turned about its centre)
+/// sits inside `page`.
+fn slide_callout_footprint(rect: Rect, rot: f64, page: Option<Rect>) -> Rect {
+    let Some(page) = page else {
+        return rect;
+    };
+    let foot = rotated_aabb(rect, rot);
+    let placed = clamp_rect_to_box(foot, Some(page));
+    let dx = placed.x - foot.x;
+    let dy = placed.y - foot.y;
+    if dx == 0.0 && dy == 0.0 {
+        return rect;
+    }
+    Rect { x: rect.x + dx, y: rect.y + dy, ..rect }
 }
 
 fn callout_pointer(
@@ -1200,7 +1464,7 @@ fn callout_pointer(
     match phase {
         Phase::Down => {
             let restart = match callout {
-                Some(Draft::CreateCallout { pon, .. }) => *pon != input.pon,
+                Some(Draft::CreateCallout { page, .. }) => page.pon() != input.page.pon(),
                 _ => true,
             };
             if restart {
@@ -1209,13 +1473,14 @@ fn callout_pointer(
                 let draft = Draft::CreateCallout {
                     subtype: "free-text-callout".into(),
                     preset: Some(preset),
-                    pon: input.pon,
+                    page: input.page,
                     step: CalloutStep::Knee,
                     tip: input.point,
                     knee: None,
                     cur: input.point,
                     box_from: None,
                     box_to: None,
+                    page_box: input.page_box,
                     display_rotation: if upright { input.display_rotation } else { None },
                     upright: upright.then_some(true),
                     flags: flags.copied(),
@@ -1254,7 +1519,7 @@ fn callout_pointer(
             let Some(Draft::CreateCallout {
                 step: CalloutStep::Box,
                 box_from: Some(_),
-                pon,
+                page,
                 tip,
                 knee,
                 preset,
@@ -1280,7 +1545,7 @@ fn callout_pointer(
                 rot: (rot != 0.0 && !rot.is_nan()).then_some(rot),
             };
             let mut annot =
-                fresh_annot(id.clone(), *pon, "free-text".into(), geom, style_from_props(&def));
+                fresh_annot(id.clone(), *page, "free-text".into(), geom, style_from_props(&def));
             annot.text = Some(text_style_from_props(&def));
             annot.flags = drawn_flags(flags.as_ref());
             commit_created(m, annot, Some(id), false)
@@ -1289,7 +1554,8 @@ fn callout_pointer(
 }
 
 fn finish_poly_create(m: &Model) -> Step {
-    let Some(Draft::CreatePoly { subtype, preset, pon, points, closed, flags, .. }) = &m.draft
+    let Some(Draft::CreatePoly { subtype, preset, page, points, closed, flags, measure, .. }) =
+        &m.draft
     else {
         return same();
     };
@@ -1304,8 +1570,14 @@ fn finish_poly_create(m: &Model) -> Step {
         ends: if *closed { None } else { Some(def.line_endings) },
         rot: None,
     };
+    if let Some(me) = measure
+        && shape_measurement_readout(&geom, me).unavailable().is_some()
+    {
+        return same();
+    }
     let id = tmp_id(m.seq + 1.0);
-    let mut annot = fresh_annot(id, *pon, subtype.clone(), geom, style_from_props(&def));
+    let mut annot = fresh_annot(id, *page, subtype.clone(), geom, style_from_props(&def));
+    annot.measure = measure.clone().map(MeasurementAppearance::Shape);
     annot.flags = drawn_flags(flags.as_ref());
     commit_created(m, annot, m.editing.clone(), false)
 }
@@ -1328,7 +1600,7 @@ fn usable_quads(quads: &[TextQuad]) -> Vec<TextQuad> {
 fn create_markup(
     m: &Model,
     subtype: &str,
-    pon: PageObjectNumber,
+    page: PageRef,
     segment_quads: &[TextQuad],
     preset: &str,
     flags: Option<&AnnotationFlagsPatch>,
@@ -1340,7 +1612,7 @@ fn create_markup(
     let id = tmp_id(m.seq + 1.0);
     let mut annot = fresh_annot(
         id,
-        pon,
+        page,
         subtype.into(),
         Geom::Quads { quads },
         style_from_props(&defaults_for(m, preset)),
@@ -1351,7 +1623,7 @@ fn create_markup(
 
 fn create_replace_text(
     m: &Model,
-    pon: PageObjectNumber,
+    page: PageRef,
     segment_quads: &[TextQuad],
     anchor: &TextEndAnchor,
     preset: &str,
@@ -1365,14 +1637,14 @@ fn create_replace_text(
     let style = style_from_props(&defaults_for(m, preset));
     let mut caret = fresh_annot(
         primary_id.clone(),
-        pon,
+        page,
         "caret".into(),
         caret_geom_from_anchor(anchor),
         style.clone(),
     );
     caret.intent = Some(Intent::Replace);
     let mut strikeout =
-        fresh_annot(strikeout_id.clone(), pon, "strikeout".into(), Geom::Quads { quads }, style);
+        fresh_annot(strikeout_id.clone(), page, "strikeout".into(), Geom::Quads { quads }, style);
     strikeout.intent = Some(Intent::StrikeoutTextEdit);
     strikeout.irt = Some(primary_id.clone());
     strikeout.group = Some(primary_id.clone());
@@ -1396,7 +1668,7 @@ fn create_replace_text(
 
 fn create_caret(
     m: &Model,
-    pon: PageObjectNumber,
+    page: PageRef,
     anchor: &TextEndAnchor,
     flags: Option<&AnnotationFlagsPatch>,
 ) -> Step {
@@ -1409,7 +1681,7 @@ fn create_caret(
     let id = tmp_id(m.seq + 1.0);
     let mut annot = fresh_annot(
         id,
-        pon,
+        page,
         "caret".into(),
         caret_geom,
         style_from_props(&defaults_for(m, "caret")),
@@ -1531,12 +1803,11 @@ fn rotate_selection(m: &Model, delta_deg: f64) -> Step {
         return same();
     }
     let pivot = if ids.len() == 1 {
-        let a = &m.by_id[ids[0]];
-        selection_center(&a.geom, a.style.stroke_width)
+        annotation_selection_frame(&m.by_id[ids[0]], None).center
     } else {
-        let pon = m.by_id[ids[0]].pon;
+        let page = m.by_id[ids[0]].page;
         let scoped = Model { selected: ids.iter().map(|id| (*id).clone()).collect(), ..m.clone() };
-        let Some(union) = group_union_bounds(&scoped, pon, None) else {
+        let Some(union) = group_union_bounds(&scoped, page, None) else {
             return same();
         };
         Point { x: union.x + union.width / 2.0, y: union.y + union.height / 2.0 }
@@ -1545,8 +1816,13 @@ fn rotate_selection(m: &Model, delta_deg: f64) -> Step {
     let mut fx = Vec::new();
     for id in ids {
         let a = by_id[id].clone();
-        let next =
-            own_geometry(Annot { geom: geom_rotate_about(&a.geom, pivot, delta_deg), ..a.clone() });
+        let next = own_geometry(Annot {
+            geom: geom_rotate_about(&a.geom, pivot, delta_deg),
+            measure: transform_measurement_caption(a.measure.as_ref(), |p| {
+                rotate_point(p, pivot, delta_deg)
+            }),
+            ..a.clone()
+        });
         fx.push(patch_fx(id, &next, &a.geom));
         by_id.insert(id.clone(), next);
     }
@@ -1561,7 +1837,15 @@ fn reset_rotation(m: &Model) -> Step {
         if !annot_transformable(&a) || geom_rotation(&a.geom) == 0.0 {
             continue;
         }
-        let next = own_geometry(Annot { geom: geom_reset_rotation(&a.geom), ..a.clone() });
+        let center = annotation_selection_frame(&a, None).center;
+        let rot = geom_rotation(&a.geom);
+        let next = own_geometry(Annot {
+            geom: geom_reset_rotation(&a.geom, Some(center)),
+            measure: transform_measurement_caption(a.measure.as_ref(), |p| {
+                rotate_point(p, center, -rot)
+            }),
+            ..a.clone()
+        });
         fx.push(patch_fx(id, &next, &a.geom));
         by_id.insert(id.clone(), next);
     }
@@ -1594,7 +1878,7 @@ fn delete_selection(m: &Model) -> Step {
 /// quad meets the box.
 pub fn annots_in_box(
     m: &Model,
-    pon: PageObjectNumber,
+    page: PageRef,
     a: Point,
     b: Point,
     inert: Option<&IdSet>,
@@ -1605,17 +1889,16 @@ pub fn annots_in_box(
         .iter()
         .filter(|id| {
             let Some(annot) = m.by_id.get(*id) else { return false };
-            if annot.pon != pon || inert.is_some_and(|s| s.has(id)) || !is_selectable(m, id) {
+            if annot.page.pon() != page.pon()
+                || inert.is_some_and(|s| s.has(id))
+                || !is_selectable(m, id)
+            {
                 return false;
             }
             if is_substrate_only(annot) {
                 return false;
             }
-            let g = anchored_geom(&annot.geom, anchor_mode_of(annot), view);
-            quad_intersects_rect(
-                &selection_quad(&g, annot.style.stroke_width, Some(&annot.style.border)),
-                bx,
-            )
+            quad_intersects_rect(&annotation_selection_frame(annot, view).corners, bx)
         })
         .cloned()
         .collect()
@@ -1706,7 +1989,9 @@ fn draft_ids(draft: Option<&Draft>) -> Vec<Id> {
         Some(Draft::Move { ids, .. } | Draft::Rotate { ids, .. } | Draft::Group { ids, .. }) => {
             ids.clone()
         }
-        Some(Draft::Handle { id, .. }) => vec![id.clone()],
+        Some(Draft::Handle { id, .. } | Draft::Caption { id, .. } | Draft::Leader { id, .. }) => {
+            vec![id.clone()]
+        }
         _ => Vec::new(),
     }
 }
@@ -1764,4 +2049,52 @@ fn reconcile(m: &Model, temp_id: &str, id: &str, ref_: &AnnotationRef) -> Option
 pub fn apply(m: &Model, msg: &Msg) -> (Model, Vec<Effect>) {
     let (next, fx) = update(m, msg);
     (next.unwrap_or_else(|| m.clone()), fx)
+}
+
+/// The data API's create: page-space geometry in, the same optimistic
+/// annotation and `create` effect a draw tool commits out. Defaults come from
+/// the preset (the subtype without one), `props` override them, and a line or
+/// open poly without endings takes the preset's.
+#[allow(clippy::too_many_arguments)]
+fn create_annot(
+    m: &Model,
+    page: PageRef,
+    subtype: &str,
+    geom: &Geom,
+    preset: Option<&str>,
+    props: Option<&AnnotationPropsPatch>,
+    flags: Option<&AnnotationFlagsPatch>,
+    select: bool,
+) -> Step {
+    let def = defaults_for(m, preset.unwrap_or(subtype));
+    let mut geom = geom.clone();
+    if let Geom::Line { ends, .. } | Geom::Poly { ends, closed: false, .. } = &mut geom
+        && ends.is_none()
+    {
+        *ends = Some(def.line_endings);
+    }
+    let id = tmp_id(m.seq + 1.0);
+    let is_text = matches!(geom, Geom::Text { .. });
+    let mut base = fresh_annot(id.clone(), page, subtype.into(), geom, style_from_props(&def));
+    if is_text {
+        base.text = Some(text_style_from_props(&def));
+    }
+    if subtype == "link" {
+        base.link = Nullable::from_option(def.link.as_option().cloned());
+    }
+    base.flags = drawn_flags(flags);
+    let annot = match props {
+        Some(p) => crate::props::apply_props(&base, p).unwrap_or(base),
+        None => base,
+    };
+    let mut order = m.order.clone();
+    order.push(id.clone());
+    let next = Model {
+        seq: m.seq + 1.0,
+        by_id: with_annot(m, &id, annot),
+        order,
+        selected: if select { vec![id.clone()] } else { m.selected.clone() },
+        ..m.clone()
+    };
+    (Some(next), vec![Effect::Create { id }])
 }

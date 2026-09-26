@@ -241,7 +241,7 @@ const groupCases: FunctionCase[] = [
 
 // ── props ────────────────────────────────────────────────────────────────────
 
-const propFns: Record<string, Fn> = {
+export const propFns: Record<string, Fn> = {
   initialTextStyle: () => pr.initialTextStyle,
   styleFromProps: pr.styleFromProps,
   textStyleFromProps: pr.textStyleFromProps,
@@ -410,7 +410,7 @@ const snapCases: FunctionCase[] = [
 
 // ── hit testing ──────────────────────────────────────────────────────────────
 
-const hitFns: Record<string, Fn> = {
+export const hitFns: Record<string, Fn> = {
   paintOrder: (s: Partial<Model>, pon: number) => ht.paintOrder(modelOf(s), pageRef(pon)),
   isSelectable: (s: Partial<Model>, id: Id) => ht.isSelectable(modelOf(s), id),
   canMove: (s: Partial<Model>, id: Id) => ht.canMove(modelOf(s), id),
@@ -615,7 +615,7 @@ hitCases.push(c('hitCalls', 'page', HIT(), hitCalls));
 
 // ── scene ────────────────────────────────────────────────────────────────────
 
-const sceneFns: Record<string, Fn> = {
+export const sceneFns: Record<string, Fn> = {
   scene: sc.scene,
   blendFor: sc.blendFor,
   layoutRedactLabel: sc.layoutRedactLabel,

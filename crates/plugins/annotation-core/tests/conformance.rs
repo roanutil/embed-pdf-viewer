@@ -91,3 +91,18 @@ fn view_matches_the_typescript() {
 fn update_matches_the_typescript() {
     replay("core/annotation-update.json");
 }
+
+#[test]
+fn measurement_matches_the_typescript() {
+    replay("core/annotation-measurement.json");
+}
+
+#[test]
+fn richtext_matches_the_typescript() {
+    replay("core/annotation-richtext.json");
+}
+
+#[test]
+fn measurement_model_matches_the_typescript() {
+    replay("core/annotation-measurement-model.json");
+}

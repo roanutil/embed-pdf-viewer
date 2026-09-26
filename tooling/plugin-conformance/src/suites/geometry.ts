@@ -29,6 +29,9 @@ const basicsFns: Record<string, Fn> = {
   NO_FRAME: () => g.NO_FRAME,
   boundsOfRects: g.boundsOfRects,
   intersectRects: g.intersectRects,
+  rectFromCorners: g.rectFromCorners,
+  rectContains: g.rectContains,
+  rectsOverlap: g.rectsOverlap,
   isQuarterTurn: g.isQuarterTurn,
   addRotations: g.addRotations,
   snapToDevice: g.snapToDevice,
@@ -73,6 +76,34 @@ const basics: FunctionCase[] = [
   c('intersectRects', 'nan-y-in-b', rc(0, 0, 10, 10), rc(0, NaN, 10, 10)),
   c('intersectRects', 'infinite', rc(-Infinity, -Infinity, Infinity, Infinity), rc(0, 0, 10, 10)),
   c('intersectRects', 'infinite-extent', rc(0, 0, Infinity, Infinity), rc(5, 5, 10, 10)),
+
+  c('rectFromCorners', 'ordered', pt(1, 2), pt(11, 22)),
+  c('rectFromCorners', 'reversed', pt(11, 22), pt(1, 2)),
+  c('rectFromCorners', 'mixed', pt(11, 2), pt(1, 22)),
+  c('rectFromCorners', 'same-point', pt(5, 5), pt(5, 5)),
+  c('rectFromCorners', 'negative', pt(-3, -4), pt(-10, 6)),
+  c('rectFromCorners', 'nan', pt(NaN, 0), pt(1, 1)),
+  c('rectFromCorners', 'infinite', pt(-Infinity, 0), pt(1, Infinity)),
+
+  c('rectContains', 'inside', rc(0, 0, 10, 10), pt(5, 5)),
+  c('rectContains', 'top-left-corner', rc(0, 0, 10, 10), pt(0, 0)),
+  c('rectContains', 'bottom-right-corner', rc(0, 0, 10, 10), pt(10, 10)),
+  c('rectContains', 'left-of', rc(0, 0, 10, 10), pt(-0.001, 5)),
+  c('rectContains', 'right-of', rc(0, 0, 10, 10), pt(10.001, 5)),
+  c('rectContains', 'above', rc(0, 0, 10, 10), pt(5, -0.001)),
+  c('rectContains', 'below', rc(0, 0, 10, 10), pt(5, 10.001)),
+  c('rectContains', 'inverted-rect', rc(10, 10, -5, -5), pt(7, 7)),
+  c('rectContains', 'nan-point', rc(0, 0, 10, 10), pt(NaN, 5)),
+  c('rectContains', 'zero-size-on-point', rc(3, 3, 0, 0), pt(3, 3)),
+
+  c('rectsOverlap', 'overlap', rc(0, 0, 10, 10), rc(5, 5, 10, 10)),
+  c('rectsOverlap', 'touching-edge', rc(0, 0, 10, 10), rc(10, 0, 10, 10)),
+  c('rectsOverlap', 'touching-bottom', rc(0, 0, 10, 10), rc(0, 10, 10, 10)),
+  c('rectsOverlap', 'disjoint', rc(0, 0, 10, 10), rc(20, 20, 5, 5)),
+  c('rectsOverlap', 'contained', rc(0, 0, 10, 10), rc(2, 2, 1, 1)),
+  c('rectsOverlap', 'zero-width', rc(0, 0, 10, 10), rc(2, 2, 0, 5)),
+  c('rectsOverlap', 'zero-height', rc(0, 0, 10, 10), rc(2, 2, 5, 0)),
+  c('rectsOverlap', 'nan', rc(0, 0, 10, 10), rc(NaN, 0, 5, 5)),
 
   ...[...ROTATIONS, ...ODD_ROTATIONS].map((r) => c('isQuarterTurn', `r${r}`, r)),
 
@@ -307,11 +338,35 @@ function pageTransformProbe(
   };
 }
 
+/** `pageSpace` with its methods exercised on the probes. */
+function pageSpaceProbe(
+  crop: g.PdfEdges,
+  probe: { points?: Point[]; rects?: Rect[]; edges?: g.PdfEdges[]; quads?: Quad[] } = {},
+) {
+  const s = g.pageSpace(crop);
+  const points = probe.points ?? [];
+  const quads = probe.quads ?? [];
+  return {
+    crop: s.crop,
+    width: s.width,
+    height: s.height,
+    pdfToPage: points.map(s.pdfToPage),
+    pageToPdf: points.map(s.pageToPdf),
+    pdfRectToPage: (probe.edges ?? []).map(s.pdfRectToPage),
+    pageRectToPdf: (probe.rects ?? []).map(s.pageRectToPdf),
+    pdfQuadToPage: quads.map(s.pdfQuadToPage),
+    pageQuadToPdf: quads.map(s.pageQuadToPdf),
+  };
+}
+
 const pageFns: Record<string, Fn> = {
   rotateScaleMatrix: g.rotateScaleMatrix,
   pdfToContentMatrix: g.pdfToContentMatrix,
   pageGeometry: g.pageGeometry,
   pageTransform: pageTransformProbe,
+  pageSpace: pageSpaceProbe,
+  edgesOverlap: g.edgesOverlap,
+  edgesOfQuad: g.edgesOfQuad,
 };
 
 const probe = {
@@ -319,6 +374,16 @@ const probe = {
   rects: [rc(0, 0, 100, 200), rc(10, 20, 30, 40), rc(-4, 7, 0, 0)],
 };
 const letter = { width: 612, height: 792 };
+const spaceProbe = {
+  points: [pt(0, 0), pt(10, 20), pt(-5, 3.5), pt(611, 791)],
+  rects: [rc(0, 0, 100, 200), rc(10, 20, 30, 40), rc(-4, 7, 0, 0)],
+  edges: [
+    { left: 0, bottom: 0, right: 100, top: 200 },
+    { left: 10, bottom: 20, right: 40, top: 60 },
+    { left: 5, bottom: 5, right: 5, top: 5 },
+  ],
+  quads: [quad(pt(10, 30), pt(40, 30), pt(10, 20), pt(40, 20)), quad(pt(0, 5), pt(5, 10), pt(10, 5), pt(5, 0))],
+};
 const crop = { left: 0, bottom: 0, right: 100, top: 200 };
 
 const page: FunctionCase[] = [
@@ -377,6 +442,29 @@ const page: FunctionCase[] = [
   c('pageTransform', 'nan-scale', { pageSize: letter, rotation: 0, scale: NaN, dpr: 1 }, probe),
   c('pageTransform', 'singular-throws', { pageSize: { width: 1e300, height: 1e300 }, rotation: 0, scale: 1e-300, dpr: 1 }, probe),
   c('pageTransform', 'no-probes', { pageSize: letter, rotation: 270, scale: 2, dpr: 3 }),
+  ...[
+    ['letter', { left: 0, bottom: 0, right: 612, top: 792 }],
+    ['offset', { left: 12, bottom: -8, right: 312, top: 392 }],
+    ['negative-origin', { left: -50, bottom: -30, right: 50, top: 170 }],
+    ['inverted', { left: 100, bottom: 200, right: 0, top: 0 }],
+    ['zero-area', { left: 5, bottom: 5, right: 5, top: 5 }],
+  ].map(([label, box]) => c('pageSpace', label as string, box, spaceProbe)),
+  c('pageSpace', 'no-probes', crop),
+  c('pageSpace', 'nan-crop', { left: NaN, bottom: 0, right: 10, top: 10 }, spaceProbe),
+
+  c('edgesOverlap', 'overlap', { left: 0, bottom: 0, right: 10, top: 10 }, { left: 5, bottom: 5, right: 15, top: 15 }),
+  c('edgesOverlap', 'touching-x', { left: 0, bottom: 0, right: 10, top: 10 }, { left: 10, bottom: 0, right: 20, top: 10 }),
+  c('edgesOverlap', 'touching-y', { left: 0, bottom: 0, right: 10, top: 10 }, { left: 0, bottom: 10, right: 10, top: 20 }),
+  c('edgesOverlap', 'disjoint-x', { left: 0, bottom: 0, right: 10, top: 10 }, { left: 20, bottom: 0, right: 30, top: 10 }),
+  c('edgesOverlap', 'disjoint-y-only', { left: 0, bottom: 0, right: 10, top: 10 }, { left: 2, bottom: 20, right: 8, top: 30 }),
+  c('edgesOverlap', 'contained', { left: 0, bottom: 0, right: 10, top: 10 }, { left: 2, bottom: 2, right: 3, top: 3 }),
+  c('edgesOverlap', 'nan', { left: NaN, bottom: 0, right: 10, top: 10 }, { left: 0, bottom: 0, right: 10, top: 10 }),
+
+  c('edgesOfQuad', 'axis-aligned', quad(pt(10, 30), pt(40, 30), pt(10, 20), pt(40, 20))),
+  c('edgesOfQuad', 'rotated', quad(pt(0, 5), pt(5, 10), pt(10, 5), pt(5, 0))),
+  c('edgesOfQuad', 'scattered', quad(pt(5, -1), pt(-2, 7), pt(9, 3), pt(0, -4))),
+  c('edgesOfQuad', 'nan', quad(pt(NaN, 0), pt(1, 0), pt(0, 1), pt(1, 1))),
+
   c('pageTransform', 'huge-page', { pageSize: { width: 14400, height: 14400 }, rotation: 90, scale: 4, dpr: 3 }, probe),
 ];
 
@@ -538,7 +626,7 @@ export const suites: Suite[] = [
   {
     kind: 'function',
     file: 'core/geometry-basics.json',
-    describes: 'packages/core/geometry: rect bounds and intersection, quarter-turn rotations, device rounding.',
+    describes: 'packages/core/geometry: rect bounds, intersection, corners, containment and overlap, quarter-turn rotations, device rounding.',
     functions: basicsFns,
     cases: basics,
   },
@@ -552,7 +640,7 @@ export const suites: Suite[] = [
   {
     kind: 'function',
     file: 'core/geometry-page.json',
-    describes: 'packages/core/geometry: rotateScaleMatrix, pageGeometry and pageTransform (methods exercised on probes).',
+    describes: 'packages/core/geometry: rotateScaleMatrix, pageGeometry, pageTransform and pageSpace (methods exercised on probes), PdfEdges helpers.',
     functions: pageFns,
     cases: page,
   },

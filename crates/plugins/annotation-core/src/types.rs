@@ -17,6 +17,9 @@ use serde_json::Value;
 pub use epdf_geometry::{Point, Rect, Size, TextQuad};
 
 use crate::js::{IdSet, Nullable, Record};
+pub use crate::measurement::{DistanceAppearance, MeasurementAppearance};
+pub use crate::measurement_shape::ShapeMeasurementAppearance;
+pub use crate::richtext::RichTextDocumentInput;
 
 /// `Vec` in the TypeScript: a content-space point.
 pub type Vec2 = Point;
@@ -26,6 +29,41 @@ pub type Id = String;
 pub type Cursor = String;
 /// `PageObjectNumber` (`@embedpdf/core`): a page's PDF object number.
 pub type PageObjectNumber = u32;
+
+/// `PageRef['kind']`: `objectNumber` is the only kind.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum PageRefKind {
+    #[default]
+    ObjectNumber,
+}
+
+/// `PageRef` (`@embedpdf/engine-core/runtime`): a page's durable address.
+/// The model keys pages by `page_object_number` and passes the address
+/// itself around.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PageRef {
+    pub kind: PageRefKind,
+    pub page_object_number: PageObjectNumber,
+}
+
+impl PageRef {
+    /// `toPageRef(pon)`.
+    pub fn new(page_object_number: PageObjectNumber) -> Self {
+        PageRef { kind: PageRefKind::ObjectNumber, page_object_number }
+    }
+
+    /// `page.pageObjectNumber`.
+    pub fn pon(&self) -> PageObjectNumber {
+        self.page_object_number
+    }
+
+    /// Two addresses name the same page.
+    pub fn same_page(&self, other: &PageRef) -> bool {
+        self.page_object_number == other.page_object_number
+    }
+}
 
 fn is_false(b: &bool) -> bool {
     !*b
@@ -146,7 +184,7 @@ pub struct AnnotationFlagsPatch {
 #[serde(rename_all = "camelCase")]
 pub struct RevisionToken {
     pub doc_session_id: String,
-    pub page_object_number: PageObjectNumber,
+    pub page: PageRef,
     pub generation: f64,
 }
 
@@ -154,9 +192,9 @@ pub struct RevisionToken {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum AnnotationRef {
-    ObjectNumber { page_object_number: PageObjectNumber, annot_object_number: f64 },
-    Nm { page_object_number: PageObjectNumber, nm: String },
-    Index { page_object_number: PageObjectNumber, index: f64, revision: RevisionToken },
+    ObjectNumber { page: PageRef, annot_object_number: f64 },
+    Nm { page: PageRef, nm: String },
+    Index { page: PageRef, index: f64, revision: RevisionToken },
 }
 
 /// `PdfDestination`: an explicit in-document destination.
@@ -165,7 +203,7 @@ pub enum AnnotationRef {
 pub enum PdfDestination {
     #[serde(rename = "xyz")]
     Xyz {
-        page_object_number: PageObjectNumber,
+        page: PageRef,
         #[serde(default, skip_serializing_if = "Nullable::is_undefined")]
         left: Nullable<f64>,
         #[serde(default, skip_serializing_if = "Nullable::is_undefined")]
@@ -174,32 +212,32 @@ pub enum PdfDestination {
         zoom: Nullable<f64>,
     },
     #[serde(rename = "fit")]
-    Fit { page_object_number: PageObjectNumber },
+    Fit { page: PageRef },
     #[serde(rename = "fitH")]
     FitH {
-        page_object_number: PageObjectNumber,
+        page: PageRef,
         #[serde(default, skip_serializing_if = "Nullable::is_undefined")]
         top: Nullable<f64>,
     },
     #[serde(rename = "fitV")]
     FitV {
-        page_object_number: PageObjectNumber,
+        page: PageRef,
         #[serde(default, skip_serializing_if = "Nullable::is_undefined")]
         left: Nullable<f64>,
     },
     #[serde(rename = "fitR")]
-    FitR { page_object_number: PageObjectNumber, left: f64, bottom: f64, right: f64, top: f64 },
+    FitR { page: PageRef, left: f64, bottom: f64, right: f64, top: f64 },
     #[serde(rename = "fitB")]
-    FitB { page_object_number: PageObjectNumber },
+    FitB { page: PageRef },
     #[serde(rename = "fitBH")]
     FitBH {
-        page_object_number: PageObjectNumber,
+        page: PageRef,
         #[serde(default, skip_serializing_if = "Nullable::is_undefined")]
         top: Nullable<f64>,
     },
     #[serde(rename = "fitBV")]
     FitBV {
-        page_object_number: PageObjectNumber,
+        page: PageRef,
         #[serde(default, skip_serializing_if = "Nullable::is_undefined")]
         left: Nullable<f64>,
     },
@@ -415,6 +453,13 @@ pub struct TextStyle {
     pub font_size: f64,
     pub font_color: String,
     pub text_align: TextAlign,
+    /// The rich body's formatting (free text only). Absent is off.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bold: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub italic: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub underline: Option<bool>,
 }
 
 /// The one flat vocabulary for editable appearance properties. `extra`
@@ -433,6 +478,12 @@ pub struct AnnotationProps {
     pub font_size: f64,
     pub font_color: String,
     pub text_align: TextAlign,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bold: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub italic: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub underline: Option<bool>,
     pub line_endings: LineEndings,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub icon: Option<String>,
@@ -457,12 +508,15 @@ pub enum PropKey {
     FontSize,
     FontColor,
     TextAlign,
+    Bold,
+    Italic,
+    Underline,
     Icon,
     Link,
 }
 
 impl PropKey {
-    pub const ALL: [PropKey; 13] = [
+    pub const ALL: [PropKey; 16] = [
         PropKey::Color,
         PropKey::InteriorColor,
         PropKey::StrokeWidth,
@@ -474,6 +528,9 @@ impl PropKey {
         PropKey::FontSize,
         PropKey::FontColor,
         PropKey::TextAlign,
+        PropKey::Bold,
+        PropKey::Italic,
+        PropKey::Underline,
         PropKey::Icon,
         PropKey::Link,
     ];
@@ -491,6 +548,9 @@ impl PropKey {
             PropKey::FontSize => "fontSize",
             PropKey::FontColor => "fontColor",
             PropKey::TextAlign => "textAlign",
+            PropKey::Bold => "bold",
+            PropKey::Italic => "italic",
+            PropKey::Underline => "underline",
             PropKey::Icon => "icon",
             PropKey::Link => "link",
         }
@@ -519,6 +579,9 @@ pub struct AnnotationPropsPatch {
     pub font_size: Option<f64>,
     pub font_color: Option<String>,
     pub text_align: Option<TextAlign>,
+    pub bold: Option<bool>,
+    pub italic: Option<bool>,
+    pub underline: Option<bool>,
     pub icon: Option<String>,
     pub link: Nullable<PdfLinkTarget>,
     pub extra: serde_json::Map<String, Value>,
@@ -540,6 +603,9 @@ impl AnnotationPropsPatch {
             Some(PropKey::FontSize) => self.font_size.is_some(),
             Some(PropKey::FontColor) => self.font_color.is_some(),
             Some(PropKey::TextAlign) => self.text_align.is_some(),
+            Some(PropKey::Bold) => self.bold.is_some(),
+            Some(PropKey::Italic) => self.italic.is_some(),
+            Some(PropKey::Underline) => self.underline.is_some(),
             Some(PropKey::Icon) => self.icon.is_some(),
             Some(PropKey::Link) => !self.link.is_undefined(),
             None => self.extra.contains_key(key),
@@ -600,6 +666,15 @@ impl AnnotationPropsPatch {
         if next.text_align.is_some() {
             out.text_align = next.text_align;
         }
+        if next.bold.is_some() {
+            out.bold = next.bold;
+        }
+        if next.italic.is_some() {
+            out.italic = next.italic;
+        }
+        if next.underline.is_some() {
+            out.underline = next.underline;
+        }
         if next.icon.is_some() {
             out.icon.clone_from(&next.icon);
         }
@@ -636,6 +711,9 @@ impl Serialize for AnnotationPropsPatch {
                 Some(PropKey::FontSize) => map.serialize_entry(&key, &self.font_size)?,
                 Some(PropKey::FontColor) => map.serialize_entry(&key, &self.font_color)?,
                 Some(PropKey::TextAlign) => map.serialize_entry(&key, &self.text_align)?,
+                Some(PropKey::Bold) => map.serialize_entry(&key, &self.bold)?,
+                Some(PropKey::Italic) => map.serialize_entry(&key, &self.italic)?,
+                Some(PropKey::Underline) => map.serialize_entry(&key, &self.underline)?,
                 Some(PropKey::Icon) => map.serialize_entry(&key, &self.icon)?,
                 Some(PropKey::Link) => map.serialize_entry(&key, &self.link)?,
                 None => map.serialize_entry(&key, &self.extra[&key])?,
@@ -668,6 +746,9 @@ impl<'de> Deserialize<'de> for AnnotationPropsPatch {
                         Some(PropKey::FontSize) => p.font_size = Some(map.next_value()?),
                         Some(PropKey::FontColor) => p.font_color = Some(map.next_value()?),
                         Some(PropKey::TextAlign) => p.text_align = Some(map.next_value()?),
+                        Some(PropKey::Bold) => p.bold = Some(map.next_value()?),
+                        Some(PropKey::Italic) => p.italic = Some(map.next_value()?),
+                        Some(PropKey::Underline) => p.underline = Some(map.next_value()?),
                         Some(PropKey::Icon) => p.icon = Some(map.next_value()?),
                         Some(PropKey::Link) => p.link = map.next_value()?,
                         None => {
@@ -734,7 +815,8 @@ pub struct Annot {
     pub id: Id,
     #[serde(rename = "ref", default)]
     pub ref_: Option<AnnotationRef>,
-    pub pon: PageObjectNumber,
+    /// The page this annotation lives on.
+    pub page: PageRef,
     pub subtype: String,
     pub geom: Geom,
     pub style: Style,
@@ -742,6 +824,8 @@ pub struct Annot {
     pub text: Option<TextStyle>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub label: Option<Label>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub measure: Option<MeasurementAppearance>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub icon: Option<String>,
     pub flags: AnnotationFlags,
@@ -919,6 +1003,15 @@ pub enum CalloutStep {
     Box,
 }
 
+/// The two stages of a distance draft: drag the endpoints, then place the
+/// dimension line.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum DistanceStep {
+    Endpoints,
+    Offset,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum GroupOp {
@@ -933,7 +1026,7 @@ pub enum Draft {
         subtype: String,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         preset: Option<String>,
-        pon: PageObjectNumber,
+        page: PageRef,
         from: Point,
         to: Point,
         ellipse: bool,
@@ -946,11 +1039,26 @@ pub enum Draft {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         flags: Option<AnnotationFlagsPatch>,
     },
+    CreateDistance {
+        step: DistanceStep,
+        subtype: String,
+        preset: String,
+        page: PageRef,
+        from: Point,
+        to: Point,
+        measure: DistanceAppearance,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        flags: Option<AnnotationFlagsPatch>,
+    },
     CreateLine {
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        measure: Option<MeasurementAppearance>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        capture: Option<String>,
         subtype: String,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         preset: Option<String>,
-        pon: PageObjectNumber,
+        page: PageRef,
         from: Point,
         to: Point,
         #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -959,10 +1067,12 @@ pub enum Draft {
         flags: Option<AnnotationFlagsPatch>,
     },
     CreatePoly {
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        measure: Option<ShapeMeasurementAppearance>,
         subtype: String,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         preset: Option<String>,
-        pon: PageObjectNumber,
+        page: PageRef,
         points: Vec<Point>,
         cur: Point,
         closed: bool,
@@ -973,7 +1083,7 @@ pub enum Draft {
         subtype: String,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         preset: Option<String>,
-        pon: PageObjectNumber,
+        page: PageRef,
         strokes: Vec<Vec<Point>>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         intent: Option<Intent>,
@@ -984,7 +1094,7 @@ pub enum Draft {
         subtype: String,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         preset: Option<String>,
-        pon: PageObjectNumber,
+        page: PageRef,
         step: CalloutStep,
         tip: Point,
         #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -994,6 +1104,8 @@ pub enum Draft {
         box_from: Option<Point>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         box_to: Option<Point>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        page_box: Option<Rect>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         display_rotation: Option<f64>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -1035,8 +1147,18 @@ pub enum Draft {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         view: Option<ViewEnv>,
     },
+    Caption {
+        id: Id,
+        start: Point,
+        delta: Point,
+    },
+    Leader {
+        id: Id,
+        start: Point,
+        delta: f64,
+    },
     Marquee {
-        pon: PageObjectNumber,
+        page: PageRef,
         from: Point,
         to: Point,
     },
@@ -1069,15 +1191,26 @@ impl Draft {
         }
     }
 
-    /// `'pon' in draft`: the creation drafts and the marquee.
-    pub fn pon(&self) -> Option<PageObjectNumber> {
+    /// `'page' in draft`: the creation drafts and the marquee.
+    pub fn page(&self) -> Option<PageRef> {
         match self {
-            Draft::CreateRect { pon, .. }
-            | Draft::CreateLine { pon, .. }
-            | Draft::CreatePoly { pon, .. }
-            | Draft::CreateInk { pon, .. }
-            | Draft::CreateCallout { pon, .. }
-            | Draft::Marquee { pon, .. } => Some(*pon),
+            Draft::CreateRect { page, .. }
+            | Draft::CreateDistance { page, .. }
+            | Draft::CreateLine { page, .. }
+            | Draft::CreatePoly { page, .. }
+            | Draft::CreateInk { page, .. }
+            | Draft::CreateCallout { page, .. }
+            | Draft::Marquee { page, .. } => Some(*page),
+            _ => None,
+        }
+    }
+
+    /// `'id' in draft ? draft.id : undefined`: the single-annotation edits.
+    pub fn id(&self) -> Option<&Id> {
+        match self {
+            Draft::Handle { id, .. } | Draft::Caption { id, .. } | Draft::Leader { id, .. } => {
+                Some(id)
+            }
             _ => None,
         }
     }
@@ -1121,7 +1254,7 @@ pub enum CreationDraftKind {
 pub struct CreationDraftAnchor {
     pub kind: CreationDraftKind,
     pub subtype: PolySubtype,
-    pub pon: PageObjectNumber,
+    pub page: PageRef,
     pub bounds: Rect,
     pub point_count: usize,
     pub min_points: usize,
@@ -1157,7 +1290,8 @@ pub struct ChromeGeom {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PointerInput {
-    pub pon: PageObjectNumber,
+    /// The page the sample resolved against.
+    pub page: PageRef,
     pub point: Point,
     pub shift: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -1206,6 +1340,10 @@ pub enum Msg {
         input: PointerInput,
     },
     CreatePointer {
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        measure: Option<MeasurementAppearance>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        capture: Option<String>,
         phase: Phase,
         subtype: String,
         #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -1225,14 +1363,29 @@ pub enum Msg {
     },
     FinishInkDraft,
     FinishCreationDraft,
+    /// Programmatic creation from page-space geometry: the data API's
+    /// `create`.
+    CreateAnnot {
+        page: PageRef,
+        subtype: String,
+        geom: Geom,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        preset: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        props: Option<AnnotationPropsPatch>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        flags: Option<AnnotationFlagsPatch>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        select: Option<bool>,
+    },
     CreateCaret {
-        pon: PageObjectNumber,
+        page: PageRef,
         anchor: TextEndAnchor,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         flags: Option<AnnotationFlagsPatch>,
     },
     CreateReplaceText {
-        pon: PageObjectNumber,
+        page: PageRef,
         quads: Vec<TextQuad>,
         anchor: TextEndAnchor,
         #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -1240,7 +1393,7 @@ pub enum Msg {
     },
     CreateMarkup {
         subtype: String,
-        pon: PageObjectNumber,
+        page: PageRef,
         quads: Vec<TextQuad>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         preset: Option<String>,
@@ -1321,6 +1474,10 @@ pub enum Msg {
         id: Id,
         text: String,
     },
+    SetRichText {
+        id: Id,
+        doc: RichTextDocumentInput,
+    },
     EndTextEdit,
 }
 
@@ -1329,6 +1486,8 @@ pub enum Msg {
 #[serde(tag = "kind", rename_all = "lowercase")]
 pub enum PatchScope {
     Geometry,
+    Caption,
+    Leader,
     /// The user's patch keys, verbatim (a key no [`PropKey`] names included).
     Props {
         keys: Vec<String>,
@@ -1338,6 +1497,11 @@ pub enum PatchScope {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "fx", rename_all = "camelCase")]
 pub enum Effect {
+    Captured {
+        tool: String,
+        page: PageRef,
+        geom: Geom,
+    },
     Create {
         id: Id,
     },
@@ -1388,6 +1552,8 @@ pub struct RenderItem {
     pub hovered: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub label: Option<Label>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub measure: Option<MeasurementAppearance>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub rot: Option<f64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -1465,6 +1631,8 @@ pub enum SceneNode {
         font_size: f64,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         font_family: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        rotation: Option<f64>,
         paint: Paint,
     },
 }

@@ -7,7 +7,7 @@ use crate::anchor::anchor_mode_of;
 use crate::geometry::{selection_quad, union_rect};
 use crate::hit::is_selectable;
 use crate::js;
-use crate::types::{Axis, Guide, Id, Model, PageObjectNumber, Point, Rect};
+use crate::types::{Axis, Guide, Id, Model, PageRef, Point, Rect};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SnapResult {
@@ -60,11 +60,12 @@ struct Best {
 pub fn compute_move_snap(
     m: &Model,
     ids: &[Id],
-    pon: PageObjectNumber,
+    page: PageRef,
     raw: Point,
     threshold: f64,
     page_box: Option<Rect>,
 ) -> SnapResult {
+    let pon = page.pon();
     if ids.iter().any(|id| m.by_id.get(id).is_some_and(|a| anchor_mode_of(a).is_some())) {
         return SnapResult { delta: raw, guides: Vec::new() };
     }
@@ -75,7 +76,10 @@ pub fn compute_move_snap(
     let mut targets: Vec<Bounds> = page_box.map(to_bounds).into_iter().collect();
     for id in &m.order {
         let a = &m.by_id[id];
-        if !ids.contains(id) && a.pon == pon && is_selectable(m, id) && anchor_mode_of(a).is_none()
+        if !ids.contains(id)
+            && a.page.pon() == pon
+            && is_selectable(m, id)
+            && anchor_mode_of(a).is_none()
         {
             targets.push(to_bounds(union_rect(&annot_quad(m, id))));
         }

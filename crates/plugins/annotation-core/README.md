@@ -1,11 +1,12 @@
 # epdf-annotation-core
 
-`packages/core/annotation` in Rust: every exported function, type and constant of its 17 source
+`packages/core/annotation` in Rust: every exported function, type and constant of its 22 source
 files, plus the module-level exports the package index leaves out (`endingPoints`,
 `endingNodes`, `cloudyPolyPath`, `chordThrough`, `apSizeChanged`, `rectsIntersect`,
 `rectHandlesFor`, `rotatePoint`, `paintOrder`, `groupUnionBounds`, `blendFor`,
-`layoutRedactLabel`, `kindTakesLink`, `annotsInBox`, `calloutBox`, `calloutUprightRot`). All
-7,022 cases in the 17 vector files replay identically (`cargo test -p epdf-annotation-core`):
+`layoutRedactLabel`, `kindTakesLink`, `annotsInBox`, `calloutBox`, `calloutUprightRot`,
+`distanceCaptionWidth`, `pointInPoly`). All 7,641 cases in the 20 vector files replay identically
+(`cargo test -p epdf-annotation-core`):
 
 | File | Cases | Covers |
 |---|---|---|
@@ -25,13 +26,18 @@ files, plus the module-level exports the package index leaves out (`endingPoints
 | `annotation-scene.json` | 274 | painted scenes per kind, markup, redaction at rest and on hover, label layout |
 | `annotation-placement.json` | 194 | click placement, click geometry, ink straightening |
 | `annotation-view.json` | 30 | 114 idle, selected and mid-gesture models through every view selector |
-| `annotation-update.json` | 111 | 251 message runs through `update`, plus the rotate, callout and marquee helpers |
+| `annotation-update.json` | 121 | 251 message runs through `update`, plus the rotate, callout (page slide included) and marquee helpers |
+| `annotation-measurement.json` | 462 | distance layouts across 7 lines and 16 appearances, shape captions, readout labels for 30 `/Measure` dictionaries, selection frames, `textPlateInset`, `geomResetRotation` about a pivot |
+| `annotation-richtext.json` | 111 | the run algebra: offsets, splits, styling ranges, normalisation, plain projection |
+| `annotation-measurement-model.json` | 36 | 53 runs over measured and rich-text annotations (distance and shape creation, caption and leader drags, `createAnnot`, `setRichText`, bold props), their hit test, scene, props and 25 view states |
 
 A case can carry many calls: `runs`, `viewMany`, `hitCalls`, `hitProbe`, `selectionAnchors` and
 `groupProbe` evaluate a list against one page, so a 22-annotation page is written once per batch.
-The files come to 15 MB.
+The files come to 19 MB. The three measurement and rich-text files come from
+`tooling/plugin-conformance/src/suites/annotation-core-measurement.ts`, which reuses the other
+suites' wrappers.
 
-The generators reach 6,628 of 6,637 statements and 2,030 of 2,048 branches of the package
+The generators reach 8,319 of 8,328 statements and 2,584 of 2,604 branches of the package
 (`vectors/coverage.json`). What they don't reach can't be reached from the public surface:
 
 - `cloudy.ts` lines 66, 67 (`cosine`/`sine` of a zero hypotenuse; callers skip zero-length
@@ -41,14 +47,34 @@ The generators reach 6,628 of 6,637 statements and 2,030 of 2,048 branches of th
   radius at or below zero; the adjusted radii are at least 0.1), 453 (a zero flattened segment).
   Line 359 (two coincident curl centres) is reachable only at zero stroke, where it is a last-bit
   question; see below.
-- `geometry.ts` 411 (`?? 0` on a number), 668 (a callout leader of fewer than two points),
-  1118 (`rot ?? 0` inside a test that `rot` is set).
-- `update.ts` 1195 (a caret box is at least 1 pt or NaN, never `<= 0`), 1361 (a group union
+- `geometry.ts` 412 (`?? 0` on a number), 669 (a callout leader of fewer than two points),
+  1117 (`rot ?? 0` inside a test that `rot` is set).
+- `measurement.ts` 421 (the `return false` for an ending that is neither a poly nor an ellipse;
+  `endingNodes` makes no other kind).
+- `richtext.ts` 214 (`previous?.style` after the run loop; the loop returns whenever the
+  paragraph has a run, so `previous` is always undefined there).
+- `update.ts` 1534 (a caret box is at least 1 pt or NaN, never `<= 0`), 1700 (a group union
   always holds its first member).
-- `view.ts` 358 (the union is taken over members `sel` already found), 571 (a selectable
+- `view.ts` 430 (the union is taken over members `sel` already found), 658 (a selectable
   selected id always has bounds on its page).
 
 ## Where the port differs in shape
+
+Pages are `PageRef`, a serde mirror of the engine's `{kind: 'objectNumber', pageObjectNumber}`,
+defined here because the crate does not depend on `epdf-kernel` outside its harness. Internals
+compare `page.pon()`, as the TypeScript compares `page.pageObjectNumber`. The suite wrappers still
+take an object number and build the address, so `src/harness.rs` does the same.
+
+`measurementReadout` and what it calls (`scaleOf`, `pathLength`, `polygonArea`,
+`validAreaBoundary`, `formatMeasurement`) live in `@embedpdf/engine-core/runtime`, not in this
+package. They are ported in `src/measure.rs` because the captions read them; the coverage gate
+counts none of their lines, so their branches are pinned only as far as the 30 `/Measure`
+dictionaries in `annotation-measurement.json` reach. `formatMeasurement` returns `None` where the
+TypeScript throws `RangeError`. `MeasurementAppearance` and `MeasurementLayout` are untagged enums
+told apart by `intent` and by shape; the distance layout variant is boxed.
+
+`richtext.rs` counts offsets in UTF-16 code units, as the TypeScript does. A rich document's body
+and a paragraph's own properties are JSON maps, carried verbatim.
 
 `update(m, msg)` returns `(Option<Model>, Vec<Effect>)`. `None` is the TypeScript handing back
 the same model object, which a store takes as "no change"; `Some` is a new model even when it
@@ -94,6 +120,14 @@ These inputs answer differently, and no vector feeds them:
   Rust compares values, so a caller-built handle draft whose `base` lists its keys in another
   order than `geomDragHandle` writes them counts as unchanged here and changed there.
 - `setText` on a DTO that is a string (the spread copies its characters).
+- `setRichText` on a free-text DTO with no `richText`: the TypeScript reads `richText.body` and
+  throws a `TypeError`; the port takes the body as empty. No vector holds one.
+- A rich-text cut inside a surrogate pair. `slice` keeps the lone surrogate; a Rust string cannot,
+  so the half becomes U+FFFD.
+- `rangeHasStyle` over a non-empty range of a document with no paragraphs reads `paragraphs[0]`
+  and throws; the port answers `false`.
+- A `null` member in a rich-text style delta. `cleanDelta` keeps it; the typed delta reads it as
+  absent.
 - A non-finite `rot` on a box: `rotatedHandleCursor` reads past its table and the handle has no
   `cursor`; here the cursor is `""`.
 
@@ -113,6 +147,10 @@ curl advance at zero tolerance, and `straightenInkStroke` compares an `atan2` an
 threshold (the cases sit at 17.6 and 17.7 rather than on `100 * tan(10°)`).
 
 ## Mutation testing
+
+Pre-v3, rerun pending: the counts below predate `measure.rs`, `measurement.rs`,
+`measurement_shape.rs`, `richtext.rs`, `selection.rs` and the PageRef changes, and several line
+numbers have moved.
 
 Every source file but `harness.rs` (excluded in `.cargo/mutants.toml`) and `lib.rs` (re-exports
 only) has been run, one file at a time (`scripts/mutants.sh -p epdf-annotation-core

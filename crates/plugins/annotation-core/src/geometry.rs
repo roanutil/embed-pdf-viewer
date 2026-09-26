@@ -179,7 +179,7 @@ fn seg_dist(p: Point, a: Point, b: Point) -> f64 {
 }
 
 /// Even-odd point in polygon.
-fn point_in_poly(p: Point, pts: &[Point]) -> bool {
+pub fn point_in_poly(p: Point, pts: &[Point]) -> bool {
     let mut inside = false;
     let n = pts.len();
     let mut j = n.wrapping_sub(1);
@@ -422,8 +422,9 @@ pub fn fit_stamp_box(center: Point, desired: Size, page: Size, rot_cw: f64) -> R
     Rect { x: cx - width / 2.0, y: cy - height / 2.0, width, height }
 }
 
-/// Reset a geom to its as-authored orientation (`rot` to 0).
-pub fn geom_reset_rotation(g: &Geom) -> Geom {
+/// Reset a geom to its as-authored orientation (`rot` to 0). A vertex geom
+/// spins back about `pivot`, or its centroid without one.
+pub fn geom_reset_rotation(g: &Geom, pivot: Option<Point>) -> Geom {
     let rot = geom_rotation(g);
     if rot == 0.0 || rot.is_nan() {
         return g.clone();
@@ -436,7 +437,7 @@ pub fn geom_reset_rotation(g: &Geom) -> Geom {
             Geom::Text { rect: *rect, callout: *callout, rot: Some(0.0) }
         }
         Geom::Caret { rect, .. } => Geom::Caret { rect: *rect, rot: Some(0.0) },
-        _ => geom_rotate_about(g, centroid_of(g), -rot),
+        _ => geom_rotate_about(g, pivot.unwrap_or_else(|| centroid_of(g)), -rot),
     }
 }
 
@@ -1337,50 +1338,60 @@ pub fn geom_drag_handle(g: &Geom, handle: &str, to: Point) -> Geom {
     }
 }
 
+/// The text plate inset of a free-text box: twice the border width, none
+/// for a width at or below zero. The plate is the box deflated by this on
+/// every side.
+pub fn text_plate_inset(stroke_width: f64) -> f64 {
+    2.0 * js::max(0.0, stroke_width)
+}
+
+/// A callout's leader, its box end pushed under the border by half the
+/// stroke, and the ending at its tip.
+fn callout_leader_nodes(g: &Geom, ending: LineEnding, stroke_width: f64) -> Vec<RenderNode> {
+    let mut pts = callout_line_points(g);
+    if stroke_width > 0.0 && pts.len() >= 2 {
+        let last = pts[pts.len() - 1];
+        let prev = pts[pts.len() - 2];
+        let dx = last.x - prev.x;
+        let dy = last.y - prev.y;
+        let len = js::hypot(dx, dy);
+        if len > 0.0 {
+            let at = pts.len() - 1;
+            pts[at] = Point {
+                x: last.x + (dx / len) * (stroke_width / 2.0),
+                y: last.y + (dy / len) * (stroke_width / 2.0),
+            };
+        }
+    }
+    let seg = callout_ending_seg(&pts, ending);
+    let mut nodes = vec![RenderNode::Poly { points: pts, closed: false }];
+    if let Some(seg) = seg {
+        nodes.extend(ending_nodes(seg.tip, seg.angle, seg.ending, stroke_width));
+    }
+    nodes
+}
+
 /// The geometry-only scene: what a framework draws for a geom, stroke inset
 /// into boxes, cloudy borders as paths, endings as nodes.
 pub fn geom_scene(g: &Geom, stroke_width: f64, border: Option<&Border>) -> Vec<RenderNode> {
     let n = js::number_to_string;
     match g {
         Geom::Text { rect, callout, rot } => {
-            let Some(c) = callout else {
-                return Vec::new();
-            };
-            let mut pts = callout_line_points(g);
-            if stroke_width > 0.0 && pts.len() >= 2 {
-                let last = pts[pts.len() - 1];
-                let prev = pts[pts.len() - 2];
-                let dx = last.x - prev.x;
-                let dy = last.y - prev.y;
-                let len = js::hypot(dx, dy);
-                if len > 0.0 {
-                    let at = pts.len() - 1;
-                    pts[at] = Point {
-                        x: last.x + (dx / len) * (stroke_width / 2.0),
-                        y: last.y + (dy / len) * (stroke_width / 2.0),
-                    };
+            let mut nodes = Vec::new();
+            if let Some(c) = callout {
+                nodes.extend(callout_leader_nodes(g, c.ending, stroke_width));
+            }
+            let r = inset_rect(*rect, stroke_width / 2.0);
+            let rot = rot.unwrap_or(0.0);
+            let center = rect_center(*rect);
+            nodes.push(if rot != 0.0 && !rot.is_nan() {
+                RenderNode::Poly {
+                    points: rect_corner_points(r).map(|p| rotate_point(p, center, rot)).to_vec(),
+                    closed: true,
                 }
-            }
-            let seg = callout_ending_seg(&pts, c.ending);
-            let mut nodes = vec![RenderNode::Poly { points: pts, closed: false }];
-            if let Some(seg) = seg {
-                nodes.extend(ending_nodes(seg.tip, seg.angle, seg.ending, stroke_width));
-            }
-            if stroke_width > 0.0 {
-                let r = inset_rect(*rect, stroke_width / 2.0);
-                let rot = rot.unwrap_or(0.0);
-                let center = rect_center(*rect);
-                nodes.push(if rot != 0.0 && !rot.is_nan() {
-                    RenderNode::Poly {
-                        points: rect_corner_points(r)
-                            .map(|p| rotate_point(p, center, rot))
-                            .to_vec(),
-                        closed: true,
-                    }
-                } else {
-                    RenderNode::Rect { rect: r }
-                });
-            }
+            } else {
+                RenderNode::Rect { rect: r }
+            });
             nodes
         }
         Geom::Caret { rect: r, .. } => {

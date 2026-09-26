@@ -49,6 +49,12 @@ fn model(a: &[Value], i: usize) -> Result<Model, Error> {
     model_of(a.get(i).unwrap_or(&Value::Null))
 }
 
+/// A suite wrapper's page argument: the object number it passes to
+/// `pageRef(pon)`.
+fn page(a: &[Value], i: usize) -> Result<PageRef, Error> {
+    Ok(PageRef::new(arg(a, i)?))
+}
+
 fn geom(a: &[Value], i: usize) -> Result<Geom, Error> {
     arg(a, i)
 }
@@ -90,9 +96,9 @@ fn hit_calls(a: &[Value]) -> Out {
         .into_iter()
         .map(|c| {
             let m = Model { selected: c.selected, ..m.clone() };
-            let t = hit_test(&m, c.pon, c.p, &c.gm, c.margin, c.page_box, c.inert.as_ref(), c.view);
-            let cur =
-                cursor_at(&m, c.pon, c.p, &c.gm, c.margin, c.page_box, c.inert.as_ref(), c.view);
+            let pg = PageRef::new(c.pon);
+            let t = hit_test(&m, pg, c.p, &c.gm, c.margin, c.page_box, c.inert.as_ref(), c.view);
+            let cur = cursor_at(&m, pg, c.p, &c.gm, c.margin, c.page_box, c.inert.as_ref(), c.view);
             Value::Array(vec![to_value(&t), to_value(&cur)])
         })
         .collect();
@@ -101,7 +107,7 @@ fn hit_calls(a: &[Value]) -> Out {
 
 fn hit_probe(a: &[Value]) -> Out {
     let m = model(a, 0)?;
-    let pon: PageObjectNumber = arg(a, 1)?;
+    let pon = page(a, 1)?;
     let selections: Vec<Vec<Id>> = arg(a, 2)?;
     let points: Vec<Point> = arg(a, 3)?;
     let gm: ChromeGeom = arg(a, 4)?;
@@ -130,7 +136,7 @@ fn hit_test_fn(a: &[Value]) -> Out {
     let inert: Option<IdSet> = arg(a, 6)?;
     ok(hit_test(
         &m,
-        arg(a, 1)?,
+        page(a, 1)?,
         arg(a, 2)?,
         &arg(a, 3)?,
         arg(a, 4)?,
@@ -145,7 +151,7 @@ fn cursor_at_fn(a: &[Value]) -> Out {
     let inert: Option<IdSet> = arg(a, 6)?;
     ok(cursor_at(
         &m,
-        arg(a, 1)?,
+        page(a, 1)?,
         arg(a, 2)?,
         &arg(a, 3)?,
         arg(a, 4)?,
@@ -213,6 +219,7 @@ fn view_all_of(
     knob_offset: Option<f64>,
     view: Option<ViewEnv>,
 ) -> ViewAll {
+    let pon = PageRef::new(pon);
     ViewAll {
         page_items: page_items(m, pon, view),
         chrome: chrome(m, pon, page_box, knob_offset, view),
@@ -282,15 +289,15 @@ fn anchor_with(
     offsets: Option<&Table<f64>>,
     views: Option<&Table<ViewEnv>>,
 ) -> Option<SelectionAnchor> {
-    let key = |pon: PageObjectNumber| pon.to_string();
-    let box_of = |pon: PageObjectNumber| boxes.and_then(|t| t.get(&key(pon)).copied());
-    let offset_of = |pon: PageObjectNumber| offsets.and_then(|t| t.get(&key(pon)).copied());
-    let view_of = |pon: PageObjectNumber| views.and_then(|t| t.get(&key(pon)).copied());
+    let key = |page: PageRef| page.pon().to_string();
+    let box_of = |page: PageRef| boxes.and_then(|t| t.get(&key(page)).copied());
+    let offset_of = |page: PageRef| offsets.and_then(|t| t.get(&key(page)).copied());
+    let view_of = |page: PageRef| views.and_then(|t| t.get(&key(page)).copied());
     selection_anchor(
         m,
-        boxes.map(|_| &box_of as &dyn Fn(PageObjectNumber) -> Option<Rect>),
-        offsets.map(|_| &offset_of as &dyn Fn(PageObjectNumber) -> Option<f64>),
-        views.map(|_| &view_of as &dyn Fn(PageObjectNumber) -> Option<ViewEnv>),
+        boxes.map(|_| &box_of as &dyn Fn(PageRef) -> Option<Rect>),
+        offsets.map(|_| &offset_of as &dyn Fn(PageRef) -> Option<f64>),
+        views.map(|_| &view_of as &dyn Fn(PageRef) -> Option<ViewEnv>),
     )
 }
 
@@ -448,7 +455,7 @@ fn annots_in_boxes(a: &[Value]) -> Out {
         let inert: Option<IdSet> = arg(&c, 3)?;
         out.push(to_value(&annots_in_box(
             &m,
-            arg(&c, 0)?,
+            page(&c, 0)?,
             arg(&c, 1)?,
             arg(&c, 2)?,
             inert.as_ref(),
@@ -461,7 +468,76 @@ fn annots_in_boxes(a: &[Value]) -> Out {
 fn annots_in_box_fn(a: &[Value]) -> Out {
     let m = model(a, 0)?;
     let inert: Option<IdSet> = arg(a, 4)?;
-    ok(annots_in_box(&m, arg(a, 1)?, arg(a, 2)?, arg(a, 3)?, inert.as_ref(), arg(a, 5)?))
+    ok(annots_in_box(&m, page(a, 1)?, arg(a, 2)?, arg(a, 3)?, inert.as_ref(), arg(a, 5)?))
+}
+
+// ── measurement ─────────────────────────────────────────────────────────────
+
+fn distance(a: &[Value], i: usize) -> Result<DistanceAppearance, Error> {
+    arg(a, i)
+}
+
+fn measure_arg(a: &[Value], i: usize) -> Result<MeasurementAppearance, Error> {
+    arg(a, i)
+}
+
+fn shape_arg(a: &[Value], i: usize) -> Result<ShapeMeasurementAppearance, Error> {
+    arg(a, i)
+}
+
+/// `distanceCaptionHit` with and without the margin, and `distanceHit`, per
+/// probe point (`null` for `distanceHit` without a layout).
+fn distance_hit_probe(a: &[Value]) -> Out {
+    let g = geom(a, 0)?;
+    let sw: f64 = arg(a, 2)?;
+    let layout = distance_layout(&g, &distance(a, 1)?, sw);
+    let points: Vec<Point> = arg(a, 3)?;
+    let margin: f64 = arg(a, 4)?;
+    let caption = layout.as_ref().and_then(|l| l.caption.as_ref());
+    ok(points
+        .iter()
+        .map(|p| {
+            (
+                distance_caption_hit(caption, *p, margin),
+                distance_caption_hit(caption, *p, 0.0),
+                layout.as_ref().map(|l| distance_hit(l, *p, sw, margin)),
+            )
+        })
+        .collect::<Vec<_>>())
+}
+
+// ── rich text ───────────────────────────────────────────────────────────────
+
+fn doc(a: &[Value], i: usize) -> Result<richtext::RichTextDocumentInput, Error> {
+    arg(a, i)
+}
+
+#[derive(Deserialize)]
+struct StyleProbe {
+    key: String,
+    #[serde(default)]
+    value: Option<Value>,
+}
+
+fn range_has_style_fn(a: &[Value]) -> Out {
+    let d = doc(a, 0)?;
+    let probe: StyleProbe = arg(a, 2)?;
+    let predicate = |delta: &RichTextStyleDelta| {
+        let v = to_value(delta);
+        v.get(&probe.key) == probe.value.as_ref()
+    };
+    ok(range_has_style(&d.paragraphs, arg(a, 1)?, &predicate))
+}
+
+fn apply_style_to_range_fn(a: &[Value]) -> Out {
+    let d = doc(a, 0)?;
+    let clear: Option<Vec<richtext::RichTextStyleKey>> = arg(a, 3)?;
+    let styled =
+        apply_style_to_range(&d.paragraphs, arg(a, 1)?, &arg(a, 2)?, &clear.unwrap_or_default());
+    ok(match styled {
+        Some(paragraphs) => richtext::RichTextDocumentInput { paragraphs, ..d },
+        None => d,
+    })
 }
 
 // ── the table ───────────────────────────────────────────────────────────────
@@ -522,7 +598,7 @@ pub fn functions() -> FunctionTable {
         }),
         ("geomTranslate", |a| ok(geom_translate(&geom(a, 0)?, arg(a, 1)?))),
         ("geomRotateAbout", |a| ok(geom_rotate_about(&geom(a, 0)?, arg(a, 1)?, arg(a, 2)?))),
-        ("geomResetRotation", |a| ok(geom_reset_rotation(&geom(a, 0)?))),
+        ("geomResetRotation", |a| ok(geom_reset_rotation(&geom(a, 0)?, arg(a, 1)?))),
         ("geomScaleAbout", |a| {
             ok(geom_scale_about(&geom(a, 0)?, arg(a, 1)?, arg(a, 2)?, arg(a, 3)?))
         }),
@@ -614,18 +690,18 @@ pub fn functions() -> FunctionTable {
             ok(compute_move_snap(
                 &model(a, 0)?,
                 &arg::<Vec<Id>>(a, 1)?,
-                arg(a, 2)?,
+                page(a, 2)?,
                 arg(a, 3)?,
                 arg(a, 4)?,
                 arg(a, 5)?,
             ))
         }),
         // hit testing
-        ("paintOrder", |a| ok(paint_order(&model(a, 0)?, arg(a, 1)?))),
+        ("paintOrder", |a| ok(paint_order(&model(a, 0)?, page(a, 1)?))),
         ("isSelectable", |a| ok(is_selectable(&model(a, 0)?, &arg::<String>(a, 1)?))),
         ("canMove", |a| ok(can_move(&model(a, 0)?, &arg::<String>(a, 1)?))),
         ("selectability", selectability),
-        ("groupUnionBounds", |a| ok(group_union_bounds(&model(a, 0)?, arg(a, 1)?, arg(a, 2)?))),
+        ("groupUnionBounds", |a| ok(group_union_bounds(&model(a, 0)?, page(a, 1)?, arg(a, 2)?))),
         ("hitTest", hit_test_fn),
         ("cursorAt", cursor_at_fn),
         ("hitCalls", hit_calls),
@@ -650,15 +726,15 @@ pub fn functions() -> FunctionTable {
             ok(straighten_ink_stroke(&arg::<Vec<Point>>(a, 0)?, &arg(a, 1)?))
         }),
         // view
-        ("pageItems", |a| ok(page_items(&model(a, 0)?, arg(a, 1)?, arg(a, 2)?))),
-        ("chrome", |a| ok(chrome(&model(a, 0)?, arg(a, 1)?, arg(a, 2)?, arg(a, 3)?, arg(a, 4)?))),
+        ("pageItems", |a| ok(page_items(&model(a, 0)?, page(a, 1)?, arg(a, 2)?))),
+        ("chrome", |a| ok(chrome(&model(a, 0)?, page(a, 1)?, arg(a, 2)?, arg(a, 3)?, arg(a, 4)?))),
         ("selectedItems", |a| ok(selected_items(&model(a, 0)?, arg(a, 1)?))),
-        ("textBoxes", |a| ok(text_boxes(&model(a, 0)?, arg(a, 1)?, arg(a, 2)?))),
+        ("textBoxes", |a| ok(text_boxes(&model(a, 0)?, page(a, 1)?, arg(a, 2)?))),
         ("selectionBoundsOnPage", |a| {
-            ok(selection_bounds_on_page(&model(a, 0)?, arg(a, 1)?, arg(a, 2)?))
+            ok(selection_bounds_on_page(&model(a, 0)?, page(a, 1)?, arg(a, 2)?))
         }),
         ("selectionKnob", |a| {
-            ok(selection_knob(&model(a, 0)?, arg(a, 1)?, arg(a, 2)?, arg(a, 3)?, arg(a, 4)?))
+            ok(selection_knob(&model(a, 0)?, page(a, 1)?, arg(a, 2)?, arg(a, 3)?, arg(a, 4)?))
         }),
         ("creationDraftAnchor", |a| ok(creation_draft_anchor(&model(a, 0)?))),
         ("selectionAnchor", selection_anchor_fn),
@@ -679,5 +755,81 @@ pub fn functions() -> FunctionTable {
         ("calloutUprightRot", |a| ok(callout_upright_rot(&arg(a, 0)?))),
         ("annotsInBox", annots_in_box_fn),
         ("annotsInBoxes", annots_in_boxes),
+        // measurement
+        ("distanceCaptionWidth", |a| {
+            ok(measurement::distance_caption_width(&arg::<String>(a, 0)?))
+        }),
+        ("distanceLabel", |a| ok(distance_label(&geom(a, 0)?, &distance(a, 1)?))),
+        ("distanceLayout", |a| ok(distance_layout(&geom(a, 0)?, &distance(a, 1)?, arg(a, 2)?))),
+        ("expandDistanceBounds", |a| ok(expand_distance_bounds(arg(a, 0)?, arg(a, 1)?))),
+        ("distanceSelectionQuad", |a| {
+            ok(distance_selection_quad(&geom(a, 0)?, &distance(a, 1)?, arg(a, 2)?))
+        }),
+        ("distanceHandles", |a| {
+            ok(distance_layout(&geom(a, 0)?, &distance(a, 1)?, arg(a, 2)?)
+                .map(|l| distance_handles(&l)))
+        }),
+        ("distanceHitProbe", distance_hit_probe),
+        ("distanceCaptionAt", |a| {
+            ok(distance_caption_at(&geom(a, 0)?, &distance(a, 1)?, arg(a, 2)?))
+        }),
+        ("distanceLeaderLength", |a| ok(distance_leader_length(&geom(a, 0)?, arg(a, 1)?))),
+        ("moveDistanceCaption", |a| {
+            ok(move_distance_caption(&geom(a, 0)?, &distance(a, 1)?, arg(a, 2)?))
+        }),
+        ("distanceScene", |a| ok(distance_scene(&geom(a, 0)?, &distance(a, 1)?, &arg(a, 2)?))),
+        ("measurementCaptionScene", |a| {
+            let style: Style = arg(a, 2)?;
+            let layout = measurement_layout(&geom(a, 0)?, &measure_arg(a, 1)?, &style);
+            ok(measurement_caption_scene(layout.as_ref().and_then(|l| l.caption()), &style))
+        }),
+        ("shapeCaptionPoint", |a| ok_or_undefined(shape_caption_point(&shape_arg(a, 0)?))),
+        ("withShapeCaptionPoint", |a| ok(with_shape_caption_point(&shape_arg(a, 0)?, arg(a, 1)?))),
+        ("transformMeasurementCaption", |a| {
+            let appearance: Option<MeasurementAppearance> = arg(a, 0)?;
+            let (dx, dy): (f64, f64) = (arg(a, 1)?, arg(a, 2)?);
+            ok_or_undefined(transform_measurement_caption(appearance.as_ref(), |p| Point {
+                x: p.x + dx,
+                y: p.y + dy,
+            }))
+        }),
+        ("shapeMeasurementReadout", |a| {
+            ok(shape_measurement_readout(&geom(a, 0)?, &shape_arg(a, 1)?))
+        }),
+        ("shapeMeasurementLabel", |a| ok(shape_measurement_label(&geom(a, 0)?, &shape_arg(a, 1)?))),
+        ("automaticShapeCaptionCenter", |a| {
+            ok(automatic_shape_caption_center(&arg::<Vec<Point>>(a, 0)?, arg(a, 1)?))
+        }),
+        ("shapeMeasurementLayout", |a| {
+            ok(shape_measurement_layout(&geom(a, 0)?, &shape_arg(a, 1)?, &arg(a, 2)?))
+        }),
+        ("measurementLayout", |a| {
+            ok(measurement_layout(&geom(a, 0)?, &measure_arg(a, 1)?, &arg(a, 2)?))
+        }),
+        ("measurementSelectionQuad", |a| {
+            ok(measurement_selection_quad(&geom(a, 0)?, &measure_arg(a, 1)?, &arg(a, 2)?))
+        }),
+        ("moveMeasurementCaption", |a| {
+            ok(move_measurement_caption(&geom(a, 0)?, &measure_arg(a, 1)?, arg(a, 2)?, &arg(a, 3)?))
+        }),
+        ("annotationSelectionFrame", |a| ok(annotation_selection_frame(&arg(a, 0)?, arg(a, 1)?))),
+        ("textPlateInset", |a| ok(text_plate_inset(arg(a, 0)?))),
+        ("pointInPoly", |a| ok(point_in_poly(arg(a, 0)?, &arg::<Vec<Point>>(a, 1)?))),
+        // rich text
+        ("richTextLength", |a| ok(rich_text_length(&doc(a, 0)?.paragraphs))),
+        ("sameStyleDelta", |a| {
+            let x: Option<RichTextStyleDelta> = arg(a, 0)?;
+            let y: Option<RichTextStyleDelta> = arg(a, 1)?;
+            ok(same_style_delta(x.as_ref(), y.as_ref()))
+        }),
+        ("normalizeRuns", |a| ok(richtext::normalize_doc(&doc(a, 0)?))),
+        ("locateOffset", |a| ok(locate_offset(&doc(a, 0)?.paragraphs, arg(a, 1)?))),
+        ("splitRunsAt", |a| ok(split_runs_at(&arg(a, 0)?, arg(a, 1)?))),
+        ("applyStyleToRange", apply_style_to_range_fn),
+        ("styleAt", |a| ok_or_undefined(style_at(&doc(a, 0)?.paragraphs, arg(a, 1)?))),
+        ("rangeHasStyle", range_has_style_fn),
+        ("paragraphsFromPlainText", |a| ok(paragraphs_from_plain_text(&arg::<String>(a, 0)?))),
+        ("plainTextOf", |a| ok(plain_text_of(&doc(a, 0)?.paragraphs))),
+        ("isPlainRichText", |a| ok(is_plain_rich_text(&doc(a, 0)?))),
     ]
 }
