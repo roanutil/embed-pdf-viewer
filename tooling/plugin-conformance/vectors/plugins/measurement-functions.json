@@ -1,0 +1,2383 @@
+{
+  "schemaVersion": 1,
+  "kind": "function",
+  "describes": "packages/plugin/measurement: the slice reducer, the default presets and scale, page-scale selection, and the unit, area-unit and precision edits.",
+  "cases": [
+    {
+      "name": "initial-state",
+      "fn": "initialMeasurementState",
+      "args": [],
+      "outcome": {
+        "returned": {
+          "pages": {},
+          "pending": 0,
+          "calibration": null,
+          "reports": []
+        }
+      }
+    },
+    {
+      "name": "reduce-page-scale",
+      "fn": "measurementReducer",
+      "args": [
+        {
+          "pages": {
+            "1": {
+              "viewports": [],
+              "scale": {
+                "measure": null,
+                "source": "default",
+                "ready": true,
+                "persistent": false
+              }
+            }
+          },
+          "pending": 1,
+          "calibration": null,
+          "reports": []
+        },
+        {
+          "type": "PAGE_SCALE",
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 2
+          },
+          "viewports": [
+            {
+              "bbox": {
+                "left": 0,
+                "bottom": 0,
+                "right": 600,
+                "top": 800
+              },
+              "measure": {
+                "subtype": "RL",
+                "ratio": "1 in = 1 m",
+                "x": [
+                  {
+                    "unit": "m",
+                    "conversion": 0.013888888888888888,
+                    "precision": 100
+                  }
+                ],
+                "distance": [
+                  {
+                    "unit": "m",
+                    "conversion": 1,
+                    "precision": 100
+                  }
+                ],
+                "area": [
+                  {
+                    "unit": "m²",
+                    "conversion": 1,
+                    "precision": 100
+                  }
+                ]
+              },
+              "owned": true
+            }
+          ],
+          "scale": {
+            "measure": {
+              "subtype": "RL",
+              "ratio": "1 in = 1 m",
+              "x": [
+                {
+                  "unit": "m",
+                  "conversion": 0.013888888888888888,
+                  "precision": 100
+                }
+              ],
+              "distance": [
+                {
+                  "unit": "m",
+                  "conversion": 1,
+                  "precision": 100
+                }
+              ],
+              "area": [
+                {
+                  "unit": "m²",
+                  "conversion": 1,
+                  "precision": 100
+                }
+              ]
+            },
+            "source": "owned",
+            "ready": true,
+            "persistent": false
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "changed": true,
+          "state": {
+            "pages": {
+              "1": {
+                "viewports": [],
+                "scale": {
+                  "measure": null,
+                  "source": "default",
+                  "ready": true,
+                  "persistent": false
+                }
+              },
+              "2": {
+                "viewports": [
+                  {
+                    "bbox": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 600,
+                      "top": 800
+                    },
+                    "measure": {
+                      "subtype": "RL",
+                      "ratio": "1 in = 1 m",
+                      "x": [
+                        {
+                          "unit": "m",
+                          "conversion": 0.013888888888888888,
+                          "precision": 100
+                        }
+                      ],
+                      "distance": [
+                        {
+                          "unit": "m",
+                          "conversion": 1,
+                          "precision": 100
+                        }
+                      ],
+                      "area": [
+                        {
+                          "unit": "m²",
+                          "conversion": 1,
+                          "precision": 100
+                        }
+                      ]
+                    },
+                    "owned": true
+                  }
+                ],
+                "scale": {
+                  "measure": {
+                    "subtype": "RL",
+                    "ratio": "1 in = 1 m",
+                    "x": [
+                      {
+                        "unit": "m",
+                        "conversion": 0.013888888888888888,
+                        "precision": 100
+                      }
+                    ],
+                    "distance": [
+                      {
+                        "unit": "m",
+                        "conversion": 1,
+                        "precision": 100
+                      }
+                    ],
+                    "area": [
+                      {
+                        "unit": "m²",
+                        "conversion": 1,
+                        "precision": 100
+                      }
+                    ]
+                  },
+                  "source": "owned",
+                  "ready": true,
+                  "persistent": false
+                }
+              }
+            },
+            "pending": 1,
+            "calibration": null,
+            "reports": []
+          }
+        }
+      }
+    },
+    {
+      "name": "reduce-pending-up",
+      "fn": "measurementReducer",
+      "args": [
+        {
+          "pages": {
+            "1": {
+              "viewports": [],
+              "scale": {
+                "measure": null,
+                "source": "default",
+                "ready": true,
+                "persistent": false
+              }
+            }
+          },
+          "pending": 1,
+          "calibration": null,
+          "reports": []
+        },
+        {
+          "type": "PENDING",
+          "delta": 1
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "changed": true,
+          "state": {
+            "pages": {
+              "1": {
+                "viewports": [],
+                "scale": {
+                  "measure": null,
+                  "source": "default",
+                  "ready": true,
+                  "persistent": false
+                }
+              }
+            },
+            "pending": 2,
+            "calibration": null,
+            "reports": []
+          }
+        }
+      }
+    },
+    {
+      "name": "reduce-pending-floors-at-zero",
+      "fn": "measurementReducer",
+      "args": [
+        {
+          "pages": {
+            "1": {
+              "viewports": [],
+              "scale": {
+                "measure": null,
+                "source": "default",
+                "ready": true,
+                "persistent": false
+              }
+            }
+          },
+          "pending": 1,
+          "calibration": null,
+          "reports": []
+        },
+        {
+          "type": "PENDING",
+          "delta": -3
+        }
+      ],
+      "covers": "The busy counter never goes below zero.",
+      "outcome": {
+        "returned": {
+          "changed": true,
+          "state": {
+            "pages": {
+              "1": {
+                "viewports": [],
+                "scale": {
+                  "measure": null,
+                  "source": "default",
+                  "ready": true,
+                  "persistent": false
+                }
+              }
+            },
+            "pending": 0,
+            "calibration": null,
+            "reports": []
+          }
+        }
+      }
+    },
+    {
+      "name": "reduce-calibration",
+      "fn": "measurementReducer",
+      "args": [
+        {
+          "pages": {
+            "1": {
+              "viewports": [],
+              "scale": {
+                "measure": null,
+                "source": "default",
+                "ready": true,
+                "persistent": false
+              }
+            }
+          },
+          "pending": 1,
+          "calibration": null,
+          "reports": []
+        },
+        {
+          "type": "CALIBRATION",
+          "request": {
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            "from": {
+              "x": 0,
+              "y": 0
+            },
+            "to": {
+              "x": 1,
+              "y": 0
+            },
+            "userSpaceLength": 1
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "changed": true,
+          "state": {
+            "pages": {
+              "1": {
+                "viewports": [],
+                "scale": {
+                  "measure": null,
+                  "source": "default",
+                  "ready": true,
+                  "persistent": false
+                }
+              }
+            },
+            "pending": 1,
+            "calibration": {
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "from": {
+                "x": 0,
+                "y": 0
+              },
+              "to": {
+                "x": 1,
+                "y": 0
+              },
+              "userSpaceLength": 1
+            },
+            "reports": []
+          }
+        }
+      }
+    },
+    {
+      "name": "reduce-reports",
+      "fn": "measurementReducer",
+      "args": [
+        {
+          "pages": {
+            "1": {
+              "viewports": [],
+              "scale": {
+                "measure": null,
+                "source": "default",
+                "ready": true,
+                "persistent": false
+              }
+            }
+          },
+          "pending": 1,
+          "calibration": null,
+          "reports": []
+        },
+        {
+          "type": "REPORTS",
+          "reports": [
+            {
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "updated": [],
+              "skipped": [],
+              "failed": [],
+              "scaleError": {
+                "name": "EngineError",
+                "code": "Unknown",
+                "message": "x"
+              }
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "changed": true,
+          "state": {
+            "pages": {
+              "1": {
+                "viewports": [],
+                "scale": {
+                  "measure": null,
+                  "source": "default",
+                  "ready": true,
+                  "persistent": false
+                }
+              }
+            },
+            "pending": 1,
+            "calibration": null,
+            "reports": [
+              {
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "updated": [],
+                "skipped": [],
+                "failed": [],
+                "scaleError": {
+                  "name": "EngineError",
+                  "code": "Unknown",
+                  "message": "x"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "reduce-unknown",
+      "fn": "measurementReducer",
+      "args": [
+        {
+          "pages": {
+            "1": {
+              "viewports": [],
+              "scale": {
+                "measure": null,
+                "source": "default",
+                "ready": true,
+                "persistent": false
+              }
+            }
+          },
+          "pending": 1,
+          "calibration": null,
+          "reports": []
+        },
+        {
+          "type": "NOPE"
+        }
+      ],
+      "covers": "An unknown action returns the same state.",
+      "outcome": {
+        "returned": {
+          "changed": false,
+          "state": {
+            "pages": {
+              "1": {
+                "viewports": [],
+                "scale": {
+                  "measure": null,
+                  "source": "default",
+                  "ready": true,
+                  "persistent": false
+                }
+              }
+            },
+            "pending": 1,
+            "calibration": null,
+            "reports": []
+          }
+        }
+      }
+    },
+    {
+      "name": "default-presets",
+      "fn": "defaultPresets",
+      "args": [],
+      "outcome": {
+        "returned": [
+          {
+            "id": "metric-1",
+            "label": "1:1",
+            "paper": 1,
+            "real": 1,
+            "unit": "m"
+          },
+          {
+            "id": "metric-10",
+            "label": "1:10",
+            "paper": 1,
+            "real": 10,
+            "unit": "m"
+          },
+          {
+            "id": "metric-20",
+            "label": "1:20",
+            "paper": 1,
+            "real": 20,
+            "unit": "m"
+          },
+          {
+            "id": "metric-50",
+            "label": "1:50",
+            "paper": 1,
+            "real": 50,
+            "unit": "m"
+          },
+          {
+            "id": "metric-100",
+            "label": "1:100",
+            "paper": 1,
+            "real": 100,
+            "unit": "m"
+          },
+          {
+            "id": "metric-200",
+            "label": "1:200",
+            "paper": 1,
+            "real": 200,
+            "unit": "m"
+          },
+          {
+            "id": "imperial-quarter",
+            "label": "1/4 in = 1 ft",
+            "paper": 1,
+            "real": 48,
+            "unit": "ft"
+          },
+          {
+            "id": "imperial-eighth",
+            "label": "1/8 in = 1 ft",
+            "paper": 1,
+            "real": 96,
+            "unit": "ft"
+          }
+        ]
+      }
+    },
+    {
+      "name": "default-measure-metric",
+      "fn": "defaultMeasure",
+      "args": [
+        {}
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "RL",
+          "ratio": "1:1",
+          "x": [
+            {
+              "unit": "m",
+              "conversion": 0.00035277777351439,
+              "precision": 100
+            }
+          ],
+          "distance": [
+            {
+              "unit": "m",
+              "conversion": 1,
+              "precision": 100
+            }
+          ],
+          "area": [
+            {
+              "unit": "m²",
+              "conversion": 1,
+              "precision": 100
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "default-measure-imperial-user-unit",
+      "fn": "defaultMeasure",
+      "args": [
+        {
+          "defaultScale": "imperial"
+        },
+        2
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "RL",
+          "ratio": "1:1",
+          "x": [
+            {
+              "unit": "ft",
+              "conversion": 0.002314814832061529,
+              "precision": 100
+            }
+          ],
+          "distance": [
+            {
+              "unit": "ft",
+              "conversion": 1,
+              "precision": 100
+            }
+          ],
+          "area": [
+            {
+              "unit": "ft²",
+              "conversion": 1,
+              "precision": 100
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "default-measure-explicit-metric",
+      "fn": "defaultMeasure",
+      "args": [
+        {
+          "defaultScale": "metric"
+        },
+        0.5
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "RL",
+          "ratio": "1:1",
+          "x": [
+            {
+              "unit": "m",
+              "conversion": 0.000176388886757195,
+              "precision": 100
+            }
+          ],
+          "distance": [
+            {
+              "unit": "m",
+              "conversion": 1,
+              "precision": 100
+            }
+          ],
+          "area": [
+            {
+              "unit": "m²",
+              "conversion": 1,
+              "precision": 100
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "default-measure-object",
+      "fn": "defaultMeasure",
+      "args": [
+        {
+          "defaultScale": {
+            "subtype": "RL",
+            "ratio": "1 in = 1 ft",
+            "x": [
+              {
+                "unit": "ft",
+                "conversion": 0.013888888888888888,
+                "precision": 100
+              }
+            ],
+            "distance": [
+              {
+                "unit": "ft",
+                "conversion": 1,
+                "precision": 100
+              }
+            ],
+            "area": [
+              {
+                "unit": "ft²",
+                "conversion": 1,
+                "precision": 100
+              }
+            ]
+          }
+        },
+        3
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "RL",
+          "ratio": "1 in = 1 ft",
+          "x": [
+            {
+              "unit": "ft",
+              "conversion": 0.013888888888888888,
+              "precision": 100
+            }
+          ],
+          "distance": [
+            {
+              "unit": "ft",
+              "conversion": 1,
+              "precision": 100
+            }
+          ],
+          "area": [
+            {
+              "unit": "ft²",
+              "conversion": 1,
+              "precision": 100
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "default-measure-bad-user-unit",
+      "fn": "defaultMeasure",
+      "args": [
+        {},
+        0
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "RangeError",
+            "message": "Calibration requires finite positive lengths and scales"
+          }
+        }
+      }
+    },
+    {
+      "name": "select-owned",
+      "fn": "selectPageScale",
+      "args": [
+        [
+          {
+            "bbox": {
+              "left": 0,
+              "bottom": 0,
+              "right": 600,
+              "top": 800
+            },
+            "measure": {
+              "subtype": "RL",
+              "ratio": "1 in = 1 m",
+              "x": [
+                {
+                  "unit": "m",
+                  "conversion": 0.013888888888888888,
+                  "precision": 100
+                }
+              ],
+              "distance": [
+                {
+                  "unit": "m",
+                  "conversion": 1,
+                  "precision": 100
+                }
+              ],
+              "area": [
+                {
+                  "unit": "m²",
+                  "conversion": 1,
+                  "precision": 100
+                }
+              ]
+            },
+            "owned": false
+          },
+          {
+            "bbox": {
+              "left": 0,
+              "bottom": 0,
+              "right": 1,
+              "top": 1
+            },
+            "measure": {
+              "subtype": "RL",
+              "ratio": "1 in = 1 ft",
+              "x": [
+                {
+                  "unit": "ft",
+                  "conversion": 0.013888888888888888,
+                  "precision": 100
+                }
+              ],
+              "distance": [
+                {
+                  "unit": "ft",
+                  "conversion": 1,
+                  "precision": 100
+                }
+              ],
+              "area": [
+                {
+                  "unit": "ft²",
+                  "conversion": 1,
+                  "precision": 100
+                }
+              ]
+            },
+            "owned": true
+          }
+        ],
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        },
+        {
+          "subtype": "RL",
+          "ratio": "1 in = 1 m",
+          "x": [
+            {
+              "unit": "m",
+              "conversion": 0.013888888888888888,
+              "precision": 100
+            }
+          ],
+          "distance": [
+            {
+              "unit": "m",
+              "conversion": 1,
+              "precision": 100
+            }
+          ],
+          "area": [
+            {
+              "unit": "m²",
+              "conversion": 1,
+              "precision": 100
+            }
+          ]
+        },
+        true
+      ],
+      "outcome": {
+        "returned": {
+          "measure": {
+            "subtype": "RL",
+            "ratio": "1 in = 1 ft",
+            "x": [
+              {
+                "unit": "ft",
+                "conversion": 0.013888888888888888,
+                "precision": 100
+              }
+            ],
+            "distance": [
+              {
+                "unit": "ft",
+                "conversion": 1,
+                "precision": 100
+              }
+            ],
+            "area": [
+              {
+                "unit": "ft²",
+                "conversion": 1,
+                "precision": 100
+              }
+            ]
+          },
+          "source": "owned",
+          "ready": true,
+          "persistent": true
+        }
+      }
+    },
+    {
+      "name": "select-last-containing",
+      "fn": "selectPageScale",
+      "args": [
+        [
+          {
+            "bbox": {
+              "left": 0,
+              "bottom": 0,
+              "right": 600,
+              "top": 800
+            },
+            "measure": {
+              "subtype": "RL",
+              "ratio": "1 in = 1 m",
+              "x": [
+                {
+                  "unit": "m",
+                  "conversion": 0.013888888888888888,
+                  "precision": 100
+                }
+              ],
+              "distance": [
+                {
+                  "unit": "m",
+                  "conversion": 1,
+                  "precision": 100
+                }
+              ],
+              "area": [
+                {
+                  "unit": "m²",
+                  "conversion": 1,
+                  "precision": 100
+                }
+              ]
+            },
+            "owned": false
+          },
+          {
+            "bbox": {
+              "left": 0,
+              "bottom": 0,
+              "right": 600,
+              "top": 800
+            },
+            "measure": {
+              "subtype": "RL",
+              "ratio": "1 in = 1 ft",
+              "x": [
+                {
+                  "unit": "ft",
+                  "conversion": 0.013888888888888888,
+                  "precision": 100
+                }
+              ],
+              "distance": [
+                {
+                  "unit": "ft",
+                  "conversion": 1,
+                  "precision": 100
+                }
+              ],
+              "area": [
+                {
+                  "unit": "ft²",
+                  "conversion": 1,
+                  "precision": 100
+                }
+              ]
+            },
+            "owned": false
+          },
+          {
+            "bbox": {
+              "left": 0,
+              "bottom": 0,
+              "right": 1,
+              "top": 1
+            },
+            "measure": {
+              "subtype": "GEO"
+            },
+            "owned": false
+          }
+        ],
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        },
+        {
+          "subtype": "RL",
+          "ratio": "1 in = 1 m",
+          "x": [
+            {
+              "unit": "m",
+              "conversion": 0.013888888888888888,
+              "precision": 100
+            }
+          ],
+          "distance": [
+            {
+              "unit": "m",
+              "conversion": 1,
+              "precision": 100
+            }
+          ],
+          "area": [
+            {
+              "unit": "m²",
+              "conversion": 1,
+              "precision": 100
+            }
+          ]
+        },
+        false
+      ],
+      "outcome": {
+        "returned": {
+          "measure": {
+            "subtype": "RL",
+            "ratio": "1 in = 1 ft",
+            "x": [
+              {
+                "unit": "ft",
+                "conversion": 0.013888888888888888,
+                "precision": 100
+              }
+            ],
+            "distance": [
+              {
+                "unit": "ft",
+                "conversion": 1,
+                "precision": 100
+              }
+            ],
+            "area": [
+              {
+                "unit": "ft²",
+                "conversion": 1,
+                "precision": 100
+              }
+            ]
+          },
+          "source": "foreign",
+          "ready": true,
+          "persistent": false
+        }
+      }
+    },
+    {
+      "name": "select-foreign-without-measure",
+      "fn": "selectPageScale",
+      "args": [
+        [
+          {
+            "bbox": {
+              "left": 0,
+              "bottom": 0,
+              "right": 600,
+              "top": 800
+            },
+            "owned": false
+          }
+        ],
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        },
+        {
+          "subtype": "RL",
+          "ratio": "1 in = 1 m",
+          "x": [
+            {
+              "unit": "m",
+              "conversion": 0.013888888888888888,
+              "precision": 100
+            }
+          ],
+          "distance": [
+            {
+              "unit": "m",
+              "conversion": 1,
+              "precision": 100
+            }
+          ],
+          "area": [
+            {
+              "unit": "m²",
+              "conversion": 1,
+              "precision": 100
+            }
+          ]
+        },
+        false
+      ],
+      "outcome": {
+        "returned": {
+          "measure": null,
+          "source": "foreign",
+          "ready": true,
+          "persistent": false
+        }
+      }
+    },
+    {
+      "name": "select-default",
+      "fn": "selectPageScale",
+      "args": [
+        [
+          {
+            "bbox": {
+              "left": 0,
+              "bottom": 0,
+              "right": 1,
+              "top": 1
+            },
+            "measure": {
+              "subtype": "RL",
+              "ratio": "1 in = 1 ft",
+              "x": [
+                {
+                  "unit": "ft",
+                  "conversion": 0.013888888888888888,
+                  "precision": 100
+                }
+              ],
+              "distance": [
+                {
+                  "unit": "ft",
+                  "conversion": 1,
+                  "precision": 100
+                }
+              ],
+              "area": [
+                {
+                  "unit": "ft²",
+                  "conversion": 1,
+                  "precision": 100
+                }
+              ]
+            },
+            "owned": false
+          }
+        ],
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        },
+        {
+          "subtype": "RL",
+          "ratio": "1 in = 1 m",
+          "x": [
+            {
+              "unit": "m",
+              "conversion": 0.013888888888888888,
+              "precision": 100
+            }
+          ],
+          "distance": [
+            {
+              "unit": "m",
+              "conversion": 1,
+              "precision": 100
+            }
+          ],
+          "area": [
+            {
+              "unit": "m²",
+              "conversion": 1,
+              "precision": 100
+            }
+          ]
+        },
+        false
+      ],
+      "outcome": {
+        "returned": {
+          "measure": {
+            "subtype": "RL",
+            "ratio": "1 in = 1 m",
+            "x": [
+              {
+                "unit": "m",
+                "conversion": 0.013888888888888888,
+                "precision": 100
+              }
+            ],
+            "distance": [
+              {
+                "unit": "m",
+                "conversion": 1,
+                "precision": 100
+              }
+            ],
+            "area": [
+              {
+                "unit": "m²",
+                "conversion": 1,
+                "precision": 100
+              }
+            ]
+          },
+          "source": "default",
+          "ready": true,
+          "persistent": false
+        }
+      }
+    },
+    {
+      "name": "select-none",
+      "fn": "selectPageScale",
+      "args": [
+        [],
+        {
+          "left": 10,
+          "bottom": 20,
+          "right": 410,
+          "top": 520
+        },
+        {
+          "subtype": "RL",
+          "ratio": "1 in = 1 ft",
+          "x": [
+            {
+              "unit": "ft",
+              "conversion": 0.013888888888888888,
+              "precision": 100
+            }
+          ],
+          "distance": [
+            {
+              "unit": "ft",
+              "conversion": 1,
+              "precision": 100
+            }
+          ],
+          "area": [
+            {
+              "unit": "ft²",
+              "conversion": 1,
+              "precision": 100
+            }
+          ]
+        },
+        true
+      ],
+      "outcome": {
+        "returned": {
+          "measure": {
+            "subtype": "RL",
+            "ratio": "1 in = 1 ft",
+            "x": [
+              {
+                "unit": "ft",
+                "conversion": 0.013888888888888888,
+                "precision": 100
+              }
+            ],
+            "distance": [
+              {
+                "unit": "ft",
+                "conversion": 1,
+                "precision": 100
+              }
+            ],
+            "area": [
+              {
+                "unit": "ft²",
+                "conversion": 1,
+                "precision": 100
+              }
+            ]
+          },
+          "source": "default",
+          "ready": true,
+          "persistent": true
+        }
+      }
+    },
+    {
+      "name": "with-unit",
+      "fn": "withUnit",
+      "args": [
+        {
+          "subtype": "RL",
+          "ratio": "1 in = 1 m",
+          "x": [
+            {
+              "unit": "m",
+              "conversion": 0.013888888888888888,
+              "precision": 100
+            }
+          ],
+          "distance": [
+            {
+              "unit": "m",
+              "conversion": 1,
+              "precision": 100
+            }
+          ],
+          "area": [
+            {
+              "unit": "m²",
+              "conversion": 1,
+              "precision": 100
+            }
+          ]
+        },
+        "ft"
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "RL",
+          "ratio": "1 in = 1 m",
+          "x": [
+            {
+              "unit": "m",
+              "conversion": 0.013888888888888888,
+              "precision": 100
+            }
+          ],
+          "distance": [
+            {
+              "unit": "ft",
+              "conversion": 3.280839895013123,
+              "precision": 100,
+              "fraction": "decimal"
+            }
+          ],
+          "area": [
+            {
+              "unit": "ft²",
+              "conversion": 10.763910416709722,
+              "precision": 100,
+              "fraction": "decimal"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "with-unit-and-area",
+      "fn": "withUnit",
+      "args": [
+        {
+          "subtype": "RL",
+          "ratio": "1 in = 1 ft",
+          "x": [
+            {
+              "unit": "ft",
+              "conversion": 0.013888888888888888,
+              "precision": 100
+            }
+          ],
+          "distance": [
+            {
+              "unit": "ft",
+              "conversion": 1,
+              "precision": 100
+            }
+          ],
+          "area": [
+            {
+              "unit": "ft²",
+              "conversion": 1,
+              "precision": 100
+            }
+          ]
+        },
+        "in",
+        "acre"
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "RL",
+          "ratio": "1 in = 1 ft",
+          "x": [
+            {
+              "unit": "ft",
+              "conversion": 0.013888888888888888,
+              "precision": 100
+            }
+          ],
+          "distance": [
+            {
+              "unit": "in",
+              "conversion": 12.000000000000002,
+              "precision": 100,
+              "fraction": "decimal"
+            }
+          ],
+          "area": [
+            {
+              "unit": "acre",
+              "conversion": 0.00002295684113865932,
+              "precision": 100,
+              "fraction": "decimal"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "with-unit-from-fraction",
+      "fn": "withUnit",
+      "args": [
+        {
+          "subtype": "RL",
+          "ratio": "1 in = 1 ft",
+          "x": [
+            {
+              "unit": "ft",
+              "conversion": 0.013888888888888888,
+              "precision": 100
+            }
+          ],
+          "distance": [
+            {
+              "unit": "ft",
+              "conversion": 1,
+              "precision": 1
+            },
+            {
+              "unit": "in",
+              "conversion": 12,
+              "fraction": "fraction",
+              "precision": 16
+            }
+          ],
+          "area": [
+            {
+              "unit": "ft²",
+              "conversion": 1,
+              "fraction": "fraction",
+              "precision": 8
+            }
+          ]
+        },
+        "yd"
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "RL",
+          "ratio": "1 in = 1 ft",
+          "x": [
+            {
+              "unit": "ft",
+              "conversion": 0.013888888888888888,
+              "precision": 100
+            }
+          ],
+          "distance": [
+            {
+              "unit": "yd",
+              "conversion": 0.33333333333333337,
+              "precision": 100,
+              "fraction": "decimal"
+            }
+          ],
+          "area": [
+            {
+              "unit": "yd²",
+              "conversion": 0.11111111111111112,
+              "precision": 100,
+              "fraction": "decimal"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "with-unit-no-precision",
+      "fn": "withUnit",
+      "args": [
+        {
+          "subtype": "RL",
+          "ratio": "1 in = 1 m",
+          "x": [
+            {
+              "unit": "m",
+              "conversion": 0.013888888888888888,
+              "precision": 100
+            }
+          ],
+          "distance": [
+            {
+              "unit": "m",
+              "conversion": 1
+            }
+          ],
+          "area": [
+            {
+              "unit": "m²",
+              "conversion": 1,
+              "precision": 100
+            }
+          ]
+        },
+        "km"
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "RL",
+          "ratio": "1 in = 1 m",
+          "x": [
+            {
+              "unit": "m",
+              "conversion": 0.013888888888888888,
+              "precision": 100
+            }
+          ],
+          "distance": [
+            {
+              "unit": "km",
+              "conversion": 0.001,
+              "precision": 100,
+              "fraction": "decimal"
+            }
+          ],
+          "area": [
+            {
+              "unit": "km²",
+              "conversion": 0.000001,
+              "precision": 100,
+              "fraction": "decimal"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "with-unit-no-distance",
+      "fn": "withUnit",
+      "args": [
+        {
+          "subtype": "RL",
+          "ratio": "1 in = 1 m",
+          "x": [
+            {
+              "unit": "m",
+              "conversion": 0.013888888888888888,
+              "precision": 100
+            }
+          ],
+          "distance": [],
+          "area": [
+            {
+              "unit": "m²",
+              "conversion": 1,
+              "precision": 100
+            }
+          ]
+        },
+        "mi"
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "RL",
+          "ratio": "1 in = 1 m",
+          "x": [
+            {
+              "unit": "m",
+              "conversion": 0.013888888888888888,
+              "precision": 100
+            }
+          ],
+          "distance": [
+            {
+              "unit": "mi",
+              "conversion": 0.0006213711922373339,
+              "precision": 100,
+              "fraction": "decimal"
+            }
+          ],
+          "area": [
+            {
+              "unit": "mi²",
+              "conversion": 3.861021585424458e-7,
+              "precision": 100,
+              "fraction": "decimal"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "with-unit-unknown-base",
+      "fn": "withUnit",
+      "args": [
+        {
+          "subtype": "RL",
+          "ratio": "1 in = 1 furlong",
+          "x": [
+            {
+              "unit": "furlong",
+              "conversion": 0.013888888888888888,
+              "precision": 100
+            }
+          ],
+          "distance": [
+            {
+              "unit": "furlong",
+              "conversion": 1,
+              "precision": 100
+            }
+          ],
+          "area": [
+            {
+              "unit": "furlong²",
+              "conversion": 1,
+              "precision": 100
+            }
+          ]
+        },
+        "m"
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "RangeError",
+            "message": "This scale has an unknown base unit; calibrate it first"
+          }
+        }
+      }
+    },
+    {
+      "name": "with-unit-no-x",
+      "fn": "withUnit",
+      "args": [
+        {
+          "subtype": "RL",
+          "ratio": "1 in = 1 m",
+          "x": [],
+          "distance": [
+            {
+              "unit": "m",
+              "conversion": 1,
+              "precision": 100
+            }
+          ],
+          "area": [
+            {
+              "unit": "m²",
+              "conversion": 1,
+              "precision": 100
+            }
+          ]
+        },
+        "m"
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "RangeError",
+            "message": "This scale has an unknown base unit; calibrate it first"
+          }
+        }
+      }
+    },
+    {
+      "name": "with-unit-padded-base",
+      "fn": "withUnit",
+      "args": [
+        {
+          "subtype": "RL",
+          "ratio": "1 in = 1 m",
+          "x": [
+            {
+              "unit": " m ",
+              "conversion": 0.013888888888888888
+            }
+          ],
+          "distance": [
+            {
+              "unit": "m",
+              "conversion": 1,
+              "precision": 100
+            }
+          ],
+          "area": [
+            {
+              "unit": "m²",
+              "conversion": 1,
+              "precision": 100
+            }
+          ]
+        },
+        "cm"
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "RL",
+          "ratio": "1 in = 1 m",
+          "x": [
+            {
+              "unit": " m ",
+              "conversion": 0.013888888888888888
+            }
+          ],
+          "distance": [
+            {
+              "unit": "cm",
+              "conversion": 100,
+              "precision": 100,
+              "fraction": "decimal"
+            }
+          ],
+          "area": [
+            {
+              "unit": "cm²",
+              "conversion": 10000,
+              "precision": 100,
+              "fraction": "decimal"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "with-area-unit",
+      "fn": "withAreaUnit",
+      "args": [
+        {
+          "subtype": "RL",
+          "ratio": "1 in = 1 m",
+          "x": [
+            {
+              "unit": "m",
+              "conversion": 0.013888888888888888,
+              "precision": 100
+            }
+          ],
+          "distance": [
+            {
+              "unit": "m",
+              "conversion": 1,
+              "precision": 100
+            }
+          ],
+          "area": [
+            {
+              "unit": "m²",
+              "conversion": 1,
+              "precision": 100
+            }
+          ]
+        },
+        "ha"
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "RL",
+          "ratio": "1 in = 1 m",
+          "x": [
+            {
+              "unit": "m",
+              "conversion": 0.013888888888888888,
+              "precision": 100
+            }
+          ],
+          "distance": [
+            {
+              "unit": "m",
+              "conversion": 1,
+              "precision": 100
+            }
+          ],
+          "area": [
+            {
+              "unit": "ha",
+              "conversion": 0.0001,
+              "precision": 100,
+              "fraction": "decimal"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "with-area-unit-from-fraction",
+      "fn": "withAreaUnit",
+      "args": [
+        {
+          "subtype": "RL",
+          "ratio": "1 in = 1 ft",
+          "x": [
+            {
+              "unit": "ft",
+              "conversion": 0.013888888888888888,
+              "precision": 100
+            }
+          ],
+          "distance": [
+            {
+              "unit": "ft",
+              "conversion": 1,
+              "precision": 1
+            },
+            {
+              "unit": "in",
+              "conversion": 12,
+              "fraction": "fraction",
+              "precision": 16
+            }
+          ],
+          "area": [
+            {
+              "unit": "ft²",
+              "conversion": 1,
+              "fraction": "fraction",
+              "precision": 8
+            }
+          ]
+        },
+        "yd2"
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "RL",
+          "ratio": "1 in = 1 ft",
+          "x": [
+            {
+              "unit": "ft",
+              "conversion": 0.013888888888888888,
+              "precision": 100
+            }
+          ],
+          "distance": [
+            {
+              "unit": "ft",
+              "conversion": 1,
+              "precision": 1
+            },
+            {
+              "unit": "in",
+              "conversion": 12,
+              "fraction": "fraction",
+              "precision": 16
+            }
+          ],
+          "area": [
+            {
+              "unit": "yd²",
+              "conversion": 0.11111111111111112,
+              "precision": 100,
+              "fraction": "decimal"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "with-area-unit-no-precision",
+      "fn": "withAreaUnit",
+      "args": [
+        {
+          "subtype": "RL",
+          "ratio": "1 in = 1 m",
+          "x": [
+            {
+              "unit": "m",
+              "conversion": 0.013888888888888888,
+              "precision": 100
+            }
+          ],
+          "distance": [
+            {
+              "unit": "m",
+              "conversion": 1,
+              "precision": 100
+            }
+          ],
+          "area": [
+            {
+              "unit": "m²",
+              "conversion": 1
+            }
+          ]
+        },
+        "pt2"
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "RL",
+          "ratio": "1 in = 1 m",
+          "x": [
+            {
+              "unit": "m",
+              "conversion": 0.013888888888888888,
+              "precision": 100
+            }
+          ],
+          "distance": [
+            {
+              "unit": "m",
+              "conversion": 1,
+              "precision": 100
+            }
+          ],
+          "area": [
+            {
+              "unit": "pt²",
+              "conversion": 8035216.070432141,
+              "precision": 100,
+              "fraction": "decimal"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "with-area-unit-no-area",
+      "fn": "withAreaUnit",
+      "args": [
+        {
+          "subtype": "RL",
+          "ratio": "1 in = 1 m",
+          "x": [
+            {
+              "unit": "m",
+              "conversion": 0.013888888888888888,
+              "precision": 100
+            }
+          ],
+          "distance": [
+            {
+              "unit": "m",
+              "conversion": 1,
+              "precision": 100
+            }
+          ],
+          "area": []
+        },
+        "mm2"
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "RL",
+          "ratio": "1 in = 1 m",
+          "x": [
+            {
+              "unit": "m",
+              "conversion": 0.013888888888888888,
+              "precision": 100
+            }
+          ],
+          "distance": [
+            {
+              "unit": "m",
+              "conversion": 1,
+              "precision": 100
+            }
+          ],
+          "area": [
+            {
+              "unit": "mm²",
+              "conversion": 1000000,
+              "precision": 100,
+              "fraction": "decimal"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "with-area-unit-unknown-base",
+      "fn": "withAreaUnit",
+      "args": [
+        {
+          "subtype": "RL",
+          "ratio": "1 in = 1 furlong",
+          "x": [
+            {
+              "unit": "furlong",
+              "conversion": 0.013888888888888888,
+              "precision": 100
+            }
+          ],
+          "distance": [
+            {
+              "unit": "furlong",
+              "conversion": 1,
+              "precision": 100
+            }
+          ],
+          "area": [
+            {
+              "unit": "furlong²",
+              "conversion": 1,
+              "precision": 100
+            }
+          ]
+        },
+        "acre"
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "RangeError",
+            "message": "This scale has an unknown base unit; calibrate it first"
+          }
+        }
+      }
+    },
+    {
+      "name": "with-area-unit-no-x",
+      "fn": "withAreaUnit",
+      "args": [
+        {
+          "subtype": "RL",
+          "ratio": "1 in = 1 m",
+          "x": [],
+          "distance": [
+            {
+              "unit": "m",
+              "conversion": 1,
+              "precision": 100
+            }
+          ],
+          "area": [
+            {
+              "unit": "m²",
+              "conversion": 1,
+              "precision": 100
+            }
+          ]
+        },
+        "acre"
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "RangeError",
+            "message": "This scale has an unknown base unit; calibrate it first"
+          }
+        }
+      }
+    },
+    {
+      "name": "with-precision",
+      "fn": "withPrecision",
+      "args": [
+        {
+          "subtype": "RL",
+          "ratio": "1 in = 1 ft",
+          "x": [
+            {
+              "unit": "ft",
+              "conversion": 0.013888888888888888,
+              "precision": 100
+            }
+          ],
+          "distance": [
+            {
+              "unit": "ft",
+              "conversion": 1,
+              "precision": 1
+            },
+            {
+              "unit": "in",
+              "conversion": 12,
+              "fraction": "fraction",
+              "precision": 16
+            }
+          ],
+          "area": [
+            {
+              "unit": "ft²",
+              "conversion": 1,
+              "fraction": "fraction",
+              "precision": 8
+            }
+          ]
+        },
+        1000
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "RL",
+          "ratio": "1 in = 1 ft",
+          "x": [
+            {
+              "unit": "ft",
+              "conversion": 0.013888888888888888,
+              "precision": 100
+            }
+          ],
+          "distance": [
+            {
+              "unit": "ft",
+              "conversion": 1,
+              "precision": 1
+            },
+            {
+              "unit": "in",
+              "conversion": 12,
+              "fraction": "decimal",
+              "precision": 1000
+            }
+          ],
+          "area": [
+            {
+              "unit": "ft²",
+              "conversion": 1,
+              "fraction": "decimal",
+              "precision": 1000
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "with-precision-one",
+      "fn": "withPrecision",
+      "args": [
+        {
+          "subtype": "RL",
+          "ratio": "1 in = 1 m",
+          "x": [
+            {
+              "unit": "m",
+              "conversion": 0.013888888888888888,
+              "precision": 100
+            }
+          ],
+          "distance": [
+            {
+              "unit": "m",
+              "conversion": 1,
+              "precision": 100
+            }
+          ],
+          "area": [
+            {
+              "unit": "m²",
+              "conversion": 1,
+              "precision": 100
+            }
+          ]
+        },
+        1
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "RL",
+          "ratio": "1 in = 1 m",
+          "x": [
+            {
+              "unit": "m",
+              "conversion": 0.013888888888888888,
+              "precision": 100
+            }
+          ],
+          "distance": [
+            {
+              "unit": "m",
+              "conversion": 1,
+              "precision": 1,
+              "fraction": "decimal"
+            }
+          ],
+          "area": [
+            {
+              "unit": "m²",
+              "conversion": 1,
+              "precision": 1,
+              "fraction": "decimal"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "with-precision-max",
+      "fn": "withPrecision",
+      "args": [
+        {
+          "subtype": "RL",
+          "ratio": "1 in = 1 m",
+          "x": [
+            {
+              "unit": "m",
+              "conversion": 0.013888888888888888,
+              "precision": 100
+            }
+          ],
+          "distance": [
+            {
+              "unit": "m",
+              "conversion": 1,
+              "precision": 100
+            }
+          ],
+          "area": [
+            {
+              "unit": "m²",
+              "conversion": 1,
+              "precision": 100
+            }
+          ]
+        },
+        1000000000
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "RL",
+          "ratio": "1 in = 1 m",
+          "x": [
+            {
+              "unit": "m",
+              "conversion": 0.013888888888888888,
+              "precision": 100
+            }
+          ],
+          "distance": [
+            {
+              "unit": "m",
+              "conversion": 1,
+              "precision": 1000000000,
+              "fraction": "decimal"
+            }
+          ],
+          "area": [
+            {
+              "unit": "m²",
+              "conversion": 1,
+              "precision": 1000000000,
+              "fraction": "decimal"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "with-precision-too-big",
+      "fn": "withPrecision",
+      "args": [
+        {
+          "subtype": "RL",
+          "ratio": "1 in = 1 m",
+          "x": [
+            {
+              "unit": "m",
+              "conversion": 0.013888888888888888,
+              "precision": 100
+            }
+          ],
+          "distance": [
+            {
+              "unit": "m",
+              "conversion": 1,
+              "precision": 100
+            }
+          ],
+          "area": [
+            {
+              "unit": "m²",
+              "conversion": 1,
+              "precision": 100
+            }
+          ]
+        },
+        10000000000
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "RangeError",
+            "message": "Invalid decimal precision"
+          }
+        }
+      }
+    },
+    {
+      "name": "with-precision-not-power",
+      "fn": "withPrecision",
+      "args": [
+        {
+          "subtype": "RL",
+          "ratio": "1 in = 1 m",
+          "x": [
+            {
+              "unit": "m",
+              "conversion": 0.013888888888888888,
+              "precision": 100
+            }
+          ],
+          "distance": [
+            {
+              "unit": "m",
+              "conversion": 1,
+              "precision": 100
+            }
+          ],
+          "area": [
+            {
+              "unit": "m²",
+              "conversion": 1,
+              "precision": 100
+            }
+          ]
+        },
+        50
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "RangeError",
+            "message": "Invalid decimal precision"
+          }
+        }
+      }
+    },
+    {
+      "name": "with-precision-fraction",
+      "fn": "withPrecision",
+      "args": [
+        {
+          "subtype": "RL",
+          "ratio": "1 in = 1 m",
+          "x": [
+            {
+              "unit": "m",
+              "conversion": 0.013888888888888888,
+              "precision": 100
+            }
+          ],
+          "distance": [
+            {
+              "unit": "m",
+              "conversion": 1,
+              "precision": 100
+            }
+          ],
+          "area": [
+            {
+              "unit": "m²",
+              "conversion": 1,
+              "precision": 100
+            }
+          ]
+        },
+        0.1
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "RangeError",
+            "message": "Invalid decimal precision"
+          }
+        }
+      }
+    },
+    {
+      "name": "with-precision-empty-lists",
+      "fn": "withPrecision",
+      "args": [
+        {
+          "subtype": "RL",
+          "ratio": "1 in = 1 m",
+          "x": [
+            {
+              "unit": "m",
+              "conversion": 0.013888888888888888,
+              "precision": 100
+            }
+          ],
+          "distance": [],
+          "area": []
+        },
+        10
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "RL",
+          "ratio": "1 in = 1 m",
+          "x": [
+            {
+              "unit": "m",
+              "conversion": 0.013888888888888888,
+              "precision": 100
+            }
+          ],
+          "distance": [],
+          "area": []
+        }
+      }
+    }
+  ]
+}
