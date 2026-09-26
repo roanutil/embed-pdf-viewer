@@ -1,43 +1,52 @@
-//! `packages/plugin/stamp` in Rust: workspace-scoped stamp libraries.
+//! `packages/plugin/stamp` in Rust: workspace-scoped stamp libraries and
+//! assets. A library IS a PDF: its `/Title` is the name, its `/Names /Pages`
+//! registry the assets, its pages the artwork, `/PieceInfo` only what has no
+//! standard home. Marks (ink, text, images, PDF pages) are authored into
+//! pages. Placement targets a document through its annotation plugin; a
+//! form-backed (dynamic) asset is first evaluated on a detached copy in a
+//! script realm the target document's actions plugin mints, then flattened.
 //!
-//! An imported PDF becomes a canonical library whose catalog and page
-//! `/PieceInfo` carry its metadata; each page is a vector asset with a
-//! derived placement PDF and a cached preview. PNG and JPEG assets stay
-//! loose. Placement names its document and goes through that document's
-//! annotation plugin (`armStamp`); with scripting enabled, a form-backed PDF
-//! asset is evaluated on a detached copy through the form plugin's standalone
-//! scripting controller and flattened first.
-//!
-//! The file split follows the TypeScript package: `types`, `reducer`,
-//! `capability`, and the wiring in [`stamp_plugin`]. The package's
-//! `/contract` entry is [`STAMP`] and the types.
+//! The files follow the TypeScript package: [`contract`] (with `token.ts`
+//! and `host-contract.ts`), [`model`], [`convention`], [`blank_library`],
+//! [`controller`] (the composition root), and the areas under
+//! [`services`], [`read`] and [`write`], each an `impl` block on the one
+//! [`StampCapability`].
 
 // Callback-shaped types are the port of JavaScript closures, as in the kernel.
 #![allow(clippy::type_complexity)]
 
-pub mod capability;
+pub mod blank_library;
+pub mod contract;
+pub mod controller;
+pub mod convention;
+pub mod model;
 pub mod promise;
-pub mod reducer;
-pub mod types;
+pub mod read;
+pub mod services;
+pub mod value;
+pub mod write;
 
 #[cfg(feature = "harness")]
 pub mod harness;
 
 use epdf_kernel::{AnyPlugin, define};
+use epdf_plugin_actions::ACTIONS;
+use epdf_plugin_annotation::ANNOTATION;
 
-pub use capability::{AssetBinary, StampCapability, create_stamp_capability};
-pub use reducer::{initial_stamp_state, stamp_reducer};
-pub use types::*;
+pub use contract::*;
+pub use controller::{StampCapability, StampHostCapability, create_stamp_controller};
+pub use model::{StampAction, StampState, initial_stamp_state, stamp_reducer};
+pub use services::asset_engine::DEFAULT_PREVIEW_WIDTH;
+pub use services::binaries::AssetBinary;
 
-/// `stampPlugin(config)`. Workspace-scoped: libraries are shared across
-/// every open document. There is no hard `requires`: the annotation token is
-/// document-scoped and resolved per placement, so a viewer without the
-/// annotation plugin fails at the arm call with the kernel's own
-/// missing-capability error.
+/// `stampPlugin(config)`: workspace-scoped (libraries outlive any one
+/// document); placement targets a document through its annotation plugin.
 pub fn stamp_plugin(config: StampConfig) -> AnyPlugin {
     define::<StampState, StampAction>("stamp")
+        .optional(ANNOTATION.any())
+        .optional(ACTIONS.any())
         .initial_state(initial_stamp_state)
         .reduce(stamp_reducer)
-        .capability(&STAMP, move |ctx| Ok(create_stamp_capability(ctx, config.clone())))
+        .create(&STAMP, move |cx| Ok((create_stamp_controller(cx, config.clone()), None)))
         .build()
 }

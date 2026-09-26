@@ -53,7 +53,7 @@ pub(crate) fn create_scripting_controller(
 }
 
 /// A commit result as the actions port reads it.
-pub(crate) fn commit_surface(result: &FormCommitResult) -> ScriptCommitSurface {
+pub fn commit_surface(result: &FormCommitResult) -> ScriptCommitSurface {
     ScriptCommitSurface {
         ui_effects: result
             .ui_effects
