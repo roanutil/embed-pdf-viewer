@@ -367,7 +367,7 @@ const dynamic: ScenarioCase[] = [
   },
   {
     name: 'a-flatten-that-fails-or-skips',
-    covers: 'A flatten result that failed or was skipped rejects with Unknown naming its page; the copy is closed.',
+    covers: 'A flatten result that failed or was skipped rejects with Unknown naming its page as the template literal prints it, whatever the engine put there; the copy is closed.',
     plugins: PLACEMENT(scripting()),
     engine: {
       documents: {
@@ -375,11 +375,25 @@ const dynamic: ScenarioCase[] = [
         lib: assetDoc(ONE),
         failed: dynamicDoc({ flatten: { results: [{ pageObjectNumber: 100, status: 'failed' }] } }),
         skipped: dynamicDoc({ flatten: { results: [{ pageObjectNumber: 100, status: 'skipped' }] } }),
+        text: dynamicDoc({ flatten: { results: [{ pageObjectNumber: 'p100', status: 'failed' }] } }),
+        nil: dynamicDoc({ flatten: { results: [{ pageObjectNumber: null, status: 'failed' }] } }),
+        flag: dynamicDoc({ flatten: { results: [{ pageObjectNumber: true, status: 'failed' }] } }),
+        none: dynamicDoc({ flatten: { results: [{ status: 'failed' }] } }),
       },
-      responses: opens('a', 'lib', 'failed', 'skipped'),
+      responses: opens('a', 'lib', 'failed', 'skipped', 'text', 'nil', 'flag', 'none'),
     },
     snapshot: 'none',
-    steps: [start, openDoc('a'), stamp('importLibraryPdf', [PDF]), arm('stamp-0-2'), arm('stamp-0-2')],
+    steps: [
+      start,
+      openDoc('a'),
+      stamp('importLibraryPdf', [PDF]),
+      arm('stamp-0-2'),
+      arm('stamp-0-2'),
+      arm('stamp-0-2'),
+      arm('stamp-0-2'),
+      arm('stamp-0-2'),
+      arm('stamp-0-2'),
+    ],
   },
   {
     name: 'a-failed-copy-close-fails-the-arm',

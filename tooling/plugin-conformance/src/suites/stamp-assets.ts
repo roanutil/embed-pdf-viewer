@@ -412,6 +412,40 @@ const queued: ScenarioCase[] = [
     ],
   },
   {
+    name: 'a-loose-append-finds-its-library-canonical',
+    covers:
+      "A loose append queued on a library that an import has since replaced with a canonical one finds a library that is not loose when its turn comes, and rejects with NotFound.",
+    plugins: STAMP(),
+    engine: {
+      documents: {
+        first: assetDoc(TWO, {
+          catalog: { Id: str('stamp-lib-0-3') },
+          page: { 100: { Id: str('c1') }, 101: { Id: str('c2') } },
+          responses: [{ path: 'download', defer: 'save-first' }],
+        }),
+        second: assetDoc(TWO, {
+          catalog: { Id: str('stamp-lib-0-3') },
+          page: { 100: { Id: str('d1') }, 101: { Id: str('d2') } },
+          responses: [{ path: 'download', defer: 'save-second' }],
+        }),
+        remove: deleteDoc(TWO),
+      },
+      responses: [...opens('first', 'second'), { path: 'open', times: 1, defer: 'reopen' }],
+    },
+    steps: [
+      start,
+      stamp('importLibraryPdf', [PDF]),
+      stamp('importLibraryPdf', [PDF]),
+      settle('save-first', PDF),
+      stamp('removeAsset', ['c1']),
+      stamp('addAsset', [{ name: 'Logo', source: png() }]),
+      stamp('addAsset', [{ libraryId: 'stamp-lib-0-3', name: 'Late', source: png() }]),
+      settle('save-second', PDF),
+      settle('reopen', { $document: 'remove' }),
+      stamp('libraries'),
+    ],
+  },
+  {
     name: 'a-loose-asset-under-a-canonical-id',
     covers:
       "An import that lands after a loose library took its embedded id replaces the library with the canonical one; removing the loose asset then finds a canonical library it has no page in and rejects with Unknown.",

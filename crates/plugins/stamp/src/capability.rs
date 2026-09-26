@@ -145,11 +145,9 @@ fn library_metadata_patch(id: &str, name: &str, categories: Option<&Vec<String>>
 }
 
 /// `snapshot?.entries ?? {}`.
+/// A `null` member reads like an empty one, so it is kept as is.
 fn entries_of(snapshot: &Value) -> Value {
-    match get(snapshot, "entries") {
-        Some(entries) if !entries.is_null() => entries.clone(),
-        _ => json!({}),
-    }
+    get(snapshot, "entries").cloned().unwrap_or_else(|| json!({}))
 }
 
 // ── engine answers ────────────────────────────────────────────────────────────
@@ -181,16 +179,6 @@ fn js_string(value: Option<&Value>) -> String {
         Some(Value::Bool(b)) => b.to_string(),
         Some(Value::Null) => "null".to_string(),
         _ => "undefined".to_string(),
-    }
-}
-
-/// `a === b` for two members, `undefined` when absent.
-fn strict_eq(a: Option<&Value>, b: Option<&Value>) -> bool {
-    match (a.filter(|v| !is_undefined(v)), b.filter(|v| !is_undefined(v))) {
-        (None, None) => true,
-        (Some(Value::Number(x)), Some(Value::Number(y))) => x.as_f64() == y.as_f64(),
-        (Some(x), Some(y)) => !x.is_object() && !x.is_array() && x == y,
-        _ => false,
     }
 }
 
@@ -1005,14 +993,14 @@ impl StampCapability {
                 };
                 return Err(Error::engine("InvalidArg", message));
             };
-            let selected_pon = get(&selected, "pageObjectNumber").cloned();
+            let selected_pon = f64::from(pon_of(&selected));
             let snapshot = await_engine(call(&doc, "forms.list", Vec::new())).await?;
             let fields = get(&snapshot, "fields").and_then(Value::as_array).cloned().unwrap_or_default();
             let has_selected_page_field = fields.iter().any(|field| {
                 get(field, "widgets").and_then(Value::as_array).is_some_and(|widgets| {
                     widgets
                         .iter()
-                        .any(|w| strict_eq(get(w, "pageObjectNumber"), selected_pon.as_ref()))
+                        .any(|w| get(w, "pageObjectNumber").and_then(Value::as_f64) == Some(selected_pon))
                 })
             });
             if !has_selected_page_field {

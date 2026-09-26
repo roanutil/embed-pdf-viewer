@@ -19700,6 +19700,2078 @@
       ]
     },
     {
+      "name": "a-loose-append-finds-its-library-canonical",
+      "covers": "A loose append queued on a library that an import has since replaced with a canonical one finds a library that is not loose when its turn comes, and rejects with NotFound.",
+      "plugins": [
+        {
+          "factory": "stamp"
+        }
+      ],
+      "engine": {
+        "documents": {
+          "first": {
+            "services": [
+              "pieceInfo",
+              "page.pieceInfo"
+            ],
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 100,
+                "label": null,
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 200,
+                    "top": 100
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 200,
+                    "top": 100
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "pageObjectNumber": 101,
+                "label": null,
+                "size": {
+                  "width": 201,
+                  "height": 101
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 201,
+                    "top": 101
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 201,
+                    "top": 101
+                  }
+                }
+              }
+            ],
+            "responses": [
+              {
+                "path": "download",
+                "defer": "save-first"
+              },
+              {
+                "path": "pages.list",
+                "value": {
+                  "pageCount": 2,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "pageObjectNumber": 100,
+                      "label": null,
+                      "size": {
+                        "width": 200,
+                        "height": 100
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 200,
+                          "top": 100
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 200,
+                          "top": 100
+                        }
+                      }
+                    },
+                    {
+                      "index": 1,
+                      "pageObjectNumber": 101,
+                      "label": null,
+                      "size": {
+                        "width": 201,
+                        "height": 101
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 201,
+                          "top": 101
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 201,
+                          "top": 101
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "pieceInfo.read",
+                "value": {
+                  "entries": {
+                    "Id": {
+                      "type": "string",
+                      "value": "stamp-lib-0-3"
+                    }
+                  },
+                  "lastModified": null
+                }
+              },
+              {
+                "path": "page.pieceInfo.read",
+                "pon": 100,
+                "value": {
+                  "entries": {
+                    "Id": {
+                      "type": "string",
+                      "value": "c1"
+                    }
+                  },
+                  "lastModified": null
+                }
+              },
+              {
+                "path": "page.pieceInfo.read",
+                "pon": 101,
+                "value": {
+                  "entries": {
+                    "Id": {
+                      "type": "string",
+                      "value": "c2"
+                    }
+                  },
+                  "lastModified": null
+                }
+              },
+              {
+                "path": "pieceInfo.update"
+              },
+              {
+                "path": "page.pieceInfo.update"
+              },
+              {
+                "path": "pages.extract",
+                "args": [
+                  [
+                    100
+                  ]
+                ],
+                "value": {
+                  "$bytes": "JVBERi1wYWdlLTEwMA=="
+                }
+              },
+              {
+                "path": "pages.extract",
+                "args": [
+                  [
+                    101
+                  ]
+                ],
+                "value": {
+                  "$bytes": "JVBERi1wYWdlLTEwMQ=="
+                }
+              },
+              {
+                "path": "page.render.image",
+                "pon": 100,
+                "value": {
+                  "contentType": "image/png",
+                  "source": {
+                    "kind": "bytes",
+                    "bytes": {
+                      "$bytes": "cG5nLTEwMA=="
+                    }
+                  }
+                }
+              },
+              {
+                "path": "page.render.image",
+                "pon": 101,
+                "value": {
+                  "contentType": "image/png",
+                  "source": {
+                    "kind": "bytes",
+                    "bytes": {
+                      "$bytes": "cG5nLTEwMQ=="
+                    }
+                  }
+                }
+              },
+              {
+                "path": "download",
+                "value": {
+                  "$bytes": "JVBERi1jYW5vbmljYWw="
+                }
+              }
+            ]
+          },
+          "second": {
+            "services": [
+              "pieceInfo",
+              "page.pieceInfo"
+            ],
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 100,
+                "label": null,
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 200,
+                    "top": 100
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 200,
+                    "top": 100
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "pageObjectNumber": 101,
+                "label": null,
+                "size": {
+                  "width": 201,
+                  "height": 101
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 201,
+                    "top": 101
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 201,
+                    "top": 101
+                  }
+                }
+              }
+            ],
+            "responses": [
+              {
+                "path": "download",
+                "defer": "save-second"
+              },
+              {
+                "path": "pages.list",
+                "value": {
+                  "pageCount": 2,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "pageObjectNumber": 100,
+                      "label": null,
+                      "size": {
+                        "width": 200,
+                        "height": 100
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 200,
+                          "top": 100
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 200,
+                          "top": 100
+                        }
+                      }
+                    },
+                    {
+                      "index": 1,
+                      "pageObjectNumber": 101,
+                      "label": null,
+                      "size": {
+                        "width": 201,
+                        "height": 101
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 201,
+                          "top": 101
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 201,
+                          "top": 101
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "pieceInfo.read",
+                "value": {
+                  "entries": {
+                    "Id": {
+                      "type": "string",
+                      "value": "stamp-lib-0-3"
+                    }
+                  },
+                  "lastModified": null
+                }
+              },
+              {
+                "path": "page.pieceInfo.read",
+                "pon": 100,
+                "value": {
+                  "entries": {
+                    "Id": {
+                      "type": "string",
+                      "value": "d1"
+                    }
+                  },
+                  "lastModified": null
+                }
+              },
+              {
+                "path": "page.pieceInfo.read",
+                "pon": 101,
+                "value": {
+                  "entries": {
+                    "Id": {
+                      "type": "string",
+                      "value": "d2"
+                    }
+                  },
+                  "lastModified": null
+                }
+              },
+              {
+                "path": "pieceInfo.update"
+              },
+              {
+                "path": "page.pieceInfo.update"
+              },
+              {
+                "path": "pages.extract",
+                "args": [
+                  [
+                    100
+                  ]
+                ],
+                "value": {
+                  "$bytes": "JVBERi1wYWdlLTEwMA=="
+                }
+              },
+              {
+                "path": "pages.extract",
+                "args": [
+                  [
+                    101
+                  ]
+                ],
+                "value": {
+                  "$bytes": "JVBERi1wYWdlLTEwMQ=="
+                }
+              },
+              {
+                "path": "page.render.image",
+                "pon": 100,
+                "value": {
+                  "contentType": "image/png",
+                  "source": {
+                    "kind": "bytes",
+                    "bytes": {
+                      "$bytes": "cG5nLTEwMA=="
+                    }
+                  }
+                }
+              },
+              {
+                "path": "page.render.image",
+                "pon": 101,
+                "value": {
+                  "contentType": "image/png",
+                  "source": {
+                    "kind": "bytes",
+                    "bytes": {
+                      "$bytes": "cG5nLTEwMQ=="
+                    }
+                  }
+                }
+              },
+              {
+                "path": "download",
+                "value": {
+                  "$bytes": "JVBERi1jYW5vbmljYWw="
+                }
+              }
+            ]
+          },
+          "remove": {
+            "services": [
+              "pieceInfo",
+              "page.pieceInfo"
+            ],
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 100,
+                "label": null,
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 200,
+                    "top": 100
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 200,
+                    "top": 100
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "pageObjectNumber": 101,
+                "label": null,
+                "size": {
+                  "width": 201,
+                  "height": 101
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 201,
+                    "top": 101
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 201,
+                    "top": 101
+                  }
+                }
+              }
+            ],
+            "responses": [
+              {
+                "path": "pages.delete",
+                "value": {
+                  "layout": {
+                    "pageCount": 1,
+                    "pages": [
+                      {
+                        "index": 1,
+                        "pageObjectNumber": 101,
+                        "label": null,
+                        "size": {
+                          "width": 201,
+                          "height": 101
+                        },
+                        "rotation": 0,
+                        "userUnit": 1,
+                        "boxes": {
+                          "media": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 201,
+                            "top": 101
+                          },
+                          "crop": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 201,
+                            "top": 101
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "cache": null
+                }
+              },
+              {
+                "path": "pages.list",
+                "value": {
+                  "pageCount": 2,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "pageObjectNumber": 100,
+                      "label": null,
+                      "size": {
+                        "width": 200,
+                        "height": 100
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 200,
+                          "top": 100
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 200,
+                          "top": 100
+                        }
+                      }
+                    },
+                    {
+                      "index": 1,
+                      "pageObjectNumber": 101,
+                      "label": null,
+                      "size": {
+                        "width": 201,
+                        "height": 101
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 201,
+                          "top": 101
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 201,
+                          "top": 101
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "pieceInfo.read",
+                "value": null
+              },
+              {
+                "path": "page.pieceInfo.read",
+                "pon": 100,
+                "value": null
+              },
+              {
+                "path": "page.pieceInfo.read",
+                "pon": 101,
+                "value": null
+              },
+              {
+                "path": "pieceInfo.update"
+              },
+              {
+                "path": "page.pieceInfo.update"
+              },
+              {
+                "path": "pages.extract",
+                "args": [
+                  [
+                    100
+                  ]
+                ],
+                "value": {
+                  "$bytes": "JVBERi1wYWdlLTEwMA=="
+                }
+              },
+              {
+                "path": "pages.extract",
+                "args": [
+                  [
+                    101
+                  ]
+                ],
+                "value": {
+                  "$bytes": "JVBERi1wYWdlLTEwMQ=="
+                }
+              },
+              {
+                "path": "page.render.image",
+                "pon": 100,
+                "value": {
+                  "contentType": "image/png",
+                  "source": {
+                    "kind": "bytes",
+                    "bytes": {
+                      "$bytes": "cG5nLTEwMA=="
+                    }
+                  }
+                }
+              },
+              {
+                "path": "page.render.image",
+                "pon": 101,
+                "value": {
+                  "contentType": "image/png",
+                  "source": {
+                    "kind": "bytes",
+                    "bytes": {
+                      "$bytes": "cG5nLTEwMQ=="
+                    }
+                  }
+                }
+              },
+              {
+                "path": "download",
+                "value": {
+                  "$bytes": "JVBERi1jYW5vbmljYWwtcmV3cml0dGVu"
+                }
+              }
+            ]
+          }
+        },
+        "responses": [
+          {
+            "path": "open",
+            "times": 1,
+            "value": {
+              "$document": "first"
+            }
+          },
+          {
+            "path": "open",
+            "times": 1,
+            "value": {
+              "$document": "second"
+            }
+          },
+          {
+            "path": "open",
+            "times": 1,
+            "defer": "reopen"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stamp"
+          },
+          "method": "importLibraryPdf",
+          "args": [
+            {
+              "$bytes": "JVBERi0xLjcKJXN0YW1wIGZpeHR1cmUK"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stamp"
+          },
+          "method": "importLibraryPdf",
+          "args": [
+            {
+              "$bytes": "JVBERi0xLjcKJXN0YW1wIGZpeHR1cmUK"
+            }
+          ]
+        },
+        {
+          "op": "settle",
+          "label": "save-first",
+          "value": {
+            "$bytes": "JVBERi0xLjcKJXN0YW1wIGZpeHR1cmUK"
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stamp"
+          },
+          "method": "removeAsset",
+          "args": [
+            "c1"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stamp"
+          },
+          "method": "addAsset",
+          "args": [
+            {
+              "name": "Logo",
+              "source": {
+                "$bytes": "iVBORw0KGgoAAAANSUhEUgAAAGQAAAAyAAAAAAAAAAA="
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stamp"
+          },
+          "method": "addAsset",
+          "args": [
+            {
+              "libraryId": "stamp-lib-0-3",
+              "name": "Late",
+              "source": {
+                "$bytes": "iVBORw0KGgoAAAANSUhEUgAAAGQAAAAyAAAAAAAAAAA="
+              }
+            }
+          ]
+        },
+        {
+          "op": "settle",
+          "label": "save-second",
+          "value": {
+            "$bytes": "JVBERi0xLjcKJXN0YW1wIGZpeHR1cmUK"
+          }
+        },
+        {
+          "op": "settle",
+          "label": "reopen",
+          "value": {
+            "$document": "remove"
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stamp"
+          },
+          "method": "libraries",
+          "args": []
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "stamp": {
+                "libraries": {},
+                "libraryOrder": [],
+                "assets": {}
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "stamp-import-0-0",
+                  "bytes": {
+                    "$bytes": "JVBERi0xLjcKJXN0YW1wIGZpeHR1cmUK"
+                  }
+                },
+                {
+                  "scope": [
+                    "*"
+                  ]
+                }
+              ]
+            },
+            {
+              "doc": "first",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "first",
+              "path": "pieceInfo.read",
+              "args": [
+                "EMBD_StampLibrary"
+              ]
+            },
+            {
+              "doc": "first",
+              "path": "page.pieceInfo.read",
+              "pon": 100,
+              "args": [
+                "EMBD_Stamp"
+              ]
+            },
+            {
+              "doc": "first",
+              "path": "page.pieceInfo.read",
+              "pon": 101,
+              "args": [
+                "EMBD_Stamp"
+              ]
+            },
+            {
+              "doc": "first",
+              "path": "pieceInfo.update",
+              "args": [
+                "EMBD_StampLibrary",
+                {
+                  "Version": 1,
+                  "Id": "stamp-lib-0-3",
+                  "Name": "Stamps",
+                  "Kind": {
+                    "name": "StampLibrary"
+                  },
+                  "Categories": null
+                }
+              ]
+            },
+            {
+              "doc": "first",
+              "path": "page.pieceInfo.update",
+              "pon": 100,
+              "args": [
+                "EMBD_Stamp",
+                {
+                  "Version": 1,
+                  "Id": "c1",
+                  "Name": "Stamp 1",
+                  "Kind": {
+                    "name": "Stamp"
+                  },
+                  "Subject": null,
+                  "Categories": null
+                }
+              ]
+            },
+            {
+              "doc": "first",
+              "path": "pages.extract",
+              "args": [
+                [
+                  100
+                ]
+              ]
+            },
+            {
+              "doc": "first",
+              "path": "page.render.image",
+              "pon": 100,
+              "args": [
+                {
+                  "viewport": {
+                    "kind": "width",
+                    "width": 256
+                  },
+                  "background": "transparent",
+                  "includeAnnotations": true,
+                  "format": "png"
+                }
+              ]
+            },
+            {
+              "doc": "first",
+              "path": "page.pieceInfo.update",
+              "pon": 101,
+              "args": [
+                "EMBD_Stamp",
+                {
+                  "Version": 1,
+                  "Id": "c2",
+                  "Name": "Stamp 2",
+                  "Kind": {
+                    "name": "Stamp"
+                  },
+                  "Subject": null,
+                  "Categories": null
+                }
+              ]
+            },
+            {
+              "doc": "first",
+              "path": "pages.extract",
+              "args": [
+                [
+                  101
+                ]
+              ]
+            },
+            {
+              "doc": "first",
+              "path": "page.render.image",
+              "pon": 101,
+              "args": [
+                {
+                  "viewport": {
+                    "kind": "width",
+                    "width": 256
+                  },
+                  "background": "transparent",
+                  "includeAnnotations": true,
+                  "format": "png"
+                }
+              ]
+            },
+            {
+              "doc": "first",
+              "path": "download",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "first": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "stamp": {
+                "libraries": {},
+                "libraryOrder": [],
+                "assets": {}
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "stamp-import-0-1",
+                  "bytes": {
+                    "$bytes": "JVBERi0xLjcKJXN0YW1wIGZpeHR1cmUK"
+                  }
+                },
+                {
+                  "scope": [
+                    "*"
+                  ]
+                }
+              ]
+            },
+            {
+              "doc": "second",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "second",
+              "path": "pieceInfo.read",
+              "args": [
+                "EMBD_StampLibrary"
+              ]
+            },
+            {
+              "doc": "second",
+              "path": "page.pieceInfo.read",
+              "pon": 100,
+              "args": [
+                "EMBD_Stamp"
+              ]
+            },
+            {
+              "doc": "second",
+              "path": "page.pieceInfo.read",
+              "pon": 101,
+              "args": [
+                "EMBD_Stamp"
+              ]
+            },
+            {
+              "doc": "second",
+              "path": "pieceInfo.update",
+              "args": [
+                "EMBD_StampLibrary",
+                {
+                  "Version": 1,
+                  "Id": "stamp-lib-0-3",
+                  "Name": "Stamps",
+                  "Kind": {
+                    "name": "StampLibrary"
+                  },
+                  "Categories": null
+                }
+              ]
+            },
+            {
+              "doc": "second",
+              "path": "page.pieceInfo.update",
+              "pon": 100,
+              "args": [
+                "EMBD_Stamp",
+                {
+                  "Version": 1,
+                  "Id": "d1",
+                  "Name": "Stamp 1",
+                  "Kind": {
+                    "name": "Stamp"
+                  },
+                  "Subject": null,
+                  "Categories": null
+                }
+              ]
+            },
+            {
+              "doc": "second",
+              "path": "pages.extract",
+              "args": [
+                [
+                  100
+                ]
+              ]
+            },
+            {
+              "doc": "second",
+              "path": "page.render.image",
+              "pon": 100,
+              "args": [
+                {
+                  "viewport": {
+                    "kind": "width",
+                    "width": 256
+                  },
+                  "background": "transparent",
+                  "includeAnnotations": true,
+                  "format": "png"
+                }
+              ]
+            },
+            {
+              "doc": "second",
+              "path": "page.pieceInfo.update",
+              "pon": 101,
+              "args": [
+                "EMBD_Stamp",
+                {
+                  "Version": 1,
+                  "Id": "d2",
+                  "Name": "Stamp 2",
+                  "Kind": {
+                    "name": "Stamp"
+                  },
+                  "Subject": null,
+                  "Categories": null
+                }
+              ]
+            },
+            {
+              "doc": "second",
+              "path": "pages.extract",
+              "args": [
+                [
+                  101
+                ]
+              ]
+            },
+            {
+              "doc": "second",
+              "path": "page.render.image",
+              "pon": 101,
+              "args": [
+                {
+                  "viewport": {
+                    "kind": "width",
+                    "width": 256
+                  },
+                  "background": "transparent",
+                  "includeAnnotations": true,
+                  "format": "png"
+                }
+              ]
+            },
+            {
+              "doc": "second",
+              "path": "download",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "first": {
+              "subscribers": 0
+            },
+            "second": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "stamp": {
+                "libraries": {},
+                "libraryOrder": [],
+                "assets": {}
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "stamp-lib-0-3"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "stamp",
+              "action": {
+                "type": "LIBRARY_ADDED",
+                "library": {
+                  "id": "stamp-lib-0-3",
+                  "name": "Stamps",
+                  "storage": "canonical-pdf",
+                  "assetIds": []
+                }
+              }
+            },
+            {
+              "slice": "stamp",
+              "action": {
+                "type": "ASSET_ADDED",
+                "asset": {
+                  "id": "c1",
+                  "libraryId": "stamp-lib-0-3",
+                  "kind": "stamp",
+                  "name": "Stamp 1",
+                  "size": {
+                    "width": 200,
+                    "height": 100
+                  },
+                  "format": "pdf",
+                  "pageObjectNumber": 100
+                }
+              }
+            },
+            {
+              "slice": "stamp",
+              "action": {
+                "type": "ASSET_ADDED",
+                "asset": {
+                  "id": "c2",
+                  "libraryId": "stamp-lib-0-3",
+                  "kind": "stamp",
+                  "name": "Stamp 2",
+                  "size": {
+                    "width": 201,
+                    "height": 101
+                  },
+                  "format": "pdf",
+                  "pageObjectNumber": 101
+                }
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": "first",
+              "path": "close",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "first": {
+              "subscribers": 0
+            },
+            "second": {
+              "subscribers": 0
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "stamp": {
+                "libraries": {
+                  "stamp-lib-0-3": {
+                    "id": "stamp-lib-0-3",
+                    "name": "Stamps",
+                    "storage": "canonical-pdf",
+                    "assetIds": [
+                      "c1",
+                      "c2"
+                    ]
+                  }
+                },
+                "libraryOrder": [
+                  "stamp-lib-0-3"
+                ],
+                "assets": {
+                  "c1": {
+                    "id": "c1",
+                    "libraryId": "stamp-lib-0-3",
+                    "kind": "stamp",
+                    "name": "Stamp 1",
+                    "size": {
+                      "width": 200,
+                      "height": 100
+                    },
+                    "format": "pdf",
+                    "pageObjectNumber": 100
+                  },
+                  "c2": {
+                    "id": "c2",
+                    "libraryId": "stamp-lib-0-3",
+                    "kind": "stamp",
+                    "name": "Stamp 2",
+                    "size": {
+                      "width": 201,
+                      "height": 101
+                    },
+                    "format": "pdf",
+                    "pageObjectNumber": 101
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "stamp-import-0-2",
+                  "bytes": {
+                    "$bytes": "JVBERi0xLjcKJXN0YW1wIGZpeHR1cmUK"
+                  }
+                },
+                {
+                  "scope": [
+                    "*"
+                  ]
+                }
+              ]
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "first": {
+              "subscribers": 0
+            },
+            "second": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 3
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "stamp": {
+                "libraries": {
+                  "stamp-lib-0-3": {
+                    "id": "stamp-lib-0-3",
+                    "name": "Stamps",
+                    "storage": "canonical-pdf",
+                    "assetIds": [
+                      "c1",
+                      "c2"
+                    ]
+                  }
+                },
+                "libraryOrder": [
+                  "stamp-lib-0-3"
+                ],
+                "assets": {
+                  "c1": {
+                    "id": "c1",
+                    "libraryId": "stamp-lib-0-3",
+                    "kind": "stamp",
+                    "name": "Stamp 1",
+                    "size": {
+                      "width": 200,
+                      "height": 100
+                    },
+                    "format": "pdf",
+                    "pageObjectNumber": 100
+                  },
+                  "c2": {
+                    "id": "c2",
+                    "libraryId": "stamp-lib-0-3",
+                    "kind": "stamp",
+                    "name": "Stamp 2",
+                    "size": {
+                      "width": 201,
+                      "height": 101
+                    },
+                    "format": "pdf",
+                    "pageObjectNumber": 101
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 4,
+              "resolved": "stamp-0-4"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "stamp",
+              "action": {
+                "type": "LIBRARY_ADDED",
+                "library": {
+                  "id": "stamp-lib-0-3",
+                  "name": "Logo",
+                  "storage": "loose",
+                  "assetIds": []
+                }
+              }
+            },
+            {
+              "slice": "stamp",
+              "action": {
+                "type": "ASSET_ADDED",
+                "asset": {
+                  "id": "stamp-0-4",
+                  "libraryId": "stamp-lib-0-3",
+                  "kind": "stamp",
+                  "name": "Logo",
+                  "size": {
+                    "width": 100,
+                    "height": 50
+                  },
+                  "format": "png"
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "first": {
+              "subscribers": 0
+            },
+            "second": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 4
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "stamp": {
+                "libraries": {
+                  "stamp-lib-0-3": {
+                    "id": "stamp-lib-0-3",
+                    "name": "Logo",
+                    "storage": "loose",
+                    "assetIds": [
+                      "stamp-0-4"
+                    ]
+                  }
+                },
+                "libraryOrder": [
+                  "stamp-lib-0-3",
+                  "stamp-lib-0-3"
+                ],
+                "assets": {
+                  "c1": {
+                    "id": "c1",
+                    "libraryId": "stamp-lib-0-3",
+                    "kind": "stamp",
+                    "name": "Stamp 1",
+                    "size": {
+                      "width": 200,
+                      "height": 100
+                    },
+                    "format": "pdf",
+                    "pageObjectNumber": 100
+                  },
+                  "c2": {
+                    "id": "c2",
+                    "libraryId": "stamp-lib-0-3",
+                    "kind": "stamp",
+                    "name": "Stamp 2",
+                    "size": {
+                      "width": 201,
+                      "height": 101
+                    },
+                    "format": "pdf",
+                    "pageObjectNumber": 101
+                  },
+                  "stamp-0-4": {
+                    "id": "stamp-0-4",
+                    "libraryId": "stamp-lib-0-3",
+                    "kind": "stamp",
+                    "name": "Logo",
+                    "size": {
+                      "width": 100,
+                      "height": 50
+                    },
+                    "format": "png"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "first": {
+              "subscribers": 0
+            },
+            "second": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 5
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "stamp": {
+                "libraries": {
+                  "stamp-lib-0-3": {
+                    "id": "stamp-lib-0-3",
+                    "name": "Logo",
+                    "storage": "loose",
+                    "assetIds": [
+                      "stamp-0-4"
+                    ]
+                  }
+                },
+                "libraryOrder": [
+                  "stamp-lib-0-3",
+                  "stamp-lib-0-3"
+                ],
+                "assets": {
+                  "c1": {
+                    "id": "c1",
+                    "libraryId": "stamp-lib-0-3",
+                    "kind": "stamp",
+                    "name": "Stamp 1",
+                    "size": {
+                      "width": 200,
+                      "height": 100
+                    },
+                    "format": "pdf",
+                    "pageObjectNumber": 100
+                  },
+                  "c2": {
+                    "id": "c2",
+                    "libraryId": "stamp-lib-0-3",
+                    "kind": "stamp",
+                    "name": "Stamp 2",
+                    "size": {
+                      "width": 201,
+                      "height": 101
+                    },
+                    "format": "pdf",
+                    "pageObjectNumber": 101
+                  },
+                  "stamp-0-4": {
+                    "id": "stamp-0-4",
+                    "libraryId": "stamp-lib-0-3",
+                    "kind": "stamp",
+                    "name": "Logo",
+                    "size": {
+                      "width": 100,
+                      "height": 50
+                    },
+                    "format": "png"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": "stamp-lib-0-3"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "stamp",
+              "action": {
+                "type": "LIBRARY_ADDED",
+                "library": {
+                  "id": "stamp-lib-0-3",
+                  "name": "Stamps",
+                  "storage": "canonical-pdf",
+                  "assetIds": []
+                }
+              }
+            },
+            {
+              "slice": "stamp",
+              "action": {
+                "type": "ASSET_ADDED",
+                "asset": {
+                  "id": "d1",
+                  "libraryId": "stamp-lib-0-3",
+                  "kind": "stamp",
+                  "name": "Stamp 1",
+                  "size": {
+                    "width": 200,
+                    "height": 100
+                  },
+                  "format": "pdf",
+                  "pageObjectNumber": 100
+                }
+              }
+            },
+            {
+              "slice": "stamp",
+              "action": {
+                "type": "ASSET_ADDED",
+                "asset": {
+                  "id": "d2",
+                  "libraryId": "stamp-lib-0-3",
+                  "kind": "stamp",
+                  "name": "Stamp 2",
+                  "size": {
+                    "width": 201,
+                    "height": 101
+                  },
+                  "format": "pdf",
+                  "pageObjectNumber": 101
+                }
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": "second",
+              "path": "close",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "first": {
+              "subscribers": 0
+            },
+            "second": {
+              "subscribers": 0
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "stamp": {
+                "libraries": {
+                  "stamp-lib-0-3": {
+                    "id": "stamp-lib-0-3",
+                    "name": "Stamps",
+                    "storage": "canonical-pdf",
+                    "assetIds": [
+                      "d1",
+                      "d2"
+                    ]
+                  }
+                },
+                "libraryOrder": [
+                  "stamp-lib-0-3",
+                  "stamp-lib-0-3",
+                  "stamp-lib-0-3"
+                ],
+                "assets": {
+                  "c1": {
+                    "id": "c1",
+                    "libraryId": "stamp-lib-0-3",
+                    "kind": "stamp",
+                    "name": "Stamp 1",
+                    "size": {
+                      "width": 200,
+                      "height": 100
+                    },
+                    "format": "pdf",
+                    "pageObjectNumber": 100
+                  },
+                  "c2": {
+                    "id": "c2",
+                    "libraryId": "stamp-lib-0-3",
+                    "kind": "stamp",
+                    "name": "Stamp 2",
+                    "size": {
+                      "width": 201,
+                      "height": 101
+                    },
+                    "format": "pdf",
+                    "pageObjectNumber": 101
+                  },
+                  "stamp-0-4": {
+                    "id": "stamp-0-4",
+                    "libraryId": "stamp-lib-0-3",
+                    "kind": "stamp",
+                    "name": "Logo",
+                    "size": {
+                      "width": 100,
+                      "height": 50
+                    },
+                    "format": "png"
+                  },
+                  "d1": {
+                    "id": "d1",
+                    "libraryId": "stamp-lib-0-3",
+                    "kind": "stamp",
+                    "name": "Stamp 1",
+                    "size": {
+                      "width": 200,
+                      "height": 100
+                    },
+                    "format": "pdf",
+                    "pageObjectNumber": 100
+                  },
+                  "d2": {
+                    "id": "d2",
+                    "libraryId": "stamp-lib-0-3",
+                    "kind": "stamp",
+                    "name": "Stamp 2",
+                    "size": {
+                      "width": 201,
+                      "height": 101
+                    },
+                    "format": "pdf",
+                    "pageObjectNumber": 101
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 3,
+              "resolved": {
+                "$undefined": true
+              }
+            },
+            {
+              "promise": 5,
+              "rejected": {
+                "$error": {
+                  "name": "EngineError",
+                  "message": "[stamp] loose library 'stamp-lib-0-3' no longer exists",
+                  "code": "NotFound"
+                }
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "stamp",
+              "action": {
+                "type": "ASSET_REMOVED",
+                "assetId": "c1"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": "remove",
+              "path": "pages.delete",
+              "args": [
+                [
+                  100
+                ]
+              ]
+            },
+            {
+              "doc": "remove",
+              "path": "download",
+              "args": []
+            },
+            {
+              "doc": "remove",
+              "path": "close",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "first": {
+              "subscribers": 0
+            },
+            "second": {
+              "subscribers": 0
+            },
+            "remove": {
+              "subscribers": 0
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "stamp": {
+                "libraries": {
+                  "stamp-lib-0-3": {
+                    "id": "stamp-lib-0-3",
+                    "name": "Stamps",
+                    "storage": "canonical-pdf",
+                    "assetIds": [
+                      "d1",
+                      "d2"
+                    ]
+                  }
+                },
+                "libraryOrder": [
+                  "stamp-lib-0-3",
+                  "stamp-lib-0-3",
+                  "stamp-lib-0-3"
+                ],
+                "assets": {
+                  "c2": {
+                    "id": "c2",
+                    "libraryId": "stamp-lib-0-3",
+                    "kind": "stamp",
+                    "name": "Stamp 2",
+                    "size": {
+                      "width": 201,
+                      "height": 101
+                    },
+                    "format": "pdf",
+                    "pageObjectNumber": 101
+                  },
+                  "stamp-0-4": {
+                    "id": "stamp-0-4",
+                    "libraryId": "stamp-lib-0-3",
+                    "kind": "stamp",
+                    "name": "Logo",
+                    "size": {
+                      "width": 100,
+                      "height": 50
+                    },
+                    "format": "png"
+                  },
+                  "d1": {
+                    "id": "d1",
+                    "libraryId": "stamp-lib-0-3",
+                    "kind": "stamp",
+                    "name": "Stamp 1",
+                    "size": {
+                      "width": 200,
+                      "height": 100
+                    },
+                    "format": "pdf",
+                    "pageObjectNumber": 100
+                  },
+                  "d2": {
+                    "id": "d2",
+                    "libraryId": "stamp-lib-0-3",
+                    "kind": "stamp",
+                    "name": "Stamp 2",
+                    "size": {
+                      "width": 201,
+                      "height": 101
+                    },
+                    "format": "pdf",
+                    "pageObjectNumber": 101
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "first": {
+              "subscribers": 0
+            },
+            "second": {
+              "subscribers": 0
+            },
+            "remove": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "returned": [
+              {
+                "id": "stamp-lib-0-3",
+                "name": "Stamps",
+                "storage": "canonical-pdf",
+                "assetIds": [
+                  "d1",
+                  "d2"
+                ]
+              },
+              {
+                "id": "stamp-lib-0-3",
+                "name": "Stamps",
+                "storage": "canonical-pdf",
+                "assetIds": [
+                  "d1",
+                  "d2"
+                ]
+              },
+              {
+                "id": "stamp-lib-0-3",
+                "name": "Stamps",
+                "storage": "canonical-pdf",
+                "assetIds": [
+                  "d1",
+                  "d2"
+                ]
+              }
+            ]
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "stamp": {
+                "libraries": {
+                  "stamp-lib-0-3": {
+                    "id": "stamp-lib-0-3",
+                    "name": "Stamps",
+                    "storage": "canonical-pdf",
+                    "assetIds": [
+                      "d1",
+                      "d2"
+                    ]
+                  }
+                },
+                "libraryOrder": [
+                  "stamp-lib-0-3",
+                  "stamp-lib-0-3",
+                  "stamp-lib-0-3"
+                ],
+                "assets": {
+                  "c2": {
+                    "id": "c2",
+                    "libraryId": "stamp-lib-0-3",
+                    "kind": "stamp",
+                    "name": "Stamp 2",
+                    "size": {
+                      "width": 201,
+                      "height": 101
+                    },
+                    "format": "pdf",
+                    "pageObjectNumber": 101
+                  },
+                  "stamp-0-4": {
+                    "id": "stamp-0-4",
+                    "libraryId": "stamp-lib-0-3",
+                    "kind": "stamp",
+                    "name": "Logo",
+                    "size": {
+                      "width": 100,
+                      "height": 50
+                    },
+                    "format": "png"
+                  },
+                  "d1": {
+                    "id": "d1",
+                    "libraryId": "stamp-lib-0-3",
+                    "kind": "stamp",
+                    "name": "Stamp 1",
+                    "size": {
+                      "width": 200,
+                      "height": 100
+                    },
+                    "format": "pdf",
+                    "pageObjectNumber": 100
+                  },
+                  "d2": {
+                    "id": "d2",
+                    "libraryId": "stamp-lib-0-3",
+                    "kind": "stamp",
+                    "name": "Stamp 2",
+                    "size": {
+                      "width": 201,
+                      "height": 101
+                    },
+                    "format": "pdf",
+                    "pageObjectNumber": 101
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "a-loose-asset-under-a-canonical-id",
       "covers": "An import that lands after a loose library took its embedded id replaces the library with the canonical one; removing the loose asset then finds a canonical library it has no page in and rejects with Unknown.",
       "plugins": [

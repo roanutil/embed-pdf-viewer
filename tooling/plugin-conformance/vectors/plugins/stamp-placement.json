@@ -32888,7 +32888,7 @@
     },
     {
       "name": "a-flatten-that-fails-or-skips",
-      "covers": "A flatten result that failed or was skipped rejects with Unknown naming its page; the copy is closed.",
+      "covers": "A flatten result that failed or was skipped rejects with Unknown naming its page as the template literal prints it, whatever the engine put there; the copy is closed.",
       "plugins": [
         {
           "factory": "interaction"
@@ -33475,6 +33475,753 @@
                 }
               }
             ]
+          },
+          "text": {
+            "services": [
+              "actions",
+              "pieceInfo",
+              "page.pieceInfo"
+            ],
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 100,
+                "label": null,
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 200,
+                    "top": 100
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 200,
+                    "top": 100
+                  }
+                }
+              }
+            ],
+            "responses": [
+              {
+                "path": "pages.list",
+                "value": {
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "pageObjectNumber": 100,
+                      "label": null,
+                      "size": {
+                        "width": 200,
+                        "height": 100
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 200,
+                          "top": 100
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 200,
+                          "top": 100
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "forms.list",
+                "value": {
+                  "formKind": "acroform",
+                  "needsAppearances": false,
+                  "fields": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 1
+                      },
+                      "fieldObjectNumber": 1,
+                      "name": "date",
+                      "family": "text",
+                      "origin": "acroform",
+                      "flags": {
+                        "readOnly": false,
+                        "required": false,
+                        "noExport": false,
+                        "raw": 0
+                      },
+                      "alternateName": null,
+                      "mappingName": null,
+                      "widgets": [
+                        {
+                          "annotObjectNumber": 201,
+                          "pageObjectNumber": 100
+                        }
+                      ],
+                      "valueEntry": {
+                        "kind": "none"
+                      },
+                      "defaultValueEntry": {
+                        "kind": "none"
+                      },
+                      "value": "",
+                      "defaultValue": "",
+                      "maxLength": null,
+                      "multiline": false,
+                      "password": false,
+                      "comb": false
+                    }
+                  ],
+                  "calculationOrder": []
+                }
+              },
+              {
+                "path": "actions.read",
+                "value": {
+                  "nameTreeScripts": [
+                    {
+                      "name": "stamp",
+                      "action": {
+                        "root": {
+                          "type": "javascript",
+                          "subtype": "JavaScript",
+                          "script": "this.getField(\"date\").value = util.printd(...);",
+                          "next": []
+                        },
+                        "incomplete": false,
+                        "warningFlags": 0,
+                        "warnings": []
+                      }
+                    }
+                  ],
+                  "openAction": null,
+                  "openDestination": null
+                }
+              },
+              {
+                "path": "forms.applyEffects",
+                "value": {
+                  "results": [
+                    {
+                      "index": 0,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    }
+                  ],
+                  "changedWidgets": [],
+                  "meta": null
+                }
+              },
+              {
+                "path": "pages.flatten",
+                "value": {
+                  "results": [
+                    {
+                      "pageObjectNumber": "p100",
+                      "status": "failed"
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "pages.extract",
+                "args": [
+                  [
+                    100
+                  ]
+                ],
+                "value": {
+                  "$bytes": "JVBERi1mbGF0LTEwMA=="
+                }
+              },
+              {
+                "path": "page.render.image",
+                "value": {
+                  "contentType": "image/png",
+                  "source": {
+                    "kind": "bytes",
+                    "bytes": {
+                      "$bytes": "ZmxhdC1wcmV2aWV3"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "nil": {
+            "services": [
+              "actions",
+              "pieceInfo",
+              "page.pieceInfo"
+            ],
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 100,
+                "label": null,
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 200,
+                    "top": 100
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 200,
+                    "top": 100
+                  }
+                }
+              }
+            ],
+            "responses": [
+              {
+                "path": "pages.list",
+                "value": {
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "pageObjectNumber": 100,
+                      "label": null,
+                      "size": {
+                        "width": 200,
+                        "height": 100
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 200,
+                          "top": 100
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 200,
+                          "top": 100
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "forms.list",
+                "value": {
+                  "formKind": "acroform",
+                  "needsAppearances": false,
+                  "fields": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 1
+                      },
+                      "fieldObjectNumber": 1,
+                      "name": "date",
+                      "family": "text",
+                      "origin": "acroform",
+                      "flags": {
+                        "readOnly": false,
+                        "required": false,
+                        "noExport": false,
+                        "raw": 0
+                      },
+                      "alternateName": null,
+                      "mappingName": null,
+                      "widgets": [
+                        {
+                          "annotObjectNumber": 201,
+                          "pageObjectNumber": 100
+                        }
+                      ],
+                      "valueEntry": {
+                        "kind": "none"
+                      },
+                      "defaultValueEntry": {
+                        "kind": "none"
+                      },
+                      "value": "",
+                      "defaultValue": "",
+                      "maxLength": null,
+                      "multiline": false,
+                      "password": false,
+                      "comb": false
+                    }
+                  ],
+                  "calculationOrder": []
+                }
+              },
+              {
+                "path": "actions.read",
+                "value": {
+                  "nameTreeScripts": [
+                    {
+                      "name": "stamp",
+                      "action": {
+                        "root": {
+                          "type": "javascript",
+                          "subtype": "JavaScript",
+                          "script": "this.getField(\"date\").value = util.printd(...);",
+                          "next": []
+                        },
+                        "incomplete": false,
+                        "warningFlags": 0,
+                        "warnings": []
+                      }
+                    }
+                  ],
+                  "openAction": null,
+                  "openDestination": null
+                }
+              },
+              {
+                "path": "forms.applyEffects",
+                "value": {
+                  "results": [
+                    {
+                      "index": 0,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    }
+                  ],
+                  "changedWidgets": [],
+                  "meta": null
+                }
+              },
+              {
+                "path": "pages.flatten",
+                "value": {
+                  "results": [
+                    {
+                      "pageObjectNumber": null,
+                      "status": "failed"
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "pages.extract",
+                "args": [
+                  [
+                    100
+                  ]
+                ],
+                "value": {
+                  "$bytes": "JVBERi1mbGF0LTEwMA=="
+                }
+              },
+              {
+                "path": "page.render.image",
+                "value": {
+                  "contentType": "image/png",
+                  "source": {
+                    "kind": "bytes",
+                    "bytes": {
+                      "$bytes": "ZmxhdC1wcmV2aWV3"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "flag": {
+            "services": [
+              "actions",
+              "pieceInfo",
+              "page.pieceInfo"
+            ],
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 100,
+                "label": null,
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 200,
+                    "top": 100
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 200,
+                    "top": 100
+                  }
+                }
+              }
+            ],
+            "responses": [
+              {
+                "path": "pages.list",
+                "value": {
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "pageObjectNumber": 100,
+                      "label": null,
+                      "size": {
+                        "width": 200,
+                        "height": 100
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 200,
+                          "top": 100
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 200,
+                          "top": 100
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "forms.list",
+                "value": {
+                  "formKind": "acroform",
+                  "needsAppearances": false,
+                  "fields": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 1
+                      },
+                      "fieldObjectNumber": 1,
+                      "name": "date",
+                      "family": "text",
+                      "origin": "acroform",
+                      "flags": {
+                        "readOnly": false,
+                        "required": false,
+                        "noExport": false,
+                        "raw": 0
+                      },
+                      "alternateName": null,
+                      "mappingName": null,
+                      "widgets": [
+                        {
+                          "annotObjectNumber": 201,
+                          "pageObjectNumber": 100
+                        }
+                      ],
+                      "valueEntry": {
+                        "kind": "none"
+                      },
+                      "defaultValueEntry": {
+                        "kind": "none"
+                      },
+                      "value": "",
+                      "defaultValue": "",
+                      "maxLength": null,
+                      "multiline": false,
+                      "password": false,
+                      "comb": false
+                    }
+                  ],
+                  "calculationOrder": []
+                }
+              },
+              {
+                "path": "actions.read",
+                "value": {
+                  "nameTreeScripts": [
+                    {
+                      "name": "stamp",
+                      "action": {
+                        "root": {
+                          "type": "javascript",
+                          "subtype": "JavaScript",
+                          "script": "this.getField(\"date\").value = util.printd(...);",
+                          "next": []
+                        },
+                        "incomplete": false,
+                        "warningFlags": 0,
+                        "warnings": []
+                      }
+                    }
+                  ],
+                  "openAction": null,
+                  "openDestination": null
+                }
+              },
+              {
+                "path": "forms.applyEffects",
+                "value": {
+                  "results": [
+                    {
+                      "index": 0,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    }
+                  ],
+                  "changedWidgets": [],
+                  "meta": null
+                }
+              },
+              {
+                "path": "pages.flatten",
+                "value": {
+                  "results": [
+                    {
+                      "pageObjectNumber": true,
+                      "status": "failed"
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "pages.extract",
+                "args": [
+                  [
+                    100
+                  ]
+                ],
+                "value": {
+                  "$bytes": "JVBERi1mbGF0LTEwMA=="
+                }
+              },
+              {
+                "path": "page.render.image",
+                "value": {
+                  "contentType": "image/png",
+                  "source": {
+                    "kind": "bytes",
+                    "bytes": {
+                      "$bytes": "ZmxhdC1wcmV2aWV3"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "none": {
+            "services": [
+              "actions",
+              "pieceInfo",
+              "page.pieceInfo"
+            ],
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 100,
+                "label": null,
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 200,
+                    "top": 100
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 200,
+                    "top": 100
+                  }
+                }
+              }
+            ],
+            "responses": [
+              {
+                "path": "pages.list",
+                "value": {
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "pageObjectNumber": 100,
+                      "label": null,
+                      "size": {
+                        "width": 200,
+                        "height": 100
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 200,
+                          "top": 100
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 200,
+                          "top": 100
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "forms.list",
+                "value": {
+                  "formKind": "acroform",
+                  "needsAppearances": false,
+                  "fields": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 1
+                      },
+                      "fieldObjectNumber": 1,
+                      "name": "date",
+                      "family": "text",
+                      "origin": "acroform",
+                      "flags": {
+                        "readOnly": false,
+                        "required": false,
+                        "noExport": false,
+                        "raw": 0
+                      },
+                      "alternateName": null,
+                      "mappingName": null,
+                      "widgets": [
+                        {
+                          "annotObjectNumber": 201,
+                          "pageObjectNumber": 100
+                        }
+                      ],
+                      "valueEntry": {
+                        "kind": "none"
+                      },
+                      "defaultValueEntry": {
+                        "kind": "none"
+                      },
+                      "value": "",
+                      "defaultValue": "",
+                      "maxLength": null,
+                      "multiline": false,
+                      "password": false,
+                      "comb": false
+                    }
+                  ],
+                  "calculationOrder": []
+                }
+              },
+              {
+                "path": "actions.read",
+                "value": {
+                  "nameTreeScripts": [
+                    {
+                      "name": "stamp",
+                      "action": {
+                        "root": {
+                          "type": "javascript",
+                          "subtype": "JavaScript",
+                          "script": "this.getField(\"date\").value = util.printd(...);",
+                          "next": []
+                        },
+                        "incomplete": false,
+                        "warningFlags": 0,
+                        "warnings": []
+                      }
+                    }
+                  ],
+                  "openAction": null,
+                  "openDestination": null
+                }
+              },
+              {
+                "path": "forms.applyEffects",
+                "value": {
+                  "results": [
+                    {
+                      "index": 0,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    }
+                  ],
+                  "changedWidgets": [],
+                  "meta": null
+                }
+              },
+              {
+                "path": "pages.flatten",
+                "value": {
+                  "results": [
+                    {
+                      "status": "failed"
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "pages.extract",
+                "args": [
+                  [
+                    100
+                  ]
+                ],
+                "value": {
+                  "$bytes": "JVBERi1mbGF0LTEwMA=="
+                }
+              },
+              {
+                "path": "page.render.image",
+                "value": {
+                  "contentType": "image/png",
+                  "source": {
+                    "kind": "bytes",
+                    "bytes": {
+                      "$bytes": "ZmxhdC1wcmV2aWV3"
+                    }
+                  }
+                }
+              }
+            ]
           }
         },
         "responses": [
@@ -33504,6 +34251,34 @@
             "times": 1,
             "value": {
               "$document": "skipped"
+            }
+          },
+          {
+            "path": "open",
+            "times": 1,
+            "value": {
+              "$document": "text"
+            }
+          },
+          {
+            "path": "open",
+            "times": 1,
+            "value": {
+              "$document": "nil"
+            }
+          },
+          {
+            "path": "open",
+            "times": 1,
+            "value": {
+              "$document": "flag"
+            }
+          },
+          {
+            "path": "open",
+            "times": 1,
+            "value": {
+              "$document": "none"
             }
           }
         ]
@@ -33539,6 +34314,50 @@
             {
               "$bytes": "JVBERi0xLjcKJXN0YW1wIGZpeHR1cmUK"
             }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stamp"
+          },
+          "method": "armAsset",
+          "args": [
+            "a",
+            "stamp-0-2"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stamp"
+          },
+          "method": "armAsset",
+          "args": [
+            "a",
+            "stamp-0-2"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stamp"
+          },
+          "method": "armAsset",
+          "args": [
+            "a",
+            "stamp-0-2"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stamp"
+          },
+          "method": "armAsset",
+          "args": [
+            "a",
+            "stamp-0-2"
           ]
         },
         {
@@ -35495,6 +36314,756 @@
           },
           "outcome": {
             "promise": 4
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 5,
+              "rejected": {
+                "$error": {
+                  "name": "EngineError",
+                  "message": "[stamp] dynamic stamp flatten failed for page p100",
+                  "code": "Unknown"
+                }
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "stamp-import-0-5",
+                  "bytes": {
+                    "$bytes": "JVBERi1jYW5vbmljYWw="
+                  }
+                },
+                {
+                  "scope": [
+                    "*"
+                  ],
+                  "identity": {
+                    "user_id": "alex",
+                    "group_id": "EmbedPDF",
+                    "display_name": "Alex Morgan"
+                  }
+                }
+              ]
+            },
+            {
+              "doc": "text",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "text",
+              "path": "forms.list",
+              "args": []
+            },
+            {
+              "doc": "text",
+              "path": "forms.list",
+              "args": []
+            },
+            {
+              "doc": "text",
+              "path": "actions.read",
+              "args": []
+            },
+            {
+              "doc": "text",
+              "path": "forms.applyEffects",
+              "args": [
+                [
+                  {
+                    "kind": "setValue",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "fieldObjectNumber": 1
+                    },
+                    "value": {
+                      "type": "text",
+                      "value": "2026-07-15"
+                    }
+                  }
+                ]
+              ]
+            },
+            {
+              "doc": "text",
+              "path": "pages.flatten",
+              "args": [
+                [
+                  100
+                ],
+                "display"
+              ]
+            },
+            {
+              "doc": "text",
+              "path": "close",
+              "args": []
+            }
+          ],
+          "callbacks": [
+            {
+              "fn": "sandbox.factory",
+              "args": [
+                2
+              ]
+            },
+            {
+              "fn": "sandbox.boot",
+              "args": [
+                2,
+                [
+                  "this.getField(\"date\").value = util.printd(...);"
+                ],
+                {
+                  "document": {
+                    "id": "text",
+                    "fileName": "text",
+                    "pageCount": 1,
+                    "pageNumber": 0
+                  },
+                  "identity": {
+                    "name": "",
+                    "loginName": "",
+                    "corporation": "",
+                    "email": ""
+                  },
+                  "environment": {
+                    "nowMs": 0,
+                    "utcOffsetMinutes": 0,
+                    "randomSeed": 145503028
+                  },
+                  "fields": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 1
+                      },
+                      "name": "date",
+                      "family": "text",
+                      "value": null,
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false
+                    }
+                  ],
+                  "event": {
+                    "kind": "name-tree-boot"
+                  }
+                },
+                {
+                  "maxExecutionMs": 50,
+                  "maxMemoryBytes": 16777216,
+                  "maxStackBytes": 524288,
+                  "maxEffects": 256,
+                  "maxOutputBytes": 1048576
+                }
+              ]
+            },
+            {
+              "fn": "sandbox.dispose",
+              "args": [
+                2
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            },
+            "lib": {
+              "subscribers": 0
+            },
+            "failed": {
+              "subscribers": 0
+            },
+            "skipped": {
+              "subscribers": 0
+            },
+            "text": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 5
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 6,
+              "rejected": {
+                "$error": {
+                  "name": "EngineError",
+                  "message": "[stamp] dynamic stamp flatten failed for page null",
+                  "code": "Unknown"
+                }
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "stamp-import-0-6",
+                  "bytes": {
+                    "$bytes": "JVBERi1jYW5vbmljYWw="
+                  }
+                },
+                {
+                  "scope": [
+                    "*"
+                  ],
+                  "identity": {
+                    "user_id": "alex",
+                    "group_id": "EmbedPDF",
+                    "display_name": "Alex Morgan"
+                  }
+                }
+              ]
+            },
+            {
+              "doc": "nil",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "nil",
+              "path": "forms.list",
+              "args": []
+            },
+            {
+              "doc": "nil",
+              "path": "forms.list",
+              "args": []
+            },
+            {
+              "doc": "nil",
+              "path": "actions.read",
+              "args": []
+            },
+            {
+              "doc": "nil",
+              "path": "forms.applyEffects",
+              "args": [
+                [
+                  {
+                    "kind": "setValue",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "fieldObjectNumber": 1
+                    },
+                    "value": {
+                      "type": "text",
+                      "value": "2026-07-15"
+                    }
+                  }
+                ]
+              ]
+            },
+            {
+              "doc": "nil",
+              "path": "pages.flatten",
+              "args": [
+                [
+                  100
+                ],
+                "display"
+              ]
+            },
+            {
+              "doc": "nil",
+              "path": "close",
+              "args": []
+            }
+          ],
+          "callbacks": [
+            {
+              "fn": "sandbox.factory",
+              "args": [
+                3
+              ]
+            },
+            {
+              "fn": "sandbox.boot",
+              "args": [
+                3,
+                [
+                  "this.getField(\"date\").value = util.printd(...);"
+                ],
+                {
+                  "document": {
+                    "id": "nil",
+                    "fileName": "nil",
+                    "pageCount": 1,
+                    "pageNumber": 0
+                  },
+                  "identity": {
+                    "name": "",
+                    "loginName": "",
+                    "corporation": "",
+                    "email": ""
+                  },
+                  "environment": {
+                    "nowMs": 0,
+                    "utcOffsetMinutes": 0,
+                    "randomSeed": 1652748950
+                  },
+                  "fields": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 1
+                      },
+                      "name": "date",
+                      "family": "text",
+                      "value": null,
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false
+                    }
+                  ],
+                  "event": {
+                    "kind": "name-tree-boot"
+                  }
+                },
+                {
+                  "maxExecutionMs": 50,
+                  "maxMemoryBytes": 16777216,
+                  "maxStackBytes": 524288,
+                  "maxEffects": 256,
+                  "maxOutputBytes": 1048576
+                }
+              ]
+            },
+            {
+              "fn": "sandbox.dispose",
+              "args": [
+                3
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            },
+            "lib": {
+              "subscribers": 0
+            },
+            "failed": {
+              "subscribers": 0
+            },
+            "skipped": {
+              "subscribers": 0
+            },
+            "text": {
+              "subscribers": 0
+            },
+            "nil": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 6
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 7,
+              "rejected": {
+                "$error": {
+                  "name": "EngineError",
+                  "message": "[stamp] dynamic stamp flatten failed for page true",
+                  "code": "Unknown"
+                }
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "stamp-import-0-7",
+                  "bytes": {
+                    "$bytes": "JVBERi1jYW5vbmljYWw="
+                  }
+                },
+                {
+                  "scope": [
+                    "*"
+                  ],
+                  "identity": {
+                    "user_id": "alex",
+                    "group_id": "EmbedPDF",
+                    "display_name": "Alex Morgan"
+                  }
+                }
+              ]
+            },
+            {
+              "doc": "flag",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "flag",
+              "path": "forms.list",
+              "args": []
+            },
+            {
+              "doc": "flag",
+              "path": "forms.list",
+              "args": []
+            },
+            {
+              "doc": "flag",
+              "path": "actions.read",
+              "args": []
+            },
+            {
+              "doc": "flag",
+              "path": "forms.applyEffects",
+              "args": [
+                [
+                  {
+                    "kind": "setValue",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "fieldObjectNumber": 1
+                    },
+                    "value": {
+                      "type": "text",
+                      "value": "2026-07-15"
+                    }
+                  }
+                ]
+              ]
+            },
+            {
+              "doc": "flag",
+              "path": "pages.flatten",
+              "args": [
+                [
+                  100
+                ],
+                "display"
+              ]
+            },
+            {
+              "doc": "flag",
+              "path": "close",
+              "args": []
+            }
+          ],
+          "callbacks": [
+            {
+              "fn": "sandbox.factory",
+              "args": [
+                4
+              ]
+            },
+            {
+              "fn": "sandbox.boot",
+              "args": [
+                4,
+                [
+                  "this.getField(\"date\").value = util.printd(...);"
+                ],
+                {
+                  "document": {
+                    "id": "flag",
+                    "fileName": "flag",
+                    "pageCount": 1,
+                    "pageNumber": 0
+                  },
+                  "identity": {
+                    "name": "",
+                    "loginName": "",
+                    "corporation": "",
+                    "email": ""
+                  },
+                  "environment": {
+                    "nowMs": 0,
+                    "utcOffsetMinutes": 0,
+                    "randomSeed": 1234850917
+                  },
+                  "fields": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 1
+                      },
+                      "name": "date",
+                      "family": "text",
+                      "value": null,
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false
+                    }
+                  ],
+                  "event": {
+                    "kind": "name-tree-boot"
+                  }
+                },
+                {
+                  "maxExecutionMs": 50,
+                  "maxMemoryBytes": 16777216,
+                  "maxStackBytes": 524288,
+                  "maxEffects": 256,
+                  "maxOutputBytes": 1048576
+                }
+              ]
+            },
+            {
+              "fn": "sandbox.dispose",
+              "args": [
+                4
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            },
+            "lib": {
+              "subscribers": 0
+            },
+            "failed": {
+              "subscribers": 0
+            },
+            "skipped": {
+              "subscribers": 0
+            },
+            "text": {
+              "subscribers": 0
+            },
+            "nil": {
+              "subscribers": 0
+            },
+            "flag": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 7
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 8,
+              "rejected": {
+                "$error": {
+                  "name": "EngineError",
+                  "message": "[stamp] dynamic stamp flatten failed for page undefined",
+                  "code": "Unknown"
+                }
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "stamp-import-0-8",
+                  "bytes": {
+                    "$bytes": "JVBERi1jYW5vbmljYWw="
+                  }
+                },
+                {
+                  "scope": [
+                    "*"
+                  ],
+                  "identity": {
+                    "user_id": "alex",
+                    "group_id": "EmbedPDF",
+                    "display_name": "Alex Morgan"
+                  }
+                }
+              ]
+            },
+            {
+              "doc": "none",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "none",
+              "path": "forms.list",
+              "args": []
+            },
+            {
+              "doc": "none",
+              "path": "forms.list",
+              "args": []
+            },
+            {
+              "doc": "none",
+              "path": "actions.read",
+              "args": []
+            },
+            {
+              "doc": "none",
+              "path": "forms.applyEffects",
+              "args": [
+                [
+                  {
+                    "kind": "setValue",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "fieldObjectNumber": 1
+                    },
+                    "value": {
+                      "type": "text",
+                      "value": "2026-07-15"
+                    }
+                  }
+                ]
+              ]
+            },
+            {
+              "doc": "none",
+              "path": "pages.flatten",
+              "args": [
+                [
+                  100
+                ],
+                "display"
+              ]
+            },
+            {
+              "doc": "none",
+              "path": "close",
+              "args": []
+            }
+          ],
+          "callbacks": [
+            {
+              "fn": "sandbox.factory",
+              "args": [
+                5
+              ]
+            },
+            {
+              "fn": "sandbox.boot",
+              "args": [
+                5,
+                [
+                  "this.getField(\"date\").value = util.printd(...);"
+                ],
+                {
+                  "document": {
+                    "id": "none",
+                    "fileName": "none",
+                    "pageCount": 1,
+                    "pageNumber": 0
+                  },
+                  "identity": {
+                    "name": "",
+                    "loginName": "",
+                    "corporation": "",
+                    "email": ""
+                  },
+                  "environment": {
+                    "nowMs": 0,
+                    "utcOffsetMinutes": 0,
+                    "randomSeed": 3109687737
+                  },
+                  "fields": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 1
+                      },
+                      "name": "date",
+                      "family": "text",
+                      "value": null,
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false
+                    }
+                  ],
+                  "event": {
+                    "kind": "name-tree-boot"
+                  }
+                },
+                {
+                  "maxExecutionMs": 50,
+                  "maxMemoryBytes": 16777216,
+                  "maxStackBytes": 524288,
+                  "maxEffects": 256,
+                  "maxOutputBytes": 1048576
+                }
+              ]
+            },
+            {
+              "fn": "sandbox.dispose",
+              "args": [
+                5
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            },
+            "lib": {
+              "subscribers": 0
+            },
+            "failed": {
+              "subscribers": 0
+            },
+            "skipped": {
+              "subscribers": 0
+            },
+            "text": {
+              "subscribers": 0
+            },
+            "nil": {
+              "subscribers": 0
+            },
+            "flag": {
+              "subscribers": 0
+            },
+            "none": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 8
           }
         }
       ]
