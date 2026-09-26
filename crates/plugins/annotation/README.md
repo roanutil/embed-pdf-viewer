@@ -118,12 +118,19 @@ The 62 unreached branches are mostly the `??` and optional-chaining arms of the 
 
 ## Mutation testing
 
-Incomplete. The run went file by file (`scripts/mutants.sh --file`) and stopped partway:
+In progress. Each file runs on its own (`scripts/mutants.sh -p epdf-plugin-annotation
+--test-package epdf-plugin-annotation --file <file>`); `harness/` is excluded. A miss is either
+killed by a case added afterwards, confirmed by applying the mutant by hand and watching the replay
+fail, or listed below with the reason no case can kill it.
 
-| Files | Caught | Missed | Unviable |
-|---|---|---|---|
-| 9 complete: `effects`, `hover_feed`, `markup`, `placement`, `promise`, `reducer`, `text_item`, `threads`, `value` | 139 | 15 | 27 |
-| `binary`, `capability`, `handler`, `repository/*`, `tools`, `types` | not run | | |
+| File | Caught | Timeouts | Missed | Unviable | Killed after | Accepted |
+|---|---|---|---|---|---|---|
+| `handler.rs` | 75 | 0 | 28 | 7 | 18 | 10 |
 
-The 15 misses have not been triaged, and `capability.rs` and `handler.rs`, the two largest files,
-are the next runs to do.
+The other files are being run.
+
+### Accepted misses
+
+| Line | Mutant | Why no case kills it |
+|---|---|---|
+| `handler.rs` 43, 73, 123, 278, 413 | each handler's `id()` to `""` and to `"xyzzy"` | Unobservable. The hub never reads a handler's id; it orders by `priority()` and gates by `enabled_for()`. |
