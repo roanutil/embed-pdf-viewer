@@ -34,6 +34,7 @@ const hoverable = [
   square(3, { rect: rect(200, 0) }),
   widget(4, 'text', { rect: rect(300, 0), actions: { cursorEnter: tree('enter-4') } }),
   link(5, { rect: rect(400, 0), actions: { cursorExit: tree('exit-5') } }),
+  square(6, { rect: rect(500, 0), actions: { cursorExit: tree('exit-6') } }),
 ];
 const annotationsList = { path: 'page.annotations.list', value: { annotations: hoverable } };
 const FORMS_EMPTY = { path: 'forms.list', value: { formKind: 'none', needsAppearances: false, fields: [], calculationOrder: [] } };
@@ -75,6 +76,7 @@ const cases: ScenarioCase[] = [
       hoverAt(201, 25),
       hoverAt(301, 25),
       hoverAt(401, 25),
+      hoverAt(501, 25),
       hoverAt(101, 25),
       call('hoverAt', [null]),
       call('createPointer', ['square', 'down', 1, { x: 100, y: 500 }]),

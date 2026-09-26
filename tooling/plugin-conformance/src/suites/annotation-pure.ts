@@ -7,6 +7,7 @@
  * replayed by `crates/plugins/annotation/tests/conformance.rs`.
  */
 import { buildCommentThreads } from '../../../../packages/engine/core/src/runtime';
+import { sniffBinaryMetadata } from '../../../../packages/engine/core/src/resource/binaryMetadata';
 import { buildTextItems } from '../../../../packages/plugin/annotation/src/text-item';
 import { iconPlacementDraft } from '../../../../packages/plugin/annotation/src/placement';
 import {
@@ -57,6 +58,23 @@ cases.push(
   ]),
   c('buildToolRegistry', 'unknown-base', [{ id: 'orphan', extends: 'nope' }]),
   c('buildToolRegistry', 'bad-default', [{ id: 'square', defaults: { fontSize: 12 } }]),
+  // Every known kind is strict about its defaults: one key it doesn't take each.
+  ...(
+    [
+      ['line', { icon: 'comment' }],
+      ['polyline', { icon: 'comment' }],
+      ['ink', { icon: 'comment' }],
+      ['free-text', { blendMode: 'multiply' }],
+      ['free-text-callout', { blendMode: 'multiply' }],
+      ['underline', { strokeWidth: 2 }],
+      ['redact', { strokeWidth: 2 }],
+      ['stamp', { opacity: 0.5 }],
+      ['link', { color: '#000000' }],
+      ['file-attachment', { strokeWidth: 2 }],
+      ['widget-choice', { opacity: 0.5 }],
+      ['widget-toggle', { fontSize: 10 }],
+    ] as const
+  ).map(([kind, defaults]) => c('buildToolRegistry', `bad-default-${kind}`, [{ id: `bad-${kind}`, subtype: kind, defaults }])),
   c('buildToolRegistry', 'bad-default-inherited', [{ id: 'marker', extends: 'highlight', subtype: 'caret' }]),
   c('buildToolRegistry', 'widget-kinds', [
     { id: 'field-text', subtype: 'widget-text', defaults: { fontSize: 10, border: { kind: 'solid' } } },
@@ -183,11 +201,31 @@ const ORDERING = [
   t(90, { inReplyTo: objRef(64), contents: 'late index, dated', created: at('9') }),
   t(70, { inReplyTo: objRef(64), contents: 'undated' }),
   t(85, { inReplyTo: objRef(64), contents: 'same date, high index', created: at('8') }),
+  t(86, { inReplyTo: objRef(64), contents: 'same date, same index: input order', created: at('8'), index: 80 }),
   t(80, { inReplyTo: objRef(64), contents: 'same date, low index', created: at('8') }),
   t(81, { inReplyTo: objRef(64), contents: 'undated, high index' }),
   square(65, { contents: 'review default root' }),
   t(66, { inReplyTo: objRef(65), stateModel: 'review', userId: 'u5' }),
 ];
+// ── engine-core binaryMetadata ────────────────────────────────────────────────
+
+const bin = (bytes: number[]) => ({ $bytes: Buffer.from(bytes).toString('base64') });
+const PNG_SIG = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13, 0x49, 0x48, 0x44, 0x52];
+const SOF = [0xff, 0xc0, 0x00, 0x11, 0x08, 0x00, 0x1e, 0x00, 0x28];
+cases.push(
+  c('sniffBinaryMetadata', 'png-wide', bin([...PNG_SIG, 0, 1, 17, 112, 0, 1, 0, 1])),
+  c('sniffBinaryMetadata', 'png-trailing-bytes', bin([...PNG_SIG, 0, 0, 0, 100, 0, 0, 0, 50, 1, 2, 3, 4, 5, 6])),
+  c('sniffBinaryMetadata', 'png-zero-width', bin([...PNG_SIG, 0, 0, 0, 0, 0, 0, 0, 50])),
+  c('sniffBinaryMetadata', 'jpeg-sof-ends-the-buffer', bin([0xff, 0xd8, ...SOF])),
+  c('sniffBinaryMetadata', 'jpeg-sof-truncated', bin([0xff, 0xd8, 0xff, 0xc0, 0x00, 0x11, 0x08, 0x00])),
+  c('sniffBinaryMetadata', 'jpeg-zero-width', bin([0xff, 0xd8, 0xff, 0xc0, 0x00, 0x11, 0x08, 0x00, 0x1e, 0x00, 0x00])),
+  c('sniffBinaryMetadata', 'jpeg-soi-after-a-segment', bin([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x04, 0, 0, 0xff, 0xd8, ...SOF])),
+  c('sniffBinaryMetadata', 'jpeg-long-segment', bin([0xff, 0xd8, 0xff, 0xe0, 0x01, 0x02, ...new Array(256).fill(0), ...SOF])),
+  c('sniffBinaryMetadata', 'jpeg-second-segment', bin([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x04, 0, 0, 0xff, 0xe1, 0x00, 0x06, 0xaa, 0xbb, 0xcc, 0xdd, ...SOF])),
+  c('sniffBinaryMetadata', 'pdf-four-bytes', bin([0x25, 0x50, 0x44, 0x46])),
+  c('sniffBinaryMetadata', 'three-bytes', bin([0x25, 0x50, 0x44])),
+);
+
 cases.push(
   c('buildCommentThreads', 'nm-refs-and-ordering', ORDERING, {}),
   c('buildCommentThreads', 'everything', THREADS, {}),
@@ -201,7 +239,7 @@ export const suites: Suite[] = [
     kind: 'function',
     file: 'plugins/annotation-pure.json',
     describes:
-      'packages/plugin/annotation: the tool registry, the free-text projection, icon placement, the reducer, and engine-core buildCommentThreads.',
+      'packages/plugin/annotation: the tool registry, the free-text projection, icon placement, the reducer, and engine-core buildCommentThreads and sniffBinaryMetadata.',
     functions: {
       buildToolRegistry: buildToolRegistry as never,
       isTouchDirect: ((tags: string[]) => isTouchDirect(new Set(tags))) as never,
@@ -211,6 +249,7 @@ export const suites: Suite[] = [
       mergeChrome: mergeChrome as never,
       annotationReducer: annotationReducer as never,
       buildCommentThreads: buildCommentThreads as never,
+      sniffBinaryMetadata: ((b: Uint8Array) => sniffBinaryMetadata(new Uint8Array(b).buffer)) as never,
     },
     cases,
   },

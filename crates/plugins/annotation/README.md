@@ -98,8 +98,8 @@ fall to the unsupported kind.
 
 ## Coverage
 
-The generators reach 6,255 of the package's 6,272 statements and 1,409 of its 1,471 branches
-(`vectors/coverage.json`). The 17 statements left:
+The generators reach 6,261 of the package's 6,275 statements and 1,431 of its 1,488 branches
+(`vectors/coverage.json`). The 14 statements left:
 
 - `capability.ts` 2182 to 2189, `commitScriptEffects` with no `ctx.doc`. The plugin is
   document-scoped, so its context always has a handle.
@@ -108,22 +108,78 @@ The generators reach 6,255 of the package's 6,272 statements and 1,409 of its 1,
 - `capability.ts` 1648 and 1649, an engine page service without `downloadFile`. This one is a
   harness limit, not unreachable code: the fake engine answers every page member, so no vector can
   describe an engine that lacks one.
-- `handler.ts` 454 to 456, a pointer cancel while an ink group is still inside its grouping
-  window. Reachable, and not yet covered: a case would cancel between two quick ink strokes.
 - `reducer.ts` 69, the `default` arm for an action outside the union, which a Rust enum can't
   express.
 
-The 62 unreached branches are mostly the `??` and optional-chaining arms of the same guards;
+The 57 unreached branches are mostly the `??` and optional-chaining arms of the same guards;
 `coverage.json` lists each by line and column.
 
 ## Mutation testing
 
-Incomplete. The run went file by file (`scripts/mutants.sh --file`) and stopped partway:
+Every source file but `harness/` (excluded in `.cargo/mutants.toml`) has been run, one file at a
+time (`scripts/mutants.sh -p epdf-plugin-annotation --test-package epdf-plugin-annotation --file
+<file>`); `repository/kinds/mod.rs` has no mutants. Of the 165 that survived, 118 are killed by
+cases added afterwards and 47 are equivalent or unreachable, each listed below. "Killed after"
+counts the first group; each of those was confirmed by applying the mutant by hand and watching the
+replay fail, not by a second full run. The nine files the first pass covered (`effects` through
+`value`) are fresh runs; that pass had counted 15 misses in them, and 8 remain.
 
-| Files | Caught | Missed | Unviable |
-|---|---|---|---|
-| 9 complete: `effects`, `hover_feed`, `markup`, `placement`, `promise`, `reducer`, `text_item`, `threads`, `value` | 139 | 15 | 27 |
-| `binary`, `capability`, `handler`, `repository/*`, `tools`, `types` | not run | | |
+| File | Caught | Timeouts | Missed | Unviable | Killed after | Accepted |
+|---|---|---|---|---|---|---|
+| `handler.rs` | 75 | 0 | 28 | 7 | 18 | 10 |
+| `tools.rs` | 73 | 0 | 17 | 6 | 11 | 6 |
+| `binary.rs` | 50 | 1 | 21 | 10 | 17 | 4 |
+| `types.rs` | 1 | 0 | 0 | 1 | | |
+| `repository/mod.rs` | 29 | 0 | 0 | 1 | | |
+| `repository/links.rs` | 2 | 0 | 0 | 0 | | |
+| `repository/projection.rs` | 39 | 0 | 0 | 3 | | |
+| `repository/props.rs` | 9 | 0 | 1 | 1 | 1 | |
+| `repository/seam.rs` | 67 | 0 | 3 | 4 | 1 | 2 |
+| `repository/kinds/free_text.rs` | 13 | 0 | 3 | 3 | 3 | |
+| `repository/kinds/misc.rs` | 15 | 0 | 0 | 10 | | |
+| `repository/kinds/quads.rs` | 48 | 0 | 6 | 4 | 2 | 4 |
+| `repository/kinds/shape.rs` | 5 | 0 | 0 | 1 | | |
+| `repository/kinds/stroke.rs` | 22 | 0 | 0 | 5 | | |
+| `effects.rs` | 18 | 0 | 1 | 1 | 1 | |
+| `hover_feed.rs` | 6 | 0 | 1 | 2 | 1 | |
+| `markup.rs` | 7 | 0 | 1 | 0 | 1 | |
+| `placement.rs` | 8 | 0 | 0 | 0 | | |
+| `promise.rs` | 5 | 0 | 0 | 11 | | |
+| `reducer.rs` | 4 | 0 | 0 | 5 | | |
+| `text_item.rs` | 6 | 0 | 0 | 1 | | |
+| `threads.rs` | 54 | 0 | 5 | 7 | 1 | 4 |
+| `value.rs` | 13 | 0 | 0 | 0 | | |
+| `capability.rs` | 328 | 0 | 78 | 177 | 61 | 17 |
+| `lib.rs` | 2 | 0 | 0 | 1 | | |
+| Total | 899 | 1 | 165 | 261 | 118 | 47 |
 
-The 15 misses have not been triaged, and `capability.rs` and `handler.rs`, the two largest files,
-are the next runs to do.
+Timeouts count as caught: the one is a mutant that loops forever.
+
+### Accepted misses
+
+| Line | Mutant | Why no case kills it |
+|---|---|---|
+| `handler.rs` 43, 73, 123, 278, 413 | each handler's `id()` to `""` and to `"xyzzy"` | Unobservable. The hub never reads a handler's id; it orders by `priority()` and gates by `enabled_for()`. |
+| `tools.rs` 69 | the `mode == "footprint"` guard in `GhostPolicy`'s decoder to `true` | Unreachable by a vector. It only changes what an object without that mode decodes to. That object is outside `GhostPolicy`'s type: the TypeScript draws a ghost for anything but `false`, and the port refuses to decode it, the same split as the core's unknown enum strings. |
+| `tools.rs` 293, 301 | delete `subtype` from the `draw` and `markup` built-in rows | Equivalent. Those rows set the subtype to the tool's id, which is what resolution falls back to. |
+| `tools.rs` 294 | delete `cursor` from the `draw` row | Equivalent. Its value is `crosshair`, the resolved default. |
+| `tools.rs` 439 | `\|\|` to `&&` in `merge_defaults` | Equivalent. When only one side has line endings, merging them over the empty default gives that side's endings, which the spread already holds. |
+| `tools.rs` 549 | `!=` to `==` on `ToolRegistry::delete`'s return | Unobservable. Its one caller, the `registerTool` unregister, ignores the result. |
+| `binary.rs` 31, 48 | the `is_undefined` guards in `not_a_blob` and `resolve_now` to `false` | Unreachable. The harness decodes an explicit `{"$undefined": true}` member to `null`, and an omitted member is `None`, so the undefined marker never reaches either match. |
+| `binary.rs` 105 | `offset + 4 < len` to `<=` in `parse_jpeg` | Equivalent. With four bytes left, every branch of the extra pass returns `None` or leaves the loop: an SOF needs nine. |
+| `binary.rs` 129 | `\|` to `^` in the segment length | Equivalent. The high byte is shifted clear of the low one, so the bits never overlap. |
+| `repository/seam.rs` 126 | the `truthy_num(r)` guard on the rotation in `box_geom_from_dto` to `true` | Equivalent. It only lets a 0 or `NaN` rotation through, and `from_pdf_rotation` turns those into 0 and `NaN`, which the two `truthy_num(rot)` tests below treat as no rotation either way. |
+| `repository/seam.rs` 304 | `content_rect_of` to `Default::default()` | Unobservable. Nothing in the workspace calls it. |
+| `repository/kinds/quads.rs` 85, 88, 91, 94 | `<` to `<=` and `>` to `>=` in `pdf_bounds_of_quads` | Equivalent. On a tie the running bound is replaced by an equal value. |
+| `threads.rs` 130 | `x < y` to `<=` in `chronological` | Equivalent. It sits under `x != y`. |
+| `threads.rs` 141 | `d > 0.0` to `==`, `<` and `>=` | Equivalent. `sort_by` only asks whether the answer is `Less`, and every mutant still answers `Less` exactly when `d < 0`. |
+| `capability.rs` 76 to 78, 84 to 86 | `same_num` and `same_rc` to `false`, and each of their arms deleted | Unobservable. Each only turns a memo hit into a miss, which recomputes an equal value, and canonical JSON has no object identity. (`==` to `!=` in `same_num`, which turns a miss into a stale hit, is killed.) |
+| `capability.rs` 221 | `owner_of` to `Default::default()` | Unreachable in the harness. The fake engine's `allowsAnnotationMutation` ignores its target, so the owner never changes an answer. |
+| `capability.rs` 279 | `+` to `-` and `*` in `random_uuid`'s counter | Unreachable in the harness, which always installs `random_uuid`. |
+| `capability.rs` 806 | `&&` to `\|\|` in `selected_committed` | Equivalent. An annotation has both a ref and a DTO (ingested) or neither (an uncommitted draft). |
+| `capability.rs` 982 | the `w > 0.0` guard to `true`, and `>` to `>=` | Equivalent. `sniff_binary_metadata` never reports a raster with a zero width. |
+| `capability.rs` 995 | `&&` to `\|\|` in `upright_rot_for`'s filter | Equivalent. It only lets a `NaN` display rotation through, and `fit_stamp_box` and `box_geom_fields` both read a `NaN` rotation as none. |
+| `capability.rs` 1098 | delete the `(None, None)` arm of the file picker's same-document check | Unreachable. The plugin is document-scoped, so a click always has a document. |
+| `capability.rs` 689 | the first `==` to `!=` in the link-chain cleanup | Equivalent. The entry is then never removed, and the next sync awaits a settled promise instead of a fresh resolved one, which costs the same turns. |
+| `capability.rs` 2237 | the `subtype == "link"` guard in `link_items_on` to `true` | Equivalent. The loop only reaches it for link annotations, whose DTO subtype is `link`. |
+| `capability.rs` 2640 | `-1.0` to `1.0` for a member missing from the paint order in `group` | Unreachable. Every committed selected member is in `order`. |

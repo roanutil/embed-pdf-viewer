@@ -410,7 +410,10 @@ const RUNS: Case[] = [
   ['hydrated-keeps-surviving-hover', S({ hovered: 'sq', editing: 'ft' }), [{ t: 'hydrated', annots: ANNOTS.filter((a) => a.id !== 'ln') }]],
   ['edit-move-exactly-0.01', start([sq('edge', rc(0, 0, 10, 10))]), [ed('down', 0, 5), ed('move', 0.01, 5), ed('up', 0.01, 5)]],
   ['create-free-text-click-height-exactly-min', {}, drag('free-text', v(100, 100), v(101, 103))],
-  ['create-markup-collinear-skew', {}, [{ t: 'createMarkup', subtype: 'highlight', pon: PON, quads: [{ upperStart: v(0, 0), upperEnd: v(10, 10), lowerStart: v(5, 5), lowerEnd: v(15, 15) }, { upperStart: v(0, 0), upperEnd: v(10, 0), lowerStart: v(0, 0), lowerEnd: v(10, 0) }] }]],
+  // The collinear skew away from the origin, where both edge vectors must be
+  // measured from the upper start for the cross product to come out zero.
+  ['create-markup-collinear-skew-offset', {}, [{ t: 'createMarkup', subtype: 'highlight', pon: PON, quads: [{ upperStart: v(10, 10), upperEnd: v(50, 50), lowerStart: v(20, 20), lowerEnd: v(60, 60) }] }]],
+  ['create-markup-collinear-skew', {},[{ t: 'createMarkup', subtype: 'highlight', pon: PON, quads: [{ upperStart: v(0, 0), upperEnd: v(10, 10), lowerStart: v(5, 5), lowerEnd: v(15, 15) }, { upperStart: v(0, 0), upperEnd: v(10, 0), lowerStart: v(0, 0), lowerEnd: v(10, 0) }] }]],
   // ── baked kinds flip to vector on an owned edit ──
   ['baked-handle-flips', S({ selected: ['baked'] }), editDrag(v(510, 540), v(530, 560))],
   ['baked-rotate90-flips', S({ selected: ['baked'] }), [{ t: 'rotate90' }]],

@@ -5,16 +5,16 @@ files, plus the module-level exports the package index leaves out (`endingPoints
 `endingNodes`, `cloudyPolyPath`, `chordThrough`, `apSizeChanged`, `rectsIntersect`,
 `rectHandlesFor`, `rotatePoint`, `paintOrder`, `groupUnionBounds`, `blendFor`,
 `layoutRedactLabel`, `kindTakesLink`, `annotsInBox`, `calloutBox`, `calloutUprightRot`). All
-6,996 cases in the 17 vector files replay identically (`cargo test -p epdf-annotation-core`):
+7,022 cases in the 17 vector files replay identically (`cargo test -p epdf-annotation-core`):
 
 | File | Cases | Covers |
 |---|---|---|
-| `annotation-geometry-basics.json` | 331 | rect math, rotation helpers, upright placement, `fitStampBox`, group scaling, the rotate knob, guide chords, the SAT test |
-| `annotation-geometry-shapes.json` | 3,333 | every per-geom function crossed with 52 shapes (each `Geom` variant rotated and degenerate), borders and stroke widths, and every handle a shape offers plus bogus ones |
+| `annotation-geometry-basics.json` | 338 | rect math, rotation helpers, upright placement, `fitStampBox`, group scaling, the rotate knob, guide chords, the SAT test |
+| `annotation-geometry-shapes.json` | 3,340 | every per-geom function crossed with 52 shapes (each `Geom` variant rotated and degenerate), borders and stroke widths, and every handle a shape offers plus bogus ones |
 | `annotation-geometry-hit.json` | 248 | `geomHit` over probe grids at the margin boundary, every line ending as a target |
-| `annotation-geometry-text.json` | 95 | callout connection, caret boxes from text anchors, the PDF/content bridge |
+| `annotation-geometry-text.json` | 97 | callout connection, caret boxes from text anchors, the PDF/content bridge |
 | `annotation-endings.json` | 88 | the ten `/LE` endings at four angles and stroke widths |
-| `annotation-cloudy.json` | 343 | cloudy rect, ellipse and polygon paths, intensities -1 to 3 including 0 and fractions |
+| `annotation-cloudy.json` | 351 | cloudy rect, ellipse and polygon paths, intensities -1 to 3 including 0 and fractions |
 | `annotation-kinds.json` | 137 | the kind table, caps and prop specs for every subtype, unknown and prototype names |
 | `annotation-flags.json` | 650 | the `/F` predicates for every flag, authority split, conversation and substrate planes |
 | `annotation-groups.json` | 15 | group keys, members, caps, attached link children |
@@ -25,13 +25,13 @@ files, plus the module-level exports the package index leaves out (`endingPoints
 | `annotation-scene.json` | 274 | painted scenes per kind, markup, redaction at rest and on hover, label layout |
 | `annotation-placement.json` | 194 | click placement, click geometry, ink straightening |
 | `annotation-view.json` | 30 | 114 idle, selected and mid-gesture models through every view selector |
-| `annotation-update.json` | 109 | 251 message runs through `update`, plus the rotate, callout and marquee helpers |
+| `annotation-update.json` | 111 | 251 message runs through `update`, plus the rotate, callout and marquee helpers |
 
 A case can carry many calls: `runs`, `viewMany`, `hitCalls`, `hitProbe`, `selectionAnchors` and
 `groupProbe` evaluate a list against one page, so a 22-annotation page is written once per batch.
 The files come to 15 MB.
 
-The generators reach 6,447 of 6,456 statements and 2,017 of 2,035 branches of the package
+The generators reach 6,628 of 6,637 statements and 2,030 of 2,048 branches of the package
 (`vectors/coverage.json`). What they don't reach can't be reached from the public surface:
 
 - `cloudy.ts` lines 66, 67 (`cosine`/`sine` of a zero hypotenuse; callers skip zero-length
@@ -114,20 +114,98 @@ threshold (the cases sit at 17.6 and 17.7 rather than on `100 * tan(10°)`).
 
 ## Mutation testing
 
-Incomplete. The run went file by file (`scripts/mutants.sh --file`) and stopped before it
-finished, so this is what 18 of the crate's 20 source files show (`harness.rs` is excluded),
-not the crate:
+Every source file but `harness.rs` (excluded in `.cargo/mutants.toml`) and `lib.rs` (re-exports
+only) has been run, one file at a time (`scripts/mutants.sh -p epdf-annotation-core
+--test-package epdf-annotation-core --file <file>`). Of the 98 mutants that survived, 30 are killed
+by cases added afterwards and 68 are equivalent or unreachable, each listed below. "Killed after"
+counts the first group; each of those was confirmed by applying the mutant by hand and watching the
+replay fail, not by a second full run. Timeouts count as caught: each is a mutant that loops
+forever.
 
-| Files | Caught | Timeouts | Missed | Unviable |
-|---|---|---|---|---|
-| 17 complete: `anchor`, `endings`, `flags`, `group`, `hit`, `ink`, `js`, `kinds`, `links`, `placement`, `plane`, `props`, `scene`, `snap`, `types`, `update`, `view` | 1,615 | 3 | 30 | 145 |
-| `cloudy.rs`, cut off partway | 411 | 12 | 19 | 0 |
-| `geometry.rs` | not run | | | |
+| File | Caught | Timeouts | Missed | Unviable | Killed after | Accepted |
+|---|---|---|---|---|---|---|
+| `anchor.rs` | 72 | 0 | 0 | 5 | | |
+| `cloudy.rs` | 632 | 18 | 39 | 1 | 7 | 32 |
+| `endings.rs` | 66 | 0 | 1 | 2 | | 1 |
+| `flags.rs` | 47 | 0 | 0 | 2 | | |
+| `geometry.rs` | 1,156 | 0 | 35 | 20 | 21 | 14 |
+| `group.rs` | 18 | 0 | 0 | 1 | | |
+| `hit.rs` | 94 | 0 | 1 | 5 | | 1 |
+| `ink.rs` | 45 | 0 | 0 | 0 | | |
+| `js.rs` | 149 | 0 | 6 | 11 | | 6 |
+| `kinds.rs` | 33 | 0 | 0 | 17 | | |
+| `links.rs` | 5 | 0 | 0 | 2 | | |
+| `placement.rs` | 63 | 0 | 0 | 2 | | |
+| `plane.rs` | 35 | 0 | 0 | 3 | | |
+| `props.rs` | 40 | 0 | 0 | 21 | | |
+| `scene.rs` | 225 | 3 | 1 | 5 | | 1 |
+| `snap.rs` | 62 | 0 | 0 | 3 | | |
+| `types.rs` | 61 | 0 | 3 | 9 | | 3 |
+| `update.rs` | 468 | 0 | 9 | 31 | 2 | 7 |
+| `view.rs` | 138 | 0 | 3 | 26 | | 3 |
+| Total | 3,409 | 21 | 98 | 166 | 30 | 68 |
 
-Timeouts count as caught: each is a mutant that loops forever. `lib.rs`, the other file not run,
-holds re-exports only.
+The rows for the 17 files the first pass had already covered are fresh runs, taken after
+`84f73b5ee` and `90be0fb5a` added cases; that pass had counted 30 misses in them, and 24 remain.
 
-The 49 misses have not been triaged one by one. Two commits after the first pass
-(`84f73b5ee`, `90be0fb5a`) added cases for the ones found then, so some of these may already be
-dead: the counts come from runs that started before those cases landed. `geometry.rs` is the
-largest file and the one most likely to hide survivors; it is the next run to do.
+### Accepted misses
+
+`cloudy.rs` (the path strings print four decimals, so a last-bit difference in an angle never
+shows):
+
+| Line | Mutant | Why no case kills it |
+|---|---|---|
+| 122 | eight arithmetic mutants in `arc_segment`'s zero-span `move_to` | Unreachable. Only `add_corner_curl` passes `add_move_to`, and its arc spans a fixed -22°. |
+| 169 | `<` to `<=` on `angle_todo` in `get_arc` | Unreachable. A zero sweep needs `b` to equal `angle_cur - alpha` to the last bit, which only the platform `atan2` and `acos` could arrange. |
+| 175 | `*` to `/` and `+` to `-` in `get_arc`'s `move_to` | Equivalent. Only the plain ellipse moves there, from angle 0: `cos 0` is 1 and `sin 0` is 0. |
+| 177 | `>` to `>=` on `ANGLE_90` in `get_arc` | Equivalent for the full circle, whose segments end at the same angles either way; a corner curl's sweep never lands on a quarter turn to the last bit. |
+| 182 | `>` to `>=` on the last segment | Equivalent. A zero-span `arc_segment` returns before drawing. |
+| 213, 220 | `+` to `-` on `ANGLE_180` | Equivalent. The angles differ by a full turn. |
+| 229 | `<` to `<=` in `output_curl_template` | Equivalent. A template's length is a multiple of 3. |
+| 253, 318 | `-1` to `1` in `compute_params_polygon`, and `!started` to `started` | Unreachable. Both belong to a zero-length edge, which `cloudy_polygon_impl` skips first (TypeScript lines 232 and 290 to 296, above). |
+| 290 | `<` to `<=` on the 0.5 radius floor | Equivalent. At 0.5 the floor assigns 0.5. |
+| 382 | `\|\|` to `&&` in `flatten_ellipse` | Unreachable. The adjusted radii are at least 0.1 (TypeScript line 347, above). |
+| 403 | `<` to `<=` and `==` on -1, `>` to `>=` on 1 in `compute_params_ellipse` | Equivalent. The argument is a length over a radius, never negative, and at exactly 1 `acos` gives the same 0. |
+| 450, 458 | `>` to `>=` on `2 * radius_adj` | Unreachable without a last-bit comparison: `radius_adj` is `sin(12°)` times the radius, so the equality would be decided by the platform `sin`, which the vectors stay off (see "JavaScript numerics"). |
+| 468 | `<` to `<=` and `==` on `flat.len()` | Unreachable. A flattened ellipse has at least 33 points; the empty case needs a radius at or below zero. |
+| 484, 487 | `<` to `<=` on the 0.5 and 3.0 radius thresholds | Unreachable without a last-bit comparison: the radius comes from a perimeter summed from platform `sin` and `cos`. |
+| 502 | `==` to `!=`, `-` to `+` and `/` in `i == flat.len() - 2` | Equivalent. That clause only sends a short last segment into the branch that places curls, where it places none and sets `remain`, which nothing reads after the loop. |
+
+`geometry.rs`:
+
+| Line | Mutant | Why no case kills it |
+|---|---|---|
+| 139 | delete the `"se"` arm of `opposite_handle` | Equivalent. `group_resize_anchor` falls back to `nw`, which is `se`'s opposite anyway, and in `resize_rotated_rect` the anchor cancels: the new centre is `c0 + R(next_centre - c0)` whatever the anchor is. |
+| 466 | `\|\|` to `&&` in `obb_from_geom` | Equivalent. The two differ only at `rot` 0, where `geom_rotate_about` by `-0` returns the geom unchanged, and at `NaN`, where the final rotation makes every corner `NaN` either way. |
+| 757 | `>` to `>=` on the baseline length in `caret_geom_from_anchor` | Equivalent. A zero length means `bx` and `by` are zeros, and `atan2` of zeros gives the 0 the other arm returns. Only a `-0` `bx` gives 180, and canonical JSON has no `-0`. |
+| 762 | `<` to `<=` against `CARET_ROT_EPSILON` | Unreachable. `normalize_deg` returns a value near 0.05 as `(x + 360) - 360`, a multiple of 2^-44, and 0.05 isn't one. The upper edge, `> 360 - 0.05`, is reachable and killed (`rot-at-the-upper-edge`). |
+| 840 | `<` to `<=` and to `==` on the join's direction change in `stroke_outline_points` | Equivalent. The points only reach `union_rect` in `geom_visual_bounds`. A join that turns by less than 1e-9 is straight to within `h * theta^2 / 8`, so its miter lands on corners already in the set. |
+| 846 | `<` to `<=` on the bisector length | Unreachable. Near a reversal that length is rounding noise of order 1e-16 over the angle, so it never lands on exactly 1e-9. |
+| 851 | `<` to `<=` on the bisector orientation test | Unreachable. The dot product is exactly 0 only when the two directions are parallel, and both parallel cases are skipped above it. |
+| 856 | `<` to `<=` on the half-angle cosine | Unreachable, for the reason 846 is; only a negative stroke width could observe it. The `==` mutant on the same line is killed (`reversal-negative-stroke`). |
+| 961 | the `*rot != 0.0` guard in `selection_bounds` to `true` | Equivalent. `rotated_aabb(rect, 0)` returns `rect`, which is what `geom_bounds` gives a text box. |
+| 1031 | `\|\|` to `&&` on the ellipse radii in `ending_nodes_hit` | Equivalent. The only ellipse node is the circle ending, placed with rotation 0 from `(-r, -r)` and `(r, r)`, so its radii are always equal. |
+| 1047, 1165 | `>` to `>=` on `len > 2` before a closing edge | Equivalent. With two points the closing edge is the first segment, already tested. |
+| 1191 | `&&` to `\|\|` on `rot` in `geom_handles` | Unreachable by a vector. At `rot` 0 the mutant rotates by 0, which is exact. Only a `NaN` `rot` tells them apart, and every consumer carries the handle's cursor, where the port already differs for a non-finite `rot` (see "Not ported"). |
+
+The other files:
+
+| Line | Mutant | Why no case kills it |
+|---|---|---|
+| `endings.rs` 42 | `a + PI` to `a - PI` for the reversed endings | Equivalent. The two angles are a full turn apart. |
+| `hit.rs` 212 | `selected.len() > 1` to `>=` in `hit_test` | Equivalent. A single selection only reaches the group branch when it isn't selectable, and then it is either not interactive (so not transformable) or of the one kind whose caps say unselectable, whose group caps are all false: the branch returns nothing. |
+| `js.rs` 23 | `-1074` to `1074`, and `\|` to `^`, in `decompose` | Equivalent. A subnormal times `10^digits` is never an exact tie either way, and the fraction never has bit 52 set. |
+| `js.rs` 34 | the `s > 0` guard in `exact_tie` to `false` | Equivalent. The last arm answers `false` for a positive shift too, since `(-s) as u32` wraps far past any trailing-zero count. |
+| `js.rs` 323 | `>` to `>=` in `Record::insert` | Equivalent. Two keys with the same array index are the same key, and that case returns earlier. |
+| `js.rs` 362, 423 | the `Record` and `IdSet` visitors' `expecting` to `Ok(())` | Unobservable. It only writes a decode error message, and no vector holds a malformed record or set. |
+| `scene.rs` 202 | outer `nodes.len() < 400` to `<=` in `layout_redact_label` | Equivalent. The inner loop's own `< 400` guard stops every push. |
+| `types.rs` 614 | delete `!` in `AnnotationPropsPatch::spread`'s key order | Unobservable here. The spread's order only reaches `set_defaults`, whose output is a JSON object (member order isn't compared, and a repeated key collapses on decode); the `props` effect's key list comes from the message's own patch. |
+| `types.rs` 654 | `PatchVisitor::expecting` to `Ok(())` | Unobservable, as for `js.rs` 362. |
+| `types.rs` 888 | the `is_segment()` guard in `segment_policy` to `true` | Equivalent. Its one caller is the line draft, and `click_create_geom` gives a line nothing from a box placement, just as it gets nothing without a policy. |
+| `update.rs` 238 | `same()` to `Default::default()` | Equivalent. `(None, Vec::new())` is the default. |
+| `update.rs` 606 | `delta.abs() < 0.01` to `<=` | Unreachable without a last-bit comparison. The delta is a difference of `atan2` angles; a snapped delta from a still pointer is `arc_to`, which is `x - 180` for an `x` near 180 and so a multiple of 2^-45, never 0.01. |
+| `update.rs` 623 | both `< 1e-4` to `<=` on the group factors | Unreachable. `sx - 1` is a multiple of `ulp(sx)`, at least 2^-53 near 1, and 1e-4 isn't one. |
+| `update.rs` 1021 | the `dr != 0.0 && !dr.is_nan()` guard to `true`, and `&&` to `\|\|` | Equivalent. A `dr` of 0 gives an upright rotation of 0, and a `NaN` one gives `NaN`, which `upright_box` and `rot_of` both treat as 0. |
+| `update.rs` 1405 | `\|\|` to `&&` on the caret box | Equivalent. The caret box is square. |
+| `view.rs` 72 | the `mode.zoom` guard in `eff_style` to `true` | Equivalent. Without `zoom` the anchor scale is 1, so the stroke divides by 1. |
+| `view.rs` 391, 494 | `sel.len() > 1` to `>=` | Equivalent. Both follow a `sel.len() == 1` branch. |

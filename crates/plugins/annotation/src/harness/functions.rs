@@ -326,6 +326,19 @@ fn comment_threads(a: &[Value]) -> Out {
     Ok(Value::Array(threads.iter().map(|t| t.to_json()).collect()))
 }
 
+fn sniff(a: &[Value]) -> Out {
+    let bytes = epdf_kernel::bytes::Bytes::from_json(&a[0]).map(|b| b.0).unwrap_or_default();
+    Ok(match crate::binary::sniff_binary_metadata(&bytes) {
+        None => Value::Null,
+        Some(meta) => match meta.size {
+            Some((width, height)) => {
+                json!({ "mimeType": meta.mime_type, "width": width, "height": height })
+            }
+            None => json!({ "mimeType": meta.mime_type }),
+        },
+    })
+}
+
 /// `plugins/annotation-pure.json`.
 pub fn pure_functions() -> FunctionTable {
     vec![
@@ -337,5 +350,6 @@ pub fn pure_functions() -> FunctionTable {
         ("mergeChrome", merge_chrome_fn),
         ("annotationReducer", reducer),
         ("buildCommentThreads", comment_threads),
+        ("sniffBinaryMetadata", sniff),
     ]
 }

@@ -35,6 +35,7 @@ import {
   layout,
   ink,
   markup,
+  FLAGS,
 } from './annotation-fixtures';
 
 const b64 = (bytes: number[]) => Buffer.from(bytes).toString('base64');
@@ -50,6 +51,9 @@ const JUNK = { $bytes: b64([1, 2, 3, 4, 5]) };
 const pointer = (phase: string, x: number, y: number, over: Record<string, unknown> = {}) => ix('dispatch', [sample(phase, x, y, over)]);
 const hover = (x: number, y: number, over: Record<string, unknown> = {}) => pointer('move', x, y, over);
 const offPage = (phase: string): Step => ix('dispatch', [{ phase, viewport: { x: 900, y: 900 }, modifiers: { shift: false, alt: false, ctrl: false, meta: false } }]);
+
+/** An argument left out, as canonical JSON spells it inside an array. */
+const U = { $undefined: true };
 
 const withSelection = [{ factory: 'interaction' }, { factory: 'selection' }, { factory: 'annotation' }];
 
@@ -320,6 +324,209 @@ const cases: ScenarioCase[] = [
     ],
   },
   {
+    name: 'grab-reach-follows-the-scale',
+    covers:
+      'The handle and knob reach is half the hit size over the page scale, doubled for touch, and the knob offset shrinks with the scale: probes just inside and outside both at scale 2, a zero scale and a NaN scale (both read as 1).',
+    plugins: PLUGINS,
+    engine: { documents: { a: doc([hydrate({ 1: [square(1, target)] })]) } },
+    snapshot: 'none',
+    steps: [
+      ...boot,
+      call('select', [objRef(1)]),
+      call('hitKind', [1, { x: 107, y: 100 }, 2, U, U, false]),
+      call('hitKind', [1, { x: 107, y: 100 }, 2, U, U, true]),
+      call('hitKind', [1, { x: 150, y: 77 }, 2, U, U, false]),
+      call('hitKind', [1, { x: 150, y: 80 }, 2, U, U, false]),
+      call('hitKind', [1, { x: 150, y: 80 }, 2, U, U, true]),
+      call('hitKind', [1, { x: 150, y: 150 }, 0]),
+      call('hitKind', [1, { x: 100, y: 100 }, { $number: 'NaN' }]),
+    ],
+  },
+  {
+    name: 'page-box-of-an-offset-crop',
+    covers:
+      'On a page whose crop starts off the origin (10, 20 to 410, 520) the page box is 400 x 500: it decides where the rotate knob flips or clamps, and where a note placed in the corner is clamped.',
+    plugins: PLUGINS,
+    engine: {
+      documents: {
+        a: doc([
+          hydrate({
+            2: [
+              square(21, { pageObjectNumber: 2, rect: { left: 110, bottom: 40, right: 210, top: 515 } }),
+              square(22, { pageObjectNumber: 2, rect: { left: 110, bottom: 470, right: 210, top: 515 } }),
+              square(23, { pageObjectNumber: 2, rect: { left: 360, bottom: 40, right: 480, top: 515 } }),
+            ],
+          }),
+          { path: 'page.annotations.create', pon: 2, value: created(textNote(60, { pageObjectNumber: 2 })) },
+        ]),
+      },
+    },
+    snapshot: 'none',
+    steps: [
+      ...boot,
+      call('select', [objRef(21, 2)]),
+      call('chrome', [2]),
+      call('select', [objRef(22, 2)]),
+      call('chrome', [2]),
+      call('select', [objRef(23, 2)]),
+      call('chrome', [2]),
+      tool('note'),
+      call('placeAt', [2, { x: 395, y: 495 }]),
+    ],
+  },
+  {
+    name: 'chrome-follows-the-view',
+    covers:
+      'chrome takes the view from a rotation alone (a noRotate note counter-rotates), recomputes when only the scale changes, and draws the rotate guides during a rotate gesture.',
+    plugins: PLUGINS,
+    engine: {
+      documents: {
+        a: doc([hydrate({ 1: [square(1, target), textNote(9, { rect: { left: 300, bottom: 300, right: 320, top: 320 }, flags: FLAGS({ noRotate: true, noZoom: true }) })] })]),
+      },
+    },
+    snapshot: 'none',
+    steps: [
+      ...boot,
+      call('select', [objRef(9)]),
+      call('chrome', [1, U, 90]),
+      call('select', [objRef(1)]),
+      call('chrome', [1, 1]),
+      call('chrome', [1, 2]),
+      pointer('down', 150, 68),
+      pointer('move', 200, 68),
+      call('chrome', [1]),
+      pointer('cancel', 200, 68),
+    ],
+  },
+  {
+    name: 'handlers-outrank-a-lower-handler',
+    covers:
+      'The place (95), draw (55) and marquee (50) handlers each take the press ahead of a scripted handler at priority 25 that would also claim it.',
+    plugins: PLUGINS,
+    engine: {
+      documents: {
+        a: doc([
+          hydrate(),
+          { path: 'page.annotations.create', pon: 1, times: 1, value: created(textNote(60)) },
+          { path: 'page.annotations.create', pon: 1, value: created(square(61)) },
+        ]),
+      },
+    },
+    snapshot: SNAP,
+    steps: [
+      ...boot,
+      ix('registerHandler', [
+        { id: 'low', priority: 25, enabledFor: { $fn: 'low.enabledFor', returns: true }, onDown: { $fn: 'low.onDown', returns: true }, onUp: { $fn: 'low.onUp' } },
+      ]),
+      tool('note'),
+      pointer('down', 100, 100),
+      pointer('up', 100, 100),
+      tool('square'),
+      pointer('down', 300, 300),
+      pointer('move', 350, 350),
+      pointer('up', 350, 350),
+      tool('pointer'),
+      pointer('down', 500, 700),
+      pointer('move', 520, 720),
+      pointer('up', 520, 720),
+    ],
+  },
+  {
+    name: 'handlers-wake-only-for-their-tags',
+    covers:
+      'A tool that enables only annotation-edit wakes neither the place handler (a note subtype still places nothing) nor the marquee (a drag on empty space selects nothing).',
+    plugins: PLUGINS,
+    engine: { documents: { a: doc([hydrate(), { path: 'page.annotations.create', pon: 1, value: created(textNote(60)) }]) } },
+    snapshot: SNAP,
+    steps: [
+      ...boot,
+      call('registerTool', [{ id: 'quiet-note', subtype: 'text', enables: ['annotation-edit'] }]),
+      tool('quiet-note'),
+      pointer('down', 100, 100),
+      pointer('up', 100, 100),
+      call('registerTool', [{ id: 'quiet-box', subtype: 'square', enables: ['annotation-edit'] }]),
+      tool('quiet-box'),
+      pointer('down', 100, 100),
+      pointer('move', 200, 200),
+      pointer('up', 200, 200),
+    ],
+  },
+  {
+    name: 'edit-press-inside-the-touch-reach-only',
+    covers:
+      'A mouse press 18px diagonally off a selected square’s corner handle is outside the mouse reach (12px) and inside the touch reach (24px): it deselects rather than starting a resize.',
+    plugins: PLUGINS,
+    engine: { documents: { a: doc([hydrate({ 1: [square(1, target)] })]) } },
+    snapshot: SNAP,
+    steps: [...boot, call('select', [objRef(1)]), call('chrome', [1]), pointer('down', 82, 82), pointer('up', 82, 82), call('selection')],
+  },
+  {
+    name: 'marquee-starts-at-exactly-4px',
+    covers:
+      'The marquee starts at 4px of viewport travel, not past it, measured as a distance from the press: once along x, once along y.',
+    plugins: PLUGINS,
+    engine: { documents: { a: doc([hydrate()]) } },
+    snapshot: SNAP,
+    steps: [
+      ...boot,
+      pointer('down', 90, 90),
+      pointer('move', 94, 90),
+      call('chrome', [1]),
+      pointer('up', 94, 90),
+      pointer('down', 90, 90),
+      pointer('move', 90, 94),
+      call('chrome', [1]),
+      pointer('up', 90, 94),
+    ],
+  },
+  {
+    name: 'hover-drives-only-a-multi-click-draft',
+    covers:
+      'Hover feeds the draft only for a poly or callout mid-creation: not for a polygon or callout tool before its first click, and not for an ink stroke waiting in its grouping window. An ink tool without a window commits on up and schedules nothing.',
+    plugins: [{ factory: 'interaction' }, { factory: 'annotation', config: { tools: [{ id: 'ink-now', extends: 'ink', ink: { groupStrokesMs: 0 } }] } }],
+    engine: { documents: { a: doc([hydrate(), { path: 'page.annotations.create', pon: 1, value: created(ink(40)) }]) } },
+    snapshot: SNAP,
+    steps: [
+      ...boot,
+      tool('polygon'),
+      hover(40, 40),
+      tool('free-text-callout'),
+      hover(40, 40),
+      tool('ink'),
+      pointer('down', 10, 10),
+      pointer('move', 20, 15),
+      pointer('up', 30, 10),
+      hover(60, 60),
+      advance(1000),
+      tool('ink-now'),
+      pointer('down', 10, 10),
+      pointer('move', 20, 15),
+      pointer('up', 30, 10),
+      advance(10),
+    ],
+  },
+  {
+    name: 'ink-cancel-inside-the-grouping-window',
+    covers:
+      'A cancel while an ink group is still inside its grouping window clears the window’s timer, so the buffered stroke never commits. Only a down that is not an ink down leaves the window open for the cancel to meet: re-registering the active tool id as a square does that without a tool change.',
+    plugins: PLUGINS,
+    engine: { documents: { a: doc([hydrate()]) } },
+    snapshot: SNAP,
+    steps: [
+      ...boot,
+      call('registerTool', [{ id: 'pen', extends: 'ink' }]),
+      tool('pen'),
+      pointer('down', 10, 10),
+      pointer('move', 20, 15),
+      pointer('up', 30, 10),
+      call('registerTool', [{ id: 'pen', extends: 'square' }]),
+      pointer('down', 40, 40),
+      pointer('cancel', 50, 50),
+      advance(1000),
+      call('list', [1]),
+    ],
+  },
+  {
     name: 'poly-and-callout-clicks',
     covers:
       'Poly tools take vertices by click, ignore drags, preview on hover and finish on a double-click; a callout advances tip, knee, box by click with a hover preview. A cancel drops the draft; a tool change resets the gesture state.',
@@ -575,6 +782,65 @@ const cases: ScenarioCase[] = [
       tool('pointer'),
       call('hasArmedStamp'),
       call('stampArmEpoch'),
+      // An explicit preview keeps its declared type; a null source, and a
+      // payload whose data is neither bytes nor a Blob, reject as V8 does.
+      call('armStamp', [{ source: PDF, preview: { data: JPEG, mimeType: 'image/jpeg' } }]),
+      call('armedStampPreview'),
+      call('armStamp', [{ source: null }]),
+      call('armStamp', [{ source: { data: 5 } }]),
+      call('armStamp', [{ source: { name: 'no-data' } }]),
+      // A falsy preview falls back to the raster's own bytes; a PDF without
+      // one has none. Sizes: an override with a zero side is ignored, a valid
+      // one wins, a target width keeps the aspect. A NaN rotation counts as
+      // none; a tool with upright off ignores a real one.
+      call('armStamp', [{ source: PNG, preview: false }]),
+      call('armedStampPreview'),
+      call('armStamp', [{ source: PDF }]),
+      call('armedStampPreview'),
+      call('armStamp', [{ source: PNG, intrinsicSize: { width: 0, height: 10 } }]),
+      call('placeArmedStamp', [1, { x: 300, y: 300 }]),
+      call('armStamp', [{ source: PNG, intrinsicSize: { width: 10, height: 0 } }]),
+      call('placeArmedStamp', [1, { x: 300, y: 300 }]),
+      call('armStamp', [{ source: PNG, intrinsicSize: { width: 300, height: 100 } }]),
+      call('placeArmedStamp', [1, { x: 300, y: 300 }]),
+      call('armStamp', [{ source: PNG, targetWidth: 80 }]),
+      call('placeArmedStamp', [1, { x: 300, y: 300 }, { $number: 'NaN' }]),
+      call('registerTool', [{ id: 'flat-stamp', extends: 'stamp', upright: false }]),
+      tool('flat-stamp'),
+      call('hasArmedStamp'),
+      call('placeArmedStamp', [1, { x: 300, y: 300 }, 90]),
+    ],
+  },
+  {
+    name: 'placement-rotation-follows-upright',
+    covers:
+      'A click placement counter-rotates only for an upright tool on a rotated page: a NaN display rotation counts as none, and a tool with upright off ignores a real one. Fixed-bytes stamps through requestStampAt, notes through placeAt.',
+    plugins: PLUGINS,
+    engine: {
+      documents: {
+        a: doc([
+          hydrate(),
+          { path: 'page.annotations.create', pon: 1, times: 1, value: created(stamp(95)) },
+          { path: 'page.annotations.create', pon: 1, times: 1, value: created(stamp(96)) },
+          { path: 'page.annotations.create', pon: 1, times: 1, value: created(textNote(97)) },
+          { path: 'page.annotations.create', pon: 1, value: created(textNote(98)) },
+        ]),
+      },
+    },
+    snapshot: 'none',
+    steps: [
+      ...boot,
+      call('registerTool', [{ id: 'approved', extends: 'stamp', source: { kind: 'bytes', source: PNG } }]),
+      tool('approved'),
+      call('requestStampAt', [1, { x: 100, y: 100 }, { $number: 'NaN' }]),
+      call('registerTool', [{ id: 'flat-approved', extends: 'stamp', source: { kind: 'bytes', source: PNG }, upright: false }]),
+      tool('flat-approved'),
+      call('requestStampAt', [1, { x: 200, y: 200 }, 90]),
+      tool('note'),
+      call('placeAt', [1, { x: 300, y: 300 }, { $number: 'NaN' }]),
+      call('registerTool', [{ id: 'flat-note', extends: 'note', upright: false }]),
+      tool('flat-note'),
+      call('placeAt', [1, { x: 400, y: 400 }, 90]),
     ],
   },
   {

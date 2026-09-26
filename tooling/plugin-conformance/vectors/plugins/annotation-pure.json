@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "function",
-  "describes": "packages/plugin/annotation: the tool registry, the free-text projection, icon placement, the reducer, and engine-core buildCommentThreads.",
+  "describes": "packages/plugin/annotation: the tool registry, the free-text projection, icon placement, the reducer, and engine-core buildCommentThreads and sniffBinaryMetadata.",
   "cases": [
     {
       "name": "buildToolRegistry/built-ins",
@@ -5228,6 +5228,282 @@
           "$error": {
             "name": "Error",
             "message": "[annotation] tool 'square' does not support default 'fontSize' for 'square'"
+          }
+        }
+      }
+    },
+    {
+      "name": "buildToolRegistry/bad-default-line",
+      "fn": "buildToolRegistry",
+      "args": [
+        [
+          {
+            "id": "bad-line",
+            "subtype": "line",
+            "defaults": {
+              "icon": "comment"
+            }
+          }
+        ]
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "Error",
+            "message": "[annotation] tool 'bad-line' does not support default 'icon' for 'line'"
+          }
+        }
+      }
+    },
+    {
+      "name": "buildToolRegistry/bad-default-polyline",
+      "fn": "buildToolRegistry",
+      "args": [
+        [
+          {
+            "id": "bad-polyline",
+            "subtype": "polyline",
+            "defaults": {
+              "icon": "comment"
+            }
+          }
+        ]
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "Error",
+            "message": "[annotation] tool 'bad-polyline' does not support default 'icon' for 'polyline'"
+          }
+        }
+      }
+    },
+    {
+      "name": "buildToolRegistry/bad-default-ink",
+      "fn": "buildToolRegistry",
+      "args": [
+        [
+          {
+            "id": "bad-ink",
+            "subtype": "ink",
+            "defaults": {
+              "icon": "comment"
+            }
+          }
+        ]
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "Error",
+            "message": "[annotation] tool 'bad-ink' does not support default 'icon' for 'ink'"
+          }
+        }
+      }
+    },
+    {
+      "name": "buildToolRegistry/bad-default-free-text",
+      "fn": "buildToolRegistry",
+      "args": [
+        [
+          {
+            "id": "bad-free-text",
+            "subtype": "free-text",
+            "defaults": {
+              "blendMode": "multiply"
+            }
+          }
+        ]
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "Error",
+            "message": "[annotation] tool 'bad-free-text' does not support default 'blendMode' for 'free-text'"
+          }
+        }
+      }
+    },
+    {
+      "name": "buildToolRegistry/bad-default-free-text-callout",
+      "fn": "buildToolRegistry",
+      "args": [
+        [
+          {
+            "id": "bad-free-text-callout",
+            "subtype": "free-text-callout",
+            "defaults": {
+              "blendMode": "multiply"
+            }
+          }
+        ]
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "Error",
+            "message": "[annotation] tool 'bad-free-text-callout' does not support default 'blendMode' for 'free-text-callout'"
+          }
+        }
+      }
+    },
+    {
+      "name": "buildToolRegistry/bad-default-underline",
+      "fn": "buildToolRegistry",
+      "args": [
+        [
+          {
+            "id": "bad-underline",
+            "subtype": "underline",
+            "defaults": {
+              "strokeWidth": 2
+            }
+          }
+        ]
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "Error",
+            "message": "[annotation] tool 'bad-underline' does not support default 'strokeWidth' for 'underline'"
+          }
+        }
+      }
+    },
+    {
+      "name": "buildToolRegistry/bad-default-redact",
+      "fn": "buildToolRegistry",
+      "args": [
+        [
+          {
+            "id": "bad-redact",
+            "subtype": "redact",
+            "defaults": {
+              "strokeWidth": 2
+            }
+          }
+        ]
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "Error",
+            "message": "[annotation] tool 'bad-redact' does not support default 'strokeWidth' for 'redact'"
+          }
+        }
+      }
+    },
+    {
+      "name": "buildToolRegistry/bad-default-stamp",
+      "fn": "buildToolRegistry",
+      "args": [
+        [
+          {
+            "id": "bad-stamp",
+            "subtype": "stamp",
+            "defaults": {
+              "opacity": 0.5
+            }
+          }
+        ]
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "Error",
+            "message": "[annotation] tool 'bad-stamp' does not support default 'opacity' for 'stamp'"
+          }
+        }
+      }
+    },
+    {
+      "name": "buildToolRegistry/bad-default-link",
+      "fn": "buildToolRegistry",
+      "args": [
+        [
+          {
+            "id": "bad-link",
+            "subtype": "link",
+            "defaults": {
+              "color": "#000000"
+            }
+          }
+        ]
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "Error",
+            "message": "[annotation] tool 'bad-link' does not support default 'color' for 'link'"
+          }
+        }
+      }
+    },
+    {
+      "name": "buildToolRegistry/bad-default-file-attachment",
+      "fn": "buildToolRegistry",
+      "args": [
+        [
+          {
+            "id": "bad-file-attachment",
+            "subtype": "file-attachment",
+            "defaults": {
+              "strokeWidth": 2
+            }
+          }
+        ]
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "Error",
+            "message": "[annotation] tool 'bad-file-attachment' does not support default 'strokeWidth' for 'file-attachment'"
+          }
+        }
+      }
+    },
+    {
+      "name": "buildToolRegistry/bad-default-widget-choice",
+      "fn": "buildToolRegistry",
+      "args": [
+        [
+          {
+            "id": "bad-widget-choice",
+            "subtype": "widget-choice",
+            "defaults": {
+              "opacity": 0.5
+            }
+          }
+        ]
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "Error",
+            "message": "[annotation] tool 'bad-widget-choice' does not support default 'opacity' for 'widget-choice'"
+          }
+        }
+      }
+    },
+    {
+      "name": "buildToolRegistry/bad-default-widget-toggle",
+      "fn": "buildToolRegistry",
+      "args": [
+        [
+          {
+            "id": "bad-widget-toggle",
+            "subtype": "widget-toggle",
+            "defaults": {
+              "fontSize": 10
+            }
+          }
+        ]
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "Error",
+            "message": "[annotation] tool 'bad-widget-toggle' does not support default 'fontSize' for 'widget-toggle'"
           }
         }
       }
@@ -10650,6 +10926,164 @@
       }
     },
     {
+      "name": "sniffBinaryMetadata/png-wide",
+      "fn": "sniffBinaryMetadata",
+      "args": [
+        {
+          "$bytes": "iVBORw0KGgoAAAANSUhEUgABEXAAAQAB"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "mimeType": "image/png",
+          "width": 70000,
+          "height": 65537
+        }
+      }
+    },
+    {
+      "name": "sniffBinaryMetadata/png-trailing-bytes",
+      "fn": "sniffBinaryMetadata",
+      "args": [
+        {
+          "$bytes": "iVBORw0KGgoAAAANSUhEUgAAAGQAAAAyAQIDBAUG"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "mimeType": "image/png",
+          "width": 100,
+          "height": 50
+        }
+      }
+    },
+    {
+      "name": "sniffBinaryMetadata/png-zero-width",
+      "fn": "sniffBinaryMetadata",
+      "args": [
+        {
+          "$bytes": "iVBORw0KGgoAAAANSUhEUgAAAAAAAAAy"
+        }
+      ],
+      "outcome": {
+        "returned": null
+      }
+    },
+    {
+      "name": "sniffBinaryMetadata/jpeg-sof-ends-the-buffer",
+      "fn": "sniffBinaryMetadata",
+      "args": [
+        {
+          "$bytes": "/9j/wAARCAAeACg="
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "mimeType": "image/jpeg",
+          "width": 40,
+          "height": 30
+        }
+      }
+    },
+    {
+      "name": "sniffBinaryMetadata/jpeg-sof-truncated",
+      "fn": "sniffBinaryMetadata",
+      "args": [
+        {
+          "$bytes": "/9j/wAARCAA="
+        }
+      ],
+      "outcome": {
+        "returned": null
+      }
+    },
+    {
+      "name": "sniffBinaryMetadata/jpeg-zero-width",
+      "fn": "sniffBinaryMetadata",
+      "args": [
+        {
+          "$bytes": "/9j/wAARCAAeAAA="
+        }
+      ],
+      "outcome": {
+        "returned": null
+      }
+    },
+    {
+      "name": "sniffBinaryMetadata/jpeg-soi-after-a-segment",
+      "fn": "sniffBinaryMetadata",
+      "args": [
+        {
+          "$bytes": "/9j/4AAEAAD/2P/AABEIAB4AKA=="
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "mimeType": "image/jpeg",
+          "width": 40,
+          "height": 30
+        }
+      }
+    },
+    {
+      "name": "sniffBinaryMetadata/jpeg-long-segment",
+      "fn": "sniffBinaryMetadata",
+      "args": [
+        {
+          "$bytes": "/9j/4AECAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP/AABEIAB4AKA=="
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "mimeType": "image/jpeg",
+          "width": 40,
+          "height": 30
+        }
+      }
+    },
+    {
+      "name": "sniffBinaryMetadata/jpeg-second-segment",
+      "fn": "sniffBinaryMetadata",
+      "args": [
+        {
+          "$bytes": "/9j/4AAEAAD/4QAGqrvM3f/AABEIAB4AKA=="
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "mimeType": "image/jpeg",
+          "width": 40,
+          "height": 30
+        }
+      }
+    },
+    {
+      "name": "sniffBinaryMetadata/pdf-four-bytes",
+      "fn": "sniffBinaryMetadata",
+      "args": [
+        {
+          "$bytes": "JVBERg=="
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "mimeType": "application/pdf"
+        }
+      }
+    },
+    {
+      "name": "sniffBinaryMetadata/three-bytes",
+      "fn": "sniffBinaryMetadata",
+      "args": [
+        {
+          "$bytes": "JVBE"
+        }
+      ],
+      "outcome": {
+        "returned": null
+      }
+    },
+    {
       "name": "buildCommentThreads/nm-refs-and-ordering",
       "fn": "buildCommentThreads",
       "args": [
@@ -11034,6 +11468,57 @@
               "top": 700
             },
             "contents": "same date, high index",
+            "subject": null,
+            "author": null,
+            "created": "2024-01-08T00:00:00Z",
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 64
+            },
+            "replyType": null,
+            "subtype": "text",
+            "color": {
+              "r": 250,
+              "g": 204,
+              "b": 21
+            },
+            "opacity": 1,
+            "icon": "comment",
+            "state": null,
+            "stateModel": null
+          },
+          {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 86
+            },
+            "pageObjectNumber": 1,
+            "index": 80,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 100,
+              "bottom": 680,
+              "right": 120,
+              "top": 700
+            },
+            "contents": "same date, same index: input order",
             "subject": null,
             "author": null,
             "created": "2024-01-08T00:00:00Z",
@@ -11569,6 +12054,57 @@
                   "top": 700
                 },
                 "contents": "same date, low index",
+                "subject": null,
+                "author": null,
+                "created": "2024-01-08T00:00:00Z",
+                "modified": null,
+                "blendMode": "normal",
+                "inReplyTo": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1,
+                  "annotObjectNumber": 64
+                },
+                "replyType": null,
+                "subtype": "text",
+                "color": {
+                  "r": 250,
+                  "g": 204,
+                  "b": 21
+                },
+                "opacity": 1,
+                "icon": "comment",
+                "state": null,
+                "stateModel": null
+              },
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1,
+                  "annotObjectNumber": 86
+                },
+                "pageObjectNumber": 1,
+                "index": 80,
+                "identityQuality": "durable",
+                "nm": null,
+                "flags": {
+                  "invisible": false,
+                  "hidden": false,
+                  "print": true,
+                  "noZoom": false,
+                  "noRotate": false,
+                  "noView": false,
+                  "readOnly": false,
+                  "locked": false,
+                  "toggleNoView": false,
+                  "lockedContents": false
+                },
+                "rect": {
+                  "left": 100,
+                  "bottom": 680,
+                  "right": 120,
+                  "top": 700
+                },
+                "contents": "same date, same index: input order",
                 "subject": null,
                 "author": null,
                 "created": "2024-01-08T00:00:00Z",

@@ -127,6 +127,37 @@ const cases: ScenarioCase[] = [
     ],
   },
   {
+    name: 'mixed-type-cursors-compare-as-javascript',
+    covers:
+      'A serverId that is not a number compares with a numeric auditHead as JavaScript does: true is 1, a numeric string is its number, a blank one is 0, so each is inside the snapshot and drops. A null auditHead reads as 0.',
+    plugins: PLUGINS,
+    engine: { documents: { a: doc([{ path: 'annotations.listRawAll', defer: 'all' }]) } },
+    snapshot: SNAP,
+    steps: [
+      ...boot,
+      emit({ type: 'annotation.created', pageObjectNumber: 1, origin: remote(true), created: square(7) }),
+      emit({ type: 'annotation.created', pageObjectNumber: 1, origin: remote('3'), created: square(8) }),
+      emit({ type: 'annotation.created', pageObjectNumber: 1, origin: remote(' '), created: square(9) }),
+      emit({ type: 'annotation.created', pageObjectNumber: 1, origin: remote('6'), created: square(10) }),
+      settle('all', { ...snapshot({ 1: [] }), auditHead: 5 }),
+      call('list', [1]),
+    ],
+  },
+  {
+    name: 'a-null-cursor-reads-as-zero',
+    covers: 'With auditHead null, a serverId of 0 is inside the snapshot and drops; 1 applies.',
+    plugins: PLUGINS,
+    engine: { documents: { a: doc([{ path: 'annotations.listRawAll', defer: 'all' }]) } },
+    snapshot: SNAP,
+    steps: [
+      ...boot,
+      emit({ type: 'annotation.created', pageObjectNumber: 1, origin: remote(0), created: square(7) }),
+      emit({ type: 'annotation.created', pageObjectNumber: 1, origin: remote(1), created: square(8) }),
+      settle('all', { ...snapshot({ 1: [] }), auditHead: null }),
+      call('list', [1]),
+    ],
+  },
+  {
     name: 'string-cursors-compare-as-strings',
     covers: 'With a string auditHead, string serverIds compare lexicographically.',
     plugins: PLUGINS,
@@ -236,12 +267,12 @@ const cases: ScenarioCase[] = [
   {
     name: 'cross-plane-events',
     covers:
-      'redaction.applied reloads each applied page once (skipped results do not); form.valueChanged and form.effectsApplied bump the appearance version of the repainted widgets (object number > 0 only).',
+      'redaction.applied reloads each applied page once (skipped results do not); form.valueChanged and form.effectsApplied bump the appearance version of the repainted widgets (object number > 0 only, so a widget numbered 0 keeps its version).',
     plugins: PLUGINS,
     engine: {
       documents: {
         a: doc([
-          hydrate({ 1: [square(1), widget(5, 'text')] }),
+          hydrate({ 1: [square(1), widget(5, 'text'), widget(0, 'text')] }),
           { path: 'page.annotations.list', pon: 1, value: { annotations: [square(1)] } },
         ]),
       },

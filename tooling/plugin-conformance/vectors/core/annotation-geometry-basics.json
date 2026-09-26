@@ -3345,6 +3345,33 @@
       }
     },
     {
+      "name": "fitStampBox/zero-size-zero-page",
+      "fn": "fitStampBox",
+      "args": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "width": 0,
+          "height": 0
+        },
+        {
+          "width": 0,
+          "height": 0
+        },
+        0
+      ],
+      "outcome": {
+        "returned": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        }
+      }
+    },
+    {
       "name": "fitStampBox/never-scales-up",
       "fn": "fitStampBox",
       "args": [
@@ -5182,6 +5209,35 @@
       }
     },
     {
+      "name": "chordThrough/at-the-parallel-threshold",
+      "fn": "chordThrough",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 600,
+          "height": 800
+        },
+        {
+          "x": 300,
+          "y": 799.9999999999
+        },
+        5.729577951308232e-11
+      ],
+      "outcome": {
+        "returned": {
+          "a": {
+            "x": 0,
+            "y": 799.9999999995999
+          },
+          "b": {
+            "x": 400.0444171950221,
+            "y": 800
+          }
+        }
+      }
+    },
+    {
       "name": "chordThrough/parallel-on-right-edge",
       "fn": "chordThrough",
       "args": [
@@ -6813,6 +6869,171 @@
       ],
       "outcome": {
         "returned": true
+      }
+    },
+    {
+      "name": "quadIntersectsRect/tilted30-end-gap",
+      "fn": "quadIntersectsRect",
+      "args": [
+        [
+          {
+            "x": 109.19872981077808,
+            "y": 75.66987298107782
+          },
+          {
+            "x": 195.80127018922195,
+            "y": 125.66987298107779
+          },
+          {
+            "x": 190.80127018922195,
+            "y": 134.33012701892218
+          },
+          {
+            "x": 104.19872981077808,
+            "y": 84.33012701892218
+          }
+        ],
+        {
+          "x": 102,
+          "y": 74,
+          "width": 4,
+          "height": 4
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "quadIntersectsRect/tilted30-long-side-gap",
+      "fn": "quadIntersectsRect",
+      "args": [
+        [
+          {
+            "x": 109.19872981077808,
+            "y": 75.66987298107782
+          },
+          {
+            "x": 195.80127018922195,
+            "y": 125.66987298107779
+          },
+          {
+            "x": 190.80127018922195,
+            "y": 134.33012701892218
+          },
+          {
+            "x": 104.19872981077808,
+            "y": 84.33012701892218
+          }
+        ],
+        {
+          "x": 102,
+          "y": 86,
+          "width": 4,
+          "height": 4
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "quadIntersectsRect/tiny-edge-skipped",
+      "fn": "quadIntersectsRect",
+      "args": [
+        [
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 1e-13,
+            "y": 1e-13
+          },
+          {
+            "x": 100,
+            "y": 100
+          },
+          {
+            "x": 0,
+            "y": 100
+          }
+        ],
+        {
+          "x": 60,
+          "y": 10,
+          "width": 10,
+          "height": 10
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "quadIntersectsRect/tiny-edge-x-at-threshold",
+      "fn": "quadIntersectsRect",
+      "args": [
+        [
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 5e-13,
+            "y": 1e-12
+          },
+          {
+            "x": 50,
+            "y": 100
+          },
+          {
+            "x": 0,
+            "y": 100
+          }
+        ],
+        {
+          "x": 30,
+          "y": 5,
+          "width": 10,
+          "height": 10
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "quadIntersectsRect/tiny-edge-y-at-threshold",
+      "fn": "quadIntersectsRect",
+      "args": [
+        [
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 1e-12,
+            "y": 5e-13
+          },
+          {
+            "x": 100,
+            "y": 50
+          },
+          {
+            "x": 0,
+            "y": 50
+          }
+        ],
+        {
+          "x": 60,
+          "y": 5,
+          "width": 10,
+          "height": 10
+        }
+      ],
+      "outcome": {
+        "returned": false
       }
     }
   ]
