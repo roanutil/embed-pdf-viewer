@@ -133,3 +133,8 @@ from parallel worktrees crashed the development machine twice before it existed.
 P6: an `epdf-viewer-host` crate that puts the kernel and plugins on `crates/epdf-engine` through
 its `host.rs` wire, and the uniffi exports for the native facades. Its gate is an integration test
 over a fixture, not vectors, because the engine is pinned on its own.
+
+## Catching up with the TypeScript
+
+`research/multi-platform-rust-core-impl` has since restructured every plugin package. What that
+breaks, measured suite by suite, and the order to fix it in: `multiplatform-plugins-rebase.md`.
