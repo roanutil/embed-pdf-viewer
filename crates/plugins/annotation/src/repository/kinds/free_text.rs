@@ -1,8 +1,10 @@
 //! `repository/kinds/freeText.ts`: the plain box and the callout (leader
-//! plus box), and the `/DA` text slice.
+//! plus box), and the `/DA` text slice. The rich body carries the
+//! formatting the `/DA` cannot, and a formatting toggle lowers as a rich
+//! write of the complete body.
 
 use epdf_annotation_core::{
-    Annot, Callout, Geom, LineEnding, PdfRect, TextAlign, TextStyle, callout_line_points,
+    Annot, Callout, Geom, LineEnding, PdfRect, PropKey, TextAlign, TextStyle, callout_line_points,
     content_to_pdf_point, content_to_pdf_rect, geom_pdf_bounds, geom_rotation,
     pdf_to_content_point, pdf_to_content_rect, rotated_aabb,
 };
@@ -26,12 +28,45 @@ fn text_align_of(dto: &Value) -> TextAlign {
 /// `textFromDTO(dto)`: an absent `fontColor` falls back to the `/DA` colour.
 fn text_from_dto(dto: &Value) -> TextStyle {
     let color = get(dto, "fontColor").filter(|c| !c.is_null()).or_else(|| get(dto, "color"));
+    let body = get(dto, "richText").and_then(|r| get(r, "body")).filter(|b| b.is_object());
+    let weight = body.and_then(|b| get(b, "weight")).and_then(Value::as_f64);
+    let italic = body.and_then(|b| get(b, "italic")).is_some_and(|i| crate::value::truthy(Some(i)));
+    let underline = body
+        .and_then(|b| get(b, "decoration"))
+        .and_then(Value::as_array)
+        .is_some_and(|d| d.iter().any(|x| x.as_str() == Some("underline")));
     TextStyle {
         font_family: str_of(dto, "fontFamily").unwrap_or_default().to_string(),
         font_size: f64_of(dto, "fontSize"),
         font_color: color_to_css(color.unwrap_or(&Value::Null)),
         text_align: text_align_of(dto),
+        bold: weight.is_some_and(|w| w >= 600.0).then_some(true),
+        italic: italic.then_some(true),
+        underline: underline.then_some(true),
     }
+}
+
+/// `formattingBody(a)`: a toggle is a body change, lowered as a rich write
+/// of the current paragraphs under the complete body with the three toggles
+/// applied, so a patch of several merges cleanly.
+fn formatting_body(a: &Annot) -> Wire {
+    let doc = crate::rich_text::rich_doc_of(a, None);
+    let t = a.text.as_ref();
+    let mut body = doc.body;
+    let on = |f: Option<bool>| f == Some(true);
+    body.insert("weight".into(), json!(if on(t.and_then(|t| t.bold)) { 700 } else { 400 }));
+    body.insert("italic".into(), json!(on(t.and_then(|t| t.italic))));
+    let decoration: Vec<&str> =
+        if on(t.and_then(|t| t.underline)) { vec!["underline"] } else { vec![] };
+    body.insert("decoration".into(), json!(decoration));
+    let mut out = Wire::new();
+    out.insert("richText".into(), json!({ "body": body, "paragraphs": doc.paragraphs }));
+    out
+}
+
+/// `prop?.[key]`: the three formatting toggles.
+pub fn prop(key: PropKey, a: &Annot) -> Option<Wire> {
+    matches!(key, PropKey::Bold | PropKey::Italic | PropKey::Underline).then(|| formatting_body(a))
 }
 
 /// `calloutFields(a, crop)`: the engine geometry of a callout, or `None`

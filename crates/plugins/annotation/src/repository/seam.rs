@@ -18,22 +18,23 @@ pub use epdf_annotation_core::{
     pdf_to_content_rect as pdf_to_content,
 };
 
-/// `refKey(ref)`: the model id of an engine ref.
-pub fn ref_key(r: &AnnotationRef) -> String {
+/// `annotationKey(ref)` (engine-core): the one model id of an engine ref,
+/// `obj:<n>`, `nm:<page>:<name>` or `idx:<page>:<i>`.
+pub fn annotation_key(r: &AnnotationRef) -> String {
     match r {
         AnnotationRef::ObjectNumber { annot_object_number, .. } => {
             format!("obj:{}", num::number_to_string(*annot_object_number))
         }
-        AnnotationRef::Nm { nm, .. } => format!("nm:{nm}"),
-        AnnotationRef::Index { page_object_number, index, .. } => {
-            format!("idx:{page_object_number}:{}", num::number_to_string(*index))
+        AnnotationRef::Nm { page, nm } => format!("nm:{}:{nm}", page.page_object_number),
+        AnnotationRef::Index { page, index, .. } => {
+            format!("idx:{}:{}", page.page_object_number, num::number_to_string(*index))
         }
     }
 }
 
-/// `refKey` over a ref still in its wire form.
-pub fn ref_key_of(r: &Value) -> Option<String> {
-    serde_json::from_value::<AnnotationRef>(r.clone()).ok().map(|r| ref_key(&r))
+/// `annotationKey` over a ref still in its wire form.
+pub fn annotation_key_of(r: &Value) -> Option<String> {
+    serde_json::from_value::<AnnotationRef>(r.clone()).ok().map(|r| annotation_key(&r))
 }
 
 // ── colour seam (engine Color <-> CSS hex) ────────────────────────────────────

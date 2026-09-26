@@ -19,15 +19,17 @@ pub mod props;
 pub mod seam;
 
 use epdf_annotation_core::{
-    Annot, AnnotationFlags, AnnotationRef, PatchScope, PdfRect, PropKey, Source, geom_rotation,
+    Annot, AnnotationFlags, AnnotationRef, PageRef, PatchScope, PdfRect,
+    PropKey, Source, geom_rotation,
     pdf_to_content_rect, props_for,
 };
+use epdf_annotation_core::measurement::MeasurementAppearance;
 use serde_json::{Value, json};
 
 pub use links::link_child_rects;
 pub use projection::{Kind, Wire, box_emit};
 pub use seam::{
-    box_geom_fields, color_to_css, css_to_color, ref_key, style_from_dto,
+    annotation_key, annotation_key_of, box_geom_fields, color_to_css, css_to_color, style_from_dto,
     widget_appearance_from_props, writable_target,
 };
 
@@ -54,16 +56,18 @@ pub fn from_dto(dto: &Value, crop: PdfRect, source: Source) -> Annot {
     };
     let ref_: Option<AnnotationRef> =
         get(dto, "ref").and_then(|r| serde_json::from_value(r.clone()).ok());
-    let irt = get(dto, "inReplyTo").filter(|v| truthy(Some(v))).and_then(seam::ref_key_of);
+    let irt = get(dto, "inReplyTo").filter(|v| truthy(Some(v))).and_then(seam::annotation_key_of);
     let group = if str_of(dto, "replyType") == Some("group") { irt.clone() } else { None };
     let flags: AnnotationFlags =
         get(dto, "flags").and_then(|f| serde_json::from_value(f.clone()).ok()).unwrap_or_default();
     let ap_box =
         pdf_to_content_rect(stripped.unwrap_or_else(|| pdf_rect_of(get(dto, "rect"))), crop);
     Annot {
-        id: ref_.as_ref().map(ref_key).unwrap_or_default(),
+        id: ref_.as_ref().map(annotation_key).unwrap_or_default(),
         ref_,
-        pon: get(dto, "pageObjectNumber").and_then(Value::as_f64).map_or(0, |p| p as u32),
+        page: get(dto, "page")
+            .and_then(|p| serde_json::from_value::<PageRef>(p.clone()).ok())
+            .unwrap_or_default(),
         subtype: if subtype == "widget" {
             kinds::misc::widget_kind_of(str_of(dto, "fieldFamily").unwrap_or_default())
         } else {
@@ -80,6 +84,7 @@ pub fn from_dto(dto: &Value, crop: PdfRect, source: Source) -> Annot {
         ap_version: None,
         authority: None,
         data: Some(dto.clone()),
+        measure: slice.measure,
         intent: slice.intent,
         link: slice.link,
         irt,
@@ -136,6 +141,24 @@ pub fn to_patch(a: &Annot, crop: PdfRect) -> Option<Wire> {
 pub fn to_scoped_patch(a: &Annot, scope: &PatchScope, crop: PdfRect) -> Option<Wire> {
     let kind = Kind::of(&a.subtype);
     match scope {
+        PatchScope::Caption => {
+            let caption = match a.measure.as_ref()? {
+                MeasurementAppearance::Distance(d) => serde_json::to_value(d.caption),
+                MeasurementAppearance::Shape(s) => serde_json::to_value(s.caption),
+            };
+            let mut rest = Wire::new();
+            rest.insert("caption".into(), caption.unwrap_or_default());
+            Some(with_subtype(a, rest))
+        }
+        PatchScope::Leader => {
+            let Some(MeasurementAppearance::Distance(d)) = &a.measure else { return None };
+            let mut out = Wire::new();
+            out.insert("subtype".into(), json!("line"));
+            if let Some(leader) = d.leader {
+                out.insert("leader".into(), serde_json::to_value(leader).unwrap_or_default());
+            }
+            Some(out)
+        }
         PatchScope::Geometry => match kind.geometry(a, crop) {
             Some(geo) => Some(with_subtype(a, geo)),
             None => to_patch(a, crop),

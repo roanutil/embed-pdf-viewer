@@ -9,13 +9,13 @@ use serde_json::{Map, Value, json};
 
 use crate::value::{get, str_of};
 
-/// `refKey` from `annotation/relationships.ts` (page-qualified, unlike the
-/// plugin's model ids).
+/// `annotationKey(ref)` (engine-core), over a wire ref: `obj:<n>`,
+/// `nm:<page>:<name>`, `idx:<page>:<i>`.
 fn rel_key(r: &Value) -> String {
-    let pon = get(r, "pageObjectNumber").map(num_text).unwrap_or_default();
+    let pon = get(r, "page").and_then(|p| get(p, "pageObjectNumber")).map(num_text).unwrap_or_default();
     match str_of(r, "kind") {
         Some("objectNumber") => {
-            format!("obj:{pon}:{}", get(r, "annotObjectNumber").map(num_text).unwrap_or_default())
+            format!("obj:{}", get(r, "annotObjectNumber").map(num_text).unwrap_or_default())
         }
         Some("nm") => format!("nm:{pon}:{}", str_of(r, "nm").unwrap_or_default()),
         _ => format!("idx:{pon}:{}", get(r, "index").map(num_text).unwrap_or_default()),
@@ -84,7 +84,7 @@ pub struct CommentThreadReview {
 #[derive(Clone, Debug, PartialEq)]
 pub struct CommentThread {
     pub root: Value,
-    pub page_object_number: Value,
+    pub page: Value,
     pub replies: Vec<Value>,
     pub grouped_parts: Vec<Value>,
     pub review: CommentThreadReview,
@@ -109,7 +109,7 @@ impl CommentThread {
         }
         json!({
             "root": self.root,
-            "pageObjectNumber": self.page_object_number,
+            "page": self.page,
             "replies": self.replies,
             "groupedParts": self.grouped_parts,
             "review": Value::Object(review),
@@ -259,7 +259,7 @@ pub fn build_comment_threads(
         if let Some(nm) = non_empty(a, "nm") {
             let alias = rel_key(&json!({
                 "kind": "nm",
-                "pageObjectNumber": get(a, "pageObjectNumber").cloned().unwrap_or(Value::Null),
+                "page": get(a, "page").cloned().unwrap_or(Value::Null),
                 "nm": nm,
             }));
             if find(&by_key, &alias).is_none() {
@@ -312,7 +312,7 @@ pub fn build_comment_threads(
         states.sort_by(chronological);
         threads.push(CommentThread {
             root: root.clone(),
-            page_object_number: get(root, "pageObjectNumber").cloned().unwrap_or(Value::Null),
+            page: get(root, "page").cloned().unwrap_or(Value::Null),
             replies,
             grouped_parts: grouped,
             review: compute_review(&states, current_user_id),

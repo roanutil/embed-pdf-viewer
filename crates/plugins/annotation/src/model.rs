@@ -1,11 +1,46 @@
-//! `reducer.ts`: the slice holds the core model and the chrome settings;
-//! the pure `update` runs in the capability, and the reducer only stores.
+//! `model.ts`: the slice holds the core model, the hydration status, the
+//! chrome settings, the tool ghost, the stamp arm epoch and the editor's
+//! text selection. The pure `update` runs in the store service; the reducer
+//! only stores.
 
 use std::rc::Rc;
 
 use epdf_annotation_core::{Model, SnapSettings, initial_model};
+use serde::Serialize;
 
-use crate::types::*;
+use crate::contract::*;
+
+/// `AnnotationState`. The model and chrome sit behind `Rc` so the memoized
+/// selectors can key on identity, as the TypeScript's `===` does.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AnnotationState {
+    pub model: Rc<Model>,
+    pub hydration: AnnotationHydration,
+    pub chrome: Rc<ChromeSettings>,
+    pub tool_ghost: Option<Rc<ToolGhost>>,
+    pub stamp_arm_epoch: f64,
+    pub text_selection: Option<Rc<TextSelection>>,
+}
+
+/// The hydration error makes one variant large; actions are transient.
+#[allow(clippy::large_enum_variant)]
+#[derive(Clone, Debug, Serialize)]
+#[serde(tag = "type")]
+pub enum AnnotationAction {
+    #[serde(rename = "SET_MODEL")]
+    SetModel { model: Rc<Model> },
+    #[serde(rename = "SET_HYDRATION")]
+    SetHydration { hydration: AnnotationHydration },
+    #[serde(rename = "SET_CHROME")]
+    SetChrome { patch: ChromeSettingsPatch },
+    #[serde(rename = "SET_TOOL_GHOST")]
+    SetToolGhost { ghost: Option<Rc<ToolGhost>> },
+    #[serde(rename = "SET_TEXT_SELECTION")]
+    SetTextSelection { selection: Option<Rc<TextSelection>> },
+    #[serde(rename = "STAMP_ARM_CHANGED")]
+    StampArmChanged,
+}
 
 /// `DEFAULT_CHROME`.
 pub fn default_chrome() -> ChromeSettings {
@@ -102,6 +137,7 @@ pub fn initial_annotation_state(config: &AnnotationConfig) -> AnnotationState {
         )),
         tool_ghost: None,
         stamp_arm_epoch: 0.0,
+        text_selection: None,
     }
 }
 
@@ -118,6 +154,9 @@ pub fn annotation_reducer(
             next.chrome = Rc::new(merge_chrome(&state.chrome, patch));
         }
         AnnotationAction::SetToolGhost { ghost } => next.tool_ghost = ghost.clone(),
+        AnnotationAction::SetTextSelection { selection } => {
+            next.text_selection = selection.clone();
+        }
         AnnotationAction::StampArmChanged => {
             next.stamp_arm_epoch = state.stamp_arm_epoch + 1.0;
             next.tool_ghost = None;
