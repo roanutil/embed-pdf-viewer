@@ -1,0 +1,7481 @@
+{
+  "schemaVersion": 1,
+  "kind": "function",
+  "describes": "packages/core/annotation richtext.ts: the rich text run algebra over plain-projection offsets.",
+  "cases": [
+    {
+      "name": "richTextLength/doc",
+      "fn": "richTextLength",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": 38
+      }
+    },
+    {
+      "name": "richTextLength/empty",
+      "fn": "richTextLength",
+      "args": [
+        {
+          "paragraphs": []
+        }
+      ],
+      "outcome": {
+        "returned": 0
+      }
+    },
+    {
+      "name": "richTextLength/messy",
+      "fn": "richTextLength",
+      "args": [
+        {
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "a",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": "",
+                  "style": {
+                    "italic": true
+                  }
+                },
+                {
+                  "text": "b",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": "c",
+                  "style": {}
+                },
+                {
+                  "text": "d"
+                }
+              ]
+            },
+            {
+              "runs": []
+            },
+            {
+              "runs": [
+                {
+                  "text": "x",
+                  "style": {
+                    "decoration": [
+                      "line-through",
+                      "underline"
+                    ]
+                  }
+                },
+                {
+                  "text": "y",
+                  "style": {
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                },
+                {
+                  "text": "z",
+                  "style": {
+                    "decoration": [
+                      "underline"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "p",
+                  "style": {
+                    "decoration": [
+                      "underline"
+                    ]
+                  }
+                },
+                {
+                  "text": "q",
+                  "style": {
+                    "decoration": [
+                      "word"
+                    ]
+                  }
+                },
+                {
+                  "text": "r",
+                  "style": {
+                    "family": "Times"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": 13
+      }
+    },
+    {
+      "name": "sameStyleDelta/both-undefined",
+      "fn": "sameStyleDelta",
+      "args": [
+        {
+          "$undefined": true
+        },
+        {
+          "$undefined": true
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "sameStyleDelta/empty-and-undefined",
+      "fn": "sameStyleDelta",
+      "args": [
+        {},
+        {
+          "$undefined": true
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "sameStyleDelta/weights-differ",
+      "fn": "sameStyleDelta",
+      "args": [
+        {
+          "weight": 700
+        },
+        {
+          "weight": 400
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "sameStyleDelta/decoration-order",
+      "fn": "sameStyleDelta",
+      "args": [
+        {
+          "decoration": [
+            "underline",
+            "line-through"
+          ]
+        },
+        {
+          "decoration": [
+            "line-through",
+            "underline"
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "sameStyleDelta/decoration-lengths",
+      "fn": "sameStyleDelta",
+      "args": [
+        {
+          "decoration": [
+            "underline"
+          ]
+        },
+        {
+          "decoration": [
+            "underline",
+            "word"
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "sameStyleDelta/decoration-one-side",
+      "fn": "sameStyleDelta",
+      "args": [
+        {
+          "decoration": [
+            "underline"
+          ]
+        },
+        {}
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "sameStyleDelta/decoration-values",
+      "fn": "sameStyleDelta",
+      "args": [
+        {
+          "decoration": [
+            "underline"
+          ]
+        },
+        {
+          "decoration": [
+            "word"
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "sameStyleDelta/every-key",
+      "fn": "sameStyleDelta",
+      "args": [
+        {
+          "family": "A",
+          "weight": 1,
+          "italic": true,
+          "size": 2,
+          "color": "#000",
+          "script": "sub",
+          "letterSpacing": 1,
+          "horizontalScale": 2,
+          "unknown": "x"
+        },
+        {
+          "family": "A",
+          "weight": 1,
+          "italic": true,
+          "size": 2,
+          "color": "#000",
+          "script": "sub",
+          "letterSpacing": 1,
+          "horizontalScale": 2,
+          "unknown": "x"
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "sameStyleDelta/unknown-differs",
+      "fn": "sameStyleDelta",
+      "args": [
+        {
+          "unknown": "x"
+        },
+        {
+          "unknown": "y"
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "normalizeRuns/doc",
+      "fn": "normalizeRuns",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "normalizeRuns/messy",
+      "fn": "normalizeRuns",
+      "args": [
+        {
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "a",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": "",
+                  "style": {
+                    "italic": true
+                  }
+                },
+                {
+                  "text": "b",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": "c",
+                  "style": {}
+                },
+                {
+                  "text": "d"
+                }
+              ]
+            },
+            {
+              "runs": []
+            },
+            {
+              "runs": [
+                {
+                  "text": "x",
+                  "style": {
+                    "decoration": [
+                      "line-through",
+                      "underline"
+                    ]
+                  }
+                },
+                {
+                  "text": "y",
+                  "style": {
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                },
+                {
+                  "text": "z",
+                  "style": {
+                    "decoration": [
+                      "underline"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "p",
+                  "style": {
+                    "decoration": [
+                      "underline"
+                    ]
+                  }
+                },
+                {
+                  "text": "q",
+                  "style": {
+                    "decoration": [
+                      "word"
+                    ]
+                  }
+                },
+                {
+                  "text": "r",
+                  "style": {
+                    "family": "Times"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "ab",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": "cd"
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "xy",
+                  "style": {
+                    "decoration": [
+                      "line-through",
+                      "underline"
+                    ]
+                  }
+                },
+                {
+                  "text": "z",
+                  "style": {
+                    "decoration": [
+                      "underline"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "p",
+                  "style": {
+                    "decoration": [
+                      "underline"
+                    ]
+                  }
+                },
+                {
+                  "text": "q",
+                  "style": {
+                    "decoration": [
+                      "word"
+                    ]
+                  }
+                },
+                {
+                  "text": "r",
+                  "style": {
+                    "family": "Times"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "plainTextOf/doc",
+      "fn": "plainTextOf",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": "Hello bold world\rSecond line\r\rcafé 😀!"
+      }
+    },
+    {
+      "name": "plainTextOf/messy",
+      "fn": "plainTextOf",
+      "args": [
+        {
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "a",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": "",
+                  "style": {
+                    "italic": true
+                  }
+                },
+                {
+                  "text": "b",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": "c",
+                  "style": {}
+                },
+                {
+                  "text": "d"
+                }
+              ]
+            },
+            {
+              "runs": []
+            },
+            {
+              "runs": [
+                {
+                  "text": "x",
+                  "style": {
+                    "decoration": [
+                      "line-through",
+                      "underline"
+                    ]
+                  }
+                },
+                {
+                  "text": "y",
+                  "style": {
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                },
+                {
+                  "text": "z",
+                  "style": {
+                    "decoration": [
+                      "underline"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "p",
+                  "style": {
+                    "decoration": [
+                      "underline"
+                    ]
+                  }
+                },
+                {
+                  "text": "q",
+                  "style": {
+                    "decoration": [
+                      "word"
+                    ]
+                  }
+                },
+                {
+                  "text": "r",
+                  "style": {
+                    "family": "Times"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": "abcd\r\rxyz\rpqr"
+      }
+    },
+    {
+      "name": "isPlainRichText/doc",
+      "fn": "isPlainRichText",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "isPlainRichText/plain",
+      "fn": "isPlainRichText",
+      "args": [
+        {
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "a"
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "b",
+                  "style": {}
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "isPlainRichText/empty-body",
+      "fn": "isPlainRichText",
+      "args": [
+        {
+          "body": {},
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "a"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "isPlainRichText/body",
+      "fn": "isPlainRichText",
+      "args": [
+        {
+          "body": {
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "a"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "isPlainRichText/paragraph-align",
+      "fn": "isPlainRichText",
+      "args": [
+        {
+          "paragraphs": [
+            {
+              "align": "left",
+              "runs": [
+                {
+                  "text": "a"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "isPlainRichText/paragraph-dir",
+      "fn": "isPlainRichText",
+      "args": [
+        {
+          "paragraphs": [
+            {
+              "dir": "rtl",
+              "runs": [
+                {
+                  "text": "a"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "isPlainRichText/paragraph-lineHeight",
+      "fn": "isPlainRichText",
+      "args": [
+        {
+          "paragraphs": [
+            {
+              "lineHeight": 2,
+              "runs": [
+                {
+                  "text": "a"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "isPlainRichText/paragraph-margins",
+      "fn": "isPlainRichText",
+      "args": [
+        {
+          "paragraphs": [
+            {
+              "margins": {
+                "top": 1,
+                "bottom": 1,
+                "left": 1,
+                "right": 1
+              },
+              "runs": [
+                {
+                  "text": "a"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "isPlainRichText/paragraph-textIndent",
+      "fn": "isPlainRichText",
+      "args": [
+        {
+          "paragraphs": [
+            {
+              "textIndent": 2,
+              "runs": [
+                {
+                  "text": "a"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "isPlainRichText/paragraph-unknown",
+      "fn": "isPlainRichText",
+      "args": [
+        {
+          "paragraphs": [
+            {
+              "unknown": "x: y",
+              "runs": [
+                {
+                  "text": "a"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "isPlainRichText/styled-run",
+      "fn": "isPlainRichText",
+      "args": [
+        {
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "a",
+                  "style": {
+                    "italic": false
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "paragraphsFromPlainText/\"a\\r\\nb\"",
+      "fn": "paragraphsFromPlainText",
+      "args": [
+        "a\r\nb"
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "runs": [
+              {
+                "text": "a"
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "text": "b"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "paragraphsFromPlainText/\"a\\rb\\nc\"",
+      "fn": "paragraphsFromPlainText",
+      "args": [
+        "a\rb\nc"
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "runs": [
+              {
+                "text": "a"
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "text": "b"
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "text": "c"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "paragraphsFromPlainText/\"\"",
+      "fn": "paragraphsFromPlainText",
+      "args": [
+        ""
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "runs": [
+              {
+                "text": ""
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "paragraphsFromPlainText/\"one\"",
+      "fn": "paragraphsFromPlainText",
+      "args": [
+        "one"
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "runs": [
+              {
+                "text": "one"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "paragraphsFromPlainText/\"\\n\\n\"",
+      "fn": "paragraphsFromPlainText",
+      "args": [
+        "\n\n"
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "runs": [
+              {
+                "text": ""
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "text": ""
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "text": ""
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "paragraphsFromPlainText/\"x\\r\\r\\ny\"",
+      "fn": "paragraphsFromPlainText",
+      "args": [
+        "x\r\r\ny"
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "runs": [
+              {
+                "text": "x"
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "text": ""
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "text": "y"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "locateOffset/doc-0",
+      "fn": "locateOffset",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        0
+      ],
+      "outcome": {
+        "returned": {
+          "paragraph": 0,
+          "offset": 0
+        }
+      }
+    },
+    {
+      "name": "styleAt/doc-0",
+      "fn": "styleAt",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        0
+      ],
+      "outcome": {
+        "returned": {}
+      }
+    },
+    {
+      "name": "locateOffset/doc-3",
+      "fn": "locateOffset",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        3
+      ],
+      "outcome": {
+        "returned": {
+          "paragraph": 0,
+          "offset": 3
+        }
+      }
+    },
+    {
+      "name": "styleAt/doc-3",
+      "fn": "styleAt",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        3
+      ],
+      "outcome": {
+        "returned": {}
+      }
+    },
+    {
+      "name": "locateOffset/doc-6",
+      "fn": "locateOffset",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        6
+      ],
+      "outcome": {
+        "returned": {
+          "paragraph": 0,
+          "offset": 6
+        }
+      }
+    },
+    {
+      "name": "styleAt/doc-6",
+      "fn": "styleAt",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        6
+      ],
+      "outcome": {
+        "returned": {}
+      }
+    },
+    {
+      "name": "locateOffset/doc-10",
+      "fn": "locateOffset",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        10
+      ],
+      "outcome": {
+        "returned": {
+          "paragraph": 0,
+          "offset": 10
+        }
+      }
+    },
+    {
+      "name": "styleAt/doc-10",
+      "fn": "styleAt",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        10
+      ],
+      "outcome": {
+        "returned": {
+          "weight": 700
+        }
+      }
+    },
+    {
+      "name": "locateOffset/doc-16",
+      "fn": "locateOffset",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        16
+      ],
+      "outcome": {
+        "returned": {
+          "paragraph": 0,
+          "offset": 16
+        }
+      }
+    },
+    {
+      "name": "styleAt/doc-16",
+      "fn": "styleAt",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        16
+      ],
+      "outcome": {
+        "returned": {}
+      }
+    },
+    {
+      "name": "locateOffset/doc-17",
+      "fn": "locateOffset",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        17
+      ],
+      "outcome": {
+        "returned": {
+          "paragraph": 1,
+          "offset": 0
+        }
+      }
+    },
+    {
+      "name": "styleAt/doc-17",
+      "fn": "styleAt",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        17
+      ],
+      "outcome": {
+        "returned": {}
+      }
+    },
+    {
+      "name": "locateOffset/doc-18",
+      "fn": "locateOffset",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        18
+      ],
+      "outcome": {
+        "returned": {
+          "paragraph": 1,
+          "offset": 1
+        }
+      }
+    },
+    {
+      "name": "styleAt/doc-18",
+      "fn": "styleAt",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        18
+      ],
+      "outcome": {
+        "returned": {}
+      }
+    },
+    {
+      "name": "locateOffset/doc-22",
+      "fn": "locateOffset",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        22
+      ],
+      "outcome": {
+        "returned": {
+          "paragraph": 1,
+          "offset": 5
+        }
+      }
+    },
+    {
+      "name": "styleAt/doc-22",
+      "fn": "styleAt",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        22
+      ],
+      "outcome": {
+        "returned": {}
+      }
+    },
+    {
+      "name": "locateOffset/doc-23",
+      "fn": "locateOffset",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        23
+      ],
+      "outcome": {
+        "returned": {
+          "paragraph": 1,
+          "offset": 6
+        }
+      }
+    },
+    {
+      "name": "styleAt/doc-23",
+      "fn": "styleAt",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        23
+      ],
+      "outcome": {
+        "returned": {}
+      }
+    },
+    {
+      "name": "locateOffset/doc-24",
+      "fn": "locateOffset",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        24
+      ],
+      "outcome": {
+        "returned": {
+          "paragraph": 1,
+          "offset": 7
+        }
+      }
+    },
+    {
+      "name": "styleAt/doc-24",
+      "fn": "styleAt",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        24
+      ],
+      "outcome": {
+        "returned": {}
+      }
+    },
+    {
+      "name": "locateOffset/doc-30",
+      "fn": "locateOffset",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        30
+      ],
+      "outcome": {
+        "returned": {
+          "paragraph": 3,
+          "offset": 0
+        }
+      }
+    },
+    {
+      "name": "styleAt/doc-30",
+      "fn": "styleAt",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        30
+      ],
+      "outcome": {
+        "returned": {
+          "color": "#ff0000"
+        }
+      }
+    },
+    {
+      "name": "locateOffset/doc-100",
+      "fn": "locateOffset",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        100
+      ],
+      "outcome": {
+        "returned": {
+          "paragraph": 3,
+          "offset": 8
+        }
+      }
+    },
+    {
+      "name": "styleAt/doc-100",
+      "fn": "styleAt",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        100
+      ],
+      "outcome": {
+        "returned": {
+          "color": "#ff0000"
+        }
+      }
+    },
+    {
+      "name": "locateOffset/doc--5",
+      "fn": "locateOffset",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        -5
+      ],
+      "outcome": {
+        "returned": {
+          "paragraph": 0,
+          "offset": 0
+        }
+      }
+    },
+    {
+      "name": "styleAt/doc--5",
+      "fn": "styleAt",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        -5
+      ],
+      "outcome": {
+        "returned": {}
+      }
+    },
+    {
+      "name": "locateOffset/doc-2.5",
+      "fn": "locateOffset",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        2.5
+      ],
+      "outcome": {
+        "returned": {
+          "paragraph": 0,
+          "offset": 2.5
+        }
+      }
+    },
+    {
+      "name": "styleAt/doc-2.5",
+      "fn": "styleAt",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        2.5
+      ],
+      "outcome": {
+        "returned": {}
+      }
+    },
+    {
+      "name": "locateOffset/empty",
+      "fn": "locateOffset",
+      "args": [
+        {
+          "paragraphs": []
+        },
+        3
+      ],
+      "outcome": {
+        "returned": {
+          "paragraph": 0,
+          "offset": 0
+        }
+      }
+    },
+    {
+      "name": "styleAt/empty",
+      "fn": "styleAt",
+      "args": [
+        {
+          "paragraphs": []
+        },
+        3
+      ],
+      "outcome": {
+        "returned": {
+          "$undefined": true
+        }
+      }
+    },
+    {
+      "name": "styleAt/empty-run",
+      "fn": "styleAt",
+      "args": [
+        {
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            }
+          ]
+        },
+        0
+      ],
+      "outcome": {
+        "returned": {}
+      }
+    },
+    {
+      "name": "styleAt/no-runs",
+      "fn": "styleAt",
+      "args": [
+        {
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ]
+        },
+        0
+      ],
+      "outcome": {
+        "returned": {}
+      }
+    },
+    {
+      "name": "styleAt/after-styled-run",
+      "fn": "styleAt",
+      "args": [
+        {
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "ab",
+                  "style": {
+                    "weight": 700
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        5
+      ],
+      "outcome": {
+        "returned": {
+          "weight": 700
+        }
+      }
+    },
+    {
+      "name": "splitRunsAt/first-0",
+      "fn": "splitRunsAt",
+      "args": [
+        {
+          "runs": [
+            {
+              "text": "Hello "
+            },
+            {
+              "text": "bold",
+              "style": {
+                "weight": 700
+              }
+            },
+            {
+              "text": " world"
+            }
+          ]
+        },
+        0
+      ],
+      "outcome": {
+        "returned": {
+          "runs": [
+            {
+              "text": "Hello "
+            },
+            {
+              "text": "bold",
+              "style": {
+                "weight": 700
+              }
+            },
+            {
+              "text": " world"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "splitRunsAt/first-3",
+      "fn": "splitRunsAt",
+      "args": [
+        {
+          "runs": [
+            {
+              "text": "Hello "
+            },
+            {
+              "text": "bold",
+              "style": {
+                "weight": 700
+              }
+            },
+            {
+              "text": " world"
+            }
+          ]
+        },
+        3
+      ],
+      "outcome": {
+        "returned": {
+          "runs": [
+            {
+              "text": "Hel"
+            },
+            {
+              "text": "lo "
+            },
+            {
+              "text": "bold",
+              "style": {
+                "weight": 700
+              }
+            },
+            {
+              "text": " world"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "splitRunsAt/first-6",
+      "fn": "splitRunsAt",
+      "args": [
+        {
+          "runs": [
+            {
+              "text": "Hello "
+            },
+            {
+              "text": "bold",
+              "style": {
+                "weight": 700
+              }
+            },
+            {
+              "text": " world"
+            }
+          ]
+        },
+        6
+      ],
+      "outcome": {
+        "returned": {
+          "runs": [
+            {
+              "text": "Hello "
+            },
+            {
+              "text": "bold",
+              "style": {
+                "weight": 700
+              }
+            },
+            {
+              "text": " world"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "splitRunsAt/first-10",
+      "fn": "splitRunsAt",
+      "args": [
+        {
+          "runs": [
+            {
+              "text": "Hello "
+            },
+            {
+              "text": "bold",
+              "style": {
+                "weight": 700
+              }
+            },
+            {
+              "text": " world"
+            }
+          ]
+        },
+        10
+      ],
+      "outcome": {
+        "returned": {
+          "runs": [
+            {
+              "text": "Hello "
+            },
+            {
+              "text": "bold",
+              "style": {
+                "weight": 700
+              }
+            },
+            {
+              "text": " world"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "splitRunsAt/first-16",
+      "fn": "splitRunsAt",
+      "args": [
+        {
+          "runs": [
+            {
+              "text": "Hello "
+            },
+            {
+              "text": "bold",
+              "style": {
+                "weight": 700
+              }
+            },
+            {
+              "text": " world"
+            }
+          ]
+        },
+        16
+      ],
+      "outcome": {
+        "returned": {
+          "runs": [
+            {
+              "text": "Hello "
+            },
+            {
+              "text": "bold",
+              "style": {
+                "weight": 700
+              }
+            },
+            {
+              "text": " world"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "splitRunsAt/first-2.5",
+      "fn": "splitRunsAt",
+      "args": [
+        {
+          "runs": [
+            {
+              "text": "Hello "
+            },
+            {
+              "text": "bold",
+              "style": {
+                "weight": 700
+              }
+            },
+            {
+              "text": " world"
+            }
+          ]
+        },
+        2.5
+      ],
+      "outcome": {
+        "returned": {
+          "runs": [
+            {
+              "text": "He"
+            },
+            {
+              "text": "llo "
+            },
+            {
+              "text": "bold",
+              "style": {
+                "weight": 700
+              }
+            },
+            {
+              "text": " world"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "splitRunsAt/surrogate-safe",
+      "fn": "splitRunsAt",
+      "args": [
+        {
+          "runs": [
+            {
+              "text": "café 😀!",
+              "style": {
+                "color": "#ff0000"
+              }
+            }
+          ]
+        },
+        5
+      ],
+      "outcome": {
+        "returned": {
+          "runs": [
+            {
+              "text": "café ",
+              "style": {
+                "color": "#ff0000"
+              }
+            },
+            {
+              "text": "😀!",
+              "style": {
+                "color": "#ff0000"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "applyStyleToRange/bold-inside-run",
+      "fn": "applyStyleToRange",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "start": 1,
+          "end": 4
+        },
+        {
+          "weight": 700
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "H"
+                },
+                {
+                  "text": "ell",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": "o "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "rangeHasStyle/bold-inside-run",
+      "fn": "rangeHasStyle",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "start": 1,
+          "end": 4
+        },
+        {
+          "key": "weight",
+          "value": 700
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "rangeHasStyle/unstyled-inside-run",
+      "fn": "rangeHasStyle",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "start": 1,
+          "end": 4
+        },
+        {
+          "key": "weight"
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "applyStyleToRange/bold-across-runs",
+      "fn": "applyStyleToRange",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "start": 3,
+          "end": 12
+        },
+        {
+          "weight": 700
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hel"
+                },
+                {
+                  "text": "lo bold w",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": "orld"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "rangeHasStyle/bold-across-runs",
+      "fn": "rangeHasStyle",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "start": 3,
+          "end": 12
+        },
+        {
+          "key": "weight",
+          "value": 700
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "rangeHasStyle/unstyled-across-runs",
+      "fn": "rangeHasStyle",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "start": 3,
+          "end": 12
+        },
+        {
+          "key": "weight"
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "applyStyleToRange/bold-reversed",
+      "fn": "applyStyleToRange",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "start": 12,
+          "end": 3
+        },
+        {
+          "weight": 700
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hel"
+                },
+                {
+                  "text": "lo bold w",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": "orld"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "rangeHasStyle/bold-reversed",
+      "fn": "rangeHasStyle",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "start": 12,
+          "end": 3
+        },
+        {
+          "key": "weight",
+          "value": 700
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "rangeHasStyle/unstyled-reversed",
+      "fn": "rangeHasStyle",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "start": 12,
+          "end": 3
+        },
+        {
+          "key": "weight"
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "applyStyleToRange/bold-empty",
+      "fn": "applyStyleToRange",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "start": 5,
+          "end": 5
+        },
+        {
+          "weight": 700
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "rangeHasStyle/bold-empty",
+      "fn": "rangeHasStyle",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "start": 5,
+          "end": 5
+        },
+        {
+          "key": "weight",
+          "value": 700
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "rangeHasStyle/unstyled-empty",
+      "fn": "rangeHasStyle",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "start": 5,
+          "end": 5
+        },
+        {
+          "key": "weight"
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "applyStyleToRange/bold-across-paragraphs",
+      "fn": "applyStyleToRange",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "start": 8,
+          "end": 20
+        },
+        {
+          "weight": 700
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold world",
+                  "style": {
+                    "weight": 700
+                  }
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Sec",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": "ond "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "rangeHasStyle/bold-across-paragraphs",
+      "fn": "rangeHasStyle",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "start": 8,
+          "end": 20
+        },
+        {
+          "key": "weight",
+          "value": 700
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "rangeHasStyle/unstyled-across-paragraphs",
+      "fn": "rangeHasStyle",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "start": 8,
+          "end": 20
+        },
+        {
+          "key": "weight"
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "applyStyleToRange/bold-whole",
+      "fn": "applyStyleToRange",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "start": 0,
+          "end": 100
+        },
+        {
+          "weight": 700
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello bold world",
+                  "style": {
+                    "weight": 700
+                  }
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second ",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "weight": 700,
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "weight": 700,
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "rangeHasStyle/bold-whole",
+      "fn": "rangeHasStyle",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "start": 0,
+          "end": 100
+        },
+        {
+          "key": "weight",
+          "value": 700
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "rangeHasStyle/unstyled-whole",
+      "fn": "rangeHasStyle",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "start": 0,
+          "end": 100
+        },
+        {
+          "key": "weight"
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "applyStyleToRange/bold-negative-start",
+      "fn": "applyStyleToRange",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "start": -4,
+          "end": 2
+        },
+        {
+          "weight": 700
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "He",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": "llo "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "rangeHasStyle/bold-negative-start",
+      "fn": "rangeHasStyle",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "start": -4,
+          "end": 2
+        },
+        {
+          "key": "weight",
+          "value": 700
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "rangeHasStyle/unstyled-negative-start",
+      "fn": "rangeHasStyle",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "start": -4,
+          "end": 2
+        },
+        {
+          "key": "weight"
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "applyStyleToRange/bold-paragraph-boundary",
+      "fn": "applyStyleToRange",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "start": 16,
+          "end": 17
+        },
+        {
+          "weight": 700
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "rangeHasStyle/bold-paragraph-boundary",
+      "fn": "rangeHasStyle",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "start": 16,
+          "end": 17
+        },
+        {
+          "key": "weight",
+          "value": 700
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "rangeHasStyle/unstyled-paragraph-boundary",
+      "fn": "rangeHasStyle",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "start": 16,
+          "end": 17
+        },
+        {
+          "key": "weight"
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "applyStyleToRange/bold-empty-paragraph",
+      "fn": "applyStyleToRange",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "start": 29,
+          "end": 30
+        },
+        {
+          "weight": 700
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "rangeHasStyle/bold-empty-paragraph",
+      "fn": "rangeHasStyle",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "start": 29,
+          "end": 30
+        },
+        {
+          "key": "weight",
+          "value": 700
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "rangeHasStyle/unstyled-empty-paragraph",
+      "fn": "rangeHasStyle",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "start": 29,
+          "end": 30
+        },
+        {
+          "key": "weight"
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "applyStyleToRange/bold-emoji",
+      "fn": "applyStyleToRange",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "start": 35,
+          "end": 37
+        },
+        {
+          "weight": 700
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café ",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                },
+                {
+                  "text": "😀",
+                  "style": {
+                    "weight": 700,
+                    "color": "#ff0000"
+                  }
+                },
+                {
+                  "text": "!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "rangeHasStyle/bold-emoji",
+      "fn": "rangeHasStyle",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "start": 35,
+          "end": 37
+        },
+        {
+          "key": "weight",
+          "value": 700
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "rangeHasStyle/unstyled-emoji",
+      "fn": "rangeHasStyle",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "start": 35,
+          "end": 37
+        },
+        {
+          "key": "weight"
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "applyStyleToRange/clear-weight",
+      "fn": "applyStyleToRange",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "start": 0,
+          "end": 16
+        },
+        {
+          "italic": true
+        },
+        [
+          "weight"
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello bold world",
+                  "style": {
+                    "italic": true
+                  }
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "applyStyleToRange/clear-all",
+      "fn": "applyStyleToRange",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "start": 0,
+          "end": 100
+        },
+        {},
+        [
+          "weight",
+          "italic",
+          "decoration",
+          "color"
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello bold world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second line"
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "applyStyleToRange/merges-into-neighbour",
+      "fn": "applyStyleToRange",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "start": 6,
+          "end": 11
+        },
+        {
+          "weight": 400
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold ",
+                  "style": {
+                    "weight": 400
+                  }
+                },
+                {
+                  "text": "world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "applyStyleToRange/messy",
+      "fn": "applyStyleToRange",
+      "args": [
+        {
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "a",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": "",
+                  "style": {
+                    "italic": true
+                  }
+                },
+                {
+                  "text": "b",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": "c",
+                  "style": {}
+                },
+                {
+                  "text": "d"
+                }
+              ]
+            },
+            {
+              "runs": []
+            },
+            {
+              "runs": [
+                {
+                  "text": "x",
+                  "style": {
+                    "decoration": [
+                      "line-through",
+                      "underline"
+                    ]
+                  }
+                },
+                {
+                  "text": "y",
+                  "style": {
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                },
+                {
+                  "text": "z",
+                  "style": {
+                    "decoration": [
+                      "underline"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "p",
+                  "style": {
+                    "decoration": [
+                      "underline"
+                    ]
+                  }
+                },
+                {
+                  "text": "q",
+                  "style": {
+                    "decoration": [
+                      "word"
+                    ]
+                  }
+                },
+                {
+                  "text": "r",
+                  "style": {
+                    "family": "Times"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "start": 0,
+          "end": 4
+        },
+        {
+          "size": 9
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "ab",
+                  "style": {
+                    "weight": 700,
+                    "size": 9
+                  }
+                },
+                {
+                  "text": "cd",
+                  "style": {
+                    "size": 9
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "xy",
+                  "style": {
+                    "decoration": [
+                      "line-through",
+                      "underline"
+                    ]
+                  }
+                },
+                {
+                  "text": "z",
+                  "style": {
+                    "decoration": [
+                      "underline"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "p",
+                  "style": {
+                    "decoration": [
+                      "underline"
+                    ]
+                  }
+                },
+                {
+                  "text": "q",
+                  "style": {
+                    "decoration": [
+                      "word"
+                    ]
+                  }
+                },
+                {
+                  "text": "r",
+                  "style": {
+                    "family": "Times"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "applyStyleToRange/end-in-empty-paragraph",
+      "fn": "applyStyleToRange",
+      "args": [
+        {
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "a",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": "",
+                  "style": {
+                    "italic": true
+                  }
+                },
+                {
+                  "text": "b",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": "c",
+                  "style": {}
+                },
+                {
+                  "text": "d"
+                }
+              ]
+            },
+            {
+              "runs": []
+            },
+            {
+              "runs": [
+                {
+                  "text": "x",
+                  "style": {
+                    "decoration": [
+                      "line-through",
+                      "underline"
+                    ]
+                  }
+                },
+                {
+                  "text": "y",
+                  "style": {
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                },
+                {
+                  "text": "z",
+                  "style": {
+                    "decoration": [
+                      "underline"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "p",
+                  "style": {
+                    "decoration": [
+                      "underline"
+                    ]
+                  }
+                },
+                {
+                  "text": "q",
+                  "style": {
+                    "decoration": [
+                      "word"
+                    ]
+                  }
+                },
+                {
+                  "text": "r",
+                  "style": {
+                    "family": "Times"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "start": 2,
+          "end": 6
+        },
+        {
+          "color": "#00f"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "ab",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": "cd",
+                  "style": {
+                    "color": "#00f"
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "xy",
+                  "style": {
+                    "decoration": [
+                      "line-through",
+                      "underline"
+                    ]
+                  }
+                },
+                {
+                  "text": "z",
+                  "style": {
+                    "decoration": [
+                      "underline"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "p",
+                  "style": {
+                    "decoration": [
+                      "underline"
+                    ]
+                  }
+                },
+                {
+                  "text": "q",
+                  "style": {
+                    "decoration": [
+                      "word"
+                    ]
+                  }
+                },
+                {
+                  "text": "r",
+                  "style": {
+                    "family": "Times"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "rangeHasStyle/messy-empty-paragraph",
+      "fn": "rangeHasStyle",
+      "args": [
+        {
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "a",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": "",
+                  "style": {
+                    "italic": true
+                  }
+                },
+                {
+                  "text": "b",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": "c",
+                  "style": {}
+                },
+                {
+                  "text": "d"
+                }
+              ]
+            },
+            {
+              "runs": []
+            },
+            {
+              "runs": [
+                {
+                  "text": "x",
+                  "style": {
+                    "decoration": [
+                      "line-through",
+                      "underline"
+                    ]
+                  }
+                },
+                {
+                  "text": "y",
+                  "style": {
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                },
+                {
+                  "text": "z",
+                  "style": {
+                    "decoration": [
+                      "underline"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "p",
+                  "style": {
+                    "decoration": [
+                      "underline"
+                    ]
+                  }
+                },
+                {
+                  "text": "q",
+                  "style": {
+                    "decoration": [
+                      "word"
+                    ]
+                  }
+                },
+                {
+                  "text": "r",
+                  "style": {
+                    "family": "Times"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "start": 5,
+          "end": 6
+        },
+        {
+          "key": "weight"
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "rangeHasStyle/empty-doc-caret",
+      "fn": "rangeHasStyle",
+      "args": [
+        {
+          "paragraphs": []
+        },
+        {
+          "start": 2,
+          "end": 2
+        },
+        {
+          "key": "weight"
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "rangeHasStyle/decoration-array",
+      "fn": "rangeHasStyle",
+      "args": [
+        {
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "a",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": "",
+                  "style": {
+                    "italic": true
+                  }
+                },
+                {
+                  "text": "b",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": "c",
+                  "style": {}
+                },
+                {
+                  "text": "d"
+                }
+              ]
+            },
+            {
+              "runs": []
+            },
+            {
+              "runs": [
+                {
+                  "text": "x",
+                  "style": {
+                    "decoration": [
+                      "line-through",
+                      "underline"
+                    ]
+                  }
+                },
+                {
+                  "text": "y",
+                  "style": {
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                },
+                {
+                  "text": "z",
+                  "style": {
+                    "decoration": [
+                      "underline"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "p",
+                  "style": {
+                    "decoration": [
+                      "underline"
+                    ]
+                  }
+                },
+                {
+                  "text": "q",
+                  "style": {
+                    "decoration": [
+                      "word"
+                    ]
+                  }
+                },
+                {
+                  "text": "r",
+                  "style": {
+                    "family": "Times"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "start": 6,
+          "end": 8
+        },
+        {
+          "key": "decoration",
+          "value": [
+            "line-through",
+            "underline"
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    }
+  ]
+}

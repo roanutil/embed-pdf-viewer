@@ -43,7 +43,7 @@ import {
 
 type Table<T> = Record<string, T>;
 
-const viewFns: Record<string, Fn> = {
+export const viewFns: Record<string, Fn> = {
   pageItems: (m: Partial<Model>, pon: number, view?: ViewEnv) => vw.pageItems(modelOf(m), pageRef(pon), view),
   chrome: (m: Partial<Model>, pon: number, pageBox?: Rect, knobOffset?: number, view?: ViewEnv) =>
     vw.chrome(modelOf(m), pageRef(pon), pageBox, knobOffset, view),

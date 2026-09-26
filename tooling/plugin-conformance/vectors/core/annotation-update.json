@@ -93685,6 +93685,411 @@
       }
     },
     {
+      "name": "calloutBox/page-inside",
+      "fn": "calloutBox",
+      "args": [
+        {
+          "g": "create-callout",
+          "subtype": "free-text-callout",
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "step": "box",
+          "tip": {
+            "x": 10,
+            "y": 10
+          },
+          "knee": {
+            "x": 50,
+            "y": 60
+          },
+          "cur": {
+            "x": 100,
+            "y": 80
+          },
+          "pageBox": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 100,
+          "y": 80,
+          "width": 150,
+          "height": 40
+        }
+      }
+    },
+    {
+      "name": "calloutUprightRot/page-inside",
+      "fn": "calloutUprightRot",
+      "args": [
+        {
+          "g": "create-callout",
+          "subtype": "free-text-callout",
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "step": "box",
+          "tip": {
+            "x": 10,
+            "y": 10
+          },
+          "knee": {
+            "x": 50,
+            "y": 60
+          },
+          "cur": {
+            "x": 100,
+            "y": 80
+          },
+          "pageBox": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        }
+      ],
+      "outcome": {
+        "returned": 0
+      }
+    },
+    {
+      "name": "calloutBox/page-right-edge",
+      "fn": "calloutBox",
+      "args": [
+        {
+          "g": "create-callout",
+          "subtype": "free-text-callout",
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "step": "box",
+          "tip": {
+            "x": 10,
+            "y": 10
+          },
+          "knee": {
+            "x": 50,
+            "y": 60
+          },
+          "cur": {
+            "x": 500,
+            "y": 80
+          },
+          "pageBox": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 450,
+          "y": 80,
+          "width": 150,
+          "height": 40
+        }
+      }
+    },
+    {
+      "name": "calloutUprightRot/page-right-edge",
+      "fn": "calloutUprightRot",
+      "args": [
+        {
+          "g": "create-callout",
+          "subtype": "free-text-callout",
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "step": "box",
+          "tip": {
+            "x": 10,
+            "y": 10
+          },
+          "knee": {
+            "x": 50,
+            "y": 60
+          },
+          "cur": {
+            "x": 500,
+            "y": 80
+          },
+          "pageBox": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        }
+      ],
+      "outcome": {
+        "returned": 0
+      }
+    },
+    {
+      "name": "calloutBox/page-bottom-edge",
+      "fn": "calloutBox",
+      "args": [
+        {
+          "g": "create-callout",
+          "subtype": "free-text-callout",
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "step": "box",
+          "tip": {
+            "x": 10,
+            "y": 10
+          },
+          "knee": {
+            "x": 50,
+            "y": 60
+          },
+          "cur": {
+            "x": 100,
+            "y": 790
+          },
+          "pageBox": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 100,
+          "y": 760,
+          "width": 150,
+          "height": 40
+        }
+      }
+    },
+    {
+      "name": "calloutUprightRot/page-bottom-edge",
+      "fn": "calloutUprightRot",
+      "args": [
+        {
+          "g": "create-callout",
+          "subtype": "free-text-callout",
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "step": "box",
+          "tip": {
+            "x": 10,
+            "y": 10
+          },
+          "knee": {
+            "x": 50,
+            "y": 60
+          },
+          "cur": {
+            "x": 100,
+            "y": 790
+          },
+          "pageBox": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        }
+      ],
+      "outcome": {
+        "returned": 0
+      }
+    },
+    {
+      "name": "calloutBox/page-upright-90",
+      "fn": "calloutBox",
+      "args": [
+        {
+          "g": "create-callout",
+          "subtype": "free-text-callout",
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "step": "box",
+          "tip": {
+            "x": 10,
+            "y": 10
+          },
+          "knee": {
+            "x": 50,
+            "y": 60
+          },
+          "cur": {
+            "x": 590,
+            "y": 790
+          },
+          "upright": true,
+          "displayRotation": 90,
+          "pageBox": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 505,
+          "y": 695,
+          "width": 150,
+          "height": 40
+        }
+      }
+    },
+    {
+      "name": "calloutUprightRot/page-upright-90",
+      "fn": "calloutUprightRot",
+      "args": [
+        {
+          "g": "create-callout",
+          "subtype": "free-text-callout",
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "step": "box",
+          "tip": {
+            "x": 10,
+            "y": 10
+          },
+          "knee": {
+            "x": 50,
+            "y": 60
+          },
+          "cur": {
+            "x": 590,
+            "y": 790
+          },
+          "upright": true,
+          "displayRotation": 90,
+          "pageBox": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        }
+      ],
+      "outcome": {
+        "returned": 270
+      }
+    },
+    {
+      "name": "calloutBox/page-dragged-ignores",
+      "fn": "calloutBox",
+      "args": [
+        {
+          "g": "create-callout",
+          "subtype": "free-text-callout",
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "step": "box",
+          "tip": {
+            "x": 10,
+            "y": 10
+          },
+          "knee": {
+            "x": 50,
+            "y": 60
+          },
+          "cur": {
+            "x": 100,
+            "y": 80
+          },
+          "boxFrom": {
+            "x": 500,
+            "y": 700
+          },
+          "boxTo": {
+            "x": 700,
+            "y": 900
+          },
+          "pageBox": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 500,
+          "y": 700,
+          "width": 200,
+          "height": 200
+        }
+      }
+    },
+    {
+      "name": "calloutUprightRot/page-dragged-ignores",
+      "fn": "calloutUprightRot",
+      "args": [
+        {
+          "g": "create-callout",
+          "subtype": "free-text-callout",
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "step": "box",
+          "tip": {
+            "x": 10,
+            "y": 10
+          },
+          "knee": {
+            "x": 50,
+            "y": 60
+          },
+          "cur": {
+            "x": 100,
+            "y": 80
+          },
+          "boxFrom": {
+            "x": 500,
+            "y": 700
+          },
+          "boxTo": {
+            "x": 700,
+            "y": 900
+          },
+          "pageBox": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 800
+          }
+        }
+      ],
+      "outcome": {
+        "returned": 0
+      }
+    },
+    {
       "name": "annotsInBox/box",
       "fn": "annotsInBox",
       "args": [

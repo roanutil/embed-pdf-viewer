@@ -53,7 +53,7 @@ const sorted = (x: unknown): unknown =>
 const sameValue = (a: unknown, b: unknown): boolean =>
   JSON.stringify(sorted(canonical(a))) === JSON.stringify(sorted(canonical(b)));
 
-const updateFns: Record<string, Fn> = {
+export const updateFns: Record<string, Fn> = {
   MIN_DRAG: () => up.MIN_DRAG,
   initialStyle: () => up.initialStyle,
   initialModel: () => up.initialModel,
@@ -515,6 +515,11 @@ for (const [label, d] of [
     [`upright-${r}-pressed`, calloutDraft({ upright: true, displayRotation: r, boxFrom: v(100, 80) })],
   ]),
   ['rotation-without-upright', calloutDraft({ displayRotation: 90 })],
+  ['page-inside', calloutDraft({ pageBox: rc(0, 0, 600, 800) })],
+  ['page-right-edge', calloutDraft({ cur: v(500, 80), pageBox: rc(0, 0, 600, 800) })],
+  ['page-bottom-edge', calloutDraft({ cur: v(100, 790), pageBox: rc(0, 0, 600, 800) })],
+  ['page-upright-90', calloutDraft({ cur: v(590, 790), upright: true, displayRotation: 90, pageBox: rc(0, 0, 600, 800) })],
+  ['page-dragged-ignores', calloutDraft({ boxFrom: v(500, 700), boxTo: v(700, 900), pageBox: rc(0, 0, 600, 800) })],
 ] as const) {
   updateCases.push(c('calloutBox', label as string, d), c('calloutUprightRot', label as string, d));
 }

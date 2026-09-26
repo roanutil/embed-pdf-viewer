@@ -471,6 +471,75 @@ fn annots_in_box_fn(a: &[Value]) -> Out {
     ok(annots_in_box(&m, page(a, 1)?, arg(a, 2)?, arg(a, 3)?, inert.as_ref(), arg(a, 5)?))
 }
 
+// ── measurement ─────────────────────────────────────────────────────────────
+
+fn distance(a: &[Value], i: usize) -> Result<DistanceAppearance, Error> {
+    arg(a, i)
+}
+
+fn measure_arg(a: &[Value], i: usize) -> Result<MeasurementAppearance, Error> {
+    arg(a, i)
+}
+
+fn shape_arg(a: &[Value], i: usize) -> Result<ShapeMeasurementAppearance, Error> {
+    arg(a, i)
+}
+
+/// `distanceCaptionHit` with and without the margin, and `distanceHit`, per
+/// probe point (`null` for `distanceHit` without a layout).
+fn distance_hit_probe(a: &[Value]) -> Out {
+    let g = geom(a, 0)?;
+    let sw: f64 = arg(a, 2)?;
+    let layout = distance_layout(&g, &distance(a, 1)?, sw);
+    let points: Vec<Point> = arg(a, 3)?;
+    let margin: f64 = arg(a, 4)?;
+    let caption = layout.as_ref().and_then(|l| l.caption.as_ref());
+    ok(points
+        .iter()
+        .map(|p| {
+            (
+                distance_caption_hit(caption, *p, margin),
+                distance_caption_hit(caption, *p, 0.0),
+                layout.as_ref().map(|l| distance_hit(l, *p, sw, margin)),
+            )
+        })
+        .collect::<Vec<_>>())
+}
+
+// ── rich text ───────────────────────────────────────────────────────────────
+
+fn doc(a: &[Value], i: usize) -> Result<richtext::RichTextDocumentInput, Error> {
+    arg(a, i)
+}
+
+#[derive(Deserialize)]
+struct StyleProbe {
+    key: String,
+    #[serde(default)]
+    value: Option<Value>,
+}
+
+fn range_has_style_fn(a: &[Value]) -> Out {
+    let d = doc(a, 0)?;
+    let probe: StyleProbe = arg(a, 2)?;
+    let predicate = |delta: &RichTextStyleDelta| {
+        let v = to_value(delta);
+        v.get(&probe.key) == probe.value.as_ref()
+    };
+    ok(range_has_style(&d.paragraphs, arg(a, 1)?, &predicate))
+}
+
+fn apply_style_to_range_fn(a: &[Value]) -> Out {
+    let d = doc(a, 0)?;
+    let clear: Option<Vec<richtext::RichTextStyleKey>> = arg(a, 3)?;
+    let styled =
+        apply_style_to_range(&d.paragraphs, arg(a, 1)?, &arg(a, 2)?, &clear.unwrap_or_default());
+    ok(match styled {
+        Some(paragraphs) => richtext::RichTextDocumentInput { paragraphs, ..d },
+        None => d,
+    })
+}
+
 // ── the table ───────────────────────────────────────────────────────────────
 
 pub fn functions() -> FunctionTable {
@@ -686,5 +755,81 @@ pub fn functions() -> FunctionTable {
         ("calloutUprightRot", |a| ok(callout_upright_rot(&arg(a, 0)?))),
         ("annotsInBox", annots_in_box_fn),
         ("annotsInBoxes", annots_in_boxes),
+        // measurement
+        ("distanceCaptionWidth", |a| {
+            ok(measurement::distance_caption_width(&arg::<String>(a, 0)?))
+        }),
+        ("distanceLabel", |a| ok(distance_label(&geom(a, 0)?, &distance(a, 1)?))),
+        ("distanceLayout", |a| ok(distance_layout(&geom(a, 0)?, &distance(a, 1)?, arg(a, 2)?))),
+        ("expandDistanceBounds", |a| ok(expand_distance_bounds(arg(a, 0)?, arg(a, 1)?))),
+        ("distanceSelectionQuad", |a| {
+            ok(distance_selection_quad(&geom(a, 0)?, &distance(a, 1)?, arg(a, 2)?))
+        }),
+        ("distanceHandles", |a| {
+            ok(distance_layout(&geom(a, 0)?, &distance(a, 1)?, arg(a, 2)?)
+                .map(|l| distance_handles(&l)))
+        }),
+        ("distanceHitProbe", distance_hit_probe),
+        ("distanceCaptionAt", |a| {
+            ok(distance_caption_at(&geom(a, 0)?, &distance(a, 1)?, arg(a, 2)?))
+        }),
+        ("distanceLeaderLength", |a| ok(distance_leader_length(&geom(a, 0)?, arg(a, 1)?))),
+        ("moveDistanceCaption", |a| {
+            ok(move_distance_caption(&geom(a, 0)?, &distance(a, 1)?, arg(a, 2)?))
+        }),
+        ("distanceScene", |a| ok(distance_scene(&geom(a, 0)?, &distance(a, 1)?, &arg(a, 2)?))),
+        ("measurementCaptionScene", |a| {
+            let style: Style = arg(a, 2)?;
+            let layout = measurement_layout(&geom(a, 0)?, &measure_arg(a, 1)?, &style);
+            ok(measurement_caption_scene(layout.as_ref().and_then(|l| l.caption()), &style))
+        }),
+        ("shapeCaptionPoint", |a| ok_or_undefined(shape_caption_point(&shape_arg(a, 0)?))),
+        ("withShapeCaptionPoint", |a| ok(with_shape_caption_point(&shape_arg(a, 0)?, arg(a, 1)?))),
+        ("transformMeasurementCaption", |a| {
+            let appearance: Option<MeasurementAppearance> = arg(a, 0)?;
+            let (dx, dy): (f64, f64) = (arg(a, 1)?, arg(a, 2)?);
+            ok_or_undefined(transform_measurement_caption(appearance.as_ref(), |p| Point {
+                x: p.x + dx,
+                y: p.y + dy,
+            }))
+        }),
+        ("shapeMeasurementReadout", |a| {
+            ok(shape_measurement_readout(&geom(a, 0)?, &shape_arg(a, 1)?))
+        }),
+        ("shapeMeasurementLabel", |a| ok(shape_measurement_label(&geom(a, 0)?, &shape_arg(a, 1)?))),
+        ("automaticShapeCaptionCenter", |a| {
+            ok(automatic_shape_caption_center(&arg::<Vec<Point>>(a, 0)?, arg(a, 1)?))
+        }),
+        ("shapeMeasurementLayout", |a| {
+            ok(shape_measurement_layout(&geom(a, 0)?, &shape_arg(a, 1)?, &arg(a, 2)?))
+        }),
+        ("measurementLayout", |a| {
+            ok(measurement_layout(&geom(a, 0)?, &measure_arg(a, 1)?, &arg(a, 2)?))
+        }),
+        ("measurementSelectionQuad", |a| {
+            ok(measurement_selection_quad(&geom(a, 0)?, &measure_arg(a, 1)?, &arg(a, 2)?))
+        }),
+        ("moveMeasurementCaption", |a| {
+            ok(move_measurement_caption(&geom(a, 0)?, &measure_arg(a, 1)?, arg(a, 2)?, &arg(a, 3)?))
+        }),
+        ("annotationSelectionFrame", |a| ok(annotation_selection_frame(&arg(a, 0)?, arg(a, 1)?))),
+        ("textPlateInset", |a| ok(text_plate_inset(arg(a, 0)?))),
+        ("pointInPoly", |a| ok(point_in_poly(arg(a, 0)?, &arg::<Vec<Point>>(a, 1)?))),
+        // rich text
+        ("richTextLength", |a| ok(rich_text_length(&doc(a, 0)?.paragraphs))),
+        ("sameStyleDelta", |a| {
+            let x: Option<RichTextStyleDelta> = arg(a, 0)?;
+            let y: Option<RichTextStyleDelta> = arg(a, 1)?;
+            ok(same_style_delta(x.as_ref(), y.as_ref()))
+        }),
+        ("normalizeRuns", |a| ok(richtext::normalize_doc(&doc(a, 0)?))),
+        ("locateOffset", |a| ok(locate_offset(&doc(a, 0)?.paragraphs, arg(a, 1)?))),
+        ("splitRunsAt", |a| ok(split_runs_at(&arg(a, 0)?, arg(a, 1)?))),
+        ("applyStyleToRange", apply_style_to_range_fn),
+        ("styleAt", |a| ok_or_undefined(style_at(&doc(a, 0)?.paragraphs, arg(a, 1)?))),
+        ("rangeHasStyle", range_has_style_fn),
+        ("paragraphsFromPlainText", |a| ok(paragraphs_from_plain_text(&arg::<String>(a, 0)?))),
+        ("plainTextOf", |a| ok(plain_text_of(&doc(a, 0)?.paragraphs))),
+        ("isPlainRichText", |a| ok(is_plain_rich_text(&doc(a, 0)?))),
     ]
 }
