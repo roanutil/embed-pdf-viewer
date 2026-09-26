@@ -1,21 +1,18 @@
-//! `source.ts`: the engine-backed link source, for viewer-only deployments
-//! (no annotation plugin). A page's annotation list keeps just the
-//! navigable links, standalone and attached children alike. The
-//! capability's lazy `ensure_page` and the effects' event-driven refetch
-//! share it; both hand it the plugin's typed context, the TypeScript's
-//! structural `io` slice.
+//! `source.ts`: the stand-alone source (no annotation plugin). One
+//! annotations read per page, folded to the clickable areas.
 
-use epdf_annotation_core::{AnnotationRef, pdf_to_content_rect};
-use epdf_kernel::{Ctx, Error};
-use epdf_plugin_annotation::promise::then;
+use epdf_annotation_core::{AnnotationRef, PageObjectNumber, PageRef, pdf_to_content_rect};
+use epdf_kernel::rt::Promise;
+use epdf_kernel::{Controller, Error};
+use epdf_plugin_annotation::promise::{await_engine, spawn};
 use epdf_plugin_annotation::value::{get, pdf_rect_of, str_of, truthy};
 use serde_json::Value;
 
-use crate::types::{HoverFlags, LinkAction, LinkNavItem, LinkState, PageObjectNumber};
+use crate::contract::{HoverFlags, Link};
+use crate::model::{LinkAction, LinkState};
 
 /// `String(value)` inside a template literal, for the members an id is
-/// built from. Absence is `undefined`; callers read members with `get`,
-/// which already turns the `undefined` marker into absence.
+/// built from. Absence is `undefined`.
 pub fn js_string(value: Option<&Value>) -> String {
     match value {
         None => "undefined".into(),
@@ -25,7 +22,7 @@ pub fn js_string(value: Option<&Value>) -> String {
             epdf_geometry::js::number_to_string(n.as_f64().unwrap_or(f64::NAN))
         }
         Some(Value::String(s)) => s.clone(),
-        // `Array.prototype.join`: `null` and `undefined` elements print empty.
+        // `Array.prototype.join`: `null` elements print empty.
         Some(Value::Array(items)) => items
             .iter()
             .map(|item| if item.is_null() { String::new() } else { js_string(Some(item)) })
@@ -38,54 +35,62 @@ pub fn js_string(value: Option<&Value>) -> String {
     }
 }
 
-/// The page's crop box from the document's page list, when it has the page.
-fn crop_of(ctx: &Ctx<LinkState, LinkAction>, pon: PageObjectNumber) -> Option<Value> {
-    let document = ctx.document()?;
-    let pages = document.pages.as_array()?;
-    let page = pages
-        .iter()
-        .find(|p| p.get("pageObjectNumber").and_then(Value::as_f64) == Some(f64::from(pon)))?;
-    Some(page.get("boxes").and_then(|b| get(b, "crop")).cloned().unwrap_or(Value::Null))
+/// The `TypeError` reading `member` off a missing (`None`) or `null` value
+/// throws.
+fn cannot_read(value: Option<&Value>, member: &str) -> Error {
+    let what = if value.is_some() { "null" } else { "undefined" };
+    Error::named("TypeError", format!("Cannot read properties of {what} (reading '{member}')"))
 }
 
-/// The fulfilled handler's loop. `None` where the TypeScript would throw
-/// (a missing `annotations` list, a `null` entry, a link without `flags`,
-/// `ref` or `rect`): the throw rejects the derived promise, which nothing
-/// observes, so nothing is dispatched.
+/// `value` when it is neither missing nor `null`, else the `TypeError`
+/// reading `member` off it throws.
+fn object_or_throw<'a>(value: Option<&'a Value>, member: &str) -> Result<&'a Value, Error> {
+    match value {
+        Some(v) if !v.is_null() => Ok(v),
+        other => Err(cannot_read(other, member)),
+    }
+}
+
+/// The loop over `snap.annotations`. `Err` is where the TypeScript throws
+/// (a list that is not iterable, a `null` entry, a link without `flags`,
+/// `ref` or `rect`), which rejects `loadLinksPage` before it stores
+/// anything.
 pub fn project_links(
     snap: &Value,
     pon: PageObjectNumber,
     crop: &Value,
-) -> Option<Vec<LinkNavItem>> {
+) -> Result<Vec<Link>, Error> {
+    let snap = object_or_throw(Some(snap), "annotations")?;
+    let Some(Value::Array(annotations)) = get(snap, "annotations") else {
+        return Err(Error::named("TypeError", "snap.annotations is not iterable"));
+    };
     let crop = pdf_rect_of(Some(crop));
     let mut items = Vec::new();
-    for dto in get(snap, "annotations")?.as_array()? {
-        if !dto.is_object() {
-            return None;
-        }
+    for dto in annotations {
+        let dto = object_or_throw(Some(dto), "subtype")?;
         let target = get(dto, "target");
         if str_of(dto, "subtype") != Some("link") || target.is_none_or(Value::is_null) {
             continue;
         }
-        let flags = get(dto, "flags").filter(|f| !f.is_null())?;
+        let flags = object_or_throw(get(dto, "flags"), "hidden")?;
         if truthy(get(flags, "hidden")) || truthy(get(flags, "noView")) {
             continue;
         }
-        let r = get(dto, "ref").filter(|r| !r.is_null())?;
+        let r = object_or_throw(get(dto, "ref"), "kind")?;
         let id = if str_of(r, "kind") == Some("objectNumber") {
             format!("obj:{}", js_string(get(r, "annotObjectNumber")))
         } else {
             format!("idx:{pon}:{}", js_string(get(dto, "index")))
         };
-        let rect = get(dto, "rect").filter(|r| !r.is_null())?;
+        let rect = object_or_throw(get(dto, "rect"), "left")?;
         let actions = get(dto, "actions").filter(|a| !a.is_null());
         let member = |key: &str| actions.and_then(|a| get(a, key)).filter(|v| !v.is_null());
         let activate = member("activate").filter(|a| truthy(Some(a))).cloned();
         let enter = truthy(member("cursorEnter").and_then(|c| get(c, "root")));
         let exit = truthy(member("cursorExit").and_then(|c| get(c, "root")));
-        items.push(LinkNavItem {
+        items.push(Link {
             id,
-            rect: pdf_to_content_rect(pdf_rect_of(Some(rect)), crop),
+            bounds: pdf_to_content_rect(pdf_rect_of(Some(rect)), crop),
             target: target.cloned().unwrap_or(Value::Null),
             attached: str_of(dto, "replyType") == Some("group")
                 && get(dto, "inReplyTo").is_some_and(|v| !v.is_null()),
@@ -94,29 +99,44 @@ pub fn project_links(
             hover_events: (enter || exit).then_some(HoverFlags { enter, exit }),
         });
     }
-    Some(items)
+    Ok(items)
 }
 
-/// `loadLinksPage(io, pon)`: list the page and cache its links. Nothing
-/// happens without a document handle or a page of that number; a refused
-/// list is swallowed. `Err` is `doc.page(pon)` throwing for a page the
-/// engine does not have.
+/// The page's crop box from the document's page list, when it has the page
+/// and the page has one.
+fn crop_of(cx: &Controller<LinkState, LinkAction>, page: &PageRef) -> Option<Value> {
+    let document = cx.document()?;
+    let layout = document.pages.as_array()?.iter().find(|p| {
+        p.get("ref").and_then(|r| r.get("pageObjectNumber")).and_then(Value::as_u64)
+            == Some(u64::from(page.page_object_number))
+    })?;
+    layout.get("boxes").and_then(|b| get(b, "crop")).filter(|c| truthy(Some(c))).cloned()
+}
+
+/// `loadLinksPage(io, page)`: list the page and store its links. Resolves
+/// with the items it stored, empty (and storing nothing) without a handle
+/// or a page of that number, and when the read fails.
 pub fn load_links_page(
-    ctx: &Ctx<LinkState, LinkAction>,
-    pon: PageObjectNumber,
-) -> Result<(), Error> {
-    let doc = ctx.doc();
-    let crop = crop_of(ctx, pon);
-    let (Some(doc), Some(crop)) = (doc, crop) else { return Ok(()) };
-    doc.page_index(pon)?;
-    let call = doc.call("page.annotations.list", Some(pon), Vec::new());
-    let ctx = ctx.clone();
-    then(call, move |result| {
-        if let Ok(snap) = result
-            && let Some(items) = project_links(&snap, pon, &crop)
-        {
-            ctx.dispatch(LinkAction::SetPage { pon, items });
+    cx: &Controller<LinkState, LinkAction>,
+    page: PageRef,
+) -> Promise<Vec<Link>> {
+    let cx = cx.clone();
+    spawn(async move {
+        let pon = page.page_object_number;
+        let (Ok(doc), Some(crop)) = (cx.doc(), crop_of(&cx, &page)) else {
+            return Ok(Vec::new());
+        };
+        // `doc.page(page)` throws for a page the engine lacks, inside the
+        // `try`.
+        if doc.page_index(pon).is_err() {
+            return Ok(Vec::new());
         }
-    });
-    Ok(())
+        let Ok(snap) = await_engine(doc.call("page.annotations.list", Some(pon), Vec::new())).await
+        else {
+            return Ok(Vec::new());
+        };
+        let items = project_links(&snap, pon, &crop)?;
+        cx.dispatch(LinkAction::SetPage { page, items: items.clone() });
+        Ok(items)
+    })
 }

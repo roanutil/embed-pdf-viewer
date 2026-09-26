@@ -474,6 +474,96 @@ const cases: ScenarioCase[] = [
       lk('activate', [named('NextPage')]),
     ],
   },
+  {
+    name: 'hit-testing-and-lookup',
+    covers:
+      'getLinkAt answers the smallest link whose bounds hold the point (edges included, the first of equal areas), null off every link; getLink finds a link by id or answers null. activateAt activates the link under the point with the page in its context, a Link input carrying its own ref and activate tree, and answers null off every link.',
+    plugins: VIEWER,
+    engine: {
+      documents: {
+        a: doc([
+          pageList(1, [
+            link(1, { rect: { left: 100, bottom: 600, right: 300, top: 700 } }),
+            link(2, { rect: { left: 150, bottom: 620, right: 200, top: 680 }, target: named('NextPage') }),
+            link(3, { rect: { left: 160, bottom: 630, right: 210, top: 690 }, actions: { activate: tree(uriNode('https://a.example')) } }),
+          ]),
+        ]),
+      },
+    },
+    snapshot: 'none',
+    steps: [
+      ...boot,
+      lk('ensureLoaded', [pr(1)]),
+      lk('getLinkAt', [pr(1), { x: 170, y: 150 }]),
+      lk('getLinkAt', [pr(1), { x: 120, y: 110 }]),
+      lk('getLinkAt', [pr(1), { x: 100, y: 100 }]),
+      lk('getLinkAt', [pr(1), { x: 500, y: 500 }]),
+      lk('getLinkAt', [pr(2), { x: 170, y: 150 }]),
+      lk('getLink', [pr(1), 'obj:3']),
+      lk('getLink', [pr(1), 'obj:9']),
+      lk('activateAt', [pr(1), { x: 170, y: 150 }]),
+      lk('activateAt', [pr(1), { x: 205, y: 185 }, { ref: objRef(9) }]),
+      lk('activateAt', [pr(1), { x: 500, y: 500 }]),
+    ],
+  },
+  {
+    name: 'labels-and-resolution',
+    covers:
+      'getLabel reads a Link’s target or a bare target: the uri, a fixed goto label, the name, and Link for anything else. resolve has no side effect: a goto to a page of the document resolves to a reveal with its page index and options, one to a page the document lacks to its destination, uri and named to their member, and the rest to reported.',
+    plugins: VIEWER,
+    engine: { documents: { a: doc([]) } },
+    snapshot: SNAP,
+    steps: [
+      ...boot,
+      lk('getLabel', [{ id: 'obj:1', bounds: { x: 0, y: 0, width: 1, height: 1 }, target: uri('https://l.example'), attached: false }]),
+      lk('getLabel', [uri('https://example.com')]),
+      lk('getLabel', [goto(xyz(1, 0, 0, 1))]),
+      lk('getLabel', [named('FirstPage')]),
+      lk('getLabel', [{ kind: 'launch', path: 'calc.exe' }]),
+      lk('resolve', [goto(xyz(2, 60, 300, 2))]),
+      lk('resolve', [goto({ kind: 'fit', page: pr(1) })]),
+      lk('resolve', [goto(xyz(77, 0, 0, 1))]),
+      lk('resolve', [uri('https://example.com')]),
+      lk('resolve', [named('LastPage')]),
+      lk('resolve', [{ kind: 'javascript' }]),
+    ],
+  },
+  {
+    name: 'list-all-links-and-loaded-events',
+    covers:
+      'Without the annotation plugin isLoaded follows the cache; listAllLinks loads every page and answers their links in page order; onLoaded fires for each page that loaded (not for a refused read) and again when an annotation event refetches a cached page.',
+    plugins: VIEWER,
+    engine: {
+      documents: {
+        a: doc([
+          pageList(1, [link(1)], 1),
+          { path: 'page.annotations.list', pon: 2, times: 1, error: { name: 'EngineError', message: 'refused', code: 'Refused' } },
+          pageList(2, PAGE2),
+          pageList(1, [link(1), link(2)]),
+        ]),
+      },
+    },
+    snapshot: SNAP,
+    steps: [
+      ...boot,
+      lk('onLoaded', [{ $fn: 'loaded' }]),
+      lk('isLoaded', [pr(1)]),
+      lk('listAllLinks'),
+      lk('isLoaded', [pr(1)]),
+      lk('isLoaded', [pr(2)]),
+      lk('listAllLinks'),
+      emit({ type: 'annotation.created', pageObjectNumber: 1, origin: { kind: 'remote', serverId: 's' }, ...created(link(2)) }),
+      lk('listLinks', [pr(1)]),
+    ],
+  },
+  {
+    name: 'list-all-links-annotation-backed',
+    covers: 'With the annotation plugin every page is loaded and listAllLinks reads its folded model without an engine read.',
+    plugins: WITH_ANNOTATION,
+    engine: { documents: { a: annotationDoc({ 1: [link(1)], 2: PAGE2 }) } },
+    snapshot: 'none',
+    steps: [...boot, lk('isLoaded', [pr(1)]), lk('isLoaded', [pr(9)]), lk('listAllLinks')],
+  },
 ];
 
 // ── functions ─────────────────────────────────────────────────────────────────
@@ -488,7 +578,7 @@ const functions = {
 
 const item = (n: number, over: Record<string, unknown> = {}) => ({
   id: `obj:${n}`,
-  rect: { x: n, y: 10, width: 20, height: 5 },
+  bounds: { x: n, y: 10, width: 20, height: 5 },
   target: uri(`https://example.com/${n}`),
   ref: objRef(n),
   attached: false,

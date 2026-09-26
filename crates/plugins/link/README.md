@@ -1,100 +1,84 @@
 # epdf-plugin-link
 
-`packages/plugin/link` in Rust: the navigation plane of link annotations. All 23 cases replay
-identically (`cargo test -p epdf-plugin-link`):
+`packages/plugin/link` in Rust, on the v3 controller shape. All 27 cases replay identically
+(`cargo test -p epdf-plugin-link`):
 
 | File | Kind | Cases | Covers |
 |---|---|---|---|
-| `vectors/plugins/link.json` | scenario | 14 | the engine-backed page cache and its refetch on annotation events, malformed lists, the annotation-backed source, the `link-nav` behavior and `engaged()`, and `activate` with no stage, with a stage, and through the action engine |
+| `vectors/plugins/link.json` | scenario | 18 | the stand-alone source (per-page reads, joined in-flight loads, retries after a refused read, malformed lists, refetch on annotation events, `onLoaded`), the annotation-backed source, hit testing and lookup, `listAllLinks` and `isLoaded`, `resolve` and `getLabel`, the `link-nav` behavior and `isNavigationEngaged`, and `activate` and `activateAt` with no stage, with a stage, and through the action engine |
 | `vectors/plugins/link-functions.json` | function | 9 | `linkReducer` and `initialLinkState` |
 
 The scenarios run the real interaction, annotation, actions and stage adapters beside this one, in
-the four combinations a deployment ships: viewer-only, annotation-backed, with a stage, and all of
-them together.
+the combinations a deployment ships: viewer-only, annotation-backed, with a stage, and all of them.
 
-## The public API
+## The API
 
-`link_plugin(LinkPluginConfig)` builds the plugin, `LINK` is its token and `LinkCapability` its
-capability. The four members are the TypeScript's in snake case:
+`link_plugin(LinkConfig)` builds the plugin, `LINK` is its token and `LinkCapability` its
+capability, which is also `LinkHostCapability`. The members are the TypeScript's in snake case:
+`list_links`, `get_link`, `get_link_at`, `list_all_links`, `ensure_loaded`, `is_loaded`, `resolve`,
+`activate`, `activate_at`, `get_label`, `on_activated`, `on_loaded` and `is_navigation_engaged`.
+`LinkNavBehavior` is the behavior `connect` registers with the annotation plugin, and
+`load_links_page` and `project_links` are the stand-alone source.
 
-- `links_on(pon)` returns the page's `LinkNavItem`s, from the annotation plugin's
-  `link_items_on` when that plugin is registered, else from this plugin's cache.
-- `ensure_page(pon)` defers to the annotation plugin, or lists the page once through
-  `page.annotations.list`.
-- `engaged()` is whether the active tool enables `link-nav`.
-- `activate(&PdfLinkTarget, Option<&LinkActivateContext>)` returns a `LinkActivation`.
+`activate` and `activate_at` take a `LinkInput`, a bare `PdfLinkTarget` or a whole `Link`, where the
+TypeScript tests `'target' in value && 'bounds' in value`. `LinkActivateContext` keeps each member
+as present-or-absent JSON, because activation spreads the context over the link's own `activate`
+and `ref` and a present `null` wins (`activate-dispatches-through-actions`). `get_label` reads the
+target's `kind` as JSON, so any shape gets a label.
 
-`LinkActivation::Dispatched` carries the action engine's `Promise<ActionDispatchResult>`, so the
-enum isn't `Serialize`; `to_json_with` prints it with the promise spelled however the caller wants.
-`LinkNavBehavior` is the behavior `init` registers, and `load_links_page` and `project_links` are
-the engine-backed source. `LinkNavItem`, `PdfLinkTarget` and `PdfDestination` are re-exported from
-the annotation crates, as `types.ts` re-exports them.
+`resolve`, `activate` and `activate_at` return `Err` where the TypeScript throws: a goto to a page
+whose `userUnit` is 0 (`Mat2D.invert: non-invertible matrix (det = 0)`). `activate` also errs on a
+`Link` whose `target` does not decode as a `PdfLinkTarget`.
 
-Three members return `Result` where the TypeScript can't throw in practice: `links_on`,
-`ensure_page` and `engaged` propagate the kernel's `try_get` error. `activate` returns `Err` in the
-two places the TypeScript throws: a goto to a page whose `userUnit` is 0 (the stage's
-`NonInvertible`, printed as `Mat2D.invert: non-invertible matrix (det = 0)`), and an `on_activate`
-listener that throws after the built-in handling ran. `ensure_page` also returns `Err` if the
-document's page list names a page the engine doesn't have, where `doc.page(pon)` throws.
+## Host input and the harness shims
 
-## Host inputs
+A throwing `onActivated` or `onLoaded` listener goes to `console.error('[link] event listener
+failed:', error)` and no longer escapes `activate`. That comes in as `LinkConfig::host`. The
+vectors log it as a `console.error` callback (`a-throwing-listener-throws-out-of-activate`, whose
+name predates v3).
 
-The plugin reads no globals. `onActivate` is `LinkPluginConfig::on_activate`, a listener that
-returns `Err` to throw.
-
-The generator's `link` factory takes `onActivate` as a scripted callback spec. A callback's logged
-arguments can't print a promise, so the shim logs a dispatched activation as `{outcome:
-'dispatched', dispatch: '[promise]'}`, and `harness.rs` does the same.
+v2 took `onActivate` as config. The generator's `link` factory subscribes the scripted callback to
+`onActivated` as soon as the controller is built, before `connect`, and logs a dispatched
+activation's promise as `[promise]`. `harness.rs` does the same through the crate-private
+`build_link_plugin(config, on_created)`.
 
 ## Turn order
 
-`loadLinksPage` chains `.then(onFulfilled, () => {})` on the engine call, which reacts one turn
-after the call settles. The port uses `epdf_plugin_annotation::promise::then`, which costs the same
-turn. Nothing else here awaits. A throw inside the fulfilled handler (a list without
-`annotations`, a `null` entry, a link without `flags`, `ref` or `rect`) rejects a promise nothing
-observes; `project_links` returns `None` for exactly those and nothing is dispatched
-(`viewer-only-malformed-lists`).
+`loadLinksPage` awaits the engine read (the three turns of
+`epdf_plugin_annotation::promise::await_engine`), and `ensureLoaded` returns its `.then` derivative,
+one turn later. The refetch chains `.then` too. `listAllLinks` is `await Promise.all(...)`.
+
+A list the loop throws on (not iterable, a `null` entry, a link without `flags`, `ref` or `rect`)
+rejects `ensureLoaded` with the JavaScript `TypeError` text (`viewer-only-malformed-lists`), and the
+rejected load stays in the in-flight map, as it does in the TypeScript.
 
 ## Where the port differs in shape
 
-The cache is a `BTreeMap<u32, Vec<LinkNavItem>>`. The TypeScript's `Record<number, ...>` keys are
-strings, and the refetch effect tests `pon in pages`, so the effect spells the event's
-`pageObjectNumber` as a property key before comparing it with the cached pages.
+The cache is a `BTreeMap<u32, Vec<Link>>`. The TypeScript's `Record<number, ...>` keys are strings;
+every page now arrives as a `PageRef`, so the keys never meet a string.
 
-`LinkNavItem` needed `Deserialize` to live in slice state, which commit `060c21ee6` added in the
-annotation crate. `behaviorFor` in the annotation harness printed a behavior it hadn't scripted as
-`{id}` alone; commit `c1bca998a` prints it as the `{id, matches, engaged}` literal the link and form
-plugins write, so `link-nav-behavior` can call both functions.
+`anno()` reads a `try_get` error as absence. The kernel only errs there when a capability's
+constructor threw, which fails the open before any link call can run.
 
-## Not ported
-
-These inputs answer differently, and no vector feeds them:
-
-- A malformed `ref` on an engine DTO. `LinkNavItem.ref_` is a typed `AnnotationRef`, so a ref that
-  doesn't decode (an `objectNumber` ref without `annotObjectNumber`) is dropped, where the
-  TypeScript copies it verbatim. Its id is still built from the raw JSON, so `obj:undefined` would
-  match.
-- A `PdfLinkTarget` or `LinkActivateContext` that doesn't match its type fails to decode in the
-  harness. In particular a goto destination of an unknown `kind` can't be expressed, where the
-  TypeScript's `destinationToReveal` falls through to a bare smooth reveal.
-- A string `pageObjectNumber` in an annotation event. The TypeScript's `pon in pages` matches
-  `"1"`, then `loadLinksPage` finds no page `=== "1"` and does nothing; the port refetches page 1.
+A malformed `ref` on an engine DTO still differs, and no vector feeds it: `Link.ref_` is a typed
+`AnnotationRef`, so a ref that does not decode is dropped where the TypeScript copies it verbatim.
 
 ## Coverage
 
-The generators reach every statement of the package (352 of 352) and 81 of its 84 branches
-(`vectors/coverage.json`). The three branches left are unreachable from the public surface:
+The generators reach 460 of the package's 461 statements and 128 of its 132 branches
+(`vectors/coverage.json`). What is left cannot be reached from the public surface:
 
-- `capability.ts:96` and `link.plugin.ts:43`, the `?? false` after `activeTool()?.`. The hub's
-  `activeTool` always returns a tool, falling back to a default for an unknown id.
-- `effects.ts:15`, `if (!doc) return`. The plugin is document-scoped, so its effect context always
-  has a handle.
+- `controller.ts:121-122`, the `reported` arm of a `reveal` resolution. Only a `goto` resolves to a
+  reveal.
+- `controller.ts:174`, `listAllLinks` without a document. The plugin is document-scoped.
+- `controller.ts:190` and `link.plugin.ts:41`, the `?? false` after `getActiveTool()?.`. The hub's
+  `getActiveTool` always returns a tool, falling back to a neutral one for an unknown id.
+
+The function fixture `item()` in `suites/link.ts` still built v2 items with `rect`; it builds
+`bounds` now, so `link-functions.json` carries the v3 `Link` shape.
 
 ## Mutation testing
 
-`scripts/mutants.sh -p epdf-plugin-link --test-package epdf-plugin-link --exclude
-crates/plugins/link/src/harness.rs` catches 62 of 63 viable mutants (10 unviable). Two earlier
-misses were closed: the smooth reveal behavior got `activate-reveals-smoothly` (commit
-`86594ae1c`), and `js_string`'s guard for the `undefined` marker was dead code and went (commit
-`473e6d227`). The one survivor is equivalent: `reducer.rs:6`, `initial_link_state` as
-`Default::default()`, which is the same empty cache.
+The pre-v3 run covered `capability.rs`, `effects.rs` and `source.rs`, which are rewritten or gone.
+The reducer moved to `model.rs` with the v3 action shape; its pre-v3 result (one equivalent
+survivor, `initial_link_state` as `Default::default()`) is pre-v3, rerun pending.
