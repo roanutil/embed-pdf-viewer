@@ -52,6 +52,11 @@ export interface ScenarioCase {
   readonly snapshot?: readonly string[] | 'none';
   /** Let an engine call go unanswered (it rejects with FakeEngineUnmatched). */
   readonly allowUnmatched?: boolean;
+  /** Await each call's returned promise, in real time, before the step
+   *  drains. For code whose promises wait on the host's thread pool
+   *  (WebCrypto), which no number of microtask turns settles. The Rust side
+   *  has no such pool: its step already runs until nothing is left. */
+  readonly awaitCalls?: boolean;
 }
 
 export type Outcome =
@@ -130,6 +135,8 @@ const CORE_ACTIONS = [
 /** Real `setImmediate`, captured before fake timers install: one turn of it
  *  runs every queued microtask, which is what "drain" means. */
 const realSetImmediate = globalThis.setImmediate;
+const realSetTimeout = globalThis.setTimeout;
+const realClearTimeout = globalThis.clearTimeout;
 const drainMicrotasks = () => new Promise<void>((resolve) => realSetImmediate(resolve));
 
 export async function runScenario(scenario: ScenarioCase): Promise<{ trace: TraceEntry[]; unmatched: string[] }> {
@@ -226,6 +233,9 @@ async function runInstalled(
   for (const step of scenario.steps) {
     entry = blankEntry();
     await runStep(step, { kernel, fake, clock, refs, promises, hooks, decode, entry });
+    if (scenario.awaitCalls && step.op === 'call' && entry.outcome && 'promise' in entry.outcome) {
+      await settledInRealTime(promises[entry.outcome.promise]);
+    }
     await drainMicrotasks();
     entry.engine = fake.log.slice(loggedEngine);
     loggedEngine = fake.log.length;
@@ -235,6 +245,20 @@ async function runInstalled(
     trace.push(entry);
   }
   return { trace, unmatched: fake.unmatched };
+}
+
+/** Wait for a promise to settle without the fake clock: WebCrypto answers
+ *  from libuv's pool. Five real seconds is a case that forgot a response. */
+async function settledInRealTime(promise: PromiseLike<unknown>): Promise<void> {
+  let timer: ReturnType<typeof realSetTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = realSetTimeout(() => reject(new Error('[scenario] awaitCalls: a call did not settle in 5 s')), 5000);
+  });
+  try {
+    await Promise.race([Promise.resolve(promise).then(() => undefined, () => undefined), timeout]);
+  } finally {
+    realClearTimeout(timer);
+  }
 }
 
 function blankEntry(): TraceEntry {

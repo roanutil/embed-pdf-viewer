@@ -28,7 +28,7 @@ The Rust side looks `fn` up in the table its test passes to `assert_suite`. Use 
 everything that has no lifecycle: geometry, reducers called directly, tile planning, layout. It is
 cheaper to grow than scenarios and it is where most arithmetic should be pinned.
 
-A scenario case is `{name, covers, plugins, engine, steps, snapshot?, allowUnmatched?, trace}`.
+A scenario case is `{name, covers, plugins, engine, steps, snapshot?, allowUnmatched?, awaitCalls?, trace}`.
 
 ## Scenarios
 
@@ -39,6 +39,13 @@ its empty slice is in every snapshot.
 
 `steps` run in order. After each one the runner drains every queued microtask (one real
 `setImmediate` in Node, `rt::run_until_stalled` in Rust) and records a trace entry.
+
+`awaitCalls: true` makes the TypeScript runner wait, in real time, for each `call` step's returned
+promise to settle before it drains. WebCrypto answers from libuv's thread pool, which no number of
+microtask turns reaches, so without it a `crypto.subtle` result would land in whichever later step
+happened to be running. The Rust runner ignores the field: a Rust step already runs until nothing
+is left. Only `core/signature-*` sets it, and a call that has not settled after 5 real seconds fails
+the generator.
 
 | op | fields | does |
 |---|---|---|
@@ -189,3 +196,12 @@ comparison explicitly, and a port picks the one that fires on the same changes.
    uncovered line is either reached by a new case or explained in `multiplatform-plugins-status.md`.
 3. In the plugin's crate, implement `HarnessPlugin` behind the `harness` feature and add a test
    that calls `assert_suite` for each of its vector files.
+
+## Fixtures
+
+`fixtures/signature/fixtures.json` holds the keys, certificates, CMS blobs and recorded signatures
+the `core/signature-*` vectors are made from. Key generation, ECDSA and RSA-PSS signatures are
+random, so `fixtures/signature/generate.ts` runs once and its output is committed; the suite only
+reads it, and `vectors:check` stays deterministic. Re-running the script replaces every key and
+changes every vector that embeds one. The Rust test host reads the same file for the keys its
+scripted WebCrypto hands out.
