@@ -33,8 +33,8 @@ use crate::policy::EngineRenderPolicy;
 use crate::raster_store::RasterStore;
 use crate::strategy::{ResolvedStrategy, base_ask_width, resolve_strategy};
 use crate::tiles::{
-    PageSizePt, PdfRect, TileCoord, TileGrid, bleed_rect, inflate_rect, intersect_rects,
-    region_covered, snap_to_pyramid, tile_grid, tile_paint_rect, tiles_in_rect, to_engine_rect,
+    PageSizePt, TileCoord, TileGrid, bleed_rect, inflate_rect, intersect_rects, region_covered,
+    snap_to_pyramid, tile_grid, tile_paint_rect, tiles_in_rect,
 };
 
 /// Backpressure: raw rasters in flight at once.
@@ -42,11 +42,12 @@ const MAX_IN_FLIGHT: i64 = 8;
 /// Stage-less (no visibleRect) demand is capped to about this many tiles.
 const STAGELESS_TILE_CAP: f64 = 64.0;
 
-/// `fetchTile(pon, rect, scale, includeAnnotations, signal)`. `Err` is a
-/// synchronous throw.
-/// The promise answers the engine's `PageImageHandle` JSON.
+/// `fetchTile(pon, rect, scale, includeAnnotations, signal)`: render a
+/// page-space region (y-down page points); the owner converts it to PDF
+/// space. `Err` is a synchronous throw. The promise answers the engine's
+/// `PageImageHandle` JSON.
 pub type FetchTile =
-    Rc<dyn Fn(u32, PdfRect, f64, bool, &AbortSignal) -> Result<Promise<Value>, Error>>;
+    Rc<dyn Fn(u32, Rect, f64, bool, &AbortSignal) -> Result<Promise<Value>, Error>>;
 
 /// What the manager needs from its owner. The capability supplies these; a
 /// host embedding the manager on its own supplies its own.
@@ -57,10 +58,10 @@ pub struct TileManagerDeps {
     /// The document fact off the kernel registry.
     pub get_policy: Rc<dyn Fn() -> EngineRenderPolicy>,
     pub get_page_size: Rc<dyn Fn(u32) -> Option<PageSizePt>>,
-    /// `Err` where the TypeScript reads a removed slice and throws.
-    pub get_epoch: Rc<dyn Fn(u32, bool) -> Result<f64, Error>>,
+    pub get_epoch: Rc<dyn Fn(u32, bool) -> f64>,
     pub fetch_tile: FetchTile,
-    /// Wake subscribed layers (dispatches `PAINT_ADVANCED` outside `plan`).
+    /// Wake subscribed layers (the owner re-plans and dispatches
+    /// `paintAdvanced` outside `plan`).
     pub on_advance: Rc<dyn Fn(u32)>,
     /// Diagnostic sink (`options.debug`).
     pub debug: Option<Rc<dyn Fn(&str)>>,
@@ -181,8 +182,7 @@ impl TileManager {
     }
 
     /// The tile paint plan for one view of a page. `Err` where the TypeScript
-    /// throws out of `plan`: the engine refusing a page the registry lists,
-    /// or the document's ledger gone after close.
+    /// throws out of `plan`: the engine refusing a page the registry lists.
     pub fn plan(
         &self,
         view: &str,
@@ -197,7 +197,7 @@ impl TileManager {
         let strategy = self.strategy();
         let Some(page) = (self.deps().get_page_size)(pon) else { return Ok(empty_tile_plan()) };
 
-        let epoch = (self.deps().get_epoch)(pon, include_annotations)?;
+        let epoch = (self.deps().get_epoch)(pon, include_annotations);
         let state = self.page_state(pon, view);
 
         // Epoch exception: old-epoch pixels are wrong, not blurry.
@@ -676,13 +676,7 @@ impl TileManager {
                     // placement rect the paint list emits.
                     let rendered =
                         if bleed_pt > 0.0 { bleed_rect(logical, bleed_pt, page) } else { logical };
-                    fetch_tile(
-                        pon,
-                        to_engine_rect(page, rendered),
-                        grid.scale,
-                        include_annotations,
-                        signal,
-                    )
+                    fetch_tile(pon, rendered, grid.scale, include_annotations, signal)
                 },
                 Some(&entry.abort),
             )?;

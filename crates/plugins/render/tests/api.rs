@@ -1,8 +1,9 @@
 //! The typed surface downstream crates use and the vectors cannot see:
-//! handle identity, the store and manager accessors, handle costs.
+//! view handle identity, the store and manager accessors, handle costs.
 
 use std::rc::Rc;
 
+use epdf_kernel::geometry::PageRef;
 use epdf_kernel::kernel::{OpenOptions, OpenSource};
 use epdf_kernel::{Kernel, KernelOptions, rt};
 use epdf_plugin_render::*;
@@ -15,7 +16,8 @@ fn kernel() -> Kernel {
     let fake = FakeEngine::new(json!({
         "documents": { "a": {
             "security": { "allows": ["doc.render"] },
-            "pages": [{ "index": 0, "pageObjectNumber": 11, "label": null,
+            "pages": [{ "index": 0, "ref": { "kind": "objectNumber", "pageObjectNumber": 11 },
+                "label": null,
                 "size": { "width": 612, "height": 792 }, "rotation": 0, "userUnit": 1,
                 "boxes": { "media": box_, "crop": box_ } }],
             "responses": [{ "path": "page.render.image",
@@ -25,7 +27,7 @@ fn kernel() -> Kernel {
     let host = RenderHost { warn: Rc::new(|_| {}), debug: Rc::new(|_| {}), ..Default::default() };
     let kernel = Kernel::new(
         Rc::new(AsEngine(fake)),
-        vec![render_plugin_with_host(RenderPluginOptions::default(), host)],
+        vec![render_plugin_with_host(RenderConfig::default(), host)],
         KernelOptions::default(),
     )
     .expect("kernel");
@@ -43,11 +45,16 @@ fn kernel() -> Kernel {
 fn view_handles_are_stable_per_view() {
     let kernel = kernel();
     let render = kernel.capability(&RENDER, Some("a")).expect("render");
-    let stage = render.tiles_for("stage");
-    assert!(stage.same(&render.tiles_for("stage")));
-    assert!(!stage.same(&render.tiles_for("thumbs")));
-    assert_eq!(stage.view(), "stage");
-    assert_eq!(render.tiles_for("thumbs").view(), "thumbs");
+    let stage = render.create_view_demand("stage");
+    assert!(stage.same(&render.create_view_demand("stage")));
+    assert!(!stage.same(&render.create_view_demand("thumbs")));
+    assert_eq!(stage.view_id(), "stage");
+    assert_eq!(render.create_view_demand("thumbs").view_id(), "thumbs");
+    // With every handle dropped, the next one is new but shares the view's
+    // reference count and demands.
+    drop(stage);
+    let again = render.create_view_demand("stage");
+    assert_eq!(again.view_id(), "stage");
 }
 
 #[test]
@@ -55,8 +62,8 @@ fn the_store_and_manager_are_the_capability_s() {
     let kernel = kernel();
     let render = kernel.capability(&RENDER, Some("a")).expect("render");
     assert_eq!(render.raster_store().size(), 0);
-    let page = render.render_page(11, RenderPageOptions { scale: 0.5, ..Default::default() });
-    let page = page.expect("render");
+    let page = render
+        .render_source(PageRef::new(11), RenderSourceOptions { scale: 0.5, ..Default::default() });
     assert_eq!(render.raster_store().size(), 1);
     rt::run_until_stalled();
     let handle = page.peek().expect("settled").expect("resolved");
@@ -69,7 +76,8 @@ fn the_store_and_manager_are_the_capability_s() {
         visible_rect: Some(epdf_geometry::Rect { x: 0.0, y: 0.0, width: 128.0, height: 128.0 }),
         velocity: None,
     };
-    render.tiles_for("stage").plan(11, &demand, None).expect("plan");
+    let stage = render.create_view_demand("stage");
+    stage.set_demand(PageRef::new(11), demand, None).expect("plan");
     let stats = render.tile_manager().stats("stage", 11);
     assert_eq!(stats, TileStats { entries: 4, in_flight: 4 });
     rt::run_until_stalled();

@@ -2,7 +2,8 @@
 //! the page's top-left, a fixed tile edge in device px).
 //!
 //! Tile coords live on the device grid at their level's scale; paint rects
-//! are y-down page points; engine rects are y-up PDF user space. Coords are
+//! are y-down page points (the kernel's page space converts them to PDF
+//! space for the engine). Coords are
 //! `f64` because the TypeScript's loop bounds come out of `Math.floor` and
 //! `Math.ceil` and can be NaN; an integer type would change which rects
 //! yield no tiles.
@@ -37,15 +38,6 @@ pub struct TileGrid {
     pub tile_size: f64,
     pub cols: f64,
     pub rows: f64,
-}
-
-/// `PdfRect`: y-up PDF user space, top > bottom.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
-pub struct PdfRect {
-    pub left: f64,
-    pub right: f64,
-    pub top: f64,
-    pub bottom: f64,
 }
 
 pub fn tile_grid(page: PageSizePt, scale: f64, tile_size: f64) -> TileGrid {
@@ -89,20 +81,6 @@ pub fn tile_paint_rect(grid: &TileGrid, page: PageSizePt, c: TileCoord) -> Rect 
     let x = c.ix * span;
     let y = c.iy * span;
     Rect { x, y, width: js::min(span, page.width - x), height: js::min(span, page.height - y) }
-}
-
-/// Engine target rect for an arbitrary y-down page-point rect.
-pub fn to_engine_rect(page: PageSizePt, rect: Rect) -> PdfRect {
-    PdfRect {
-        left: rect.x,
-        right: rect.x + rect.width,
-        top: page.height - rect.y,
-        bottom: page.height - (rect.y + rect.height),
-    }
-}
-
-pub fn tile_engine_rect(grid: &TileGrid, page: PageSizePt, c: TileCoord) -> PdfRect {
-    to_engine_rect(page, tile_paint_rect(grid, page, c))
 }
 
 /// Expand a paint rect by `pt` points per side, clamped to the page: the
