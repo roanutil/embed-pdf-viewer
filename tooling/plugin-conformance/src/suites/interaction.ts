@@ -10,19 +10,22 @@
  */
 import {
   FeedbackToken,
-  InteractionToken,
   builtinTools,
   feedbackPlugin,
-  initialInteractionState,
   interactionPlugin,
-  interactionReducer,
   samplePointOn,
 } from '../../../../packages/plugin/interaction/src/index';
+import { InteractionToken } from '../../../../packages/plugin/interaction/src/host-contract';
+import {
+  initialInteractionState,
+  reduceInteraction,
+} from '../../../../packages/plugin/interaction/src/model';
 import type {
   InteractionConfig,
   PlatformFeedback,
   PointerSample,
 } from '../../../../packages/plugin/interaction/src/index';
+import type { PageRef } from '../../../../packages/core/main/src/index';
 
 import type { FakeDocumentSpec } from '../fake-engine';
 import { registerPlugin, type ScenarioCase, type Step } from '../scenario';
@@ -50,7 +53,7 @@ registerPlugin('feedback', {
 
 const box = { left: 0, bottom: 0, right: 600, top: 800 };
 const pages = [
-  { index: 0, pageObjectNumber: 1, label: null, size: { width: 600, height: 800 }, rotation: 0, userUnit: 1, boxes: { media: box, crop: box } },
+  { index: 0, ref: { kind: 'objectNumber', pageObjectNumber: 1 }, label: null, size: { width: 600, height: 800 }, rotation: 0, userUnit: 1, boxes: { media: box, crop: box } },
 ];
 const doc = (over: Partial<FakeDocumentSpec> = {}): FakeDocumentSpec => ({ pages, ...over });
 const engine = { documents: { a: doc() } };
@@ -69,7 +72,8 @@ const call = (method: string, ...args: unknown[]): Step => ({
   args,
 });
 const ref = (n: number, ...args: unknown[]): Step => ({ op: 'call', target: { ref: n }, args });
-const dispatch = (sample: unknown): Step => call('dispatch', sample);
+const dispatch = (sample: unknown): Step => call('dispatchPointer', sample);
+const pageRef = (pon: number) => ({ kind: 'objectNumber', pageObjectNumber: pon });
 
 const noMods = { shift: false, alt: false, ctrl: false, meta: false };
 
@@ -82,7 +86,7 @@ const s = (phase: string, over: Record<string, unknown> = {}): Record<string, un
     modifiers: noMods,
     ...rest,
   };
-  if (page !== null) sample.page = page ?? { pon: 1, point: { x: 5, y: 6 } };
+  if (page !== null) sample.page = page ?? { ref: pageRef(1), point: { x: 5, y: 6 } };
   return sample;
 };
 /** The same sample over a page gap. */
@@ -132,10 +136,10 @@ const cases: ScenarioCase[] = [
     steps: [
       ...opened,
       { op: 'call', target: 'kernel', method: 'capability', args: [{ $token: 'interaction' }, 'a'] },
-      call('activeTool'),
-      call('activeToolId'),
-      call('cursor'),
-      call('tools'),
+      call('getActiveTool'),
+      call('getActiveToolId'),
+      call('getCursor'),
+      call('listTools'),
     ],
   },
   {
@@ -144,7 +148,7 @@ const cases: ScenarioCase[] = [
     plugins: [{ factory: 'interaction', config: { defaultTool: 'pan' } }],
     engine,
     snapshot: only,
-    steps: [...opened, call('activeToolId'), call('activeTool'), call('cursor')],
+    steps: [...opened, call('getActiveToolId'), call('getActiveTool'), call('getCursor')],
   },
   {
     name: 'unknown-default-tool',
@@ -155,7 +159,7 @@ const cases: ScenarioCase[] = [
     snapshot: only,
     steps: [
       ...opened,
-      call('activeTool'),
+      call('getActiveTool'),
       call('registerHandler', handler('h', 1, { enabled: { returns: false } })),
       dispatch(s('down')),
       dispatch(s('move')),
@@ -171,11 +175,11 @@ const cases: ScenarioCase[] = [
     steps: [
       ...opened,
       call('activateTool', 'nope'),
-      call('onToolChange', { $fn: 'first' }),
-      call('onToolChange', { $fn: 'second' }),
+      call('onToolChanged', { $fn: 'first' }),
+      call('onToolChanged', { $fn: 'second' }),
       call('activateTool', 'pan'),
-      call('activeToolId'),
-      call('cursor'),
+      call('getActiveToolId'),
+      call('getCursor'),
       call('activateTool', 'pan'),
       ref(0),
       ref(0),
@@ -377,11 +381,11 @@ const cases: ScenarioCase[] = [
       ...opened,
       call('registerHandler', handler('h', 1)),
       dispatch(s('down')),
-      call('setCursor', 'hover', 'text', 10),
+      call('claimCursor', 'hover', 'text', 10),
       call('activateTool', 'pan'),
       dispatch(s('move')),
       dispatch(s('up')),
-      call('cursor'),
+      call('getCursor'),
     ],
   },
   {
@@ -393,17 +397,17 @@ const cases: ScenarioCase[] = [
     snapshot: only,
     steps: [
       ...opened,
-      call('setCursor', 'a', 'text', 10),
-      call('setCursor', 'b', 'move', 10),
-      call('setCursor', 'b', 'move', 20),
-      call('setCursor', 'b', 'grabbing', 10),
-      call('setCursor', 'c', 'crosshair'),
-      call('setCursor', 'a', null),
-      call('setCursor', 'b', null),
-      call('setCursor', 'c', 'crosshair', -1),
-      call('setCursor', 'c', null),
-      call('setCursor', 'never', null),
-      call('cursor'),
+      call('claimCursor', 'a', 'text', 10),
+      call('claimCursor', 'b', 'move', 10),
+      call('claimCursor', 'b', 'move', 20),
+      call('claimCursor', 'b', 'grabbing', 10),
+      call('claimCursor', 'c', 'crosshair'),
+      call('claimCursor', 'a', null),
+      call('claimCursor', 'b', null),
+      call('claimCursor', 'c', 'crosshair', -1),
+      call('claimCursor', 'c', null),
+      call('claimCursor', 'never', null),
+      call('getCursor'),
     ],
   },
   {
@@ -423,7 +427,7 @@ const cases: ScenarioCase[] = [
       dispatch(gap('move')),
       dispatch(s('down')),
       dispatch(s('up')),
-      dispatch(s('move', { page: { pon: 1, point: { x: 1, y: 2 }, scale: 2, rotation: 90, zoom: 1.5 } })),
+      dispatch(s('move', { page: { ref: pageRef(1), point: { x: 1, y: 2 }, scale: 2, rotation: 90, zoom: 1.5 } })),
       dispatch(gap('move')),
     ],
   },
@@ -438,10 +442,10 @@ const cases: ScenarioCase[] = [
       ...opened,
       call('setToolCursor', 'pointer', { default: 'url(p.svg) 0 0, default', text: 'url(t.svg) 4 4, text', move: null }),
       dispatch(s('move')),
-      call('setCursor', 'hover', 'text', 1),
-      call('setCursor', 'hover', 'move', 1),
-      call('setCursor', 'hover', 'copy', 1),
-      call('setCursor', 'hover', null),
+      call('claimCursor', 'hover', 'text', 1),
+      call('claimCursor', 'hover', 'move', 1),
+      call('claimCursor', 'hover', 'copy', 1),
+      call('claimCursor', 'hover', null),
       dispatch(gap('move')),
       dispatch(s('move')),
       call('setToolCursor', 'pan', { grab: 'url(h.svg) 0 0, grab' }),
@@ -449,7 +453,7 @@ const cases: ScenarioCase[] = [
       call('activateTool', 'pan'),
       dispatch(gap('move')),
       dispatch(s('move')),
-      call('cursor'),
+      call('getCursor'),
     ],
   },
   {
@@ -462,27 +466,27 @@ const cases: ScenarioCase[] = [
     steps: [
       ...opened,
       call('registerTool', tool('ink', 'crosshair', ['ink', 'draw', 'ink'], { touchDirect: true, gapCursor: 'not-allowed' })),
-      call('tools'),
-      call('registerTool', tool('pointer', 'default', ['text-select'])),
-      call('tools'),
+      call('listTools'),
+      call('registerTool', tool('pointer', 'default', ['text-select']), { replace: true }),
+      call('listTools'),
       call('activateTool', 'ink'),
       call('setToolCursor', 'ink', { crosshair: 'url(i.svg) 0 0, crosshair' }),
       dispatch(s('move')),
-      call('cursor'),
+      call('getCursor'),
       call('setToolCursor', 'pan', { grab: 'url(g.svg) 0 0, grab' }),
       ref(0),
-      call('activeTool'),
-      call('tools'),
+      call('getActiveTool'),
+      call('listTools'),
       call('activateTool', 'pan'),
       call('activateTool', 'ink'),
-      call('registerTool', tool('ink', 'crosshair', [])),
+      call('registerTool', tool('ink', 'crosshair', []), { replace: true }),
       call('activateTool', 'ink'),
-      call('registerTool', tool('ink', 'cell', [])),
+      call('registerTool', tool('ink', 'cell', []), { replace: true }),
       call('activateTool', 'ink'),
       call('setToolCursor', 'ink', null),
-      call('cursor'),
+      call('getCursor'),
       ref(0),
-      call('tools'),
+      call('listTools'),
     ],
   },
   {
@@ -517,7 +521,7 @@ const cases: ScenarioCase[] = [
       call('registerHandler', handler('h', 1)),
       dispatch(
         s('down', {
-          page: { pon: 1, point: { x: 1.5, y: -2 }, scale: 1.25, rotation: 270, zoom: 0.5 },
+          page: { ref: pageRef(1), point: { x: 1.5, y: -2 }, scale: 1.25, rotation: 270, zoom: 0.5 },
           modifiers: { shift: true, alt: false, ctrl: true, meta: false },
           clickCount: 2,
           pointerType: 'pen',
@@ -565,19 +569,20 @@ const cases: ScenarioCase[] = [
 const withProject = (sample: Record<string, unknown>): PointerSample => {
   const { projects, ...rest } = sample as { projects?: Record<string, unknown> };
   const out = rest as unknown as PointerSample;
-  if (projects) out.project = (pon) => projects[String(pon)] as never;
+  if (projects) out.project = (page: PageRef) => projects[String(page.pageObjectNumber)] as never;
   return out;
 };
 
 const functions = {
-  samplePointOn: (sample: Record<string, unknown>, pon: number) => samplePointOn(withProject(sample), pon),
+  samplePointOn: (sample: Record<string, unknown>, pon: number) =>
+    samplePointOn(withProject(sample), { kind: 'objectNumber', pageObjectNumber: pon }),
   builtinTools,
   initialInteractionState,
-  interactionReducer,
+  reduceInteraction,
 };
 
 const fc = (fn: string, label: string, ...args: unknown[]): FunctionCase => ({ name: `${fn}/${label}`, fn, args });
-const at = (pon: number, x: number, y: number) => ({ pon, point: { x, y } });
+const at = (pon: number, x: number, y: number) => ({ ref: pageRef(pon), point: { x, y } });
 
 const functionCases: FunctionCase[] = [
   fc('samplePointOn', 'project-wins', { ...s('move'), projects: { 1: { x: -40, y: 900 } } }, 1),
@@ -591,10 +596,10 @@ const functionCases: FunctionCase[] = [
   fc('builtinTools', 'pointer-and-pan'),
   fc('initialInteractionState', 'no-config', {}),
   fc('initialInteractionState', 'default-tool', { defaultTool: 'pan' }),
-  fc('interactionReducer', 'set-tool', { activeToolId: 'pointer', cursor: 'default' }, { type: 'SET_TOOL', toolId: 'pan' }),
-  fc('interactionReducer', 'set-same-tool', { activeToolId: 'pan', cursor: 'grab' }, { type: 'SET_TOOL', toolId: 'pan' }),
-  fc('interactionReducer', 'set-cursor', { activeToolId: 'pan', cursor: 'grab' }, { type: 'SET_CURSOR', cursor: 'grabbing' }),
-  fc('interactionReducer', 'set-same-cursor', { activeToolId: 'pan', cursor: 'grab' }, { type: 'SET_CURSOR', cursor: 'grab' }),
+  fc('reduceInteraction', 'set-tool', { activeToolId: 'pointer', defaultToolId: 'pointer', toolStack: [], cursor: 'default' }, { type: 'SET_TOOL', toolId: 'pan' }),
+  fc('reduceInteraction', 'set-same-tool', { activeToolId: 'pan', defaultToolId: 'pointer', toolStack: [], cursor: 'grab' }, { type: 'SET_TOOL', toolId: 'pan' }),
+  fc('reduceInteraction', 'set-cursor', { activeToolId: 'pan', defaultToolId: 'pointer', toolStack: [], cursor: 'grab' }, { type: 'SET_CURSOR', cursor: 'grabbing' }),
+  fc('reduceInteraction', 'set-same-cursor', { activeToolId: 'pan', defaultToolId: 'pointer', toolStack: [], cursor: 'grab' }, { type: 'SET_CURSOR', cursor: 'grab' }),
 ];
 
 export const suites: Suite[] = [

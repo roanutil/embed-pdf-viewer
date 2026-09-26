@@ -24,15 +24,15 @@ import { definePlugin, type AnyPlugin } from '@embedpdf/core';
 
 import { actionsPlugin } from '../../../../packages/plugin/actions/src/actions.plugin';
 import { createHoverPump, type HoverTarget } from '../../../../packages/plugin/actions/src/hover-pump';
-import { ActionsToken } from '../../../../packages/plugin/actions/src/internal';
+import { ActionsToken } from '../../../../packages/plugin/actions/src/host-contract';
 import { submitEntriesToUrlEncoded } from '../../../../packages/plugin/actions/src/submit-encoding';
 import {
   eventOf,
-  originOf,
-  type ActionsPluginConfig,
+  triggerOriginOf,
+  type ActionsConfig as ActionsPluginConfig,
   type ActionTrigger,
   type ActionTriggerResult,
-} from '../../../../packages/plugin/actions/src/types';
+} from '../../../../packages/plugin/actions/src/contract';
 import type { FakeDocumentSpec, ResponseSpec } from '../fake-engine';
 import { registerPlugin, type PluginEnv, type ScenarioCase, type Step } from '../scenario';
 import type { FunctionCase, Suite } from '../vectors';
@@ -138,9 +138,10 @@ registerPlugin('hover-pump', { factory: (config, env) => hoverPumpDriver(config 
 // ── builders ──────────────────────────────────────────────────────────────────
 
 const box = { left: 0, bottom: 0, right: 600, top: 800 };
+const pr = (pon: number) => ({ kind: 'objectNumber', pageObjectNumber: pon });
 const page = (pon: number, index: number, actions?: unknown) => ({
   index,
-  pageObjectNumber: pon,
+  ref: pr(pon),
   label: null,
   size: { width: 600, height: 800 },
   rotation: 0,
@@ -161,7 +162,7 @@ const engineWith = (over: Partial<FakeDocumentSpec> = {}) => ({ documents: { a: 
 type Node = Record<string, unknown>;
 const tree = (root: Node | null, incomplete = false) => ({ root, incomplete, warningFlags: 0, warnings: incomplete ? ['incomplete'] : [] });
 const js = (script: string, next: Node[] = []): Node => ({ type: 'javascript', subtype: 'JavaScript', script, next });
-const goto = (pon: number, next: Node[] = []): Node => ({ type: 'goto', subtype: 'GoTo', destination: { kind: 'fit', pageObjectNumber: pon }, next });
+const goto = (pon: number, next: Node[] = []): Node => ({ type: 'goto', subtype: 'GoTo', destination: { kind: 'fit', page: pr(pon) }, next });
 const uri = (value: string, next: Node[] = [], isMap = false): Node => ({ type: 'uri', subtype: 'URI', uri: value, isMap, next });
 const named = (name: string, next: Node[] = []): Node => ({ type: 'named', subtype: 'Named', name, next });
 const hide = (targets: unknown[], hidden = true, next: Node[] = []): Node => ({ type: 'hide', subtype: 'Hide', targets, hide: hidden, next });
@@ -186,9 +187,10 @@ const FLAGS = {
 const payload = (over: Record<string, unknown> = {}) => ({ url: 'https://home.test/submit', fields: null, flags: FLAGS, ...over });
 const submit = (p?: unknown, next: Node[] = []): Node => ({ type: 'submit-form', subtype: 'SubmitForm', ...(p === undefined ? {} : { payload: p }), next });
 
-const aref = (pon: number, objectNumber: number) => ({ kind: 'objectNumber', pageObjectNumber: pon, annotObjectNumber: objectNumber });
+const aref = (pon: number, objectNumber: number) => ({ kind: 'objectNumber', page: pr(pon), annotObjectNumber: objectNumber });
 const annot = (pon: number, objectNumber: number, actions?: unknown, over: Record<string, unknown> = {}) => ({
   ref: aref(pon, objectNumber),
+  page: pr(pon),
   subtype: 'square',
   rect: { left: 10, bottom: 20, right: 30, top: 40 },
   flags: { hidden: false, print: true, readOnly: false, locked: false, noView: false, toggleNoView: false },
@@ -209,7 +211,7 @@ const formField = (name: string, fieldObjectNumber: number, widgets: number[] = 
   valueEntry: { kind: 'scalar', value: `${name}-value` },
   defaultValueEntry: { kind: 'none' },
   flags: { readOnly: false, required: false },
-  widgets: widgets.map((annotObjectNumber) => ({ annotObjectNumber, pageObjectNumber: 1 })),
+  widgets: widgets.map((annotObjectNumber) => ({ ref: aref(1, annotObjectNumber), annotObjectNumber, page: pr(1) })),
   ...over,
 });
 const forms = (fields: unknown[], extra: Partial<ResponseSpec> = {}): ResponseSpec => ({
@@ -672,8 +674,8 @@ const dispatcherCases: ScenarioCase[] = [
     engine: engineWith(),
     steps: [
       ...boot,
-      cap('onAction', fnSpec('onAction.bad', { throws: { message: 'observer broke' } })),
-      cap('onAction', fnSpec('onAction')),
+      cap('onExecuted', fnSpec('onAction.bad', { throws: { message: 'observer broke' } })),
+      cap('onExecuted', fnSpec('onAction')),
       cap('onDiagnostic', fnSpec('onDiagnostic.bad', { throws: { message: 'diag observer broke' } })),
       listen(),
       cap('execute', tree(js('orphan()')), USER),
@@ -827,13 +829,13 @@ const submitCases: ScenarioCase[] = [
 
 // ── triggers ──────────────────────────────────────────────────────────────────
 
-const activate = (pon: number, ref: unknown, source?: unknown) => ({ scope: 'activate', ref, pon, ...(source === undefined ? {} : { source }) });
-const annotationEvent = (event: string, pon: number, ref: unknown, source?: unknown) => ({ scope: 'annotation', event, ref, pon, ...(source === undefined ? {} : { source }) });
-const pageEvent = (event: string, pon: number) => ({ scope: 'page', event, pon });
+const activate = (pon: number, ref: unknown, source?: unknown) => ({ scope: 'activate', ref, page: pr(pon), ...(source === undefined ? {} : { source }) });
+const annotationEvent = (event: string, pon: number, ref: unknown, source?: unknown) => ({ scope: 'annotation', event, ref, page: pr(pon), ...(source === undefined ? {} : { source }) });
+const pageEvent = (event: string, pon: number) => ({ scope: 'page', event, page: pr(pon) });
 const docEvent = (event: string) => ({ scope: 'document', event });
 const dispatch = (trigger: unknown) => cap('dispatch', trigger);
-const nmRef = (pon: number, nm: string) => ({ kind: 'nm', pageObjectNumber: pon, nm });
-const indexRef = (pon: number, index: number, revision: unknown = 'r1') => ({ kind: 'index', pageObjectNumber: pon, index, revision });
+const nmRef = (pon: number, nm: string) => ({ kind: 'nm', page: pr(pon), nm });
+const indexRef = (pon: number, index: number, revision: unknown = 'r1') => ({ kind: 'index', page: pr(pon), index, revision });
 
 const fanPage5 = [
   annot(5, 11, { pageOpen: tree(named('PO-11')), pageClose: tree(named('PC-11')), pageVisible: tree(named('PV-11')), pageInvisible: tree(named('PI-11')) }),
@@ -853,7 +855,7 @@ const triggerCases: ScenarioCase[] = [
     plugins: plugins(OFF),
     engine: engineWith({
       responses: [
-        annotations(2, [annot(2, 0, { activate: tree(named('click-numberless')) }, { ref: { kind: 'objectNumber', pageObjectNumber: 2 } })]),
+        annotations(2, [annot(2, 0, { activate: tree(named('click-numberless')) }, { ref: { kind: 'objectNumber', page: pr(2) } })]),
         annotations(1, [
           annot(1, 9, { activate: tree(named('click-9')) }),
           annot(1, 10, { activate: tree(named('click-nm')) }, { ref: nmRef(1, 'tip') }),
@@ -873,8 +875,8 @@ const triggerCases: ScenarioCase[] = [
       dispatch(activate(1, indexRef(2, 3))),
       dispatch(activate(1, indexRef(1, 4))),
       dispatch(activate(1, aref(1, 10))),
-      dispatch(activate(1, { kind: 'objectNumber', pageObjectNumber: 1, annotObjectNumber: 404 })),
-      dispatch(activate(2, { kind: 'objectNumber', pageObjectNumber: 2 })),
+      dispatch(activate(1, { kind: 'objectNumber', page: pr(1), annotObjectNumber: 404 })),
+      dispatch(activate(2, { kind: 'objectNumber', page: pr(2) })),
     ],
     snapshot: snap,
   },
@@ -901,7 +903,7 @@ const triggerCases: ScenarioCase[] = [
     steps: [
       ...boot,
       reg('named'),
-      listen('onAction'),
+      listen('onExecuted'),
       ...['cursorEnter', 'cursorExit', 'mouseDown', 'mouseUp', 'focus', 'blur'].map((event) => dispatch(annotationEvent(event, 4, aref(4, 7)))),
       dispatch(annotationEvent('cursorEnter', 4, aref(4, 8))),
     ],
@@ -912,7 +914,7 @@ const triggerCases: ScenarioCase[] = [
     covers: 'A first-party source hint becomes the step source, and the origin is still derived from the trigger.',
     plugins: plugins(OFF),
     engine: engineWith({ responses: [annotations(1, [annot(1, 7, { cursorEnter: tree(named('e')) })])] }),
-    steps: [...boot, reg('named'), listen('onAction'), dispatch(annotationEvent('cursorEnter', 1, aref(1, 7), { kind: 'link', annotation: aref(1, 7), pon: 1 }))],
+    steps: [...boot, reg('named'), listen('onExecuted'), dispatch(annotationEvent('cursorEnter', 1, aref(1, 7), { kind: 'link', annotation: aref(1, 7), page: pr(1) }))],
     snapshot: snap,
   },
   {
@@ -962,7 +964,7 @@ const triggerCases: ScenarioCase[] = [
     steps: [
       ...boot,
       reg('named'),
-      listen('onAction'),
+      listen('onExecuted'),
       dispatch(pageEvent('open', 5)),
       dispatch(pageEvent('close', 5)),
       dispatch(pageEvent('visible', 5)),
@@ -1071,9 +1073,9 @@ const triggerCases: ScenarioCase[] = [
 // ── the open sequence, the barrier and the coordinator ─────────────────────────
 
 const report = (currentPon: number | null, visiblePons: number[], cause = 'user', placed = true) =>
-  cap('reportPageState', { currentPon, visiblePons, placed, cause });
+  cap('reportPageState', { currentPage: currentPon === null ? null : pr(currentPon), visiblePages: visiblePons.map(pr), placed, cause });
 const drainTrigger = dispatch(annotationEvent('cursorEnter', 999, aref(999, 1)));
-const openDocs = { openAction: tree(named('OpenAction')), openDestination: { kind: 'fit', pageObjectNumber: 3 } };
+const openDocs = { openAction: tree(named('OpenAction')), openDestination: { kind: 'fit', page: pr(3) } };
 const threePages = [page(1, 0, { open: tree(named('O-1')) }), page(3, 1, { open: tree(named('O-3')) })];
 
 const sequenceCases: ScenarioCase[] = [
@@ -1416,7 +1418,7 @@ const scriptEngine = (over: Partial<FakeDocumentSpec> = {}, catalogOver: Record<
   });
 const widgetCtx = (field: unknown, event: unknown = { scope: 'activate' }) => ({
   origin: 'user',
-  source: { kind: 'widget', field, annotation: aref(1, 41), pon: 1 },
+  source: { kind: 'widget', field, annotation: aref(1, 41), page: pr(1) },
   event,
 });
 const out = (over: Record<string, unknown>) => ({ output: over });
@@ -1595,17 +1597,17 @@ const scriptCases: ScenarioCase[] = [
         widgetCtx({ kind: 'fqn', name: 'ghost' }),
         widgetCtx({ kind: 'objectNumber', fieldObjectNumber: 102 }),
         widgetCtx({ kind: 'fqn', name: 'empty' }),
-        { origin: 'hover', source: { kind: 'link', annotation: aref(1, 7), pon: 1 }, event: { scope: 'annotation', name: 'cursorEnter' } },
-        { origin: 'hover', source: { kind: 'link', annotation: aref(2, 7), pon: 2 }, event: { scope: 'annotation', name: 'cursorEnter' } },
-        { origin: 'user', source: { kind: 'annotation', annotation: aref(2, 6), pon: 2 }, event: { scope: 'annotation', name: 'mouseDown' } },
-        { origin: 'hover', source: { kind: 'annotation', annotation: aref(1, 6), pon: 1 }, event: { scope: 'annotation', name: 'cursorExit' } },
-        { origin: 'user', source: { kind: 'annotation', annotation: aref(1, 6), pon: 1 }, event: { scope: 'annotation', name: 'mouseDown' } },
-        { origin: 'user', source: { kind: 'annotation', annotation: aref(1, 6), pon: 1 }, event: { scope: 'annotation', name: 'mouseUp' } },
-        { origin: 'user', source: { kind: 'annotation', annotation: aref(1, 6), pon: 1 }, event: { scope: 'annotation', name: 'blur' } },
-        { origin: 'lifecycle', source: { kind: 'page', pon: 2 }, event: { scope: 'page', name: 'open' } },
-        { origin: 'lifecycle', source: { kind: 'page', pon: 2 }, event: { scope: 'page', name: 'close' } },
-        { origin: 'lifecycle', source: { kind: 'page', pon: 2 }, event: { scope: 'page', name: 'visible' } },
-        { origin: 'lifecycle', source: { kind: 'page', pon: 2 }, event: { scope: 'page', name: 'invisible' } },
+        { origin: 'hover', source: { kind: 'link', annotation: aref(1, 7), page: pr(1) }, event: { scope: 'annotation', name: 'cursorEnter' } },
+        { origin: 'hover', source: { kind: 'link', annotation: aref(2, 7), page: pr(2) }, event: { scope: 'annotation', name: 'cursorEnter' } },
+        { origin: 'user', source: { kind: 'annotation', annotation: aref(2, 6), page: pr(2) }, event: { scope: 'annotation', name: 'mouseDown' } },
+        { origin: 'hover', source: { kind: 'annotation', annotation: aref(1, 6), page: pr(1) }, event: { scope: 'annotation', name: 'cursorExit' } },
+        { origin: 'user', source: { kind: 'annotation', annotation: aref(1, 6), page: pr(1) }, event: { scope: 'annotation', name: 'mouseDown' } },
+        { origin: 'user', source: { kind: 'annotation', annotation: aref(1, 6), page: pr(1) }, event: { scope: 'annotation', name: 'mouseUp' } },
+        { origin: 'user', source: { kind: 'annotation', annotation: aref(1, 6), page: pr(1) }, event: { scope: 'annotation', name: 'blur' } },
+        { origin: 'lifecycle', source: { kind: 'page', page: pr(2) }, event: { scope: 'page', name: 'open' } },
+        { origin: 'lifecycle', source: { kind: 'page', page: pr(2) }, event: { scope: 'page', name: 'close' } },
+        { origin: 'lifecycle', source: { kind: 'page', page: pr(2) }, event: { scope: 'page', name: 'visible' } },
+        { origin: 'lifecycle', source: { kind: 'page', page: pr(2) }, event: { scope: 'page', name: 'invisible' } },
         { origin: 'lifecycle', source: { kind: 'document' }, event: { scope: 'document', name: 'open' } },
         { origin: 'lifecycle', source: { kind: 'document' }, event: { scope: 'document', name: 'will-save' } },
         { origin: 'lifecycle', source: { kind: 'document' }, event: { scope: 'document', name: 'did-save' } },
@@ -1631,7 +1633,7 @@ const scriptCases: ScenarioCase[] = [
     covers: 'A source page that is not in the document makes the world read throw; the transaction rejects and the node fails.',
     plugins: plugins(JS_OFF()),
     engine: scriptEngine(),
-    steps: [...boot, listen(), cap('execute', tree(js('a()')), { origin: 'lifecycle', source: { kind: 'page', pon: 42 }, event: { scope: 'page', name: 'open' } })],
+    steps: [...boot, listen(), cap('execute', tree(js('a()')), { origin: 'lifecycle', source: { kind: 'page', page: pr(42) }, event: { scope: 'page', name: 'open' } })],
     snapshot: snap,
   },
   {
@@ -1691,7 +1693,7 @@ const scriptCases: ScenarioCase[] = [
   },
   {
     name: 'no-sandbox-host',
-    covers: 'A host with no sandbox (the TypeScript with scripting disabled): javascript nodes are inert, scripting unavailable, and the capability has no scriptTransaction member.',
+    covers: 'A host with no sandbox (the TypeScript with scripting disabled): javascript nodes are inert, scripting unavailable, and the capability has no scriptRealm member.',
     plugins: plugins({ openSequence: 'off', javascript: { enabled: true, sandbox: null } }),
     engine: scriptEngine(),
     steps: [...boot, listen(), cap('execute', tree(js('a()')), USER), { op: 'call', target: 'kernel', method: 'capability', args: [{ $token: 'actions' }, 'a'] }],
@@ -1699,15 +1701,16 @@ const scriptCases: ScenarioCase[] = [
   },
   {
     name: 'script-transaction-port',
-    covers: 'With scripting on, the host lens has scriptTransaction: a body shares the realm queue with the executor and resolves with the body result.',
+    covers: 'With scripting on, the host lens has scriptRealm.transaction: a body shares the realm queue with the executor and resolves with the body result.',
     plugins: plugins(JS_OFF({ sandbox: { builds: [{ run: [{}] }] } })),
     engine: scriptEngine(),
     steps: [
       ...boot,
       { op: 'call', target: 'kernel', method: 'capability', args: [{ $token: 'actions' }, 'a'] },
       cap('execute', tree(js('a()')), USER),
-      cap('scriptTransaction', fnSpec('body', { resolves: 'body-result' })),
-      cap('scriptTransaction', fnSpec('body.throws', { throws: { message: 'body threw' } })),
+      // ref 8 is `scriptRealm.transaction` in the capability read above.
+      callRef(8, fnSpec('body', { resolves: 'body-result' })),
+      callRef(8, fnSpec('body.throws', { throws: { message: 'body threw' } })),
     ],
     snapshot: 'none',
   },
@@ -1835,7 +1838,7 @@ const hover = (target: unknown) => ({ op: 'call', target: { token: 'hover-pump',
 const pumpReset: Step = { op: 'call', target: { token: 'hover-pump', doc: 'a' }, method: 'reset', args: [] };
 const hoverTarget = (objectNumber: number, events?: unknown, ref?: unknown, pon = 1) => ({
   ref: ref ?? aref(pon, objectNumber),
-  pon,
+  page: pr(pon),
   ...(events === undefined ? {} : { events }),
 });
 const scriptedDispatch = (labels: string[]) => fnSpec('dispatch', { seq: labels.map((label) => ({ defer: label })) });
@@ -1945,8 +1948,8 @@ const hoverCases: ScenarioCase[] = [
     steps: [
       ...boot,
       reg('named'),
-      listen('onAction'),
-      hover({ ...hoverTarget(5), source: { kind: 'link', annotation: aref(1, 5), pon: 1 } }),
+      listen('onExecuted'),
+      hover({ ...hoverTarget(5), source: { kind: 'link', annotation: aref(1, 5), page: pr(1) } }),
       hover(hoverTarget(6)),
       hover(null),
     ],
@@ -1964,7 +1967,7 @@ const triggers = [
 ];
 const functionCases: FunctionCase[] = [
   ...triggers.map((trigger, i) => ({ name: `event-of-${i}`, fn: 'eventOf', args: [trigger] })),
-  ...triggers.map((trigger, i) => ({ name: `origin-of-${i}`, fn: 'originOf', args: [trigger] })),
+  ...triggers.map((trigger, i) => ({ name: `origin-of-${i}`, fn: 'triggerOriginOf', args: [trigger] })),
   { name: 'url-encode-empty', fn: 'submitEntriesToUrlEncoded', args: [[]] },
   {
     name: 'url-encode-mixed',
@@ -1987,7 +1990,7 @@ export const suites: Suite[] = [
     kind: 'function',
     file: 'plugins/actions.json',
     describes: 'packages/plugin/actions: eventOf, originOf and submitEntriesToUrlEncoded.',
-    functions: { eventOf, originOf, submitEntriesToUrlEncoded },
+    functions: { eventOf, triggerOriginOf, submitEntriesToUrlEncoded },
     cases: functionCases,
   },
   {

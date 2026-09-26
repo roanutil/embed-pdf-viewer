@@ -17,7 +17,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -55,7 +58,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 3,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 3
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -116,7 +122,10 @@
                   },
                   "openDestination": {
                     "kind": "fit",
-                    "pageObjectNumber": 3
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 3
+                    }
                   }
                 }
               },
@@ -202,9 +211,15 @@
           "method": "reportPageState",
           "args": [
             {
-              "currentPon": 1,
-              "visiblePons": [
-                1
+              "currentPage": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "visiblePages": [
+                {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                }
               ],
               "placed": true,
               "cause": "programmatic"
@@ -220,9 +235,15 @@
           "method": "reportPageState",
           "args": [
             {
-              "currentPon": 3,
-              "visiblePons": [
-                3
+              "currentPage": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 3
+              },
+              "visiblePages": [
+                {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 3
+                }
               ],
               "placed": true,
               "cause": "programmatic"
@@ -260,10 +281,16 @@
               "event": "cursorEnter",
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 999,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 999
+                },
                 "annotObjectNumber": 1
               },
-              "pon": 999
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 999
+              }
             }
           ]
         },
@@ -298,10 +325,16 @@
               "event": "cursorEnter",
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 999,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 999
+                },
                 "annotObjectNumber": 1
               },
-              "pon": 999
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 999
+              }
             }
           ]
         }
@@ -379,7 +412,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -388,7 +421,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -413,7 +447,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -438,7 +473,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -463,7 +499,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -488,7 +525,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -537,7 +575,10 @@
                   "subtype": "GoTo",
                   "destination": {
                     "kind": "fit",
-                    "pageObjectNumber": 3
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 3
+                    }
                   },
                   "next": []
                 },
@@ -587,7 +628,10 @@
                   "origin": "lifecycle",
                   "source": {
                     "kind": "page",
-                    "pon": 3
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 3
+                    }
                   },
                   "event": {
                     "scope": "page",
@@ -612,7 +656,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 3
+                "seq": 3,
+                "policyRevision": 0
               }
             }
           }
@@ -649,7 +694,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 3
+                "seq": 3,
+                "policyRevision": 0
               }
             }
           }
@@ -674,7 +720,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 3
+                "seq": 3,
+                "policyRevision": 0
               }
             }
           }
@@ -711,7 +758,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 3
+                "seq": 3,
+                "policyRevision": 0
               }
             }
           }
@@ -732,7 +780,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -789,8 +840,15 @@
                     {
                       "ref": {
                         "kind": "objectNumber",
-                        "pageObjectNumber": 2,
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 2
+                        },
                         "annotObjectNumber": 9
+                      },
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 2
                       },
                       "subtype": "square",
                       "rect": {
@@ -892,10 +950,16 @@
               "scope": "activate",
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 2,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "annotObjectNumber": 9
               },
-              "pon": 2
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 2
+              }
             }
           ]
         }
@@ -973,7 +1037,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -982,7 +1046,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -1007,7 +1072,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -1024,10 +1090,16 @@
                       "kind": "annotation",
                       "annotation": {
                         "kind": "objectNumber",
-                        "pageObjectNumber": 2,
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 2
+                        },
                         "annotObjectNumber": 9
                       },
-                      "pon": 2
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 2
+                      }
                     },
                     "tree": {
                       "root": {
@@ -1121,10 +1193,16 @@
                     "kind": "annotation",
                     "annotation": {
                       "kind": "objectNumber",
-                      "pageObjectNumber": 2,
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 2
+                      },
                       "annotObjectNumber": 9
                     },
-                    "pon": 2
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 2
+                    }
                   },
                   "event": {
                     "scope": "activate"
@@ -1146,7 +1224,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 2
+                "seq": 2,
+                "policyRevision": 0
               }
             }
           }
@@ -1167,7 +1246,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -1192,7 +1274,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -1413,7 +1498,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -1422,7 +1507,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -1447,7 +1533,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -1472,7 +1559,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -1497,7 +1585,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -1557,7 +1646,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 1
+                "seq": 1,
+                "policyRevision": 0
               }
             }
           }
@@ -1581,7 +1671,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 8,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 8
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -1702,10 +1795,16 @@
               "event": "cursorEnter",
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 999,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 999
+                },
                 "annotObjectNumber": 1
               },
-              "pon": 999
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 999
+              }
             }
           ]
         }
@@ -1755,6 +1854,12 @@
               "action": {
                 "type": "@@core/document-added"
               }
+            },
+            {
+              "slice": "actions::a",
+              "action": {
+                "type": "ACTIONS_DISPATCHED"
+              }
             }
           ],
           "engine": [
@@ -1776,38 +1881,7 @@
               "doc": "a",
               "path": "pages.list",
               "args": []
-            }
-          ],
-          "callbacks": [],
-          "reports": [],
-          "status": "started",
-          "engineState": {
-            "a": {
-              "subscribers": 1
-            }
-          },
-          "outcome": {
-            "promise": 1
-          },
-          "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 0
-              }
-            }
-          }
-        },
-        {
-          "settled": [],
-          "actions": [
-            {
-              "slice": "actions::a",
-              "action": {
-                "type": "ACTIONS_DISPATCHED"
-              }
-            }
-          ],
-          "engine": [
+            },
             {
               "doc": "a",
               "path": "actions.read",
@@ -1820,30 +1894,31 @@
               "args": []
             }
           ],
-          "callbacks": [
-            {
-              "fn": "exec.named",
-              "args": [
-                {
-                  "type": "named",
-                  "subtype": "Named",
-                  "name": "O-8",
-                  "next": []
-                },
-                {
-                  "origin": "lifecycle",
-                  "source": {
-                    "kind": "page",
-                    "pon": 8
-                  },
-                  "event": {
-                    "scope": "page",
-                    "name": "open"
-                  }
-                }
-              ]
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
             }
-          ],
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 1,
+                "policyRevision": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
@@ -1859,7 +1934,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 1
+                "seq": 1,
+                "policyRevision": 0
               }
             }
           }
@@ -1896,7 +1972,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 1
+                "seq": 1,
+                "policyRevision": 0
               }
             }
           }
@@ -1920,7 +1997,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -1958,7 +2038,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 3,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 3
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -2076,10 +2159,19 @@
           "method": "reportPageState",
           "args": [
             {
-              "currentPon": 3,
-              "visiblePons": [
-                1,
-                3
+              "currentPage": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 3
+              },
+              "visiblePages": [
+                {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 3
+                }
               ],
               "placed": true,
               "cause": "user"
@@ -2108,10 +2200,16 @@
               "event": "cursorEnter",
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 999,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 999
+                },
                 "annotObjectNumber": 1
               },
-              "pon": 999
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 999
+              }
             }
           ]
         }
@@ -2182,6 +2280,11 @@
               "doc": "a",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "a",
+              "path": "actions.read",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -2189,7 +2292,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -2198,7 +2301,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -2206,13 +2310,7 @@
         {
           "settled": [],
           "actions": [],
-          "engine": [
-            {
-              "doc": "a",
-              "path": "actions.read",
-              "args": []
-            }
-          ],
+          "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
@@ -2229,7 +2327,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -2254,7 +2353,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -2297,7 +2397,10 @@
                   "origin": "lifecycle",
                   "source": {
                     "kind": "page",
-                    "pon": 3
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 3
+                    }
                   },
                   "event": {
                     "scope": "page",
@@ -2317,7 +2420,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 1
+                "seq": 1,
+                "policyRevision": 0
               }
             }
           }
@@ -2354,7 +2458,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 1
+                "seq": 1,
+                "policyRevision": 0
               }
             }
           }
@@ -2449,10 +2554,16 @@
               "event": "cursorEnter",
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 999,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 999
+                },
                 "annotObjectNumber": 1
               },
-              "pon": 999
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 999
+              }
             }
           ]
         }
@@ -2530,7 +2641,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -2539,7 +2650,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -2564,7 +2676,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -2601,7 +2714,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -2625,7 +2739,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -2686,7 +2803,10 @@
                   },
                   "openDestination": {
                     "kind": "fit",
-                    "pageObjectNumber": 3
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 3
+                    }
                   }
                 }
               },
@@ -2772,9 +2892,15 @@
           "method": "reportPageState",
           "args": [
             {
-              "currentPon": 1,
-              "visiblePons": [
-                1
+              "currentPage": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "visiblePages": [
+                {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                }
               ],
               "placed": true,
               "cause": "user"
@@ -2855,7 +2981,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -2864,7 +2990,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -2889,7 +3016,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -2914,7 +3042,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -2951,7 +3080,10 @@
                   "origin": "lifecycle",
                   "source": {
                     "kind": "page",
-                    "pon": 1
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    }
                   },
                   "event": {
                     "scope": "page",
@@ -2976,7 +3108,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 1
+                "seq": 1,
+                "policyRevision": 0
               }
             }
           }
@@ -2997,7 +3130,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -3022,7 +3158,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -3222,7 +3361,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -3231,7 +3370,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -3256,7 +3396,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -3335,7 +3476,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 1
+                "seq": 1,
+                "policyRevision": 0
               }
             }
           }
@@ -3382,7 +3524,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 1
+                "seq": 1,
+                "policyRevision": 0
               }
             }
           }
@@ -3406,7 +3549,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -3444,7 +3590,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 3,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 3
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -3587,10 +3736,16 @@
               "event": "cursorEnter",
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 999,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 999
+                },
                 "annotObjectNumber": 1
               },
-              "pon": 999
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 999
+              }
             }
           ]
         },
@@ -3603,9 +3758,15 @@
           "method": "reportPageState",
           "args": [
             {
-              "currentPon": 3,
-              "visiblePons": [
-                3
+              "currentPage": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 3
+              },
+              "visiblePages": [
+                {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 3
+                }
               ],
               "placed": true,
               "cause": "user"
@@ -3658,6 +3819,12 @@
               "action": {
                 "type": "@@core/document-added"
               }
+            },
+            {
+              "slice": "actions::a",
+              "action": {
+                "type": "ACTIONS_DISPATCHED"
+              }
             }
           ],
           "engine": [
@@ -3679,38 +3846,7 @@
               "doc": "a",
               "path": "pages.list",
               "args": []
-            }
-          ],
-          "callbacks": [],
-          "reports": [],
-          "status": "started",
-          "engineState": {
-            "a": {
-              "subscribers": 1
-            }
-          },
-          "outcome": {
-            "promise": 1
-          },
-          "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 0
-              }
-            }
-          }
-        },
-        {
-          "settled": [],
-          "actions": [
-            {
-              "slice": "actions::a",
-              "action": {
-                "type": "ACTIONS_DISPATCHED"
-              }
-            }
-          ],
-          "engine": [
+            },
             {
               "doc": "a",
               "path": "actions.read",
@@ -3723,30 +3859,31 @@
               "args": []
             }
           ],
-          "callbacks": [
-            {
-              "fn": "exec.named",
-              "args": [
-                {
-                  "type": "named",
-                  "subtype": "Named",
-                  "name": "O-1",
-                  "next": []
-                },
-                {
-                  "origin": "lifecycle",
-                  "source": {
-                    "kind": "page",
-                    "pon": 1
-                  },
-                  "event": {
-                    "scope": "page",
-                    "name": "open"
-                  }
-                }
-              ]
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
             }
-          ],
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 1,
+                "policyRevision": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
@@ -3762,7 +3899,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 1
+                "seq": 1,
+                "policyRevision": 0
               }
             }
           }
@@ -3787,7 +3925,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 1
+                "seq": 1,
+                "policyRevision": 0
               }
             }
           }
@@ -3834,7 +3973,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 1
+                "seq": 1,
+                "policyRevision": 0
               }
             }
           }
@@ -3871,7 +4011,10 @@
                   "origin": "lifecycle",
                   "source": {
                     "kind": "page",
-                    "pon": 3
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 3
+                    }
                   },
                   "event": {
                     "scope": "page",
@@ -3896,7 +4039,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 2
+                "seq": 2,
+                "policyRevision": 0
               }
             }
           }
@@ -3920,7 +4064,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -4082,40 +4229,7 @@
               "doc": "a",
               "path": "pages.list",
               "args": []
-            }
-          ],
-          "callbacks": [],
-          "reports": [],
-          "status": "started",
-          "engineState": {
-            "a": {
-              "subscribers": 1
-            }
-          },
-          "outcome": {
-            "promise": 1
-          },
-          "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 0
-              }
-            }
-          }
-        },
-        {
-          "settled": [
-            {
-              "promise": 2,
-              "resolved": {
-                "status": "inert",
-                "steps": [],
-                "diagnostics": []
-              }
-            }
-          ],
-          "actions": [],
-          "engine": [
+            },
             {
               "doc": "a",
               "path": "page.annotations.list",
@@ -4132,12 +4246,46 @@
             }
           },
           "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 0,
+                "policyRevision": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": {
+                "status": "inert",
+                "steps": [],
+                "diagnostics": []
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
             "promise": 2
           },
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -4174,7 +4322,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -4198,7 +4347,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -4247,7 +4399,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -4307,8 +4462,15 @@
                     {
                       "ref": {
                         "kind": "objectNumber",
-                        "pageObjectNumber": 1,
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
                         "annotObjectNumber": 41
+                      },
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
                       },
                       "subtype": "square",
                       "rect": {
@@ -4361,8 +4523,15 @@
                     {
                       "ref": {
                         "kind": "objectNumber",
-                        "pageObjectNumber": 2,
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 2
+                        },
                         "annotObjectNumber": 42
+                      },
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 2
                       },
                       "subtype": "square",
                       "rect": {
@@ -4472,9 +4641,15 @@
           "method": "reportPageState",
           "args": [
             {
-              "currentPon": 1,
-              "visiblePons": [
-                1
+              "currentPage": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "visiblePages": [
+                {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                }
               ],
               "placed": false,
               "cause": "user"
@@ -4490,9 +4665,15 @@
           "method": "reportPageState",
           "args": [
             {
-              "currentPon": 1,
-              "visiblePons": [
-                1
+              "currentPage": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "visiblePages": [
+                {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                }
               ],
               "placed": true,
               "cause": "user"
@@ -4508,9 +4689,15 @@
           "method": "reportPageState",
           "args": [
             {
-              "currentPon": 2,
-              "visiblePons": [
-                2
+              "currentPage": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 2
+              },
+              "visiblePages": [
+                {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                }
               ],
               "placed": true,
               "cause": "user"
@@ -4526,9 +4713,15 @@
           "method": "reportPageState",
           "args": [
             {
-              "currentPon": 2,
-              "visiblePons": [
-                2
+              "currentPage": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 2
+              },
+              "visiblePages": [
+                {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                }
               ],
               "placed": true,
               "cause": "user"
@@ -4544,10 +4737,19 @@
           "method": "reportPageState",
           "args": [
             {
-              "currentPon": 2,
-              "visiblePons": [
-                1,
-                2
+              "currentPage": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 2
+              },
+              "visiblePages": [
+                {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                }
               ],
               "placed": true,
               "cause": "user"
@@ -4563,8 +4765,8 @@
           "method": "reportPageState",
           "args": [
             {
-              "currentPon": null,
-              "visiblePons": [],
+              "currentPage": null,
+              "visiblePages": [],
               "placed": true,
               "cause": "user"
             }
@@ -4644,7 +4846,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -4653,7 +4855,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -4678,7 +4881,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -4703,7 +4907,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -4748,10 +4953,16 @@
                     "kind": "annotation",
                     "annotation": {
                       "kind": "objectNumber",
-                      "pageObjectNumber": 1,
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "annotObjectNumber": 41
                     },
-                    "pon": 1
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    }
                   },
                   "event": {
                     "scope": "page",
@@ -4773,7 +4984,10 @@
                   "origin": "lifecycle",
                   "source": {
                     "kind": "page",
-                    "pon": 1
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    }
                   },
                   "event": {
                     "scope": "page",
@@ -4798,7 +5012,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 2
+                "seq": 2,
+                "policyRevision": 0
               }
             }
           }
@@ -4853,7 +5068,10 @@
                   "origin": "lifecycle",
                   "source": {
                     "kind": "page",
-                    "pon": 1
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    }
                   },
                   "event": {
                     "scope": "page",
@@ -4877,10 +5095,16 @@
                     "kind": "annotation",
                     "annotation": {
                       "kind": "objectNumber",
-                      "pageObjectNumber": 1,
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "annotObjectNumber": 41
                     },
-                    "pon": 1
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    }
                   },
                   "event": {
                     "scope": "page",
@@ -4904,10 +5128,16 @@
                     "kind": "annotation",
                     "annotation": {
                       "kind": "objectNumber",
-                      "pageObjectNumber": 2,
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 2
+                      },
                       "annotObjectNumber": 42
                     },
-                    "pon": 2
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 2
+                    }
                   },
                   "event": {
                     "scope": "page",
@@ -4929,7 +5159,10 @@
                   "origin": "lifecycle",
                   "source": {
                     "kind": "page",
-                    "pon": 2
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 2
+                    }
                   },
                   "event": {
                     "scope": "page",
@@ -4954,7 +5187,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 6
+                "seq": 6,
+                "policyRevision": 0
               }
             }
           }
@@ -4979,7 +5213,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 6
+                "seq": 6,
+                "policyRevision": 0
               }
             }
           }
@@ -5011,10 +5246,16 @@
                     "kind": "annotation",
                     "annotation": {
                       "kind": "objectNumber",
-                      "pageObjectNumber": 1,
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "annotObjectNumber": 41
                     },
-                    "pon": 1
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    }
                   },
                   "event": {
                     "scope": "page",
@@ -5039,7 +5280,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 7
+                "seq": 7,
+                "policyRevision": 0
               }
             }
           }
@@ -5081,7 +5323,10 @@
                   "origin": "lifecycle",
                   "source": {
                     "kind": "page",
-                    "pon": 2
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 2
+                    }
                   },
                   "event": {
                     "scope": "page",
@@ -5105,10 +5350,16 @@
                     "kind": "annotation",
                     "annotation": {
                       "kind": "objectNumber",
-                      "pageObjectNumber": 1,
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "annotObjectNumber": 41
                     },
-                    "pon": 1
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    }
                   },
                   "event": {
                     "scope": "page",
@@ -5132,10 +5383,16 @@
                     "kind": "annotation",
                     "annotation": {
                       "kind": "objectNumber",
-                      "pageObjectNumber": 2,
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 2
+                      },
                       "annotObjectNumber": 42
                     },
-                    "pon": 2
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 2
+                    }
                   },
                   "event": {
                     "scope": "page",
@@ -5160,7 +5417,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 10
+                "seq": 10,
+                "policyRevision": 0
               }
             }
           }
@@ -5184,7 +5442,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -5222,7 +5483,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -5341,8 +5605,11 @@
           "method": "reportPageState",
           "args": [
             {
-              "currentPon": 1,
-              "visiblePons": [],
+              "currentPage": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "visiblePages": [],
               "placed": true,
               "cause": "user"
             }
@@ -5357,8 +5624,11 @@
           "method": "reportPageState",
           "args": [
             {
-              "currentPon": 2,
-              "visiblePons": [],
+              "currentPage": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 2
+              },
+              "visiblePages": [],
               "placed": true,
               "cause": "programmatic"
             }
@@ -5373,8 +5643,11 @@
           "method": "reportPageState",
           "args": [
             {
-              "currentPon": 1,
-              "visiblePons": [],
+              "currentPage": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "visiblePages": [],
               "placed": true,
               "cause": "programmatic"
             }
@@ -5389,8 +5662,11 @@
           "method": "reportPageState",
           "args": [
             {
-              "currentPon": 2,
-              "visiblePons": [],
+              "currentPage": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 2
+              },
+              "visiblePages": [],
               "placed": true,
               "cause": "programmatic"
             }
@@ -5405,8 +5681,11 @@
           "method": "reportPageState",
           "args": [
             {
-              "currentPon": 1,
-              "visiblePons": [],
+              "currentPage": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "visiblePages": [],
               "placed": true,
               "cause": "programmatic"
             }
@@ -5421,8 +5700,11 @@
           "method": "reportPageState",
           "args": [
             {
-              "currentPon": 2,
-              "visiblePons": [],
+              "currentPage": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 2
+              },
+              "visiblePages": [],
               "placed": true,
               "cause": "programmatic"
             }
@@ -5437,8 +5719,11 @@
           "method": "reportPageState",
           "args": [
             {
-              "currentPon": 1,
-              "visiblePons": [],
+              "currentPage": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "visiblePages": [],
               "placed": true,
               "cause": "programmatic"
             }
@@ -5453,8 +5738,11 @@
           "method": "reportPageState",
           "args": [
             {
-              "currentPon": 2,
-              "visiblePons": [],
+              "currentPage": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 2
+              },
+              "visiblePages": [],
               "placed": true,
               "cause": "programmatic"
             }
@@ -5469,8 +5757,11 @@
           "method": "reportPageState",
           "args": [
             {
-              "currentPon": 1,
-              "visiblePons": [],
+              "currentPage": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "visiblePages": [],
               "placed": true,
               "cause": "programmatic"
             }
@@ -5485,8 +5776,11 @@
           "method": "reportPageState",
           "args": [
             {
-              "currentPon": 2,
-              "visiblePons": [],
+              "currentPage": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 2
+              },
+              "visiblePages": [],
               "placed": true,
               "cause": "programmatic"
             }
@@ -5501,8 +5795,11 @@
           "method": "reportPageState",
           "args": [
             {
-              "currentPon": 1,
-              "visiblePons": [],
+              "currentPage": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "visiblePages": [],
               "placed": true,
               "cause": "programmatic"
             }
@@ -5517,8 +5814,11 @@
           "method": "reportPageState",
           "args": [
             {
-              "currentPon": 2,
-              "visiblePons": [],
+              "currentPage": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 2
+              },
+              "visiblePages": [],
               "placed": true,
               "cause": "user"
             }
@@ -5533,8 +5833,11 @@
           "method": "reportPageState",
           "args": [
             {
-              "currentPon": 1,
-              "visiblePons": [],
+              "currentPage": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "visiblePages": [],
               "placed": true,
               "cause": "programmatic"
             }
@@ -5614,7 +5917,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -5623,7 +5926,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -5648,7 +5952,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -5673,7 +5978,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -5710,7 +6016,10 @@
                   "origin": "lifecycle",
                   "source": {
                     "kind": "page",
-                    "pon": 1
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    }
                   },
                   "event": {
                     "scope": "page",
@@ -5735,7 +6044,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 1
+                "seq": 1,
+                "policyRevision": 0
               }
             }
           }
@@ -5772,7 +6082,10 @@
                   "origin": "lifecycle",
                   "source": {
                     "kind": "page",
-                    "pon": 2
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 2
+                    }
                   },
                   "event": {
                     "scope": "page",
@@ -5797,7 +6110,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 2
+                "seq": 2,
+                "policyRevision": 0
               }
             }
           }
@@ -5827,7 +6141,10 @@
                   "origin": "lifecycle",
                   "source": {
                     "kind": "page",
-                    "pon": 1
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    }
                   },
                   "event": {
                     "scope": "page",
@@ -5852,7 +6169,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 3
+                "seq": 3,
+                "policyRevision": 0
               }
             }
           }
@@ -5882,7 +6200,10 @@
                   "origin": "lifecycle",
                   "source": {
                     "kind": "page",
-                    "pon": 2
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 2
+                    }
                   },
                   "event": {
                     "scope": "page",
@@ -5907,7 +6228,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 4
+                "seq": 4,
+                "policyRevision": 0
               }
             }
           }
@@ -5937,7 +6259,10 @@
                   "origin": "lifecycle",
                   "source": {
                     "kind": "page",
-                    "pon": 1
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    }
                   },
                   "event": {
                     "scope": "page",
@@ -5962,7 +6287,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 5
+                "seq": 5,
+                "policyRevision": 0
               }
             }
           }
@@ -5992,7 +6318,10 @@
                   "origin": "lifecycle",
                   "source": {
                     "kind": "page",
-                    "pon": 2
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 2
+                    }
                   },
                   "event": {
                     "scope": "page",
@@ -6017,7 +6346,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 6
+                "seq": 6,
+                "policyRevision": 0
               }
             }
           }
@@ -6047,7 +6377,10 @@
                   "origin": "lifecycle",
                   "source": {
                     "kind": "page",
-                    "pon": 1
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    }
                   },
                   "event": {
                     "scope": "page",
@@ -6072,7 +6405,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 7
+                "seq": 7,
+                "policyRevision": 0
               }
             }
           }
@@ -6102,7 +6436,10 @@
                   "origin": "lifecycle",
                   "source": {
                     "kind": "page",
-                    "pon": 2
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 2
+                    }
                   },
                   "event": {
                     "scope": "page",
@@ -6127,7 +6464,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 8
+                "seq": 8,
+                "policyRevision": 0
               }
             }
           }
@@ -6157,7 +6495,10 @@
                   "origin": "lifecycle",
                   "source": {
                     "kind": "page",
-                    "pon": 1
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    }
                   },
                   "event": {
                     "scope": "page",
@@ -6182,7 +6523,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 9
+                "seq": 9,
+                "policyRevision": 0
               }
             }
           }
@@ -6217,7 +6559,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 9
+                "seq": 9,
+                "policyRevision": 0
               }
             }
           }
@@ -6252,7 +6595,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 9
+                "seq": 9,
+                "policyRevision": 0
               }
             }
           }
@@ -6282,7 +6626,10 @@
                   "origin": "lifecycle",
                   "source": {
                     "kind": "page",
-                    "pon": 2
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 2
+                    }
                   },
                   "event": {
                     "scope": "page",
@@ -6307,7 +6654,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 10
+                "seq": 10,
+                "policyRevision": 0
               }
             }
           }
@@ -6337,7 +6685,10 @@
                   "origin": "lifecycle",
                   "source": {
                     "kind": "page",
-                    "pon": 1
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    }
                   },
                   "event": {
                     "scope": "page",
@@ -6362,7 +6713,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 11
+                "seq": 11,
+                "policyRevision": 0
               }
             }
           }
@@ -6383,7 +6735,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -6421,7 +6776,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -6470,8 +6828,15 @@
                     {
                       "ref": {
                         "kind": "objectNumber",
-                        "pageObjectNumber": 1,
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
                         "annotObjectNumber": 5
+                      },
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
                       },
                       "subtype": "square",
                       "rect": {
@@ -6583,8 +6948,11 @@
           "method": "reportPageState",
           "args": [
             {
-              "currentPon": 1,
-              "visiblePons": [],
+              "currentPage": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "visiblePages": [],
               "placed": true,
               "cause": "user"
             }
@@ -6617,8 +6985,11 @@
           "method": "reportPageState",
           "args": [
             {
-              "currentPon": 2,
-              "visiblePons": [],
+              "currentPage": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 2
+              },
+              "visiblePages": [],
               "placed": true,
               "cause": "programmatic"
             }
@@ -6633,8 +7004,11 @@
           "method": "reportPageState",
           "args": [
             {
-              "currentPon": 1,
-              "visiblePons": [],
+              "currentPage": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "visiblePages": [],
               "placed": true,
               "cause": "programmatic"
             }
@@ -6649,8 +7023,11 @@
           "method": "reportPageState",
           "args": [
             {
-              "currentPon": 2,
-              "visiblePons": [],
+              "currentPage": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 2
+              },
+              "visiblePages": [],
               "placed": true,
               "cause": "programmatic"
             }
@@ -6665,8 +7042,11 @@
           "method": "reportPageState",
           "args": [
             {
-              "currentPon": 1,
-              "visiblePons": [],
+              "currentPage": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "visiblePages": [],
               "placed": true,
               "cause": "programmatic"
             }
@@ -6681,8 +7061,11 @@
           "method": "reportPageState",
           "args": [
             {
-              "currentPon": 2,
-              "visiblePons": [],
+              "currentPage": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 2
+              },
+              "visiblePages": [],
               "placed": true,
               "cause": "programmatic"
             }
@@ -6697,8 +7080,11 @@
           "method": "reportPageState",
           "args": [
             {
-              "currentPon": 1,
-              "visiblePons": [],
+              "currentPage": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "visiblePages": [],
               "placed": true,
               "cause": "programmatic"
             }
@@ -6713,8 +7099,11 @@
           "method": "reportPageState",
           "args": [
             {
-              "currentPon": 2,
-              "visiblePons": [],
+              "currentPage": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 2
+              },
+              "visiblePages": [],
               "placed": true,
               "cause": "programmatic"
             }
@@ -6729,8 +7118,11 @@
           "method": "reportPageState",
           "args": [
             {
-              "currentPon": 1,
-              "visiblePons": [],
+              "currentPage": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "visiblePages": [],
               "placed": true,
               "cause": "programmatic"
             }
@@ -6749,10 +7141,16 @@
               "event": "focus",
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 5
               },
-              "pon": 1
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              }
             }
           ]
         },
@@ -6765,8 +7163,11 @@
           "method": "reportPageState",
           "args": [
             {
-              "currentPon": 2,
-              "visiblePons": [],
+              "currentPage": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 2
+              },
+              "visiblePages": [],
               "placed": true,
               "cause": "programmatic"
             }
@@ -6781,8 +7182,11 @@
           "method": "reportPageState",
           "args": [
             {
-              "currentPon": 1,
-              "visiblePons": [],
+              "currentPage": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "visiblePages": [],
               "placed": true,
               "cause": "programmatic"
             }
@@ -6862,7 +7266,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -6871,7 +7275,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -6896,7 +7301,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -6921,7 +7327,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -6946,7 +7353,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -6983,7 +7391,10 @@
                   "origin": "lifecycle",
                   "source": {
                     "kind": "page",
-                    "pon": 1
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    }
                   },
                   "event": {
                     "scope": "page",
@@ -7008,7 +7419,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 1
+                "seq": 1,
+                "policyRevision": 0
               }
             }
           }
@@ -7045,7 +7457,10 @@
                   "origin": "lifecycle",
                   "source": {
                     "kind": "page",
-                    "pon": 2
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 2
+                    }
                   },
                   "event": {
                     "scope": "page",
@@ -7070,7 +7485,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 2
+                "seq": 2,
+                "policyRevision": 0
               }
             }
           }
@@ -7100,7 +7516,10 @@
                   "origin": "lifecycle",
                   "source": {
                     "kind": "page",
-                    "pon": 1
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    }
                   },
                   "event": {
                     "scope": "page",
@@ -7125,7 +7544,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 3
+                "seq": 3,
+                "policyRevision": 0
               }
             }
           }
@@ -7155,7 +7575,10 @@
                   "origin": "lifecycle",
                   "source": {
                     "kind": "page",
-                    "pon": 2
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 2
+                    }
                   },
                   "event": {
                     "scope": "page",
@@ -7180,7 +7603,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 4
+                "seq": 4,
+                "policyRevision": 0
               }
             }
           }
@@ -7210,7 +7634,10 @@
                   "origin": "lifecycle",
                   "source": {
                     "kind": "page",
-                    "pon": 1
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    }
                   },
                   "event": {
                     "scope": "page",
@@ -7235,7 +7662,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 5
+                "seq": 5,
+                "policyRevision": 0
               }
             }
           }
@@ -7265,7 +7693,10 @@
                   "origin": "lifecycle",
                   "source": {
                     "kind": "page",
-                    "pon": 2
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 2
+                    }
                   },
                   "event": {
                     "scope": "page",
@@ -7290,7 +7721,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 6
+                "seq": 6,
+                "policyRevision": 0
               }
             }
           }
@@ -7320,7 +7752,10 @@
                   "origin": "lifecycle",
                   "source": {
                     "kind": "page",
-                    "pon": 1
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    }
                   },
                   "event": {
                     "scope": "page",
@@ -7345,7 +7780,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 7
+                "seq": 7,
+                "policyRevision": 0
               }
             }
           }
@@ -7375,7 +7811,10 @@
                   "origin": "lifecycle",
                   "source": {
                     "kind": "page",
-                    "pon": 2
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 2
+                    }
                   },
                   "event": {
                     "scope": "page",
@@ -7400,7 +7839,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 8
+                "seq": 8,
+                "policyRevision": 0
               }
             }
           }
@@ -7430,7 +7870,10 @@
                   "origin": "lifecycle",
                   "source": {
                     "kind": "page",
-                    "pon": 1
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    }
                   },
                   "event": {
                     "scope": "page",
@@ -7455,7 +7898,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 9
+                "seq": 9,
+                "policyRevision": 0
               }
             }
           }
@@ -7472,10 +7916,16 @@
                       "kind": "annotation",
                       "annotation": {
                         "kind": "objectNumber",
-                        "pageObjectNumber": 1,
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
                         "annotObjectNumber": 5
                       },
-                      "pon": 1
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      }
                     },
                     "tree": {
                       "root": {
@@ -7537,10 +7987,16 @@
                     "kind": "annotation",
                     "annotation": {
                       "kind": "objectNumber",
-                      "pageObjectNumber": 1,
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "annotObjectNumber": 5
                     },
-                    "pon": 1
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    }
                   },
                   "event": {
                     "scope": "annotation",
@@ -7563,7 +8019,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 10
+                "seq": 10,
+                "policyRevision": 0
               }
             }
           }
@@ -7593,7 +8050,10 @@
                   "origin": "lifecycle",
                   "source": {
                     "kind": "page",
-                    "pon": 2
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 2
+                    }
                   },
                   "event": {
                     "scope": "page",
@@ -7618,7 +8078,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 11
+                "seq": 11,
+                "policyRevision": 0
               }
             }
           }
@@ -7648,7 +8109,10 @@
                   "origin": "lifecycle",
                   "source": {
                     "kind": "page",
-                    "pon": 1
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    }
                   },
                   "event": {
                     "scope": "page",
@@ -7673,7 +8137,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 12
+                "seq": 12,
+                "policyRevision": 0
               }
             }
           }
@@ -7697,7 +8162,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -7722,7 +8190,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -8016,7 +8487,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -8025,7 +8496,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -8050,7 +8522,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -8145,7 +8618,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 1
+                "seq": 1,
+                "policyRevision": 0
               }
             }
           }
@@ -8234,7 +8708,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 2
+                "seq": 2,
+                "policyRevision": 0
               }
             }
           }
@@ -8323,7 +8798,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 3
+                "seq": 3,
+                "policyRevision": 0
               }
             }
           }
@@ -8412,7 +8888,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 4
+                "seq": 4,
+                "policyRevision": 0
               }
             }
           }
@@ -8501,7 +8978,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 5
+                "seq": 5,
+                "policyRevision": 0
               }
             }
           }
@@ -8525,7 +9003,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -8550,7 +9031,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -8736,7 +9220,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -8745,7 +9229,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -8783,7 +9268,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -8815,7 +9301,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -8836,7 +9323,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -8861,7 +9351,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -9106,7 +9599,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -9115,7 +9608,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -9140,7 +9634,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -9165,7 +9660,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -9287,7 +9783,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 2
+                "seq": 2,
+                "policyRevision": 0
               }
             }
           }
@@ -9334,7 +9831,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 2
+                "seq": 2,
+                "policyRevision": 0
               }
             }
           }
@@ -9423,7 +9921,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 3
+                "seq": 3,
+                "policyRevision": 0
               }
             }
           }
@@ -9447,7 +9946,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -9472,7 +9974,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -9714,7 +10219,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -9723,7 +10228,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -9748,7 +10254,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -9773,7 +10280,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -9826,7 +10334,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -9921,7 +10430,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 1
+                "seq": 1,
+                "policyRevision": 0
               }
             }
           }
@@ -9953,7 +10463,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 1
+                "seq": 1,
+                "policyRevision": 0
               }
             }
           }
@@ -9980,7 +10491,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -10005,7 +10519,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -10267,7 +10784,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -10276,7 +10793,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -10301,7 +10819,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -10334,7 +10853,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -10371,7 +10891,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -10408,7 +10929,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -10432,7 +10954,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -10457,7 +10982,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -10646,7 +11174,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -10655,7 +11183,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -10680,7 +11209,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -10775,7 +11305,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 1
+                "seq": 1,
+                "policyRevision": 0
               }
             }
           }
@@ -10799,7 +11330,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -10824,7 +11358,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -11064,7 +11601,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -11073,7 +11610,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -11098,7 +11636,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -11160,7 +11699,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 1
+                "seq": 1,
+                "policyRevision": 0
               }
             }
           }
@@ -11183,7 +11723,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 1
+                "seq": 1,
+                "policyRevision": 0
               }
             }
           }
@@ -11268,7 +11809,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 3
+                "seq": 3,
+                "policyRevision": 0
               }
             }
           }
@@ -11292,7 +11834,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -11317,7 +11862,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -11580,7 +12128,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -11589,7 +12137,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -11614,7 +12163,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -11639,7 +12189,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -11742,7 +12293,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 2
+                "seq": 2,
+                "policyRevision": 0
               }
             }
           }
@@ -11808,7 +12360,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 3
+                "seq": 3,
+                "policyRevision": 0
               }
             }
           }
@@ -11874,7 +12427,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 4
+                "seq": 4,
+                "policyRevision": 0
               }
             }
           }
@@ -11905,7 +12459,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -11930,7 +12487,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -12221,7 +12781,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -12230,7 +12790,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -12255,7 +12816,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -12280,7 +12842,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -12305,7 +12868,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -12415,7 +12979,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 2
+                "seq": 2,
+                "policyRevision": 0
               }
             }
           }
@@ -12497,7 +13062,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 3
+                "seq": 3,
+                "policyRevision": 0
               }
             }
           }
@@ -12617,7 +13183,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 6
+                "seq": 6,
+                "policyRevision": 0
               }
             }
           }
@@ -12648,7 +13215,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -12673,7 +13243,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -12932,7 +13505,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -12941,7 +13514,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -12966,7 +13540,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -12991,7 +13566,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -13016,7 +13592,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -13142,7 +13719,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 3
+                "seq": 3,
+                "policyRevision": 0
               }
             }
           }
@@ -13166,7 +13744,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -13191,7 +13772,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -13481,7 +14065,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -13490,7 +14074,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -13515,7 +14100,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -13540,7 +14126,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -13612,7 +14199,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 1
+                "seq": 1,
+                "policyRevision": 0
               }
             }
           }
@@ -13637,7 +14225,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 1
+                "seq": 1,
+                "policyRevision": 0
               }
             }
           }
@@ -13741,7 +14330,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 4
+                "seq": 4,
+                "policyRevision": 0
               }
             }
           }
@@ -13765,7 +14355,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -13790,7 +14383,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -14041,7 +14637,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -14050,7 +14646,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -14075,7 +14672,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -14100,7 +14698,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -14151,7 +14750,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -14176,7 +14776,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -14225,7 +14826,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 2
+                "seq": 2,
+                "policyRevision": 0
               }
             }
           }
@@ -14249,7 +14851,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -14274,7 +14879,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -14467,7 +15075,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -14476,7 +15084,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -14501,7 +15110,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -14545,7 +15155,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }

@@ -20,7 +20,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -45,7 +48,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -228,7 +234,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -237,7 +243,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -262,7 +269,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -323,7 +331,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 1
+                "seq": 1,
+                "policyRevision": 0
               }
             }
           }
@@ -347,7 +356,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -372,7 +384,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -573,7 +588,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -582,7 +597,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -607,7 +623,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -668,7 +685,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 1
+                "seq": 1,
+                "policyRevision": 0
               }
             }
           }
@@ -692,7 +710,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -717,7 +738,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -990,7 +1014,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -999,7 +1023,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -1024,7 +1049,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -1049,7 +1075,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -1136,7 +1163,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 1
+                "seq": 1,
+                "policyRevision": 0
               }
             }
           }
@@ -1223,7 +1251,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 2
+                "seq": 2,
+                "policyRevision": 0
               }
             }
           }
@@ -1247,7 +1276,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -1272,7 +1304,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -1512,7 +1547,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -1521,7 +1556,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -1546,7 +1582,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -1571,7 +1608,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -1668,7 +1706,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 1
+                "seq": 1,
+                "policyRevision": 0
               }
             }
           }
@@ -1692,7 +1731,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -1717,7 +1759,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -2040,7 +2085,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -2049,7 +2094,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -2074,7 +2120,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -2099,7 +2146,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -2119,7 +2167,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -2214,7 +2263,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 1
+                "seq": 1,
+                "policyRevision": 0
               }
             }
           }
@@ -2325,7 +2375,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 2
+                "seq": 2,
+                "policyRevision": 0
               }
             }
           }
@@ -2356,7 +2407,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -2381,7 +2435,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -2608,7 +2665,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -2617,7 +2674,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -2642,7 +2700,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -2741,7 +2800,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 1
+                "seq": 1,
+                "policyRevision": 0
               }
             }
           }
@@ -2765,7 +2825,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -2790,7 +2853,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -2842,7 +2908,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -2867,7 +2936,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -3194,7 +3266,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -3248,10 +3320,10 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             },
             "b": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -3270,7 +3342,7 @@
               "subscribers": 2
             },
             "b": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -3291,7 +3363,7 @@
               "subscribers": 2
             },
             "b": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -3383,7 +3455,7 @@
               "subscribers": 2
             },
             "b": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -3543,7 +3615,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -3568,7 +3643,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -3925,7 +4003,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -3934,7 +4012,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -3959,7 +4038,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -3984,7 +4064,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -4009,7 +4090,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -4120,7 +4202,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 1
+                "seq": 1,
+                "policyRevision": 0
               }
             }
           }
@@ -4216,7 +4299,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 2
+                "seq": 2,
+                "policyRevision": 0
               }
             }
           }
@@ -4312,7 +4396,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 3
+                "seq": 3,
+                "policyRevision": 0
               }
             }
           }
@@ -4342,7 +4427,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 3
+                "seq": 3,
+                "policyRevision": 0
               }
             }
           }
@@ -4373,7 +4459,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -4398,7 +4487,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -4737,7 +4829,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -4746,7 +4838,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -4771,7 +4864,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -4796,7 +4890,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -4821,7 +4916,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -4881,7 +4977,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 1
+                "seq": 1,
+                "policyRevision": 0
               }
             }
           }
@@ -4978,7 +5075,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 2
+                "seq": 2,
+                "policyRevision": 0
               }
             }
           }
@@ -5075,7 +5173,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 3
+                "seq": 3,
+                "policyRevision": 0
               }
             }
           }
@@ -5099,7 +5198,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -5124,7 +5226,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -5379,7 +5484,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -5388,7 +5493,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -5413,7 +5519,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -5438,7 +5545,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -5463,7 +5571,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 0
+                "seq": 0,
+                "policyRevision": 0
               }
             }
           }
@@ -5542,7 +5651,8 @@
           "state": {
             "plugins": {
               "actions::a": {
-                "seq": 1
+                "seq": 1,
+                "policyRevision": 0
               }
             }
           }
