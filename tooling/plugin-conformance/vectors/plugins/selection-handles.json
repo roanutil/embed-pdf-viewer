@@ -44,7 +44,10 @@
           }
         },
         {
-          "pon": 1,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
           "glyphQuad": {
             "upperStart": {
               "x": 10,
@@ -106,7 +109,10 @@
           }
         },
         {
-          "pon": 1,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
           "glyphQuad": {
             "upperStart": {
               "x": 20,
@@ -168,7 +174,10 @@
           }
         },
         {
-          "pon": 1,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
           "glyphQuad": {
             "upperStart": {
               "x": 10,
@@ -230,7 +239,10 @@
           }
         },
         {
-          "pon": 1,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
           "glyphQuad": {
             "upperStart": {
               "x": 20,
@@ -292,7 +304,10 @@
           }
         },
         {
-          "pon": 1,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
           "glyphQuad": {
             "upperStart": {
               "x": 10,
@@ -354,7 +369,10 @@
           }
         },
         {
-          "pon": 1,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
           "glyphQuad": {
             "upperStart": {
               "x": 20,
@@ -407,7 +425,10 @@
           "matrices": {}
         },
         {
-          "pon": 1,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
           "glyphQuad": {
             "upperStart": {
               "x": 10,
@@ -442,7 +463,10 @@
           "matrices": {}
         },
         {
-          "pon": 1,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
           "glyphQuad": {
             "upperStart": {
               "x": 20,
@@ -486,7 +510,10 @@
           }
         },
         {
-          "pon": 1,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
           "glyphQuad": {
             "upperStart": {
               "x": 10,
@@ -548,7 +575,10 @@
           }
         },
         {
-          "pon": 1,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
           "glyphQuad": {
             "upperStart": {
               "x": 20,
@@ -610,7 +640,10 @@
           }
         },
         {
-          "pon": 1,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
           "glyphQuad": {
             "upperStart": {
               "x": 10,
@@ -672,7 +705,10 @@
           }
         },
         {
-          "pon": 1,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
           "glyphQuad": {
             "upperStart": {
               "x": 20,
@@ -734,7 +770,10 @@
           }
         },
         {
-          "pon": 1,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
           "glyphQuad": {
             "upperStart": {
               "x": 10,
@@ -796,7 +835,10 @@
           }
         },
         {
-          "pon": 1,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
           "glyphQuad": {
             "upperStart": {
               "x": 20,
@@ -849,7 +891,10 @@
           "matrices": {}
         },
         {
-          "pon": 1,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
           "glyphQuad": {
             "upperStart": {
               "x": 10,
@@ -884,7 +929,10 @@
           "matrices": {}
         },
         {
-          "pon": 1,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
           "glyphQuad": {
             "upperStart": {
               "x": 20,
@@ -928,7 +976,10 @@
           }
         },
         {
-          "pon": 1,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
           "glyphQuad": {
             "upperStart": {
               "x": 10,
@@ -990,7 +1041,10 @@
           }
         },
         {
-          "pon": 1,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
           "glyphQuad": {
             "upperStart": {
               "x": 20,
@@ -1052,7 +1106,10 @@
           }
         },
         {
-          "pon": 1,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
           "glyphQuad": {
             "upperStart": {
               "x": 10,
@@ -1114,7 +1171,10 @@
           }
         },
         {
-          "pon": 1,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
           "glyphQuad": {
             "upperStart": {
               "x": 20,
@@ -1176,7 +1236,10 @@
           }
         },
         {
-          "pon": 1,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
           "glyphQuad": {
             "upperStart": {
               "x": 10,
@@ -1238,7 +1301,10 @@
           }
         },
         {
-          "pon": 1,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
           "glyphQuad": {
             "upperStart": {
               "x": 20,
@@ -1291,7 +1357,10 @@
           "matrices": {}
         },
         {
-          "pon": 1,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
           "glyphQuad": {
             "upperStart": {
               "x": 10,
@@ -1326,7 +1395,10 @@
           "matrices": {}
         },
         {
-          "pon": 1,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
           "glyphQuad": {
             "upperStart": {
               "x": 20,
@@ -1370,7 +1442,10 @@
           }
         },
         {
-          "pon": 1,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
           "glyphQuad": {
             "upperStart": {
               "x": 10,
@@ -1432,7 +1507,10 @@
           }
         },
         {
-          "pon": 1,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
           "glyphQuad": {
             "upperStart": {
               "x": 20,
@@ -1494,7 +1572,10 @@
           }
         },
         {
-          "pon": 1,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
           "glyphQuad": {
             "upperStart": {
               "x": 10,
@@ -1556,7 +1637,10 @@
           }
         },
         {
-          "pon": 1,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
           "glyphQuad": {
             "upperStart": {
               "x": 20,
@@ -1618,7 +1702,10 @@
           }
         },
         {
-          "pon": 1,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
           "glyphQuad": {
             "upperStart": {
               "x": 10,
@@ -1680,7 +1767,10 @@
           }
         },
         {
-          "pon": 1,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
           "glyphQuad": {
             "upperStart": {
               "x": 20,
@@ -1733,7 +1823,10 @@
           "matrices": {}
         },
         {
-          "pon": 1,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
           "glyphQuad": {
             "upperStart": {
               "x": 10,
@@ -1768,7 +1861,10 @@
           "matrices": {}
         },
         {
-          "pon": 1,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
           "glyphQuad": {
             "upperStart": {
               "x": 20,
@@ -1812,7 +1908,10 @@
           }
         },
         {
-          "pon": 1,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
           "glyphQuad": {
             "upperStart": {
               "x": 5,
@@ -1856,7 +1955,10 @@
           }
         },
         {
-          "pon": 1,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
           "glyphQuad": {
             "upperStart": {
               "x": 10,
@@ -1918,7 +2020,10 @@
           }
         },
         {
-          "pon": 1,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
           "glyphQuad": {
             "upperStart": {
               "x": 10,
@@ -1980,7 +2085,10 @@
           }
         },
         {
-          "pon": 2,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 2
+          },
           "glyphQuad": {
             "upperStart": {
               "x": 10,
@@ -2025,7 +2133,10 @@
           ]
         },
         {
-          "pon": 1,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
           "glyphQuad": {
             "upperStart": {
               "x": 10,
@@ -2085,7 +2196,10 @@
           ]
         },
         {
-          "pon": 1,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
           "glyphQuad": {
             "upperStart": {
               "x": 20,
@@ -2129,8 +2243,11 @@
       "outcome": {
         "returned": [
           {
-            "beginAt": [
-              1,
+            "beginGestureAt": [
+              {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               {
                 "x": 26,
                 "y": 37
@@ -2140,7 +2257,10 @@
           },
           {
             "extendTo": [
-              1,
+              {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               {
                 "x": 40,
                 "y": 30
@@ -2149,7 +2269,10 @@
           },
           {
             "extendTo": [
-              2,
+              {
+                "kind": "objectNumber",
+                "pageObjectNumber": 2
+              },
               {
                 "x": 50,
                 "y": 10
@@ -2158,7 +2281,10 @@
           },
           {
             "extendTo": [
-              2,
+              {
+                "kind": "objectNumber",
+                "pageObjectNumber": 2
+              },
               {
                 "x": 50,
                 "y": -5
@@ -2166,7 +2292,7 @@
             ]
           },
           {
-            "end": []
+            "endGesture": []
           }
         ]
       }
@@ -2189,7 +2315,10 @@
           ]
         },
         {
-          "pon": 1,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
           "glyphQuad": {
             "upperStart": {
               "x": 10,
@@ -2235,8 +2364,11 @@
       "outcome": {
         "returned": [
           {
-            "beginAt": [
-              1,
+            "beginGestureAt": [
+              {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               {
                 "x": 13,
                 "y": 26
@@ -2245,8 +2377,11 @@
             "answer": false
           },
           {
-            "beginAt": [
-              1,
+            "beginGestureAt": [
+              {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               {
                 "x": 13,
                 "y": 26
@@ -2256,7 +2391,10 @@
           },
           {
             "extendTo": [
-              1,
+              {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               {
                 "x": 2,
                 "y": 2
@@ -2265,7 +2403,10 @@
           },
           {
             "extendTo": [
-              1,
+              {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               {
                 "x": 3,
                 "y": 3
@@ -2273,7 +2414,7 @@
             ]
           },
           {
-            "end": []
+            "endGesture": []
           }
         ]
       }
@@ -2286,7 +2427,10 @@
           "pages": []
         },
         {
-          "pon": 1,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
           "glyphQuad": {
             "upperStart": {
               "x": 10,
@@ -2322,8 +2466,11 @@
       "outcome": {
         "returned": [
           {
-            "beginAt": [
-              1,
+            "beginGestureAt": [
+              {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
               {
                 "x": 13,
                 "y": 26
@@ -2332,7 +2479,7 @@
             "answer": true
           },
           {
-            "end": []
+            "endGesture": []
           }
         ]
       }

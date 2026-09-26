@@ -20,6 +20,7 @@ import {
   textSegmentsForRange,
   type PageGeometrySnapshot,
   type PageTextSnapshot,
+  type PageRef,
   type PdfQuad,
   type PdfRect,
 } from '../../../../packages/engine/core/src/runtime';
@@ -37,7 +38,7 @@ import {
   buildSelectionPageGeometry,
   contentPointToPdf,
   initialSelectionState,
-  selectionReducer,
+  reduceSelection,
   toContentSegment,
   toContentTextQuad,
 } from '../../../../packages/plugin/selection/src/internal';
@@ -106,11 +107,12 @@ const geo13: PageGeometrySnapshot = {
   runs: [run(0, glyphs('abc', 50, 750)), run(3, glyphs('fed', 50, 730).reverse())],
 };
 
+const pr = (pon: number) => ({ kind: 'objectNumber', pageObjectNumber: pon });
 const box = { left: 0, bottom: 0, right: 600, top: 800 };
 const offset = { left: 10, bottom: 20, right: 610, top: 820 };
 const layout = (index: number, pon: number, over: Record<string, unknown> = {}) => ({
   index,
-  pageObjectNumber: pon,
+  ref: pr(pon),
   label: null,
   size: { width: 600, height: 800 },
   rotation: 0,
@@ -147,20 +149,61 @@ const openDoc = (id = 'a'): Step => ({
   method: 'open',
   args: [{ kind: 'bytes', id, bytes: { $bytes: '' } }],
 });
-const sel = (method: string, ...args: unknown[]): Step => ({ op: 'call', target: { token: 'selection', doc: 'a' }, method, args });
-const hub = (method: string, ...args: unknown[]): Step => ({ op: 'call', target: { token: 'interaction', doc: 'a' }, method, args });
+/** v2 selection method → v3 name. Page-first verbs take a PageRef, and a
+ *  range addresses pages by `page` rather than `pon`. */
+const RENAMED: Readonly<Record<string, string>> = {
+  beginAt: 'beginGestureAt',
+  end: 'endGesture',
+  ensurePage: 'ensureLoaded',
+  isSelecting: 'isGestureActive',
+  menuAnchor: 'getAnchor',
+  onChange: 'onChanged',
+  onCommit: 'onCommitted',
+  rectsForPage: 'listRects',
+  segmentsForPage: 'listSegments',
+  selectedPages: 'listSelectedPages',
+  snapshot: 'getSnapshot',
+  highlightVisible: 'isHighlightVisible',
+};
+const PAGE_FIRST = new Set(['beginAt', 'ensurePage', 'isLoaded', 'isOverText', 'rectsForPage', 'segmentsForPage', 'selectWordAt', 'selectLineAt', 'extendTo']);
+/** `{pon}` → `{page}` inside a v2 range. */
+const rangeOf = (range: unknown): unknown => {
+  if (!range || typeof range !== 'object') return range;
+  const r = range as Record<string, unknown>;
+  if (typeof r.pon === 'number') {
+    const { pon, ...rest } = r;
+    return { page: pr(pon as number), ...rest };
+  }
+  if (r.start && typeof r.start === 'object') return { ...r, start: rangeOf(r.start), end: rangeOf(r.end) };
+  return range;
+};
+const selCall = (doc: string, method: string, args: readonly unknown[]): Step => {
+  let out = [...args];
+  if (PAGE_FIRST.has(method) && typeof out[0] === 'number') out = [pr(out[0] as number), ...out.slice(1)];
+  if (method === 'select') out = [rangeOf(out[0]), ...out.slice(1)];
+  return { op: 'call', target: { token: 'selection', doc }, method: RENAMED[method] ?? method, args: out };
+};
+const sel = (method: string, ...args: unknown[]): Step => selCall('a', method, args);
+const HUB_RENAMED: Readonly<Record<string, string>> = { dispatch: 'dispatchPointer', cursor: 'getCursor' };
+const hub = (method: string, ...args: unknown[]): Step => ({
+  op: 'call',
+  target: { token: 'interaction', doc: 'a' },
+  method: HUB_RENAMED[method] ?? method,
+  args,
+});
 const ref = (n: number): Step => ({ op: 'call', target: { ref: n } });
 const emit = (event: unknown): Step => ({ op: 'emit', doc: 'a', event });
 const settle = (label: string, value?: unknown): Step => ({ op: 'settle', label, value });
 const fail = (label: string): Step => ({ op: 'settle', label, error: { name: 'EngineError', message: 'aborted read', code: 'Aborted' } });
 
+const LOCAL = { kind: 'local', sessionId: 's1', sub: null };
 const noMods = { shift: false, alt: false, ctrl: false, meta: false };
 /** A pointer sample over page `pon` at content point (x, y); viewport = the
  *  point, so the drag threshold reads in the same units. */
 const at = (phase: string, pon: number, x: number, y: number, over: Record<string, unknown> = {}) => ({
   phase,
   viewport: { x, y },
-  page: { pon, point: { x, y } },
+  page: { ref: pr(pon), point: { x, y } },
   modifiers: noMods,
   ...over,
 });
@@ -522,7 +565,7 @@ const cases: ScenarioCase[] = [
       sel('readText'),
       sel('select', { pon: 9, start: 1, count: 1 }),
       sel('readText'),
-      { op: 'call', target: { token: 'selection', doc: 'b' }, method: 'select', args: [{ pon: 1, start: 0, count: 2 }] },
+      selCall('b', 'select', [{ pon: 1, start: 0, count: 2 }]),
       { op: 'call', target: { token: 'selection', doc: 'b' }, method: 'readText' },
     ],
   },
@@ -638,7 +681,7 @@ const cases: ScenarioCase[] = [
       ...loadAll,
       sel('select', { start: { pon: 1, index: 13 }, end: { pon: 5, index: 4 } }),
       sel('readText'),
-      emit({ type: 'annotations.created', pageObjectNumber: 1 }),
+      emit({ type: 'annotations.created', page: pr(1), origin: LOCAL }),
       emit({
         type: 'pages.rotated',
         layout: { pageCount: 3, pages: [layout(0, 1, { rotation: 90 }), pages[1], pages[2]] },
@@ -667,7 +710,7 @@ const cases: ScenarioCase[] = [
       sel('ensurePage', 5),
       sel('select', { pon: 1, start: 0, count: 5 }),
       sel('readText'),
-      emit({ type: 'redaction.applied', pageObjectNumber: 1 }),
+      emit({ type: 'redaction.applied', page: pr(1), origin: LOCAL }),
       sel('hasSelection'),
       sel('isOverText', 1, H1),
       settle('geo-5-old', geo5),
@@ -966,8 +1009,8 @@ const geometryFns = {
   glyphAtGrid,
   pairProbe,
   sliceSweep,
-  initialSelectionState: () => initialSelectionState,
-  selectionReducer,
+  initialSelectionState: () => initialSelectionState(),
+  reduceSelection,
 };
 
 const allGlyphs = (snap: PageGeometrySnapshot) => {
@@ -976,7 +1019,7 @@ const allGlyphs = (snap: PageGeometrySnapshot) => {
   return n;
 };
 
-const state = (over: Record<string, unknown> = {}) => ({ ...initialSelectionState, ...over });
+const state = (over: Record<string, unknown> = {}) => ({ ...initialSelectionState(), ...over });
 const segmentsOf = (s: GeomSpec, from: number, to: number) =>
   textSegmentsForRange(buildPageTextLayout(s.snapshot), from, to - from + 1).map((seg) => toContentSegment(geomOf(s), seg));
 
@@ -1068,20 +1111,20 @@ const geometryCases: FunctionCase[] = [
   fc('sliceTextByChars', 'empty-map-is-identity', { text: 'xyz', charCount: 3, charMap: [] }, 1, 3),
   fc('sliceTextByChars', 'short-text', { text: 'ab', charCount: 5 }, 0, 5),
   fc('initialSelectionState', 'empty'),
-  fc('selectionReducer', 'page-loaded', state(), { type: 'PAGE_LOADED', pon: 3 }),
-  fc('selectionReducer', 'page-loaded-again', state({ loaded: { 3: true } }), { type: 'PAGE_LOADED', pon: 3 }),
-  fc('selectionReducer', 'set', state({ selecting: true }), {
-    type: 'SET',
-    selection: { anchor: { pon: 1, glyph: 0 }, focus: { pon: 1, glyph: 2 } },
+  fc('reduceSelection', 'page-loaded', state(), { type: 'pageLoaded', page: pr(3) }),
+  fc('reduceSelection', 'page-loaded-again', state({ loaded: { 3: true } }), { type: 'pageLoaded', page: pr(3) }),
+  fc('reduceSelection', 'set', state({ selecting: true }), {
+    type: 'set',
+    selection: { anchor: { page: pr(1), glyph: 0 }, focus: { page: pr(1), glyph: 2 } },
     segments: { 1: segmentsOf(spec(simple(3)), 0, 2) },
   }),
-  fc('selectionReducer', 'clear', state({ selection: { anchor: { pon: 1, glyph: 0 }, focus: { pon: 1, glyph: 0 } }, segments: {} }), { type: 'CLEAR' }),
-  fc('selectionReducer', 'clear-segments-only', state({ segments: { 2: [] } }), { type: 'CLEAR' }),
-  fc('selectionReducer', 'clear-empty', state(), { type: 'CLEAR' }),
-  fc('selectionReducer', 'hide', state(), { type: 'SET_HIGHLIGHT_HIDDEN', hidden: true }),
-  fc('selectionReducer', 'hide-again', state({ highlightHidden: true }), { type: 'SET_HIGHLIGHT_HIDDEN', hidden: true }),
-  fc('selectionReducer', 'selecting', state(), { type: 'SET_SELECTING', selecting: true }),
-  fc('selectionReducer', 'selecting-again', state(), { type: 'SET_SELECTING', selecting: false }),
+  fc('reduceSelection', 'clear', state({ selection: { anchor: { page: pr(1), glyph: 0 }, focus: { page: pr(1), glyph: 0 } }, segments: {} }), { type: 'clear' }),
+  fc('reduceSelection', 'clear-segments-only', state({ segments: { 2: [] } }), { type: 'clear' }),
+  fc('reduceSelection', 'clear-empty', state(), { type: 'clear' }),
+  fc('reduceSelection', 'hide', state(), { type: 'setHighlightHidden', hidden: true }),
+  fc('reduceSelection', 'hide-again', state({ highlightHidden: true }), { type: 'setHighlightHidden', hidden: true }),
+  fc('reduceSelection', 'selecting', state(), { type: 'setGestureActive', active: true }),
+  fc('reduceSelection', 'selecting-again', state(), { type: 'setGestureActive', active: false }),
   ...Object.entries({ ...sweepFixtures, varied, mixed }).map(([name, snap]) => fc('layoutSweep', name, snap)),
   fc('glyphAtGrid', 'varied', varied, { x0: 0, x1: 170, y0: 10, y1: 110, step: 2.5 }),
   fc('glyphAtGrid', 'varied-tight-tolerance', varied, { x0: 0, x1: 170, y0: 10, y1: 110, step: 2.5 }, 0.4),
@@ -1102,22 +1145,22 @@ interface ViewSpec {
   pages?: { pon: number; rect: { x: number; y: number; width: number; height: number } }[];
 }
 const viewOf = (v: ViewSpec): SelectionHandleView => ({
-  toOverlay: (pon, p) => {
-    const m = v.matrices?.[String(pon)];
+  toOverlay: (page, p) => {
+    const m = v.matrices?.[String(page.pageObjectNumber)];
     return m ? { x: m[0] * p.x + m[2] * p.y + m[4], y: m[1] * p.x + m[3] * p.y + m[5] } : null;
   },
   pageAt: (o) => {
     const hit = (v.pages ?? []).find((pg) => o.x >= pg.rect.x && o.x < pg.rect.x + pg.rect.width && o.y >= pg.rect.y && o.y < pg.rect.y + pg.rect.height);
-    return hit ? { pon: hit.pon, point: { x: o.x - hit.rect.x, y: o.y - hit.rect.y } } : null;
+    return hit ? { ref: { kind: 'objectNumber', pageObjectNumber: hit.pon }, point: { x: o.x - hit.rect.x, y: o.y - hit.rect.y } } : null;
   },
-  pointOnPage: (pon, o) => {
-    const pg = (v.pages ?? []).find((p) => p.pon === pon);
+  pointOnPage: (page, o) => {
+    const pg = (v.pages ?? []).find((p) => p.pon === page.pageObjectNumber);
     return pg ? { x: o.x - pg.rect.x, y: o.y - pg.rect.y } : null;
   },
 });
 
-/** A drag session against a recording target: `begins` answers `beginAt`
- *  per call (the last repeats); returns every target call in order. */
+/** A drag session against a recording target: `begins` answers
+ *  `beginGestureAt` per call (the last repeats); returns every target call in order. */
 const handleDrag = (
   view: ViewSpec,
   opposite: SelectionHandleEndpoint,
@@ -1128,15 +1171,15 @@ const handleDrag = (
   const log: unknown[] = [];
   let calls = 0;
   const target = {
-    beginAt: (pon: number, point: { x: number; y: number }) => {
+    beginGestureAt: (page: PageRef, point: { x: number; y: number }) => {
       const answer = begins[Math.min(calls++, begins.length - 1)];
-      log.push({ beginAt: [pon, point], answer });
+      log.push({ beginGestureAt: [page, point], answer });
       return answer;
     },
-    extendTo: (pon: number, point: { x: number; y: number }) => void log.push({ extendTo: [pon, point] }),
-    end: () => void log.push({ end: [] }),
+    extendTo: (page: PageRef, point: { x: number; y: number }) => void log.push({ extendTo: [page, point] }),
+    endGesture: () => void log.push({ endGesture: [] }),
   };
-  const session = createSelectionHandleDrag(target, viewOf(view), opposite, draggedPon);
+  const session = createSelectionHandleDrag(target, viewOf(view), opposite, { kind: 'objectNumber', pageObjectNumber: draggedPon });
   for (const m of moves) {
     if (m === 'end') session.end();
     else session.move(m);
@@ -1163,7 +1206,7 @@ const views: Record<string, ViewSpec> = {
   rotated: { matrices: { 1: [0, 1, -1, 0, 500, 0] } },
   none: { matrices: {} },
 };
-const ep = (glyphQuad: typeof upright, advance: 1 | -1, pon = 1) => ({ pon, glyphQuad, advance });
+const ep = (glyphQuad: typeof upright, advance: 1 | -1, pon = 1) => ({ page: { kind: 'objectNumber' as const, pageObjectNumber: pon }, glyphQuad, advance });
 
 const handleCases: FunctionCase[] = [
   fc('HANDLE_HEAD', 'px'),
