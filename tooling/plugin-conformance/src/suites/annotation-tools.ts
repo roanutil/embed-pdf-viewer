@@ -35,6 +35,7 @@ import {
   layout,
   ink,
   markup,
+  FLAGS,
 } from './annotation-fixtures';
 
 const b64 = (bytes: number[]) => Buffer.from(bytes).toString('base64');
@@ -50,6 +51,9 @@ const JUNK = { $bytes: b64([1, 2, 3, 4, 5]) };
 const pointer = (phase: string, x: number, y: number, over: Record<string, unknown> = {}) => ix('dispatch', [sample(phase, x, y, over)]);
 const hover = (x: number, y: number, over: Record<string, unknown> = {}) => pointer('move', x, y, over);
 const offPage = (phase: string): Step => ix('dispatch', [{ phase, viewport: { x: 900, y: 900 }, modifiers: { shift: false, alt: false, ctrl: false, meta: false } }]);
+
+/** An argument left out, as canonical JSON spells it inside an array. */
+const U = { $undefined: true };
 
 const withSelection = [{ factory: 'interaction' }, { factory: 'selection' }, { factory: 'annotation' }];
 
@@ -317,6 +321,81 @@ const cases: ScenarioCase[] = [
       pointer('cancel', 20, 20),
       advance(1000),
       call('list', [1]),
+    ],
+  },
+  {
+    name: 'grab-reach-follows-the-scale',
+    covers:
+      'The handle and knob reach is half the hit size over the page scale, doubled for touch, and the knob offset shrinks with the scale: probes just inside and outside both at scale 2, a zero scale and a NaN scale (both read as 1).',
+    plugins: PLUGINS,
+    engine: { documents: { a: doc([hydrate({ 1: [square(1, target)] })]) } },
+    snapshot: 'none',
+    steps: [
+      ...boot,
+      call('select', [objRef(1)]),
+      call('hitKind', [1, { x: 107, y: 100 }, 2, U, U, false]),
+      call('hitKind', [1, { x: 107, y: 100 }, 2, U, U, true]),
+      call('hitKind', [1, { x: 150, y: 77 }, 2, U, U, false]),
+      call('hitKind', [1, { x: 150, y: 80 }, 2, U, U, false]),
+      call('hitKind', [1, { x: 150, y: 80 }, 2, U, U, true]),
+      call('hitKind', [1, { x: 150, y: 150 }, 0]),
+      call('hitKind', [1, { x: 100, y: 100 }, { $number: 'NaN' }]),
+    ],
+  },
+  {
+    name: 'page-box-of-an-offset-crop',
+    covers:
+      'On a page whose crop starts off the origin (10, 20 to 410, 520) the page box is 400 x 500: it decides where the rotate knob flips or clamps, and where a note placed in the corner is clamped.',
+    plugins: PLUGINS,
+    engine: {
+      documents: {
+        a: doc([
+          hydrate({
+            2: [
+              square(21, { pageObjectNumber: 2, rect: { left: 110, bottom: 40, right: 210, top: 515 } }),
+              square(22, { pageObjectNumber: 2, rect: { left: 110, bottom: 470, right: 210, top: 515 } }),
+              square(23, { pageObjectNumber: 2, rect: { left: 360, bottom: 40, right: 480, top: 515 } }),
+            ],
+          }),
+          { path: 'page.annotations.create', pon: 2, value: created(textNote(60, { pageObjectNumber: 2 })) },
+        ]),
+      },
+    },
+    snapshot: 'none',
+    steps: [
+      ...boot,
+      call('select', [objRef(21, 2)]),
+      call('chrome', [2]),
+      call('select', [objRef(22, 2)]),
+      call('chrome', [2]),
+      call('select', [objRef(23, 2)]),
+      call('chrome', [2]),
+      tool('note'),
+      call('placeAt', [2, { x: 395, y: 495 }]),
+    ],
+  },
+  {
+    name: 'chrome-follows-the-view',
+    covers:
+      'chrome takes the view from a rotation alone (a noRotate note counter-rotates), recomputes when only the scale changes, and draws the rotate guides during a rotate gesture.',
+    plugins: PLUGINS,
+    engine: {
+      documents: {
+        a: doc([hydrate({ 1: [square(1, target), textNote(9, { rect: { left: 300, bottom: 300, right: 320, top: 320 }, flags: FLAGS({ noRotate: true, noZoom: true }) })] })]),
+      },
+    },
+    snapshot: 'none',
+    steps: [
+      ...boot,
+      call('select', [objRef(9)]),
+      call('chrome', [1, U, 90]),
+      call('select', [objRef(1)]),
+      call('chrome', [1, 1]),
+      call('chrome', [1, 2]),
+      pointer('down', 150, 68),
+      pointer('move', 200, 68),
+      call('chrome', [1]),
+      pointer('cancel', 200, 68),
     ],
   },
   {
