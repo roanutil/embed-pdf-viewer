@@ -1,4 +1,4 @@
-//! `hover-feed.ts`: the annotation plane's cursor enter/exit trigger feed,
+//! `tools/hover-feed.ts`: the annotation plane's cursor enter/exit trigger feed,
 //! a thin adapter from the one pointer-driven hover seam (`hoverAt`'s diff)
 //! onto the actions plugin's shared hover pump.
 
@@ -33,7 +33,7 @@ impl AnnotationHoverFeed {
         }
         Some(HoverTarget {
             annotation_ref,
-            pon: annot.pon as _,
+            page: epdf_kernel::geometry::PageRef::new(annot.page.page_object_number),
             source: None,
             events: Some(HoverEvents { enter: Some(enter), exit: Some(exit) }),
         })

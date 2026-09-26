@@ -4,11 +4,11 @@
 //! resolves. [`default_tools`] is the built-in table; an embedder merges
 //! over it by id, adds new ids, or inherits with `extends`.
 
+use epdf_annotation_core::measurement::LineLeader;
 use epdf_annotation_core::{
     AnnotationFlagsPatch, AnnotationPropsPatch, ClickCreate, ClickCreateOption,
     InkStraightenOptions,
 };
-use epdf_annotation_core::measurement::LineLeader;
 use epdf_kernel::Error;
 use serde::de::{self, Deserializer};
 use serde::ser::Serializer;
@@ -380,14 +380,20 @@ pub fn default_tools() -> Vec<AnnotationToolDef> {
                 "strokeWidth": 1,
                 "lineEndings": { "start": "none", "end": "none" },
             })),
-            measurement: Some(ToolMeasurement { caption: json!({ "enabled": true }), leader: None }),
+            measurement: Some(ToolMeasurement {
+                caption: json!({ "enabled": true }),
+                leader: None,
+            }),
             ..def("perimeter")
         },
         AnnotationToolDef {
             extends: Some("polygon".into()),
             intent: Some("PolygonDimension".into()),
             defaults: patch(json!({ "strokeWidth": 1 })),
-            measurement: Some(ToolMeasurement { caption: json!({ "enabled": true }), leader: None }),
+            measurement: Some(ToolMeasurement {
+                caption: json!({ "enabled": true }),
+                leader: None,
+            }),
             ..def("area")
         },
         AnnotationToolDef {

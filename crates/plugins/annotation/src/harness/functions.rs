@@ -10,7 +10,9 @@ use plugin_conformance::js::{arg, from_value, to_value};
 use serde_json::{Value, json};
 
 use crate::contract::*;
-use crate::model::{AnnotationAction, AnnotationState, annotation_reducer, initial_annotation_state, merge_chrome};
+use crate::model::{
+    AnnotationAction, AnnotationState, annotation_reducer, initial_annotation_state, merge_chrome,
+};
 use crate::repository::kinds::{free_text, misc, quads, shape};
 use crate::repository::seam::{self, pdf_json};
 use crate::repository::{self, projection::Wire};
@@ -294,7 +296,9 @@ fn state_from_json(v: &Value) -> Result<AnnotationState, Error> {
         tool_ghost: ghost_from_json(v.get("toolGhost").unwrap_or(&Value::Null))?,
         stamp_arm_epoch: v.get("stampArmEpoch").and_then(Value::as_f64).unwrap_or(0.0),
         text_selection: match v.get("textSelection") {
-            Some(t) if !t.is_null() && !epdf_kernel::is_undefined(t) => Some(Rc::new(from_value(t)?)),
+            Some(t) if !t.is_null() && !epdf_kernel::is_undefined(t) => {
+                Some(Rc::new(from_value(t)?))
+            }
             _ => None,
         },
     })

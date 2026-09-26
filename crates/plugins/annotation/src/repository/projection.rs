@@ -6,11 +6,10 @@
 //! `None` where the member is absent.
 
 use epdf_annotation_core::js::Nullable;
-use epdf_annotation_core::{
-    Annot, Geom, Intent, Label, PdfLinkTarget, PdfRect, PropKey, TextStyle,
-    geom_rotation,
-};
 use epdf_annotation_core::measurement::MeasurementAppearance;
+use epdf_annotation_core::{
+    Annot, Geom, Intent, Label, PdfLinkTarget, PdfRect, PropKey, TextStyle, geom_rotation,
+};
 use serde_json::{Map, Value};
 
 use super::kinds;

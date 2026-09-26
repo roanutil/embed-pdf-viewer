@@ -1,106 +1,122 @@
-//! `effects.ts`: makes annotations reactive to the document event stream.
-//! It kicks whole-document hydration once, hands remote `annotation.*`
-//! events to the capability's hydration-aware delivery, re-hydrates on
-//! `stream.desynced`, and reconciles page membership, form re-bakes and
-//! redaction applies.
+//! `sync/document-events.ts`: makes annotations reactive to the document
+//! event stream. It kicks whole-document hydration once, hands remote
+//! `annotation.*` events to the hydration-aware delivery, rehydrates on
+//! `stream.desynced` and `document.versioned`, reconciles page membership,
+//! and bumps the widgets form and signature writes repaint.
 
 use std::rc::Rc;
 
-use epdf_annotation_core::{Msg, update};
-use epdf_kernel::{EffectCtx, Error};
+use epdf_annotation_core::{Msg, PageRef, update};
+use epdf_kernel::Controller;
 use serde_json::Value;
 
-use crate::types::{ANNOTATION, AnnotationAction, AnnotationState};
-use crate::value::{f64_of, get, str_of};
+use crate::controller::AnnotationCapability;
+use crate::model::{AnnotationAction, AnnotationState};
+use crate::repository::annotation_key_of;
+use crate::value::{get, str_of};
 
-fn pons(v: Option<&Value>) -> Vec<u32> {
-    v.and_then(Value::as_array)
+/// `widgetKey(w)`: a widget's model key, or none when the engine could not
+/// give it an annotation address.
+fn widget_key(w: &Value) -> Option<String> {
+    get(w, "ref").filter(|r| !r.is_null()).and_then(annotation_key_of)
+}
+
+fn widget_keys(list: Option<&Value>) -> Vec<String> {
+    list.and_then(Value::as_array).into_iter().flatten().filter_map(widget_key).collect()
+}
+
+fn page_refs(list: Option<&Value>) -> Vec<PageRef> {
+    list.and_then(Value::as_array)
         .into_iter()
         .flatten()
-        .filter_map(Value::as_f64)
-        .map(|p| p as u32)
+        .filter_map(|p| serde_json::from_value(p.clone()).ok())
         .collect()
 }
 
-/// `registerAnnotationEffects(ctx)`.
-pub fn register_annotation_effects(
-    ctx: EffectCtx<AnnotationState, AnnotationAction>,
-) -> Result<(), Error> {
-    let Some(doc) = ctx.doc() else { return Ok(()) };
-
-    let typed = ctx.ctx.clone();
+/// `subscribeDocumentEvents(ctx)`: subscribe first, then hydrate, so every
+/// event from the snapshot's cursor onward is observed.
+pub(crate) fn subscribe_document_events(
+    cx: &Controller<AnnotationState, AnnotationAction>,
+    host: AnnotationCapability,
+) {
+    let Ok(doc) = cx.doc() else { return };
+    let typed = cx.clone();
     let apply = move |msg: Msg| {
         let m = typed.state().model.clone();
         let (next, _) = update(&m, &msg);
         let model = next.map_or(m, Rc::new);
         typed.dispatch(AnnotationAction::SetModel { model });
     };
-    let host_ctx = ctx.ctx.clone();
-    let host = move || host_ctx.get(&ANNOTATION);
-    let model_ctx = ctx.ctx.clone();
-
+    let model_cx = cx.clone();
+    let events_host = host.clone();
     let unsubscribe = doc.subscribe(Rc::new(move |event: &Value| {
+        let host = &events_host;
         let kind = str_of(event, "type").unwrap_or_default();
-        if kind == "form.valueChanged" || kind == "form.effectsApplied" {
-            let ids = get(event, "changedWidgets")
-                .and_then(Value::as_array)
-                .into_iter()
-                .flatten()
-                .filter(|w| f64_of(w, "annotObjectNumber") > 0.0)
-                .map(|w| {
-                    format!(
-                        "obj:{}",
-                        epdf_geometry::js::number_to_string(f64_of(w, "annotObjectNumber"))
-                    )
-                })
-                .collect();
-            apply(Msg::BumpAp { ids });
-            return;
-        }
-        if kind == "redaction.applied" {
-            let mut affected: Vec<u32> = Vec::new();
-            for r in get(event, "results").and_then(Value::as_array).into_iter().flatten() {
-                if str_of(r, "status") == Some("applied") {
-                    let pon = f64_of(r, "pageObjectNumber") as u32;
-                    if !affected.contains(&pon) {
-                        affected.push(pon);
+        match kind {
+            "form.valueChanged" | "form.effectsApplied" => {
+                apply(Msg::BumpAp { ids: widget_keys(get(event, "changedWidgets")) });
+                return;
+            }
+            "form.fieldUpdated" => {
+                let widgets = get(event, "field").and_then(|f| get(f, "widgets"));
+                apply(Msg::BumpAp { ids: widget_keys(widgets) });
+                return;
+            }
+            "signature.completed" => {
+                let widget = get(event, "signature").and_then(|s| get(s, "widget"));
+                if let Some(key) = widget.filter(|w| !w.is_null()).and_then(widget_key) {
+                    apply(Msg::BumpAp { ids: vec![key] });
+                }
+                return;
+            }
+            "document.versioned" | "stream.desynced" => {
+                let _ = host.refresh();
+                return;
+            }
+            "redaction.applied" => {
+                let mut affected: Vec<u32> = Vec::new();
+                for r in get(event, "results").and_then(Value::as_array).into_iter().flatten() {
+                    if str_of(r, "status") != Some("applied") {
+                        continue;
+                    }
+                    let Some(page) = get(r, "page")
+                        .and_then(|p| serde_json::from_value::<PageRef>(p.clone()).ok())
+                    else {
+                        continue;
+                    };
+                    if !affected.contains(&page.page_object_number) {
+                        affected.push(page.page_object_number);
                     }
                 }
-            }
-            if let Ok(host) = host() {
                 for pon in affected {
-                    let _ = host.reload_page(pon);
+                    let _ = host.reload_page_pon(pon);
                 }
+                return;
             }
-            return;
-        }
-        if kind == "stream.desynced" {
-            if let Ok(host) = host() {
-                let _ = host.rehydrate();
-            }
-            return;
-        }
-        if kind == "pages.deleted" {
-            let gone = pons(get(event, "pageObjectNumbers"));
-            let m = model_ctx.state().model.clone();
-            let ids: Vec<String> = m
-                .order
-                .iter()
-                .filter(|id| m.by_id.get(*id).is_some_and(|a| gone.contains(&a.pon)))
-                .cloned()
-                .collect();
-            if !ids.is_empty() {
-                apply(Msg::Remove { ids });
-            }
-            return;
-        }
-        if kind == "pages.inserted" {
-            if let Ok(host) = host() {
-                for pon in pons(get(event, "insertedPageObjectNumbers")) {
-                    let _ = host.reload_page(pon);
+            "pages.deleted" => {
+                let gone: Vec<u32> =
+                    page_refs(get(event, "pages")).iter().map(|p| p.page_object_number).collect();
+                let m = model_cx.state().model.clone();
+                let ids: Vec<String> = m
+                    .order
+                    .iter()
+                    .filter(|id| {
+                        m.by_id.get(*id).is_some_and(|a| gone.contains(&a.page.page_object_number))
+                    })
+                    .cloned()
+                    .collect();
+                if !ids.is_empty() {
+                    apply(Msg::Remove { ids });
                 }
+                return;
             }
-            return;
+            "pages.inserted" => {
+                for page in page_refs(get(event, "insertedPages")) {
+                    let _ = host.reload_page(page);
+                }
+                return;
+            }
+            _ => {}
         }
         let remote = event
             .get("origin")
@@ -111,13 +127,10 @@ pub fn register_annotation_effects(
         if matches!(
             kind,
             "annotation.created" | "annotation.updated" | "annotation.moved" | "annotation.deleted"
-        ) && let Ok(host) = host()
-        {
-            host.deliver_remote_annotation_event(event.clone());
+        ) {
+            host.deliver_remote_event(event.clone());
         }
     }));
-    ctx.cleanup_fn(move || unsubscribe.call());
-
-    ctx.get(&ANNOTATION)?.ensure_hydrated();
-    Ok(())
+    cx.listen(unsubscribe);
+    host.ensure_hydrated();
 }

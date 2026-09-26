@@ -402,8 +402,9 @@ pub fn runs_in_range(
     let from = locate_offset(paragraphs, start);
     let to = locate_offset(paragraphs, end);
     let mut out = Vec::new();
-    for index in from.paragraph..=to.paragraph {
-        let paragraph = &paragraphs[index];
+    for (index, paragraph) in
+        paragraphs.iter().enumerate().take(to.paragraph + 1).skip(from.paragraph)
+    {
         let local_start = if index == from.paragraph { from.offset } else { 0.0 };
         let local_end = if index == to.paragraph { to.offset } else { para_len(paragraph) };
         let mut pos = 0.0;
@@ -467,7 +468,9 @@ pub fn range_props(
     read(PropKey::FontColor, &|s| {
         json!(s.get("color").and_then(Value::as_str).unwrap_or_default().to_lowercase())
     });
-    read(PropKey::Bold, &|s| json!(s.get("weight").and_then(Value::as_f64).unwrap_or(400.0) >= 600.0));
+    read(PropKey::Bold, &|s| {
+        json!(s.get("weight").and_then(Value::as_f64).unwrap_or(400.0) >= 600.0)
+    });
     read(PropKey::Italic, &|s| json!(s.get("italic").and_then(Value::as_bool).unwrap_or(false)));
     read(PropKey::Underline, &|s| {
         json!(

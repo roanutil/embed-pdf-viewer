@@ -1,18 +1,30 @@
-//! `handler.ts`: the five pointer handlers the plugin registers with the
-//! interaction hub. Gesture state lives in the handler; the capability runs
-//! the pure core.
+//! `tools/handlers.ts`: the five pointer handlers the plugin registers with
+//! the interaction hub. Gesture state lives in the handler; the controller
+//! runs the pure core. Gestures are page-anchored: every move and up
+//! resolves against the page the gesture started on (`pointOn`).
 
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
-use epdf_annotation_core::{Phase as CorePhase, Point};
+use epdf_annotation_core::{PageRef, Phase as CorePhase, Point};
 use epdf_geometry::js::hypot;
 use epdf_kernel::rt::{self, TimerId};
 use epdf_plugin_interaction::{
     InteractionCapability, InteractionHandler, PointerKind, PointerSample, Tool, sample_point_on,
 };
 
-use crate::capability::{AnnotationCapability, HoverAt};
+use crate::controller::AnnotationCapability;
+use crate::host_contract::*;
+
+/// A hub page address as the model's.
+fn core_page(p: epdf_kernel::geometry::PageRef) -> PageRef {
+    PageRef::new(p.page_object_number)
+}
+
+/// `pointOn(s, page)`: the sample on the gesture's home page.
+fn point_on(s: &PointerSample, page: PageRef) -> Option<Point> {
+    sample_point_on(s, epdf_kernel::geometry::PageRef::new(page.page_object_number))
+}
 
 const MARQUEE_DRAG_THRESHOLD_PX: f64 = 4.0;
 
@@ -43,14 +55,14 @@ impl InteractionHandler for PlaceHandler {
         "annotation-place"
     }
     fn priority(&self) -> f64 {
-        95.0
+        ANNOTATION_PLACE_PRIORITY
     }
     fn enabled_for(&self, t: &Tool) -> bool {
         t.enables("annotation-place") || t.enables("annotation-stamp")
     }
     fn on_down(&self, s: &PointerSample) -> bool {
         let Some(page) = &s.page else { return false };
-        self.anno.place_at(page.pon, page.point, page.rotation.map(|r| r.0))
+        self.anno.place_at(core_page(page.page), page.point, page.rotation.map(|r| r.0))
     }
 }
 
@@ -73,7 +85,7 @@ impl InteractionHandler for GhostHandler {
         "annotation-ghost"
     }
     fn priority(&self) -> f64 {
-        1000.0
+        ANNOTATION_GHOST_PRIORITY
     }
     fn enabled_for(&self, _t: &Tool) -> bool {
         true
@@ -84,9 +96,9 @@ impl InteractionHandler for GhostHandler {
     }
     fn on_hover(&self, s: &PointerSample) {
         match &s.page {
-            Some(page) => self.anno.ghost_hover_at(
-                &self.interaction.active_tool_id(),
-                page.pon,
+            Some(page) => self.anno.hover_ghost_at(
+                &self.interaction.get_active_tool_id(),
+                core_page(page.page),
                 page.point,
                 page.rotation.map(|r| r.0),
             ),
@@ -97,7 +109,7 @@ impl InteractionHandler for GhostHandler {
 
 #[derive(Clone, Copy)]
 struct EditOrigin {
-    pon: u32,
+    page: PageRef,
     point: Point,
     down_point: Point,
     touch: bool,
@@ -123,39 +135,50 @@ impl InteractionHandler for EditHandler {
         "annotation-edit"
     }
     fn priority(&self) -> f64 {
-        100.0
+        ANNOTATION_EDIT_PRIORITY
     }
     fn enabled_for(&self, t: &Tool) -> bool {
         t.enables("annotation-edit")
     }
     fn claims_touch(&self, s: &PointerSample) -> bool {
         let Some(page) = &s.page else { return false };
-        self.anno.claims_touch_at(page.pon, page.point, page.scale, rotation_of(s), page.zoom)
+        self.anno.claims_touch_at(
+            core_page(page.page),
+            page.point,
+            page.scale,
+            rotation_of(s),
+            page.zoom,
+        )
     }
     fn on_down(&self, s: &PointerSample) -> bool {
         let Some(page) = &s.page else { return false };
+        // The final distance-placement click belongs to its creation draft.
+        if self.anno.distance_creation_page().is_some() {
+            return false;
+        }
         let touch = s.pointer_type == Some(PointerKind::Touch);
-        let was_editing = self.anno.current_editing().is_some();
+        let was_editing = self.anno.get_editing_id().is_some();
         if was_editing {
-            self.anno.end_text_edit();
+            let _ = self.anno.end_text_edit();
         }
         let rot = rotation_of(s);
-        if self.anno.hit_kind(page.pon, page.point, page.scale, rot, page.zoom, Some(touch))
+        let here = core_page(page.page);
+        if self.anno.get_hit_kind(here, page.point, page.scale, rot, page.zoom, Some(touch))
             == "empty"
         {
             if !s.modifiers.shift {
-                self.anno.deselect();
+                self.anno.clear_selection();
             }
             return was_editing;
         }
         if s.click_count.unwrap_or(1.0) >= 2.0
-            && self.anno.begin_text_edit_at(page.pon, page.point, page.scale, rot, page.zoom)
+            && self.anno.begin_text_edit_at(here, page.point, page.scale, rot, page.zoom)
         {
             return true;
         }
         self.anno.edit_pointer(
             CorePhase::Down,
-            page.pon,
+            here,
             page.point,
             s.modifiers.shift,
             page.scale,
@@ -164,18 +187,18 @@ impl InteractionHandler for EditHandler {
             Some(touch),
         );
         *self.origin.borrow_mut() =
-            Some(EditOrigin { pon: page.pon, point: page.point, down_point: page.point, touch });
+            Some(EditOrigin { page: here, point: page.point, down_point: page.point, touch });
         true
     }
     fn on_move(&self, s: &PointerSample) {
         let Some(origin) = *self.origin.borrow() else { return };
-        let Some(point) = sample_point_on(s, origin.pon) else { return };
+        let Some(point) = point_on(s, origin.page) else { return };
         if let Some(o) = self.origin.borrow_mut().as_mut() {
             o.point = point;
         }
         self.anno.edit_pointer(
             CorePhase::Move,
-            origin.pon,
+            origin.page,
             point,
             s.modifiers.shift,
             s.page.and_then(|p| p.scale),
@@ -186,10 +209,10 @@ impl InteractionHandler for EditHandler {
     }
     fn on_up(&self, s: &PointerSample) {
         let Some(origin) = *self.origin.borrow() else { return };
-        let point = sample_point_on(s, origin.pon).unwrap_or(origin.point);
+        let point = point_on(s, origin.page).unwrap_or(origin.point);
         self.anno.edit_pointer(
             CorePhase::Up,
-            origin.pon,
+            origin.page,
             point,
             false,
             None,
@@ -203,7 +226,7 @@ impl InteractionHandler for EditHandler {
         let Some(origin) = self.origin.borrow_mut().take() else { return };
         self.anno.edit_pointer(
             CorePhase::Move,
-            origin.pon,
+            origin.page,
             origin.down_point,
             false,
             None,
@@ -213,7 +236,7 @@ impl InteractionHandler for EditHandler {
         );
         self.anno.edit_pointer(
             CorePhase::Up,
-            origin.pon,
+            origin.page,
             origin.down_point,
             false,
             None,
@@ -224,11 +247,17 @@ impl InteractionHandler for EditHandler {
     }
     fn on_hover(&self, s: &PointerSample) {
         let cursor = s.page.as_ref().and_then(|page| {
-            self.anno.cursor_at(page.pon, page.point, page.scale, rotation_of(s), page.zoom)
+            self.anno.get_cursor_at(
+                core_page(page.page),
+                page.point,
+                page.scale,
+                rotation_of(s),
+                page.zoom,
+            )
         });
-        self.interaction.set_cursor("annotation", cursor.as_deref(), 20.0);
+        self.interaction.claim_cursor("annotation", cursor.as_deref(), 20.0);
         self.anno.hover_at(s.page.as_ref().map(|page| HoverAt {
-            pon: page.pon,
+            page: core_page(page.page),
             point: page.point,
             scale: page.scale,
             rotation: rotation_of(s),
@@ -239,7 +268,7 @@ impl InteractionHandler for EditHandler {
 
 #[derive(Clone, Copy)]
 struct MarqueeAnchor {
-    pon: u32,
+    page: PageRef,
     point: Point,
     vx: f64,
     vy: f64,
@@ -257,7 +286,7 @@ struct MarqueeView {
 pub struct MarqueeHandler {
     anno: AnnotationCapability,
     anchor: RefCell<Option<MarqueeAnchor>>,
-    last: RefCell<Option<(u32, Point)>>,
+    last: RefCell<Option<(PageRef, Point)>>,
     dragging: Cell<bool>,
     view: Cell<MarqueeView>,
 }
@@ -278,7 +307,7 @@ impl InteractionHandler for MarqueeHandler {
         "annotation-marquee"
     }
     fn priority(&self) -> f64 {
-        50.0
+        ANNOTATION_MARQUEE_PRIORITY
     }
     fn enabled_for(&self, t: &Tool) -> bool {
         t.enables("annotation-marquee")
@@ -286,21 +315,21 @@ impl InteractionHandler for MarqueeHandler {
     fn on_down(&self, s: &PointerSample) -> bool {
         let Some(page) = &s.page else { return false };
         *self.anchor.borrow_mut() = Some(MarqueeAnchor {
-            pon: page.pon,
+            page: core_page(page.page),
             point: page.point,
             vx: s.viewport.x,
             vy: s.viewport.y,
             shift: s.modifiers.shift,
         });
-        *self.last.borrow_mut() = Some((page.pon, page.point));
+        *self.last.borrow_mut() = Some((core_page(page.page), page.point));
         self.view.set(MarqueeView { scale: page.scale, rotation: rotation_of(s), zoom: page.zoom });
         self.dragging.set(false);
         true
     }
     fn on_move(&self, s: &PointerSample) {
         let Some(anchor) = *self.anchor.borrow() else { return };
-        let Some(point) = sample_point_on(s, anchor.pon) else { return };
-        *self.last.borrow_mut() = Some((anchor.pon, point));
+        let Some(point) = point_on(s, anchor.page) else { return };
+        *self.last.borrow_mut() = Some((anchor.page, point));
         let view = self.view.get();
         if !self.dragging.get() {
             if hypot(s.viewport.x - anchor.vx, s.viewport.y - anchor.vy) < MARQUEE_DRAG_THRESHOLD_PX
@@ -310,7 +339,7 @@ impl InteractionHandler for MarqueeHandler {
             self.dragging.set(true);
             self.anno.marquee_pointer(
                 CorePhase::Down,
-                anchor.pon,
+                anchor.page,
                 anchor.point,
                 anchor.shift,
                 view.scale,
@@ -320,7 +349,7 @@ impl InteractionHandler for MarqueeHandler {
         }
         self.anno.marquee_pointer(
             CorePhase::Move,
-            anchor.pon,
+            anchor.page,
             point,
             anchor.shift,
             view.scale,
@@ -337,7 +366,7 @@ impl InteractionHandler for MarqueeHandler {
             let view = self.view.get();
             self.anno.marquee_pointer(
                 CorePhase::Up,
-                anchor.pon,
+                anchor.page,
                 point,
                 anchor.shift,
                 view.scale,
@@ -359,7 +388,7 @@ impl InteractionHandler for MarqueeHandler {
 
 struct PendingInk {
     tool: String,
-    pon: u32,
+    page: PageRef,
     timer: TimerId,
 }
 
@@ -367,7 +396,8 @@ struct PendingInk {
 struct DrawState {
     drawing_poly: Cell<bool>,
     drawing_callout: Cell<bool>,
-    origin: RefCell<Option<(u32, Point)>>,
+    follow_page: Cell<Option<PageRef>>,
+    origin: RefCell<Option<(PageRef, Point)>>,
     pending_ink: RefCell<Option<PendingInk>>,
 }
 
@@ -392,19 +422,21 @@ pub fn create_draw_handler(
 ) -> DrawHandler {
     let state = Rc::new(DrawState::default());
     let (s, a) = (Rc::downgrade(&state), anno.clone());
-    interaction.on_tool_change(move || {
-        let Some(state) = s.upgrade() else { return };
+    let _ = interaction.on_tool_changed(move |_| {
+        let Some(state) = s.upgrade() else { return Ok(()) };
         flush_pending_ink(&state, &a);
         state.drawing_poly.set(false);
         state.drawing_callout.set(false);
+        state.follow_page.set(None);
         *state.origin.borrow_mut() = None;
+        Ok(())
     });
     DrawHandler { anno, interaction, state }
 }
 
 impl DrawHandler {
     fn tool_id(&self) -> String {
-        self.interaction.active_tool_id()
+        self.interaction.get_active_tool_id()
     }
 }
 
@@ -413,22 +445,31 @@ impl InteractionHandler for DrawHandler {
         "annotation-draw"
     }
     fn priority(&self) -> f64 {
-        55.0
+        ANNOTATION_DRAW_PRIORITY
     }
     fn enabled_for(&self, t: &Tool) -> bool {
         t.enables("annotation-draw")
     }
     fn on_down(&self, s: &PointerSample) -> bool {
-        let Some(page) = &s.page else { return false };
         let tool = self.tool_id();
-        let st = self.anno.tool_subtype(&tool);
+        let st = self.anno.get_tool_subtype(&tool);
+        if let Some(distance_page) = self.anno.distance_creation_page() {
+            if let Some(point) = point_on(s, distance_page) {
+                self.anno.create_pointer(&tool, CorePhase::Down, distance_page, point, false, None);
+            }
+            // This click commits on down; its up must not start another draft.
+            *self.state.origin.borrow_mut() = None;
+            return true;
+        }
+        let Some(page) = &s.page else { return false };
+        let here = core_page(page.page);
         if st == "ink" {
             let pending = self
                 .state
                 .pending_ink
                 .borrow()
                 .as_ref()
-                .map(|p| (p.tool == tool && p.pon == page.pon, p.timer));
+                .map(|p| (p.tool == tool && p.page.same_page(&here), p.timer));
             match pending {
                 Some((true, timer)) => {
                     rt::clear_timer(timer);
@@ -438,51 +479,48 @@ impl InteractionHandler for DrawHandler {
                 None => {}
             }
         }
-        *self.state.origin.borrow_mut() = Some((page.pon, page.point));
+        *self.state.origin.borrow_mut() = Some((here, page.point));
         if is_poly_tool(&st) {
             let finish = s.click_count.unwrap_or(1.0) >= 2.0;
-            self.anno.create_pointer(&tool, CorePhase::Down, page.pon, page.point, finish, None);
+            self.anno.create_pointer(&tool, CorePhase::Down, here, page.point, finish, None);
             self.state.drawing_poly.set(!finish);
+            self.state.follow_page.set(if finish { None } else { Some(here) });
             return true;
         }
         self.state.drawing_poly.set(false);
         if is_callout_tool(&st) {
             self.state.drawing_callout.set(true);
+            self.state.follow_page.set(Some(here));
+        } else {
+            self.state.follow_page.set(None);
         }
-        self.anno.create_pointer(
-            &tool,
-            CorePhase::Down,
-            page.pon,
-            page.point,
-            false,
-            rotation_of(s),
-        );
+        self.anno.create_pointer(&tool, CorePhase::Down, here, page.point, false, rotation_of(s));
         true
     }
     fn on_move(&self, s: &PointerSample) {
         let tool = self.tool_id();
-        let st = self.anno.tool_subtype(&tool);
-        let Some((pon, _)) = *self.state.origin.borrow() else { return };
+        let st = self.anno.get_tool_subtype(&tool);
+        let Some((page, _)) = *self.state.origin.borrow() else { return };
         if is_poly_tool(&st) && !self.state.drawing_poly.get() {
             return;
         }
-        let Some(point) = sample_point_on(s, pon) else { return };
-        *self.state.origin.borrow_mut() = Some((pon, point));
-        self.anno.create_pointer(&tool, CorePhase::Move, pon, point, false, None);
+        let Some(point) = point_on(s, page) else { return };
+        *self.state.origin.borrow_mut() = Some((page, point));
+        self.anno.create_pointer(&tool, CorePhase::Move, page, point, false, None);
     }
     fn on_up(&self, s: &PointerSample) {
         let tool = self.tool_id();
-        let st = self.anno.tool_subtype(&tool);
+        let st = self.anno.get_tool_subtype(&tool);
         let origin = *self.state.origin.borrow();
-        if let Some((pon, last)) = origin
+        if let Some((page, last)) = origin
             && !is_poly_tool(&st)
         {
-            let point = sample_point_on(s, pon).unwrap_or(last);
-            self.anno.create_pointer(&tool, CorePhase::Up, pon, point, false, None);
+            let point = point_on(s, page).unwrap_or(last);
+            self.anno.create_pointer(&tool, CorePhase::Up, page, point, false, None);
             if st == "ink" {
                 let group_ms = self
                     .anno
-                    .tool(&tool)
+                    .get_resolved_tool(&tool)
                     .and_then(|t| t.ink)
                     .and_then(|i| i.group_strokes_ms)
                     .unwrap_or(0.0);
@@ -494,7 +532,7 @@ impl InteractionHandler for DrawHandler {
                         }
                         anno.finish_ink_draft();
                     });
-                    *self.state.pending_ink.borrow_mut() = Some(PendingInk { tool, pon, timer });
+                    *self.state.pending_ink.borrow_mut() = Some(PendingInk { tool, page, timer });
                 }
             }
         }
@@ -506,17 +544,25 @@ impl InteractionHandler for DrawHandler {
         }
         self.state.drawing_poly.set(false);
         self.state.drawing_callout.set(false);
+        self.state.follow_page.set(None);
         *self.state.origin.borrow_mut() = None;
         self.anno.cancel_creation_draft();
     }
     fn on_hover(&self, s: &PointerSample) {
         let tool = self.tool_id();
-        let st = self.anno.tool_subtype(&tool);
-        let Some(page) = &s.page else { return };
-        if (self.state.drawing_poly.get() && is_poly_tool(&st))
-            || (self.state.drawing_callout.get() && is_callout_tool(&st))
+        let st = self.anno.get_tool_subtype(&tool);
+        if let Some(distance_page) = self.anno.distance_creation_page() {
+            if let Some(point) = point_on(s, distance_page) {
+                self.anno.create_pointer(&tool, CorePhase::Move, distance_page, point, false, None);
+            }
+            return;
+        }
+        let Some(follow) = self.state.follow_page.get() else { return };
+        if ((self.state.drawing_poly.get() && is_poly_tool(&st))
+            || (self.state.drawing_callout.get() && is_callout_tool(&st)))
+            && let Some(point) = point_on(s, follow)
         {
-            self.anno.create_pointer(&tool, CorePhase::Move, page.pon, page.point, false, None);
+            self.anno.create_pointer(&tool, CorePhase::Move, follow, point, false, None);
         }
     }
 }

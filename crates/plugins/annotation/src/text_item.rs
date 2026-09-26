@@ -3,7 +3,9 @@
 //! [`TextItem`]s.
 
 use epdf_annotation_core::richtext::{RichTextParagraph, RichTextRun};
-use epdf_annotation_core::{Model, PageRef, ViewEnv, initial_text_style, text_boxes, text_plate_inset};
+use epdf_annotation_core::{
+    Model, PageRef, ViewEnv, initial_text_style, text_boxes, text_plate_inset,
+};
 use serde_json::json;
 
 use crate::contract::{RichTextParagraphs, TextItem, TextItemCss};

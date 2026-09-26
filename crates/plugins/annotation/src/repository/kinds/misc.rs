@@ -112,8 +112,9 @@ fn widget_text_from_dto(d: &Value) -> TextStyle {
             .and_then(|a| serde_json::from_value(a.clone()).ok())
             .unwrap_or(TextAlign::Left),
         bold: None,
-       italic: None,
-       underline: None,    }
+        italic: None,
+        underline: None,
+    }
 }
 
 pub fn widget_ingest(d: &Value, crop: PdfRect) -> IngestSlice {

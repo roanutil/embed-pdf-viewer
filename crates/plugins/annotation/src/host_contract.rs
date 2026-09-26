@@ -67,7 +67,10 @@ impl RecalibrationReport {
         out.insert(
             "failed".into(),
             json!(
-                self.failed.iter().map(|(r, e)| json!({ "ref": r, "error": e })).collect::<Vec<_>>()
+                self.failed
+                    .iter()
+                    .map(|(r, e)| json!({ "ref": r, "error": e }))
+                    .collect::<Vec<_>>()
             ),
         );
         if let Some(error) = &self.error {

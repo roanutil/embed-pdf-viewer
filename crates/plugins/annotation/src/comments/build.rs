@@ -12,7 +12,8 @@ use crate::value::{get, str_of};
 /// `annotationKey(ref)` (engine-core), over a wire ref: `obj:<n>`,
 /// `nm:<page>:<name>`, `idx:<page>:<i>`.
 fn rel_key(r: &Value) -> String {
-    let pon = get(r, "page").and_then(|p| get(p, "pageObjectNumber")).map(num_text).unwrap_or_default();
+    let pon =
+        get(r, "page").and_then(|p| get(p, "pageObjectNumber")).map(num_text).unwrap_or_default();
     match str_of(r, "kind") {
         Some("objectNumber") => {
             format!("obj:{}", get(r, "annotObjectNumber").map(num_text).unwrap_or_default())

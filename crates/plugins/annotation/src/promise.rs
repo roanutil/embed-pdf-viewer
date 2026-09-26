@@ -67,3 +67,45 @@ pub fn all<T: Clone + 'static>(promises: Vec<Promise<T>>) -> Promise<Vec<T>> {
     }
     out
 }
+
+/// `Promise.resolve(p).then(...)` on one element: an `AbortablePromise` is
+/// a `Promise` subclass, so it is adopted as a thenable (the adoption job,
+/// its reaction, then the wrapper's reaction); a plain promise reacts in
+/// one turn.
+async fn observe<T: Clone + 'static>(p: Promise<T>) -> Result<T, Error> {
+    if p.is_abortable() {
+        let adopted = Promise::spawn(async move {
+            rt::tick().await;
+            p.await
+        });
+        adopted.await
+    } else {
+        p.await
+    }
+}
+
+/// `Promise.allSettled(promises)`: every outcome, in order, settling in the
+/// turn the last element's reaction runs.
+pub fn all_settled<T: Clone + 'static>(
+    promises: Vec<Promise<T>>,
+) -> Promise<Vec<Result<T, Error>>> {
+    if promises.is_empty() {
+        return Promise::resolved(Vec::new());
+    }
+    let (out, resolver) = Promise::pending();
+    let slots: Rc<RefCell<Vec<Option<Result<T, Error>>>>> =
+        Rc::new(RefCell::new(vec![None; promises.len()]));
+    let remaining = Rc::new(Cell::new(promises.len()));
+    for (i, promise) in promises.into_iter().enumerate() {
+        let (slots, remaining, resolver) = (slots.clone(), remaining.clone(), resolver.clone());
+        rt::spawn(async move {
+            let result = observe(promise).await;
+            slots.borrow_mut()[i] = Some(result);
+            remaining.set(remaining.get() - 1);
+            if remaining.get() == 0 {
+                resolver.resolve(slots.borrow_mut().drain(..).flatten().collect());
+            }
+        });
+    }
+    out
+}

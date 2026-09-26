@@ -18,12 +18,11 @@ pub mod projection;
 pub mod props;
 pub mod seam;
 
-use epdf_annotation_core::{
-    Annot, AnnotationFlags, AnnotationRef, PageRef, PatchScope, PdfRect,
-    PropKey, Source, geom_rotation,
-    pdf_to_content_rect, props_for,
-};
 use epdf_annotation_core::measurement::MeasurementAppearance;
+use epdf_annotation_core::{
+    Annot, AnnotationFlags, AnnotationRef, PageRef, PatchScope, PdfRect, PropKey, Source,
+    geom_rotation, pdf_to_content_rect, props_for,
+};
 use serde_json::{Value, json};
 
 pub use links::link_child_rects;
