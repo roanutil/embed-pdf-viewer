@@ -3,45 +3,47 @@
 //! accent, enablement, active state and visibility derive at call time from
 //! i18n, the shell and the definition's own derivations.
 //!
-//! The file split follows the TypeScript package: [`types`], [`reducer`],
-//! [`capability`], and the wiring in [`commands_plugin`].
+//! The file split follows the TypeScript package: [`contract`], [`model`],
+//! [`registry`], [`controller`], and the wiring in [`commands_plugin`].
 
-use std::cell::RefCell;
 use std::rc::Rc;
 
-use epdf_kernel::{AnyPlugin, Error, define};
+use epdf_kernel::{AnyPlugin, define};
+use epdf_plugin_i18n::I18N;
+use epdf_plugin_shell::SHELL;
 
-pub mod capability;
-pub mod reducer;
-pub mod types;
+pub mod contract;
+pub mod controller;
+pub mod model;
+pub mod registry;
 
 #[cfg(feature = "harness")]
 pub mod harness;
 
-pub use capability::{CommandRegistry, CommandsCapability, RegisteredCommand, register_command};
-pub use reducer::{commands_reducer, initial_commands_state};
-pub use types::{
-    AccentDerivation, COMMANDS, CommandCtx, CommandDef, CommandsAction, CommandsConfig,
-    CommandsState, Derivation, IconAccent, MenuTarget, Panel, ResolvedCommand, RunFn, Shortcut,
+pub use contract::{
+    AccentDerivation, COMMANDS, CommandCtx, CommandDef, CommandExecutedEvent,
+    CommandExecutionFailedEvent, CommandsConfig, Derivation, ExecuteResult, IconAccent, MenuTarget,
+    Panel, RegisterCommandOptions, RejectReason, ResolvedCommand, RunFn, Shortcut, ShortcutBinding,
     resolved_commands_equal,
 };
+pub use controller::{CommandsCapability, create_commands_controller};
+pub use model::{CommandsAction, CommandsState, commands_reducer, initial_commands_state};
+pub use registry::{CommandRegistry, RegisteredCommand, register_command};
 
 /// `commandsPlugin(config)`: workspace-scoped, one vocabulary for the whole
 /// workspace, with resolution and execution bound to a target document per
-/// call. Definitions live in this closure, never in the store. A duplicate
-/// id or an unparsable shortcut in `config.commands` is the error the
-/// TypeScript throws from the factory.
-pub fn commands_plugin(config: CommandsConfig) -> Result<AnyPlugin, Error> {
-    let mut registry = CommandRegistry::new();
-    for def in config.commands {
-        register_command(&mut registry, def)?;
-    }
-    let registry = Rc::new(RefCell::new(registry));
-    let disabled_categories = config.disabled_categories;
-
-    Ok(define::<CommandsState, CommandsAction>("commands")
-        .initial_state(move || CommandsState { disabled_categories: disabled_categories.clone() })
+/// call. Each controller registers the configured definitions in its own
+/// registry, so a bad definition fails the kernel, not this call. i18n and
+/// the shell are optional: without them labels stay keys and surface targets
+/// route nowhere.
+pub fn commands_plugin(config: CommandsConfig) -> AnyPlugin {
+    let config = Rc::new(config);
+    let disabled = config.disabled_categories.clone();
+    define::<CommandsState, CommandsAction>("commands")
+        .optional(I18N.any())
+        .optional(SHELL.any())
+        .initial_state(move || initial_commands_state(&disabled))
         .reduce(commands_reducer)
-        .capability(&COMMANDS, move |ctx| Ok(CommandsCapability::new(ctx, registry.clone())))
-        .build())
+        .create(&COMMANDS, move |cx| Ok((create_commands_controller(cx, &config)?, None)))
+        .build()
 }

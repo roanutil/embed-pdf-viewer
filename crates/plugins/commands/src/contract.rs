@@ -1,6 +1,6 @@
-//! `types.ts`: the contract. A command definition is app content and holds
-//! functions, so it lives in the plugin's registry, never in the store; the
-//! store slice is only the serializable `disabledCategories`.
+//! `contract.ts`: the contract. A command definition is app content and
+//! holds functions, so it lives in the controller's registry, never in the
+//! store; the store slice is only the serializable `disabledCategories`.
 
 use std::any::Any;
 use std::fmt;
@@ -12,13 +12,17 @@ use epdf_kernel::types::CoreState;
 use epdf_kernel::{AnyToken, Error, Token};
 use serde::{Deserialize, Serialize};
 
-use crate::capability::CommandsCapability;
+use epdf_kernel::rt::Promise;
+use serde_json::Value;
+
+use crate::controller::CommandsCapability;
 
 /// What a derivation or `run` sees: capability resolution bound to the
 /// command's target document (explicit, else the active one).
 #[derive(Clone)]
 pub struct CommandCtx {
     pub(crate) document_id: Option<String>,
+    pub(crate) args: Option<Value>,
     pub(crate) ctx: PluginContext,
 }
 
@@ -27,6 +31,12 @@ impl CommandCtx {
     /// empty id is kept, as `documentId ?? activeId` keeps it.
     pub fn document_id(&self) -> Option<&str> {
         self.document_id.as_deref()
+    }
+
+    /// Caller-supplied arguments (`execute(id, {args})`); absent when the
+    /// caller gave none.
+    pub fn args(&self) -> Option<&Value> {
+        self.args.as_ref()
     }
 
     pub fn core(&self) -> Rc<CoreState> {
@@ -74,9 +84,9 @@ pub struct IconAccent {
 pub type Derivation = Rc<dyn Fn(&CommandCtx) -> Result<bool, Error>>;
 /// `iconAccent`. `Ok(None)` is a `null` (or `undefined`) answer.
 pub type AccentDerivation = Rc<dyn Fn(&CommandCtx) -> Result<Option<IconAccent>, Error>>;
-/// `run`. Its return value is never read, so an async verb returns once it
-/// has started.
-pub type RunFn = Rc<dyn Fn(&CommandCtx) -> Result<(), Error>>;
+/// `run`: `Ok(None)` is a synchronous verb, `Ok(Some)` the promise an async
+/// one returns, which `execute` awaits; `Err` a throw.
+pub type RunFn = Rc<dyn Fn(&CommandCtx) -> Result<Option<Promise<Value>>, Error>>;
 
 /// `shortcut`: one binding or several.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -113,7 +123,8 @@ pub struct CommandDef {
     pub enabled: Option<Derivation>,
     pub active: Option<Derivation>,
     pub visible: Option<Derivation>,
-    /// The verb. When present it runs instead of the surface routing.
+    /// The verb. When present it runs instead of the surface routing, and
+    /// `execute` settles after it.
     pub run: Option<RunFn>,
 }
 
@@ -180,23 +191,6 @@ pub fn resolved_commands_equal(a: Option<&ResolvedCommand>, b: Option<&ResolvedC
         && a.shortcuts == b.shortcuts
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CommandsState {
-    pub disabled_categories: Vec<String>,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "type")]
-pub enum CommandsAction {
-    #[serde(rename = "COMMANDS/DISABLE_CATEGORY")]
-    DisableCategory { category: String },
-    #[serde(rename = "COMMANDS/ENABLE_CATEGORY")]
-    EnableCategory { category: String },
-    #[serde(rename = "COMMANDS/SET_DISABLED_CATEGORIES")]
-    SetDisabledCategories { categories: Vec<String> },
-}
-
 #[derive(Clone, Debug, Default)]
 pub struct CommandsConfig {
     /// The app's command definitions (the plugin ships none).
@@ -205,11 +199,67 @@ pub struct CommandsConfig {
     pub disabled_categories: Vec<String>,
 }
 
-/// `menuTarget(id)`: the one fact the overflow projection needs.
+/// `RegisterCommandOptions`.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct RegisterCommandOptions {
+    /// Replace an existing definition with the same id (otherwise a
+    /// duplicate throws `conflict`).
+    pub replace: bool,
+}
+
+/// `ExecuteResult`: `{status: 'executed'}`, or a refusal with its reason.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(tag = "status", rename_all = "lowercase")]
+pub enum ExecuteResult {
+    Executed,
+    Rejected { reason: RejectReason },
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum RejectReason {
+    NotFound,
+    Disabled,
+    Hidden,
+}
+
+/// `CommandExecutedEvent`. `args` is absent when the caller gave none.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CommandExecutedEvent {
+    pub command_id: String,
+    pub document_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub args: Option<Value>,
+}
+
+/// `CommandExecutionFailedEvent`. `error` is `PluginErrorInfo`.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CommandExecutionFailedEvent {
+    pub command_id: String,
+    pub document_id: Option<String>,
+    pub error: Value,
+}
+
+/// A `{commandId, shortcut}` row of `listShortcuts`.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ShortcutBinding {
+    pub command_id: String,
+    pub shortcut: String,
+}
+
+/// `getMenuTarget(id)`: the one fact the overflow projection needs.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize)]
 pub struct MenuTarget {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub menu: Option<String>,
 }
 
-pub static COMMANDS: LazyLock<Token<CommandsCapability>> = LazyLock::new(|| Token::new("commands"));
+pub static COMMANDS: LazyLock<Token<CommandsCapability>> = LazyLock::new(|| {
+    Token::with_hint(
+        "commands",
+        "add commandsPlugin() from '@embedpdf/plugin-commands' to your plugins list",
+    )
+});

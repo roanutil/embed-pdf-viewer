@@ -1788,7 +1788,7 @@
           "id": "commands",
           "scope": "workspace",
           "initialState": {
-            "$function": true
+            "disabledCategories": []
           }
         }
       }
@@ -1804,7 +1804,7 @@
           "id": "commands",
           "scope": "workspace",
           "initialState": {
-            "$function": true
+            "disabledCategories": []
           }
         }
       }
@@ -1826,7 +1826,11 @@
           "id": "commands",
           "scope": "workspace",
           "initialState": {
-            "$function": true
+            "disabledCategories": [
+              "pro",
+              "beta",
+              "pro"
+            ]
           }
         }
       }
@@ -1854,13 +1858,13 @@
           "id": "commands",
           "scope": "workspace",
           "initialState": {
-            "$function": true
+            "disabledCategories": []
           }
         }
       }
     },
     {
-      "name": "plugin-duplicate-command-throws",
+      "name": "plugin-duplicate-command-is-not-checked-here",
       "fn": "commandsPlugin",
       "args": [
         {
@@ -1881,13 +1885,13 @@
           "id": "commands",
           "scope": "workspace",
           "initialState": {
-            "$function": true
+            "disabledCategories": []
           }
         }
       }
     },
     {
-      "name": "plugin-bad-shortcut-throws",
+      "name": "plugin-bad-shortcut-is-not-checked-here",
       "fn": "commandsPlugin",
       "args": [
         {
@@ -1905,7 +1909,7 @@
           "id": "commands",
           "scope": "workspace",
           "initialState": {
-            "$function": true
+            "disabledCategories": []
           }
         }
       }
