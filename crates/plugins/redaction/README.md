@@ -1,92 +1,80 @@
 # epdf-plugin-redaction
 
-`packages/plugin/redaction` in Rust: the destructive apply stage over `redact` annotation marks.
-All 45 cases in two vector files replay identically (`cargo test -p epdf-plugin-redaction`):
+`packages/plugin/redaction` in Rust, on the v3 controller shape. All 50 cases in two vector files
+replay identically (`cargo test -p epdf-plugin-redaction`):
 
 | File | Kind | Cases | Covers |
 |---|---|---|---|
-| `vectors/plugins/redaction.json` | scenario | 14 | the twins, the redact tool verbs, marking from the text selection and by area drag, the pending projection, collateral, `setLabel`, `apply` and `applyAll` over the engine's `redaction` service (and an engine without it), refusals, remote applies, a throwing `onApplied` listener |
-| `vectors/plugins/redaction-functions.json` | function | 31 | the reducer, and `estimateCollateral` and `getPending` over a stub context: touching edges, slivers, tilted quads, `NaN` geometry, id filters, every ref kind |
+| `vectors/plugins/redaction.json` | scenario | 22 | the twins, marking from the text selection, by area, by page and from search matches, the configured overlay look, the redact tool through the suite's lens, the pending view and its reads, collateral, `unmark` and `clearPending`, labels and a refused label edit, `apply`, `applyPages` and `applyAll` over the engine's `redaction` service (and an engine without it), refusals, remote applies, `onPendingChanged`, a throwing `onApplied` listener |
+| `vectors/plugins/redaction-functions.json` | function | 28 | the reducer, and `estimateCollateral` over a stub annotation plane: touching edges, slivers, tilted quads, `NaN` geometry, ref filters of every kind |
 
-The scenario registry runs the real interaction, selection and annotation adapters beside this one,
-so marks are real annotations and the apply flow sees the annotation plane's own reaction to a
-`redaction.applied` event.
+The scenario registry runs the real interaction, selection, annotation and search adapters beside
+this one, so marks are real annotations and search marks come from a real search session.
 
 ## The API
 
-One token, `REDACTION`, and one type, `RedactionCapability`, with the TypeScript's methods in snake
-case: `can_mark`, `can_apply`, `is_applying`, `last_result`, `enable_redact`, `toggle_redact`,
-`is_redact_active`, `queue_current_selection`, `prepare_pending`, `get_pending`, `pending_count`,
-`estimate_collateral`, `set_label`, `apply`, `apply_all` and `on_applied`. `redaction_plugin(host)`
-is `redactionPlugin()`. The reducer, `create_redaction_capability`, and the pure halves of the
-capability (`collect_pending`, `estimate_collateral`, `id_of`, `regions_of`, `intersects`) are
-public too.
+One token, `REDACTION`, and one type, `RedactionCapability`, with the TypeScript's members in snake
+case: the reads `list_pending`, `get_pending`, `get_pending_count` and `estimate_collateral`;
+marking with `mark_selection`, `mark_area`, `mark_page`, `mark_matches`, `unmark`, `clear_pending`
+and `update_label`; applying with `apply`, `apply_pages` and `apply_all`; and `can_mark`,
+`can_apply`, `is_applying`, `get_last_result`, `on_applied` and `on_pending_changed`.
+`redaction_plugin(RedactionConfig)` is `redactionPlugin(config)`. The files follow the TypeScript's
+`read/`, `write/`, `sync/` and `services/` split, each an `impl` block on the one capability.
 
-`canMark` is `annotation.can_create()`, not a re-derivation. `canApply` is engine support plus all
-three of `doc.redact`, `doc.pages.modify` and `doc.annotate.modify` (`APPLY_CAPABILITIES`), as
-`permissions.md` requires.
+`mark_area`, `mark_page` and `clear_pending` return `Result<Promise<_>, Error>`, because the
+TypeScript's are plain functions that throw where they are called (`markPage` of an unknown page,
+`markArea` without create authority). The `async` verbs reject instead. `apply`, `apply_pages` and
+`apply_all` are plain functions too, but they refuse with `Promise.reject`, so they return a
+`Promise`.
 
-Apply results and `redaction.applied` events stay `serde_json::Value`: the plugin never reads
-inside them. So does a pending item's `ref`, which is the DTO's own and goes back to the engine
-verbatim.
+Apply results, `redaction.applied` events and collateral refs stay `serde_json::Value`: the plugin
+never reads inside them.
 
 ## Host input
 
-The TypeScript reports a throwing `onApplied` listener to `console.error` and carries on with the
-next one. That comes in as `RedactionHost::console_error(message, error)`; `None` drops it. The
-vectors log it as a `console.error` callback, the same shim the annotation suites use.
+The TypeScript reports a throwing event listener to `console.error('[redaction] listener failed:',
+error)`. That comes in as `RedactionConfig::host.console_error`. The vectors log it as a
+`console.error` callback, the same shim the annotation suites use.
 
-## Turn order
+## The `redaction-tool` lens
 
-`apply` and `apply_all` are `async` functions that `return runApply(...)`, so their promise settles
-two turns after `runApply`'s (the resolve-thenable job, then the reaction). `runApply` awaits the
-engine call, which costs the three turns `epdf_plugin_annotation::promise::await_engine` models.
-`prepare_pending` is `await Promise.all(...)` over `ensurePage`'s `undefined`s: one turn for the
-`all`, one for the `await`.
+v2's `enableRedact`, `toggleRedact` and `isRedactActive` left the plugin: the `redact` tool is the
+annotation plugin's, armed through the interaction hub. The generator keeps the old cases readable
+with a suite-local `redaction-tool` factory (`redaction-test/tool`) over the hub, and `harness.rs`
+builds the same lens. `toggleRedact` goes back through `activateDefaultTool`, not to `pointer`.
 
 ## Where the port differs in shape
 
-`toggle_redact`, `enable_redact` and `is_redact_active` return `Result`, because `ctx.try_get` can
-fail when a capability constructor throws. The TypeScript throws the same error from the same call.
+The TypeScript memoizes each page's marks on the identity of `annotation.list({page, subtype})`,
+and the document-wide list on the identity of the per-page results. The annotation plane builds a
+fresh array per call, so the per-page memo never hits (`read/pending.ts:41` is unreached). The port
+rebuilds the marks on every read. Nothing observable changes.
 
-A `redaction.applied` event with no `origin` makes the TypeScript listener throw a `TypeError` from
-inside `emit`. The Rust listener can't throw, so it ignores the event. No engine sends one.
+`originOf(event)` for a remote apply is computed locally in `sync/mod.rs`. The kernel's `origin_of`
+answers `sessionId: null` for an origin without one, where the TypeScript's literal carries
+`undefined`, which canonical JSON leaves out (`remote-applies-arrive-as-events`).
 
-`get_pending`'s `id` is the TypeScript's template literal over whatever the ref carries, including
-`undefined` members of an unknown ref kind, so it's computed from the JSON rather than through
-`AnnotationRef`, which would refuse such a ref.
+`apply` with no argument throws `TypeError: Cannot read properties of undefined (reading 'map')` in
+the TypeScript before any promise exists. The harness produces that throw, since the Rust signature
+takes a slice.
 
 ## Coverage
 
-The generators reach all 253 statements in `capability.ts` and every statement in the other five
-files, and 98 of its 101 branches (`vectors/coverage.json`). The three left are unreachable from the
-public surface:
+The generators reach 731 of the package's 738 statements and 167 of its 172 branches
+(`vectors/coverage.json`). What is left cannot be reached from the plugin:
 
-- `capability.ts:67`, `requireDoc` with no `ctx.doc`. The plugin is document-scoped, so its context
-  always has a handle.
-- `capability.ts:160`, `toggleRedact` without an interaction plugin. The annotation plugin requires
-  one, and this plugin requires the annotation plugin.
-- `capability.ts:173`, a selected page with no segments. The selection plugin's `snapshot` filters
-  those pages out before it returns.
+- `controller.ts:53-59`, `createRedactionCapability`, the unit tests' helper. The plugin builds
+  through `createRedactionController`.
+- `read/pending.ts:41`, the memo hit, for the reason above.
+- `read/pending.ts:44`, a `redact` record without a `redact` raw DTO. The annotation plane only
+  lists confirmed entries, and those carry their DTO.
+- `services/store.ts:20`, `requireDoc` without a handle, and `store.ts:31`, `pages()` without a
+  document. The plugin is document-scoped and a controller is built after the handle is set.
+- `services/store.ts:33`, the `-1` page index. A mark's page comes from the page filter or the
+  document's page list, and hydration drops annotations on pages the document does not list.
 
 ## Mutation testing
 
-Complete, file by file through `scripts/mutants.sh`:
-
-| File | Caught | Missed | Timeout | Unviable |
-|---|---|---|---|---|
-| `capability.rs` | 87 | 0 | 1 | 38 |
-| `reducer.rs` | 3 | 1 | 0 | 0 |
-| `lib.rs` | 0 | 0 | 0 | 1 |
-
-The timeout is `index *= 1` in the listener walk, which never ends, so cargo-mutants catches it by
-its timeout. The one miss is equivalent: `initial_redaction_state` replaced with
-`Default::default()` builds the same state. `types.rs` has no functions to mutate, and `harness.rs`
-is the adapter, which the vectors exercise but nobody mutates.
-
-The first `capability.rs` run missed 7. Two were guards for an `undefined` ref member, which
-canonical JSON never carries, so they're gone and a function case pins how an array-valued member
-joins. The other five were the listener set's re-entry bookkeeping. No vector reaches it (a `$fn`
-callback can't unsubscribe while `onApplied` listeners are firing), so three unit tests in
-`capability.rs` pin JavaScript's `Set` iteration rules instead. That's the cost of those tests: they
-check the port against the language semantics, not against the TypeScript oracle.
+The pre-v3 runs covered `capability.rs`, which is gone. The reducer moved unchanged to `model.rs`;
+its pre-v3 result (3 caught, 1 equivalent miss: `initial_redaction_state` as `Default::default()`)
+is pre-v3, rerun pending.

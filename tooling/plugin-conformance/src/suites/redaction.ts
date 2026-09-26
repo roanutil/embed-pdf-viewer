@@ -15,7 +15,7 @@ import { createCapabilityToken, definePlugin, type AnyPlugin } from '@embedpdf/c
 import { initialRedactionState, redactionReducer } from '../../../../packages/plugin/redaction/src/model';
 import { createPendingReads } from '../../../../packages/plugin/redaction/src/read/pending';
 import { redactionPlugin } from '../../../../packages/plugin/redaction/src/index';
-import { RedactionToken } from '../../../../packages/plugin/redaction/src/host-contract';
+import { RedactionToken, type RedactionConfig } from '../../../../packages/plugin/redaction/src/host-contract';
 import type { RedactionAction, RedactionState } from '../../../../packages/plugin/redaction/src/model';
 import { InteractionToken } from '../../../../packages/plugin/interaction/src/host-contract';
 
@@ -56,9 +56,9 @@ console.error = (...args: unknown[]) => {
 };
 
 registerPlugin('redaction', {
-  factory: (_config, env) => {
+  factory: (config, env) => {
     redactionLog = env.log;
-    return redactionPlugin() as AnyPlugin;
+    return redactionPlugin((config ?? {}) as RedactionConfig) as AnyPlugin;
   },
   tokens: [RedactionToken],
 });
@@ -165,6 +165,8 @@ const call = (method: string, args: unknown[] = [], docId = 'a'): Step => {
   return { op: 'call', target: { token: 'redaction', doc: docId }, method: RENAMED[method] ?? method, args: out };
 };
 const ref = (n: number): Step => ({ op: 'call', target: { ref: n } });
+/** A v3 call on the redaction capability, no renames. */
+const rd = (method: string, args: unknown[] = [], docId = 'a'): Step => ({ op: 'call', target: { token: 'redaction', doc: docId }, method, args });
 const emit = (event: Record<string, unknown>, docId = 'a'): Step => ({ op: 'emit', doc: docId, event: v3Event(event) });
 const openDoc = (id: string): Step => open(id);
 
@@ -226,6 +228,15 @@ const applyResult = (scope: unknown, removed = 2) => ({
   removedAnnotationCount: removed,
   meta: { revision: 3 },
 });
+const OVERLAY = { overlay: { fill: '#ff0000', text: { color: '#00ff00', fontFamily: 'courier', fontSize: 0 } } };
+const CROP2_RECT = { left: 10, bottom: 20, right: 410, top: 520 };
+/** An engine search match and one axis-aligned PDF-space segment. */
+const seg = (left: number, bottom: number, right: number, top: number) => ({
+  quad: { p1: { x: left, y: top }, p2: { x: right, y: top }, p3: { x: left, y: bottom }, p4: { x: right, y: bottom } },
+  rect: { left, bottom, right, top },
+  advance: 1,
+});
+const match = (pon: number, charStart: number, segments: unknown[]) => ({ page: pr(pon), charStart, charCount: 3, segments });
 const refsScope = { kind: 'annotations', refs: [objRef(10), { kind: 'nm', page: pr(2), nm: 'mark-b' }] };
 const pagesScope = { kind: 'pages', pages: [pr(1), pr(2)] };
 const reloadPages = [
@@ -526,6 +537,168 @@ const cases: ScenarioCase[] = [
       call('setLabel', [{ kind: 'nm', page: pr(2), nm: 'mark-b' }, { overlayText: 'B', repeat: false }]),
       call('setLabel', [objRef(1), { overlayText: 'x' }]),
       call('setLabel', [objRef(77), { overlayText: 'x' }]),
+    ],
+  },
+  {
+    name: 'mark-area-and-page',
+    covers:
+      'markArea creates a redact annotation over a page-space rectangle with the redact tool and the configured overlay look (fill, label colour, family, and a size of 0); markPage covers the whole page. onPendingChanged fires for each redact creation and not for a square. markPage of a page the document lacks throws not-found; without create authority markArea and markPage throw permission-denied.',
+    plugins: [{ factory: 'interaction' }, { factory: 'annotation' }, { factory: 'redaction', config: OVERLAY }, { factory: 'redaction-tool' }],
+    engine: {
+      documents: {
+        a: withService([
+          hydrate(),
+          { path: 'page.annotations.create', pon: 1, times: 1, value: created(redact(40, { rect: { left: 10, bottom: 730, right: 110, top: 780 }, interiorColor: { r: 255, g: 0, b: 0 }, fontColor: { r: 0, g: 255, b: 0 }, fontFamily: 'courier' })) },
+          { path: 'page.annotations.create', pon: 2, value: created(redact(41, { pageObjectNumber: 2, rect: CROP2_RECT, interiorColor: { r: 255, g: 0, b: 0 }, fontColor: { r: 0, g: 255, b: 0 }, fontFamily: 'courier' })) },
+          { path: 'page.annotations.create', pon: 1, value: created(square(42)) },
+        ]),
+        b: withService([hydrate()], { security: { allows: ['doc.annotate.read', ...APPLY_CAPS] } }),
+      },
+    },
+    snapshot: SNAP,
+    steps: [
+      ...boot,
+      openDoc('b'),
+      rd('onPendingChanged', [{ $fn: 'pending' }]),
+      rd('markArea', [pr(1), { x: 10, y: 20, width: 100, height: 50 }]),
+      rd('markPage', [pr(2)]),
+      { op: 'call', target: { token: 'annotation', doc: 'a' }, method: 'create', args: [{ page: pr(1), subtype: 'square', bounds: { x: 300, y: 300, width: 50, height: 50 } }] },
+      rd('markPage', [pr(9)]),
+      rd('listPending'),
+      rd('canMark', [], 'b'),
+      rd('markArea', [pr(1), { x: 0, y: 0, width: 10, height: 10 }], 'b'),
+      rd('markPage', [pr(1)], 'b'),
+    ],
+  },
+  {
+    name: 'an-overlay-without-values-adds-nothing',
+    covers: 'An overlay config whose fill and text members are all absent adds no props to a mark. A document with pages but no marks lists none.',
+    plugins: [{ factory: 'interaction' }, { factory: 'annotation' }, { factory: 'redaction', config: { overlay: { text: {} } } }],
+    engine: {
+      documents: {
+        a: withService([hydrate(), { path: 'page.annotations.create', pon: 1, value: created(redact(43, { rect: { left: 10, bottom: 730, right: 110, top: 780 } })) }]),
+      },
+    },
+    snapshot: 'none',
+    steps: [...boot, rd('listPending'), rd('markArea', [pr(1), { x: 10, y: 20, width: 100, height: 50 }]), rd('getPendingCount')],
+  },
+  {
+    name: 'mark-search-matches',
+    covers:
+      'markMatches runs the search and creates one redact mark per hit from its segment quads, in hit order, skipping hits without segments; a pages filter keeps only the hits on those pages. Without a config the marks carry no overlay props.',
+    plugins: [{ factory: 'interaction' }, { factory: 'annotation' }, { factory: 'search' }, { factory: 'redaction' }],
+    engine: {
+      documents: {
+        a: withService([
+          hydrate(),
+          { path: 'search.query', value: { matches: [match(1, 0, [seg(50, 738, 116, 750), seg(50, 718, 80, 730)]), match(1, 20, []), match(2, 3, [seg(40, 488, 64, 500)])], nextCursor: null, scannedPages: 2, totalPages: 2 } },
+          { path: 'page.annotations.create', pon: 1, value: created(redact(50, { quadPoints: [quad(50, 738, 66, 12), quad(50, 718, 30, 12)] })) },
+          { path: 'page.annotations.create', pon: 2, times: 1, value: created(redact(51, { pageObjectNumber: 2, quadPoints: [quad(40, 488, 24, 12)] })) },
+          { path: 'page.annotations.create', pon: 2, value: created(redact(52, { pageObjectNumber: 2, quadPoints: [quad(40, 488, 24, 12)] })) },
+        ]),
+      },
+    },
+    snapshot: SNAP,
+    steps: [
+      ...boot,
+      rd('markMatches', [{ text: 'the' }]),
+      rd('markMatches', [{ text: 'the' }, { pages: [pr(2)] }]),
+      rd('listPending'),
+    ],
+  },
+  {
+    name: 'marking-refusals',
+    covers:
+      'markMatches rejects unsupported without a search plugin and permission-denied without create authority; markSelection rejects unsupported without a selection plugin once authority is there.',
+    plugins: PLUGINS,
+    engine: {
+      documents: {
+        a: withService([hydrate()]),
+        b: withService([hydrate()], { security: { allows: ['doc.annotate.read'] } }),
+      },
+    },
+    snapshot: 'none',
+    steps: [...boot, openDoc('b'), rd('markMatches', [{ text: 'x' }]), rd('markMatches', [{ text: 'x' }], 'b'), rd('markSelection'), rd('markSelection', [], 'b')],
+  },
+  {
+    name: 'unmark-and-clear',
+    covers:
+      'unmark deletes the refs that are pending marks through the annotation plane and reports every other ref as skipped; with no marks among them it resolves without touching the engine. clearPending unmarks every mark; a refused delete lands in failed. onPendingChanged fires once per deleted mark, with its page.',
+    plugins: PLUGINS,
+    engine: {
+      documents: {
+        a: withService([
+          hydrate(seed),
+          { path: 'page.annotations.delete', pon: 1, times: 1, value: {} },
+          { path: 'page.annotations.delete', pon: 1, error: { name: 'EngineError', message: 'locked', code: 'Refused' } },
+          { path: 'page.annotations.delete', pon: 2, value: {} },
+        ]),
+      },
+    },
+    snapshot: SNAP,
+    steps: [
+      ...boot,
+      rd('onPendingChanged', [{ $fn: 'pending' }]),
+      rd('unmark', [[objRef(10), objRef(1), objRef(99)]]),
+      rd('unmark', [[objRef(1)]]),
+      rd('clearPending'),
+      rd('listPending'),
+    ],
+  },
+  {
+    name: 'apply-pages',
+    covers: 'applyPages rejects invalid-input for no pages and otherwise sends the given pages as a pages scope.',
+    plugins: PLUGINS,
+    engine: {
+      documents: {
+        a: withService([hydrate(seed), { path: 'redaction.apply', args: [{ kind: 'pages', pages: [pr(2)] }], value: applyResult({ kind: 'pages', pages: [pr(2)] }, 1) }]),
+      },
+    },
+    snapshot: ['redaction::a'],
+    steps: [...boot, rd('applyPages', [[]]), rd('isApplying'), rd('applyPages', [[pr(2)]]), rd('getLastResult')],
+  },
+  {
+    name: 'pending-reads',
+    covers:
+      'getPending finds a mark by any ref kind and answers null for a non-mark; listPending with a page filter reads only that page (a page the document lacks has none), a filter without a page reads them all, and repeated reads answer the same marks. getPendingCount counts one page or all.',
+    plugins: PLUGINS,
+    engine: { documents: { a: withService([hydrate(seed)]) } },
+    snapshot: 'none',
+    steps: [
+      ...boot,
+      rd('getPending', [objRef(10)]),
+      rd('getPending', [{ kind: 'nm', page: pr(2), nm: 'mark-b' }]),
+      rd('getPending', [objRef(1)]),
+      rd('listPending', [{ page: pr(2) }]),
+      rd('listPending', [{ page: pr(2) }]),
+      rd('listPending', [{ page: pr(9) }]),
+      rd('listPending', [{}]),
+      rd('listPending'),
+      rd('getPendingCount', [pr(1)]),
+      rd('getPendingCount', [pr(9)]),
+      rd('getPendingCount'),
+    ],
+  },
+  {
+    name: 'update-label-refused',
+    covers:
+      'An engine refusal of a label edit rejects as a redaction PluginError; a later edit that lands fires onPendingChanged for the mark’s page.',
+    plugins: PLUGINS,
+    engine: {
+      documents: {
+        a: withService([
+          hydrate(seed),
+          { path: 'page.annotations.update', pon: 1, times: 1, error: { name: 'EngineError', message: 'locked', code: 'Refused' } },
+          { path: 'page.annotations.update', pon: 1, value: updated({ ...areaMark, repeat: true }) },
+        ]),
+      },
+    },
+    snapshot: 'none',
+    steps: [
+      ...boot,
+      rd('onPendingChanged', [{ $fn: 'pending' }]),
+      rd('updateLabel', [objRef(10), { overlayText: 'X' }]),
+      rd('updateLabel', [objRef(10), { repeat: true }]),
     ],
   },
 ];

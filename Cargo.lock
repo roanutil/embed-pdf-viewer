@@ -557,6 +557,7 @@ dependencies = [
  "epdf-kernel",
  "epdf-plugin-annotation",
  "epdf-plugin-interaction",
+ "epdf-plugin-search",
  "epdf-plugin-selection",
  "plugin-conformance",
  "serde",
