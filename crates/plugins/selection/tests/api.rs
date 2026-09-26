@@ -6,12 +6,15 @@ use std::cell::Cell;
 use std::rc::Rc;
 
 use epdf_geometry::{Point, TextQuad};
+use epdf_kernel::geometry::PageRef;
 use epdf_kernel::kernel::OpenSource;
 use epdf_kernel::{Kernel, KernelOptions, OpenOptions, rt};
 use epdf_plugin_interaction::{InteractionConfig, interaction_plugin};
 use epdf_plugin_selection::*;
 use plugin_conformance::fake_engine::{AsEngine, FakeEngine};
 use serde_json::json;
+
+const PAGE: PageRef = PageRef { page_object_number: 1 };
 
 /// Page 1 with "abc" at x 50..68, y-up 738..750 (content y 50..62).
 fn kernel() -> Kernel {
@@ -21,7 +24,7 @@ fn kernel() -> Kernel {
     let fake = FakeEngine::new(json!({
         "documents": { "a": {
             "pages": [{
-                "index": 0, "pageObjectNumber": 1, "label": null,
+                "index": 0, "ref": { "kind": "objectNumber", "pageObjectNumber": 1 }, "label": null,
                 "size": { "width": 600, "height": 800 }, "rotation": 0, "userUnit": 1,
                 "boxes": { "media": box_, "crop": box_ }
             }],
@@ -35,7 +38,10 @@ fn kernel() -> Kernel {
     }));
     let kernel = Kernel::new(
         Rc::new(AsEngine(fake)),
-        vec![interaction_plugin(InteractionConfig::default()), selection_plugin()],
+        vec![
+            interaction_plugin(InteractionConfig::default()),
+            selection_plugin(SelectionConfig::default()),
+        ],
         KernelOptions { report: None, on_dispatch: None },
     )
     .unwrap();
@@ -52,13 +58,13 @@ fn kernel() -> Kernel {
 struct Shifted;
 
 impl SelectionHandleView for Shifted {
-    fn to_overlay(&self, _: u32, p: Point) -> Option<Point> {
+    fn to_overlay(&self, _: PageRef, p: Point) -> Option<Point> {
         Some(Point { x: p.x + 100.0, y: p.y })
     }
     fn page_at(&self, o: Point) -> Option<handles::PagePoint> {
-        Some(handles::PagePoint { pon: 1, point: Point { x: o.x - 100.0, y: o.y } })
+        Some(handles::PagePoint { page: PAGE, point: Point { x: o.x - 100.0, y: o.y } })
     }
-    fn point_on_page(&self, _: u32, o: Point) -> Option<Point> {
+    fn point_on_page(&self, _: PageRef, o: Point) -> Option<Point> {
         Some(Point { x: o.x - 100.0, y: o.y })
     }
 }
@@ -67,11 +73,14 @@ impl SelectionHandleView for Shifted {
 fn a_handle_drag_drives_the_capability() {
     let kernel = kernel();
     let selection = kernel.capability(&SELECTION, Some("a")).unwrap();
-    selection.ensure_page(1);
+    let _ = selection.ensure_loaded(PAGE);
     rt::run_until_stalled();
     let commits = Rc::new(Cell::new(0));
     let c = commits.clone();
-    selection.on_commit(move || c.set(c.get() + 1));
+    let _off = selection.on_committed(move |_| {
+        c.set(c.get() + 1);
+        Ok(())
+    });
 
     // The opposite endpoint is glyph 0's cell; drag toward glyph 2.
     let cell = TextQuad {
@@ -80,14 +89,14 @@ fn a_handle_drag_drives_the_capability() {
         lower_start: Point { x: 50.0, y: 62.0 },
         lower_end: Point { x: 56.0, y: 62.0 },
     };
-    let opposite = SelectionHandleEndpoint { pon: 1, glyph_quad: cell, advance: 1 };
+    let opposite = SelectionHandleEndpoint { page: PAGE, glyph_quad: cell, advance: 1 };
     let session =
-        create_selection_handle_drag(Rc::new(selection.clone()), Rc::new(Shifted), &opposite, 1);
+        create_selection_handle_drag(Rc::new(selection.clone()), Rc::new(Shifted), &opposite, PAGE);
     session.move_to(Point { x: 165.0, y: 56.0 });
-    assert!(selection.is_selecting());
-    let range = selection.snapshot().range.unwrap();
+    assert!(selection.is_gesture_active());
+    let range = selection.get_snapshot().range.unwrap();
     assert_eq!((range.start.index, range.end.index), (0, 3));
     session.end();
-    assert!(!selection.is_selecting());
+    assert!(!selection.is_gesture_active());
     assert_eq!(commits.get(), 1);
 }

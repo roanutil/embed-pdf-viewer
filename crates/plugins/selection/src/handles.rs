@@ -6,33 +6,36 @@ use std::cell::Cell;
 use std::rc::Rc;
 
 use epdf_geometry::{Point, TextQuad, TextQuadSide, js, text_quad_edge};
+use epdf_kernel::geometry::PageRef;
+use epdf_plugin_interaction::page_ref_json;
 use serde::{Deserialize, Serialize};
 
-use crate::capability::SelectionCapability;
-use crate::types::PageObjectNumber;
+use crate::controller::SelectionCapability;
 
 /// A page under an overlay point.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct PagePoint {
-    pub pon: PageObjectNumber,
+    #[serde(rename = "ref", with = "page_ref_json")]
+    pub page: PageRef,
     pub point: Point,
 }
 
 /// What handle geometry and drags need from the hosting view.
 pub trait SelectionHandleView {
     /// Page content point to overlay px; point-exact.
-    fn to_overlay(&self, pon: PageObjectNumber, pt: Point) -> Option<Point>;
+    fn to_overlay(&self, page: PageRef, pt: Point) -> Option<Point>;
     /// Overlay px to the page under it, `None` over a gap.
     fn page_at(&self, overlay: Point) -> Option<PagePoint>;
     /// Overlay px to a specific page's content space, unclamped.
-    fn point_on_page(&self, pon: PageObjectNumber, overlay: Point) -> Option<Point>;
+    fn point_on_page(&self, page: PageRef, overlay: Point) -> Option<Point>;
 }
 
 /// One selection boundary as the handle needs it.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SelectionHandleEndpoint {
-    pub pon: PageObjectNumber,
+    #[serde(with = "page_ref_json")]
+    pub page: PageRef,
     pub glyph_quad: TextQuad,
     /// Reading direction of its segment (1 is the frame's +x).
     pub advance: i32,
@@ -40,20 +43,24 @@ pub struct SelectionHandleEndpoint {
 
 /// The gesture verbs a handle drag drives.
 pub trait SelectionHandleTarget {
-    fn begin_at(&self, pon: PageObjectNumber, point: Point) -> bool;
-    fn extend_to(&self, pon: PageObjectNumber, point: Point);
-    fn end(&self);
+    fn begin_gesture_at(&self, page: PageRef, point: Point) -> bool;
+    fn extend_to(&self, page: PageRef, point: Point);
+    fn end_gesture(&self);
 }
 
+/// The capability satisfies the target, as the TypeScript's structural type
+/// does. An `extend_to` refused for want of `doc.text.select` is dropped:
+/// `begin_gesture_at` already answered false without it, so a drag never
+/// gets that far.
 impl SelectionHandleTarget for SelectionCapability {
-    fn begin_at(&self, pon: PageObjectNumber, point: Point) -> bool {
-        SelectionCapability::begin_at(self, pon, point)
+    fn begin_gesture_at(&self, page: PageRef, point: Point) -> bool {
+        SelectionCapability::begin_gesture_at(self, page, point)
     }
-    fn extend_to(&self, pon: PageObjectNumber, point: Point) {
-        SelectionCapability::extend_to(self, pon, point);
+    fn extend_to(&self, page: PageRef, point: Point) {
+        let _ = SelectionCapability::extend_to(self, page, point);
     }
-    fn end(&self) {
-        SelectionCapability::end(self);
+    fn end_gesture(&self) {
+        SelectionCapability::end_gesture(self);
     }
 }
 
@@ -111,8 +118,8 @@ pub fn selection_handle_geom(
         ep.glyph_quad,
         if leading { TextQuadSide::Start } else { TextQuadSide::End },
     );
-    let upper = view.to_overlay(ep.pon, upper_page);
-    let lower = view.to_overlay(ep.pon, lower_page);
+    let upper = view.to_overlay(ep.page, upper_page);
+    let lower = view.to_overlay(ep.page, lower_page);
     let (upper, lower) = (upper?, lower?);
     let dx = lower.x - upper.x;
     let dy = lower.y - upper.y;
@@ -146,18 +153,18 @@ pub fn selection_handle_geom(
 pub struct SelectionHandleDragSession {
     selection: Rc<dyn SelectionHandleTarget>,
     view: Rc<dyn SelectionHandleView>,
-    opposite_pon: PageObjectNumber,
+    opposite_page: PageRef,
     anchor_point: Point,
     begun: Cell<bool>,
-    last_pon: Cell<PageObjectNumber>,
+    last_page: Cell<PageRef>,
 }
 
-/// `createSelectionHandleDrag(selection, view, opposite, draggedPon)`.
+/// `createSelectionHandleDrag(selection, view, opposite, draggedPage)`.
 pub fn create_selection_handle_drag(
     selection: Rc<dyn SelectionHandleTarget>,
     view: Rc<dyn SelectionHandleView>,
     opposite: &SelectionHandleEndpoint,
-    dragged_pon: PageObjectNumber,
+    dragged_page: PageRef,
 ) -> SelectionHandleDragSession {
     let q = opposite.glyph_quad;
     let anchor_point =
@@ -165,10 +172,10 @@ pub fn create_selection_handle_drag(
     SelectionHandleDragSession {
         selection,
         view,
-        opposite_pon: opposite.pon,
+        opposite_page: opposite.page,
         anchor_point,
         begun: Cell::new(false),
-        last_pon: Cell::new(dragged_pon),
+        last_page: Cell::new(dragged_page),
     }
 }
 
@@ -176,19 +183,19 @@ impl SelectionHandleDragSession {
     /// `move(overlay)`: feed the pointer's current overlay position.
     pub fn move_to(&self, overlay: Point) {
         if !self.begun.get() {
-            if !self.selection.begin_at(self.opposite_pon, self.anchor_point) {
+            if !self.selection.begin_gesture_at(self.opposite_page, self.anchor_point) {
                 return;
             }
             self.begun.set(true);
         }
         match self.view.page_at(overlay) {
             Some(hit) => {
-                self.last_pon.set(hit.pon);
-                self.selection.extend_to(hit.pon, hit.point);
+                self.last_page.set(hit.page);
+                self.selection.extend_to(hit.page, hit.point);
             }
             None => {
-                if let Some(p) = self.view.point_on_page(self.last_pon.get(), overlay) {
-                    self.selection.extend_to(self.last_pon.get(), p);
+                if let Some(p) = self.view.point_on_page(self.last_page.get(), overlay) {
+                    self.selection.extend_to(self.last_page.get(), p);
                 }
             }
         }
@@ -197,7 +204,7 @@ impl SelectionHandleDragSession {
     /// The pointer released or was cancelled: settle, if the drag re-rooted.
     pub fn end(&self) {
         if self.begun.get() {
-            self.selection.end();
+            self.selection.end_gesture();
         }
     }
 }
