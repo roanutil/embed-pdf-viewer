@@ -10,7 +10,7 @@ use std::rc::Rc;
 use epdf_geometry::Point;
 use epdf_plugin_interaction::{InteractionCapability, InteractionHandler, PointerSample, Tool};
 
-use crate::capability::StageCapability;
+use crate::controller::StageCapability;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct ScrollHandlerOptions {
@@ -28,7 +28,7 @@ struct ScrollHandler {
 
 impl ScrollHandler {
     fn is_pan_tool(&self) -> bool {
-        self.interaction.active_tool().enables("scroll")
+        self.interaction.get_active_tool().enables("scroll")
     }
 }
 
@@ -52,7 +52,7 @@ impl InteractionHandler for ScrollHandler {
             return false;
         }
         self.last.set(s.viewport);
-        self.interaction.set_cursor("stage-grab", Some("grabbing"), 40.0);
+        self.interaction.claim_cursor("stage-grab", Some("grabbing"), 40.0);
         true
     }
 
@@ -66,19 +66,19 @@ impl InteractionHandler for ScrollHandler {
     }
 
     fn on_up(&self, _s: &PointerSample) {
-        self.interaction.set_cursor("stage-grab", None, 0.0);
+        self.interaction.claim_cursor("stage-grab", None, 0.0);
     }
 
     fn on_hover(&self, s: &PointerSample) {
         if self.pan_fallback && !self.is_pan_tool() {
             let cursor = if s.page.is_some() { None } else { Some("grab") };
-            self.interaction.set_cursor("stage-pan-fallback", cursor, 5.0);
+            self.interaction.claim_cursor("stage-pan-fallback", cursor, 5.0);
         }
     }
 }
 
 /// `createScrollHandler(stage, interaction, options)`. The surface binding
-/// registers it with the hub, scoped to `stage.lens_id()`.
+/// registers it with the hub, scoped to `stage.get_lens_id()`.
 pub fn create_scroll_handler(
     stage: StageCapability,
     interaction: InteractionCapability,

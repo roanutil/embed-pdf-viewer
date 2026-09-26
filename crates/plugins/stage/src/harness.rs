@@ -20,18 +20,21 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use epdf_geometry::{PageRotation, Point, Rect, Size};
+use epdf_kernel::geometry::PageRef;
 use epdf_kernel::rt::{self, TimerId};
-use epdf_kernel::{AnyPlugin, AnyToken, Error, Token, define, is_undefined, undefined};
-use epdf_plugin_interaction::INTERACTION;
+use epdf_kernel::{
+    AnyPlugin, AnyToken, Error, Token, Unsubscribe, define, is_undefined, undefined,
+};
 use epdf_plugin_interaction::harness::{answer_truthy, truthy};
+use epdf_plugin_interaction::{INTERACTION, RegisterHandlerOptions};
 use epdf_stage_core::{Camera, ZoomSpec};
 use plugin_conformance::js::{arg, from_value, to_value};
-use plugin_conformance::{FunctionTable, Harness, HarnessPlugin, Outcome};
+use plugin_conformance::{Answer, FunctionTable, Harness, HarnessPlugin, Outcome};
 use serde_json::{Map, Value, json};
 
 use crate::destination::{PageLayout, PdfDestination, destination_to_reveal};
+use crate::model::{initial_stage_state, stage_reducer};
 use crate::motion::*;
-use crate::reducer::{initial_stage_state, stage_reducer};
 use crate::responsive::{box_of, eq_setting, matches_query, merge_settings, resolve_responsive};
 use crate::settings::{
     SETTING_KEYS, default_responsive, default_settings, settings_effect, settings_equal,
@@ -202,46 +205,35 @@ fn not_a_function(method: &str) -> Outcome {
     Outcome::Threw(Error::new(format!("[scenario] \"{method}\" is not a function")))
 }
 
-/// The capability object literal's member order.
+/// The capability's member order: `composeApi` over the areas' slices, in
+/// the order `controller.ts` lists them, then the six hooks.
 const MEMBERS: &[&str] = &[
-    "camera",
-    "viewport",
-    "scrollMetrics",
-    "pageCount",
-    "visiblePages",
-    "currentPage",
-    "currentItemPages",
-    "pages",
-    "pageRect",
-    "pageAt",
-    "pointOnPage",
+    // read/pages
+    "getCamera",
+    "getViewportSize",
+    "getScrollMetrics",
+    "listVisiblePages",
+    "isPageVisible",
+    "getCurrentPageIndex",
+    "getCurrentPage",
+    "listCurrentItemPages",
+    "getPageFrame",
+    "getPageAt",
+    "viewportToPage",
     "pageToWorld",
-    "pageRectToScreen",
-    "toScreen",
-    "toWorld",
-    "flow",
-    "layout",
-    "spread",
-    "sizing",
-    "columns",
-    "bounded",
-    "padding",
-    "gap",
-    "pageFrame",
-    "fitAlign",
-    "arrivalAlign",
-    "zoomAlign",
-    "anchorAlign",
-    "direction",
-    "scrollBehavior",
-    "viewRotation",
-    "zoomLevel",
-    "zoomMode",
-    "viewpoint",
-    "settings",
-    "viewState",
-    "setViewport",
-    "setDevicePixelRatio",
+    "pageRectToViewport",
+    "worldToViewport",
+    "viewportToWorld",
+    "pageToViewport",
+    "getViewRotation",
+    "getZoomLevel",
+    "getZoomMode",
+    "getViewpoint",
+    // camera/animation
+    "fling",
+    "isMoving",
+    "stopMotion",
+    // camera/gestures
     "setCamera",
     "panBy",
     "scrollTo",
@@ -249,52 +241,100 @@ const MEMBERS: &[&str] = &[
     "zoomAround",
     "beginGesture",
     "endGesture",
-    "fling",
-    "cameraInMotion",
-    "doubleTapZoom",
-    "zoomIn",
-    "zoomOut",
-    "zoomTo",
-    "fitWidth",
-    "fitPage",
-    "fitAll",
-    "automatic",
-    "refit",
+    // navigation/arrive
+    "goToPageIndex",
     "goToPage",
+    "goToFirstPage",
+    "goToLastPage",
+    "canGoNext",
+    "canGoPrevious",
+    "nextPage",
+    "previousPage",
+    "resetView",
+    // navigation/reveal
     "reveal",
-    "next",
-    "prev",
-    "lensId",
-    "update",
-    "setResponsive",
-    "matches",
-    "activeRules",
+    "revealRect",
+    "revealIndex",
+    // settings/settings
+    "getSettings",
+    "resetSettings",
+    "updateSettings",
+    "setResponsiveRules",
+    "matchesRule",
+    "listActiveRules",
     "setFlow",
     "setLayout",
     "setSpread",
     "setSizing",
-    "setColumns",
-    "setBounded",
-    "setPadding",
-    "setGap",
-    "setPageFrame",
-    "setFitAlign",
-    "setArrivalAlign",
-    "setZoomAlign",
-    "setAnchorAlign",
-    "setDirection",
-    "setViewRotation",
-    "rotateView",
-    "setScrollBehavior",
     "applyViewState",
+    // navigation/zoom
+    "doubleTapZoom",
+    "zoomIn",
+    "zoomOut",
+    "zoomTo",
+    "zoomBy",
+    "fitWidth",
+    "fitPage",
+    "fitAll",
+    "fitAutomatic",
+    "setViewRotation",
+    "rotateViewBy",
+    // view/lifecycle
+    "setViewportSize",
+    "setDevicePixelRatio",
+    "refit",
+    "getViewState",
+    "getLensId",
     "provideInitialView",
     "placeInitial",
-    "resetView",
+    // the hooks
+    "onPageChanged",
+    "onZoomChanged",
+    "onCameraChanged",
+    "onMotionEnded",
+    "onSettingsChanged",
+    "onViewportChanged",
 ];
 
 fn index_arg(args: &[Value], i: usize) -> Result<isize, Error> {
     let n: f64 = arg(args, i)?;
     Ok(n as isize)
+}
+
+/// A `PageRef` argument. Anything else names no page: every page verb
+/// then answers as it does for a page the document lacks.
+fn page_arg(args: &[Value], i: usize) -> PageRef {
+    present(args, i).and_then(PageRef::from_json).unwrap_or(PageRef::new(u32::MAX))
+}
+
+/// A registry row as JavaScript reads it: `undefined` members absent.
+fn page_info_json(page: Option<PageInfo>) -> Value {
+    page.map_or(Value::Null, |p| without_undefined(&p))
+}
+
+/// Subscribe a scripted listener to one hook; the outcome is the
+/// unsubscribe, as a ref.
+fn hook<E: serde::Serialize + 'static>(
+    h: &Harness,
+    spec: Option<&Value>,
+    subscribe: impl FnOnce(Box<dyn Fn(&E) -> Result<(), Error>>) -> Unsubscribe,
+) -> Outcome {
+    let callback = h.callback(spec.unwrap_or(&Value::Null));
+    let off = subscribe(Box::new(move |event: &E| {
+        let event = without_undefined(&to_value(event));
+        match callback.call(vec![event]) {
+            Answer::Throws(error) => Err(error),
+            _ => Ok(()),
+        }
+    }));
+    unsubscribe_ref(h, off)
+}
+
+fn unsubscribe_ref(h: &Harness, off: Unsubscribe) -> Outcome {
+    Outcome::Returned(h.register_fn(Rc::new(move |_| {
+        off.call();
+        Outcome::undefined()
+    })))
 }
 
 fn call_stage(
@@ -304,148 +344,190 @@ fn call_stage(
     h: &Harness,
 ) -> Result<Outcome, Error> {
     let r = Outcome::Returned;
+    let unit = Outcome::undefined;
     Ok(match method {
-        "camera" => r(to_value(&cap.camera())),
-        "viewport" => r(to_value(&cap.viewport())),
-        "scrollMetrics" => r(to_value(&cap.scroll_metrics())),
-        "pageCount" => r(json!(cap.page_count())),
-        "visiblePages" => {
-            r(Value::Array(cap.visible_pages().iter().map(|p| visible_page_json(h, p)).collect()))
+        // read/pages
+        "getCamera" => r(to_value(&cap.get_camera())),
+        "getViewportSize" => r(to_value(&cap.get_viewport_size())),
+        "getScrollMetrics" => r(to_value(&cap.get_scroll_metrics())),
+        "listVisiblePages" => r(Value::Array(
+            cap.list_visible_pages().iter().map(|p| visible_page_json(h, p)).collect(),
+        )),
+        "isPageVisible" => r(json!(cap.is_page_visible(page_arg(args, 0)))),
+        "getCurrentPageIndex" => r(json!(cap.get_current_page_index())),
+        "getCurrentPage" => r(page_info_json(cap.get_current_page())),
+        "listCurrentItemPages" => r(Value::Array(
+            cap.list_current_item_pages().into_iter().map(|p| page_info_json(Some(p))).collect(),
+        )),
+        "getPageFrame" => r(cap
+            .get_page_frame(page_arg(args, 0))
+            .map_or(Value::Null, |p| visible_page_json(h, &p))),
+        "getPageAt" => r(option_json(cap.get_page_at(arg(args, 0)?))),
+        "viewportToPage" => r(option_json(cap.viewport_to_page(page_arg(args, 0), arg(args, 1)?))),
+        "pageToWorld" => r(option_json(cap.page_to_world(page_arg(args, 0), arg(args, 1)?))),
+        "pageRectToViewport" => {
+            r(option_json(cap.page_rect_to_viewport(page_arg(args, 0), arg(args, 1)?)))
         }
-        "currentPage" => r(json!(cap.current_page())),
-        "currentItemPages" => r(json!(cap.current_item_pages())),
-        "pages" => r(to_value(&cap.pages())),
-        "pageRect" => {
-            r(cap.page_rect(arg(args, 0)?).map_or(Value::Null, |p| visible_page_json(h, &p)))
+        "worldToViewport" => r(to_value(&cap.world_to_viewport(arg(args, 0)?))),
+        "viewportToWorld" => r(to_value(&cap.viewport_to_world(arg(args, 0)?))),
+        "pageToViewport" => r(option_json(cap.page_to_viewport(page_arg(args, 0), arg(args, 1)?))),
+        "getViewRotation" => r(to_value(&cap.get_view_rotation())),
+        "getZoomLevel" => r(to_value(&cap.get_zoom_level())),
+        "getZoomMode" => r(to_value(&cap.get_zoom_mode())),
+        "getViewpoint" => r(to_value(&cap.get_viewpoint())),
+        // camera/animation
+        "fling" => done(cap.fling(arg(args, 0)?, arg(args, 1)?)),
+        "isMoving" => r(json!(cap.is_moving())),
+        "stopMotion" => {
+            cap.stop_motion();
+            unit()
         }
-        "pageAt" => r(option_json(cap.page_at(arg(args, 0)?))),
-        "pointOnPage" => r(option_json(cap.point_on_page(arg(args, 0)?, arg(args, 1)?))),
-        "pageToWorld" => r(option_json(cap.page_to_world(arg(args, 0)?, arg(args, 1)?))),
-        "pageRectToScreen" => r(option_json(cap.page_rect_to_screen(arg(args, 0)?, arg(args, 1)?))),
-        "toScreen" => r(to_value(&cap.to_screen(arg(args, 0)?))),
-        "toWorld" => r(to_value(&cap.to_world(arg(args, 0)?))),
-        "flow" => r(to_value(&cap.flow())),
-        "layout" => r(to_value(&cap.layout())),
-        "spread" => r(to_value(&cap.spread())),
-        "sizing" => r(to_value(&cap.sizing())),
-        "columns" => r(to_value(&cap.columns())),
-        "bounded" => r(json!(cap.bounded())),
-        "padding" => r(to_value(&cap.padding())),
-        "gap" => r(to_value(&cap.gap())),
-        "pageFrame" => r(to_value(&cap.page_frame())),
-        "fitAlign" => r(to_value(&cap.fit_align())),
-        "arrivalAlign" => r(to_value(&cap.arrival_align())),
-        "zoomAlign" => r(to_value(&cap.zoom_align())),
-        "anchorAlign" => r(to_value(&cap.anchor_align())),
-        "direction" => r(to_value(&cap.direction())),
-        "scrollBehavior" => r(to_value(&cap.scroll_behavior())),
-        "viewRotation" => r(to_value(&cap.view_rotation())),
-        "zoomLevel" => r(to_value(&cap.zoom_level())),
-        "zoomMode" => r(cap.zoom_mode().map_or(json!("custom"), |m| to_value(&m))),
-        "viewpoint" => r(to_value(&cap.viewpoint())),
-        "settings" => r(to_value(&cap.settings())),
-        "viewState" => r(to_value(&cap.view_state())),
-        "setViewport" => {
-            cap.set_viewport(arg::<Size>(args, 0)?);
-            Outcome::undefined()
-        }
-        "setDevicePixelRatio" => {
-            cap.set_device_pixel_ratio(arg(args, 0)?);
-            Outcome::undefined()
-        }
+        // camera/gestures
         "setCamera" => done(cap.set_camera(arg::<Camera>(args, 0)?)),
         "panBy" => done(cap.pan_by(arg(args, 0)?, arg(args, 1)?)),
         "scrollTo" => {
             cap.scroll_to(arg(args, 0)?);
-            Outcome::undefined()
+            unit()
         }
         "scrollBy" => {
             cap.scroll_by(arg(args, 0)?);
-            Outcome::undefined()
+            unit()
         }
         "zoomAround" => done(cap.zoom_around(arg(args, 0)?, arg(args, 1)?)),
         "beginGesture" => {
             cap.begin_gesture(opt(args, 0)?);
-            Outcome::undefined()
+            unit()
         }
         "endGesture" => done(cap.end_gesture()),
-        "fling" => done(cap.fling(arg(args, 0)?, arg(args, 1)?)),
-        "cameraInMotion" => r(json!(cap.camera_in_motion())),
-        "doubleTapZoom" => {
-            cap.double_tap_zoom(arg(args, 0)?);
-            Outcome::undefined()
-        }
-        "zoomIn" => done(cap.zoom_in()),
-        "zoomOut" => done(cap.zoom_out()),
-        "zoomTo" => done(cap.zoom_to(arg::<ZoomSpec>(args, 0)?)),
-        "fitWidth" => done(cap.fit_width()),
-        "fitPage" => done(cap.fit_page()),
-        "fitAll" => done(cap.fit_all()),
-        "automatic" => done(cap.automatic()),
-        "refit" => {
-            cap.refit();
-            Outcome::undefined()
+        // navigation/arrive
+        "goToPageIndex" => {
+            cap.go_to_page_index(index_arg(args, 0)?, opt(args, 1)?);
+            unit()
         }
         "goToPage" => {
-            cap.go_to_page(index_arg(args, 0)?, opt(args, 1)?);
-            Outcome::undefined()
+            cap.go_to_page(page_arg(args, 0), opt(args, 1)?);
+            unit()
         }
+        "goToFirstPage" => {
+            cap.go_to_first_page(opt(args, 0)?);
+            unit()
+        }
+        "goToLastPage" => {
+            cap.go_to_last_page(opt(args, 0)?);
+            unit()
+        }
+        "canGoNext" => r(json!(cap.can_go_next())),
+        "canGoPrevious" => r(json!(cap.can_go_previous())),
+        "nextPage" => {
+            cap.next_page(opt(args, 0)?);
+            unit()
+        }
+        "previousPage" => {
+            cap.previous_page(opt(args, 0)?);
+            unit()
+        }
+        "resetView" => {
+            cap.reset_view();
+            unit()
+        }
+        // navigation/reveal
         "reveal" => {
-            cap.reveal(index_arg(args, 0)?, opt(args, 1)?);
-            Outcome::undefined()
+            cap.reveal(page_arg(args, 0), opt(args, 1)?);
+            unit()
         }
-        "next" => {
-            cap.next(opt(args, 0)?);
-            Outcome::undefined()
+        "revealRect" => {
+            cap.reveal_rect(page_arg(args, 0), arg(args, 1)?, opt(args, 2)?);
+            unit()
         }
-        "prev" => {
-            cap.prev(opt(args, 0)?);
-            Outcome::undefined()
+        "revealIndex" => {
+            cap.reveal_index(index_arg(args, 0)?, opt(args, 1)?);
+            unit()
         }
-        "lensId" => r(json!(cap.lens_id())),
-        "update" => done(cap.update(arg(args, 0)?)),
-        "setResponsive" => done(
-            cap.set_responsive(rules_from_json(present(args, 0).unwrap_or(&Value::Null), Some(h))?),
-        ),
-        "matches" => r(json!(cap.matches(&arg::<String>(args, 0)?))),
-        "activeRules" => r(json!(cap.active_rules())),
+        // settings/settings
+        "getSettings" => r(to_value(&cap.get_settings())),
+        "resetSettings" => done(cap.reset_settings()),
+        "updateSettings" => done(cap.update_settings(arg(args, 0)?)),
+        "setResponsiveRules" => done(cap.set_responsive_rules(rules_from_json(
+            present(args, 0).unwrap_or(&Value::Null),
+            Some(h),
+        )?)),
+        "matchesRule" => r(json!(cap.matches_rule(&arg::<String>(args, 0)?))),
+        "listActiveRules" => r(json!(cap.list_active_rules())),
         "setFlow" => done(cap.set_flow(arg(args, 0)?)),
         "setLayout" => done(cap.set_layout(arg(args, 0)?)),
         "setSpread" => done(cap.set_spread(arg(args, 0)?)),
         "setSizing" => done(cap.set_sizing(arg(args, 0)?)),
-        "setColumns" => done(cap.set_columns(arg(args, 0)?)),
-        "setBounded" => done(cap.set_bounded(arg(args, 0)?)),
-        "setPadding" => done(cap.set_padding(arg(args, 0)?)),
-        "setGap" => done(cap.set_gap(arg(args, 0)?)),
-        "setPageFrame" => done(cap.set_page_frame(arg(args, 0)?)),
-        "setFitAlign" => done(cap.set_fit_align(arg(args, 0)?)),
-        "setArrivalAlign" => done(cap.set_arrival_align(arg(args, 0)?)),
-        "setZoomAlign" => done(cap.set_zoom_align(arg(args, 0)?)),
-        "setAnchorAlign" => done(cap.set_anchor_align(arg(args, 0)?)),
-        "setDirection" => done(cap.set_direction(arg(args, 0)?)),
-        "setViewRotation" => done(cap.set_view_rotation(arg::<PageRotation>(args, 0)?)),
-        "rotateView" => done(cap.rotate_view(arg(args, 0)?)),
-        "setScrollBehavior" => done(cap.set_scroll_behavior(arg(args, 0)?)),
         "applyViewState" => {
             cap.apply_view_state(arg(args, 0)?);
-            Outcome::undefined()
+            unit()
         }
+        // navigation/zoom
+        "doubleTapZoom" => {
+            cap.double_tap_zoom(arg(args, 0)?);
+            unit()
+        }
+        "zoomIn" => done(cap.zoom_in()),
+        "zoomOut" => done(cap.zoom_out()),
+        "zoomTo" => done(cap.zoom_to(arg::<ZoomTarget>(args, 0)?, opt(args, 1)?)),
+        "zoomBy" => done(cap.zoom_by(arg(args, 0)?, opt(args, 1)?)),
+        "fitWidth" => done(cap.fit_width()),
+        "fitPage" => done(cap.fit_page()),
+        "fitAll" => done(cap.fit_all()),
+        "fitAutomatic" => done(cap.fit_automatic()),
+        "setViewRotation" => done(cap.set_view_rotation(arg::<PageRotation>(args, 0)?)),
+        "rotateViewBy" => done(cap.rotate_view_by(arg(args, 0)?)),
+        // view/lifecycle
+        "setViewportSize" => {
+            cap.set_viewport_size(arg::<Size>(args, 0)?);
+            unit()
+        }
+        "setDevicePixelRatio" => {
+            cap.set_device_pixel_ratio(arg(args, 0)?);
+            unit()
+        }
+        "refit" => {
+            cap.refit();
+            unit()
+        }
+        "getViewState" => r(to_value(&cap.get_view_state())),
+        "getLensId" => r(json!(cap.get_lens_id())),
         "provideInitialView" => {
             let priority: f64 = arg(args, 0)?;
             let callback = h.callback(present(args, 1).unwrap_or(&Value::Null));
-            cap.provide_initial_view(priority, move || match callback.call(Vec::new()) {
-                plugin_conformance::Answer::Returns(v) if truthy(&v) => from_value(&v).ok(),
+            let off = cap.provide_initial_view(priority, move || match callback.call(Vec::new()) {
+                Answer::Returns(v) if truthy(&v) => from_value(&v).ok(),
                 _ => None,
             });
-            Outcome::undefined()
+            unsubscribe_ref(h, off)
         }
         "placeInitial" => {
             cap.place_initial();
-            Outcome::undefined()
+            unit()
         }
-        "resetView" => {
-            cap.reset_view();
-            Outcome::undefined()
+        // the hooks
+        "onPageChanged" => {
+            let cap = cap.clone();
+            hook(h, present(args, 0), move |f| cap.on_page_changed(f))
+        }
+        "onZoomChanged" => {
+            let cap = cap.clone();
+            hook(h, present(args, 0), move |f| cap.on_zoom_changed(f))
+        }
+        "onCameraChanged" => {
+            let cap = cap.clone();
+            hook(h, present(args, 0), move |f| cap.on_camera_changed(f))
+        }
+        "onMotionEnded" => {
+            let cap = cap.clone();
+            hook(h, present(args, 0), move |f| cap.on_motion_ended(f))
+        }
+        "onSettingsChanged" => {
+            let cap = cap.clone();
+            hook(h, present(args, 0), move |f| cap.on_settings_changed(f))
+        }
+        "onViewportChanged" => {
+            let cap = cap.clone();
+            hook(h, present(args, 0), move |f| cap.on_viewport_changed(f))
         }
         other => not_a_function(other),
     })
@@ -476,7 +558,10 @@ impl HarnessPlugin for Stage {
                         hub.clone(),
                         ScrollHandlerOptions { pan_fallback },
                     );
-                    let off = hub.register_handler(handler, Some(stage.lens_id()));
+                    let off = hub.register_handler(
+                        handler,
+                        RegisterHandlerOptions { source: Some(stage.get_lens_id()) },
+                    );
                     ctx.cleanup_fn(move || off.call());
                     Ok(None)
                 })

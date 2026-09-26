@@ -1,22 +1,29 @@
-//! `types.ts`: the settings vocabulary, the slice state and its actions, the
-//! options the verbs take, the host frame seam, and the token.
+//! `contract.ts`: the public stage vocabulary. Settings, the camera and
+//! view model, navigation and reveal options, events, and the host frame
+//! seam. The capability itself is [`crate::StageCapability`]; the token is
+//! [`crate::STAGE`].
 
 use std::fmt;
 use std::rc::Rc;
-use std::sync::LazyLock;
 
 use epdf_geometry::{PageFrame, PageRotation, PageTransform, Point, Rect, Size};
-use epdf_kernel::Token;
+use epdf_kernel::geometry::PageRef;
+use epdf_plugin_actions::page_ref_json;
 use epdf_stage_core::{
     Align, AlignValue, Alignment, AlignmentValue, Anchor, Camera, Direction, PageBox, SizingMode,
-    SpreadMode, ZoomSpec,
+    SpreadMode, ZoomMode, ZoomSpec,
 };
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 
-use crate::capability::StageCapability;
+use crate::settings::SettingKey;
 
-/// `PageObjectNumber`, as the engine contract spells a page.
+/// `PageObjectNumber`, the number inside a [`PageRef`].
 pub type PageObjectNumber = u32;
+
+/// `PageInfo` (`PageLayout` in `engine-core`): one row of the kernel's page
+/// registry, as the engine reported it. The kernel keeps the registry as
+/// JSON, so the stage hands rows back as the same JSON.
+pub type PageInfo = serde_json::Value;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -271,65 +278,12 @@ impl From<StageSettings> for PartialSettings {
 pub struct VisiblePage {
     #[serde(flatten)]
     pub page: PageBox,
-    pub pon: PageObjectNumber,
+    #[serde(rename = "ref", with = "page_ref_json")]
+    pub page_ref: PageRef,
     pub screen_x: f64,
     pub screen_y: f64,
     pub transform: PageTransform,
     pub visible_rect: Rect,
-}
-
-/// What last drove the camera or cursor.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum MotionCause {
-    User,
-    Programmatic,
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct StageState {
-    #[serde(flatten)]
-    pub settings: StageSettings,
-    pub camera: Camera,
-    /// The one-way render-commit latch.
-    pub placed: bool,
-    /// Names of the matching responsive rules, in source order.
-    pub active_rules: Vec<String>,
-    /// False while the zoom is in motion.
-    pub camera_resting: bool,
-    pub vp: Size,
-    /// Device px per view px.
-    pub dpr: f64,
-    /// The current page, valid in both flows.
-    pub cursor: usize,
-    pub motion_cause: MotionCause,
-}
-
-// A PATCH carries a whole settings bag; actions are short-lived values, so
-// the size difference costs nothing a box would save.
-#[allow(clippy::large_enum_variant)]
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "type")]
-pub enum StageAction {
-    #[serde(rename = "CAMERA")]
-    Camera { camera: Camera },
-    #[serde(rename = "CAMERA_REST")]
-    CameraRest { resting: bool },
-    #[serde(rename = "PLACED")]
-    Placed,
-    #[serde(rename = "VP")]
-    Vp { vp: Size },
-    #[serde(rename = "DPR")]
-    Dpr { dpr: f64 },
-    #[serde(rename = "CURSOR")]
-    Cursor { cursor: usize },
-    #[serde(rename = "MOTION_CAUSE")]
-    MotionCause { cause: MotionCause },
-    #[serde(rename = "PATCH")]
-    Patch { patch: PartialSettings },
-    #[serde(rename = "RESPONSIVE")]
-    Responsive { active: Vec<String> },
 }
 
 /// A page-relative view memento: what I'm looking at and how zoomed.
@@ -456,26 +410,12 @@ pub struct RevealOptions {
     pub anchor: Option<RevealAnchor>,
 }
 
-/// `beginGesture`'s options.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
-pub struct GestureOptions {
-    /// Rubber-band overscroll for this gesture.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub elastic: Option<bool>,
-}
-
-/// One entry of `pages()`.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct PageEntry {
-    pub index: usize,
-    pub pon: PageObjectNumber,
-    pub label: Option<String>,
-}
-
-/// `pageAt`'s hit: the page under a screen point and its content point.
+/// `getPageAt`'s hit: the page under a viewport point and its page-space
+/// point.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct PageHit {
-    pub pon: PageObjectNumber,
+    #[serde(rename = "ref", with = "page_ref_json")]
+    pub page_ref: PageRef,
     pub point: Point,
     pub scale: f64,
     /// Total display rotation (document `/Rotate` plus view rotation).
@@ -495,8 +435,94 @@ pub struct StageConfig {
     pub responsive: Option<Vec<ResponsiveRule>>,
 }
 
-/// The main lens's token, `'stage'`.
-pub static STAGE: LazyLock<Token<StageCapability>> = LazyLock::new(|| Token::new("stage"));
+/// `ViewportPoint`: this stage's container px, top-left origin.
+pub type ViewportPoint = Point;
+/// `ViewportRect`.
+pub type ViewportRect = Rect;
 
-/// `Size`, re-exported for the viewport intents.
-pub type Viewport = Size;
+/// `ZoomModeValue | 'custom'`: the active zoom intent's mode, `Custom` for
+/// a fixed level or a page-width or page-height spec.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum StageZoomMode {
+    Mode(ZoomMode),
+    Custom,
+}
+
+impl StageZoomMode {
+    /// The mode `spec` names, as `'mode' in zoom ? zoom.mode : 'custom'`.
+    pub fn of(spec: ZoomSpec) -> Self {
+        match spec {
+            ZoomSpec::Mode { mode } => StageZoomMode::Mode(mode),
+            _ => StageZoomMode::Custom,
+        }
+    }
+}
+
+impl Serialize for StageZoomMode {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        match self {
+            StageZoomMode::Mode(mode) => mode.serialize(s),
+            StageZoomMode::Custom => s.serialize_str("custom"),
+        }
+    }
+}
+
+/// `zoomTo`'s first argument: a bare number is a fixed level.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum ZoomTarget {
+    Level(f64),
+    Spec(ZoomSpec),
+}
+
+/// `ZoomToOptions`.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct ZoomToOptions {
+    /// Hold this viewport point fixed while the level changes (default: the
+    /// `zoomAlign` point).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub around: Option<ViewportPoint>,
+}
+
+// ── events ────────────────────────────────────────────────────────────────────
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StagePageChangedEvent {
+    /// The registry row of the new cursor page, `None` when there is none.
+    pub page: Option<PageInfo>,
+    pub page_index: usize,
+    pub previous_page_index: usize,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StageZoomChangedEvent {
+    pub level: f64,
+    pub previous_level: f64,
+    pub mode: StageZoomMode,
+}
+
+/// Coalesced per camera write, not per frame.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize)]
+pub struct StageCameraChangedEvent {
+    pub camera: Camera,
+}
+
+/// A tween or fling settled, or was stopped.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize)]
+pub struct StageMotionEndedEvent {
+    pub camera: Camera,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct StageSettingsChangedEvent {
+    pub settings: StageSettings,
+    /// The keys whose value changed, in `SETTING_KEYS` order.
+    pub changed: Vec<SettingKey>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Serialize)]
+pub struct StageViewportChangedEvent {
+    pub size: Size,
+}
