@@ -7,6 +7,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use epdf_geometry::Point;
+use epdf_kernel::geometry::PageRef;
 use epdf_kernel::kernel::OpenSource;
 use epdf_kernel::{Kernel, KernelOptions, OpenOptions, rt};
 use epdf_plugin_interaction::*;
@@ -65,7 +66,7 @@ fn sample(phase: Phase) -> PointerSample {
         phase,
         Point { x: 0.0, y: 0.0 },
         Some(PageHit {
-            pon: 1,
+            page: PageRef::new(1),
             point: Point { x: 1.0, y: 1.0 },
             scale: None,
             rotation: None,
@@ -79,15 +80,15 @@ fn trait_defaults_are_the_absent_member_behaviour() {
     let kernel = kernel();
     let hub = kernel.capability(&INTERACTION, Some("a")).unwrap();
     let log = Rc::new(RefCell::new(Vec::new()));
-    hub.register_handler(Rc::new(UpOnly(log.clone())), None);
+    hub.register_handler(Rc::new(UpOnly(log.clone())), RegisterHandlerOptions::default());
     assert!(!hub.would_claim_touch(&sample(Phase::Down)));
-    hub.dispatch(&sample(Phase::Down));
-    hub.dispatch(&sample(Phase::Move));
-    hub.dispatch(&sample(Phase::Cancel));
-    hub.dispatch(&sample(Phase::Up));
+    hub.dispatch_pointer(&sample(Phase::Down));
+    hub.dispatch_pointer(&sample(Phase::Move));
+    hub.dispatch_pointer(&sample(Phase::Cancel));
+    hub.dispatch_pointer(&sample(Phase::Up));
     assert_eq!(*log.borrow(), ["down", "up"]);
-    hub.activate_tool("pan").unwrap();
-    hub.dispatch(&sample(Phase::Down));
+    hub.activate_tool("pan", None).unwrap();
+    hub.dispatch_pointer(&sample(Phase::Down));
     assert_eq!(*log.borrow(), ["down", "up"]);
 }
 
@@ -96,11 +97,14 @@ fn closing_the_document_releases_the_handlers() {
     let kernel = kernel();
     let hub = kernel.capability(&INTERACTION, Some("a")).unwrap();
     let handler: Rc<dyn InteractionHandler> = Rc::new(UpOnly(Rc::default()));
-    hub.register_handler(handler.clone(), Some("lens".into()));
-    hub.dispatch(&sample(Phase::Down));
+    hub.register_handler(handler.clone(), RegisterHandlerOptions { source: Some("lens".into()) });
+    hub.dispatch_pointer(&sample(Phase::Down));
     let seen = Rc::new(RefCell::new(0));
     let s = seen.clone();
-    hub.on_tool_change(move || *s.borrow_mut() += 1);
+    hub.on_tool_changed(move |_| {
+        *s.borrow_mut() += 1;
+        Ok(())
+    });
     assert!(Rc::strong_count(&handler) > 1);
     let _ = kernel.documents().close("a");
     rt::run_until_stalled();

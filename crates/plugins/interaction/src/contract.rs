@@ -1,4 +1,5 @@
-//! `types.ts`: the pointer protocol every interactive plugin speaks.
+//! `contract.ts`: the pointer protocol every interactive plugin speaks, the
+//! tool vocabulary, the events, and `samplePointOn`.
 
 use std::collections::BTreeMap;
 use std::fmt;
@@ -7,14 +8,14 @@ use std::sync::LazyLock;
 
 use epdf_geometry::{PageRotation, Point};
 use epdf_kernel::Token;
-use serde::{Deserialize, Serialize};
+use epdf_kernel::geometry::PageRef;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde_json::Value;
 
-use crate::capability::InteractionCapability;
+use crate::controller::InteractionCapability;
 
 pub type ToolId = String;
 pub type Cursor = String;
-/// `PageObjectNumber`, as the engine contract spells a page.
-pub type PageObjectNumber = u32;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Modifiers {
@@ -97,41 +98,76 @@ pub enum Gesture {
     LongPress,
 }
 
-/// The page under the pointer: its object number and the content point
-/// (y-down, PDF units), plus the environment the source could report.
+/// `PageRef` as JSON (`{kind: 'objectNumber', pageObjectNumber}`), for the
+/// serde derives below. The kernel's `PageRef` carries no serde impls.
+pub mod page_ref_json {
+    use super::*;
+
+    pub fn serialize<S: Serializer>(page: &PageRef, s: S) -> Result<S::Ok, S::Error> {
+        page.to_json().serialize(s)
+    }
+
+    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<PageRef, D::Error> {
+        let value = Value::deserialize(d)?;
+        PageRef::from_json(&value).ok_or_else(|| serde::de::Error::custom("not a PageRef"))
+    }
+
+    /// The same, for an `Option<PageRef>` that prints `null` when absent.
+    pub mod nullable {
+        use super::*;
+
+        pub fn serialize<S: Serializer>(page: &Option<PageRef>, s: S) -> Result<S::Ok, S::Error> {
+            page.map(PageRef::to_json).unwrap_or(Value::Null).serialize(s)
+        }
+
+        pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Option<PageRef>, D::Error> {
+            let value = Value::deserialize(d)?;
+            if value.is_null() {
+                return Ok(None);
+            }
+            PageRef::from_json(&value)
+                .map(Some)
+                .ok_or_else(|| serde::de::Error::custom("not a PageRef"))
+        }
+    }
+}
+
+/// `PointerSample.page`: the page under the pointer, its page-space point,
+/// and the environment the source could report.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct PageHit {
-    pub pon: PageObjectNumber,
+    #[serde(rename = "ref", with = "page_ref_json")]
+    pub page: PageRef,
     pub point: Point,
-    /// View px per content unit.
+    /// View px per page unit.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub scale: Option<f64>,
-    /// Total display rotation (document `/Rotate` plus view rotation).
+    /// The page's total display rotation.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub rotation: Option<PageRotation>,
-    /// Zoom relative to the page's 100% baseline.
+    /// The page's zoom relative to its 100% baseline.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub zoom: Option<f64>,
 }
 
-/// `PointerSample.project`: this event on a specific page's content space,
+/// `PointerSample.project`: this event on a specific page's frame,
 /// unclamped, or `None` when the source cannot project onto that page.
-pub type Project = Rc<dyn Fn(PageObjectNumber) -> Option<Point>>;
+pub type Project = Rc<dyn Fn(PageRef) -> Option<Point>>;
 
-/// One normalized pointer event.
+/// One normalized pointer event. `viewport` is the source container's px.
 #[derive(Clone)]
 pub struct PointerSample {
     pub phase: Phase,
-    /// The source container's px.
     pub viewport: Point,
     /// Present over a page, absent over gaps.
     pub page: Option<PageHit>,
     pub modifiers: Modifiers,
     /// For a down: 1 single, 2 double, 3 triple. Absent reads as 1.
     pub click_count: Option<f64>,
+    /// Absent when the source can't say; treat as mouse.
     pub pointer_type: Option<PointerKind>,
     pub gesture: Option<Gesture>,
-    /// The lens (stage plugin id) the sample came from.
+    /// The lens (stage plugin id) the sample came from; absent routes everywhere.
     pub source: Option<String>,
     pub project: Option<Project>,
 }
@@ -169,8 +205,8 @@ impl fmt::Debug for PointerSample {
     }
 }
 
-/// A pointer handler contributed by a feature plugin: the one registration
-/// mechanism. The hub routes each gesture to the first eligible handler, by
+/// A pointer handler contributed by a feature plugin, registered through the
+/// host lens. The hub routes each gesture to the first eligible handler, by
 /// priority, whose `on_down` captures it.
 ///
 /// The optional members of the TypeScript interface are default methods
@@ -193,31 +229,73 @@ pub trait InteractionHandler {
     }
     /// Pointer moved with no active gesture: cursor feedback only.
     fn on_hover(&self, _sample: &PointerSample) {}
-    /// Touch pre-flight: claim this contact as a tool gesture. A pure read.
+    /// Touch consent, rung 2: claim this contact as a tool gesture. A pure read.
     fn claims_touch(&self, _sample: &PointerSample) -> bool {
         false
     }
 }
 
-/// A tool's runtime cursor skin: keyword to restyled cursor.
+/// A tool's runtime cursor skin: while this tool is armed, keyword X looks like Y.
 pub type ToolCursorSkin = BTreeMap<Cursor, Cursor>;
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+/// `InteractionConfig`.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct InteractionConfig {
+    /// Tool active when a document opens. Default `pointer`.
+    pub default_tool: Option<ToolId>,
+    /// Tools registered at construction, beside the built-in `pointer` and `pan`.
+    pub tools: Vec<Tool>,
+}
+
+/// `ActivateToolOptions`.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct ActivateToolOptions {
+    /// Handed to the owning plugin through `ToolChangedEvent.payload`.
+    pub payload: Option<Value>,
+}
+
+/// `RegisterToolOptions`.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct RegisterToolOptions {
+    /// Replace an existing registration with the same id instead of rejecting it.
+    pub replace: bool,
+}
+
+/// `registerHandler`'s options: `source` scopes a handler to one lens.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct RegisterHandlerOptions {
+    pub source: Option<String>,
+}
+
+// ── events ────────────────────────────────────────────────────────────────────
+
+/// `ToolChangedEvent`.
+#[derive(Clone, Debug, PartialEq)]
+pub struct ToolChangedEvent {
+    pub tool_id: ToolId,
+    pub previous_tool_id: ToolId,
+    pub tool: Tool,
+    pub payload: Option<Value>,
+}
+
+/// `GestureEvent`.
+#[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct InteractionState {
-    pub active_tool_id: ToolId,
+pub struct GestureEvent {
+    pub handler_id: String,
+    #[serde(with = "page_ref_json::nullable")]
+    pub page: Option<PageRef>,
+    pub pointer_type: PointerKind,
+}
+
+/// What `onCursorChanged` carries.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct CursorChangedEvent {
     pub cursor: Cursor,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "type")]
-pub enum InteractionAction {
-    #[serde(rename = "SET_TOOL", rename_all = "camelCase")]
-    SetTool { tool_id: ToolId },
-    #[serde(rename = "SET_CURSOR")]
-    SetCursor { cursor: Cursor },
-}
-
+/// The package token. One runtime token serves the public contract and the
+/// host lens; in Rust both are [`InteractionCapability`].
 pub static INTERACTION: LazyLock<Token<InteractionCapability>> = LazyLock::new(|| {
     Token::with_hint(
         "interaction",
@@ -227,18 +305,12 @@ pub static INTERACTION: LazyLock<Token<InteractionCapability>> = LazyLock::new(|
 
 /// Resolve a sample against a gesture's home page: the source's unclamped
 /// projection when it has one, else the page hit when it is that page.
-pub fn sample_point_on(sample: &PointerSample, pon: PageObjectNumber) -> Option<Point> {
-    sample
-        .project
-        .as_ref()
-        .and_then(|project| project(pon))
-        .or_else(|| sample.page.as_ref().filter(|page| page.pon == pon).map(|page| page.point))
-}
-
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct InteractionConfig {
-    /// Tool active when a document opens. Default `pointer`.
-    #[serde(default)]
-    pub default_tool: Option<ToolId>,
+pub fn sample_point_on(sample: &PointerSample, page: PageRef) -> Option<Point> {
+    sample.project.as_ref().and_then(|project| project(page)).or_else(|| {
+        sample
+            .page
+            .as_ref()
+            .filter(|hit| hit.page.page_object_number == page.page_object_number)
+            .map(|hit| hit.point)
+    })
 }

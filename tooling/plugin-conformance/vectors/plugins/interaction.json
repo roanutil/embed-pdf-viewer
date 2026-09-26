@@ -15925,6 +15925,2844 @@
       ]
     },
     {
+      "name": "tool-lookups",
+      "covers": "getDefaultToolId, getTool (null for an unknown id), hasTool and activeToolEnables read the registry and the armed tool.",
+      "plugins": [
+        {
+          "factory": "interaction",
+          "config": {
+            "defaultTool": "pan"
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "snapshot": "none",
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "getDefaultToolId",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "getTool",
+          "args": [
+            "pointer"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "getTool",
+          "args": [
+            "ghost"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "hasTool",
+          "args": [
+            "pan"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "hasTool",
+          "args": [
+            "ghost"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "activeToolEnables",
+          "args": [
+            "scroll"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "activeToolEnables",
+          "args": [
+            "text-select"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "activateTool",
+          "args": [
+            "pointer"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "activeToolEnables",
+          "args": [
+            "text-select"
+          ]
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 1
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": "pan"
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "id": "pointer",
+              "cursor": "default",
+              "enables": {
+                "$set": [
+                  "text-select",
+                  "annotation-edit",
+                  "annotation-marquee",
+                  "form-fill",
+                  "link-nav"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": null
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": true
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": false
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": true
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": false
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "interaction::a",
+              "action": {
+                "type": "SET_TOOL",
+                "toolId": "pointer"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "push-and-pop-tools",
+      "covers": "pushTool arms a tool over the stack and hands its payload to onToolChanged; popTool restores the previous one, and with an empty stack does nothing. pushTool refuses an unknown id. activateTool clears the stack; activateDefaultTool arms the configured default.",
+      "plugins": [
+        {
+          "factory": "interaction"
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "snapshot": [
+        "interaction::a"
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "onToolChanged",
+          "args": [
+            {
+              "$fn": "changed"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "registerTool",
+          "args": [
+            {
+              "id": "ink",
+              "cursor": "crosshair",
+              "enables": {
+                "$set": [
+                  "ink"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "pushTool",
+          "args": [
+            "pan",
+            {
+              "payload": {
+                "held": "space"
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "pushTool",
+          "args": [
+            "ink",
+            {}
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "pushTool",
+          "args": [
+            "ghost"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "popTool",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "popTool",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "popTool",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "pushTool",
+          "args": [
+            "pan"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "activateTool",
+          "args": [
+            "pan"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "activateTool",
+          "args": [
+            "ink",
+            {
+              "payload": "preset-1"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "activateDefaultTool",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "activateDefaultTool",
+          "args": []
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "plugins": {
+              "interaction::a": {
+                "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
+                "cursor": "default"
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 0
+            }
+          },
+          "state": {
+            "plugins": {
+              "interaction::a": {
+                "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
+                "cursor": "default"
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 1
+            }
+          },
+          "state": {
+            "plugins": {
+              "interaction::a": {
+                "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
+                "cursor": "default"
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "interaction::a",
+              "action": {
+                "type": "PUSH_TOOL",
+                "toolId": "pan"
+              }
+            },
+            {
+              "slice": "interaction::a",
+              "action": {
+                "type": "SET_CURSOR",
+                "cursor": "grab"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "changed",
+              "args": [
+                {
+                  "toolId": "pan",
+                  "previousToolId": "pointer",
+                  "tool": {
+                    "id": "pan",
+                    "cursor": "grab",
+                    "gapCursor": "grab",
+                    "enables": {
+                      "$set": [
+                        "scroll",
+                        "annotation-edit",
+                        "form-fill",
+                        "link-nav"
+                      ]
+                    }
+                  },
+                  "payload": {
+                    "held": "space"
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "interaction::a": {
+                "activeToolId": "pan",
+                "defaultToolId": "pointer",
+                "toolStack": [
+                  "pointer"
+                ],
+                "cursor": "grab"
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "interaction::a",
+              "action": {
+                "type": "PUSH_TOOL",
+                "toolId": "ink"
+              }
+            },
+            {
+              "slice": "interaction::a",
+              "action": {
+                "type": "SET_CURSOR",
+                "cursor": "default"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "changed",
+              "args": [
+                {
+                  "toolId": "ink",
+                  "previousToolId": "pan",
+                  "tool": {
+                    "id": "ink",
+                    "cursor": "crosshair",
+                    "enables": {
+                      "$set": [
+                        "ink"
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "interaction::a": {
+                "activeToolId": "ink",
+                "defaultToolId": "pointer",
+                "toolStack": [
+                  "pointer",
+                  "pan"
+                ],
+                "cursor": "default"
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "threw": {
+              "$error": {
+                "name": "PluginError",
+                "message": "unknown tool 'ghost'",
+                "code": "not-found",
+                "capability": "interaction"
+              }
+            }
+          },
+          "state": {
+            "plugins": {
+              "interaction::a": {
+                "activeToolId": "ink",
+                "defaultToolId": "pointer",
+                "toolStack": [
+                  "pointer",
+                  "pan"
+                ],
+                "cursor": "default"
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "interaction::a",
+              "action": {
+                "type": "POP_TOOL"
+              }
+            },
+            {
+              "slice": "interaction::a",
+              "action": {
+                "type": "SET_CURSOR",
+                "cursor": "grab"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "changed",
+              "args": [
+                {
+                  "toolId": "pan",
+                  "previousToolId": "ink",
+                  "tool": {
+                    "id": "pan",
+                    "cursor": "grab",
+                    "gapCursor": "grab",
+                    "enables": {
+                      "$set": [
+                        "scroll",
+                        "annotation-edit",
+                        "form-fill",
+                        "link-nav"
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "interaction::a": {
+                "activeToolId": "pan",
+                "defaultToolId": "pointer",
+                "toolStack": [
+                  "pointer"
+                ],
+                "cursor": "grab"
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "interaction::a",
+              "action": {
+                "type": "POP_TOOL"
+              }
+            },
+            {
+              "slice": "interaction::a",
+              "action": {
+                "type": "SET_CURSOR",
+                "cursor": "default"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "changed",
+              "args": [
+                {
+                  "toolId": "pointer",
+                  "previousToolId": "pan",
+                  "tool": {
+                    "id": "pointer",
+                    "cursor": "default",
+                    "enables": {
+                      "$set": [
+                        "text-select",
+                        "annotation-edit",
+                        "annotation-marquee",
+                        "form-fill",
+                        "link-nav"
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "interaction::a": {
+                "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
+                "cursor": "default"
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "interaction::a": {
+                "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
+                "cursor": "default"
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "interaction::a",
+              "action": {
+                "type": "PUSH_TOOL",
+                "toolId": "pan"
+              }
+            },
+            {
+              "slice": "interaction::a",
+              "action": {
+                "type": "SET_CURSOR",
+                "cursor": "grab"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "changed",
+              "args": [
+                {
+                  "toolId": "pan",
+                  "previousToolId": "pointer",
+                  "tool": {
+                    "id": "pan",
+                    "cursor": "grab",
+                    "gapCursor": "grab",
+                    "enables": {
+                      "$set": [
+                        "scroll",
+                        "annotation-edit",
+                        "form-fill",
+                        "link-nav"
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "interaction::a": {
+                "activeToolId": "pan",
+                "defaultToolId": "pointer",
+                "toolStack": [
+                  "pointer"
+                ],
+                "cursor": "grab"
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "interaction::a",
+              "action": {
+                "type": "SET_TOOL",
+                "toolId": "pan"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "changed",
+              "args": [
+                {
+                  "toolId": "pan",
+                  "previousToolId": "pan",
+                  "tool": {
+                    "id": "pan",
+                    "cursor": "grab",
+                    "gapCursor": "grab",
+                    "enables": {
+                      "$set": [
+                        "scroll",
+                        "annotation-edit",
+                        "form-fill",
+                        "link-nav"
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "interaction::a": {
+                "activeToolId": "pan",
+                "defaultToolId": "pointer",
+                "toolStack": [],
+                "cursor": "grab"
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "interaction::a",
+              "action": {
+                "type": "SET_TOOL",
+                "toolId": "ink"
+              }
+            },
+            {
+              "slice": "interaction::a",
+              "action": {
+                "type": "SET_CURSOR",
+                "cursor": "default"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "changed",
+              "args": [
+                {
+                  "toolId": "ink",
+                  "previousToolId": "pan",
+                  "tool": {
+                    "id": "ink",
+                    "cursor": "crosshair",
+                    "enables": {
+                      "$set": [
+                        "ink"
+                      ]
+                    }
+                  },
+                  "payload": "preset-1"
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "interaction::a": {
+                "activeToolId": "ink",
+                "defaultToolId": "pointer",
+                "toolStack": [],
+                "cursor": "default"
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "interaction::a",
+              "action": {
+                "type": "SET_TOOL",
+                "toolId": "pointer"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "changed",
+              "args": [
+                {
+                  "toolId": "pointer",
+                  "previousToolId": "ink",
+                  "tool": {
+                    "id": "pointer",
+                    "cursor": "default",
+                    "enables": {
+                      "$set": [
+                        "text-select",
+                        "annotation-edit",
+                        "annotation-marquee",
+                        "form-fill",
+                        "link-nav"
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "interaction::a": {
+                "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
+                "cursor": "default"
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "interaction::a",
+              "action": {
+                "type": "SET_TOOL",
+                "toolId": "pointer"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "changed",
+              "args": [
+                {
+                  "toolId": "pointer",
+                  "previousToolId": "pointer",
+                  "tool": {
+                    "id": "pointer",
+                    "cursor": "default",
+                    "enables": {
+                      "$set": [
+                        "text-select",
+                        "annotation-edit",
+                        "annotation-marquee",
+                        "form-fill",
+                        "link-nav"
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "interaction::a": {
+                "activeToolId": "pointer",
+                "defaultToolId": "pointer",
+                "toolStack": [],
+                "cursor": "default"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "register-tool-conflict",
+      "covers": "A duplicate id is refused with conflict unless replace is set; a replaced registration's remover is inert, and the replacement's remover deletes it.",
+      "plugins": [
+        {
+          "factory": "interaction"
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "snapshot": "none",
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "registerTool",
+          "args": [
+            {
+              "id": "pan",
+              "cursor": "move",
+              "enables": {
+                "$set": []
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "registerTool",
+          "args": [
+            {
+              "id": "pan",
+              "cursor": "move",
+              "enables": {
+                "$set": []
+              }
+            },
+            {}
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "registerTool",
+          "args": [
+            {
+              "id": "ink",
+              "cursor": "crosshair",
+              "enables": {
+                "$set": [
+                  "ink"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "registerTool",
+          "args": [
+            {
+              "id": "ink",
+              "cursor": "cell",
+              "enables": {
+                "$set": [
+                  "ink"
+                ]
+              }
+            },
+            {
+              "replace": true
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "ref": 0
+          },
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "getTool",
+          "args": [
+            "ink"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "ref": 1
+          },
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "hasTool",
+          "args": [
+            "ink"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "ref": 1
+          },
+          "args": []
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 1
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "threw": {
+              "$error": {
+                "name": "PluginError",
+                "message": "tool 'pan' is already registered; pass { replace: true } to replace it",
+                "code": "conflict",
+                "capability": "interaction"
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "threw": {
+              "$error": {
+                "name": "PluginError",
+                "message": "tool 'pan' is already registered; pass { replace: true } to replace it",
+                "code": "conflict",
+                "capability": "interaction"
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 0
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 1
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "id": "ink",
+              "cursor": "cell",
+              "enables": {
+                "$set": [
+                  "ink"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": false
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "gesture-events",
+      "covers": "onGestureStarted fires for the capturing handler with the page ref and pointer type (mouse when absent); onGestureEnded on up, onGestureCancelled on cancel; a down nobody captures, and an up or cancel with no owner, fire nothing. Over a gap the page is null. onCursorChanged fires on every resolved change.",
+      "plugins": [
+        {
+          "factory": "interaction"
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "snapshot": "none",
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "onGestureStarted",
+          "args": [
+            {
+              "$fn": "started"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "onGestureEnded",
+          "args": [
+            {
+              "$fn": "ended"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "onGestureCancelled",
+          "args": [
+            {
+              "$fn": "cancelled"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "onCursorChanged",
+          "args": [
+            {
+              "$fn": "cursor"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "registerHandler",
+          "args": [
+            {
+              "id": "h",
+              "priority": 1,
+              "enabledFor": {
+                "$fn": "h.enabledFor",
+                "returns": true
+              },
+              "onDown": {
+                "$fn": "h.onDown",
+                "seq": [
+                  {
+                    "returns": true
+                  },
+                  {
+                    "returns": true
+                  },
+                  {
+                    "returns": false
+                  }
+                ]
+              },
+              "onMove": {
+                "$fn": "h.onMove"
+              },
+              "onUp": {
+                "$fn": "h.onUp"
+              },
+              "onCancel": {
+                "$fn": "h.onCancel"
+              },
+              "onHover": {
+                "$fn": "h.onHover"
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "dispatchPointer",
+          "args": [
+            {
+              "phase": "down",
+              "viewport": {
+                "x": 10,
+                "y": 20
+              },
+              "modifiers": {
+                "shift": false,
+                "alt": false,
+                "ctrl": false,
+                "meta": false
+              },
+              "pointerType": "pen",
+              "page": {
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "point": {
+                  "x": 5,
+                  "y": 6
+                }
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "dispatchPointer",
+          "args": [
+            {
+              "phase": "up",
+              "viewport": {
+                "x": 10,
+                "y": 20
+              },
+              "modifiers": {
+                "shift": false,
+                "alt": false,
+                "ctrl": false,
+                "meta": false
+              },
+              "pointerType": "pen",
+              "page": {
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "point": {
+                  "x": 5,
+                  "y": 6
+                }
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "dispatchPointer",
+          "args": [
+            {
+              "phase": "down",
+              "viewport": {
+                "x": 10,
+                "y": 20
+              },
+              "modifiers": {
+                "shift": false,
+                "alt": false,
+                "ctrl": false,
+                "meta": false
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "dispatchPointer",
+          "args": [
+            {
+              "phase": "cancel",
+              "viewport": {
+                "x": 10,
+                "y": 20
+              },
+              "modifiers": {
+                "shift": false,
+                "alt": false,
+                "ctrl": false,
+                "meta": false
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "dispatchPointer",
+          "args": [
+            {
+              "phase": "down",
+              "viewport": {
+                "x": 10,
+                "y": 20
+              },
+              "modifiers": {
+                "shift": false,
+                "alt": false,
+                "ctrl": false,
+                "meta": false
+              },
+              "page": {
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "point": {
+                  "x": 5,
+                  "y": 6
+                }
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "dispatchPointer",
+          "args": [
+            {
+              "phase": "up",
+              "viewport": {
+                "x": 10,
+                "y": 20
+              },
+              "modifiers": {
+                "shift": false,
+                "alt": false,
+                "ctrl": false,
+                "meta": false
+              },
+              "page": {
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "point": {
+                  "x": 5,
+                  "y": 6
+                }
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "dispatchPointer",
+          "args": [
+            {
+              "phase": "cancel",
+              "viewport": {
+                "x": 10,
+                "y": 20
+              },
+              "modifiers": {
+                "shift": false,
+                "alt": false,
+                "ctrl": false,
+                "meta": false
+              },
+              "page": {
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "point": {
+                  "x": 5,
+                  "y": 6
+                }
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "claimCursor",
+          "args": [
+            "hover",
+            "text"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "claimCursor",
+          "args": [
+            "hover",
+            null
+          ]
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 1
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 0
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 1
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 2
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 3
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 4
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "h.enabledFor",
+              "args": [
+                {
+                  "id": "pointer",
+                  "cursor": "default",
+                  "enables": {
+                    "$set": [
+                      "text-select",
+                      "annotation-edit",
+                      "annotation-marquee",
+                      "form-fill",
+                      "link-nav"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "h.onDown",
+              "args": [
+                {
+                  "phase": "down",
+                  "viewport": {
+                    "x": 10,
+                    "y": 20
+                  },
+                  "modifiers": {
+                    "shift": false,
+                    "alt": false,
+                    "ctrl": false,
+                    "meta": false
+                  },
+                  "pointerType": "pen",
+                  "page": {
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
+                    "point": {
+                      "x": 5,
+                      "y": 6
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "started",
+              "args": [
+                {
+                  "handlerId": "h",
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "pointerType": "pen"
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "h.onUp",
+              "args": [
+                {
+                  "phase": "up",
+                  "viewport": {
+                    "x": 10,
+                    "y": 20
+                  },
+                  "modifiers": {
+                    "shift": false,
+                    "alt": false,
+                    "ctrl": false,
+                    "meta": false
+                  },
+                  "pointerType": "pen",
+                  "page": {
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
+                    "point": {
+                      "x": 5,
+                      "y": 6
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "ended",
+              "args": [
+                {
+                  "handlerId": "h",
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "pointerType": "pen"
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "h.enabledFor",
+              "args": [
+                {
+                  "id": "pointer",
+                  "cursor": "default",
+                  "enables": {
+                    "$set": [
+                      "text-select",
+                      "annotation-edit",
+                      "annotation-marquee",
+                      "form-fill",
+                      "link-nav"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "h.onDown",
+              "args": [
+                {
+                  "phase": "down",
+                  "viewport": {
+                    "x": 10,
+                    "y": 20
+                  },
+                  "modifiers": {
+                    "shift": false,
+                    "alt": false,
+                    "ctrl": false,
+                    "meta": false
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "started",
+              "args": [
+                {
+                  "handlerId": "h",
+                  "page": null,
+                  "pointerType": "mouse"
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "h.onCancel",
+              "args": [
+                {
+                  "phase": "cancel",
+                  "viewport": {
+                    "x": 10,
+                    "y": 20
+                  },
+                  "modifiers": {
+                    "shift": false,
+                    "alt": false,
+                    "ctrl": false,
+                    "meta": false
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "cancelled",
+              "args": [
+                {
+                  "handlerId": "h",
+                  "page": null,
+                  "pointerType": "mouse"
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "h.enabledFor",
+              "args": [
+                {
+                  "id": "pointer",
+                  "cursor": "default",
+                  "enables": {
+                    "$set": [
+                      "text-select",
+                      "annotation-edit",
+                      "annotation-marquee",
+                      "form-fill",
+                      "link-nav"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "h.onDown",
+              "args": [
+                {
+                  "phase": "down",
+                  "viewport": {
+                    "x": 10,
+                    "y": 20
+                  },
+                  "modifiers": {
+                    "shift": false,
+                    "alt": false,
+                    "ctrl": false,
+                    "meta": false
+                  },
+                  "page": {
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
+                    "point": {
+                      "x": 5,
+                      "y": 6
+                    }
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "interaction::a",
+              "action": {
+                "type": "SET_CURSOR",
+                "cursor": "text"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "cursor",
+              "args": [
+                {
+                  "cursor": "text"
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "interaction::a",
+              "action": {
+                "type": "SET_CURSOR",
+                "cursor": "default"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "cursor",
+              "args": [
+                {
+                  "cursor": "default"
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "feedback-noop",
       "covers": "Without a provider the feedback capability is a no-op in literal member order.",
       "plugins": [
