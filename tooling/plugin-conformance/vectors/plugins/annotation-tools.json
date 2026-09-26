@@ -72752,6 +72752,3747 @@
       ]
     },
     {
+      "name": "ink-cancel-inside-the-grouping-window",
+      "covers": "A cancel while an ink group is still inside its grouping window clears the window’s timer, so the buffered stroke never commits. Only a down that is not an ink down leaves the window open for the cancel to meet: re-registering the active tool id as a square does that without a tool change.",
+      "plugins": [
+        {
+          "factory": "interaction"
+        },
+        {
+          "factory": "annotation"
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "pageObjectNumber": 2,
+                "label": null,
+                "size": {
+                  "width": 400,
+                  "height": 500
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 410,
+                    "top": 520
+                  },
+                  "crop": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 410,
+                    "top": 520
+                  }
+                }
+              }
+            ],
+            "security": {
+              "allows": "*"
+            },
+            "responses": [
+              {
+                "path": "annotations.listRawAll",
+                "value": {
+                  "pages": []
+                }
+              }
+            ]
+          }
+        }
+      },
+      "snapshot": [
+        "annotation::a"
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "annotation",
+            "doc": "a"
+          },
+          "method": "registerTool",
+          "args": [
+            {
+              "id": "pen",
+              "extends": "ink"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "activateTool",
+          "args": [
+            "pen"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "dispatch",
+          "args": [
+            {
+              "phase": "down",
+              "viewport": {
+                "x": 10,
+                "y": 10
+              },
+              "page": {
+                "pon": 1,
+                "point": {
+                  "x": 10,
+                  "y": 10
+                },
+                "scale": 1
+              },
+              "modifiers": {
+                "shift": false,
+                "alt": false,
+                "ctrl": false,
+                "meta": false
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "dispatch",
+          "args": [
+            {
+              "phase": "move",
+              "viewport": {
+                "x": 20,
+                "y": 15
+              },
+              "page": {
+                "pon": 1,
+                "point": {
+                  "x": 20,
+                  "y": 15
+                },
+                "scale": 1
+              },
+              "modifiers": {
+                "shift": false,
+                "alt": false,
+                "ctrl": false,
+                "meta": false
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "dispatch",
+          "args": [
+            {
+              "phase": "up",
+              "viewport": {
+                "x": 30,
+                "y": 10
+              },
+              "page": {
+                "pon": 1,
+                "point": {
+                  "x": 30,
+                  "y": 10
+                },
+                "scale": 1
+              },
+              "modifiers": {
+                "shift": false,
+                "alt": false,
+                "ctrl": false,
+                "meta": false
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "annotation",
+            "doc": "a"
+          },
+          "method": "registerTool",
+          "args": [
+            {
+              "id": "pen",
+              "extends": "square"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "dispatch",
+          "args": [
+            {
+              "phase": "down",
+              "viewport": {
+                "x": 40,
+                "y": 40
+              },
+              "page": {
+                "pon": 1,
+                "point": {
+                  "x": 40,
+                  "y": 40
+                },
+                "scale": 1
+              },
+              "modifiers": {
+                "shift": false,
+                "alt": false,
+                "ctrl": false,
+                "meta": false
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "dispatch",
+          "args": [
+            {
+              "phase": "cancel",
+              "viewport": {
+                "x": 50,
+                "y": 50
+              },
+              "page": {
+                "pon": 1,
+                "point": {
+                  "x": 50,
+                  "y": 50
+                },
+                "scale": 1
+              },
+              "modifiers": {
+                "shift": false,
+                "alt": false,
+                "ctrl": false,
+                "meta": false
+              }
+            }
+          ]
+        },
+        {
+          "op": "advance",
+          "ms": 1000
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "annotation",
+            "doc": "a"
+          },
+          "method": "list",
+          "args": [
+            1
+          ]
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_HYDRATION",
+                "hydration": {
+                  "status": "loading"
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_HYDRATION",
+                "hydration": {
+                  "status": "complete"
+                }
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "annotations.listRawAll",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "plugins": {
+              "annotation::a": {
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                },
+                "hydration": {
+                  "status": "complete"
+                },
+                "chrome": {
+                  "accent": "#3858e9",
+                  "outline": {
+                    "style": "solid",
+                    "width": 1
+                  },
+                  "handles": {
+                    "size": 8,
+                    "hitSize": 24,
+                    "fill": "#ffffff"
+                  },
+                  "knob": {
+                    "size": 10,
+                    "hitSize": 24,
+                    "offset": 32,
+                    "stalk": true,
+                    "fill": "#ffffff"
+                  },
+                  "guides": {
+                    "enabled": true,
+                    "style": "solid",
+                    "width": 1,
+                    "axisOpacity": 0.35,
+                    "indicatorOpacity": 0.8
+                  }
+                },
+                "toolGhost": null,
+                "stampArmEpoch": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "pen": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 0
+            }
+          },
+          "state": {
+            "plugins": {
+              "annotation::a": {
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "pen": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                },
+                "hydration": {
+                  "status": "complete"
+                },
+                "chrome": {
+                  "accent": "#3858e9",
+                  "outline": {
+                    "style": "solid",
+                    "width": 1
+                  },
+                  "handles": {
+                    "size": 8,
+                    "hitSize": 24,
+                    "fill": "#ffffff"
+                  },
+                  "knob": {
+                    "size": 10,
+                    "hitSize": 24,
+                    "offset": 32,
+                    "stalk": true,
+                    "fill": "#ffffff"
+                  },
+                  "guides": {
+                    "enabled": true,
+                    "style": "solid",
+                    "width": 1,
+                    "axisOpacity": 0.35,
+                    "indicatorOpacity": 0.8
+                  }
+                },
+                "toolGhost": null,
+                "stampArmEpoch": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "interaction::a",
+              "action": {
+                "type": "SET_TOOL",
+                "toolId": "pen"
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "pen": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "annotation::a": {
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "pen": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                },
+                "hydration": {
+                  "status": "complete"
+                },
+                "chrome": {
+                  "accent": "#3858e9",
+                  "outline": {
+                    "style": "solid",
+                    "width": 1
+                  },
+                  "handles": {
+                    "size": 8,
+                    "hitSize": 24,
+                    "fill": "#ffffff"
+                  },
+                  "knob": {
+                    "size": 10,
+                    "hitSize": 24,
+                    "offset": 32,
+                    "stalk": true,
+                    "fill": "#ffffff"
+                  },
+                  "guides": {
+                    "enabled": true,
+                    "style": "solid",
+                    "width": 1,
+                    "axisOpacity": 0.35,
+                    "indicatorOpacity": 0.8
+                  }
+                },
+                "toolGhost": null,
+                "stampArmEpoch": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "interaction::a",
+              "action": {
+                "type": "SET_CURSOR",
+                "cursor": "crosshair"
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "pen": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": {
+                    "g": "create-ink",
+                    "subtype": "ink",
+                    "preset": "pen",
+                    "pon": 1,
+                    "strokes": [
+                      [
+                        {
+                          "x": 10,
+                          "y": 10
+                        }
+                      ]
+                    ]
+                  },
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "pen": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "annotation::a": {
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": {
+                    "g": "create-ink",
+                    "subtype": "ink",
+                    "preset": "pen",
+                    "pon": 1,
+                    "strokes": [
+                      [
+                        {
+                          "x": 10,
+                          "y": 10
+                        }
+                      ]
+                    ]
+                  },
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "pen": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                },
+                "hydration": {
+                  "status": "complete"
+                },
+                "chrome": {
+                  "accent": "#3858e9",
+                  "outline": {
+                    "style": "solid",
+                    "width": 1
+                  },
+                  "handles": {
+                    "size": 8,
+                    "hitSize": 24,
+                    "fill": "#ffffff"
+                  },
+                  "knob": {
+                    "size": 10,
+                    "hitSize": 24,
+                    "offset": 32,
+                    "stalk": true,
+                    "fill": "#ffffff"
+                  },
+                  "guides": {
+                    "enabled": true,
+                    "style": "solid",
+                    "width": 1,
+                    "axisOpacity": 0.35,
+                    "indicatorOpacity": 0.8
+                  }
+                },
+                "toolGhost": null,
+                "stampArmEpoch": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": {
+                    "g": "create-ink",
+                    "subtype": "ink",
+                    "preset": "pen",
+                    "pon": 1,
+                    "strokes": [
+                      [
+                        {
+                          "x": 10,
+                          "y": 10
+                        },
+                        {
+                          "x": 20,
+                          "y": 15
+                        }
+                      ]
+                    ]
+                  },
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "pen": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "annotation::a": {
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": {
+                    "g": "create-ink",
+                    "subtype": "ink",
+                    "preset": "pen",
+                    "pon": 1,
+                    "strokes": [
+                      [
+                        {
+                          "x": 10,
+                          "y": 10
+                        },
+                        {
+                          "x": 20,
+                          "y": 15
+                        }
+                      ]
+                    ]
+                  },
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "pen": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                },
+                "hydration": {
+                  "status": "complete"
+                },
+                "chrome": {
+                  "accent": "#3858e9",
+                  "outline": {
+                    "style": "solid",
+                    "width": 1
+                  },
+                  "handles": {
+                    "size": 8,
+                    "hitSize": 24,
+                    "fill": "#ffffff"
+                  },
+                  "knob": {
+                    "size": 10,
+                    "hitSize": 24,
+                    "offset": 32,
+                    "stalk": true,
+                    "fill": "#ffffff"
+                  },
+                  "guides": {
+                    "enabled": true,
+                    "style": "solid",
+                    "width": 1,
+                    "axisOpacity": 0.35,
+                    "indicatorOpacity": 0.8
+                  }
+                },
+                "toolGhost": null,
+                "stampArmEpoch": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": {
+                    "g": "create-ink",
+                    "subtype": "ink",
+                    "preset": "pen",
+                    "pon": 1,
+                    "strokes": [
+                      [
+                        {
+                          "x": 10,
+                          "y": 10
+                        },
+                        {
+                          "x": 20,
+                          "y": 15
+                        }
+                      ]
+                    ]
+                  },
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "pen": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "annotation::a": {
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": {
+                    "g": "create-ink",
+                    "subtype": "ink",
+                    "preset": "pen",
+                    "pon": 1,
+                    "strokes": [
+                      [
+                        {
+                          "x": 10,
+                          "y": 10
+                        },
+                        {
+                          "x": 20,
+                          "y": 15
+                        }
+                      ]
+                    ]
+                  },
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "pen": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                },
+                "hydration": {
+                  "status": "complete"
+                },
+                "chrome": {
+                  "accent": "#3858e9",
+                  "outline": {
+                    "style": "solid",
+                    "width": 1
+                  },
+                  "handles": {
+                    "size": 8,
+                    "hitSize": 24,
+                    "fill": "#ffffff"
+                  },
+                  "knob": {
+                    "size": 10,
+                    "hitSize": 24,
+                    "offset": 32,
+                    "stalk": true,
+                    "fill": "#ffffff"
+                  },
+                  "guides": {
+                    "enabled": true,
+                    "style": "solid",
+                    "width": 1,
+                    "axisOpacity": 0.35,
+                    "indicatorOpacity": 0.8
+                  }
+                },
+                "toolGhost": null,
+                "stampArmEpoch": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": {
+                    "g": "create-ink",
+                    "subtype": "ink",
+                    "preset": "pen",
+                    "pon": 1,
+                    "strokes": [
+                      [
+                        {
+                          "x": 10,
+                          "y": 10
+                        },
+                        {
+                          "x": 20,
+                          "y": 15
+                        }
+                      ]
+                    ]
+                  },
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "pen": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 1
+            }
+          },
+          "state": {
+            "plugins": {
+              "annotation::a": {
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": {
+                    "g": "create-ink",
+                    "subtype": "ink",
+                    "preset": "pen",
+                    "pon": 1,
+                    "strokes": [
+                      [
+                        {
+                          "x": 10,
+                          "y": 10
+                        },
+                        {
+                          "x": 20,
+                          "y": 15
+                        }
+                      ]
+                    ]
+                  },
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "pen": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                },
+                "hydration": {
+                  "status": "complete"
+                },
+                "chrome": {
+                  "accent": "#3858e9",
+                  "outline": {
+                    "style": "solid",
+                    "width": 1
+                  },
+                  "handles": {
+                    "size": 8,
+                    "hitSize": 24,
+                    "fill": "#ffffff"
+                  },
+                  "knob": {
+                    "size": 10,
+                    "hitSize": 24,
+                    "offset": 32,
+                    "stalk": true,
+                    "fill": "#ffffff"
+                  },
+                  "guides": {
+                    "enabled": true,
+                    "style": "solid",
+                    "width": 1,
+                    "axisOpacity": 0.35,
+                    "indicatorOpacity": 0.8
+                  }
+                },
+                "toolGhost": null,
+                "stampArmEpoch": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": {
+                    "g": "create-ink",
+                    "subtype": "ink",
+                    "preset": "pen",
+                    "pon": 1,
+                    "strokes": [
+                      [
+                        {
+                          "x": 10,
+                          "y": 10
+                        },
+                        {
+                          "x": 20,
+                          "y": 15
+                        }
+                      ]
+                    ]
+                  },
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "pen": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": {
+                    "g": "create-rect",
+                    "subtype": "square",
+                    "preset": "pen",
+                    "pon": 1,
+                    "from": {
+                      "x": 40,
+                      "y": 40
+                    },
+                    "to": {
+                      "x": 40,
+                      "y": 40
+                    },
+                    "ellipse": false,
+                    "clickCreate": {
+                      "width": 80,
+                      "height": 60
+                    }
+                  },
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "pen": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "annotation::a": {
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": {
+                    "g": "create-rect",
+                    "subtype": "square",
+                    "preset": "pen",
+                    "pon": 1,
+                    "from": {
+                      "x": 40,
+                      "y": 40
+                    },
+                    "to": {
+                      "x": 40,
+                      "y": 40
+                    },
+                    "ellipse": false,
+                    "clickCreate": {
+                      "width": 80,
+                      "height": 60
+                    }
+                  },
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "pen": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                },
+                "hydration": {
+                  "status": "complete"
+                },
+                "chrome": {
+                  "accent": "#3858e9",
+                  "outline": {
+                    "style": "solid",
+                    "width": 1
+                  },
+                  "handles": {
+                    "size": 8,
+                    "hitSize": 24,
+                    "fill": "#ffffff"
+                  },
+                  "knob": {
+                    "size": 10,
+                    "hitSize": 24,
+                    "offset": 32,
+                    "stalk": true,
+                    "fill": "#ffffff"
+                  },
+                  "guides": {
+                    "enabled": true,
+                    "style": "solid",
+                    "width": 1,
+                    "axisOpacity": 0.35,
+                    "indicatorOpacity": 0.8
+                  }
+                },
+                "toolGhost": null,
+                "stampArmEpoch": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "pen": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "annotation::a": {
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "pen": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                },
+                "hydration": {
+                  "status": "complete"
+                },
+                "chrome": {
+                  "accent": "#3858e9",
+                  "outline": {
+                    "style": "solid",
+                    "width": 1
+                  },
+                  "handles": {
+                    "size": 8,
+                    "hitSize": 24,
+                    "fill": "#ffffff"
+                  },
+                  "knob": {
+                    "size": 10,
+                    "hitSize": 24,
+                    "offset": 32,
+                    "stalk": true,
+                    "fill": "#ffffff"
+                  },
+                  "guides": {
+                    "enabled": true,
+                    "style": "solid",
+                    "width": 1,
+                    "axisOpacity": 0.35,
+                    "indicatorOpacity": 0.8
+                  }
+                },
+                "toolGhost": null,
+                "stampArmEpoch": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "state": {
+            "plugins": {
+              "annotation::a": {
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "pen": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                },
+                "hydration": {
+                  "status": "complete"
+                },
+                "chrome": {
+                  "accent": "#3858e9",
+                  "outline": {
+                    "style": "solid",
+                    "width": 1
+                  },
+                  "handles": {
+                    "size": 8,
+                    "hitSize": 24,
+                    "fill": "#ffffff"
+                  },
+                  "knob": {
+                    "size": 10,
+                    "hitSize": 24,
+                    "offset": 32,
+                    "stalk": true,
+                    "fill": "#ffffff"
+                  },
+                  "guides": {
+                    "enabled": true,
+                    "style": "solid",
+                    "width": 1,
+                    "axisOpacity": 0.35,
+                    "indicatorOpacity": 0.8
+                  }
+                },
+                "toolGhost": null,
+                "stampArmEpoch": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": []
+          },
+          "state": {
+            "plugins": {
+              "annotation::a": {
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "pen": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                },
+                "hydration": {
+                  "status": "complete"
+                },
+                "chrome": {
+                  "accent": "#3858e9",
+                  "outline": {
+                    "style": "solid",
+                    "width": 1
+                  },
+                  "handles": {
+                    "size": 8,
+                    "hitSize": 24,
+                    "fill": "#ffffff"
+                  },
+                  "knob": {
+                    "size": 10,
+                    "hitSize": 24,
+                    "offset": 32,
+                    "stalk": true,
+                    "fill": "#ffffff"
+                  },
+                  "guides": {
+                    "enabled": true,
+                    "style": "solid",
+                    "width": 1,
+                    "axisOpacity": 0.35,
+                    "indicatorOpacity": 0.8
+                  }
+                },
+                "toolGhost": null,
+                "stampArmEpoch": 0
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "poly-and-callout-clicks",
       "covers": "Poly tools take vertices by click, ignore drags, preview on hover and finish on a double-click; a callout advances tip, knee, box by click with a hover preview. A cancel drops the draft; a tool change resets the gesture state.",
       "plugins": [

@@ -320,6 +320,27 @@ const cases: ScenarioCase[] = [
     ],
   },
   {
+    name: 'ink-cancel-inside-the-grouping-window',
+    covers:
+      'A cancel while an ink group is still inside its grouping window clears the window’s timer, so the buffered stroke never commits. Only a down that is not an ink down leaves the window open for the cancel to meet: re-registering the active tool id as a square does that without a tool change.',
+    plugins: PLUGINS,
+    engine: { documents: { a: doc([hydrate()]) } },
+    snapshot: SNAP,
+    steps: [
+      ...boot,
+      call('registerTool', [{ id: 'pen', extends: 'ink' }]),
+      tool('pen'),
+      pointer('down', 10, 10),
+      pointer('move', 20, 15),
+      pointer('up', 30, 10),
+      call('registerTool', [{ id: 'pen', extends: 'square' }]),
+      pointer('down', 40, 40),
+      pointer('cancel', 50, 50),
+      advance(1000),
+      call('list', [1]),
+    ],
+  },
+  {
     name: 'poly-and-callout-clicks',
     covers:
       'Poly tools take vertices by click, ignore drags, preview on hover and finish on a double-click; a callout advances tip, knee, box by click with a hover preview. A cancel drops the draft; a tool change resets the gesture state.',

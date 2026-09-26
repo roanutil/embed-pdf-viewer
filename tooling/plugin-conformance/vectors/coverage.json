@@ -1,7 +1,7 @@
 {
   "total": {
-    "statements": "30785/30846",
-    "branches": "7540/7743"
+    "statements": "30788/30846",
+    "branches": "7541/7743"
   },
   "files": {
     "packages/core/acrojs/src/actions.ts": {
@@ -497,19 +497,14 @@
       ]
     },
     "packages/plugin/annotation/src/handler.ts": {
-      "statements": "469/472",
-      "branches": "107/112",
-      "uncoveredLines": [
-        454,
-        455,
-        456
-      ],
+      "statements": "472/472",
+      "branches": "108/112",
+      "uncoveredLines": [],
       "uncoveredBranches": [
         "165:19#0",
         "200:19#0",
         "272:19#0",
-        "421:55#0",
-        "453:22#0"
+        "421:55#0"
       ]
     },
     "packages/plugin/annotation/src/host-contract.ts": {
