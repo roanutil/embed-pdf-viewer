@@ -29,7 +29,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 11,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -54,7 +57,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 22,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -79,7 +85,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 33,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 33
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -117,7 +126,10 @@
                 "value": {
                   "matches": [
                     {
-                      "pageObjectNumber": 11,
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 11
+                      },
                       "charStart": 0,
                       "charCount": 4,
                       "segments": [
@@ -151,7 +163,10 @@
                       ]
                     },
                     {
-                      "pageObjectNumber": 11,
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 11
+                      },
                       "charStart": 9,
                       "charCount": 4,
                       "segments": [
@@ -204,7 +219,10 @@
                 "value": {
                   "matches": [
                     {
-                      "pageObjectNumber": 22,
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 22
+                      },
                       "charStart": 2,
                       "charCount": 4,
                       "segments": [
@@ -238,7 +256,10 @@
                       ]
                     },
                     {
-                      "pageObjectNumber": 33,
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 33
+                      },
                       "charStart": 5,
                       "charCount": 4,
                       "segments": [
@@ -310,7 +331,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "goToPage",
+          "method": "goToPageIndex",
           "args": [
             2
           ]
@@ -334,7 +355,7 @@
             "token": "search",
             "doc": "a"
           },
-          "method": "status",
+          "method": "getStatus",
           "args": []
         }
       ],
@@ -419,6 +440,7 @@
               "search::a": {
                 "query": null,
                 "status": "idle",
+                "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
                 "activeIndex": -1,
@@ -479,6 +501,7 @@
               "search::a": {
                 "query": null,
                 "status": "idle",
+                "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
                 "activeIndex": -1,
@@ -497,7 +520,10 @@
               "promise": 2,
               "resolved": [
                 {
-                  "pon": 11,
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 11
+                  },
                   "pageIndex": 0,
                   "charStart": 0,
                   "charCount": 4,
@@ -538,7 +564,10 @@
                   }
                 },
                 {
-                  "pon": 11,
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 11
+                  },
                   "pageIndex": 0,
                   "charStart": 9,
                   "charCount": 4,
@@ -579,7 +608,10 @@
                   }
                 },
                 {
-                  "pon": 22,
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 22
+                  },
                   "pageIndex": 1,
                   "charStart": 2,
                   "charCount": 4,
@@ -620,7 +652,10 @@
                   }
                 },
                 {
-                  "pon": 33,
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 33
+                  },
                   "pageIndex": 2,
                   "charStart": 5,
                   "charCount": 4,
@@ -707,6 +742,7 @@
               "search::a": {
                 "query": null,
                 "status": "idle",
+                "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
                 "activeIndex": -1,
@@ -739,6 +775,7 @@
               "search::a": {
                 "query": null,
                 "status": "idle",
+                "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
                 "activeIndex": -1,
@@ -773,7 +810,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 11,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -798,7 +838,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 22,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -823,7 +866,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 33,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 33
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -861,7 +907,10 @@
                 "value": {
                   "matches": [
                     {
-                      "pageObjectNumber": 11,
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 11
+                      },
                       "charStart": 0,
                       "charCount": 4,
                       "segments": [
@@ -1060,6 +1109,7 @@
               "search::a": {
                 "query": null,
                 "status": "idle",
+                "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
                 "activeIndex": -1,
@@ -1078,7 +1128,10 @@
               "promise": 2,
               "resolved": [
                 {
-                  "pon": 11,
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 11
+                  },
                   "pageIndex": 0,
                   "charStart": 0,
                   "charCount": 4,
@@ -1152,6 +1205,7 @@
               "search::a": {
                 "query": null,
                 "status": "idle",
+                "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
                 "activeIndex": -1,
@@ -1170,10 +1224,22 @@
               "promise": 3,
               "rejected": {
                 "$error": {
-                  "name": "PermissionDenied",
+                  "name": "PluginError",
                   "message": "permission denied (local): doc.text.copy",
-                  "required": "doc.text.copy",
-                  "context": "local"
+                  "code": "permission-denied",
+                  "capability": "search",
+                  "details": {
+                    "required": "doc.text.copy",
+                    "context": "local"
+                  },
+                  "cause": {
+                    "$error": {
+                      "name": "PermissionDenied",
+                      "message": "permission denied (local): doc.text.copy",
+                      "required": "doc.text.copy",
+                      "context": "local"
+                    }
+                  }
                 }
               }
             }
@@ -1210,6 +1276,7 @@
               "search::a": {
                 "query": null,
                 "status": "idle",
+                "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
                 "activeIndex": -1,
@@ -1244,7 +1311,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 11,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -1269,7 +1339,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 22,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -1294,7 +1367,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 33,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 33
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -1348,7 +1424,10 @@
                 "value": {
                   "matches": [
                     {
-                      "pageObjectNumber": 22,
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 22
+                      },
                       "charStart": 0,
                       "charCount": 4,
                       "segments": [
@@ -1510,6 +1589,7 @@
               "search::a": {
                 "query": null,
                 "status": "idle",
+                "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
                 "activeIndex": -1,
@@ -1528,7 +1608,10 @@
               "promise": 2,
               "resolved": [
                 {
-                  "pon": 22,
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 22
+                  },
                   "pageIndex": 1,
                   "charStart": 0,
                   "charCount": 4,
@@ -1614,6 +1697,7 @@
               "search::a": {
                 "query": null,
                 "status": "idle",
+                "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
                 "activeIndex": -1,
@@ -1648,7 +1732,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 11,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -1673,7 +1760,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 22,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -1698,7 +1788,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 33,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 33
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -1736,7 +1829,10 @@
                 "value": {
                   "matches": [
                     {
-                      "pageObjectNumber": 11,
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 11
+                      },
                       "charStart": 0,
                       "charCount": 4,
                       "segments": [
@@ -1807,7 +1903,10 @@
                 "value": {
                   "matches": [
                     {
-                      "pageObjectNumber": 11,
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 11
+                      },
                       "charStart": 4,
                       "charCount": 4,
                       "segments": [
@@ -1861,7 +1960,10 @@
                 "value": {
                   "matches": [
                     {
-                      "pageObjectNumber": 22,
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 22
+                      },
                       "charStart": 0,
                       "charCount": 4,
                       "segments": [
@@ -2023,6 +2125,7 @@
               "search::a": {
                 "query": null,
                 "status": "idle",
+                "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
                 "activeIndex": -1,
@@ -2041,7 +2144,10 @@
               "promise": 2,
               "resolved": [
                 {
-                  "pon": 11,
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 11
+                  },
                   "pageIndex": 0,
                   "charStart": 4,
                   "charCount": 4,
@@ -2082,7 +2188,10 @@
                   }
                 },
                 {
-                  "pon": 22,
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 22
+                  },
                   "pageIndex": 1,
                   "charStart": 0,
                   "charCount": 4,
@@ -2194,6 +2303,7 @@
               "search::a": {
                 "query": null,
                 "status": "idle",
+                "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
                 "activeIndex": -1,
@@ -2228,7 +2338,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 11,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -2253,7 +2366,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 22,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -2278,7 +2394,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 33,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 33
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -2303,7 +2422,10 @@
               },
               {
                 "index": 3,
-                "pageObjectNumber": 44,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 44
+                },
                 "label": null,
                 "size": {
                   "width": 100,
@@ -2358,7 +2480,10 @@
                 "value": {
                   "matches": [
                     {
-                      "pageObjectNumber": 44,
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 44
+                      },
                       "charStart": 0,
                       "charCount": 4,
                       "segments": [
@@ -2533,6 +2658,7 @@
               "search::a": {
                 "query": null,
                 "status": "idle",
+                "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
                 "activeIndex": -1,
@@ -2551,9 +2677,17 @@
               "promise": 2,
               "rejected": {
                 "$error": {
-                  "name": "EngineError",
+                  "name": "PluginError",
                   "message": "boom",
-                  "code": "Unknown"
+                  "code": "operation-failed",
+                  "capability": "search",
+                  "cause": {
+                    "$error": {
+                      "name": "EngineError",
+                      "message": "boom",
+                      "code": "Unknown"
+                    }
+                  }
                 }
               }
             }
@@ -2589,6 +2723,7 @@
               "search::a": {
                 "query": null,
                 "status": "idle",
+                "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
                 "activeIndex": -1,
@@ -2605,12 +2740,52 @@
           "settled": [
             {
               "promise": 3,
-              "rejected": {
-                "$error": {
-                  "name": "Error",
-                  "message": "Mat2D.invert: non-invertible matrix (det = 0)"
+              "resolved": [
+                {
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 44
+                  },
+                  "pageIndex": 3,
+                  "charStart": 0,
+                  "charCount": 4,
+                  "segments": [
+                    {
+                      "quad": {
+                        "upperStart": {
+                          "x": 10,
+                          "y": 60
+                        },
+                        "upperEnd": {
+                          "x": 50,
+                          "y": 60
+                        },
+                        "lowerStart": {
+                          "x": 10,
+                          "y": 80
+                        },
+                        "lowerEnd": {
+                          "x": 50,
+                          "y": 80
+                        }
+                      },
+                      "rect": {
+                        "x": 10,
+                        "y": 60,
+                        "width": 40,
+                        "height": 20
+                      },
+                      "advance": 1
+                    }
+                  ],
+                  "bounds": {
+                    "x": 10,
+                    "y": 60,
+                    "width": 40,
+                    "height": 20
+                  }
                 }
-              }
+              ]
             }
           ],
           "actions": [],
@@ -2645,6 +2820,7 @@
               "search::a": {
                 "query": null,
                 "status": "idle",
+                "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
                 "activeIndex": -1,
@@ -2679,7 +2855,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 11,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -2704,7 +2883,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 22,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -2729,7 +2911,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 33,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 33
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -2871,7 +3056,10 @@
           "value": {
             "matches": [
               {
-                "pageObjectNumber": 33,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 33
+                },
                 "charStart": 0,
                 "charCount": 4,
                 "segments": [
@@ -2916,7 +3104,10 @@
           "value": {
             "matches": [
               {
-                "pageObjectNumber": 11,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
                 "charStart": 0,
                 "charCount": 4,
                 "segments": [
@@ -3051,6 +3242,7 @@
               "search::a": {
                 "query": null,
                 "status": "idle",
+                "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
                 "activeIndex": -1,
@@ -3072,7 +3264,8 @@
                 "type": "START",
                 "query": {
                   "text": "the"
-                }
+                },
+                "operationId": "session#1"
               }
             }
           ],
@@ -3099,9 +3292,7 @@
             }
           },
           "outcome": {
-            "returned": {
-              "$undefined": true
-            }
+            "promise": 2
           },
           "state": {
             "plugins": {
@@ -3110,6 +3301,7 @@
                   "text": "the"
                 },
                 "status": "searching",
+                "operationId": "session#1",
                 "hits": [],
                 "hitsByPage": {},
                 "activeIndex": -1,
@@ -3148,7 +3340,7 @@
             }
           },
           "outcome": {
-            "promise": 2
+            "promise": 3
           },
           "state": {
             "plugins": {
@@ -3157,6 +3349,7 @@
                   "text": "the"
                 },
                 "status": "searching",
+                "operationId": "session#1",
                 "hits": [],
                 "hitsByPage": {},
                 "activeIndex": -1,
@@ -3170,7 +3363,22 @@
           }
         },
         {
-          "settled": [],
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": {
+                "status": "superseded",
+                "hitCount": 0
+              }
+            },
+            {
+              "promise": 4,
+              "resolved": {
+                "status": "complete",
+                "hitCount": 0
+              }
+            }
+          ],
           "actions": [
             {
               "slice": "search::a",
@@ -3179,7 +3387,8 @@
                 "query": {
                   "text": "other",
                   "matchCase": true
-                }
+                },
+                "operationId": "session#2"
               }
             },
             {
@@ -3226,9 +3435,7 @@
             }
           },
           "outcome": {
-            "returned": {
-              "$undefined": true
-            }
+            "promise": 4
           },
           "state": {
             "plugins": {
@@ -3238,6 +3445,7 @@
                   "matchCase": true
                 },
                 "status": "complete",
+                "operationId": "session#2",
                 "hits": [],
                 "hitsByPage": {},
                 "activeIndex": -1,
@@ -3253,10 +3461,13 @@
         {
           "settled": [
             {
-              "promise": 2,
+              "promise": 3,
               "resolved": [
                 {
-                  "pon": 33,
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 33
+                  },
                   "pageIndex": 2,
                   "charStart": 0,
                   "charCount": 4,
@@ -3317,6 +3528,7 @@
                   "matchCase": true
                 },
                 "status": "complete",
+                "operationId": "session#2",
                 "hits": [],
                 "hitsByPage": {},
                 "activeIndex": -1,
@@ -3349,6 +3561,7 @@
                   "matchCase": true
                 },
                 "status": "complete",
+                "operationId": "session#2",
                 "hits": [],
                 "hitsByPage": {},
                 "activeIndex": -1,
@@ -3364,7 +3577,7 @@
         {
           "settled": [
             {
-              "promise": 3,
+              "promise": 5,
               "resolved": []
             }
           ],
@@ -3393,7 +3606,7 @@
             }
           },
           "outcome": {
-            "promise": 3
+            "promise": 5
           },
           "state": {
             "plugins": {
@@ -3403,6 +3616,7 @@
                   "matchCase": true
                 },
                 "status": "complete",
+                "operationId": "session#2",
                 "hits": [],
                 "hitsByPage": {},
                 "activeIndex": -1,
@@ -3440,7 +3654,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 11,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -3465,7 +3682,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 22,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -3490,7 +3710,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 33,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 33
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -3542,7 +3765,10 @@
                 "value": {
                   "matches": [
                     {
-                      "pageObjectNumber": 11,
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 11
+                      },
                       "charStart": 0,
                       "charCount": 4,
                       "segments": [
@@ -3691,7 +3917,10 @@
           "value": {
             "matches": [
               {
-                "pageObjectNumber": 22,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                },
                 "charStart": 0,
                 "charCount": 4,
                 "segments": [
@@ -3736,7 +3965,10 @@
           "value": {
             "matches": [
               {
-                "pageObjectNumber": 22,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                },
                 "charStart": 0,
                 "charCount": 4,
                 "segments": [
@@ -3857,6 +4089,7 @@
               "search::a": {
                 "query": null,
                 "status": "idle",
+                "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
                 "activeIndex": -1,
@@ -3902,6 +4135,7 @@
               "search::a": {
                 "query": null,
                 "status": "idle",
+                "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
                 "activeIndex": -1,
@@ -3920,8 +4154,10 @@
               "promise": 2,
               "rejected": {
                 "$error": {
-                  "name": "AbortError",
-                  "message": "This operation was aborted"
+                  "name": "PluginError",
+                  "message": "findAll aborted",
+                  "code": "operation-cancelled",
+                  "capability": "search"
                 }
               }
             }
@@ -3956,6 +4192,7 @@
               "search::a": {
                 "query": null,
                 "status": "idle",
+                "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
                 "activeIndex": -1,
@@ -4016,6 +4253,7 @@
               "search::a": {
                 "query": null,
                 "status": "idle",
+                "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
                 "activeIndex": -1,
@@ -4034,8 +4272,10 @@
               "promise": 3,
               "rejected": {
                 "$error": {
-                  "name": "Error",
-                  "message": "user left"
+                  "name": "PluginError",
+                  "message": "findAll aborted",
+                  "code": "operation-cancelled",
+                  "capability": "search"
                 }
               }
             }
@@ -4070,6 +4310,7 @@
               "search::a": {
                 "query": null,
                 "status": "idle",
+                "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
                 "activeIndex": -1,
@@ -4099,6 +4340,7 @@
               "search::a": {
                 "query": null,
                 "status": "idle",
+                "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
                 "activeIndex": -1,
@@ -4128,6 +4370,7 @@
               "search::a": {
                 "query": null,
                 "status": "idle",
+                "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
                 "activeIndex": -1,
@@ -4165,7 +4408,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 11,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -4190,7 +4436,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 22,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -4215,7 +4464,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 33,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 33
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -4253,7 +4505,10 @@
                 "value": {
                   "matches": [
                     {
-                      "pageObjectNumber": 11,
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 11
+                      },
                       "charStart": 0,
                       "charCount": 4,
                       "segments": [
@@ -4429,6 +4684,7 @@
               "search::a": {
                 "query": null,
                 "status": "idle",
+                "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
                 "activeIndex": -1,
@@ -4463,6 +4719,7 @@
               "search::a": {
                 "query": null,
                 "status": "idle",
+                "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
                 "activeIndex": -1,
@@ -4481,27 +4738,16 @@
               "promise": 2,
               "rejected": {
                 "$error": {
-                  "name": "AbortError",
-                  "message": "This operation was aborted"
+                  "name": "PluginError",
+                  "message": "findAll aborted",
+                  "code": "operation-cancelled",
+                  "capability": "search"
                 }
               }
             }
           ],
           "actions": [],
-          "engine": [
-            {
-              "doc": "a",
-              "path": "search.query",
-              "args": [
-                {
-                  "query": {
-                    "text": "the"
-                  },
-                  "mode": "full"
-                }
-              ]
-            }
-          ],
+          "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
@@ -4518,6 +4764,7 @@
               "search::a": {
                 "query": null,
                 "status": "idle",
+                "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
                 "activeIndex": -1,
@@ -4555,7 +4802,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 11,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -4580,7 +4830,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 22,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -4605,7 +4858,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 33,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 33
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -4643,7 +4899,10 @@
                 "value": {
                   "matches": [
                     {
-                      "pageObjectNumber": 11,
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 11
+                      },
                       "charStart": 0,
                       "charCount": 4,
                       "segments": [
@@ -4819,6 +5078,7 @@
               "search::a": {
                 "query": null,
                 "status": "idle",
+                "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
                 "activeIndex": -1,
@@ -4837,7 +5097,10 @@
               "promise": 2,
               "resolved": [
                 {
-                  "pon": 11,
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 11
+                  },
                   "pageIndex": 0,
                   "charStart": 0,
                   "charCount": 4,
@@ -4911,6 +5174,7 @@
               "search::a": {
                 "query": null,
                 "status": "idle",
+                "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
                 "activeIndex": -1,
@@ -4945,6 +5209,7 @@
               "search::a": {
                 "query": null,
                 "status": "idle",
+                "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
                 "activeIndex": -1,
@@ -4982,7 +5247,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 11,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -5007,7 +5275,10 @@
               },
               {
                 "index": 1,
-                "pageObjectNumber": 22,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -5032,7 +5303,10 @@
               },
               {
                 "index": 2,
-                "pageObjectNumber": 33,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 33
+                },
                 "label": null,
                 "size": {
                   "width": 300,
@@ -5210,6 +5484,7 @@
               "search::a": {
                 "query": null,
                 "status": "idle",
+                "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
                 "activeIndex": -1,
@@ -5228,9 +5503,17 @@
               "promise": 2,
               "rejected": {
                 "$error": {
-                  "name": "EngineError",
+                  "name": "PluginError",
                   "message": "boom",
-                  "code": "Unknown"
+                  "code": "operation-failed",
+                  "capability": "search",
+                  "cause": {
+                    "$error": {
+                      "name": "EngineError",
+                      "message": "boom",
+                      "code": "Unknown"
+                    }
+                  }
                 }
               }
             }
@@ -5266,6 +5549,7 @@
               "search::a": {
                 "query": null,
                 "status": "idle",
+                "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
                 "activeIndex": -1,
@@ -5300,6 +5584,7 @@
               "search::a": {
                 "query": null,
                 "status": "idle",
+                "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
                 "activeIndex": -1,

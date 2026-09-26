@@ -1,19 +1,20 @@
 /**
- * `packages/plugin/search/src/reducer.ts`, called directly. Replayed by
+ * `packages/plugin/search/src/model.ts`, called directly. Replayed by
  * `crates/plugins/search/tests/conformance.rs`.
  *
- * `searchReducer` reports `{changed, state}`: `changed` is `next !== state`,
+ * `reduceSearch` reports `{changed, state}`: `changed` is `next !== state`,
  * the identity the store's change notification keys on.
  */
-import { initialSearchState, searchReducer } from '../../../../packages/plugin/search/src/reducer';
-import type { SearchAction, SearchHit, SearchState } from '../../../../packages/plugin/search/src/types';
+import { initialSearchState, reduceSearch } from '../../../../packages/plugin/search/src/model';
+import type { SearchAction, SearchState } from '../../../../packages/plugin/search/src/model';
+import type { SearchHit } from '../../../../packages/plugin/search/src/contract';
 
 import type { FunctionCase, Suite } from '../vectors';
 
 const functions = {
   initialSearchState,
-  searchReducer: (state: SearchState, action: SearchAction) => {
-    const next = searchReducer(state, action);
+  reduceSearch: (state: SearchState, action: SearchAction) => {
+    const next = reduceSearch(state, action);
     return { changed: next !== state, state: next };
   },
 };
@@ -30,7 +31,7 @@ const seg = (r: { x: number; y: number; width: number; height: number }) => ({
   advance: 1 as const,
 });
 const hit = (pon: number, charStart: number, over: Partial<SearchHit> = {}): SearchHit => ({
-  pon,
+  page: { kind: 'objectNumber', pageObjectNumber: pon },
   pageIndex: 0,
   charStart,
   charCount: 4,
@@ -39,30 +40,31 @@ const hit = (pon: number, charStart: number, over: Partial<SearchHit> = {}): Sea
   ...over,
 });
 
+const failure = (message: string) => ({ code: 'operation-failed' as const, message, capability: 'search' });
 const started: SearchState = { ...initialSearchState(), query: { text: 'test' }, status: 'searching' };
 const withHits: SearchState = {
   ...started,
   hits: [hit(5, 0), hit(5, 9), hit(7, 2)],
-  hitsByPage: { 5: [0, 1], 7: [2] },
+  hitsByPage: { 5: [hit(5, 0), hit(5, 9)], 7: [hit(7, 2)] },
   activeIndex: 0,
   progress: { scanned: 2, total: 8 },
 };
 const done: SearchState = { ...withHits, status: 'complete', activeIndex: 2 };
-const failed: SearchState = { ...withHits, status: 'error', error: 'boom' };
+const failed: SearchState = { ...withHits, status: 'error', error: failure('boom') };
 
 const c = (name: string, state: SearchState, action: unknown, covers?: string): FunctionCase => ({
   name,
-  fn: 'searchReducer',
+  fn: 'reduceSearch',
   args: [state, action],
   ...(covers === undefined ? {} : { covers }),
 });
 
 const cases: FunctionCase[] = [
   { name: 'initial-state', fn: 'initialSearchState', args: [] },
-  c('start-from-idle', initialSearchState(), { type: 'START', query: { text: 'x', matchCase: true } }),
-  c('start-resets-a-finished-search', done, { type: 'START', query: { text: 'again', regex: true, wholeWord: true } }, 'START drops hits, index, progress and error and keeps only the new query.'),
-  c('start-resets-an-error', failed, { type: 'START', query: { text: 'y' } }),
-  c('append-first-hits', started, { type: 'APPEND', hits: [hit(5, 0), hit(5, 9)], scanned: 1, total: 8 }, 'The first hits activate index 0 and index by pon.'),
+  c('start-from-idle', initialSearchState(), { type: 'START', query: { text: 'x', matchCase: true }, operationId: 'search#2' }),
+  c('start-resets-a-finished-search', done, { type: 'START', query: { text: 'again', regex: true, wholeWord: true }, operationId: 'search#2' }, 'START drops hits, index, progress and error and keeps only the new query.'),
+  c('start-resets-an-error', failed, { type: 'START', query: { text: 'y' }, operationId: 'search#2' }),
+  c('append-first-hits', started, { type: 'APPEND', hits: [hit(5, 0), hit(5, 9)], scanned: 1, total: 8 }, 'The first hits activate index 0 and bucket by page object number.'),
   c('append-more-hits', withHits, { type: 'APPEND', hits: [hit(7, 11), hit(9, 0), hit(5, 20)], scanned: 5, total: 8 }, 'Later hits extend existing page buckets and add new ones; the active index is kept.'),
   c('append-keeps-an-explicit-index', { ...withHits, activeIndex: 2 }, { type: 'APPEND', hits: [hit(9, 1)], scanned: 6, total: 8 }),
   c('append-empty-advances-progress', withHits, { type: 'APPEND', hits: [], scanned: 7, total: 8 }, 'An empty APPEND is a new object with only progress changed.'),
@@ -70,8 +72,8 @@ const cases: FunctionCase[] = [
   c('append-to-idle', initialSearchState(), { type: 'APPEND', hits: [hit(3, 0, { segments: [], bounds: undefined, snippet: { text: 'a b', matchStart: 2, matchLength: 1 } })], scanned: 1, total: 1 }),
   c('complete', withHits, { type: 'COMPLETE' }),
   c('complete-when-idle', initialSearchState(), { type: 'COMPLETE' }),
-  c('error', withHits, { type: 'ERROR', message: 'boom' }),
-  c('error-replaces-an-error', failed, { type: 'ERROR', message: 'again' }),
+  c('error', withHits, { type: 'ERROR', error: failure('boom') }),
+  c('error-replaces-an-error', failed, { type: 'ERROR', error: failure('again') }),
   c('set-active', withHits, { type: 'SET_ACTIVE', index: 2 }),
   c('set-active-unchecked', withHits, { type: 'SET_ACTIVE', index: 7 }, 'The reducer stores the index it is given; wrapping is the capability\'s job.'),
   c('set-active-negative', done, { type: 'SET_ACTIVE', index: -1 }),
@@ -84,7 +86,7 @@ export const suites: Suite[] = [
   {
     kind: 'function',
     file: 'plugins/search-reducer.json',
-    describes: 'packages/plugin/search: initialSearchState and searchReducer.',
+    describes: 'packages/plugin/search: initialSearchState and reduceSearch.',
     functions,
     cases,
   },

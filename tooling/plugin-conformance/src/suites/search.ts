@@ -17,12 +17,12 @@
 import { createCapabilityToken, type AnyPlugin } from '@embedpdf/core';
 
 import { SearchToken, searchPlugin } from '../../../../packages/plugin/search/src/index';
-import type { SearchCapability, SearchPluginConfig } from '../../../../packages/plugin/search/src/types';
+import type { SearchCapability, SearchConfig as SearchPluginConfig } from '../../../../packages/plugin/search/src/contract';
 
 import type { FakeDocumentSpec, ResponseSpec } from '../fake-engine';
 import { registerPlugin, type PluginSpec, type ScenarioCase, type Step } from '../scenario';
 import type { Suite } from '../vectors';
-import './stage-plugin';
+import { stageStep } from './stage-plugin';
 
 // ── harness shims ─────────────────────────────────────────────────────────────
 
@@ -51,7 +51,10 @@ registerPlugin('search', {
     const plugin = searchPlugin(config as SearchPluginConfig | undefined) as AnyPlugin;
     return {
       ...plugin,
-      capability: (ctx) => withSignals(plugin.capability!(ctx) as SearchCapability),
+      create: (ctx) => {
+        const { api, connect } = plugin.create!(ctx);
+        return { api: withSignals(api as SearchCapability), connect };
+      },
     } as AnyPlugin;
   },
   tokens: [SearchToken],
@@ -73,6 +76,8 @@ registerPlugin('search-signals', {
 
 // ── fixtures ──────────────────────────────────────────────────────────────────
 
+const pr = (pon: number) => ({ kind: 'objectNumber', pageObjectNumber: pon });
+
 const layout = (
   pon: number,
   index: number,
@@ -81,7 +86,7 @@ const layout = (
   userUnit = 1,
 ) => ({
   index,
-  pageObjectNumber: pon,
+  ref: pr(pon),
   label: null,
   size: { width: crop.right - crop.left, height: crop.top - crop.bottom },
   rotation,
@@ -107,7 +112,7 @@ const seg = (r: PdfRect, advance: 1 | -1 = 1) => ({
 });
 
 const m = (pon: number, charStart: number, segments: unknown[] = [seg({ left: 10, bottom: 20, right: 50, top: 40 })], extra: Record<string, unknown> = {}) => ({
-  pageObjectNumber: pon,
+  page: pr(pon),
   charStart,
   charCount: 4,
   segments,
@@ -126,7 +131,7 @@ const Q2 = { text: 'other', matchCase: true };
 
 /** A `search.query` request as the capability builds it. */
 const req = (query: unknown, mode: 'full' | 'rects', at: { cursor?: string; startPage?: number } = {}) => [
-  { query, mode, ...at },
+  { query, mode, ...at, ...(at.startPage === undefined ? {} : { startPage: pr(at.startPage) }) },
 ];
 
 const answer = (query: unknown, mode: 'full' | 'rects', at: { cursor?: string; startPage?: number }, value: unknown, times?: number): ResponseSpec => ({
@@ -169,8 +174,32 @@ const doc = (responses: ResponseSpec[], over: Partial<FakeDocumentSpec> = {}): F
 const start: Step = { op: 'call', target: 'kernel', method: 'start' };
 const open = (id = 'a'): Step => ({ op: 'call', target: 'documents', method: 'open', args: [{ kind: 'bytes', id, bytes: { $bytes: '' } }] });
 const close = (id = 'a'): Step => ({ op: 'call', target: 'documents', method: 'close', args: [id] });
-const s = (method: string, ...args: unknown[]): Step => ({ op: 'call', target: { token: 'search', doc: 'a' }, method, args });
-const st = (method: string, ...args: unknown[]): Step => ({ op: 'call', target: { token: 'stage', doc: 'a' }, method, args });
+/** v2 search method → v3 name. `hitsForPage(pon)` is `listHits({page})`, and
+ *  a search's `startPage` is a PageRef. */
+const RENAMED: Readonly<Record<string, string>> = {
+  rerun: 'refresh',
+  next: 'nextHit',
+  prev: 'previousHit',
+  goTo: 'goToHit',
+  query: 'getQuery',
+  status: 'getStatus',
+  hits: 'listHits',
+  hitCount: 'getHitCount',
+  activeIndex: 'getActiveHitIndex',
+  activeHit: 'getActiveHit',
+  progress: 'getProgress',
+  errorMessage: 'getError',
+};
+const s = (method: string, ...args: unknown[]): Step => {
+  const target = { token: 'search', doc: 'a' };
+  if (method === 'hitsForPage') return { op: 'call', target, method: 'listHits', args: [{ page: pr(args[0] as number) }] };
+  if (method === 'search' && args[1] && typeof (args[1] as { startPage?: unknown }).startPage === 'number') {
+    const options = args[1] as { startPage: number };
+    return { op: 'call', target, method, args: [args[0], { ...options, startPage: pr(options.startPage) }] };
+  }
+  return { op: 'call', target, method: RENAMED[method] ?? method, args };
+};
+const st = (method: string, ...args: unknown[]): Step => stageStep('stage', 'a', method, args);
 const settle = (label: string, value: unknown): Step => ({ op: 'settle', label, value });
 const reject = (label: string, error: { name: string; message: string; [k: string]: unknown }): Step => ({ op: 'settle', label, error });
 const abortSignal = (name: string, reason?: unknown): Step => ({
@@ -746,10 +775,10 @@ const effectCases: ScenarioCase[] = [
     steps: [
       start,
       open(),
-      emit({ type: 'annotations.created', pageObjectNumber: 11 }),
+      emit({ type: 'annotations.created', page: pr(11) }),
       advance(300),
       s('search', Q),
-      emit({ type: 'annotations.created', pageObjectNumber: 11 }),
+      emit({ type: 'annotations.created', page: pr(11) }),
       advance(200),
       emit({ type: 'pages.changed' }),
       advance(249),
