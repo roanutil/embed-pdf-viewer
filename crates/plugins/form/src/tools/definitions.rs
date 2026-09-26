@@ -1,6 +1,6 @@
-//! `tools.ts`: the form-tool table, the one source of truth for the palette.
+//! `tools/definitions.ts`: the form-tool table, the one source of truth for the palette.
 //! The tools live in the annotation registry when that plugin is present,
-//! but the commit always goes through `placeField`: they enable
+//! but the commit always goes through `createField`: they enable
 //! `form-place`, never `annotation-draw`.
 
 use std::sync::LazyLock;
@@ -20,7 +20,7 @@ pub struct ClickSize {
 #[serde(rename_all = "camelCase")]
 pub struct FormToolDef {
     pub id: &'static str,
-    /// The field family `placeField` commits (`AuthorableFormFamily`).
+    /// The field family `createField` commits (`AuthorableFormFamily`).
     pub family: &'static str,
     /// The client kind the annotation registry routes on.
     pub visual_kind: &'static str,
@@ -67,6 +67,9 @@ pub static FORM_TOOLS: LazyLock<Vec<FormToolDef>> = LazyLock::new(|| {
         tool("form-radio", "radio", "widget-toggle", (18.0, 18.0), false),
         tool("form-combobox", "combobox", "widget-choice", (140.0, 24.0), true),
         tool("form-listbox", "listbox", "widget-choice", (140.0, 72.0), true),
+        // A signature field: the bare widget box; the signing act (the
+        // signature plugin) draws the mark into it later.
+        tool("form-signature", "signature", "widget-box", (160.0, 48.0), false),
     ]
 });
 

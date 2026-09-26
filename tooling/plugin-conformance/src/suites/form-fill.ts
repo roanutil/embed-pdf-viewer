@@ -22,7 +22,10 @@ import {
   effectsOk,
   emit,
   fail,
+  fnSpec,
+  fqn,
   list,
+  pushbutton,
   listbox,
   ref,
   settle,
@@ -496,6 +499,206 @@ const cases: ScenarioCase[] = [
   },
 ];
 
+const READ_FIELDS = [
+  NAME,
+  AGREE,
+  COLOUR,
+  COLOURS,
+  text(7, 'lines', '', { valueEntry: { kind: 'array', values: ['l1', 'l2'] } }),
+  checkbox(8, 'multi', false, { valueEntry: { kind: 'array', values: [] } }, [{ annotObjectNumber: 108, pageObjectNumber: 2, onState: 'Yes' }]),
+  checkbox(9, 'multi2', false, { valueEntry: { kind: 'array', values: ['On'] } }),
+  combobox(10, 'pick', '', { valueEntry: { kind: 'array', values: ['r', 'g'] } }),
+  listbox(11, 'one', [], { valueEntry: { kind: 'scalar', value: 'r' } }),
+  pushbutton(12, 'go'),
+  text(13, 'odd', '', { valueEntry: { kind: 'unsupported' } }),
+  text(14, 'loose', 'l', {}, [[114, 0]]),
+  checkbox(15, 'ticked', true),
+];
+
+const v3Cases: ScenarioCase[] = [
+  {
+    name: 'reads-over-the-snapshot',
+    covers:
+      'getStatus walks loading to ready; listFields filters by family, exact name and widget page (an unplaced widget matches no page); getValue maps each value entry to the write vocabulary and answers null for a valueless, unsupported or unknown field; exportValues keys the valued ones by name; getFieldForWidget takes a ref or an object number, and a non-object-number ref finds nothing.',
+    plugins: FORM_ONLY,
+    engine: { documents: { a: doc([list(READ_FIELDS, { defer: 'list' })]) } },
+    snapshot: SNAP,
+    steps: [
+      ...boot,
+      call('getStatus'),
+      call('listFields'),
+      call('exportValues'),
+      settle('list', snapshot(READ_FIELDS)),
+      call('getStatus'),
+      call('listFields'),
+      call('listFields', [{ family: 'checkbox' }]),
+      call('listFields', [{ name: 'colour' }]),
+      call('listFields', [{ name: 'nope' }]),
+      call('listFields', [{ page: pr(2) }]),
+      call('listFields', [{ family: 'text', page: pr(1) }]),
+      call('listFields', [{}]),
+      ...[1, 2, 3, 4, 7, 8, 9, 10, 11, 12, 13, 15, 404].map((n) => call('getValue', [ref(n)])),
+      call('getValue', [fqn('loose')]),
+      call('exportValues'),
+      call('getFieldForWidget', [{ kind: 'objectNumber', page: pr(1), annotObjectNumber: 102 }]),
+      call('getFieldForWidget', [{ kind: 'nm', page: pr(1), nm: 'n1' }]),
+      call('getFieldForWidget', [{ annotObjectNumber: 104 }]),
+      call('listWidgets', [pr(1)]),
+    ],
+  },
+  {
+    name: 'status-without-read-and-after-a-failed-load',
+    covers: "Without doc.forms.read the status is 'forbidden'; a load that rejects leaves it 'error'.",
+    plugins: FORM_ONLY,
+    engine: {
+      documents: {
+        a: doc([list(FIELDS)], { security: { allows: ['doc.forms.fill'] } }),
+        b: doc([{ path: 'forms.list', error: { name: 'EngineError', message: 'gone', code: 'Io' } }]),
+      },
+    },
+    snapshot: 'none',
+    steps: [
+      ...boot,
+      { op: 'call', target: 'documents', method: 'open', args: [{ kind: 'bytes', id: 'b', bytes: { $bytes: '' } }] },
+      call('getStatus'),
+      call('getStatus', [], 'b'),
+    ],
+  },
+  {
+    name: 'batch-writes',
+    covers:
+      'setValues writes each entry through the validated path in order and reports the refs that landed and the ones that threw, with the error info; importValues does the same keyed by name. Without doc.forms.fill every entry fails permission-denied.',
+    plugins: FORM_ONLY,
+    engine: {
+      documents: {
+        a: doc([
+          list(FIELDS),
+          { path: 'forms.setValue', times: 1, value: { changedWidgets: [] } },
+          { path: 'forms.setValue', times: 1, error: { name: 'EngineError', message: 'invalid value', code: 'InvalidArg' } },
+          { path: 'forms.setValue', value: { changedWidgets: [] } },
+        ]),
+        b: doc([list(FIELDS)], { security: { allows: ['doc.forms.read'] } }),
+      },
+    },
+    snapshot: 'none',
+    steps: [
+      ...boot,
+      { op: 'call', target: 'documents', method: 'open', args: [{ kind: 'bytes', id: 'b', bytes: { $bytes: '' } }] },
+      call('setValues', [[
+        { ref: ref(1), value: { type: 'text', value: 'Grace' } },
+        { ref: ref(2), value: { type: 'toggle', state: 'Yes' } },
+      ]]),
+      call('importValues', [{ name: { type: 'text', value: 'Ada' }, colour: { type: 'choice', values: ['g'] } }]),
+      call('setValues', [[]]),
+      call('setValues', [[{ ref: ref(1), value: { type: 'text', value: 'x' } }]], 'b'),
+      call('importValues', [{ name: { type: 'text', value: 'x' } }], 'b'),
+    ],
+  },
+  {
+    name: 'reset-all',
+    covers:
+      'resetAll resets every resettable field (buttons and signatures skipped), a listed subset by object number or name, or its complement with exclude, through the one reset batch; it answers the refs it resolved from the current snapshot.',
+    plugins: FORM_ONLY,
+    engine: {
+      documents: {
+        a: doc([
+          list([...FIELDS, pushbutton(12, 'go')]),
+          { path: 'forms.applyEffects', value: effectsOk(1) },
+        ]),
+      },
+    },
+    snapshot: 'none',
+    steps: [
+      ...boot,
+      call('resetAll'),
+      call('resetAll', [{ fields: [ref(1), fqn('agree')] }]),
+      call('resetAll', [{ fields: [ref(1)], exclude: true }]),
+      call('resetAll', [{ fields: [] }]),
+    ],
+  },
+  {
+    name: 'reset-all-failures',
+    covers:
+      "A failed or rejected reset entry makes resetAll report its fields as failed 'operation-failed' and the rest as applied; without doc.forms.fill it rejects permission-denied before any call; before the snapshot lands it reads one itself.",
+    plugins: FORM_ONLY,
+    engine: {
+      documents: {
+        a: doc([
+          list(FIELDS, { defer: 'first', times: 1 }),
+          list(FIELDS),
+          {
+            path: 'forms.applyEffects',
+            times: 1,
+            value: {
+              results: [{ index: 0, status: 'failed', fields: [NAME], changedWidgets: [] }, { index: 1, status: 'applied', fields: [AGREE], changedWidgets: [] }],
+              changedWidgets: [],
+              meta: null,
+            },
+          },
+          {
+            path: 'forms.applyEffects',
+            times: 1,
+            value: { results: [{ index: 0, status: 'rejected', fields: [AGREE], changedWidgets: [] }], changedWidgets: [], meta: null },
+          },
+          { path: 'forms.applyEffects', value: effectsOk(1) },
+        ]),
+        b: doc([list(FIELDS)], { security: { allows: ['doc.forms.read'] } }),
+      },
+    },
+    snapshot: 'none',
+    steps: [
+      ...boot,
+      { op: 'call', target: 'documents', method: 'open', args: [{ kind: 'bytes', id: 'b', bytes: { $bytes: '' } }] },
+      call('resetAll', [], 'b'),
+      call('resetAll'),
+      settle('first', snapshot(FIELDS)),
+      call('resetAll'),
+      call('resetAll'),
+    ],
+  },
+  {
+    name: 'confirmed-change-events',
+    covers:
+      'Every form event with an origin is announced before it is folded: a value change with its field, a created field, an updated, attached or detached one as updated, a deleted one by object number with no field; each carries the origin. onResynced fires when a read lands. document.versioned and signature.completed re-read too. A throwing listener is reported to console.error and the rest still run; an unsubscribed one hears nothing.',
+    plugins: FORM_ONLY,
+    engine: { documents: { a: doc([list(FIELDS)]) } },
+    snapshot: 'none',
+    steps: [
+      ...boot,
+      call('onValueChanged', [fnSpec('valueChanged.bad', { throws: { message: 'listener broke' } })]),
+      call('onValueChanged', [fnSpec('valueChanged')]),
+      call('onFieldCreated', [fnSpec('fieldCreated')]),
+      call('onFieldUpdated', [fnSpec('fieldUpdated')]),
+      call('onFieldDeleted', [fnSpec('fieldDeleted')]),
+      call('onValidationRejected', [fnSpec('validationRejected')]),
+      call('onResynced', [fnSpec('resynced')]),
+      emit({ type: 'form.valueChanged', origin: { kind: 'remote', actor: 'u2' }, field: NAME, changedWidgets: [] }),
+      emit({ type: 'form.valueChanged', origin: { kind: 'local' }, field: AGREE, changedWidgets: [] }),
+      emit({ type: 'form.fieldCreated', origin: { kind: 'local' }, field: COLOUR, changedWidgets: [] }),
+      emit({ type: 'form.fieldUpdated', origin: { kind: 'local' }, field: COLOUR, changedWidgets: [] }),
+      emit({ type: 'form.widgetAttached', origin: { kind: 'local' }, field: COLOUR, changedWidgets: [] }),
+      emit({ type: 'form.widgetDetached', origin: { kind: 'remote' }, field: COLOUR, changedWidgets: [] }),
+      emit({ type: 'form.fieldDeleted', origin: { kind: 'local' }, deletedFieldObjectNumber: 3, removedWidgets: [] }),
+      emit({ type: 'form.repaired', origin: { kind: 'local' } }),
+      emit({ type: 'document.versioned', version: 2 }),
+      emit({ type: 'signature.completed' }),
+    ],
+  },
+  {
+    name: 'an-unsubscribed-listener-hears-nothing',
+    covers: 'The unsubscribe an event hook returns detaches that listener.',
+    plugins: FORM_ONLY,
+    engine: { documents: { a: doc([list(FIELDS)]) } },
+    snapshot: 'none',
+    steps: [
+      ...boot,
+      call('onResynced', [fnSpec('resynced')]),
+      { op: 'call', target: { ref: 0 } },
+      call('refresh'),
+    ],
+  },
+];
+
 function aIndex(pon: number, index: number) {
   return { kind: 'index', page: pr(pon), index, revision: 1 };
 }
@@ -505,6 +708,6 @@ export const suites: Suite[] = [
     kind: 'scenario',
     file: 'plugins/form-fill.json',
     describes: 'packages/plugin/form without actions or annotation: hydration, geometry, the fill projection, value writes, reset, interchange, the twins and the reactive effect.',
-    cases,
+    cases: [...cases, ...v3Cases],
   },
 ];

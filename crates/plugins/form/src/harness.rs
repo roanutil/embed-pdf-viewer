@@ -5,71 +5,98 @@
 //!
 //! - `console.warn` and `console.error` lines starting `[form]` log as the
 //!   callbacks of those names (the `FormHost` sinks);
-//! - `form-scripting` builds a standalone [`FormScriptingController`] over
-//!   the document with a scripted sandbox;
-//! - `form-probe` answers the annotation plugin's `behaviorFor` as the id of
-//!   the engaged behavior.
+//! - `form-scripting` builds a [`FormScriptingController`] over a realm the
+//!   actions plugin mints with `create_detached_script_realm` for the
+//!   document, on first use; the driver owns the realm;
+//! - `form-probe` answers the annotation plugin's `getBehaviorFor` as the id
+//!   of the engaged behavior.
 
 use std::any::Any;
+use std::cell::RefCell;
 use std::rc::Rc;
 
-use epdf_acrojs::harness::{scripted_callback, scripted_sandbox_factory};
-use epdf_acrojs::{IdentityOverrides, PartialScriptIdentity};
+use epdf_acrojs::java_script_program_from_action_tree;
+use epdf_kernel::geometry::PageRef;
 use epdf_kernel::js::{from_value, to_value};
 use epdf_kernel::rt::Promise;
-use epdf_kernel::{AnyPlugin, AnyToken, Ctx, Error, Token, define, is_undefined, undefined};
-use epdf_plugin_actions::{ActionOrigin, PdfAnnotationEventKind};
+use epdf_kernel::{
+    AnyPlugin, AnyToken, Ctx, Error, Token, Unsubscribe, define, is_undefined, undefined,
+};
+use epdf_plugin_actions::{
+    ACTIONS, ActionOrigin, DetachedScriptRealm, PdfAnnotationEventKind, ScriptRealmTarget,
+};
 use epdf_plugin_annotation::ANNOTATION;
-use plugin_conformance::{Answer, Callback, FunctionTable, Harness, HarnessPlugin, Outcome};
+use plugin_conformance::{Answer, FunctionTable, Harness, HarnessPlugin, Outcome};
 use serde::Serialize;
 use serde_json::{Value, json};
 
-use crate::capability::FormCapability;
+use crate::contract::*;
+use crate::controller::FormCapability;
 use crate::core::fill_items::{fill_item_for_widget, fill_items, project_widget};
 use crate::core::model::{
-    Model, Msg, field_by_key, field_for_widget, field_key_of, initial_model, update,
+    Model, Msg, field_by_key, field_for_widget, field_key_of, initial_model, update, widget_at,
 };
 use crate::field_selection::{build_submit_entries, resolve_field_selection};
 use crate::form_plugin;
-use crate::reducer::{form_reducer, initial_form_state};
-use crate::scripting::{FormScriptingController, FormScriptingControllerOptions};
-use crate::tools::{FORM_TOOLS, PLACE_TAGS, form_tool_by_id};
-use crate::types::{FORM, FormAction, FormHost, FormPluginConfig, FormScriptingOptions, FormState};
+use crate::model::{FormAction, FormState, form_reducer, initial_form_state};
+use crate::promise::await_engine;
+use crate::scripting::controller::{
+    FormScriptingController, FormScriptingControllerOptions, TransactionBody, TransactionPort,
+};
+use crate::tools::definitions::{FORM_TOOLS, PLACE_TAGS, form_tool_by_id};
+use crate::value::get;
 
 /// The adapter.
 pub struct Form;
 
-/// The TypeScript object literal's member order.
+/// The composed api's member order (`composeApi` over the controller's
+/// slices).
 const MEMBERS: &[&str] = &[
-    "snapshot",
+    "getSnapshot",
+    "getField",
+    "getFieldForWidget",
+    "listFields",
+    "getValue",
+    "exportValues",
+    "listFillItems",
+    "getFillItem",
+    "ensureLoaded",
+    "getWidgetAt",
+    "getPageBox",
+    "listWidgets",
     "refresh",
-    "fillItems",
-    "fillItem",
-    "ensureGeom",
-    "field",
-    "fieldForWidget",
-    "setText",
-    "toggle",
-    "choose",
-    "reset",
-    "commitValue",
-    "activateWidget",
-    "notifyWidgetEvent",
-    "resetFormAction",
-    "resolveSubmitDataset",
-    "commitScriptFormEffects",
+    "getStatus",
     "setValue",
-    "exportData",
-    "importData",
-    "repair",
-    "placeField",
-    "pageBox",
+    "setText",
+    "setChecked",
+    "setChoice",
+    "setValueRaw",
+    "setValues",
+    "importValues",
+    "reset",
+    "resetAll",
+    "resetFormAction",
+    "createField",
     "updateField",
     "deleteField",
     "detachWidget",
+    "attachWidget",
+    "exportData",
+    "importData",
+    "repair",
+    "activateWidget",
+    "notifyWidgetEvent",
+    "resolveSubmitDataset",
+    "commitScriptFormEffects",
     "canRead",
     "canFill",
     "canDesign",
+    "onValueChanged",
+    "onFieldCreated",
+    "onFieldUpdated",
+    "onFieldDeleted",
+    "onValidationRejected",
+    "onResynced",
 ];
 
 fn arg(args: &[Value], i: usize) -> Option<&Value> {
@@ -86,6 +113,12 @@ fn str_arg(args: &[Value], i: usize) -> String {
 
 fn num_arg(args: &[Value], i: usize) -> f64 {
     arg(args, i).and_then(epdf_acrojs::js::number).unwrap_or(f64::NAN)
+}
+
+fn page_arg(args: &[Value], i: usize) -> Result<PageRef, Error> {
+    arg(args, i)
+        .and_then(PageRef::from_json)
+        .ok_or_else(|| Error::named("TypeError", "not a PageRef"))
 }
 
 fn decoded<T: serde::de::DeserializeOwned>(args: &[Value], i: usize) -> Result<T, Error> {
@@ -117,6 +150,29 @@ fn not_a_function(method: &str) -> Outcome {
     Outcome::Threw(Error::new(format!("[scenario] \"{method}\" is not a function")))
 }
 
+fn unsubscribe_ref(h: &Harness, un: Unsubscribe) -> Outcome {
+    Outcome::Returned(h.register_fn(Rc::new(move |_| {
+        un.call();
+        Outcome::undefined()
+    })))
+}
+
+/// An event hook: subscribe a scripted callback, return its unsubscribe.
+fn hook<E: Serialize + 'static>(
+    h: &Harness,
+    spec: Option<&Value>,
+    subscribe: impl FnOnce(std::boxed::Box<dyn Fn(&E) -> Result<(), Error>>) -> Unsubscribe,
+) -> Outcome {
+    let callback = h.callback(spec.unwrap_or(&Value::Null));
+    let off = subscribe(std::boxed::Box::new(move |event: &E| {
+        match callback.call(vec![to_value(event)]) {
+            Answer::Throws(error) => Err(error),
+            _ => Ok(()),
+        }
+    }));
+    unsubscribe_ref(h, off)
+}
+
 fn call_form(
     cap: &FormCapability,
     method: &str,
@@ -124,30 +180,75 @@ fn call_form(
     h: &Harness,
 ) -> Result<Outcome, Error> {
     Ok(match method {
-        "snapshot" => Outcome::Returned(or_null(cap.snapshot())),
-        "refresh" => unit_promise(cap.refresh_with(crate::value::truthy(arg(args, 0)))),
-        "fillItems" => Outcome::Returned(json_of(&*cap.fill_items(num_arg(args, 0)))),
-        "fillItem" => {
-            Outcome::Returned(cap.fill_item(num_arg(args, 0)).map_or(Value::Null, |i| json_of(&*i)))
+        "getSnapshot" => Outcome::Returned(or_null(cap.get_snapshot())),
+        "getField" => Outcome::Returned(or_null(cap.get_field(&value_arg(args, 0)))),
+        "getFieldForWidget" => {
+            Outcome::Returned(or_null(cap.get_field_for_widget(&value_arg(args, 0))))
         }
-        "ensureGeom" => {
-            cap.ensure_geom(num_arg(args, 0));
+        "listFields" => {
+            let filter: Option<FormFilter> = match arg(args, 0) {
+                Some(filter) => Some(from_value(filter)?),
+                None => None,
+            };
+            Outcome::Returned(Value::Array(cap.list_fields(filter.as_ref())))
+        }
+        "getValue" => Outcome::Returned(or_null(cap.get_value(&value_arg(args, 0)))),
+        "exportValues" => Outcome::Returned(Value::Object(cap.export_values())),
+        "listFillItems" => Outcome::Returned(json_of(&*cap.list_fill_items(page_arg(args, 0)?))),
+        "listWidgets" => Outcome::Returned(json_of(&*cap.list_widgets(page_arg(args, 0)?))),
+        "getFillItem" => Outcome::Returned(
+            cap.get_fill_item(num_arg(args, 0)).map_or(Value::Null, |i| json_of(&*i)),
+        ),
+        "ensureLoaded" => {
+            cap.ensure_loaded(page_arg(args, 0)?);
             Outcome::undefined()
         }
-        "field" => Outcome::Returned(or_null(cap.field(&str_arg(args, 0)))),
-        "fieldForWidget" => Outcome::Returned(or_null(cap.field_for_widget(num_arg(args, 0)))),
-        "setText" => unit_promise(cap.set_text(str_arg(args, 0), value_arg(args, 1))),
-        "toggle" => unit_promise(cap.toggle(str_arg(args, 0), value_arg(args, 1))),
-        "choose" => unit_promise(cap.choose(str_arg(args, 0), value_arg(args, 1))),
-        "reset" => unit_promise(cap.reset(str_arg(args, 0))),
-        "commitValue" => json_promise(cap.commit_value(value_arg(args, 0), value_arg(args, 1))),
-        "activateWidget" => json_promise(cap.activate_widget(str_arg(args, 0), value_arg(args, 1))),
-        "notifyWidgetEvent" => {
-            let event: PdfAnnotationEventKind = decoded(args, 2)?;
-            match cap.notify_widget_event(&str_arg(args, 0), &value_arg(args, 1), event) {
-                Ok(()) => Outcome::undefined(),
-                Err(error) => Outcome::Threw(error),
-            }
+        "getWidgetAt" => {
+            let point = value_arg(args, 1);
+            let x = point.get("x").and_then(Value::as_f64).unwrap_or(f64::NAN);
+            let y = point.get("y").and_then(Value::as_f64).unwrap_or(f64::NAN);
+            Outcome::Returned(
+                cap.get_widget_at(page_arg(args, 0)?, x, y).map_or(Value::Null, |w| json_of(&w)),
+            )
+        }
+        "getPageBox" => Outcome::Returned(
+            cap.get_page_box(page_arg(args, 0)?).map_or(Value::Null, |b| json_of(&b)),
+        ),
+        "refresh" => unit_promise(cap.refresh()),
+        "getStatus" => Outcome::Returned(json_of(&cap.get_status())),
+        "setValue" => json_promise(cap.set_value(value_arg(args, 0), value_arg(args, 1))),
+        "setText" => json_promise(cap.set_text(value_arg(args, 0), value_arg(args, 1))),
+        "setChecked" => json_promise(cap.set_checked(value_arg(args, 0), value_arg(args, 1))),
+        "setChoice" => json_promise(cap.set_choice(
+            value_arg(args, 0),
+            arg(args, 1).and_then(Value::as_array).cloned().unwrap_or_default(),
+        )),
+        "setValueRaw" => json_promise(cap.set_value_raw(value_arg(args, 0), value_arg(args, 1))),
+        "setValues" => {
+            let entries = arg(args, 0)
+                .and_then(Value::as_array)
+                .into_iter()
+                .flatten()
+                .map(|e| {
+                    (
+                        e.get("ref").cloned().unwrap_or_else(undefined),
+                        e.get("value").cloned().unwrap_or_else(undefined),
+                    )
+                })
+                .collect();
+            json_promise(cap.set_values(entries))
+        }
+        "importValues" => {
+            let values = arg(args, 0).and_then(Value::as_object).cloned().unwrap_or_default();
+            json_promise(cap.import_values(values))
+        }
+        "reset" => unit_promise(cap.reset(value_arg(args, 0))),
+        "resetAll" => {
+            let options: ResetAllOptions = match arg(args, 0) {
+                Some(options) => from_value(options)?,
+                None => ResetAllOptions::default(),
+            };
+            json_promise(cap.reset_all(options))
         }
         "resetFormAction" => {
             let targets = arg(args, 0).and_then(Value::as_array).cloned();
@@ -157,6 +258,22 @@ fn call_form(
                 None => None,
             };
             json_promise(cap.reset_form_action(targets, exclude, origin))
+        }
+        "createField" => json_promise(cap.create_field(decoded(args, 0)?)),
+        "updateField" => unit_promise(cap.update_field(value_arg(args, 0), value_arg(args, 1))),
+        "deleteField" => unit_promise(cap.delete_field(value_arg(args, 0))),
+        "detachWidget" => unit_promise(cap.detach_widget(value_arg(args, 0), value_arg(args, 1))),
+        "attachWidget" => unit_promise(cap.attach_widget(value_arg(args, 0), value_arg(args, 1))),
+        "exportData" => json_promise(cap.export_data(arg(args, 0).cloned())),
+        "importData" => json_promise(cap.import_data(value_arg(args, 0), arg(args, 1).cloned())),
+        "repair" => json_promise(cap.repair(arg(args, 0).cloned())),
+        "activateWidget" => json_promise(cap.activate_widget(value_arg(args, 0))),
+        "notifyWidgetEvent" => {
+            let event: PdfAnnotationEventKind = decoded(args, 2)?;
+            match cap.notify_widget_event(&value_arg(args, 0), &value_arg(args, 1), event) {
+                Ok(()) => Outcome::undefined(),
+                Err(error) => Outcome::Threw(error),
+            }
         }
         "resolveSubmitDataset" => {
             let diagnose = h.callback(arg(args, 2).unwrap_or(&Value::Null));
@@ -172,20 +289,33 @@ fn call_form(
             let effects = arg(args, 0).and_then(Value::as_array).cloned().unwrap_or_default();
             json_promise(cap.commit_script_form_effects(effects))
         }
-        "setValue" => json_promise(cap.set_value(value_arg(args, 0), value_arg(args, 1))),
-        "exportData" => json_promise(cap.export_data(arg(args, 0).cloned())),
-        "importData" => json_promise(cap.import_data(value_arg(args, 0), arg(args, 1).cloned())),
-        "repair" => json_promise(cap.repair(arg(args, 0).cloned())),
-        "placeField" => json_promise(cap.place_field(decoded(args, 0)?)),
-        "pageBox" => {
-            Outcome::Returned(cap.page_box(num_arg(args, 0)).map_or(Value::Null, |b| json_of(&b)))
-        }
-        "updateField" => unit_promise(cap.update_field(str_arg(args, 0), value_arg(args, 1))),
-        "deleteField" => unit_promise(cap.delete_field(str_arg(args, 0))),
-        "detachWidget" => unit_promise(cap.detach_widget(str_arg(args, 0), num_arg(args, 1))),
         "canRead" => Outcome::Returned(json!(cap.can_read())),
         "canFill" => Outcome::Returned(json!(cap.can_fill())),
         "canDesign" => Outcome::Returned(json!(cap.can_design())),
+        "onValueChanged" => {
+            let cap = cap.clone();
+            hook(h, arg(args, 0), move |f| cap.on_value_changed(f))
+        }
+        "onFieldCreated" => {
+            let cap = cap.clone();
+            hook(h, arg(args, 0), move |f| cap.on_field_created(f))
+        }
+        "onFieldUpdated" => {
+            let cap = cap.clone();
+            hook(h, arg(args, 0), move |f| cap.on_field_updated(f))
+        }
+        "onFieldDeleted" => {
+            let cap = cap.clone();
+            hook(h, arg(args, 0), move |f| cap.on_field_deleted(f))
+        }
+        "onValidationRejected" => {
+            let cap = cap.clone();
+            hook(h, arg(args, 0), move |f| cap.on_validation_rejected(f))
+        }
+        "onResynced" => {
+            let cap = cap.clone();
+            hook(h, arg(args, 0), move |f| cap.on_resynced(f))
+        }
         other => not_a_function(other),
     })
 }
@@ -200,8 +330,9 @@ fn console_sink(h: &Harness, name: &'static str) -> Rc<dyn Fn(&str, &Error)> {
 }
 
 /// The vector's `form` factory: the plugin with its console sinks logged.
-pub fn form_config(h: &Harness) -> FormPluginConfig {
-    FormPluginConfig {
+pub fn form_config(h: &Harness) -> FormConfig {
+    FormConfig {
+        validation: None,
         host: FormHost {
             console_warn: Some(console_sink(h, "console.warn")),
             console_error: Some(console_sink(h, "console.error")),
@@ -211,72 +342,110 @@ pub fn form_config(h: &Harness) -> FormPluginConfig {
 
 // ── the standalone scripting driver ───────────────────────────────────────────
 
-/// The `form-scripting` driver's capability.
-#[derive(Clone)]
-pub struct StandaloneDriver {
-    controller: FormScriptingController,
-}
-
-fn scripted(spec: &Value, h: &Harness) -> Callback {
-    scripted_callback(spec.get("$fn").and_then(Value::as_str).unwrap_or_default(), spec, h)
-}
-
-fn number_fn(callback: Callback) -> Rc<dyn Fn() -> f64> {
-    Rc::new(move || match callback.call(Vec::new()) {
-        Answer::Returns(value) => value.as_f64().unwrap_or(f64::NAN),
-        _ => f64::NAN,
+/// The name-tree boot programs: the catalog's scripts, read lazily.
+pub fn name_tree_boot_sources(
+    doc: Rc<dyn epdf_kernel::engine::DocumentHandle>,
+) -> Rc<dyn Fn() -> Result<Promise<Vec<String>>, Error>> {
+    Rc::new(move || {
+        let read = doc.has("actions").then(|| doc.call("actions.read", None, Vec::new()));
+        Ok(Promise::spawn(async move {
+            let Some(read) = read else { return Ok(Vec::new()) };
+            let actions = await_engine(read).await?;
+            if actions.is_null() {
+                return Ok(Vec::new());
+            }
+            get(&actions, "nameTreeScripts")
+                .and_then(Value::as_array)
+                .into_iter()
+                .flatten()
+                .map(|entry| {
+                    java_script_program_from_action_tree(
+                        get(entry, "action").unwrap_or(&Value::Null),
+                    )
+                })
+                .collect::<Result<Vec<_>, _>>()
+        }))
     })
 }
 
-/// `StandaloneConfig` as [`FormScriptingOptions`].
-pub fn standalone_options(config: &Value, h: &Harness) -> Result<FormScriptingOptions, Error> {
-    let sandbox = config.get("sandbox").cloned().unwrap_or_else(|| json!({}));
-    let mut options = FormScriptingOptions::new(scripted_sandbox_factory(&sandbox, h));
-    options.identity = match config.get("identity") {
-        None => None,
-        Some(identity) if identity.get("$fn").is_some() => {
-            let callback = scripted(identity, h);
-            Some(IdentityOverrides::Function(Rc::new(move || match callback.call(Vec::new()) {
-                Answer::Returns(value) => from_value(&value).unwrap_or_default(),
-                _ => PartialScriptIdentity::default(),
-            })))
-        }
-        Some(identity) => Some(IdentityOverrides::Value(from_value(identity)?)),
-    };
-    options.file_name = config.get("fileName").map(|spec| {
-        let callback = scripted(spec, h);
-        Rc::new(move || match callback.call(Vec::new()) {
-            Answer::Returns(value) => value.as_str().unwrap_or_default().to_string(),
-            _ => String::new(),
-        }) as Rc<dyn Fn() -> String>
-    });
-    let number = |key: &str| config.get(key).map(|spec| number_fn(scripted(spec, h)));
-    options.now = number("now");
-    options.utc_offset_minutes = number("utcOffsetMinutes");
-    options.random_seed = number("randomSeed");
-    options.budget = match config.get("budget") {
-        Some(budget) => Some(from_value(budget)?),
-        None => None,
-    };
-    Ok(options)
+struct DriverState {
+    realm: Option<DetachedScriptRealm>,
+    controller: Option<FormScriptingController>,
 }
 
-fn standalone_plugin(config: &Value, h: &Harness) -> Result<AnyPlugin, Error> {
+/// The `form-scripting` driver's capability.
+#[derive(Clone)]
+pub struct StandaloneDriver {
+    ctx: Ctx<Value, Value>,
+    state: Rc<RefCell<DriverState>>,
+}
+
+impl StandaloneDriver {
+    /// `ready()`: mint the realm and build the controller on first use.
+    fn ready(&self) -> Result<FormScriptingController, Error> {
+        if let Some(controller) = &self.state.borrow().controller {
+            return Ok(controller.clone());
+        }
+        let doc = self.ctx.doc().ok_or_else(|| Error::new("[form-scripting] no document"))?;
+        let actions = self.ctx.get(&ACTIONS)?;
+        let document_ctx = self.ctx.clone();
+        let document: Rc<dyn Fn() -> Option<epdf_kernel::types::DocumentMeta>> =
+            Rc::new(move || document_ctx.document());
+        let realm = actions
+            .create_detached_script_realm(ScriptRealmTarget {
+                doc: doc.clone(),
+                document: document.clone(),
+                boot_sources: name_tree_boot_sources(doc.clone()),
+            })
+            .ok_or_else(|| Error::new("[form-scripting] scripting is off"))?;
+        let port = realm.clone();
+        let transaction: TransactionPort =
+            Rc::new(move |body: TransactionBody| port.transaction(body));
+        let controller = FormScriptingController::new(FormScriptingControllerOptions {
+            doc,
+            document,
+            transaction,
+            budget: Some(realm.budget().clone()),
+        });
+        let mut state = self.state.borrow_mut();
+        state.realm = Some(realm);
+        state.controller = Some(controller.clone());
+        Ok(controller)
+    }
+}
+
+fn standalone_plugin(h: &Harness) -> AnyPlugin {
     let token: Token<StandaloneDriver> = Token::from_any(h.token("form-scripting", None));
-    let options = standalone_options(config, h)?;
-    Ok(define::<Value, Value>("form-scripting")
+    define::<Value, Value>("form-scripting")
         .document_scoped()
+        .requires(ACTIONS.any())
         .capability(&token, move |ctx: Ctx<Value, Value>| {
-            let doc = ctx.doc().ok_or_else(|| Error::new("[form-scripting] no document"))?;
-            let document_ctx = ctx.clone();
-            let controller = FormScriptingController::new(FormScriptingControllerOptions::Config {
-                doc,
-                document: Rc::new(move || document_ctx.document()),
-                config: options.clone(),
-            });
-            Ok(StandaloneDriver { controller })
+            Ok(StandaloneDriver {
+                ctx,
+                state: Rc::new(RefCell::new(DriverState { realm: None, controller: None })),
+            })
         })
-        .build())
+        .build()
+}
+
+fn call_driver(driver: &StandaloneDriver, method: &str, args: &[Value]) -> Outcome {
+    let run = |f: &dyn Fn(&FormScriptingController) -> Outcome| match driver.ready() {
+        Ok(controller) => f(&controller),
+        Err(error) => Outcome::Threw(error),
+    };
+    match method {
+        "commit" => run(&|c| json_promise(c.commit(value_arg(args, 0), value_arg(args, 1)))),
+        "activate" => run(&|c| json_promise(c.activate(value_arg(args, 0), value_arg(args, 1)))),
+        "recalculate" => run(&|c| json_promise(c.recalculate())),
+        "dispose" => run(&|c| {
+            c.dispose();
+            if let Some(realm) = &driver.state.borrow().realm {
+                realm.dispose();
+            }
+            Outcome::undefined()
+        }),
+        other => not_a_function(other),
+    }
 }
 
 // ── the behavior probe ────────────────────────────────────────────────────────
@@ -301,9 +470,9 @@ impl HarnessPlugin for Form {
         vec!["form", "form-scripting", "form-probe"]
     }
 
-    fn build(&self, factory: &str, config: &Value, h: &Harness) -> Result<AnyPlugin, Error> {
+    fn build(&self, factory: &str, _config: &Value, h: &Harness) -> Result<AnyPlugin, Error> {
         match factory {
-            "form-scripting" => standalone_plugin(config, h),
+            "form-scripting" => Ok(standalone_plugin(h)),
             "form-probe" => Ok(probe_plugin(h)),
             _ => Ok(form_plugin(form_config(h))),
         }
@@ -321,24 +490,14 @@ impl HarnessPlugin for Form {
         h: &Harness,
     ) -> Option<Outcome> {
         if let Some(driver) = capability.downcast_ref::<StandaloneDriver>() {
-            let c = &driver.controller;
-            return Some(match method {
-                "commit" => json_promise(c.commit(value_arg(&args, 0), value_arg(&args, 1))),
-                "activate" => json_promise(c.activate(value_arg(&args, 0), value_arg(&args, 1))),
-                "recalculate" => json_promise(c.recalculate()),
-                "dispose" => {
-                    c.dispose();
-                    Outcome::undefined()
-                }
-                other => not_a_function(other),
-            });
+            return Some(call_driver(driver, method, &args));
         }
         if let Some(probe) = capability.downcast_ref::<Probe>() {
             return Some(match method {
                 "behaviorFor" => {
                     let behavior = probe.ctx.get(&ANNOTATION).map(|annotation| {
                         annotation
-                            .behavior_for(&str_arg(&args, 0), None)
+                            .get_behavior_for(&str_arg(&args, 0), None)
                             .map_or(Value::Null, |b| json!(b.id()))
                     });
                     Outcome::from_result(behavior)
@@ -407,25 +566,45 @@ fn fill_item_for_widget_fn(args: &[Value]) -> Result<Value, Error> {
     Ok(item.map_or(Value::Null, |i| json_of(&i)))
 }
 
+fn widget_at_fn(args: &[Value]) -> Result<Value, Error> {
+    let point = value_arg(args, 2);
+    let x = point.get("x").and_then(Value::as_f64).unwrap_or(f64::NAN);
+    let y = point.get("y").and_then(Value::as_f64).unwrap_or(f64::NAN);
+    let hit = widget_at(&*model_arg(args, 0)?, num_arg(args, 1), x, y);
+    Ok(hit.map_or(Value::Null, |h| json_of(&h)))
+}
+
+fn field_ref_by_name_fn(args: &[Value]) -> Result<Value, Error> {
+    Ok(field_ref::by_name(&str_arg(args, 0)))
+}
+
+fn field_ref_by_object_number_fn(args: &[Value]) -> Result<Value, Error> {
+    Ok(field_ref::by_object_number(num_arg(args, 0)))
+}
+
 fn initial_form_state_fn(_: &[Value]) -> Result<Value, Error> {
     Ok(json_of(&initial_form_state()))
 }
 
-/// `formReducer(state, action)`: an action other than `SET_MODEL` is the
+/// `formReducer(state, action)`: an action of another type is the
 /// TypeScript's `return state`, which the Rust enum cannot carry.
 fn form_reducer_fn(args: &[Value]) -> Result<Value, Error> {
     let state = value_arg(args, 0);
     let action = value_arg(args, 1);
-    if action.get("type").and_then(Value::as_str) != Some("SET_MODEL") {
-        return Ok(state);
-    }
-    let model: Model = from_value(action.get("model").unwrap_or(&Value::Null))?;
-    let current: Model = from_value(state.get("model").unwrap_or(&Value::Null))?;
-    let next = form_reducer(
-        &FormState { model: Rc::new(current) },
-        &FormAction::SetModel { model: Rc::new(model) },
-    );
-    Ok(json_of(&next.unwrap_or_else(initial_form_state)))
+    let current = FormState {
+        model: Rc::new(from_value(state.get("model").unwrap_or(&Value::Null))?),
+        status: from_value(state.get("status").unwrap_or(&Value::Null))?,
+    };
+    let action = match action.get("type").and_then(Value::as_str) {
+        Some("SET_MODEL") => FormAction::SetModel {
+            model: Rc::new(from_value(action.get("model").unwrap_or(&Value::Null))?),
+        },
+        Some("SET_STATUS") => FormAction::SetStatus {
+            status: from_value(action.get("status").unwrap_or(&Value::Null))?,
+        },
+        _ => return Ok(state),
+    };
+    Ok(form_reducer(&current, &action).map_or(state, |next| json_of(&next)))
 }
 
 fn form_tools_fn(_: &[Value]) -> Result<Value, Error> {
@@ -448,7 +627,7 @@ fn resolve_field_selection_fn(args: &[Value]) -> Result<Value, Error> {
 fn build_submit_entries_fn(args: &[Value]) -> Result<Value, Error> {
     let fields = arg(args, 0).and_then(Value::as_array).cloned().unwrap_or_default();
     let intent = decoded(args, 1)?;
-    let diagnostics = std::cell::RefCell::new(Vec::new());
+    let diagnostics = RefCell::new(Vec::new());
     let entries = build_submit_entries(&fields, &intent, &|d| diagnostics.borrow_mut().push(d));
     Ok(json!({ "entries": json_of(&entries), "diagnostics": json_of(&diagnostics.into_inner()) }))
 }
@@ -464,6 +643,9 @@ pub fn functions() -> FunctionTable {
         ("projectWidget", project_widget_fn),
         ("fillItems", fill_items_fn),
         ("fillItemForWidget", fill_item_for_widget_fn),
+        ("widgetAt", widget_at_fn),
+        ("fieldRefByName", field_ref_by_name_fn),
+        ("fieldRefByObjectNumber", field_ref_by_object_number_fn),
         ("initialFormState", initial_form_state_fn),
         ("formReducer", form_reducer_fn),
         ("formTools", form_tools_fn),

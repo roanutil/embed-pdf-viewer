@@ -196,3 +196,41 @@ pub fn field_by_key(model: &Model, key: &str) -> Option<Value> {
 pub fn field_for_widget(model: &Model, annot_object_number: f64) -> Option<Value> {
     field_at(model, model.by_widget.get(&number_key(annot_object_number)))
 }
+
+/// `WidgetHit`: the annotation under a point and the field it belongs to.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WidgetHit {
+    pub annot_object_number: f64,
+    pub field: Value,
+    /// The widget's page-space box.
+    #[serde(rename = "box")]
+    pub bx: Box,
+}
+
+/// `contains(b, p)`: edges are inside.
+pub fn contains(b: &Box, x: f64, y: f64) -> bool {
+    x >= b.x && x <= b.x + b.width && y >= b.y && y <= b.y + b.height
+}
+
+/// `widgetAt(model, pageObjectNumber, point)`: the widget under a page
+/// point from the model's loaded geometry for that page, the smallest
+/// containing box winning. `Object.entries` visits integer keys in numeric
+/// order, so the boxes are visited that way here too.
+pub fn widget_at(model: &Model, page_object_number: f64, x: f64, y: f64) -> Option<WidgetHit> {
+    let geom = model.geom.get(&number_key(page_object_number))?;
+    let mut entries: Vec<(f64, &Box)> =
+        geom.iter().map(|(k, b)| (k.parse::<f64>().unwrap_or(f64::NAN), b)).collect();
+    entries.sort_by(|a, b| a.0.total_cmp(&b.0));
+    let mut best: Option<WidgetHit> = None;
+    for (annot_object_number, bx) in entries {
+        if !contains(bx, x, y) {
+            continue;
+        }
+        let Some(field) = field_for_widget(model, annot_object_number) else { continue };
+        if best.as_ref().is_none_or(|b| bx.width * bx.height < b.bx.width * b.bx.height) {
+            best = Some(WidgetHit { annot_object_number, field, bx: *bx });
+        }
+    }
+    best
+}

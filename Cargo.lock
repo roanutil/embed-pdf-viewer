@@ -644,8 +644,10 @@ name = "epdf-plugin-stamp"
 version = "0.0.0"
 dependencies = [
  "epdf-acrojs",
+ "epdf-annotation-core",
  "epdf-geometry",
  "epdf-kernel",
+ "epdf-plugin-actions",
  "epdf-plugin-annotation",
  "epdf-plugin-form",
  "epdf-plugin-interaction",

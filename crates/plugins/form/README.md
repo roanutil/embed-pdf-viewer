@@ -1,131 +1,114 @@
 # epdf-plugin-form
 
-`packages/plugin/form` in Rust: the field plane over the engine's `forms.*` services, the fill
-projection, value writes and reset, interchange, field design with the draw-to-place handler, ISO
-field selection, and the K/V/C/F scripting transaction. All 191 cases in five vector files replay
-identically (`cargo test -p epdf-plugin-form`):
+`packages/plugin/form` in Rust at the v3 contract: the field plane over the engine's `forms.*`
+services, the fill projection, value writes and their batch doors, reset, interchange, field design
+with the draw-to-place handler, ISO field selection, and the K/V/C/F scripting transaction. All 216
+cases in five vector files replay identically (`cargo test -p epdf-plugin-form`):
 
 | File | Kind | Cases | Covers |
 |---|---|---|---|
-| `vectors/plugins/form-core.json` | function | 87 | `core/model.ts`, `core/fill-items.ts`, the reducer, the tool table, `resolveFieldSelection` and `buildSubmitEntries` |
-| `vectors/plugins/form-fill.json` | scenario | 23 | hydration and refresh, widget geometry, the fused fill projection, typed writes and their queue, reset with and without a batch door, interchange, the twins, the reactive effect |
-| `vectors/plugins/form-design.json` | scenario | 24 | tool and behavior registration with and without the annotation plugin, `placeField` and the other design verbs, the place handler as `PointerSample` sequences |
+| `vectors/plugins/form-core.json` | function | 100 | `core/model.ts` (with `widgetAt`), `core/fill-items.ts`, the reducer, the tool table, `fieldRef`, `resolveFieldSelection` and `buildSubmitEntries` |
+| `vectors/plugins/form-fill.json` | scenario | 30 | hydration, `getStatus` and `refresh`, widget geometry, the fused fill projection, the field reads, typed and batch writes, `reset` and `resetAll`, interchange, the twins, the six confirmed-change events |
+| `vectors/plugins/form-design.json` | scenario | 28 | tool and behavior registration with and without the annotation plugin, `createField` and the other design verbs, the hit test, the place handler as `PointerSample` sequences |
 | `vectors/plugins/form-actions.json` | scenario | 13 | the `reset-form` executor, the submit resolver, the script commit sink, widget activation, the widget event feed |
-| `vectors/plugins/form-scripting.json` | scenario | 44 | the standalone controller (environment, boot, keystroke, validate, calculate, format, effect canonicalisation, budgets, faults) and the capability over the actions realm |
+| `vectors/plugins/form-scripting.json` | scenario | 45 | the standalone controller over a detached realm, and the capability over the actions plugin's realm |
 
 The scenario registry runs the real interaction, actions and annotation adapters beside this one.
 
-## The API stamp and siblings use
+## Shape
 
-The TypeScript's root, `/contract`, `/contract/host` and `/internal` entries are type lenses over
-one runtime token. Here that's `FORM` and `FormCapability`, whose host members
-(`reset_form_action`, `resolve_submit_dataset`, `commit_script_form_effects`) say so in their docs.
-The methods are the TypeScript's in snake case: `snapshot`, `fill_items`, `set_text`,
-`commit_value`, `activate_widget`, `place_field`, `can_design`, and so on. `refresh()` is also
-`refresh_with(force)`, since the TypeScript's `refresh` takes the flag too.
+The files follow the TypeScript package. `controller.rs` is the composition root; each area is an
+`impl` block on the one `FormCapability`, one file per TypeScript file under `services/`, `read/`,
+`sync/`, `write/`, `scripting/` and `tools/`, and their private state sits in `Core`. `form_plugin`
+declares `create`: the controller is built during bring-up and `connect` subscribes to the document
+events, starts hydration and wires the hub.
 
-`/scripting` is `create_form_scripting_controller(FormScriptingControllerOptions::Config { doc,
-document, config })`, which is what stamp calls for its detached asset documents, then
-`recalculate()` and `dispose()`. `FormCommitResult`, `FormUiEffect` and `FormScriptingOptions` are
-the result and configuration types. `FormScriptingOptions::sandbox_factory` is required: the
-TypeScript falls back to a lazily imported QuickJS sandbox, and Rust has no default. A host with no
-sandbox builds no controller, and inside a viewer the capability then runs exactly as the
-TypeScript does with scripting disabled (`no-sandbox-host`).
+The public surface is the v3 contract in snake case. Fields are addressed by a `FormFieldRef`
+(`contract::field_ref` builds one) and pages by the kernel's `PageRef`: `get_snapshot`,
+`list_fields`, `get_value`, `export_values`, `list_widgets`, `get_widget_at`, `set_value`,
+`set_value_raw`, `set_values`, `import_values`, `reset`, `reset_all`, `create_field`,
+`attach_widget`, `detach_widget`, the twins and the six `on_*` hooks. The host lens
+(`list_fill_items`, `get_fill_item`, `ensure_loaded`, `get_page_box`, `notify_widget_event`,
+`reset_form_action`, `resolve_submit_dataset`, `commit_script_form_effects`) is on the same type,
+as the TypeScript's two lenses share one token. `FormHostCapability` is an alias.
 
-Engine DTOs (snapshots, fields, effects, action trees, annotation refs) stay `serde_json::Value`.
-Fill items are typed, but members copied from the field DTO stay JSON so an absent one prints as
-absent.
+The scripting controller no longer builds a realm. `create_form_scripting_controller` takes a
+`TransactionPort` and a budget: the capability hands it the actions plugin's `script_realm`, and a
+host evaluating a document that is not displayed (stamp's asset documents) mints one with
+`create_detached_script_realm`. `FormScriptingOptions` and the sandbox factory are gone with the
+standalone realm. `services::scripting::commit_surface` is public so a detached-realm owner can
+surface a result through the actions port.
+
+Engine DTOs (snapshots, fields, effects, action trees, refs) stay `serde_json::Value`. Fill items
+are typed; members copied from the field DTO stay JSON so an absent one prints as absent.
 
 ## Host inputs
 
-The TypeScript reads three ambient values, and each comes in as an input:
-
-- `console.warn('[form] form snapshot failed to load', err)` and `console.error('[form] placeField
-  failed:', err)` go to `FormHost::console_warn` and `console_error` on `FormPluginConfig`. The
-  vectors log both as callbacks.
-- `-new Date(nowMs).getTimezoneOffset()` in the standalone realm is
-  `FormScriptingOptions::host_utc_offset_minutes`, default zero. The generator pins `TZ=UTC`.
-- `Date.now()`, for the standalone clock and the transaction's execution budget, is `rt::now()`.
+`console.warn('[form] form snapshot failed to load', err)`, `console.error('[form] createField
+failed:', err)` and `console.error('[form] event listener failed:', err)` go to
+`FormHost::console_warn` and `console_error` on `FormConfig`. The vectors log each as a callback.
+`Date.now()`, for the transaction's execution budget, is `rt::now()`.
 
 ## Where the port has to be careful
 
-Turn counts are behaviour, and each `await` and `.then` is mirrored with `src/promise.rs`: an
-engine call awaited resumes three turns after it settles, `.then` on one reacts after one, and an
-`async` function that returns a promise settles two turns after it. The snapshot load is
-`list().then(apply).catch(warn).finally(clear)`, which settles two turns after its `finally`
-callback. `form-design`'s `queued-verbs-interleave-with-page-reloads` pins how unawaited annotation
-reloads interleave with the next queued verb.
+Turn counts are behaviour, and each `await` is mirrored with `src/promise.rs`. `refresh` is the
+TypeScript's `do { await readSnapshot() } while (refreshAgain)` inside a `.finally`, whose derived
+promise settles two turns after its callback; every call during a run shares that promise and
+queues one more read. `write`, `reset` and `resetAll` are `async` functions that return the queue's
+promise, so they cost the adoption turns.
 
-Keystroke splicing counts UTF-16 code units and reads offsets the way `String#slice` does. Output
-budget bytes are the UTF-8 length of `JSON.stringify(output)`, so `value::json_stringify` prints
-numbers as `Number#toString` does rather than as `serde_json` does.
+Keystroke splicing counts UTF-16 code units, and output budget bytes are the UTF-8 length of
+`JSON.stringify(output)`, printed the way `Number#toString` prints numbers.
 
-`sameAnnotationRef` compares an index ref's `revision` with `===`. A `RevisionToken` object read
-from JSON is never identical to another, so the Rust treats an object revision as unequal and a
-primitive one by value. Activation reads a loaded annotation through the annotation plugin's typed
-`AnnotationRef`, and a ref that doesn't decode (a string revision, say) counts as not loaded.
+`sameAnnotationRef` compares an index ref's `revision` with `===`. A revision object read from JSON
+is never identical to another, so the Rust treats an object revision as unequal.
 
-One harness change came with this port: a fake document's `lacks` list removes the optional
-`forms.applyEffects` member (commit `5c6ad7125`). Without it no vector could reach the six branches
-that handle an engine without a batch door.
+## Coverage
+
+Across the whole corpus the generators reach 3,431 of the package's 3,460 statements and 879 of
+its 927 branches (`vectors/coverage.json`). The 29 statements left:
+
+- `controller.ts` 85 to 91: `createFormCapability`, the unit-test door that builds and connects a
+  controller outside the plugin. Nothing in the plugin calls it.
+- `form.plugin.ts` 137 to 147, 164 and 165: the sink and the executor when `ctx.tryGet(FormToken)`
+  finds no form capability. Both are registered only while the plugin lives.
+- `write/activation.ts` 27 to 31: `sameAnnotationRef`'s `nm` and `index` arms. `activateWidget`
+  finds the field by the widget's object number, so a ref of another kind rejects `not-found`
+  first, and a listed candidate of another kind fails the kind check on line 23.
+- `scripting/controller.ts` 142 and 143: a target with no script view. The overlay is built from
+  the snapshot the target was found in.
+- `scripting/overlay.ts` 94: `formValueFromScriptValue` for a pushbutton or signature, which every
+  path refuses first.
+- `tools/handlers.ts` 126: a click placement that is not a box. Every palette policy is a box.
+
+The unreached branches are the `if (!doc)` and `ctx.doc?` arms (the plugin is document-scoped), the
+`String(error)` arm of every `error instanceof Error ? ... : String(error)` (the fake engine and the
+scripted sandbox only throw `Error`s), `this.transactionBudget ?? DEFAULT_SCRIPT_BUDGET` (a realm
+port always carries a budget), `getActiveTool()?.enables ... ?? false` (there is always an active
+tool), `result.effectsResult?.results ?? []` in `resetAll` (a failed reset always carries its
+effects result), the handler's guards against a move or up without a captured gesture, the
+`sameAnnotationRef` arms above, and a design verb's widget without a page.
+
+## Pinned TypeScript behaviour
+
+`importValues` addresses each field as `{kind: 'fqn', name}`. With scripting on, the transaction
+matches fields by `refKey`, so a field that has an object number never matches its own name and
+the write fails "Form field 'fqn:email' no longer exists" (`form-scripting`,
+`batch-writes-count-rejections`). Without scripting the engine resolves the name and the write
+lands.
+
+`activateWidget` takes the widget alone and can only resolve an object-number ref; an `nm` or
+`index` widget ref rejects `not-found`.
 
 ## Where the port differs in shape
 
 A few malformed DTOs make the TypeScript throw a `TypeError` where the Rust carries on, and no
 vector sends one: a snapshot without `calculationOrder` (read as empty), a form event whose `origin`
-is `null` (ignored), a field without `flags` (not read-only). A non-boolean `flags.readOnly` prints
-as `disabled: true` where the TypeScript's `||` would print the value itself. `writeDone` past the
-end of the field list pads with `null`s, which JSON prints as the TypeScript prints its holes, and
-the index skips them as `forEach` skips holes.
-
-## Coverage
-
-The generators reach 2,746 of the package's 2,762 statements and 756 of its 799 branches
-(`vectors/coverage.json`). Every file outside `form.plugin.ts`, `handler.ts` and `scripting.ts` is
-at every statement. The 16 statements left, and the branches with them, guard states the public
-surface can't produce:
-
-- `form.plugin.ts` 117 to 128, 135, 145 and 146: the sink, resolver and executor closures when
-  `ctx.tryGet(FormToken)` finds no form capability, and the executor's non-`reset-form` guard. The
-  plugin registers them only while it exists, and only for `reset-form` nodes.
-- `handler.ts` 135: a click placement that isn't a box. `resolveClickPlacement` returns a box for
-  every width-and-height policy, which is all the palette has.
-- `scripting.ts` 367 and 368: a target with no script view. The overlay is built from the same
-  snapshot the target was found in.
-
-The unreached branches are the `if (!doc)` and `ctx.doc?` arms (the plugin is document-scoped), the
-`String(error)` arm of every `error instanceof Error ? ... : String(error)` (the fake engine and the
-scripted sandbox only throw `Error`s, and Rust has nothing else), `scripting.ts:76-77` (the QuickJS
-default, which doesn't port), `scripting.ts:86` (a null document meta), `scripting.ts:177` (a
-script value change on a pushbutton or signature, which every path throws on first),
-`scripting.ts:213` (an overlay field missing from the original it was cloned from),
-`form.plugin.ts:98` (`activeTool()` is never undefined), `form.plugin.ts:155` (a failed reset never
-carries an error), and `handler.ts` 60, 77 and 83 (a move or up without a captured gesture, or with
-a non-palette tool, which the hub never routes).
+is `null` (ignored), a field without `flags` (not read-only). `writeDone` past the end of the field
+list pads with `null`s, which JSON prints as the TypeScript prints its holes.
 
 ## Mutation testing
 
-`scripts/mutants.sh -p epdf-plugin-form --test-package epdf-plugin-form --file <file>`, file by file
-over every module but `harness.rs`, catches 454 of 466 viable mutants (449 caught, 5 timeouts; 164
-unviable). Two of the 449 are `scripting.rs` survivors that later cases kill, checked by applying
-each by hand; the other numbers are from the last run of each file. The 12 survivors are
-equivalent:
-
-- `capability.rs:396` and `:418`, the fill caches' grant comparison as `!=`. The grant can't change
-  while the model stands still, so a miss recomputes the same items.
-- `capability.rs:745`, reloading a changed widget's page 0: the annotation plugin finds no crop for
-  it and makes no call.
-- `capability.rs:836`, `no_tree`'s first `&&` as `||`. Every inert step carries a diagnostic, so an
-  inert result with steps never has none.
-- `scripting.rs:637`, dropping the null check on `/CO` entries. A null matches only a field whose
-  FQN is literally `undefined`, and then only as a recalculation anchor, which proposes nothing.
-- `field_selection.rs:86` and `:92`, `explicit_include`'s `&&` and `explicit`'s `&&` as `||`.
-  `listed()` is false for every selected field whenever `explicit_include` is false.
-- `handler.rs:74` (two), the handler's `id`, which the hub never reads, and `handler.rs:84`,
-  `enabled_for` answering true, which only reaches an `on_down` that declines any tool the palette
-  doesn't know.
-- `core/model.rs:59` and `reducer.rs:11`, `initial_model` and `initial_form_state` as
-  `Default::default()`: the same values.
-
-The timeouts count as caught: four `value.rs` mutants of `get` and `num` hang the replay, and
-`auto_name`'s `+=` as `*=` stays at 1 and never finds a free name.
+Pre-v3, rerun pending. The last run, over the pre-v3 layout (`capability.rs`, `scripting.rs`,
+`handler.rs`, since split into the areas above), caught 454 of 466 viable mutants (449 caught, 5
+timeouts; 164 unviable), and the 12 survivors were equivalent.

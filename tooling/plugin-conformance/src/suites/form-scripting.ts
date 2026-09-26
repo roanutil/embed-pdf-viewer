@@ -858,6 +858,26 @@ const capabilityCases: ScenarioCase[] = [
     ],
   },
   {
+    name: 'batch-writes-count-rejections',
+    covers:
+      "setValues and importValues report a rejected write as failed 'invalid-input' with the first diagnostic's message (or the status), and a failed one as 'operation-failed' with the error's message; a rejection is also announced on onValidationRejected with its diagnostics.",
+    plugins: scripted({ builds: [{ run: [rejects('x'), budgetFault('boom'), out({ event: ev('ok') }), out({ event: ev('y', { rc: false }), diagnostics: [{ code: 'script-error', message: 'bad email' }] })] }] }),
+    engine: { documents: { a: doc([list([NAME, GUARD()]), applyOk()]) } },
+    snapshot: 'none',
+    steps: [
+      ...boot,
+      ...observe,
+      call('onValidationRejected', [fnSpec('validationRejected')]),
+      call('setValues', [[
+        { ref: ref(2), value: textValue('bad') },
+        { ref: ref(2), value: textValue('worse') },
+        { ref: ref(2), value: textValue('fine') },
+        { ref: ref(2), value: textValue('noted') },
+      ]]),
+      call('importValues', [{ email: textValue('again') }]),
+    ],
+  },
+  {
     name: 'reset-recalculates',
     covers:
       "With scripting on, a reset recalculates the /CO chain after its batch and folds the recalculation's UI, diagnostics and error into its result, surfaced with the caller's origin.",

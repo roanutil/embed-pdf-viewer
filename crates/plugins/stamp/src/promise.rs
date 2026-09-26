@@ -40,3 +40,15 @@ pub fn finally<T: Clone + 'static>(
         outcome
     })
 }
+
+/// `Promise.all(promises)`: settles one turn after the last element's
+/// reaction, or with the first rejection.
+pub fn all<T: Clone + 'static>(promises: Vec<Promise<T>>) -> Promise<Vec<T>> {
+    Promise::spawn(async move {
+        let mut out = Vec::new();
+        for promise in promises {
+            out.push(promise.await?);
+        }
+        Ok(out)
+    })
+}

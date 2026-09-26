@@ -16,10 +16,12 @@ import {
   fieldKeyOf,
   initialModel,
   update,
+  widgetAt,
   type Model,
   type Msg,
 } from '../../../../packages/plugin/form/src/core/model';
 import { buildSubmitEntries, resolveFieldSelection } from '../../../../packages/plugin/form/src/field-selection';
+import { fieldRef } from '../../../../packages/plugin/form/src/contract';
 import { formReducer, initialFormState } from '../../../../packages/plugin/form/src/model';
 import { FORM_TOOL_BY_ID, FORM_TOOLS, PLACE_TAGS } from '../../../../packages/plugin/form/src/tools/definitions';
 
@@ -48,6 +50,9 @@ const functions = {
   projectWidget,
   fillItems,
   fillItemForWidget,
+  widgetAt,
+  fieldRefByName: fieldRef.byName,
+  fieldRefByObjectNumber: fieldRef.byObjectNumber,
   initialFormState,
   formReducer,
   formTools: () => ({ tools: FORM_TOOLS, placeTags: PLACE_TAGS }),
@@ -177,12 +182,25 @@ const projectionCases: FunctionCase[] = [
   fc('fillItemForWidget', 'unknown', withGeom, 404),
   fc('fillItemForWidget', 'no-control', withGeom, 116),
   fc('fillItemForWidget', 'index-without-the-widget', inconsistent, 999),
+  fc('fillItemForWidget', 'an-unplaced-widget-has-no-box', run([{ t: 'snapshot', snapshot: snapshot([text(30, 'loose', 'l', {}, [[130, null]])]) as never }]), 130),
+  fc('projectWidget', 'signature-unsigned', loaded, SIG, 116, box(1, 1)),
+  fc('projectWidget', 'signature-signed', loaded, { ...SIG, valueEntry: { kind: 'scalar', value: 'sig-dict' } }, 116),
+  fc('widgetAt', 'no-geometry-for-the-page', loaded, 3, { x: 1, y: 1 }),
+  fc('widgetAt', 'nothing-under-the-point', withGeom, 3, { x: 500, y: 500 }),
+  fc('widgetAt', 'the-smallest-containing-box-wins', update(loaded, { t: 'pageGeom', pageObjectNumber: 3, boxes: { 104: box(0, 0, 100, 100), 105: box(10, 10, 20, 20), 106: box(5, 5, 50, 50) } }), 3, { x: 15, y: 15 }),
+  fc('widgetAt', 'edges-are-inside', update(loaded, { t: 'pageGeom', pageObjectNumber: 3, boxes: { 104: box(10, 10, 20, 20) } }), 3, { x: 30, y: 30 }),
+  fc('widgetAt', 'a-box-without-a-field-is-skipped', update(loaded, { t: 'pageGeom', pageObjectNumber: 3, boxes: { 999: box(0, 0, 5, 5), 104: box(0, 0, 50, 50) } }), 3, { x: 2, y: 2 }),
+  fc('widgetAt', 'a-larger-box-later-loses', update(loaded, { t: 'pageGeom', pageObjectNumber: 3, boxes: { 105: box(10, 10, 20, 20), 106: box(0, 0, 50, 50) } }), 3, { x: 15, y: 15 }),
 ];
 
 const reducerCases: FunctionCase[] = [
   fc('initialFormState', 'empty'),
   fc('formReducer', 'set-model', initialFormState(), { type: 'SET_MODEL', model: loaded }),
   fc('formReducer', 'other-action-is-no-change', initialFormState(), { type: 'OTHER' }),
+  fc('formReducer', 'set-status', initialFormState(), { type: 'SET_STATUS', status: 'loading' }),
+  fc('formReducer', 'set-status-unchanged-is-no-change', { ...initialFormState(), status: 'ready' }, { type: 'SET_STATUS', status: 'ready' }),
+  fc('fieldRefByName', 'fqn', 'parent.child'),
+  fc('fieldRefByObjectNumber', 'object-number', 12),
   fc('formTools', 'the-palette'),
   fc('formToolById', 'text', 'form-text'),
   fc('formToolById', 'listbox', 'form-listbox'),

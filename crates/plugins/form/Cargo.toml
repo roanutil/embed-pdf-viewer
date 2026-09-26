@@ -3,7 +3,7 @@ name = "epdf-plugin-form"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
-description = "packages/plugin/form in Rust: the field plane (reactive snapshot over doc.forms, the fill projection, value writes and reset, interchange, field design and the draw-to-place handler, ISO field selection) and the K/V/C/F scripting transaction over a host-supplied sandbox."
+description = "packages/plugin/form in Rust: the field plane (reactive snapshot over doc.forms, the fill projection, value writes and reset, interchange, field design and the draw-to-place handler, ISO field selection) and the K/V/C/F scripting transaction over the actions plugin's script realm."
 
 [lib]
 crate-type = ["rlib"]

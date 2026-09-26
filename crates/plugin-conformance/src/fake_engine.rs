@@ -417,6 +417,15 @@ impl DocumentHandle for FakeHandle {
         if DEFAULT_PRESENT.contains(&member) {
             return !self.lacks().contains(&member);
         }
+        // The TypeScript fake answers every `pages.*` member through a proxy
+        // that honours `lacks`, and every `page.annotations.*` member but a
+        // lacked `downloadFile` (above) through one that does not.
+        if member.starts_with("pages.") {
+            return !self.lacks().contains(&member);
+        }
+        if member.starts_with("page.annotations.") {
+            return true;
+        }
         self.services().contains(&member)
     }
 
