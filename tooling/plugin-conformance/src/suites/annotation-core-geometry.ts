@@ -603,6 +603,13 @@ for (const [label, box, i, sw] of [
   ['ellipse-height-exactly-5', rc(0, 0, 100, 11.75), 0.5, 1],
   ['ellipse-height-4-width-exactly-20', rc(0, 0, 26.75, 10.75), 0.5, 1],
   ['rect-tiny-intensity', rc(0, 0, 400, 300), 0.01, 0],
+  // Inside the 5.75 inset these leave a 2.6 x 2.6 ellipse, just under half the
+  // 5.25 curl radius, which is drawn plain even though the curls would fit;
+  // then each side at exactly half, and a height past it.
+  ['ellipse-under-half-radius', rc(0, 0, 14.1, 14.1), 1, 1],
+  ['ellipse-width-at-half-radius', rc(0, 0, 14.125, 14.1), 1, 1],
+  ['ellipse-height-at-half-radius', rc(0, 0, 14.1, 14.125), 1, 1],
+  ['ellipse-narrow-past-half-radius', rc(0, 0, 14.1, 15.5), 1, 1],
 ] as const) {
   if (sw > 0) cloudyCases.push(c('cloudyPath', `${label}-ellipse`, box, true, i, sw));
   cloudyCases.push(c('cloudyPath', `${label}-rect`, box, false, i, sw));

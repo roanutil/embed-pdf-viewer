@@ -122,14 +122,36 @@ replay fail.
 
 | File | Caught | Timeouts | Missed | Unviable | Killed after | Accepted |
 |---|---|---|---|---|---|---|
+| `cloudy.rs` | 632 | 18 | 39 | 1 | 7 | 32 |
 | `geometry.rs` | 1,156 | 0 | 35 | 20 | 21 | 14 |
 
 Timeouts count as caught: each is a mutant that loops forever.
 
 The 17 files the first pass completed (1,615 caught, 3 timeouts, 30 missed, 145 unviable, before
-`84f73b5ee` and `90be0fb5a` added cases) and `cloudy.rs` are being re-run.
+`84f73b5ee` and `90be0fb5a` added cases) are being re-run.
 
 ### Accepted misses
+
+`cloudy.rs` (the path strings print four decimals, so a last-bit difference in an angle never
+shows):
+
+| Line | Mutant | Why no case kills it |
+|---|---|---|
+| 122 | eight arithmetic mutants in `arc_segment`'s zero-span `move_to` | Unreachable. Only `add_corner_curl` passes `add_move_to`, and its arc spans a fixed -22°. |
+| 169 | `<` to `<=` on `angle_todo` in `get_arc` | Unreachable. A zero sweep needs `b` to equal `angle_cur - alpha` to the last bit, which only the platform `atan2` and `acos` could arrange. |
+| 175 | `*` to `/` and `+` to `-` in `get_arc`'s `move_to` | Equivalent. Only the plain ellipse moves there, from angle 0: `cos 0` is 1 and `sin 0` is 0. |
+| 177 | `>` to `>=` on `ANGLE_90` in `get_arc` | Equivalent for the full circle, whose segments end at the same angles either way; a corner curl's sweep never lands on a quarter turn to the last bit. |
+| 182 | `>` to `>=` on the last segment | Equivalent. A zero-span `arc_segment` returns before drawing. |
+| 213, 220 | `+` to `-` on `ANGLE_180` | Equivalent. The angles differ by a full turn. |
+| 229 | `<` to `<=` in `output_curl_template` | Equivalent. A template's length is a multiple of 3. |
+| 253, 318 | `-1` to `1` in `compute_params_polygon`, and `!started` to `started` | Unreachable. Both belong to a zero-length edge, which `cloudy_polygon_impl` skips first (TypeScript lines 232 and 290 to 296, above). |
+| 290 | `<` to `<=` on the 0.5 radius floor | Equivalent. At 0.5 the floor assigns 0.5. |
+| 382 | `\|\|` to `&&` in `flatten_ellipse` | Unreachable. The adjusted radii are at least 0.1 (TypeScript line 347, above). |
+| 403 | `<` to `<=` and `==` on -1, `>` to `>=` on 1 in `compute_params_ellipse` | Equivalent. The argument is a length over a radius, never negative, and at exactly 1 `acos` gives the same 0. |
+| 450, 458 | `>` to `>=` on `2 * radius_adj` | Unreachable without a last-bit comparison: `radius_adj` is `sin(12°)` times the radius, so the equality would be decided by the platform `sin`, which the vectors stay off (see "JavaScript numerics"). |
+| 468 | `<` to `<=` and `==` on `flat.len()` | Unreachable. A flattened ellipse has at least 33 points; the empty case needs a radius at or below zero. |
+| 484, 487 | `<` to `<=` on the 0.5 and 3.0 radius thresholds | Unreachable without a last-bit comparison: the radius comes from a perimeter summed from platform `sin` and `cos`. |
+| 502 | `==` to `!=`, `-` to `+` and `/` in `i == flat.len() - 2` | Equivalent. That clause only sends a short last segment into the branch that places curls, where it places none and sets `remain`, which nothing reads after the loop. |
 
 `geometry.rs`:
 
