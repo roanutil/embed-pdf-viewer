@@ -7041,6 +7041,1177 @@
       }
     },
     {
+      "name": "set-active-same-index",
+      "fn": "reduceSearch",
+      "args": [
+        {
+          "query": {
+            "text": "test"
+          },
+          "status": "searching",
+          "operationId": null,
+          "hits": [
+            {
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 5
+              },
+              "pageIndex": 0,
+              "charStart": 0,
+              "charCount": 4,
+              "segments": [
+                {
+                  "quad": {
+                    "upperStart": {
+                      "x": 0,
+                      "y": 0
+                    },
+                    "upperEnd": {
+                      "x": 10,
+                      "y": 0
+                    },
+                    "lowerStart": {
+                      "x": 0,
+                      "y": 10
+                    },
+                    "lowerEnd": {
+                      "x": 10,
+                      "y": 10
+                    }
+                  },
+                  "rect": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 10,
+                    "height": 10
+                  },
+                  "advance": 1
+                }
+              ],
+              "bounds": {
+                "x": 0,
+                "y": 0,
+                "width": 10,
+                "height": 10
+              }
+            },
+            {
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 5
+              },
+              "pageIndex": 0,
+              "charStart": 9,
+              "charCount": 4,
+              "segments": [
+                {
+                  "quad": {
+                    "upperStart": {
+                      "x": 0,
+                      "y": 0
+                    },
+                    "upperEnd": {
+                      "x": 10,
+                      "y": 0
+                    },
+                    "lowerStart": {
+                      "x": 0,
+                      "y": 10
+                    },
+                    "lowerEnd": {
+                      "x": 10,
+                      "y": 10
+                    }
+                  },
+                  "rect": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 10,
+                    "height": 10
+                  },
+                  "advance": 1
+                }
+              ],
+              "bounds": {
+                "x": 0,
+                "y": 0,
+                "width": 10,
+                "height": 10
+              }
+            },
+            {
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 7
+              },
+              "pageIndex": 0,
+              "charStart": 2,
+              "charCount": 4,
+              "segments": [
+                {
+                  "quad": {
+                    "upperStart": {
+                      "x": 0,
+                      "y": 0
+                    },
+                    "upperEnd": {
+                      "x": 10,
+                      "y": 0
+                    },
+                    "lowerStart": {
+                      "x": 0,
+                      "y": 10
+                    },
+                    "lowerEnd": {
+                      "x": 10,
+                      "y": 10
+                    }
+                  },
+                  "rect": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 10,
+                    "height": 10
+                  },
+                  "advance": 1
+                }
+              ],
+              "bounds": {
+                "x": 0,
+                "y": 0,
+                "width": 10,
+                "height": 10
+              }
+            }
+          ],
+          "hitsByPage": {
+            "5": [
+              {
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 5
+                },
+                "pageIndex": 0,
+                "charStart": 0,
+                "charCount": 4,
+                "segments": [
+                  {
+                    "quad": {
+                      "upperStart": {
+                        "x": 0,
+                        "y": 0
+                      },
+                      "upperEnd": {
+                        "x": 10,
+                        "y": 0
+                      },
+                      "lowerStart": {
+                        "x": 0,
+                        "y": 10
+                      },
+                      "lowerEnd": {
+                        "x": 10,
+                        "y": 10
+                      }
+                    },
+                    "rect": {
+                      "x": 0,
+                      "y": 0,
+                      "width": 10,
+                      "height": 10
+                    },
+                    "advance": 1
+                  }
+                ],
+                "bounds": {
+                  "x": 0,
+                  "y": 0,
+                  "width": 10,
+                  "height": 10
+                }
+              },
+              {
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 5
+                },
+                "pageIndex": 0,
+                "charStart": 9,
+                "charCount": 4,
+                "segments": [
+                  {
+                    "quad": {
+                      "upperStart": {
+                        "x": 0,
+                        "y": 0
+                      },
+                      "upperEnd": {
+                        "x": 10,
+                        "y": 0
+                      },
+                      "lowerStart": {
+                        "x": 0,
+                        "y": 10
+                      },
+                      "lowerEnd": {
+                        "x": 10,
+                        "y": 10
+                      }
+                    },
+                    "rect": {
+                      "x": 0,
+                      "y": 0,
+                      "width": 10,
+                      "height": 10
+                    },
+                    "advance": 1
+                  }
+                ],
+                "bounds": {
+                  "x": 0,
+                  "y": 0,
+                  "width": 10,
+                  "height": 10
+                }
+              }
+            ],
+            "7": [
+              {
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 7
+                },
+                "pageIndex": 0,
+                "charStart": 2,
+                "charCount": 4,
+                "segments": [
+                  {
+                    "quad": {
+                      "upperStart": {
+                        "x": 0,
+                        "y": 0
+                      },
+                      "upperEnd": {
+                        "x": 10,
+                        "y": 0
+                      },
+                      "lowerStart": {
+                        "x": 0,
+                        "y": 10
+                      },
+                      "lowerEnd": {
+                        "x": 10,
+                        "y": 10
+                      }
+                    },
+                    "rect": {
+                      "x": 0,
+                      "y": 0,
+                      "width": 10,
+                      "height": 10
+                    },
+                    "advance": 1
+                  }
+                ],
+                "bounds": {
+                  "x": 0,
+                  "y": 0,
+                  "width": 10,
+                  "height": 10
+                }
+              }
+            ]
+          },
+          "activeIndex": 0,
+          "progress": {
+            "scanned": 2,
+            "total": 8
+          },
+          "error": null
+        },
+        {
+          "type": "SET_ACTIVE",
+          "index": 0
+        }
+      ],
+      "covers": "The index already active returns the same state, so the store does not notify.",
+      "outcome": {
+        "returned": {
+          "changed": false,
+          "state": {
+            "query": {
+              "text": "test"
+            },
+            "status": "searching",
+            "operationId": null,
+            "hits": [
+              {
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 5
+                },
+                "pageIndex": 0,
+                "charStart": 0,
+                "charCount": 4,
+                "segments": [
+                  {
+                    "quad": {
+                      "upperStart": {
+                        "x": 0,
+                        "y": 0
+                      },
+                      "upperEnd": {
+                        "x": 10,
+                        "y": 0
+                      },
+                      "lowerStart": {
+                        "x": 0,
+                        "y": 10
+                      },
+                      "lowerEnd": {
+                        "x": 10,
+                        "y": 10
+                      }
+                    },
+                    "rect": {
+                      "x": 0,
+                      "y": 0,
+                      "width": 10,
+                      "height": 10
+                    },
+                    "advance": 1
+                  }
+                ],
+                "bounds": {
+                  "x": 0,
+                  "y": 0,
+                  "width": 10,
+                  "height": 10
+                }
+              },
+              {
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 5
+                },
+                "pageIndex": 0,
+                "charStart": 9,
+                "charCount": 4,
+                "segments": [
+                  {
+                    "quad": {
+                      "upperStart": {
+                        "x": 0,
+                        "y": 0
+                      },
+                      "upperEnd": {
+                        "x": 10,
+                        "y": 0
+                      },
+                      "lowerStart": {
+                        "x": 0,
+                        "y": 10
+                      },
+                      "lowerEnd": {
+                        "x": 10,
+                        "y": 10
+                      }
+                    },
+                    "rect": {
+                      "x": 0,
+                      "y": 0,
+                      "width": 10,
+                      "height": 10
+                    },
+                    "advance": 1
+                  }
+                ],
+                "bounds": {
+                  "x": 0,
+                  "y": 0,
+                  "width": 10,
+                  "height": 10
+                }
+              },
+              {
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 7
+                },
+                "pageIndex": 0,
+                "charStart": 2,
+                "charCount": 4,
+                "segments": [
+                  {
+                    "quad": {
+                      "upperStart": {
+                        "x": 0,
+                        "y": 0
+                      },
+                      "upperEnd": {
+                        "x": 10,
+                        "y": 0
+                      },
+                      "lowerStart": {
+                        "x": 0,
+                        "y": 10
+                      },
+                      "lowerEnd": {
+                        "x": 10,
+                        "y": 10
+                      }
+                    },
+                    "rect": {
+                      "x": 0,
+                      "y": 0,
+                      "width": 10,
+                      "height": 10
+                    },
+                    "advance": 1
+                  }
+                ],
+                "bounds": {
+                  "x": 0,
+                  "y": 0,
+                  "width": 10,
+                  "height": 10
+                }
+              }
+            ],
+            "hitsByPage": {
+              "5": [
+                {
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 5
+                  },
+                  "pageIndex": 0,
+                  "charStart": 0,
+                  "charCount": 4,
+                  "segments": [
+                    {
+                      "quad": {
+                        "upperStart": {
+                          "x": 0,
+                          "y": 0
+                        },
+                        "upperEnd": {
+                          "x": 10,
+                          "y": 0
+                        },
+                        "lowerStart": {
+                          "x": 0,
+                          "y": 10
+                        },
+                        "lowerEnd": {
+                          "x": 10,
+                          "y": 10
+                        }
+                      },
+                      "rect": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 10,
+                        "height": 10
+                      },
+                      "advance": 1
+                    }
+                  ],
+                  "bounds": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 10,
+                    "height": 10
+                  }
+                },
+                {
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 5
+                  },
+                  "pageIndex": 0,
+                  "charStart": 9,
+                  "charCount": 4,
+                  "segments": [
+                    {
+                      "quad": {
+                        "upperStart": {
+                          "x": 0,
+                          "y": 0
+                        },
+                        "upperEnd": {
+                          "x": 10,
+                          "y": 0
+                        },
+                        "lowerStart": {
+                          "x": 0,
+                          "y": 10
+                        },
+                        "lowerEnd": {
+                          "x": 10,
+                          "y": 10
+                        }
+                      },
+                      "rect": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 10,
+                        "height": 10
+                      },
+                      "advance": 1
+                    }
+                  ],
+                  "bounds": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 10,
+                    "height": 10
+                  }
+                }
+              ],
+              "7": [
+                {
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 7
+                  },
+                  "pageIndex": 0,
+                  "charStart": 2,
+                  "charCount": 4,
+                  "segments": [
+                    {
+                      "quad": {
+                        "upperStart": {
+                          "x": 0,
+                          "y": 0
+                        },
+                        "upperEnd": {
+                          "x": 10,
+                          "y": 0
+                        },
+                        "lowerStart": {
+                          "x": 0,
+                          "y": 10
+                        },
+                        "lowerEnd": {
+                          "x": 10,
+                          "y": 10
+                        }
+                      },
+                      "rect": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 10,
+                        "height": 10
+                      },
+                      "advance": 1
+                    }
+                  ],
+                  "bounds": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 10,
+                    "height": 10
+                  }
+                }
+              ]
+            },
+            "activeIndex": 0,
+            "progress": {
+              "scanned": 2,
+              "total": 8
+            },
+            "error": null
+          }
+        }
+      }
+    },
+    {
+      "name": "cancelled",
+      "fn": "reduceSearch",
+      "args": [
+        {
+          "query": {
+            "text": "test"
+          },
+          "status": "searching",
+          "operationId": null,
+          "hits": [
+            {
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 5
+              },
+              "pageIndex": 0,
+              "charStart": 0,
+              "charCount": 4,
+              "segments": [
+                {
+                  "quad": {
+                    "upperStart": {
+                      "x": 0,
+                      "y": 0
+                    },
+                    "upperEnd": {
+                      "x": 10,
+                      "y": 0
+                    },
+                    "lowerStart": {
+                      "x": 0,
+                      "y": 10
+                    },
+                    "lowerEnd": {
+                      "x": 10,
+                      "y": 10
+                    }
+                  },
+                  "rect": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 10,
+                    "height": 10
+                  },
+                  "advance": 1
+                }
+              ],
+              "bounds": {
+                "x": 0,
+                "y": 0,
+                "width": 10,
+                "height": 10
+              }
+            },
+            {
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 5
+              },
+              "pageIndex": 0,
+              "charStart": 9,
+              "charCount": 4,
+              "segments": [
+                {
+                  "quad": {
+                    "upperStart": {
+                      "x": 0,
+                      "y": 0
+                    },
+                    "upperEnd": {
+                      "x": 10,
+                      "y": 0
+                    },
+                    "lowerStart": {
+                      "x": 0,
+                      "y": 10
+                    },
+                    "lowerEnd": {
+                      "x": 10,
+                      "y": 10
+                    }
+                  },
+                  "rect": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 10,
+                    "height": 10
+                  },
+                  "advance": 1
+                }
+              ],
+              "bounds": {
+                "x": 0,
+                "y": 0,
+                "width": 10,
+                "height": 10
+              }
+            },
+            {
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 7
+              },
+              "pageIndex": 0,
+              "charStart": 2,
+              "charCount": 4,
+              "segments": [
+                {
+                  "quad": {
+                    "upperStart": {
+                      "x": 0,
+                      "y": 0
+                    },
+                    "upperEnd": {
+                      "x": 10,
+                      "y": 0
+                    },
+                    "lowerStart": {
+                      "x": 0,
+                      "y": 10
+                    },
+                    "lowerEnd": {
+                      "x": 10,
+                      "y": 10
+                    }
+                  },
+                  "rect": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 10,
+                    "height": 10
+                  },
+                  "advance": 1
+                }
+              ],
+              "bounds": {
+                "x": 0,
+                "y": 0,
+                "width": 10,
+                "height": 10
+              }
+            }
+          ],
+          "hitsByPage": {
+            "5": [
+              {
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 5
+                },
+                "pageIndex": 0,
+                "charStart": 0,
+                "charCount": 4,
+                "segments": [
+                  {
+                    "quad": {
+                      "upperStart": {
+                        "x": 0,
+                        "y": 0
+                      },
+                      "upperEnd": {
+                        "x": 10,
+                        "y": 0
+                      },
+                      "lowerStart": {
+                        "x": 0,
+                        "y": 10
+                      },
+                      "lowerEnd": {
+                        "x": 10,
+                        "y": 10
+                      }
+                    },
+                    "rect": {
+                      "x": 0,
+                      "y": 0,
+                      "width": 10,
+                      "height": 10
+                    },
+                    "advance": 1
+                  }
+                ],
+                "bounds": {
+                  "x": 0,
+                  "y": 0,
+                  "width": 10,
+                  "height": 10
+                }
+              },
+              {
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 5
+                },
+                "pageIndex": 0,
+                "charStart": 9,
+                "charCount": 4,
+                "segments": [
+                  {
+                    "quad": {
+                      "upperStart": {
+                        "x": 0,
+                        "y": 0
+                      },
+                      "upperEnd": {
+                        "x": 10,
+                        "y": 0
+                      },
+                      "lowerStart": {
+                        "x": 0,
+                        "y": 10
+                      },
+                      "lowerEnd": {
+                        "x": 10,
+                        "y": 10
+                      }
+                    },
+                    "rect": {
+                      "x": 0,
+                      "y": 0,
+                      "width": 10,
+                      "height": 10
+                    },
+                    "advance": 1
+                  }
+                ],
+                "bounds": {
+                  "x": 0,
+                  "y": 0,
+                  "width": 10,
+                  "height": 10
+                }
+              }
+            ],
+            "7": [
+              {
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 7
+                },
+                "pageIndex": 0,
+                "charStart": 2,
+                "charCount": 4,
+                "segments": [
+                  {
+                    "quad": {
+                      "upperStart": {
+                        "x": 0,
+                        "y": 0
+                      },
+                      "upperEnd": {
+                        "x": 10,
+                        "y": 0
+                      },
+                      "lowerStart": {
+                        "x": 0,
+                        "y": 10
+                      },
+                      "lowerEnd": {
+                        "x": 10,
+                        "y": 10
+                      }
+                    },
+                    "rect": {
+                      "x": 0,
+                      "y": 0,
+                      "width": 10,
+                      "height": 10
+                    },
+                    "advance": 1
+                  }
+                ],
+                "bounds": {
+                  "x": 0,
+                  "y": 0,
+                  "width": 10,
+                  "height": 10
+                }
+              }
+            ]
+          },
+          "activeIndex": 0,
+          "progress": {
+            "scanned": 2,
+            "total": 8
+          },
+          "error": null
+        },
+        {
+          "type": "CANCELLED"
+        }
+      ],
+      "covers": "CANCELLED keeps the hits, the index and the progress.",
+      "outcome": {
+        "returned": {
+          "changed": true,
+          "state": {
+            "query": {
+              "text": "test"
+            },
+            "status": "cancelled",
+            "operationId": null,
+            "hits": [
+              {
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 5
+                },
+                "pageIndex": 0,
+                "charStart": 0,
+                "charCount": 4,
+                "segments": [
+                  {
+                    "quad": {
+                      "upperStart": {
+                        "x": 0,
+                        "y": 0
+                      },
+                      "upperEnd": {
+                        "x": 10,
+                        "y": 0
+                      },
+                      "lowerStart": {
+                        "x": 0,
+                        "y": 10
+                      },
+                      "lowerEnd": {
+                        "x": 10,
+                        "y": 10
+                      }
+                    },
+                    "rect": {
+                      "x": 0,
+                      "y": 0,
+                      "width": 10,
+                      "height": 10
+                    },
+                    "advance": 1
+                  }
+                ],
+                "bounds": {
+                  "x": 0,
+                  "y": 0,
+                  "width": 10,
+                  "height": 10
+                }
+              },
+              {
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 5
+                },
+                "pageIndex": 0,
+                "charStart": 9,
+                "charCount": 4,
+                "segments": [
+                  {
+                    "quad": {
+                      "upperStart": {
+                        "x": 0,
+                        "y": 0
+                      },
+                      "upperEnd": {
+                        "x": 10,
+                        "y": 0
+                      },
+                      "lowerStart": {
+                        "x": 0,
+                        "y": 10
+                      },
+                      "lowerEnd": {
+                        "x": 10,
+                        "y": 10
+                      }
+                    },
+                    "rect": {
+                      "x": 0,
+                      "y": 0,
+                      "width": 10,
+                      "height": 10
+                    },
+                    "advance": 1
+                  }
+                ],
+                "bounds": {
+                  "x": 0,
+                  "y": 0,
+                  "width": 10,
+                  "height": 10
+                }
+              },
+              {
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 7
+                },
+                "pageIndex": 0,
+                "charStart": 2,
+                "charCount": 4,
+                "segments": [
+                  {
+                    "quad": {
+                      "upperStart": {
+                        "x": 0,
+                        "y": 0
+                      },
+                      "upperEnd": {
+                        "x": 10,
+                        "y": 0
+                      },
+                      "lowerStart": {
+                        "x": 0,
+                        "y": 10
+                      },
+                      "lowerEnd": {
+                        "x": 10,
+                        "y": 10
+                      }
+                    },
+                    "rect": {
+                      "x": 0,
+                      "y": 0,
+                      "width": 10,
+                      "height": 10
+                    },
+                    "advance": 1
+                  }
+                ],
+                "bounds": {
+                  "x": 0,
+                  "y": 0,
+                  "width": 10,
+                  "height": 10
+                }
+              }
+            ],
+            "hitsByPage": {
+              "5": [
+                {
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 5
+                  },
+                  "pageIndex": 0,
+                  "charStart": 0,
+                  "charCount": 4,
+                  "segments": [
+                    {
+                      "quad": {
+                        "upperStart": {
+                          "x": 0,
+                          "y": 0
+                        },
+                        "upperEnd": {
+                          "x": 10,
+                          "y": 0
+                        },
+                        "lowerStart": {
+                          "x": 0,
+                          "y": 10
+                        },
+                        "lowerEnd": {
+                          "x": 10,
+                          "y": 10
+                        }
+                      },
+                      "rect": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 10,
+                        "height": 10
+                      },
+                      "advance": 1
+                    }
+                  ],
+                  "bounds": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 10,
+                    "height": 10
+                  }
+                },
+                {
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 5
+                  },
+                  "pageIndex": 0,
+                  "charStart": 9,
+                  "charCount": 4,
+                  "segments": [
+                    {
+                      "quad": {
+                        "upperStart": {
+                          "x": 0,
+                          "y": 0
+                        },
+                        "upperEnd": {
+                          "x": 10,
+                          "y": 0
+                        },
+                        "lowerStart": {
+                          "x": 0,
+                          "y": 10
+                        },
+                        "lowerEnd": {
+                          "x": 10,
+                          "y": 10
+                        }
+                      },
+                      "rect": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 10,
+                        "height": 10
+                      },
+                      "advance": 1
+                    }
+                  ],
+                  "bounds": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 10,
+                    "height": 10
+                  }
+                }
+              ],
+              "7": [
+                {
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 7
+                  },
+                  "pageIndex": 0,
+                  "charStart": 2,
+                  "charCount": 4,
+                  "segments": [
+                    {
+                      "quad": {
+                        "upperStart": {
+                          "x": 0,
+                          "y": 0
+                        },
+                        "upperEnd": {
+                          "x": 10,
+                          "y": 0
+                        },
+                        "lowerStart": {
+                          "x": 0,
+                          "y": 10
+                        },
+                        "lowerEnd": {
+                          "x": 10,
+                          "y": 10
+                        }
+                      },
+                      "rect": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 10,
+                        "height": 10
+                      },
+                      "advance": 1
+                    }
+                  ],
+                  "bounds": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 10,
+                    "height": 10
+                  }
+                }
+              ]
+            },
+            "activeIndex": 0,
+            "progress": {
+              "scanned": 2,
+              "total": 8
+            },
+            "error": null
+          }
+        }
+      }
+    },
+    {
       "name": "clear",
       "fn": "reduceSearch",
       "args": [

@@ -9785,6 +9785,2595 @@
           }
         }
       ]
+    },
+    {
+      "name": "reveal-active-hit",
+      "covers": "revealActiveHit reveals the active hit again without changing it (per-call options merge as navigation's do), and does nothing with no active hit.",
+      "plugins": [
+        {
+          "factory": "stage",
+          "config": {
+            "viewUnitsPerPoint": 1
+          }
+        },
+        {
+          "factory": "search"
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "security": {
+              "allows": [
+                "doc.text.search",
+                "doc.text.copy"
+              ]
+            },
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 11
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 22
+                },
+                "label": null,
+                "size": {
+                  "width": 300,
+                  "height": 400
+                },
+                "rotation": 90,
+                "userUnit": 2,
+                "boxes": {
+                  "media": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 310,
+                    "top": 420
+                  },
+                  "crop": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 310,
+                    "top": 420
+                  }
+                }
+              },
+              {
+                "index": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 33
+                },
+                "label": null,
+                "size": {
+                  "width": 300,
+                  "height": 300
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 300,
+                    "top": 300
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 300,
+                    "top": 300
+                  }
+                }
+              }
+            ],
+            "responses": [
+              {
+                "path": "search.query",
+                "args": [
+                  {
+                    "query": {
+                      "text": "the"
+                    },
+                    "mode": "full",
+                    "startPage": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 11
+                    }
+                  }
+                ],
+                "value": {
+                  "matches": [
+                    {
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 11
+                      },
+                      "charStart": 0,
+                      "charCount": 4,
+                      "segments": [
+                        {
+                          "quad": {
+                            "p1": {
+                              "x": 10,
+                              "y": 40
+                            },
+                            "p2": {
+                              "x": 50,
+                              "y": 40
+                            },
+                            "p3": {
+                              "x": 10,
+                              "y": 20
+                            },
+                            "p4": {
+                              "x": 50,
+                              "y": 20
+                            }
+                          },
+                          "rect": {
+                            "left": 10,
+                            "bottom": 20,
+                            "right": 50,
+                            "top": 40
+                          },
+                          "advance": 1
+                        }
+                      ]
+                    },
+                    {
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 22
+                      },
+                      "charStart": 2,
+                      "charCount": 4,
+                      "segments": [
+                        {
+                          "quad": {
+                            "p1": {
+                              "x": 10,
+                              "y": 40
+                            },
+                            "p2": {
+                              "x": 50,
+                              "y": 40
+                            },
+                            "p3": {
+                              "x": 10,
+                              "y": 20
+                            },
+                            "p4": {
+                              "x": 50,
+                              "y": 20
+                            }
+                          },
+                          "rect": {
+                            "left": 10,
+                            "bottom": 20,
+                            "right": 50,
+                            "top": 40
+                          },
+                          "advance": 1
+                        }
+                      ]
+                    }
+                  ],
+                  "nextCursor": null,
+                  "scannedPages": 3,
+                  "totalPages": 3
+                }
+              }
+            ]
+          }
+        }
+      },
+      "snapshot": [
+        "search::a",
+        "stage::a"
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stage",
+            "doc": "a"
+          },
+          "method": "setViewportSize",
+          "args": [
+            {
+              "width": 800,
+              "height": 600
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "search",
+            "doc": "a"
+          },
+          "method": "revealActiveHit",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "search",
+            "doc": "a"
+          },
+          "method": "search",
+          "args": [
+            {
+              "text": "the"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "search",
+            "doc": "a"
+          },
+          "method": "goToHit",
+          "args": [
+            1,
+            {
+              "behavior": "instant"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stage",
+            "doc": "a"
+          },
+          "method": "setCamera",
+          "args": [
+            {
+              "x": 0,
+              "y": 0,
+              "zoom": 1
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "search",
+            "doc": "a"
+          },
+          "method": "revealActiveHit",
+          "args": [
+            {
+              "behavior": "instant"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stage",
+            "doc": "a"
+          },
+          "method": "getCamera",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "search",
+            "doc": "a"
+          },
+          "method": "getActiveHitIndex",
+          "args": []
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "plugins": {
+              "search::a": {
+                "query": null,
+                "status": "idle",
+                "operationId": null,
+                "hits": [],
+                "hitsByPage": {},
+                "activeIndex": -1,
+                "progress": {
+                  "scanned": 0,
+                  "total": 0
+                },
+                "error": null
+              },
+              "stage::a": {
+                "camera": {
+                  "x": 0,
+                  "y": 0,
+                  "zoom": 1
+                },
+                "placed": false,
+                "cameraResting": true,
+                "vp": {
+                  "width": 0,
+                  "height": 0
+                },
+                "dpr": 1,
+                "cursor": 0,
+                "motionCause": "user",
+                "activeRules": [],
+                "flow": "continuous",
+                "layout": "vertical",
+                "spread": "none",
+                "sizing": "intrinsic",
+                "columns": "square",
+                "bounded": true,
+                "padding": 24,
+                "gap": 16,
+                "pageFrame": {
+                  "top": 0,
+                  "right": 0,
+                  "bottom": 0,
+                  "left": 0
+                },
+                "direction": "ltr",
+                "fitAlign": {
+                  "x": "center",
+                  "y": "center"
+                },
+                "arrivalAlign": {
+                  "x": "start",
+                  "y": "start"
+                },
+                "zoomAlign": {
+                  "x": "center",
+                  "y": "center"
+                },
+                "anchorAlign": {
+                  "x": "start",
+                  "y": "start"
+                },
+                "viewRotation": 0,
+                "zoom": {
+                  "mode": "automatic"
+                },
+                "scrollBehavior": "smooth",
+                "viewUnitsPerPoint": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "stage::a",
+              "action": {
+                "type": "VP",
+                "vp": {
+                  "width": 800,
+                  "height": 600
+                }
+              }
+            },
+            {
+              "slice": "stage::a",
+              "action": {
+                "type": "MOTION_CAUSE",
+                "cause": "programmatic"
+              }
+            },
+            {
+              "slice": "stage::a",
+              "action": {
+                "type": "CAMERA",
+                "camera": {
+                  "zoom": 0.94,
+                  "x": -25.53191489361707,
+                  "y": -25.531914893617024
+                }
+              }
+            },
+            {
+              "slice": "stage::a",
+              "action": {
+                "type": "PLACED"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "search::a": {
+                "query": null,
+                "status": "idle",
+                "operationId": null,
+                "hits": [],
+                "hitsByPage": {},
+                "activeIndex": -1,
+                "progress": {
+                  "scanned": 0,
+                  "total": 0
+                },
+                "error": null
+              },
+              "stage::a": {
+                "camera": {
+                  "zoom": 0.94,
+                  "x": -25.53191489361707,
+                  "y": -25.531914893617024
+                },
+                "placed": true,
+                "cameraResting": true,
+                "vp": {
+                  "width": 800,
+                  "height": 600
+                },
+                "dpr": 1,
+                "cursor": 0,
+                "motionCause": "programmatic",
+                "activeRules": [],
+                "flow": "continuous",
+                "layout": "vertical",
+                "spread": "none",
+                "sizing": "intrinsic",
+                "columns": "square",
+                "bounded": true,
+                "padding": 24,
+                "gap": 16,
+                "pageFrame": {
+                  "top": 0,
+                  "right": 0,
+                  "bottom": 0,
+                  "left": 0
+                },
+                "direction": "ltr",
+                "fitAlign": {
+                  "x": "center",
+                  "y": "center"
+                },
+                "arrivalAlign": {
+                  "x": "start",
+                  "y": "start"
+                },
+                "zoomAlign": {
+                  "x": "center",
+                  "y": "center"
+                },
+                "anchorAlign": {
+                  "x": "start",
+                  "y": "start"
+                },
+                "viewRotation": 0,
+                "zoom": {
+                  "mode": "automatic"
+                },
+                "scrollBehavior": "smooth",
+                "viewUnitsPerPoint": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "search::a": {
+                "query": null,
+                "status": "idle",
+                "operationId": null,
+                "hits": [],
+                "hitsByPage": {},
+                "activeIndex": -1,
+                "progress": {
+                  "scanned": 0,
+                  "total": 0
+                },
+                "error": null
+              },
+              "stage::a": {
+                "camera": {
+                  "zoom": 0.94,
+                  "x": -25.53191489361707,
+                  "y": -25.531914893617024
+                },
+                "placed": true,
+                "cameraResting": true,
+                "vp": {
+                  "width": 800,
+                  "height": 600
+                },
+                "dpr": 1,
+                "cursor": 0,
+                "motionCause": "programmatic",
+                "activeRules": [],
+                "flow": "continuous",
+                "layout": "vertical",
+                "spread": "none",
+                "sizing": "intrinsic",
+                "columns": "square",
+                "bounded": true,
+                "padding": 24,
+                "gap": 16,
+                "pageFrame": {
+                  "top": 0,
+                  "right": 0,
+                  "bottom": 0,
+                  "left": 0
+                },
+                "direction": "ltr",
+                "fitAlign": {
+                  "x": "center",
+                  "y": "center"
+                },
+                "arrivalAlign": {
+                  "x": "start",
+                  "y": "start"
+                },
+                "zoomAlign": {
+                  "x": "center",
+                  "y": "center"
+                },
+                "anchorAlign": {
+                  "x": "start",
+                  "y": "start"
+                },
+                "viewRotation": 0,
+                "zoom": {
+                  "mode": "automatic"
+                },
+                "scrollBehavior": "smooth",
+                "viewUnitsPerPoint": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": {
+                "status": "complete",
+                "hitCount": 2
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "search::a",
+              "action": {
+                "type": "START",
+                "query": {
+                  "text": "the"
+                },
+                "operationId": "session#1"
+              }
+            },
+            {
+              "slice": "search::a",
+              "action": {
+                "type": "APPEND",
+                "hits": [
+                  {
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 11
+                    },
+                    "pageIndex": 0,
+                    "charStart": 0,
+                    "charCount": 4,
+                    "segments": [
+                      {
+                        "quad": {
+                          "upperStart": {
+                            "x": 10,
+                            "y": 760
+                          },
+                          "upperEnd": {
+                            "x": 50,
+                            "y": 760
+                          },
+                          "lowerStart": {
+                            "x": 10,
+                            "y": 780
+                          },
+                          "lowerEnd": {
+                            "x": 50,
+                            "y": 780
+                          }
+                        },
+                        "rect": {
+                          "x": 10,
+                          "y": 760,
+                          "width": 40,
+                          "height": 20
+                        },
+                        "advance": 1
+                      }
+                    ],
+                    "bounds": {
+                      "x": 10,
+                      "y": 760,
+                      "width": 40,
+                      "height": 20
+                    }
+                  },
+                  {
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 22
+                    },
+                    "pageIndex": 1,
+                    "charStart": 2,
+                    "charCount": 4,
+                    "segments": [
+                      {
+                        "quad": {
+                          "upperStart": {
+                            "x": 0,
+                            "y": 380
+                          },
+                          "upperEnd": {
+                            "x": 40,
+                            "y": 380
+                          },
+                          "lowerStart": {
+                            "x": 0,
+                            "y": 400
+                          },
+                          "lowerEnd": {
+                            "x": 40,
+                            "y": 400
+                          }
+                        },
+                        "rect": {
+                          "x": 0,
+                          "y": 380,
+                          "width": 40,
+                          "height": 20
+                        },
+                        "advance": 1
+                      }
+                    ],
+                    "bounds": {
+                      "x": 0,
+                      "y": 380,
+                      "width": 40,
+                      "height": 20
+                    }
+                  }
+                ],
+                "scanned": 3,
+                "total": 3
+              }
+            },
+            {
+              "slice": "search::a",
+              "action": {
+                "type": "COMPLETE"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "search.query",
+              "args": [
+                {
+                  "query": {
+                    "text": "the"
+                  },
+                  "mode": "full",
+                  "startPage": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 11
+                  }
+                }
+              ]
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "plugins": {
+              "search::a": {
+                "query": {
+                  "text": "the"
+                },
+                "status": "complete",
+                "operationId": "session#1",
+                "hits": [
+                  {
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 11
+                    },
+                    "pageIndex": 0,
+                    "charStart": 0,
+                    "charCount": 4,
+                    "segments": [
+                      {
+                        "quad": {
+                          "upperStart": {
+                            "x": 10,
+                            "y": 760
+                          },
+                          "upperEnd": {
+                            "x": 50,
+                            "y": 760
+                          },
+                          "lowerStart": {
+                            "x": 10,
+                            "y": 780
+                          },
+                          "lowerEnd": {
+                            "x": 50,
+                            "y": 780
+                          }
+                        },
+                        "rect": {
+                          "x": 10,
+                          "y": 760,
+                          "width": 40,
+                          "height": 20
+                        },
+                        "advance": 1
+                      }
+                    ],
+                    "bounds": {
+                      "x": 10,
+                      "y": 760,
+                      "width": 40,
+                      "height": 20
+                    }
+                  },
+                  {
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 22
+                    },
+                    "pageIndex": 1,
+                    "charStart": 2,
+                    "charCount": 4,
+                    "segments": [
+                      {
+                        "quad": {
+                          "upperStart": {
+                            "x": 0,
+                            "y": 380
+                          },
+                          "upperEnd": {
+                            "x": 40,
+                            "y": 380
+                          },
+                          "lowerStart": {
+                            "x": 0,
+                            "y": 400
+                          },
+                          "lowerEnd": {
+                            "x": 40,
+                            "y": 400
+                          }
+                        },
+                        "rect": {
+                          "x": 0,
+                          "y": 380,
+                          "width": 40,
+                          "height": 20
+                        },
+                        "advance": 1
+                      }
+                    ],
+                    "bounds": {
+                      "x": 0,
+                      "y": 380,
+                      "width": 40,
+                      "height": 20
+                    }
+                  }
+                ],
+                "hitsByPage": {
+                  "11": [
+                    {
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 11
+                      },
+                      "pageIndex": 0,
+                      "charStart": 0,
+                      "charCount": 4,
+                      "segments": [
+                        {
+                          "quad": {
+                            "upperStart": {
+                              "x": 10,
+                              "y": 760
+                            },
+                            "upperEnd": {
+                              "x": 50,
+                              "y": 760
+                            },
+                            "lowerStart": {
+                              "x": 10,
+                              "y": 780
+                            },
+                            "lowerEnd": {
+                              "x": 50,
+                              "y": 780
+                            }
+                          },
+                          "rect": {
+                            "x": 10,
+                            "y": 760,
+                            "width": 40,
+                            "height": 20
+                          },
+                          "advance": 1
+                        }
+                      ],
+                      "bounds": {
+                        "x": 10,
+                        "y": 760,
+                        "width": 40,
+                        "height": 20
+                      }
+                    }
+                  ],
+                  "22": [
+                    {
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 22
+                      },
+                      "pageIndex": 1,
+                      "charStart": 2,
+                      "charCount": 4,
+                      "segments": [
+                        {
+                          "quad": {
+                            "upperStart": {
+                              "x": 0,
+                              "y": 380
+                            },
+                            "upperEnd": {
+                              "x": 40,
+                              "y": 380
+                            },
+                            "lowerStart": {
+                              "x": 0,
+                              "y": 400
+                            },
+                            "lowerEnd": {
+                              "x": 40,
+                              "y": 400
+                            }
+                          },
+                          "rect": {
+                            "x": 0,
+                            "y": 380,
+                            "width": 40,
+                            "height": 20
+                          },
+                          "advance": 1
+                        }
+                      ],
+                      "bounds": {
+                        "x": 0,
+                        "y": 380,
+                        "width": 40,
+                        "height": 20
+                      }
+                    }
+                  ]
+                },
+                "activeIndex": 0,
+                "progress": {
+                  "scanned": 3,
+                  "total": 3
+                },
+                "error": null
+              },
+              "stage::a": {
+                "camera": {
+                  "zoom": 0.94,
+                  "x": -25.53191489361707,
+                  "y": -25.531914893617024
+                },
+                "placed": true,
+                "cameraResting": true,
+                "vp": {
+                  "width": 800,
+                  "height": 600
+                },
+                "dpr": 1,
+                "cursor": 0,
+                "motionCause": "programmatic",
+                "activeRules": [],
+                "flow": "continuous",
+                "layout": "vertical",
+                "spread": "none",
+                "sizing": "intrinsic",
+                "columns": "square",
+                "bounded": true,
+                "padding": 24,
+                "gap": 16,
+                "pageFrame": {
+                  "top": 0,
+                  "right": 0,
+                  "bottom": 0,
+                  "left": 0
+                },
+                "direction": "ltr",
+                "fitAlign": {
+                  "x": "center",
+                  "y": "center"
+                },
+                "arrivalAlign": {
+                  "x": "start",
+                  "y": "start"
+                },
+                "zoomAlign": {
+                  "x": "center",
+                  "y": "center"
+                },
+                "anchorAlign": {
+                  "x": "start",
+                  "y": "start"
+                },
+                "viewRotation": 0,
+                "zoom": {
+                  "mode": "automatic"
+                },
+                "scrollBehavior": "smooth",
+                "viewUnitsPerPoint": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "search::a",
+              "action": {
+                "type": "SET_ACTIVE",
+                "index": 1
+              }
+            },
+            {
+              "slice": "stage::a",
+              "action": {
+                "type": "CURSOR",
+                "cursor": 1
+              }
+            },
+            {
+              "slice": "stage::a",
+              "action": {
+                "type": "CAMERA",
+                "camera": {
+                  "zoom": 0.94,
+                  "x": -25.53191489361707,
+                  "y": 632.5957446808511
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 22
+              },
+              "pageIndex": 1,
+              "charStart": 2,
+              "charCount": 4,
+              "segments": [
+                {
+                  "quad": {
+                    "upperStart": {
+                      "x": 0,
+                      "y": 380
+                    },
+                    "upperEnd": {
+                      "x": 40,
+                      "y": 380
+                    },
+                    "lowerStart": {
+                      "x": 0,
+                      "y": 400
+                    },
+                    "lowerEnd": {
+                      "x": 40,
+                      "y": 400
+                    }
+                  },
+                  "rect": {
+                    "x": 0,
+                    "y": 380,
+                    "width": 40,
+                    "height": 20
+                  },
+                  "advance": 1
+                }
+              ],
+              "bounds": {
+                "x": 0,
+                "y": 380,
+                "width": 40,
+                "height": 20
+              }
+            }
+          },
+          "state": {
+            "plugins": {
+              "search::a": {
+                "query": {
+                  "text": "the"
+                },
+                "status": "complete",
+                "operationId": "session#1",
+                "hits": [
+                  {
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 11
+                    },
+                    "pageIndex": 0,
+                    "charStart": 0,
+                    "charCount": 4,
+                    "segments": [
+                      {
+                        "quad": {
+                          "upperStart": {
+                            "x": 10,
+                            "y": 760
+                          },
+                          "upperEnd": {
+                            "x": 50,
+                            "y": 760
+                          },
+                          "lowerStart": {
+                            "x": 10,
+                            "y": 780
+                          },
+                          "lowerEnd": {
+                            "x": 50,
+                            "y": 780
+                          }
+                        },
+                        "rect": {
+                          "x": 10,
+                          "y": 760,
+                          "width": 40,
+                          "height": 20
+                        },
+                        "advance": 1
+                      }
+                    ],
+                    "bounds": {
+                      "x": 10,
+                      "y": 760,
+                      "width": 40,
+                      "height": 20
+                    }
+                  },
+                  {
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 22
+                    },
+                    "pageIndex": 1,
+                    "charStart": 2,
+                    "charCount": 4,
+                    "segments": [
+                      {
+                        "quad": {
+                          "upperStart": {
+                            "x": 0,
+                            "y": 380
+                          },
+                          "upperEnd": {
+                            "x": 40,
+                            "y": 380
+                          },
+                          "lowerStart": {
+                            "x": 0,
+                            "y": 400
+                          },
+                          "lowerEnd": {
+                            "x": 40,
+                            "y": 400
+                          }
+                        },
+                        "rect": {
+                          "x": 0,
+                          "y": 380,
+                          "width": 40,
+                          "height": 20
+                        },
+                        "advance": 1
+                      }
+                    ],
+                    "bounds": {
+                      "x": 0,
+                      "y": 380,
+                      "width": 40,
+                      "height": 20
+                    }
+                  }
+                ],
+                "hitsByPage": {
+                  "11": [
+                    {
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 11
+                      },
+                      "pageIndex": 0,
+                      "charStart": 0,
+                      "charCount": 4,
+                      "segments": [
+                        {
+                          "quad": {
+                            "upperStart": {
+                              "x": 10,
+                              "y": 760
+                            },
+                            "upperEnd": {
+                              "x": 50,
+                              "y": 760
+                            },
+                            "lowerStart": {
+                              "x": 10,
+                              "y": 780
+                            },
+                            "lowerEnd": {
+                              "x": 50,
+                              "y": 780
+                            }
+                          },
+                          "rect": {
+                            "x": 10,
+                            "y": 760,
+                            "width": 40,
+                            "height": 20
+                          },
+                          "advance": 1
+                        }
+                      ],
+                      "bounds": {
+                        "x": 10,
+                        "y": 760,
+                        "width": 40,
+                        "height": 20
+                      }
+                    }
+                  ],
+                  "22": [
+                    {
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 22
+                      },
+                      "pageIndex": 1,
+                      "charStart": 2,
+                      "charCount": 4,
+                      "segments": [
+                        {
+                          "quad": {
+                            "upperStart": {
+                              "x": 0,
+                              "y": 380
+                            },
+                            "upperEnd": {
+                              "x": 40,
+                              "y": 380
+                            },
+                            "lowerStart": {
+                              "x": 0,
+                              "y": 400
+                            },
+                            "lowerEnd": {
+                              "x": 40,
+                              "y": 400
+                            }
+                          },
+                          "rect": {
+                            "x": 0,
+                            "y": 380,
+                            "width": 40,
+                            "height": 20
+                          },
+                          "advance": 1
+                        }
+                      ],
+                      "bounds": {
+                        "x": 0,
+                        "y": 380,
+                        "width": 40,
+                        "height": 20
+                      }
+                    }
+                  ]
+                },
+                "activeIndex": 1,
+                "progress": {
+                  "scanned": 3,
+                  "total": 3
+                },
+                "error": null
+              },
+              "stage::a": {
+                "camera": {
+                  "zoom": 0.94,
+                  "x": -25.53191489361707,
+                  "y": 632.5957446808511
+                },
+                "placed": true,
+                "cameraResting": true,
+                "vp": {
+                  "width": 800,
+                  "height": 600
+                },
+                "dpr": 1,
+                "cursor": 1,
+                "motionCause": "programmatic",
+                "activeRules": [],
+                "flow": "continuous",
+                "layout": "vertical",
+                "spread": "none",
+                "sizing": "intrinsic",
+                "columns": "square",
+                "bounded": true,
+                "padding": 24,
+                "gap": 16,
+                "pageFrame": {
+                  "top": 0,
+                  "right": 0,
+                  "bottom": 0,
+                  "left": 0
+                },
+                "direction": "ltr",
+                "fitAlign": {
+                  "x": "center",
+                  "y": "center"
+                },
+                "arrivalAlign": {
+                  "x": "start",
+                  "y": "start"
+                },
+                "zoomAlign": {
+                  "x": "center",
+                  "y": "center"
+                },
+                "anchorAlign": {
+                  "x": "start",
+                  "y": "start"
+                },
+                "viewRotation": 0,
+                "zoom": {
+                  "mode": "automatic"
+                },
+                "scrollBehavior": "smooth",
+                "viewUnitsPerPoint": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "stage::a",
+              "action": {
+                "type": "MOTION_CAUSE",
+                "cause": "user"
+              }
+            },
+            {
+              "slice": "stage::a",
+              "action": {
+                "type": "CAMERA",
+                "camera": {
+                  "zoom": 1,
+                  "x": 0,
+                  "y": 0
+                }
+              }
+            },
+            {
+              "slice": "stage::a",
+              "action": {
+                "type": "CURSOR",
+                "cursor": 0
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "search::a": {
+                "query": {
+                  "text": "the"
+                },
+                "status": "complete",
+                "operationId": "session#1",
+                "hits": [
+                  {
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 11
+                    },
+                    "pageIndex": 0,
+                    "charStart": 0,
+                    "charCount": 4,
+                    "segments": [
+                      {
+                        "quad": {
+                          "upperStart": {
+                            "x": 10,
+                            "y": 760
+                          },
+                          "upperEnd": {
+                            "x": 50,
+                            "y": 760
+                          },
+                          "lowerStart": {
+                            "x": 10,
+                            "y": 780
+                          },
+                          "lowerEnd": {
+                            "x": 50,
+                            "y": 780
+                          }
+                        },
+                        "rect": {
+                          "x": 10,
+                          "y": 760,
+                          "width": 40,
+                          "height": 20
+                        },
+                        "advance": 1
+                      }
+                    ],
+                    "bounds": {
+                      "x": 10,
+                      "y": 760,
+                      "width": 40,
+                      "height": 20
+                    }
+                  },
+                  {
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 22
+                    },
+                    "pageIndex": 1,
+                    "charStart": 2,
+                    "charCount": 4,
+                    "segments": [
+                      {
+                        "quad": {
+                          "upperStart": {
+                            "x": 0,
+                            "y": 380
+                          },
+                          "upperEnd": {
+                            "x": 40,
+                            "y": 380
+                          },
+                          "lowerStart": {
+                            "x": 0,
+                            "y": 400
+                          },
+                          "lowerEnd": {
+                            "x": 40,
+                            "y": 400
+                          }
+                        },
+                        "rect": {
+                          "x": 0,
+                          "y": 380,
+                          "width": 40,
+                          "height": 20
+                        },
+                        "advance": 1
+                      }
+                    ],
+                    "bounds": {
+                      "x": 0,
+                      "y": 380,
+                      "width": 40,
+                      "height": 20
+                    }
+                  }
+                ],
+                "hitsByPage": {
+                  "11": [
+                    {
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 11
+                      },
+                      "pageIndex": 0,
+                      "charStart": 0,
+                      "charCount": 4,
+                      "segments": [
+                        {
+                          "quad": {
+                            "upperStart": {
+                              "x": 10,
+                              "y": 760
+                            },
+                            "upperEnd": {
+                              "x": 50,
+                              "y": 760
+                            },
+                            "lowerStart": {
+                              "x": 10,
+                              "y": 780
+                            },
+                            "lowerEnd": {
+                              "x": 50,
+                              "y": 780
+                            }
+                          },
+                          "rect": {
+                            "x": 10,
+                            "y": 760,
+                            "width": 40,
+                            "height": 20
+                          },
+                          "advance": 1
+                        }
+                      ],
+                      "bounds": {
+                        "x": 10,
+                        "y": 760,
+                        "width": 40,
+                        "height": 20
+                      }
+                    }
+                  ],
+                  "22": [
+                    {
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 22
+                      },
+                      "pageIndex": 1,
+                      "charStart": 2,
+                      "charCount": 4,
+                      "segments": [
+                        {
+                          "quad": {
+                            "upperStart": {
+                              "x": 0,
+                              "y": 380
+                            },
+                            "upperEnd": {
+                              "x": 40,
+                              "y": 380
+                            },
+                            "lowerStart": {
+                              "x": 0,
+                              "y": 400
+                            },
+                            "lowerEnd": {
+                              "x": 40,
+                              "y": 400
+                            }
+                          },
+                          "rect": {
+                            "x": 0,
+                            "y": 380,
+                            "width": 40,
+                            "height": 20
+                          },
+                          "advance": 1
+                        }
+                      ],
+                      "bounds": {
+                        "x": 0,
+                        "y": 380,
+                        "width": 40,
+                        "height": 20
+                      }
+                    }
+                  ]
+                },
+                "activeIndex": 1,
+                "progress": {
+                  "scanned": 3,
+                  "total": 3
+                },
+                "error": null
+              },
+              "stage::a": {
+                "camera": {
+                  "zoom": 1,
+                  "x": 0,
+                  "y": 0
+                },
+                "placed": true,
+                "cameraResting": true,
+                "vp": {
+                  "width": 800,
+                  "height": 600
+                },
+                "dpr": 1,
+                "cursor": 0,
+                "motionCause": "user",
+                "activeRules": [],
+                "flow": "continuous",
+                "layout": "vertical",
+                "spread": "none",
+                "sizing": "intrinsic",
+                "columns": "square",
+                "bounded": true,
+                "padding": 24,
+                "gap": 16,
+                "pageFrame": {
+                  "top": 0,
+                  "right": 0,
+                  "bottom": 0,
+                  "left": 0
+                },
+                "direction": "ltr",
+                "fitAlign": {
+                  "x": "center",
+                  "y": "center"
+                },
+                "arrivalAlign": {
+                  "x": "start",
+                  "y": "start"
+                },
+                "zoomAlign": {
+                  "x": "center",
+                  "y": "center"
+                },
+                "anchorAlign": {
+                  "x": "start",
+                  "y": "start"
+                },
+                "viewRotation": 0,
+                "zoom": {
+                  "mode": "automatic"
+                },
+                "scrollBehavior": "smooth",
+                "viewUnitsPerPoint": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "stage::a",
+              "action": {
+                "type": "MOTION_CAUSE",
+                "cause": "programmatic"
+              }
+            },
+            {
+              "slice": "stage::a",
+              "action": {
+                "type": "CURSOR",
+                "cursor": 1
+              }
+            },
+            {
+              "slice": "stage::a",
+              "action": {
+                "type": "CAMERA",
+                "camera": {
+                  "zoom": 1,
+                  "x": -24,
+                  "y": 646
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "search::a": {
+                "query": {
+                  "text": "the"
+                },
+                "status": "complete",
+                "operationId": "session#1",
+                "hits": [
+                  {
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 11
+                    },
+                    "pageIndex": 0,
+                    "charStart": 0,
+                    "charCount": 4,
+                    "segments": [
+                      {
+                        "quad": {
+                          "upperStart": {
+                            "x": 10,
+                            "y": 760
+                          },
+                          "upperEnd": {
+                            "x": 50,
+                            "y": 760
+                          },
+                          "lowerStart": {
+                            "x": 10,
+                            "y": 780
+                          },
+                          "lowerEnd": {
+                            "x": 50,
+                            "y": 780
+                          }
+                        },
+                        "rect": {
+                          "x": 10,
+                          "y": 760,
+                          "width": 40,
+                          "height": 20
+                        },
+                        "advance": 1
+                      }
+                    ],
+                    "bounds": {
+                      "x": 10,
+                      "y": 760,
+                      "width": 40,
+                      "height": 20
+                    }
+                  },
+                  {
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 22
+                    },
+                    "pageIndex": 1,
+                    "charStart": 2,
+                    "charCount": 4,
+                    "segments": [
+                      {
+                        "quad": {
+                          "upperStart": {
+                            "x": 0,
+                            "y": 380
+                          },
+                          "upperEnd": {
+                            "x": 40,
+                            "y": 380
+                          },
+                          "lowerStart": {
+                            "x": 0,
+                            "y": 400
+                          },
+                          "lowerEnd": {
+                            "x": 40,
+                            "y": 400
+                          }
+                        },
+                        "rect": {
+                          "x": 0,
+                          "y": 380,
+                          "width": 40,
+                          "height": 20
+                        },
+                        "advance": 1
+                      }
+                    ],
+                    "bounds": {
+                      "x": 0,
+                      "y": 380,
+                      "width": 40,
+                      "height": 20
+                    }
+                  }
+                ],
+                "hitsByPage": {
+                  "11": [
+                    {
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 11
+                      },
+                      "pageIndex": 0,
+                      "charStart": 0,
+                      "charCount": 4,
+                      "segments": [
+                        {
+                          "quad": {
+                            "upperStart": {
+                              "x": 10,
+                              "y": 760
+                            },
+                            "upperEnd": {
+                              "x": 50,
+                              "y": 760
+                            },
+                            "lowerStart": {
+                              "x": 10,
+                              "y": 780
+                            },
+                            "lowerEnd": {
+                              "x": 50,
+                              "y": 780
+                            }
+                          },
+                          "rect": {
+                            "x": 10,
+                            "y": 760,
+                            "width": 40,
+                            "height": 20
+                          },
+                          "advance": 1
+                        }
+                      ],
+                      "bounds": {
+                        "x": 10,
+                        "y": 760,
+                        "width": 40,
+                        "height": 20
+                      }
+                    }
+                  ],
+                  "22": [
+                    {
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 22
+                      },
+                      "pageIndex": 1,
+                      "charStart": 2,
+                      "charCount": 4,
+                      "segments": [
+                        {
+                          "quad": {
+                            "upperStart": {
+                              "x": 0,
+                              "y": 380
+                            },
+                            "upperEnd": {
+                              "x": 40,
+                              "y": 380
+                            },
+                            "lowerStart": {
+                              "x": 0,
+                              "y": 400
+                            },
+                            "lowerEnd": {
+                              "x": 40,
+                              "y": 400
+                            }
+                          },
+                          "rect": {
+                            "x": 0,
+                            "y": 380,
+                            "width": 40,
+                            "height": 20
+                          },
+                          "advance": 1
+                        }
+                      ],
+                      "bounds": {
+                        "x": 0,
+                        "y": 380,
+                        "width": 40,
+                        "height": 20
+                      }
+                    }
+                  ]
+                },
+                "activeIndex": 1,
+                "progress": {
+                  "scanned": 3,
+                  "total": 3
+                },
+                "error": null
+              },
+              "stage::a": {
+                "camera": {
+                  "zoom": 1,
+                  "x": -24,
+                  "y": 646
+                },
+                "placed": true,
+                "cameraResting": true,
+                "vp": {
+                  "width": 800,
+                  "height": 600
+                },
+                "dpr": 1,
+                "cursor": 1,
+                "motionCause": "programmatic",
+                "activeRules": [],
+                "flow": "continuous",
+                "layout": "vertical",
+                "spread": "none",
+                "sizing": "intrinsic",
+                "columns": "square",
+                "bounded": true,
+                "padding": 24,
+                "gap": 16,
+                "pageFrame": {
+                  "top": 0,
+                  "right": 0,
+                  "bottom": 0,
+                  "left": 0
+                },
+                "direction": "ltr",
+                "fitAlign": {
+                  "x": "center",
+                  "y": "center"
+                },
+                "arrivalAlign": {
+                  "x": "start",
+                  "y": "start"
+                },
+                "zoomAlign": {
+                  "x": "center",
+                  "y": "center"
+                },
+                "anchorAlign": {
+                  "x": "start",
+                  "y": "start"
+                },
+                "viewRotation": 0,
+                "zoom": {
+                  "mode": "automatic"
+                },
+                "scrollBehavior": "smooth",
+                "viewUnitsPerPoint": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "zoom": 1,
+              "x": -24,
+              "y": 646
+            }
+          },
+          "state": {
+            "plugins": {
+              "search::a": {
+                "query": {
+                  "text": "the"
+                },
+                "status": "complete",
+                "operationId": "session#1",
+                "hits": [
+                  {
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 11
+                    },
+                    "pageIndex": 0,
+                    "charStart": 0,
+                    "charCount": 4,
+                    "segments": [
+                      {
+                        "quad": {
+                          "upperStart": {
+                            "x": 10,
+                            "y": 760
+                          },
+                          "upperEnd": {
+                            "x": 50,
+                            "y": 760
+                          },
+                          "lowerStart": {
+                            "x": 10,
+                            "y": 780
+                          },
+                          "lowerEnd": {
+                            "x": 50,
+                            "y": 780
+                          }
+                        },
+                        "rect": {
+                          "x": 10,
+                          "y": 760,
+                          "width": 40,
+                          "height": 20
+                        },
+                        "advance": 1
+                      }
+                    ],
+                    "bounds": {
+                      "x": 10,
+                      "y": 760,
+                      "width": 40,
+                      "height": 20
+                    }
+                  },
+                  {
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 22
+                    },
+                    "pageIndex": 1,
+                    "charStart": 2,
+                    "charCount": 4,
+                    "segments": [
+                      {
+                        "quad": {
+                          "upperStart": {
+                            "x": 0,
+                            "y": 380
+                          },
+                          "upperEnd": {
+                            "x": 40,
+                            "y": 380
+                          },
+                          "lowerStart": {
+                            "x": 0,
+                            "y": 400
+                          },
+                          "lowerEnd": {
+                            "x": 40,
+                            "y": 400
+                          }
+                        },
+                        "rect": {
+                          "x": 0,
+                          "y": 380,
+                          "width": 40,
+                          "height": 20
+                        },
+                        "advance": 1
+                      }
+                    ],
+                    "bounds": {
+                      "x": 0,
+                      "y": 380,
+                      "width": 40,
+                      "height": 20
+                    }
+                  }
+                ],
+                "hitsByPage": {
+                  "11": [
+                    {
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 11
+                      },
+                      "pageIndex": 0,
+                      "charStart": 0,
+                      "charCount": 4,
+                      "segments": [
+                        {
+                          "quad": {
+                            "upperStart": {
+                              "x": 10,
+                              "y": 760
+                            },
+                            "upperEnd": {
+                              "x": 50,
+                              "y": 760
+                            },
+                            "lowerStart": {
+                              "x": 10,
+                              "y": 780
+                            },
+                            "lowerEnd": {
+                              "x": 50,
+                              "y": 780
+                            }
+                          },
+                          "rect": {
+                            "x": 10,
+                            "y": 760,
+                            "width": 40,
+                            "height": 20
+                          },
+                          "advance": 1
+                        }
+                      ],
+                      "bounds": {
+                        "x": 10,
+                        "y": 760,
+                        "width": 40,
+                        "height": 20
+                      }
+                    }
+                  ],
+                  "22": [
+                    {
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 22
+                      },
+                      "pageIndex": 1,
+                      "charStart": 2,
+                      "charCount": 4,
+                      "segments": [
+                        {
+                          "quad": {
+                            "upperStart": {
+                              "x": 0,
+                              "y": 380
+                            },
+                            "upperEnd": {
+                              "x": 40,
+                              "y": 380
+                            },
+                            "lowerStart": {
+                              "x": 0,
+                              "y": 400
+                            },
+                            "lowerEnd": {
+                              "x": 40,
+                              "y": 400
+                            }
+                          },
+                          "rect": {
+                            "x": 0,
+                            "y": 380,
+                            "width": 40,
+                            "height": 20
+                          },
+                          "advance": 1
+                        }
+                      ],
+                      "bounds": {
+                        "x": 0,
+                        "y": 380,
+                        "width": 40,
+                        "height": 20
+                      }
+                    }
+                  ]
+                },
+                "activeIndex": 1,
+                "progress": {
+                  "scanned": 3,
+                  "total": 3
+                },
+                "error": null
+              },
+              "stage::a": {
+                "camera": {
+                  "zoom": 1,
+                  "x": -24,
+                  "y": 646
+                },
+                "placed": true,
+                "cameraResting": true,
+                "vp": {
+                  "width": 800,
+                  "height": 600
+                },
+                "dpr": 1,
+                "cursor": 1,
+                "motionCause": "programmatic",
+                "activeRules": [],
+                "flow": "continuous",
+                "layout": "vertical",
+                "spread": "none",
+                "sizing": "intrinsic",
+                "columns": "square",
+                "bounded": true,
+                "padding": 24,
+                "gap": 16,
+                "pageFrame": {
+                  "top": 0,
+                  "right": 0,
+                  "bottom": 0,
+                  "left": 0
+                },
+                "direction": "ltr",
+                "fitAlign": {
+                  "x": "center",
+                  "y": "center"
+                },
+                "arrivalAlign": {
+                  "x": "start",
+                  "y": "start"
+                },
+                "zoomAlign": {
+                  "x": "center",
+                  "y": "center"
+                },
+                "anchorAlign": {
+                  "x": "start",
+                  "y": "start"
+                },
+                "viewRotation": 0,
+                "zoom": {
+                  "mode": "automatic"
+                },
+                "scrollBehavior": "smooth",
+                "viewUnitsPerPoint": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": 1
+          },
+          "state": {
+            "plugins": {
+              "search::a": {
+                "query": {
+                  "text": "the"
+                },
+                "status": "complete",
+                "operationId": "session#1",
+                "hits": [
+                  {
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 11
+                    },
+                    "pageIndex": 0,
+                    "charStart": 0,
+                    "charCount": 4,
+                    "segments": [
+                      {
+                        "quad": {
+                          "upperStart": {
+                            "x": 10,
+                            "y": 760
+                          },
+                          "upperEnd": {
+                            "x": 50,
+                            "y": 760
+                          },
+                          "lowerStart": {
+                            "x": 10,
+                            "y": 780
+                          },
+                          "lowerEnd": {
+                            "x": 50,
+                            "y": 780
+                          }
+                        },
+                        "rect": {
+                          "x": 10,
+                          "y": 760,
+                          "width": 40,
+                          "height": 20
+                        },
+                        "advance": 1
+                      }
+                    ],
+                    "bounds": {
+                      "x": 10,
+                      "y": 760,
+                      "width": 40,
+                      "height": 20
+                    }
+                  },
+                  {
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 22
+                    },
+                    "pageIndex": 1,
+                    "charStart": 2,
+                    "charCount": 4,
+                    "segments": [
+                      {
+                        "quad": {
+                          "upperStart": {
+                            "x": 0,
+                            "y": 380
+                          },
+                          "upperEnd": {
+                            "x": 40,
+                            "y": 380
+                          },
+                          "lowerStart": {
+                            "x": 0,
+                            "y": 400
+                          },
+                          "lowerEnd": {
+                            "x": 40,
+                            "y": 400
+                          }
+                        },
+                        "rect": {
+                          "x": 0,
+                          "y": 380,
+                          "width": 40,
+                          "height": 20
+                        },
+                        "advance": 1
+                      }
+                    ],
+                    "bounds": {
+                      "x": 0,
+                      "y": 380,
+                      "width": 40,
+                      "height": 20
+                    }
+                  }
+                ],
+                "hitsByPage": {
+                  "11": [
+                    {
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 11
+                      },
+                      "pageIndex": 0,
+                      "charStart": 0,
+                      "charCount": 4,
+                      "segments": [
+                        {
+                          "quad": {
+                            "upperStart": {
+                              "x": 10,
+                              "y": 760
+                            },
+                            "upperEnd": {
+                              "x": 50,
+                              "y": 760
+                            },
+                            "lowerStart": {
+                              "x": 10,
+                              "y": 780
+                            },
+                            "lowerEnd": {
+                              "x": 50,
+                              "y": 780
+                            }
+                          },
+                          "rect": {
+                            "x": 10,
+                            "y": 760,
+                            "width": 40,
+                            "height": 20
+                          },
+                          "advance": 1
+                        }
+                      ],
+                      "bounds": {
+                        "x": 10,
+                        "y": 760,
+                        "width": 40,
+                        "height": 20
+                      }
+                    }
+                  ],
+                  "22": [
+                    {
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 22
+                      },
+                      "pageIndex": 1,
+                      "charStart": 2,
+                      "charCount": 4,
+                      "segments": [
+                        {
+                          "quad": {
+                            "upperStart": {
+                              "x": 0,
+                              "y": 380
+                            },
+                            "upperEnd": {
+                              "x": 40,
+                              "y": 380
+                            },
+                            "lowerStart": {
+                              "x": 0,
+                              "y": 400
+                            },
+                            "lowerEnd": {
+                              "x": 40,
+                              "y": 400
+                            }
+                          },
+                          "rect": {
+                            "x": 0,
+                            "y": 380,
+                            "width": 40,
+                            "height": 20
+                          },
+                          "advance": 1
+                        }
+                      ],
+                      "bounds": {
+                        "x": 0,
+                        "y": 380,
+                        "width": 40,
+                        "height": 20
+                      }
+                    }
+                  ]
+                },
+                "activeIndex": 1,
+                "progress": {
+                  "scanned": 3,
+                  "total": 3
+                },
+                "error": null
+              },
+              "stage::a": {
+                "camera": {
+                  "zoom": 1,
+                  "x": -24,
+                  "y": 646
+                },
+                "placed": true,
+                "cameraResting": true,
+                "vp": {
+                  "width": 800,
+                  "height": 600
+                },
+                "dpr": 1,
+                "cursor": 1,
+                "motionCause": "programmatic",
+                "activeRules": [],
+                "flow": "continuous",
+                "layout": "vertical",
+                "spread": "none",
+                "sizing": "intrinsic",
+                "columns": "square",
+                "bounded": true,
+                "padding": 24,
+                "gap": 16,
+                "pageFrame": {
+                  "top": 0,
+                  "right": 0,
+                  "bottom": 0,
+                  "left": 0
+                },
+                "direction": "ltr",
+                "fitAlign": {
+                  "x": "center",
+                  "y": "center"
+                },
+                "arrivalAlign": {
+                  "x": "start",
+                  "y": "start"
+                },
+                "zoomAlign": {
+                  "x": "center",
+                  "y": "center"
+                },
+                "anchorAlign": {
+                  "x": "start",
+                  "y": "start"
+                },
+                "viewRotation": 0,
+                "zoom": {
+                  "mode": "automatic"
+                },
+                "scrollBehavior": "smooth",
+                "viewUnitsPerPoint": 1
+              }
+            }
+          }
+        }
+      ]
     }
   ]
 }
