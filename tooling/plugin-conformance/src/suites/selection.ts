@@ -43,11 +43,69 @@ import {
   toContentTextQuad,
 } from '../../../../packages/plugin/selection/src/internal';
 
+import { createCapabilityToken, type AnyPlugin, type OperationOptions } from '@embedpdf/core';
+import type { SelectionConfig, TextRange } from '../../../../packages/plugin/selection/src/contract';
+import type { SelectionHostCapability } from '../../../../packages/plugin/selection/src/host-contract';
+
 import type { FakeDocumentSpec, ResponseSpec } from '../fake-engine';
 import { registerPlugin, type ScenarioCase, type Step } from '../scenario';
 import type { FunctionCase, Suite } from '../vectors';
 
-registerPlugin('selection', { factory: () => selectionPlugin(), tokens: [SelectionToken] });
+// ── harness shims ────────────────────────────────────────────────────────────
+//
+// A vector cannot carry an `AbortSignal`, so the `selection` factory wraps the
+// api: a `readText` or `readTextInRange` option `signal: {"$abortSignal": name}`
+// becomes the signal of a controller named `name`, which the
+// `selection-signals` test plugin's `abort(name)` aborts.
+
+const controllers = new Map<string, AbortController>();
+const controllerNamed = (name: string): AbortController => {
+  let controller = controllers.get(name);
+  if (!controller) {
+    controller = new AbortController();
+    controllers.set(name, controller);
+  }
+  return controller;
+};
+const withSignal = (options: unknown): OperationOptions | undefined => {
+  if (!options || typeof options !== 'object') return options as undefined;
+  const spec = (options as { signal?: { $abortSignal?: string } }).signal;
+  return spec?.$abortSignal !== undefined ? { ...options, signal: controllerNamed(spec.$abortSignal).signal } : (options as OperationOptions);
+};
+
+registerPlugin('selection', {
+  factory: (config) => {
+    controllers.clear();
+    const plugin = selectionPlugin((config ?? {}) as SelectionConfig) as AnyPlugin;
+    return {
+      ...plugin,
+      create: (ctx) => {
+        const { api, connect } = plugin.create!(ctx);
+        const cap = api as SelectionHostCapability;
+        return {
+          api: {
+            ...cap,
+            readText: (options?: unknown) => cap.readText(withSignal(options)),
+            readTextInRange: (range: TextRange, options?: unknown) => cap.readTextInRange(range, withSignal(options)),
+          },
+          connect,
+        };
+      },
+    } as AnyPlugin;
+  },
+  tokens: [SelectionToken],
+});
+
+const SignalsToken = createCapabilityToken<{ abort(name: string): void }>('selection-test/signals');
+registerPlugin('selection-signals', {
+  factory: () =>
+    ({
+      id: 'selection-test/signals',
+      token: SignalsToken,
+      capability: () => ({ abort: (name: string) => controllerNamed(name).abort() }),
+    }) as AnyPlugin,
+  tokens: [SignalsToken],
+});
 
 // ── page geometry fixtures ───────────────────────────────────────────────────
 
@@ -330,8 +388,8 @@ const cases: ScenarioCase[] = [
       sel('ensurePage', 9),
       sel('ensurePage', 9),
       settle('geo-5', geo5),
-      { op: 'call', target: { token: 'selection', doc: 'b' }, method: 'ensurePage', args: [1] },
-      { op: 'call', target: { token: 'selection', doc: 'b' }, method: 'isOverText', args: [1, H1] },
+      selCall('b', 'ensurePage', [1]),
+      selCall('b', 'isOverText', [1, H1]),
     ],
   },
   {
@@ -780,6 +838,164 @@ const cases: ScenarioCase[] = [
     snapshot: 'none',
     steps: [...opened, sel('ensurePage', 1), { op: 'call', target: 'documents', method: 'close', args: ['a'] }],
   },
+  {
+    name: 'select-page',
+    covers:
+      'selectPage selects every character of one page: a loaded page at once, an unloaded one as an open range that warms the page and settles when its geometry lands (a system change); a page outside the document throws not-found.',
+    plugins,
+    engine: { documents: { a: doc({ responses: [deferGeo(5, 'geo-5'), ...geometryReads, ...textReads] }) } },
+    snapshot: slice,
+    steps: [
+      ...opened,
+      sel('ensurePage', 1),
+      sel('onChanged', { $fn: 'change' }),
+      sel('selectPage', pr(1)),
+      sel('getRange'),
+      sel('selectPage', pr(5)),
+      sel('getSnapshot'),
+      settle('geo-5', geo5),
+      sel('getRange'),
+      sel('readText'),
+      sel('selectPage', pr(42)),
+    ],
+  },
+  {
+    name: 'refused-writes-and-copy-only',
+    covers:
+      'Without doc.text.select every selection write throws permission-denied (selectPage, selectWordAt, selectLineAt, extendTo), beginGestureAt answers false, and warming resolves without a read; readTextInRange still works with doc.text.copy alone.',
+    plugins,
+    engine: { documents: { a: doc({ security: { allows: ['doc.text.copy'] } }) } },
+    snapshot: slice,
+    steps: [
+      ...opened,
+      sel('selectPage', pr(1)),
+      sel('selectWordAt', pr(1), H1),
+      sel('selectLineAt', pr(1), H1),
+      sel('extendTo', pr(1), H1),
+      sel('beginGestureAt', pr(1), H1),
+      sel('ensureLoaded', pr(1)),
+      sel('readTextInRange', { start: { page: pr(1), index: 0 }, end: { page: pr(1), index: 5 } }),
+    ],
+  },
+  {
+    name: 'read-text-in-range',
+    covers:
+      'readTextInRange reads any range without touching the selection: an empty or backward range is "", an end at index 0 stops at the previous page, a negative start clamps, a range spans pages; a page outside the document rejects not-found and a caller without doc.text.copy permission-denied. Options without a signal read normally.',
+    plugins,
+    engine: {
+      documents: {
+        a: doc(),
+        b: doc({ security: { allows: ['doc.text.select'] } }),
+      },
+    },
+    snapshot: 'none',
+    steps: [
+      start,
+      openDoc('a'),
+      openDoc('b'),
+      sel('readTextInRange', { start: { page: pr(1), index: 6 }, end: { page: pr(1), index: 11 } }),
+      sel('readTextInRange', { start: { page: pr(1), index: 5 }, end: { page: pr(1), index: 5 } }),
+      sel('readTextInRange', { start: { page: pr(5), index: 0 }, end: { page: pr(1), index: 3 } }),
+      sel('readTextInRange', { start: { page: pr(1), index: 13 }, end: { page: pr(5), index: 0 } }),
+      sel('readTextInRange', { start: { page: pr(1), index: -2 }, end: { page: pr(1), index: 3 } }),
+      sel('readTextInRange', { start: { page: pr(1), index: 20 }, end: { page: pr(9), index: 2 } }, {}),
+      sel('readTextInRange', { start: { page: pr(42), index: 0 }, end: { page: pr(1), index: 3 } }),
+      sel('readTextInRange', { start: { page: pr(1), index: 0 }, end: { page: pr(43), index: 3 } }),
+      sel('hasSelection'),
+      sel('select', { pon: 1, start: 0, count: 5 }),
+      sel('readText', {}),
+      { op: 'call', target: { token: 'selection', doc: 'b' }, method: 'readTextInRange', args: [{ start: { page: pr(1), index: 0 }, end: { page: pr(1), index: 3 } }] },
+    ],
+  },
+  {
+    name: 'read-text-cancelled',
+    covers:
+      'readText checks its signal before each batch of page reads and once more after the last: an already aborted signal rejects operation-cancelled with no read, an abort while the first batch is in flight rejects before the second batch is issued, an abort during a single batch rejects when it lands, and a signal that never aborts reads normally.',
+    plugins: [{ factory: 'selection-signals' }, ...plugins],
+    engine: {
+      documents: {
+        a: {
+          pages: Array.from({ length: 10 }, (_, i) => layout(i, 100 + i)),
+          security: { allows: both },
+          responses: [
+            deferText(100, 'first'),
+            deferText(109, 'second'),
+            deferText(109, 'third'),
+            { path: 'page.geometry.read', value: { runs: [run(0, glyphs('Pn', 50, 750))] } },
+            { path: 'page.text.read', value: { text: 'Pn', charCount: 2 } },
+          ],
+        },
+      },
+    },
+    snapshot: 'none',
+    steps: [
+      ...opened,
+      sel('selectAll'),
+      { op: 'call', target: { token: 'selection-test/signals' }, method: 'abort', args: ['pre'] },
+      sel('readText', { signal: { $abortSignal: 'pre' } }),
+      sel('readText', { signal: { $abortSignal: 's1' } }),
+      { op: 'call', target: { token: 'selection-test/signals' }, method: 'abort', args: ['s1'] },
+      settle('first', { text: 'P0', charCount: 2 }),
+      sel('readText', { signal: { $abortSignal: 'ok' } }),
+      settle('second', { text: 'P9', charCount: 2 }),
+      emit({ type: 'pages.flattened' }),
+      sel('select', { pon: 109, start: 0, count: 2 }),
+      sel('readTextInRange', { start: { page: pr(109), index: 0 }, end: { page: pr(109), index: 2 } }, { signal: { $abortSignal: 's2' } }),
+      { op: 'call', target: { token: 'selection-test/signals' }, method: 'abort', args: ['s2'] },
+      settle('third', { text: 'Q9', charCount: 2 }),
+    ],
+  },
+  {
+    name: 'drag-threshold-config',
+    covers: 'selectionPlugin({ dragThreshold }) sets the viewport distance a press travels before it becomes a drag: 9.9 px is still a click at 10, exactly 10 begins the drag.',
+    plugins: [{ factory: 'interaction' }, { factory: 'selection', config: { dragThreshold: 10 } }],
+    engine: { documents: { a: doc() } },
+    snapshot: slice,
+    steps: [
+      ...opened,
+      ...loadAll,
+      hub('dispatch', { ...at('down', 1, H1.x, H1.y), viewport: { x: 0, y: 0 } }),
+      hub('dispatch', { ...at('move', 1, W1.x, W1.y), viewport: { x: 9.9, y: 0 } }),
+      sel('hasSelection'),
+      hub('dispatch', { ...at('move', 1, W1.x, W1.y), viewport: { x: 10, y: 0 } }),
+      sel('hasSelection'),
+      hub('dispatch', { ...at('up', 1, W1.x, W1.y), viewport: { x: 10, y: 0 } }),
+    ],
+  },
+  {
+    name: 'events-and-origins',
+    covers:
+      'onChanged carries the range, the pages with segments and the origin; onCleared fires only when a selection is actually dropped; writes are the api\'s outside a gesture and the user\'s inside one (beginGesture opens it with no selection); endGesture with nothing selected commits nothing; a content change clears with a system origin. getRange and listRects read the model.',
+    plugins,
+    engine: { documents: { a: doc() } },
+    snapshot: slice,
+    steps: [
+      ...opened,
+      ...loadAll,
+      sel('onChanged', { $fn: 'change' }),
+      sel('onCleared', { $fn: 'cleared' }),
+      sel('onCommitted', { $fn: 'commit' }),
+      sel('select', { pon: 1, start: 0, count: 5 }),
+      sel('getRange'),
+      sel('listRects', pr(1)),
+      sel('listRects', pr(1)),
+      sel('listRects', pr(9)),
+      sel('clear'),
+      sel('clear'),
+      sel('getRange'),
+      sel('beginGesture'),
+      sel('isGestureActive'),
+      sel('selectWordAt', pr(1), W1),
+      sel('endGesture'),
+      sel('beginGesture'),
+      sel('clear'),
+      sel('endGesture'),
+      sel('select', { start: { page: pr(1), index: 13 }, end: { page: pr(5), index: 4 } }),
+      sel('listSelectedPages'),
+      emit({ type: 'redaction.applied', page: pr(1), origin: LOCAL }),
+      sel('listSelectedPages'),
+    ],
+  },
 ];
 
 // ── function suites ──────────────────────────────────────────────────────────
@@ -874,6 +1090,44 @@ const tilted: PageGeometrySnapshot = {
     tiltedRun(7, (2 * Math.PI) / 3, { x: 50, y: 300 }, 3),
   ],
 };
+/** One glyph whose baseline runs at `theta` degrees and whose ascent edge
+ *  (p3 to p1) runs at `theta + phi`: a heavily sheared cell. With `phi` near
+ *  0 or 180 the ascent is almost parallel to the baseline, so the two terms
+ *  of the handedness cross product nearly cancel and have opposite signs; `phi`
+ *  past 180 makes the cell left-handed (a mirrored run). */
+const shearedRun = (charStart: number, theta: number, phi: number) => {
+  const t = (theta * Math.PI) / 180;
+  const a = ((theta + phi) * Math.PI) / 180;
+  const origin = { x: 200 + charStart * 20, y: 200 };
+  const b = { x: 8 * Math.cos(t), y: 8 * Math.sin(t) };
+  const up = { x: 10 * Math.cos(a), y: 10 * Math.sin(a) };
+  const p3 = origin;
+  const p4 = { x: origin.x + b.x, y: origin.y + b.y };
+  const p1 = { x: origin.x + up.x, y: origin.y + up.y };
+  const p2 = { x: p1.x + b.x, y: p1.y + b.y };
+  const pts = [p1, p2, p3, p4];
+  return {
+    rect: {
+      left: Math.min(...pts.map((p) => p.x)),
+      bottom: Math.min(...pts.map((p) => p.y)),
+      right: Math.max(...pts.map((p) => p.x)),
+      top: Math.max(...pts.map((p) => p.y)),
+    },
+    charStart,
+    rotation: t,
+    ascentFlip: phi > 180,
+    glyphs: [{ looseQuad: { p1, p2, p3, p4 }, flags: 0 }],
+  };
+};
+const HANDEDNESS_THETAS = [30, 100, 200, 300];
+const HANDEDNESS_PHIS = [8, 172, 188, 352];
+/** Every (theta, phi) pair on one page: each baseline angle gets a right- and
+ *  a left-handed frame, and the second cell of each handedness has to match
+ *  the frame the first one made. */
+const handedness: PageGeometrySnapshot = {
+  runs: HANDEDNESS_THETAS.flatMap((theta, i) => HANDEDNESS_PHIS.map((phi, j) => shearedRun(i * 4 + j, theta, phi))),
+};
+
 /** Upright lines for the line-expansion walk: overlapping, stacked, a
  *  zero-width run, and an empty-rect run between them. */
 const lines: PageGeometrySnapshot = {
@@ -901,7 +1155,7 @@ const zeroFirst: PageGeometrySnapshot = {
     run(1, glyphs('cd', 20, 97)),
   ],
 };
-const sweepFixtures: Record<string, PageGeometrySnapshot> = { geo1, tilted, lines, gaps, zeroFirst };
+const sweepFixtures: Record<string, PageGeometrySnapshot> = { geo1, tilted, lines, gaps, zeroFirst, handedness };
 
 /** Two upright runs, the second shifted by `dx` past the first's end,
  *  raised by `dy`, `h2` tall, `n2` glyphs, at font size `fs2`: the merge
@@ -1036,6 +1290,10 @@ const geometryCases: FunctionCase[] = [
   fc('buildPageTextLayout', 'mixed', mixed),
   fc('buildPageTextLayout', 'empty', empty),
   fc('buildPageTextLayout', 'rotated-all-empty', { runs: [varied.runs[6]] }),
+  ...HANDEDNESS_THETAS.flatMap((theta) =>
+    HANDEDNESS_PHIS.map((phi) => fc('buildPageTextLayout', `handedness-${theta}-${phi}`, { runs: [shearedRun(0, theta, phi)] })),
+  ),
+  fc('buildPageTextLayout', 'handedness-all', handedness),
   ...[
     ['inside-tight', { x: 14, y: 95 }],
     ['gap-between-glyphs-tolerance', { x: 45, y: 95 }],
@@ -1113,7 +1371,7 @@ const geometryCases: FunctionCase[] = [
   fc('initialSelectionState', 'empty'),
   fc('reduceSelection', 'page-loaded', state(), { type: 'pageLoaded', page: pr(3) }),
   fc('reduceSelection', 'page-loaded-again', state({ loaded: { 3: true } }), { type: 'pageLoaded', page: pr(3) }),
-  fc('reduceSelection', 'set', state({ selecting: true }), {
+  fc('reduceSelection', 'set', state({ gestureActive: true }), {
     type: 'set',
     selection: { anchor: { page: pr(1), glyph: 0 }, focus: { page: pr(1), glyph: 2 } },
     segments: { 1: segmentsOf(spec(simple(3)), 0, 2) },

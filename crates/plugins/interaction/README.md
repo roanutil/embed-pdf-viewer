@@ -47,8 +47,7 @@ vector can: a scripted handler in a vector always overrides them.
 Registration returns `Unregister`, which can be called any number of times, as the TypeScript
 closure can. `registerTool`'s remover owns its registration only: once a `replace` put another tool
 under the id, the old remover does nothing (`register-tool-conflict`). The TypeScript compares
-object identity; Rust keeps a serial per registration. `CallbackSet` in `callbacks.rs` is no longer
-used by the hub, which now fires kernel event hooks. It stays because the selection crate uses it.
+object identity; Rust keeps a serial per registration.
 
 ## Where the port differs in shape
 
@@ -71,10 +70,8 @@ downstream crates register next to their own when their vectors drive the hub.
 
 Pre-v3, rerun pending. `cargo mutants -p epdf-plugin-interaction --test-package
 epdf-plugin-interaction` caught 82 of 89 viable mutants, and one more timed out (an infinite loop in
-`CallbackSet::for_each`). The 7 that survived were equivalent:
-
-- 4 in `CallbackSet` (`callbacks.rs:77`, `:78`, `:88`) change when a tombstoned entry is compacted
-  out of the list. A tombstone is never visited, so the only difference is memory.
-- 3 on the `Greater` arm of the priority comparator in `eligible` (now in `controller.rs`). The
-  stable sort only asks whether one handler sorts before another, so `Greater` and `Equal` both
-  leave a pair in registration order.
+`CallbackSet::for_each`). The 7 that survived were equivalent. Four of them were in `CallbackSet`,
+which is gone: the selection port no longer needs it, and the hub fires kernel event hooks. The
+other 3 are on the `Greater` arm of the priority comparator in `eligible` (now in
+`controller.rs`). The stable sort only asks whether one handler sorts before another, so `Greater`
+and `Equal` both leave a pair in registration order.

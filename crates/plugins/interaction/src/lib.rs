@@ -5,8 +5,7 @@
 //! The file split follows the TypeScript package: [`contract`] (with the
 //! host lens folded into [`InteractionCapability`]), [`model`],
 //! [`controller`], [`feedback`], and the wiring in [`interaction_plugin`].
-//! `callbacks` holds `Unregister` and the JavaScript `Set` of callbacks the
-//! selection plugin shares.
+//! `callbacks` holds `Unregister`, what the registries return.
 //!
 //! Downstream plugins (selection, annotation, form, stage) implement
 //! [`InteractionHandler`] and register it with
@@ -24,7 +23,7 @@ pub mod harness;
 
 use epdf_kernel::{AnyPlugin, define};
 
-pub use callbacks::{CallbackSet, Unregister, Unsubscriber, VoidCallback};
+pub use callbacks::Unregister;
 pub use contract::*;
 pub use controller::{InteractionCapability, create_interaction_controller};
 pub use feedback::{
