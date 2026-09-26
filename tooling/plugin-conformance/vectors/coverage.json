@@ -1,7 +1,7 @@
 {
   "total": {
-    "statements": "43609/46778",
-    "branches": "9773/10306"
+    "statements": "43724/46778",
+    "branches": "9875/10392"
   },
   "files": {
     "packages/core/acrojs/src/actions.ts": {
@@ -3562,23 +3562,10 @@
       "uncoveredBranches": []
     },
     "packages/plugin/commands/src/controller.ts": {
-      "statements": "245/255",
-      "branches": "101/102",
-      "uncoveredLines": [
-        43,
-        212,
-        213,
-        214,
-        227,
-        228,
-        229,
-        232,
-        233,
-        234
-      ],
-      "uncoveredBranches": [
-        "60:32#0"
-      ]
+      "statements": "255/255",
+      "branches": "119/119",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
     },
     "packages/plugin/commands/src/host-contract.ts": {
       "statements": "20/20",
@@ -4103,14 +4090,9 @@
       "uncoveredBranches": []
     },
     "packages/plugin/i18n/src/controller.ts": {
-      "statements": "162/174",
-      "branches": "44/44",
+      "statements": "167/174",
+      "branches": "48/48",
       "uncoveredLines": [
-        148,
-        149,
-        150,
-        151,
-        152,
         168,
         169,
         170,
@@ -4146,45 +4128,10 @@
       "uncoveredBranches": []
     },
     "packages/plugin/i18n/src/model.ts": {
-      "statements": "60/92",
-      "branches": "25/26",
-      "uncoveredLines": [
-        40,
-        41,
-        42,
-        43,
-        44,
-        45,
-        46,
-        47,
-        48,
-        49,
-        50,
-        51,
-        52,
-        66,
-        67,
-        68,
-        69,
-        70,
-        71,
-        72,
-        73,
-        74,
-        75,
-        76,
-        77,
-        78,
-        79,
-        80,
-        81,
-        82,
-        83,
-        84
-      ],
-      "uncoveredBranches": [
-        "65:4#0"
-      ]
+      "statements": "92/92",
+      "branches": "36/36",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
     },
     "packages/plugin/i18n/src/negotiate.ts": {
       "statements": "44/44",
@@ -4388,23 +4335,10 @@
       "uncoveredBranches": []
     },
     "packages/plugin/metadata/src/controller.ts": {
-      "statements": "91/100",
-      "branches": "17/19",
-      "uncoveredLines": [
-        66,
-        67,
-        68,
-        69,
-        70,
-        71,
-        72,
-        73,
-        74
-      ],
-      "uncoveredBranches": [
-        "50:53#0",
-        "65:26#0"
-      ]
+      "statements": "100/100",
+      "branches": "23/23",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
     },
     "packages/plugin/metadata/src/index.ts": {
       "statements": "7/7",
@@ -4420,13 +4354,12 @@
     },
     "packages/plugin/metadata/src/model.ts": {
       "statements": "46/47",
-      "branches": "11/14",
+      "branches": "14/16",
       "uncoveredLines": [
         30
       ],
       "uncoveredBranches": [
         "24:30#0",
-        "28:40#0",
         "29:4#0"
       ]
     },
@@ -4443,54 +4376,13 @@
       "uncoveredBranches": []
     },
     "packages/plugin/page-edit/src/controller.ts": {
-      "statements": "125/162",
-      "branches": "54/60",
-      "uncoveredLines": [
-        119,
-        120,
-        121,
-        122,
-        123,
-        124,
-        125,
-        126,
-        127,
-        128,
-        129,
-        130,
-        131,
-        132,
-        133,
-        134,
-        135,
-        136,
-        137,
-        138,
-        139,
-        140,
-        143,
-        144,
-        145,
-        146,
-        147,
-        148,
-        149,
-        150,
-        152,
-        153,
-        154,
-        155,
-        156,
-        157,
-        158
-      ],
+      "statements": "162/162",
+      "branches": "82/85",
+      "uncoveredLines": [],
       "uncoveredBranches": [
         "30:14#0",
         "40:41#0",
-        "75:63#0",
-        "92:21#0",
-        "101:55#0",
-        "118:8#0"
+        "75:63#0"
       ]
     },
     "packages/plugin/page-edit/src/host-contract.ts": {
@@ -5034,11 +4926,9 @@
     },
     "packages/plugin/shell/src/controller.ts": {
       "statements": "113/113",
-      "branches": "52/53",
+      "branches": "58/58",
       "uncoveredLines": [],
-      "uncoveredBranches": [
-        "30:40#0"
-      ]
+      "uncoveredBranches": []
     },
     "packages/plugin/shell/src/host-contract.ts": {
       "statements": "8/8",
@@ -5053,32 +4943,10 @@
       "uncoveredBranches": []
     },
     "packages/plugin/shell/src/model.ts": {
-      "statements": "87/105",
-      "branches": "31/33",
-      "uncoveredLines": [
-        73,
-        74,
-        75,
-        76,
-        77,
-        78,
-        79,
-        80,
-        81,
-        82,
-        83,
-        84,
-        85,
-        86,
-        98,
-        99,
-        100,
-        101
-      ],
-      "uncoveredBranches": [
-        "72:4#0",
-        "97:4#0"
-      ]
+      "statements": "105/105",
+      "branches": "42/42",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
     },
     "packages/plugin/shell/src/shell.plugin.ts": {
       "statements": "22/22",
@@ -5951,21 +5819,10 @@
       "uncoveredBranches": []
     },
     "packages/plugin/view-manager/src/controller.ts": {
-      "statements": "171/175",
-      "branches": "62/67",
-      "uncoveredLines": [
-        24,
-        93,
-        94,
-        117
-      ],
-      "uncoveredBranches": [
-        "92:29#0",
-        "92:57#0",
-        "114:8#0",
-        "115:21#0",
-        "116:38#0"
-      ]
+      "statements": "175/175",
+      "branches": "76/76",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
     },
     "packages/plugin/view-manager/src/host-contract.ts": {
       "statements": "8/8",
@@ -5981,7 +5838,7 @@
     },
     "packages/plugin/view-manager/src/model.ts": {
       "statements": "235/235",
-      "branches": "74/74",
+      "branches": "75/75",
       "uncoveredLines": [],
       "uncoveredBranches": []
     },
