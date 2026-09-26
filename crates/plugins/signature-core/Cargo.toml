@@ -1,0 +1,31 @@
+[package]
+name = "epdf-signature-core"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+description = "packages/core/signature in Rust: parse, verify and build detached CMS signatures, the completion gate, certificate chain validation as pkijs does it, sign() and validateSignatures() over a document handle, and the signer ports. WebCrypto is a host trait."
+
+[lib]
+crate-type = ["rlib"]
+
+[features]
+# The conformance adapter (`harness` module): the function table, the
+# `signature-core` scenario plugin and a scripted WebCrypto host. On by
+# default so `cargo test` replays the vectors with no flags; a host that
+# ships the crate turns it off with `default-features = false`.
+default = ["harness"]
+harness = ["dep:plugin-conformance"]
+
+[dependencies]
+epdf-kernel = { path = "../../epdf-kernel" }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["float_roundtrip", "preserve_order"] }
+base64 = "0.22"
+sha1 = { version = "0.10", features = ["oid"] }
+sha2 = { version = "0.10", features = ["oid"] }
+rsa = { version = "0.9", default-features = false, features = ["std", "u64_digit"] }
+ecdsa = { version = "0.16", features = ["verifying"] }
+p256 = { version = "0.13", default-features = false, features = ["ecdsa", "std"] }
+p384 = { version = "0.13", default-features = false, features = ["ecdsa", "std"] }
+p521 = { version = "0.13", default-features = false, features = ["ecdsa", "std"] }
+plugin-conformance = { path = "../../plugin-conformance", optional = true }
