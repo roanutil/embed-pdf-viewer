@@ -41,6 +41,11 @@ import { definePlugin, type AnyPlugin } from '@embedpdf/core';
 import type { Engine } from '@embedpdf/engine-core/runtime';
 
 import { initialStampState, stampReducer } from '../../../../packages/plugin/stamp/src/model';
+import {
+  memoryStampStore,
+  persistStampLibraries,
+  restoreStampLibraries,
+} from '../../../../packages/plugin/stamp/src/persistence';
 import { stampPlugin } from '../../../../packages/plugin/stamp/src/stamp.plugin';
 import { StampToken } from '../../../../packages/plugin/stamp/src/host-contract';
 import type { StampConfig, StampHostCapability } from '../../../../packages/plugin/stamp/src/host-contract';
@@ -241,6 +246,44 @@ registerPlugin('stamp-plugin', {
     return stampPlugin() as AnyPlugin;
   },
   tokens: [StampToken],
+});
+
+// ── the persistence driver ────────────────────────────────────────────────────
+
+/** `stamp-persistence`: `persistence.ts` over a memory store. `seed` fills
+ *  the store, `rows` lists it, `restore` and `persist` run the helpers
+ *  against the stamp capability, `stop` calls what `persist` returned.
+ *  `config.fail` names store calls (`list`, `put`, `delete`) that reject. */
+registerPlugin('stamp-persistence', {
+  factory: (config, env) => {
+    const fail = ((config ?? {}) as { fail?: Record<string, string> }).fail ?? {};
+    return definePlugin({
+      id: 'stamp-persistence',
+      token: env.token('stamp-persistence'),
+      scope: 'workspace',
+      requires: [StampToken],
+      capability: (ctx) => {
+        const memory = memoryStampStore();
+        const reject = (call: string) => Promise.reject(new Error(fail[call]));
+        const store = {
+          list: () => (fail.list ? reject('list') : memory.list()),
+          put: (id: string, bytes: Uint8Array) => (fail.put ? reject('put') : memory.put(id, bytes)),
+          delete: (id: string) => (fail.delete ? reject('delete') : memory.delete(id)),
+        };
+        let stop: (() => void) | null = null;
+        return {
+          seed: (rows: { id: string; bytes: Uint8Array }[]) =>
+            Promise.all(rows.map((row) => memory.put(row.id, row.bytes))).then(() => undefined),
+          rows: () => memory.list(),
+          restore: () => restoreStampLibraries(ctx.get(StampToken), store),
+          persist: (opts?: { except?: string[]; debounceMs?: number }) => {
+            stop = persistStampLibraries(ctx.get(StampToken), store, opts);
+          },
+          stop: () => stop?.(),
+        };
+      },
+    }) as AnyPlugin;
+  },
 });
 
 // ── bytes ─────────────────────────────────────────────────────────────────────

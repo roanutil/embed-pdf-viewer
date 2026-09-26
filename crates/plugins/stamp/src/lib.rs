@@ -20,6 +20,7 @@ pub mod contract;
 pub mod controller;
 pub mod convention;
 pub mod model;
+pub mod persistence;
 pub mod promise;
 pub mod read;
 pub mod services;

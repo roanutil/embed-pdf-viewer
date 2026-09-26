@@ -35,6 +35,10 @@ use serde_json::{Value, json};
 use crate::contract::*;
 use crate::controller::{StampCapability, create_stamp_controller};
 use crate::model::{StampAction, StampState};
+use crate::persistence::{
+    MemoryStampStore, PersistOptions, StampLibraryStore, StoredLibrary, memory_stamp_store,
+    persist_stamp_libraries, restore_stamp_libraries,
+};
 use crate::services::asset_engine::reset_id_sequence;
 use crate::{initial_stamp_state, stamp_plugin, stamp_reducer};
 
@@ -357,6 +361,143 @@ fn observers_plugin(config: &Value, h: &Harness) -> AnyPlugin {
         .build()
 }
 
+// ── stamp-persistence ─────────────────────────────────────────────────────────
+
+/// The memory store, with the calls `config.fail` names rejecting.
+struct FailingStore {
+    memory: MemoryStampStore,
+    fail: Value,
+}
+
+impl FailingStore {
+    fn failure(&self, call: &str) -> Option<Error> {
+        self.fail.get(call).and_then(Value::as_str).map(Error::new)
+    }
+}
+
+impl StampLibraryStore for FailingStore {
+    fn list(&self) -> Promise<Vec<StoredLibrary>> {
+        match self.failure("list") {
+            Some(error) => Promise::rejected(error),
+            None => self.memory.list(),
+        }
+    }
+    fn put(&self, id: &str, bytes: Vec<u8>) -> Promise<()> {
+        match self.failure("put") {
+            Some(error) => Promise::rejected(error),
+            None => self.memory.put(id, bytes),
+        }
+    }
+    fn delete(&self, id: &str) -> Promise<()> {
+        match self.failure("delete") {
+            Some(error) => Promise::rejected(error),
+            None => self.memory.delete(id),
+        }
+    }
+}
+
+/// The `stamp-persistence` driver's capability.
+#[derive(Clone)]
+pub struct PersistenceDriver {
+    ctx: epdf_kernel::Ctx<Value, Value>,
+    memory: MemoryStampStore,
+    store: Rc<dyn StampLibraryStore>,
+    stop: Rc<std::cell::RefCell<Option<Rc<dyn Fn()>>>>,
+    warn: Rc<dyn Fn(&str, &Error)>,
+}
+
+fn persistence_plugin(config: &Value, h: &Harness) -> AnyPlugin {
+    let token: epdf_kernel::Token<PersistenceDriver> =
+        epdf_kernel::Token::from_any(h.token("stamp-persistence", None));
+    let (fail, h) = (config.get("fail").cloned().unwrap_or(Value::Null), h.clone());
+    define::<Value, Value>("stamp-persistence")
+        .requires(STAMP.any())
+        .capability(&token, move |ctx| {
+            let memory = memory_stamp_store();
+            let log = h.clone();
+            Ok(PersistenceDriver {
+                ctx,
+                memory: memory.clone(),
+                store: Rc::new(FailingStore { memory, fail: fail.clone() }),
+                stop: Rc::default(),
+                warn: Rc::new(move |message: &str, error: &Error| {
+                    log.log("console.warn", vec![json!(message), error.to_canonical()]);
+                }),
+            })
+        })
+        .build()
+}
+
+fn call_persistence(
+    driver: &PersistenceDriver,
+    method: &str,
+    args: &[Value],
+) -> Result<Outcome, Error> {
+    let stamp = || driver.ctx.get(&STAMP);
+    Ok(match method {
+        "seed" => {
+            let puts: Vec<Promise<()>> = args
+                .first()
+                .and_then(Value::as_array)
+                .into_iter()
+                .flatten()
+                .map(|row| {
+                    let id = row.get("id").and_then(Value::as_str).unwrap_or_default();
+                    let bytes = row
+                        .get("bytes")
+                        .and_then(epdf_kernel::bytes::Bytes::from_json)
+                        .map(|b| b.0)
+                        .unwrap_or_default();
+                    driver.memory.put(id, bytes)
+                })
+                .collect();
+            let all = crate::promise::all(puts);
+            Outcome::promise_unit(Promise::spawn(async move {
+                all.await?;
+                Ok(())
+            }))
+        }
+        "rows" => json_promise(driver.memory.list(), |rows| {
+            Value::Array(
+                rows.iter()
+                    .map(|r| json!({ "id": r.id, "bytes": epdf_kernel::bytes::Bytes(r.bytes.clone()).to_json() }))
+                    .collect(),
+            )
+        }),
+        "restore" => {
+            let warn = driver.warn.clone();
+            Outcome::promise(restore_stamp_libraries(&stamp()?, driver.store.clone(), Some(warn)))
+        }
+        "persist" => {
+            let opts = args.first().filter(|v| !is_undefined(v) && !v.is_null());
+            let options = PersistOptions {
+                except: opts
+                    .and_then(|o| o.get("except"))
+                    .and_then(Value::as_array)
+                    .map(|e| e.iter().filter_map(Value::as_str).map(str::to_string).collect())
+                    .unwrap_or_default(),
+                debounce_ms: opts.and_then(|o| o.get("debounceMs")).and_then(Value::as_f64),
+            };
+            let stop = persist_stamp_libraries(
+                &stamp()?,
+                driver.store.clone(),
+                options,
+                Some(driver.warn.clone()),
+            );
+            *driver.stop.borrow_mut() = Some(stop);
+            Outcome::undefined()
+        }
+        "stop" => {
+            let stop = driver.stop.borrow().clone();
+            if let Some(stop) = stop {
+                stop();
+            }
+            Outcome::undefined()
+        }
+        other => Outcome::Threw(Error::new(format!("[scenario] \"{other}\" is not a function"))),
+    })
+}
+
 // ── the adapter ───────────────────────────────────────────────────────────────
 
 fn page_list(value: Option<&Value>) -> Option<Vec<PageRef>> {
@@ -542,12 +683,15 @@ fn call_stamp(
 
 impl HarnessPlugin for Stamp {
     fn factories(&self) -> Vec<&'static str> {
-        vec!["stamp", "stamp-plugin", "stamp-observers"]
+        vec!["stamp", "stamp-plugin", "stamp-observers", "stamp-persistence"]
     }
 
     fn build(&self, factory: &str, config: &Value, h: &Harness) -> Result<AnyPlugin, Error> {
         if factory == "stamp-observers" {
             return Ok(observers_plugin(config, h));
+        }
+        if factory == "stamp-persistence" {
+            return Ok(persistence_plugin(config, h));
         }
         reset_id_sequence();
         if factory == "stamp-plugin" {
@@ -579,11 +723,17 @@ impl HarnessPlugin for Stamp {
         args: Vec<Value>,
         h: &Harness,
     ) -> Option<Outcome> {
+        if let Some(driver) = capability.downcast_ref::<PersistenceDriver>() {
+            return Some(call_persistence(driver, method, &args).unwrap_or_else(Outcome::Threw));
+        }
         let cap = capability.downcast_ref::<StampCapability>()?;
         Some(call_stamp(cap, method, &args, h).unwrap_or_else(Outcome::Threw))
     }
 
     fn members(&self, capability: &Rc<dyn Any>) -> Option<Vec<&'static str>> {
+        if capability.downcast_ref::<PersistenceDriver>().is_some() {
+            return Some(vec!["seed", "rows", "restore", "persist", "stop"]);
+        }
         capability.downcast_ref::<StampCapability>()?;
         Some(MEMBERS.to_vec())
     }

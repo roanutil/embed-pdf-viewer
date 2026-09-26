@@ -386,6 +386,70 @@ const placement: ScenarioCase[] = [
   },
 ];
 
+const persist = (method: string, args: unknown[] = []) => ({ op: 'call' as const, target: { token: 'stamp-persistence' }, method, args });
+const PERSIST = (config?: unknown) => [...STAMP(), config === undefined ? { factory: 'stamp-persistence' } : { factory: 'stamp-persistence', config }];
+
+const persistence: ScenarioCase[] = [
+  {
+    name: 'restore-stored-libraries',
+    covers:
+      'restoreStampLibraries imports every stored library as it is and answers their ids; one that fails to import is reported and skipped. A store whose list rejects rejects the restore.',
+    plugins: PERSIST(),
+    engine: { documents: { lib: assetDoc(ONE, { title: 'Kept' }) }, responses: opens('lib') },
+    steps: [
+      start,
+      persist('seed', [[{ id: 'kept', bytes: PDF }, { id: 'junk', bytes: png() }]]),
+      persist('restore'),
+      stamp('listLibraries'),
+    ],
+  },
+  {
+    name: 'a-store-that-cannot-list',
+    covers: 'A store whose list rejects rejects the restore with that error.',
+    plugins: PERSIST({ fail: { list: 'offline' } }),
+    steps: [start, persist('restore')],
+  },
+  {
+    name: 'persist-library-changes',
+    covers:
+      "persistStampLibraries writes a library's exported PDF to the store once its changes stop for the debounce, a burst coalescing into one write; a removal deletes the stored copy at once and drops a pending write; an excepted library is never stored. The stop function unsubscribes and flushes pending writes immediately.",
+    plugins: PERSIST(),
+    steps: [
+      start,
+      persist('persist', [{ except: ['skip'], debounceMs: 100 }]),
+      stamp('createLibrary', ['A', { id: 'a' }]),
+      stamp('createLibrary', ['Skip', { id: 'skip' }]),
+      { op: 'advance', ms: 50 },
+      stamp('updateLibrary', ['a', { name: 'A2' }]),
+      { op: 'advance', ms: 99 },
+      persist('rows'),
+      { op: 'advance', ms: 1 },
+      persist('rows'),
+      stamp('createLibrary', ['B', { id: 'b' }]),
+      stamp('deleteLibrary', ['a']),
+      persist('rows'),
+      persist('stop'),
+      persist('rows'),
+      stamp('createLibrary', ['C', { id: 'c' }]),
+      { op: 'advance', ms: 1000 },
+      persist('rows'),
+    ],
+  },
+  {
+    name: 'persistence-failures-are-reported',
+    covers: 'A store write or delete that rejects is reported with the library id and leaves the stream running; the default debounce is 250 ms.',
+    plugins: PERSIST({ fail: { put: 'quota exceeded', delete: 'locked' } }),
+    steps: [
+      start,
+      persist('persist'),
+      stamp('createLibrary', ['A', { id: 'a' }]),
+      { op: 'advance', ms: 250 },
+      stamp('deleteLibrary', ['a']),
+      persist('rows'),
+    ],
+  },
+];
+
 const workshop = (cases: ScenarioCase[]): ScenarioCase[] =>
   cases.map((c) => ({ ...c, engine: withWorkshop(c.engine as never) }));
 
@@ -394,7 +458,7 @@ export const suites: Suite[] = [
     kind: 'scenario',
     file: 'plugins/stamp-api.json',
     describes: 'packages/plugin/stamp: library and asset edits, marks, registered libraries, previews, placement without the pointer, and the change events.',
-    cases: workshop([...libraries, ...marks, ...assets, ...previews, ...placement]),
+    cases: workshop([...libraries, ...marks, ...assets, ...previews, ...placement, ...persistence]),
   },
 ];
 
