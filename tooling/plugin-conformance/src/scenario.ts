@@ -133,6 +133,12 @@ const realSetImmediate = globalThis.setImmediate;
 const drainMicrotasks = () => new Promise<void>((resolve) => realSetImmediate(resolve));
 
 export async function runScenario(scenario: ScenarioCase): Promise<{ trace: TraceEntry[]; unmatched: string[] }> {
+  const base = await instanceBase();
+  const { trace, unmatched } = await runScenarioRaw(scenario);
+  return { trace: renumberInstances(trace, base) as TraceEntry[], unmatched };
+}
+
+async function runScenarioRaw(scenario: ScenarioCase): Promise<{ trace: TraceEntry[]; unmatched: string[] }> {
   runTokens = new Map();
   const clock = FakeTimers.install({
     now: 0,
@@ -228,24 +234,70 @@ function instantiate(spec: PluginSpec, env: PluginEnv): AnyPlugin {
 }
 
 /** Wrap every context the kernel hands this plugin so its dispatches are
- *  logged with the slice they target, before the reducer runs. */
+ *  logged with the slice they target, before the reducer runs. A proxy, not a
+ *  spread: a controller context's `doc` is a getter that throws for a
+ *  workspace plugin, and must stay lazy. */
 function instrument(plugin: AnyPlugin, entry: () => TraceEntry): AnyPlugin {
   const wrap = <C extends { dispatch(action: Action): void; documentId?: string }>(ctx: C): C => {
     const slice = ctx.documentId ? `${plugin.id}::${ctx.documentId}` : plugin.id;
-    return {
-      ...ctx,
-      dispatch: (action: Action) => {
-        entry().actions.push({ slice, action: canonical(action, snapshotHooks) });
-        ctx.dispatch(action);
-      },
+    const dispatch = (action: Action) => {
+      entry().actions.push({ slice, action: canonical(action, snapshotHooks) });
+      ctx.dispatch(action);
     };
+    return new Proxy(ctx, {
+      get: (target, member) => (member === 'dispatch' ? dispatch : Reflect.get(target, member, target)),
+    });
   };
   return {
     ...plugin,
     capability: plugin.capability && ((ctx) => plugin.capability!(wrap(ctx))),
     init: plugin.init && ((ctx) => plugin.init!(wrap(ctx))),
     effects: plugin.effects && ((ctx) => plugin.effects!(wrap(ctx))),
+    create: plugin.create && ((ctx) => plugin.create!(wrap(ctx))),
   };
+}
+
+// ── instance ids ──────────────────────────────────────────────────────────────
+
+/** The kernel numbers document instances (`<id>#<n>`) from one counter shared
+ *  by every kernel in the process, so a raw trace would depend on how many
+ *  cases ran before it. `instanceBase()` reads the counter by opening a
+ *  document in a throwaway kernel; `renumberInstances` then rewrites every
+ *  `<id>#<n>` with `n` above the base to `n - base`, which is what a kernel
+ *  whose counter starts at zero writes. The Rust kernel counts per kernel. */
+let burned = false;
+async function instanceBase(): Promise<number> {
+  const fake = createFakeEngine(
+    { documents: { probe: { pages: [] } } },
+    (value) => value,
+  );
+  const kernel = createKernel({ engine: fake.engine, plugins: [], report: () => {} });
+  await kernel.start();
+  // Lane ids (`<lane>#<n>`) share the shape and count from one per lane.
+  // Pushing the counter past any lane's count first keeps the two apart.
+  if (!burned) {
+    burned = true;
+    for (let i = 0; i < 1000; i += 1) void kernel.documents.open({ kind: 'bytes', id: `burn${i}` } as never).catch(() => {});
+  }
+  await kernel.documents.open({ kind: 'bytes', id: 'probe', bytes: new Uint8Array() } as never);
+  const instanceId = kernel.getState().core.documents.probe!.instanceId;
+  await kernel.destroy();
+  return Number(instanceId.slice(instanceId.lastIndexOf('#') + 1));
+}
+
+function renumberInstances(value: unknown, base: number): unknown {
+  if (typeof value === 'string') {
+    return value.replace(/([^\s#"'`(]+)#(\d+)/g, (whole, id: string, n: string) =>
+      Number(n) > base ? `${id}#${Number(n) - base}` : whole,
+    );
+  }
+  if (Array.isArray(value)) return value.map((item) => renumberInstances(item, base));
+  if (value && typeof value === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [key, member] of Object.entries(value)) out[renumberInstances(key, base) as string] = renumberInstances(member, base);
+    return out;
+  }
+  return value;
 }
 
 function snapshot(kernel: Kernel, keys: readonly string[] | undefined): unknown {

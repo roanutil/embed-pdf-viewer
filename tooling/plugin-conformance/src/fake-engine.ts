@@ -68,7 +68,8 @@ export interface FakeDocumentSpec {
   readonly id?: string;
   /** Optional services present on this handle: `render`, `actions`,
    *  `attachments`, `pieceInfo`, `redaction`, `downloadLayer`, `page.pieceInfo`,
-   *  and the optional member `forms.submit`. */
+   *  `page.measure`, `signatures`, `fonts`, `version`, and the optional member
+   *  `forms.submit`. */
   readonly services?: readonly string[];
   /** Optional members present by default that this handle lacks:
    *  `forms.applyEffects`, `pages.flatten` and `pages.extract`, which the
@@ -76,8 +77,9 @@ export interface FakeDocumentSpec {
   readonly lacks?: readonly string[];
   readonly capabilities?: unknown;
   readonly security?: SecuritySpec;
-  /** The page registry. `pages.list` answers from it unless the table says otherwise,
-   *  and `page(pon)` refuses a pon that is not in it. */
+  /** The page registry (`PageLayout`s, each with its `ref`). `pages.list` answers
+   *  from it unless the table says otherwise, and `page(ref)` refuses a ref
+   *  whose object number is not in it. */
   readonly pages?: readonly unknown[];
   readonly responses?: readonly ResponseSpec[];
 }
@@ -225,7 +227,7 @@ export function createFakeEngine(
     const security = document.security ?? {};
     const listeners = new Set<(event: unknown) => void>();
     handles.set(id, { listeners });
-    const pages = (document.pages ?? []) as { pageObjectNumber: number; index: number }[];
+    const pages = (document.pages ?? []) as { ref: { pageObjectNumber: number }; index: number }[];
     const allows = (capability: string) =>
       security.allows === '*' || (security.allows ?? []).includes(capability);
 
@@ -270,13 +272,14 @@ export function createFakeEngine(
         },
         lastServerId: () => null,
       },
-      page: (pon: number) => {
-        const page = pages.find((p) => p.pageObjectNumber === pon);
+      page: (ref: { pageObjectNumber: number }) => {
+        const pon = ref.pageObjectNumber;
+        const page = pages.find((p) => p.ref.pageObjectNumber === pon);
         if (!page) {
           throw makeError({ name: 'EngineError', message: `no page ${pon}`, code: 'NotFound' });
         }
         const pageHandle: Record<string, unknown> = {
-          pageObjectNumber: pon,
+          ref: { kind: 'objectNumber', pageObjectNumber: pon },
           pageIndex: page.index,
           annotations: service(id, table, 'page.annotations', pon),
           text: service(id, table, 'page.text', pon),
@@ -284,13 +287,17 @@ export function createFakeEngine(
           render: service(id, table, 'page.render', pon),
         };
         if (services.has('page.pieceInfo')) pageHandle.pieceInfo = service(id, table, 'page.pieceInfo', pon);
+        if (services.has('page.measure')) pageHandle.measure = service(id, table, 'page.measure', pon);
         return pageHandle;
       },
       download: (...args: unknown[]) => call(id, table, 'download', undefined, args),
       close: (...args: unknown[]) => call(id, table, 'close', undefined, args, () => undefined),
     };
-    for (const optional of ['render', 'actions', 'attachments', 'pieceInfo', 'redaction']) {
+    for (const optional of ['render', 'actions', 'attachments', 'pieceInfo', 'redaction', 'signatures', 'fonts']) {
       if (services.has(optional)) handle[optional] = service(id, table, optional);
+    }
+    if (services.has('version')) {
+      handle.version = (...args: unknown[]) => call(id, table, 'version', undefined, args);
     }
     if (services.has('downloadLayer')) {
       handle.downloadLayer = (...args: unknown[]) => call(id, table, 'downloadLayer', undefined, args);
