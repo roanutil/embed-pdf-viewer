@@ -395,6 +395,36 @@ const handlerCases: ScenarioCase[] = [
     ],
   },
   {
+    name: 'the-click-threshold-is-strict',
+    covers: 'A drag exactly the drag threshold wide (or tall) is a drag, not a click: here a degenerate one, which placeField refuses.',
+    plugins: FORM_ONLY,
+    engine: PLACE_ENGINE(),
+    snapshot: 'none',
+    steps: [...boot, tool('form-text'), pointer('down', 50, 50), pointer('up', 53, 50), pointer('down', 50, 50), pointer('up', 50, 53)],
+  },
+  {
+    name: 'the-handler-outranks-lower-priorities',
+    covers: 'At priority 95 the place handler takes a down before an eligible handler of priority 50 is asked.',
+    plugins: FORM_ONLY,
+    engine: PLACE_ENGINE(),
+    snapshot: 'none',
+    steps: [
+      ...boot,
+      ix('registerHandler', [
+        {
+          id: 'low',
+          priority: 50,
+          enabledFor: { $fn: 'low.enabledFor', returns: true },
+          onDown: { $fn: 'low.onDown', returns: true },
+          onUp: { $fn: 'low.onUp' },
+        },
+      ]),
+      tool('form-text'),
+      pointer('down', 100, 100),
+      pointer('up', 100, 100),
+    ],
+  },
+  {
     name: 'the-handler-declines',
     covers:
       'No capture off a page, under a tool the palette does not know (even one enabling form-place), or without the design grant; the gesture falls through to other handlers.',
