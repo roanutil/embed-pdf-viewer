@@ -168,7 +168,16 @@ const valueCases: ScenarioCase[] = [
       commit(7, { type: 'choice', values: ['r', 'g'] }),
       commit(1, { type: 'toggle', state: 'Yes' }),
       commit(8, textValue('press')),
+      commit(1, { type: 'choice', values: ['x'] }),
     ],
+  },
+  {
+    name: 'a-cleared-toggle-proposes-off',
+    covers: "A toggle to null reaches the validator as 'Off'.",
+    plugins: solo({ sandbox: { builds: [{ run: [out({ event: ev('Off') })] }] } }),
+    engine: { documents: { a: doc([list([CHECK]), applyOk()]) } },
+    snapshot: 'none',
+    steps: [...boot, commit(4, { type: 'toggle', state: null })],
   },
   {
     name: 'validated-values-cross-back',
@@ -279,7 +288,12 @@ const bootCases: ScenarioCase[] = [
       'A rejected value still commits the boot effects alone and resolves rejected with their result; a boot batch that fails turns the rejection into a failure; with no batch door it fails before the engine.',
     plugins: solo({
       sandbox: {
-        builds: [{ boot: [out({ formEffects: [setValue(1, textValue('booted'))] })], run: [rejects('x')] }],
+        builds: [
+          {
+            boot: [out({ formEffects: [setValue(1, textValue('booted'))], diagnostics: [{ code: 'unsupported-api', message: 'app.viewerVersion' }] })],
+            run: [rejects('x')],
+          },
+        ],
       },
     }),
     engine: {
@@ -319,6 +333,26 @@ const activationCases: ScenarioCase[] = [
     engine: { documents: { a: doc([list([NAME, BUTTON, TOTAL], {}, [ref(3)]), applyOk()]) } },
     snapshot: 'none',
     steps: [...boot, standalone('activate', [ref(8), tree(js('go()', [js('then()')]))])],
+  },
+  {
+    name: 'activation-edits-its-own-field',
+    covers: "An activation that sets its own field's value commits it; the activated field is not formatted, since no value was proposed.",
+    plugins: solo({ sandbox: { builds: [{ run: [out({ formEffects: [setValue(9, textValue('mine'))] })] }] } }),
+    engine: { documents: { a: doc([list([text(9, 'self', 'old', kvcf({ format: tree(js('fmt()')) }))]), applyOk()]) } },
+    snapshot: 'none',
+    steps: [...boot, standalone('activate', [ref(9), tree(js('me()'))])],
+  },
+  {
+    name: 'recalculate-keeps-a-boot-reset',
+    covers: "recalculate() proposes nothing, so a boot script's reset of the anchor field survives as a reset effect.",
+    plugins: solo({ sandbox: { builds: [{ boot: [out({ formEffects: [{ kind: 'reset', refs: [ref(4)] }] })] }] } }),
+    engine: {
+      documents: {
+        a: doc([list([text(4, 'total', 'changed', { defaultValueEntry: { kind: 'scalar', value: 'dflt' } })], {}, [ref(4)]), ACTIONS_READ(), applyOk()], withScripts),
+      },
+    },
+    snapshot: 'none',
+    steps: [...boot, standalone('recalculate')],
   },
   {
     name: 'activation-refusals',
@@ -391,7 +425,7 @@ const keystrokeCases: ScenarioCase[] = [
   {
     name: 'keystroke-empty-values',
     covers:
-      "An empty field's old value and a null proposal both reach the keystroke script as ''; the field's page is its first placed widget's index in the document, 0 when it has none or the page is unknown.",
+      "An empty field's old value and a null proposal both reach the keystroke script as ''; the field's page is its first placed widget's index in the document, 0 when it has none or the page is unknown; a direct widget before it is passed over.",
     plugins: solo({ sandbox: { builds: [{}] } }),
     engine: {
       documents: {
@@ -399,6 +433,7 @@ const keystrokeCases: ScenarioCase[] = [
           list([
             text(2, 'code', '', kvcf({ keystroke: K('ks()') }), [[102, 2]]),
             text(3, 'unplaced', '', kvcf({ keystroke: K('ks()') }), [[0, 0]]),
+            text(5, 'second', '', kvcf({ keystroke: K('ks()') }), [[0, 0], [105, 2]]),
             text(4, 'lost', '', kvcf({ keystroke: K('ks()') }), [[104, 77]]),
           ]),
           applyOk(),
@@ -406,7 +441,7 @@ const keystrokeCases: ScenarioCase[] = [
       },
     },
     snapshot: 'none',
-    steps: [...boot, commit(2, { type: 'text', value: null }), commit(3, textValue('u')), commit(4, textValue('l'))],
+    steps: [...boot, commit(2, { type: 'text', value: null }), commit(3, textValue('u')), commit(4, textValue('l')), commit(5, textValue('s'))],
   },
   {
     name: 'keystroke-fault-ladder',
@@ -595,7 +630,7 @@ const effectCases: ScenarioCase[] = [
   {
     name: 'effects-canonicalise',
     covers:
-      'Script effects fold into the overlay: a reset back to a default becomes one leading reset effect, a later setValue un-resets, display changes become setDisplay, appearance text keeps the last per field in first-set order, and effects on fields the snapshot lacks are dropped.',
+      'Script effects fold into the overlay: a reset back to a default becomes one leading reset effect, a later setValue un-resets (even back to the default), display changes become setDisplay, appearance text keeps the last per field in first-set order, and effects on fields the snapshot lacks are dropped.',
     plugins: solo({
       sandbox: {
         builds: [
@@ -611,6 +646,8 @@ const effectCases: ScenarioCase[] = [
                   { kind: 'setAppearanceText', ref: ref(3), text: 'three' },
                   { kind: 'setAppearanceText', ref: ref(5), text: 'last' },
                   setValue(99, textValue('ghost')),
+                  { kind: 'reset', refs: [ref(7)] },
+                  setValue(7, textValue('dflt')),
                 ],
               }),
             ],
@@ -627,6 +664,7 @@ const effectCases: ScenarioCase[] = [
             text(4, 'b', 'changed', { defaultValueEntry: { kind: 'scalar', value: 'dflt' } }),
             text(5, 'c', 'c'),
             text(6, 'd', 'dflt', { defaultValueEntry: { kind: 'scalar', value: 'dflt' } }),
+            text(7, 'e', 'changed', { defaultValueEntry: { kind: 'scalar', value: 'dflt' } }),
           ]),
           applyOk(),
         ]),
@@ -738,6 +776,17 @@ const budgetCases: ScenarioCase[] = [
     engine: { documents: { a: doc([list([CODE()]), ACTIONS_READ(), applyOk()], withScripts) } },
     snapshot: 'none',
     steps: [...boot, commit(2, textValue('slow')), advance(60), settle('rebuild'), commit(2, textValue('next'))],
+  },
+  {
+    name: 'the-time-budget-shrinks',
+    covers: 'A run that took 20 of the 50 budgeted milliseconds leaves the next run 30.',
+    plugins: solo({
+      sandbox: { builds: [{ boot: [{ dispose: true }] }, { defer: 'rebuild' }] },
+      budget: BUDGET,
+    }),
+    engine: { documents: { a: doc([list([CODE()]), ACTIONS_READ(), applyOk()], withScripts) } },
+    snapshot: 'none',
+    steps: [...boot, commit(2, textValue('slow')), advance(20), settle('rebuild')],
   },
 ];
 

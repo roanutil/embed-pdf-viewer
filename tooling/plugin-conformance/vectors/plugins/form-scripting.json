@@ -2749,6 +2749,26 @@
               "value": "press"
             }
           ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form-scripting",
+            "doc": "a"
+          },
+          "method": "commit",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "fieldObjectNumber": 1
+            },
+            {
+              "type": "choice",
+              "values": [
+                "x"
+              ]
+            }
+          ]
         }
       ],
       "trace": [
@@ -3469,6 +3489,537 @@
           },
           "outcome": {
             "promise": 9
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 10,
+              "resolved": {
+                "status": "failed",
+                "scripted": true,
+                "effectsResult": null,
+                "uiEffects": [],
+                "diagnostics": [],
+                "error": {
+                  "kind": "invalid-output",
+                  "message": "Form value type 'choice' does not match field family 'text'"
+                }
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "forms.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 10
+          }
+        }
+      ]
+    },
+    {
+      "name": "a-cleared-toggle-proposes-off",
+      "covers": "A toggle to null reaches the validator as 'Off'.",
+      "plugins": [
+        {
+          "factory": "form-scripting",
+          "config": {
+            "sandbox": {
+              "builds": [
+                {
+                  "run": [
+                    {
+                      "output": {
+                        "event": {
+                          "rc": true,
+                          "value": "Off",
+                          "change": "",
+                          "selStart": 0,
+                          "selEnd": 0
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "pageObjectNumber": 2,
+                "label": null,
+                "size": {
+                  "width": 400,
+                  "height": 500
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 410,
+                    "top": 520
+                  },
+                  "crop": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 410,
+                    "top": 520
+                  }
+                }
+              }
+            ],
+            "security": {
+              "allows": "*"
+            },
+            "responses": [
+              {
+                "path": "forms.list",
+                "value": {
+                  "formKind": "acroform",
+                  "needsAppearances": false,
+                  "fields": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 4
+                      },
+                      "fieldObjectNumber": 4,
+                      "name": "agree",
+                      "family": "checkbox",
+                      "origin": "acroform",
+                      "flags": {
+                        "readOnly": false,
+                        "required": false,
+                        "noExport": false,
+                        "raw": 0
+                      },
+                      "alternateName": null,
+                      "mappingName": null,
+                      "widgets": [
+                        {
+                          "annotObjectNumber": 104,
+                          "pageObjectNumber": 1,
+                          "onState": "Yes"
+                        }
+                      ],
+                      "valueEntry": {
+                        "kind": "scalar",
+                        "value": "Yes"
+                      },
+                      "defaultValueEntry": {
+                        "kind": "none"
+                      },
+                      "checked": true,
+                      "actions": {
+                        "validate": {
+                          "root": {
+                            "type": "javascript",
+                            "subtype": "JavaScript",
+                            "script": "v()",
+                            "next": []
+                          },
+                          "incomplete": false,
+                          "warningFlags": 0,
+                          "warnings": []
+                        }
+                      }
+                    }
+                  ],
+                  "calculationOrder": []
+                }
+              },
+              {
+                "path": "forms.applyEffects",
+                "value": {
+                  "results": [
+                    {
+                      "index": 0,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 1,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 2,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 3,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 4,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 5,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 6,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 7,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    }
+                  ],
+                  "changedWidgets": [],
+                  "meta": null
+                }
+              }
+            ]
+          }
+        }
+      },
+      "snapshot": "none",
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form-scripting",
+            "doc": "a"
+          },
+          "method": "commit",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "fieldObjectNumber": 4
+            },
+            {
+              "type": "toggle",
+              "state": null
+            }
+          ]
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 1
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": {
+                "status": "applied",
+                "scripted": true,
+                "effectsResult": {
+                  "results": [
+                    {
+                      "index": 0,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 1,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 2,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 3,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 4,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 5,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 6,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 7,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    }
+                  ],
+                  "changedWidgets": [],
+                  "meta": null
+                },
+                "uiEffects": [],
+                "diagnostics": []
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "forms.list",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "forms.applyEffects",
+              "args": [
+                [
+                  {
+                    "kind": "setValue",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "fieldObjectNumber": 4
+                    },
+                    "value": {
+                      "type": "toggle",
+                      "state": null
+                    }
+                  }
+                ]
+              ]
+            }
+          ],
+          "callbacks": [
+            {
+              "fn": "sandbox.factory",
+              "args": [
+                0
+              ]
+            },
+            {
+              "fn": "sandbox.run",
+              "args": [
+                0,
+                "v()",
+                {
+                  "document": {
+                    "id": "a",
+                    "fileName": "a",
+                    "pageCount": 2,
+                    "pageNumber": 0
+                  },
+                  "identity": {
+                    "name": "",
+                    "loginName": "",
+                    "corporation": "",
+                    "email": ""
+                  },
+                  "environment": {
+                    "nowMs": 0,
+                    "utcOffsetMinutes": 0,
+                    "randomSeed": 3669834966
+                  },
+                  "fields": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 4
+                      },
+                      "name": "agree",
+                      "family": "checkbox",
+                      "value": "Off",
+                      "defaultValue": "Off",
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false
+                    }
+                  ],
+                  "event": {
+                    "kind": "field-validate",
+                    "target": {
+                      "kind": "objectNumber",
+                      "fieldObjectNumber": 4
+                    },
+                    "source": {
+                      "kind": "objectNumber",
+                      "fieldObjectNumber": 4
+                    },
+                    "value": "Off",
+                    "willCommit": true
+                  }
+                },
+                {
+                  "maxExecutionMs": 50,
+                  "maxMemoryBytes": 16777216,
+                  "maxStackBytes": 524288,
+                  "maxEffects": 256,
+                  "maxOutputBytes": 1048576
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 2
           }
         }
       ]
@@ -9015,6 +9566,12 @@
                               "value": "booted"
                             }
                           }
+                        ],
+                        "diagnostics": [
+                          {
+                            "code": "unsupported-api",
+                            "message": "app.viewerVersion"
+                          }
                         ]
                       }
                     }
@@ -10017,7 +10574,12 @@
                   "meta": null
                 },
                 "uiEffects": [],
-                "diagnostics": []
+                "diagnostics": [
+                  {
+                    "code": "unsupported-api",
+                    "message": "app.viewerVersion"
+                  }
+                ]
               }
             }
           ],
@@ -10227,7 +10789,12 @@
                 "scripted": true,
                 "effectsResult": null,
                 "uiEffects": [],
-                "diagnostics": [],
+                "diagnostics": [
+                  {
+                    "code": "unsupported-api",
+                    "message": "app.viewerVersion"
+                  }
+                ],
                 "error": {
                   "kind": "invalid-output",
                   "message": "A name-tree boot effect failed"
@@ -10441,7 +11008,12 @@
                 "scripted": true,
                 "effectsResult": null,
                 "uiEffects": [],
-                "diagnostics": [],
+                "diagnostics": [
+                  {
+                    "code": "unsupported-api",
+                    "message": "app.viewerVersion"
+                  }
+                ],
                 "error": {
                   "kind": "invalid-output",
                   "message": "Batched form effects are unavailable"
@@ -11253,6 +11825,1023 @@
                       "fieldObjectNumber": 8
                     },
                     "value": null
+                  }
+                },
+                {
+                  "maxExecutionMs": 50,
+                  "maxMemoryBytes": 16777216,
+                  "maxStackBytes": 524288,
+                  "maxEffects": 256,
+                  "maxOutputBytes": 1048576
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 2
+          }
+        }
+      ]
+    },
+    {
+      "name": "activation-edits-its-own-field",
+      "covers": "An activation that sets its own field's value commits it; the activated field is not formatted, since no value was proposed.",
+      "plugins": [
+        {
+          "factory": "form-scripting",
+          "config": {
+            "sandbox": {
+              "builds": [
+                {
+                  "run": [
+                    {
+                      "output": {
+                        "formEffects": [
+                          {
+                            "kind": "setValue",
+                            "ref": {
+                              "kind": "objectNumber",
+                              "fieldObjectNumber": 9
+                            },
+                            "value": {
+                              "type": "text",
+                              "value": "mine"
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "pageObjectNumber": 2,
+                "label": null,
+                "size": {
+                  "width": 400,
+                  "height": 500
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 410,
+                    "top": 520
+                  },
+                  "crop": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 410,
+                    "top": 520
+                  }
+                }
+              }
+            ],
+            "security": {
+              "allows": "*"
+            },
+            "responses": [
+              {
+                "path": "forms.list",
+                "value": {
+                  "formKind": "acroform",
+                  "needsAppearances": false,
+                  "fields": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 9
+                      },
+                      "fieldObjectNumber": 9,
+                      "name": "self",
+                      "family": "text",
+                      "origin": "acroform",
+                      "flags": {
+                        "readOnly": false,
+                        "required": false,
+                        "noExport": false,
+                        "raw": 0
+                      },
+                      "alternateName": null,
+                      "mappingName": null,
+                      "widgets": [
+                        {
+                          "annotObjectNumber": 109,
+                          "pageObjectNumber": 1
+                        }
+                      ],
+                      "valueEntry": {
+                        "kind": "scalar",
+                        "value": "old"
+                      },
+                      "defaultValueEntry": {
+                        "kind": "none"
+                      },
+                      "value": "old",
+                      "defaultValue": "",
+                      "maxLength": null,
+                      "multiline": false,
+                      "password": false,
+                      "comb": false,
+                      "actions": {
+                        "format": {
+                          "root": {
+                            "type": "javascript",
+                            "subtype": "JavaScript",
+                            "script": "fmt()",
+                            "next": []
+                          },
+                          "incomplete": false,
+                          "warningFlags": 0,
+                          "warnings": []
+                        }
+                      }
+                    }
+                  ],
+                  "calculationOrder": []
+                }
+              },
+              {
+                "path": "forms.applyEffects",
+                "value": {
+                  "results": [
+                    {
+                      "index": 0,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 1,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 2,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 3,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 4,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 5,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 6,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 7,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    }
+                  ],
+                  "changedWidgets": [],
+                  "meta": null
+                }
+              }
+            ]
+          }
+        }
+      },
+      "snapshot": "none",
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form-scripting",
+            "doc": "a"
+          },
+          "method": "activate",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "fieldObjectNumber": 9
+            },
+            {
+              "root": {
+                "type": "javascript",
+                "subtype": "JavaScript",
+                "script": "me()",
+                "next": []
+              },
+              "incomplete": false,
+              "warningFlags": 0,
+              "warnings": []
+            }
+          ]
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 1
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": {
+                "status": "applied",
+                "scripted": true,
+                "effectsResult": {
+                  "results": [
+                    {
+                      "index": 0,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 1,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 2,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 3,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 4,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 5,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 6,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 7,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    }
+                  ],
+                  "changedWidgets": [],
+                  "meta": null
+                },
+                "uiEffects": [],
+                "diagnostics": []
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "forms.list",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "forms.applyEffects",
+              "args": [
+                [
+                  {
+                    "kind": "setValue",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "fieldObjectNumber": 9
+                    },
+                    "value": {
+                      "type": "text",
+                      "value": "mine"
+                    }
+                  }
+                ]
+              ]
+            }
+          ],
+          "callbacks": [
+            {
+              "fn": "sandbox.factory",
+              "args": [
+                0
+              ]
+            },
+            {
+              "fn": "sandbox.run",
+              "args": [
+                0,
+                "me()",
+                {
+                  "document": {
+                    "id": "a",
+                    "fileName": "a",
+                    "pageCount": 2,
+                    "pageNumber": 0
+                  },
+                  "identity": {
+                    "name": "",
+                    "loginName": "",
+                    "corporation": "",
+                    "email": ""
+                  },
+                  "environment": {
+                    "nowMs": 0,
+                    "utcOffsetMinutes": 0,
+                    "randomSeed": 3669834966
+                  },
+                  "fields": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 9
+                      },
+                      "name": "self",
+                      "family": "text",
+                      "value": "old",
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false
+                    }
+                  ],
+                  "event": {
+                    "kind": "widget-activate",
+                    "target": {
+                      "kind": "objectNumber",
+                      "fieldObjectNumber": 9
+                    },
+                    "source": {
+                      "kind": "objectNumber",
+                      "fieldObjectNumber": 9
+                    },
+                    "value": "old"
+                  }
+                },
+                {
+                  "maxExecutionMs": 50,
+                  "maxMemoryBytes": 16777216,
+                  "maxStackBytes": 524288,
+                  "maxEffects": 256,
+                  "maxOutputBytes": 1048576
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 2
+          }
+        }
+      ]
+    },
+    {
+      "name": "recalculate-keeps-a-boot-reset",
+      "covers": "recalculate() proposes nothing, so a boot script's reset of the anchor field survives as a reset effect.",
+      "plugins": [
+        {
+          "factory": "form-scripting",
+          "config": {
+            "sandbox": {
+              "builds": [
+                {
+                  "boot": [
+                    {
+                      "output": {
+                        "formEffects": [
+                          {
+                            "kind": "reset",
+                            "refs": [
+                              {
+                                "kind": "objectNumber",
+                                "fieldObjectNumber": 4
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "pageObjectNumber": 2,
+                "label": null,
+                "size": {
+                  "width": 400,
+                  "height": 500
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 410,
+                    "top": 520
+                  },
+                  "crop": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 410,
+                    "top": 520
+                  }
+                }
+              }
+            ],
+            "security": {
+              "allows": "*"
+            },
+            "responses": [
+              {
+                "path": "forms.list",
+                "value": {
+                  "formKind": "acroform",
+                  "needsAppearances": false,
+                  "fields": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 4
+                      },
+                      "fieldObjectNumber": 4,
+                      "name": "total",
+                      "family": "text",
+                      "origin": "acroform",
+                      "flags": {
+                        "readOnly": false,
+                        "required": false,
+                        "noExport": false,
+                        "raw": 0
+                      },
+                      "alternateName": null,
+                      "mappingName": null,
+                      "widgets": [
+                        {
+                          "annotObjectNumber": 104,
+                          "pageObjectNumber": 1
+                        }
+                      ],
+                      "valueEntry": {
+                        "kind": "scalar",
+                        "value": "changed"
+                      },
+                      "defaultValueEntry": {
+                        "kind": "scalar",
+                        "value": "dflt"
+                      },
+                      "value": "changed",
+                      "defaultValue": "",
+                      "maxLength": null,
+                      "multiline": false,
+                      "password": false,
+                      "comb": false
+                    }
+                  ],
+                  "calculationOrder": [
+                    {
+                      "kind": "objectNumber",
+                      "fieldObjectNumber": 4
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "actions.read",
+                "value": {
+                  "nameTreeScripts": [
+                    {
+                      "name": "lib0",
+                      "action": {
+                        "root": {
+                          "type": "javascript",
+                          "subtype": "JavaScript",
+                          "script": "var lib = 1;",
+                          "next": []
+                        },
+                        "incomplete": false,
+                        "warningFlags": 0,
+                        "warnings": []
+                      }
+                    }
+                  ],
+                  "openAction": null,
+                  "openDestination": null
+                }
+              },
+              {
+                "path": "forms.applyEffects",
+                "value": {
+                  "results": [
+                    {
+                      "index": 0,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 1,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 2,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 3,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 4,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 5,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 6,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 7,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    }
+                  ],
+                  "changedWidgets": [],
+                  "meta": null
+                }
+              }
+            ],
+            "services": [
+              "actions"
+            ]
+          }
+        }
+      },
+      "snapshot": "none",
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form-scripting",
+            "doc": "a"
+          },
+          "method": "recalculate",
+          "args": []
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 1
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": {
+                "status": "applied",
+                "scripted": true,
+                "effectsResult": {
+                  "results": [
+                    {
+                      "index": 0,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 1,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 2,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 3,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 4,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 5,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 6,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 7,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    }
+                  ],
+                  "changedWidgets": [],
+                  "meta": null
+                },
+                "uiEffects": [],
+                "diagnostics": []
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "forms.list",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "actions.read",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "forms.applyEffects",
+              "args": [
+                [
+                  {
+                    "kind": "reset",
+                    "refs": [
+                      {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 4
+                      }
+                    ]
+                  }
+                ]
+              ]
+            }
+          ],
+          "callbacks": [
+            {
+              "fn": "sandbox.factory",
+              "args": [
+                0
+              ]
+            },
+            {
+              "fn": "sandbox.boot",
+              "args": [
+                0,
+                [
+                  "var lib = 1;"
+                ],
+                {
+                  "document": {
+                    "id": "a",
+                    "fileName": "a",
+                    "pageCount": 2,
+                    "pageNumber": 0
+                  },
+                  "identity": {
+                    "name": "",
+                    "loginName": "",
+                    "corporation": "",
+                    "email": ""
+                  },
+                  "environment": {
+                    "nowMs": 0,
+                    "utcOffsetMinutes": 0,
+                    "randomSeed": 3669834966
+                  },
+                  "fields": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 4
+                      },
+                      "name": "total",
+                      "family": "text",
+                      "value": "changed",
+                      "defaultValue": "dflt",
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false
+                    }
+                  ],
+                  "event": {
+                    "kind": "name-tree-boot"
                   }
                 },
                 {
@@ -14255,7 +15844,7 @@
     },
     {
       "name": "keystroke-empty-values",
-      "covers": "An empty field's old value and a null proposal both reach the keystroke script as ''; the field's page is its first placed widget's index in the document, 0 when it has none or the page is unknown.",
+      "covers": "An empty field's old value and a null proposal both reach the keystroke script as ''; the field's page is its first placed widget's index in the document, 0 when it has none or the page is unknown; a direct widget before it is passed over.",
       "plugins": [
         {
           "factory": "form-scripting",
@@ -14403,6 +15992,59 @@
                         {
                           "annotObjectNumber": 0,
                           "pageObjectNumber": 0
+                        }
+                      ],
+                      "valueEntry": {
+                        "kind": "none"
+                      },
+                      "defaultValueEntry": {
+                        "kind": "none"
+                      },
+                      "value": "",
+                      "defaultValue": "",
+                      "maxLength": null,
+                      "multiline": false,
+                      "password": false,
+                      "comb": false,
+                      "actions": {
+                        "keystroke": {
+                          "root": {
+                            "type": "javascript",
+                            "subtype": "JavaScript",
+                            "script": "ks()",
+                            "next": []
+                          },
+                          "incomplete": false,
+                          "warningFlags": 0,
+                          "warnings": []
+                        }
+                      }
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 5
+                      },
+                      "fieldObjectNumber": 5,
+                      "name": "second",
+                      "family": "text",
+                      "origin": "acroform",
+                      "flags": {
+                        "readOnly": false,
+                        "required": false,
+                        "noExport": false,
+                        "raw": 0
+                      },
+                      "alternateName": null,
+                      "mappingName": null,
+                      "widgets": [
+                        {
+                          "annotObjectNumber": 0,
+                          "pageObjectNumber": 0
+                        },
+                        {
+                          "annotObjectNumber": 105,
+                          "pageObjectNumber": 2
                         }
                       ],
                       "valueEntry": {
@@ -14619,6 +16261,24 @@
               "value": "l"
             }
           ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form-scripting",
+            "doc": "a"
+          },
+          "method": "commit",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "fieldObjectNumber": 5
+            },
+            {
+              "type": "text",
+              "value": "s"
+            }
+          ]
         }
       ],
       "trace": [
@@ -14776,6 +16436,19 @@
                     {
                       "ref": {
                         "kind": "objectNumber",
+                        "fieldObjectNumber": 5
+                      },
+                      "name": "second",
+                      "family": "text",
+                      "value": null,
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
                         "fieldObjectNumber": 4
                       },
                       "name": "lost",
@@ -14856,6 +16529,19 @@
                         "fieldObjectNumber": 3
                       },
                       "name": "unplaced",
+                      "family": "text",
+                      "value": null,
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 5
+                      },
+                      "name": "second",
                       "family": "text",
                       "value": null,
                       "defaultValue": null,
@@ -14990,6 +16676,19 @@
                     {
                       "ref": {
                         "kind": "objectNumber",
+                        "fieldObjectNumber": 5
+                      },
+                      "name": "second",
+                      "family": "text",
+                      "value": null,
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
                         "fieldObjectNumber": 4
                       },
                       "name": "lost",
@@ -15070,6 +16769,19 @@
                         "fieldObjectNumber": 3
                       },
                       "name": "unplaced",
+                      "family": "text",
+                      "value": null,
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 5
+                      },
+                      "name": "second",
                       "family": "text",
                       "value": null,
                       "defaultValue": null,
@@ -15204,6 +16916,19 @@
                     {
                       "ref": {
                         "kind": "objectNumber",
+                        "fieldObjectNumber": 5
+                      },
+                      "name": "second",
+                      "family": "text",
+                      "value": null,
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
                         "fieldObjectNumber": 4
                       },
                       "name": "lost",
@@ -15294,6 +17019,19 @@
                     {
                       "ref": {
                         "kind": "objectNumber",
+                        "fieldObjectNumber": 5
+                      },
+                      "name": "second",
+                      "family": "text",
+                      "value": null,
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
                         "fieldObjectNumber": 4
                       },
                       "name": "lost",
@@ -15341,6 +17079,246 @@
           },
           "outcome": {
             "promise": 4
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 5,
+              "resolved": {
+                "status": "unchanged",
+                "scripted": true,
+                "effectsResult": null,
+                "uiEffects": [],
+                "diagnostics": []
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "forms.list",
+              "args": []
+            }
+          ],
+          "callbacks": [
+            {
+              "fn": "sandbox.run",
+              "args": [
+                0,
+                "ks()",
+                {
+                  "document": {
+                    "id": "a",
+                    "fileName": "a",
+                    "pageCount": 2,
+                    "pageNumber": 1
+                  },
+                  "identity": {
+                    "name": "",
+                    "loginName": "",
+                    "corporation": "",
+                    "email": ""
+                  },
+                  "environment": {
+                    "nowMs": 0,
+                    "utcOffsetMinutes": 0,
+                    "randomSeed": 3703390204
+                  },
+                  "fields": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 2
+                      },
+                      "name": "code",
+                      "family": "text",
+                      "value": null,
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 3
+                      },
+                      "name": "unplaced",
+                      "family": "text",
+                      "value": null,
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 5
+                      },
+                      "name": "second",
+                      "family": "text",
+                      "value": null,
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 4
+                      },
+                      "name": "lost",
+                      "family": "text",
+                      "value": null,
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false
+                    }
+                  ],
+                  "event": {
+                    "kind": "field-keystroke",
+                    "target": {
+                      "kind": "objectNumber",
+                      "fieldObjectNumber": 5
+                    },
+                    "source": {
+                      "kind": "objectNumber",
+                      "fieldObjectNumber": 5
+                    },
+                    "value": "",
+                    "change": "s",
+                    "selStart": 0,
+                    "selEnd": 0,
+                    "willCommit": false
+                  }
+                },
+                {
+                  "maxExecutionMs": 50,
+                  "maxMemoryBytes": 16777216,
+                  "maxStackBytes": 524288,
+                  "maxEffects": 256,
+                  "maxOutputBytes": 1048576
+                }
+              ]
+            },
+            {
+              "fn": "sandbox.run",
+              "args": [
+                0,
+                "ks()",
+                {
+                  "document": {
+                    "id": "a",
+                    "fileName": "a",
+                    "pageCount": 2,
+                    "pageNumber": 1
+                  },
+                  "identity": {
+                    "name": "",
+                    "loginName": "",
+                    "corporation": "",
+                    "email": ""
+                  },
+                  "environment": {
+                    "nowMs": 0,
+                    "utcOffsetMinutes": 0,
+                    "randomSeed": 3720167823
+                  },
+                  "fields": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 2
+                      },
+                      "name": "code",
+                      "family": "text",
+                      "value": null,
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 3
+                      },
+                      "name": "unplaced",
+                      "family": "text",
+                      "value": null,
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 5
+                      },
+                      "name": "second",
+                      "family": "text",
+                      "value": null,
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 4
+                      },
+                      "name": "lost",
+                      "family": "text",
+                      "value": null,
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false
+                    }
+                  ],
+                  "event": {
+                    "kind": "field-keystroke",
+                    "target": {
+                      "kind": "objectNumber",
+                      "fieldObjectNumber": 5
+                    },
+                    "source": {
+                      "kind": "objectNumber",
+                      "fieldObjectNumber": 5
+                    },
+                    "value": "",
+                    "change": "",
+                    "selStart": 0,
+                    "selEnd": 0,
+                    "willCommit": true
+                  }
+                },
+                {
+                  "maxExecutionMs": 50,
+                  "maxMemoryBytes": 16777216,
+                  "maxStackBytes": 524288,
+                  "maxEffects": 256,
+                  "maxOutputBytes": 1048576
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 5
           }
         }
       ]
@@ -23208,7 +25186,7 @@
     },
     {
       "name": "effects-canonicalise",
-      "covers": "Script effects fold into the overlay: a reset back to a default becomes one leading reset effect, a later setValue un-resets, display changes become setDisplay, appearance text keeps the last per field in first-set order, and effects on fields the snapshot lacks are dropped.",
+      "covers": "Script effects fold into the overlay: a reset back to a default becomes one leading reset effect, a later setValue un-resets (even back to the default), display changes become setDisplay, appearance text keeps the last per field in first-set order, and effects on fields the snapshot lacks are dropped.",
       "plugins": [
         {
           "factory": "form-scripting",
@@ -23297,6 +25275,26 @@
                             "value": {
                               "type": "text",
                               "value": "ghost"
+                            }
+                          },
+                          {
+                            "kind": "reset",
+                            "refs": [
+                              {
+                                "kind": "objectNumber",
+                                "fieldObjectNumber": 7
+                              }
+                            ]
+                          },
+                          {
+                            "kind": "setValue",
+                            "ref": {
+                              "kind": "objectNumber",
+                              "fieldObjectNumber": 7
+                            },
+                            "value": {
+                              "type": "text",
+                              "value": "dflt"
                             }
                           }
                         ]
@@ -23568,6 +25566,44 @@
                         "value": "dflt"
                       },
                       "value": "dflt",
+                      "defaultValue": "",
+                      "maxLength": null,
+                      "multiline": false,
+                      "password": false,
+                      "comb": false
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 7
+                      },
+                      "fieldObjectNumber": 7,
+                      "name": "e",
+                      "family": "text",
+                      "origin": "acroform",
+                      "flags": {
+                        "readOnly": false,
+                        "required": false,
+                        "noExport": false,
+                        "raw": 0
+                      },
+                      "alternateName": null,
+                      "mappingName": null,
+                      "widgets": [
+                        {
+                          "annotObjectNumber": 107,
+                          "pageObjectNumber": 1
+                        }
+                      ],
+                      "valueEntry": {
+                        "kind": "scalar",
+                        "value": "changed"
+                      },
+                      "defaultValueEntry": {
+                        "kind": "scalar",
+                        "value": "dflt"
+                      },
+                      "value": "changed",
                       "defaultValue": "",
                       "maxLength": null,
                       "multiline": false,
@@ -23860,6 +25896,17 @@
                     "display": "hidden"
                   },
                   {
+                    "kind": "setValue",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "fieldObjectNumber": 7
+                    },
+                    "value": {
+                      "type": "text",
+                      "value": "dflt"
+                    }
+                  },
+                  {
                     "kind": "setAppearanceText",
                     "ref": {
                       "kind": "objectNumber",
@@ -23970,6 +26017,19 @@
                       "name": "d",
                       "family": "text",
                       "value": "dflt",
+                      "defaultValue": "dflt",
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 7
+                      },
+                      "name": "e",
+                      "family": "text",
+                      "value": "changed",
                       "defaultValue": "dflt",
                       "display": "visible",
                       "readOnly": false,
@@ -28679,6 +30739,752 @@
           },
           "outcome": {
             "promise": 3
+          }
+        }
+      ]
+    },
+    {
+      "name": "the-time-budget-shrinks",
+      "covers": "A run that took 20 of the 50 budgeted milliseconds leaves the next run 30.",
+      "plugins": [
+        {
+          "factory": "form-scripting",
+          "config": {
+            "sandbox": {
+              "builds": [
+                {
+                  "boot": [
+                    {
+                      "dispose": true
+                    }
+                  ]
+                },
+                {
+                  "defer": "rebuild"
+                }
+              ]
+            },
+            "budget": {
+              "maxExecutionMs": 50,
+              "maxMemoryBytes": 1024,
+              "maxStackBytes": 512,
+              "maxEffects": 2,
+              "maxOutputBytes": 100000
+            }
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "pageObjectNumber": 1,
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "pageObjectNumber": 2,
+                "label": null,
+                "size": {
+                  "width": 400,
+                  "height": 500
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 410,
+                    "top": 520
+                  },
+                  "crop": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 410,
+                    "top": 520
+                  }
+                }
+              }
+            ],
+            "security": {
+              "allows": "*"
+            },
+            "responses": [
+              {
+                "path": "forms.list",
+                "value": {
+                  "formKind": "acroform",
+                  "needsAppearances": false,
+                  "fields": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 2
+                      },
+                      "fieldObjectNumber": 2,
+                      "name": "code",
+                      "family": "text",
+                      "origin": "acroform",
+                      "flags": {
+                        "readOnly": false,
+                        "required": false,
+                        "noExport": false,
+                        "raw": 0
+                      },
+                      "alternateName": null,
+                      "mappingName": null,
+                      "widgets": [
+                        {
+                          "annotObjectNumber": 102,
+                          "pageObjectNumber": 1
+                        }
+                      ],
+                      "valueEntry": {
+                        "kind": "scalar",
+                        "value": "old"
+                      },
+                      "defaultValueEntry": {
+                        "kind": "none"
+                      },
+                      "value": "old",
+                      "defaultValue": "",
+                      "maxLength": null,
+                      "multiline": false,
+                      "password": false,
+                      "comb": false,
+                      "actions": {
+                        "keystroke": {
+                          "root": {
+                            "type": "javascript",
+                            "subtype": "JavaScript",
+                            "script": "ks()",
+                            "next": []
+                          },
+                          "incomplete": false,
+                          "warningFlags": 0,
+                          "warnings": []
+                        }
+                      }
+                    }
+                  ],
+                  "calculationOrder": []
+                }
+              },
+              {
+                "path": "actions.read",
+                "value": {
+                  "nameTreeScripts": [
+                    {
+                      "name": "lib0",
+                      "action": {
+                        "root": {
+                          "type": "javascript",
+                          "subtype": "JavaScript",
+                          "script": "var lib = 1;",
+                          "next": []
+                        },
+                        "incomplete": false,
+                        "warningFlags": 0,
+                        "warnings": []
+                      }
+                    }
+                  ],
+                  "openAction": null,
+                  "openDestination": null
+                }
+              },
+              {
+                "path": "forms.applyEffects",
+                "value": {
+                  "results": [
+                    {
+                      "index": 0,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 1,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 2,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 3,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 4,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 5,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 6,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 7,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    }
+                  ],
+                  "changedWidgets": [],
+                  "meta": null
+                }
+              }
+            ],
+            "services": [
+              "actions"
+            ]
+          }
+        }
+      },
+      "snapshot": "none",
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form-scripting",
+            "doc": "a"
+          },
+          "method": "commit",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "fieldObjectNumber": 2
+            },
+            {
+              "type": "text",
+              "value": "slow"
+            }
+          ]
+        },
+        {
+          "op": "advance",
+          "ms": 20
+        },
+        {
+          "op": "settle",
+          "label": "rebuild"
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 1
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "forms.list",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "actions.read",
+              "args": []
+            }
+          ],
+          "callbacks": [
+            {
+              "fn": "sandbox.factory",
+              "args": [
+                0
+              ]
+            },
+            {
+              "fn": "sandbox.boot",
+              "args": [
+                0,
+                [
+                  "var lib = 1;"
+                ],
+                {
+                  "document": {
+                    "id": "a",
+                    "fileName": "a",
+                    "pageCount": 2,
+                    "pageNumber": 0
+                  },
+                  "identity": {
+                    "name": "",
+                    "loginName": "",
+                    "corporation": "",
+                    "email": ""
+                  },
+                  "environment": {
+                    "nowMs": 0,
+                    "utcOffsetMinutes": 0,
+                    "randomSeed": 3669834966
+                  },
+                  "fields": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 2
+                      },
+                      "name": "code",
+                      "family": "text",
+                      "value": "old",
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false
+                    }
+                  ],
+                  "event": {
+                    "kind": "name-tree-boot"
+                  }
+                },
+                {
+                  "maxExecutionMs": 50,
+                  "maxMemoryBytes": 1024,
+                  "maxStackBytes": 512,
+                  "maxEffects": 2,
+                  "maxOutputBytes": 100000
+                }
+              ]
+            },
+            {
+              "fn": "sandbox.factory",
+              "args": [
+                1
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 2
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": {
+                "status": "applied",
+                "scripted": true,
+                "effectsResult": {
+                  "results": [
+                    {
+                      "index": 0,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 1,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 2,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 3,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 4,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 5,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 6,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 7,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    }
+                  ],
+                  "changedWidgets": [],
+                  "meta": null
+                },
+                "uiEffects": [],
+                "diagnostics": []
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "forms.applyEffects",
+              "args": [
+                [
+                  {
+                    "kind": "setValue",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "fieldObjectNumber": 2
+                    },
+                    "value": {
+                      "type": "text",
+                      "value": ""
+                    }
+                  }
+                ]
+              ]
+            }
+          ],
+          "callbacks": [
+            {
+              "fn": "sandbox.boot",
+              "args": [
+                1,
+                [
+                  "var lib = 1;"
+                ],
+                {
+                  "document": {
+                    "id": "a",
+                    "fileName": "a",
+                    "pageCount": 2,
+                    "pageNumber": 0
+                  },
+                  "identity": {
+                    "name": "",
+                    "loginName": "",
+                    "corporation": "",
+                    "email": ""
+                  },
+                  "environment": {
+                    "nowMs": 20,
+                    "utcOffsetMinutes": 0,
+                    "randomSeed": 3686612585
+                  },
+                  "fields": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 2
+                      },
+                      "name": "code",
+                      "family": "text",
+                      "value": "old",
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false
+                    }
+                  ],
+                  "event": {
+                    "kind": "name-tree-boot"
+                  }
+                },
+                {
+                  "maxExecutionMs": 50,
+                  "maxMemoryBytes": 1024,
+                  "maxStackBytes": 512,
+                  "maxEffects": 2,
+                  "maxOutputBytes": 100000
+                }
+              ]
+            },
+            {
+              "fn": "sandbox.run",
+              "args": [
+                1,
+                "ks()",
+                {
+                  "document": {
+                    "id": "a",
+                    "fileName": "a",
+                    "pageCount": 2,
+                    "pageNumber": 0
+                  },
+                  "identity": {
+                    "name": "",
+                    "loginName": "",
+                    "corporation": "",
+                    "email": ""
+                  },
+                  "environment": {
+                    "nowMs": 20,
+                    "utcOffsetMinutes": 0,
+                    "randomSeed": 3636279728
+                  },
+                  "fields": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 2
+                      },
+                      "name": "code",
+                      "family": "text",
+                      "value": "old",
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false
+                    }
+                  ],
+                  "event": {
+                    "kind": "field-keystroke",
+                    "target": {
+                      "kind": "objectNumber",
+                      "fieldObjectNumber": 2
+                    },
+                    "source": {
+                      "kind": "objectNumber",
+                      "fieldObjectNumber": 2
+                    },
+                    "value": "old",
+                    "change": "slow",
+                    "selStart": 0,
+                    "selEnd": 3,
+                    "willCommit": false
+                  }
+                },
+                {
+                  "maxExecutionMs": 50,
+                  "maxMemoryBytes": 1024,
+                  "maxStackBytes": 512,
+                  "maxEffects": 2,
+                  "maxOutputBytes": 100000
+                }
+              ]
+            },
+            {
+              "fn": "sandbox.run",
+              "args": [
+                1,
+                "ks()",
+                {
+                  "document": {
+                    "id": "a",
+                    "fileName": "a",
+                    "pageCount": 2,
+                    "pageNumber": 0
+                  },
+                  "identity": {
+                    "name": "",
+                    "loginName": "",
+                    "corporation": "",
+                    "email": ""
+                  },
+                  "environment": {
+                    "nowMs": 20,
+                    "utcOffsetMinutes": 0,
+                    "randomSeed": 3653057347
+                  },
+                  "fields": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 2
+                      },
+                      "name": "code",
+                      "family": "text",
+                      "value": "old",
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false
+                    }
+                  ],
+                  "event": {
+                    "kind": "field-keystroke",
+                    "target": {
+                      "kind": "objectNumber",
+                      "fieldObjectNumber": 2
+                    },
+                    "source": {
+                      "kind": "objectNumber",
+                      "fieldObjectNumber": 2
+                    },
+                    "value": "",
+                    "change": "",
+                    "selStart": 0,
+                    "selEnd": 0,
+                    "willCommit": true
+                  }
+                },
+                {
+                  "maxExecutionMs": 30,
+                  "maxMemoryBytes": 1024,
+                  "maxStackBytes": 512,
+                  "maxEffects": 2,
+                  "maxOutputBytes": 100000
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
           }
         }
       ]
