@@ -5733,7 +5733,7 @@
     },
     {
       "name": "set-locale-unknown-warns-once",
-      "covers": "An unregistered code with no loader dispatches nothing and warns once per code.",
+      "covers": "An unregistered code with no loader dispatches nothing, warns nothing, and rejects not-found each time.",
       "plugins": [
         {
           "factory": "i18n",
@@ -18557,6 +18557,5252 @@
                     "translations": {
                       "commands": {
                         "save": "Save (he)"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "register-returns-a-remover",
+      "covers": "registerLocale returns a remover that dispatches UNREGISTER_LOCALE: the pack leaves listLocales() (a lazy loader for the code is listed again), the current locale stays but loses its pack, and a second call dispatches again and changes nothing.",
+      "plugins": [
+        {
+          "factory": "i18n",
+          "config": {
+            "locales": [
+              {
+                "code": "en",
+                "name": "English",
+                "translations": {
+                  "commands": {
+                    "zoom": {
+                      "in": "Zoom In",
+                      "out": "Zoom Out"
+                    },
+                    "save": "Save"
+                  },
+                  "zoomLevel": "Zoom Level ({level}%)",
+                  "pages": {
+                    "one": "{count} page",
+                    "other": "{count} pages"
+                  },
+                  "greeting": "Hello {name}, you have {count} {unknown}"
+                }
+              }
+            ],
+            "loaders": {
+              "he": {
+                "$fn": "load-he",
+                "resolves": {
+                  "code": "he",
+                  "name": "עברית",
+                  "dir": "rtl",
+                  "translations": {
+                    "commands": {
+                      "save": "שמור"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "i18n"
+          },
+          "method": "registerLocale",
+          "args": [
+            {
+              "code": "ar",
+              "name": "العربية",
+              "dir": "rtl",
+              "translations": {
+                "commands": {
+                  "save": "حفظ"
+                },
+                "pages": {
+                  "zero": "لا صفحات",
+                  "one": "صفحة",
+                  "two": "صفحتان",
+                  "few": "{count} صفحات",
+                  "many": "{count} صفحة",
+                  "other": "{count} صفحة"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "i18n"
+          },
+          "method": "registerLocale",
+          "args": [
+            {
+              "code": "he",
+              "name": "עברית",
+              "dir": "rtl",
+              "translations": {
+                "commands": {
+                  "save": "שמור"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "i18n"
+          },
+          "method": "setLocale",
+          "args": [
+            "ar"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "i18n"
+          },
+          "method": "getLocale",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "i18n"
+          },
+          "method": "getDirection",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "i18n"
+          },
+          "method": "getLoadingLocale",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "i18n"
+          },
+          "method": "listLocales",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "ref": 0
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "i18n"
+          },
+          "method": "getLocale",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "i18n"
+          },
+          "method": "getDirection",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "i18n"
+          },
+          "method": "getLoadingLocale",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "i18n"
+          },
+          "method": "listLocales",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "i18n"
+          },
+          "method": "t",
+          "args": [
+            "commands.save"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "ref": 1
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "i18n"
+          },
+          "method": "listLocales",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "ref": 0
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "i18n"
+          },
+          "method": "getLocale",
+          "args": []
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "en",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "i18n",
+              "action": {
+                "type": "I18N/REGISTER_LOCALE",
+                "locale": {
+                  "code": "ar",
+                  "name": "العربية",
+                  "dir": "rtl",
+                  "translations": {
+                    "commands": {
+                      "save": "حفظ"
+                    },
+                    "pages": {
+                      "zero": "لا صفحات",
+                      "one": "صفحة",
+                      "two": "صفحتان",
+                      "few": "{count} صفحات",
+                      "many": "{count} صفحة",
+                      "other": "{count} صفحة"
+                    }
+                  }
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "$ref": 0
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "en",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "ar": {
+                    "code": "ar",
+                    "name": "العربية",
+                    "dir": "rtl",
+                    "translations": {
+                      "commands": {
+                        "save": "حفظ"
+                      },
+                      "pages": {
+                        "zero": "لا صفحات",
+                        "one": "صفحة",
+                        "two": "صفحتان",
+                        "few": "{count} صفحات",
+                        "many": "{count} صفحة",
+                        "other": "{count} صفحة"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "i18n",
+              "action": {
+                "type": "I18N/REGISTER_LOCALE",
+                "locale": {
+                  "code": "he",
+                  "name": "עברית",
+                  "dir": "rtl",
+                  "translations": {
+                    "commands": {
+                      "save": "שמור"
+                    }
+                  }
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "$ref": 1
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "en",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "ar": {
+                    "code": "ar",
+                    "name": "العربية",
+                    "dir": "rtl",
+                    "translations": {
+                      "commands": {
+                        "save": "حفظ"
+                      },
+                      "pages": {
+                        "zero": "لا صفحات",
+                        "one": "صفحة",
+                        "two": "صفحتان",
+                        "few": "{count} صفحات",
+                        "many": "{count} صفحة",
+                        "other": "{count} صفحة"
+                      }
+                    }
+                  },
+                  "he": {
+                    "code": "he",
+                    "name": "עברית",
+                    "dir": "rtl",
+                    "translations": {
+                      "commands": {
+                        "save": "שמור"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "i18n",
+              "action": {
+                "type": "I18N/SET_LOCALE",
+                "locale": "ar"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "ar",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "ar": {
+                    "code": "ar",
+                    "name": "العربية",
+                    "dir": "rtl",
+                    "translations": {
+                      "commands": {
+                        "save": "حفظ"
+                      },
+                      "pages": {
+                        "zero": "لا صفحات",
+                        "one": "صفحة",
+                        "two": "صفحتان",
+                        "few": "{count} صفحات",
+                        "many": "{count} صفحة",
+                        "other": "{count} صفحة"
+                      }
+                    }
+                  },
+                  "he": {
+                    "code": "he",
+                    "name": "עברית",
+                    "dir": "rtl",
+                    "translations": {
+                      "commands": {
+                        "save": "שמור"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": "ar"
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "ar",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "ar": {
+                    "code": "ar",
+                    "name": "العربية",
+                    "dir": "rtl",
+                    "translations": {
+                      "commands": {
+                        "save": "حفظ"
+                      },
+                      "pages": {
+                        "zero": "لا صفحات",
+                        "one": "صفحة",
+                        "two": "صفحتان",
+                        "few": "{count} صفحات",
+                        "many": "{count} صفحة",
+                        "other": "{count} صفحة"
+                      }
+                    }
+                  },
+                  "he": {
+                    "code": "he",
+                    "name": "עברית",
+                    "dir": "rtl",
+                    "translations": {
+                      "commands": {
+                        "save": "שמור"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": "rtl"
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "ar",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "ar": {
+                    "code": "ar",
+                    "name": "العربية",
+                    "dir": "rtl",
+                    "translations": {
+                      "commands": {
+                        "save": "حفظ"
+                      },
+                      "pages": {
+                        "zero": "لا صفحات",
+                        "one": "صفحة",
+                        "two": "صفحتان",
+                        "few": "{count} صفحات",
+                        "many": "{count} صفحة",
+                        "other": "{count} صفحة"
+                      }
+                    }
+                  },
+                  "he": {
+                    "code": "he",
+                    "name": "עברית",
+                    "dir": "rtl",
+                    "translations": {
+                      "commands": {
+                        "save": "שמור"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": null
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "ar",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "ar": {
+                    "code": "ar",
+                    "name": "العربية",
+                    "dir": "rtl",
+                    "translations": {
+                      "commands": {
+                        "save": "حفظ"
+                      },
+                      "pages": {
+                        "zero": "لا صفحات",
+                        "one": "صفحة",
+                        "two": "صفحتان",
+                        "few": "{count} صفحات",
+                        "many": "{count} صفحة",
+                        "other": "{count} صفحة"
+                      }
+                    }
+                  },
+                  "he": {
+                    "code": "he",
+                    "name": "עברית",
+                    "dir": "rtl",
+                    "translations": {
+                      "commands": {
+                        "save": "שמור"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": [
+              {
+                "code": "en",
+                "name": "English",
+                "dir": "ltr",
+                "loaded": true
+              },
+              {
+                "code": "ar",
+                "name": "العربية",
+                "dir": "rtl",
+                "loaded": true
+              },
+              {
+                "code": "he",
+                "name": "עברית",
+                "dir": "rtl",
+                "loaded": true
+              }
+            ]
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "ar",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "ar": {
+                    "code": "ar",
+                    "name": "العربية",
+                    "dir": "rtl",
+                    "translations": {
+                      "commands": {
+                        "save": "حفظ"
+                      },
+                      "pages": {
+                        "zero": "لا صفحات",
+                        "one": "صفحة",
+                        "two": "صفحتان",
+                        "few": "{count} صفحات",
+                        "many": "{count} صفحة",
+                        "other": "{count} صفحة"
+                      }
+                    }
+                  },
+                  "he": {
+                    "code": "he",
+                    "name": "עברית",
+                    "dir": "rtl",
+                    "translations": {
+                      "commands": {
+                        "save": "שמור"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "i18n",
+              "action": {
+                "type": "I18N/UNREGISTER_LOCALE",
+                "locale": "ar"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "ar",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "he": {
+                    "code": "he",
+                    "name": "עברית",
+                    "dir": "rtl",
+                    "translations": {
+                      "commands": {
+                        "save": "שמור"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": "ar"
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "ar",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "he": {
+                    "code": "he",
+                    "name": "עברית",
+                    "dir": "rtl",
+                    "translations": {
+                      "commands": {
+                        "save": "שמור"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": "ltr"
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "ar",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "he": {
+                    "code": "he",
+                    "name": "עברית",
+                    "dir": "rtl",
+                    "translations": {
+                      "commands": {
+                        "save": "שמור"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": null
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "ar",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "he": {
+                    "code": "he",
+                    "name": "עברית",
+                    "dir": "rtl",
+                    "translations": {
+                      "commands": {
+                        "save": "שמור"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": [
+              {
+                "code": "en",
+                "name": "English",
+                "dir": "ltr",
+                "loaded": true
+              },
+              {
+                "code": "he",
+                "name": "עברית",
+                "dir": "rtl",
+                "loaded": true
+              }
+            ]
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "ar",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "he": {
+                    "code": "he",
+                    "name": "עברית",
+                    "dir": "rtl",
+                    "translations": {
+                      "commands": {
+                        "save": "שמור"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": "Save"
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "ar",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "he": {
+                    "code": "he",
+                    "name": "עברית",
+                    "dir": "rtl",
+                    "translations": {
+                      "commands": {
+                        "save": "שמור"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "i18n",
+              "action": {
+                "type": "I18N/UNREGISTER_LOCALE",
+                "locale": "he"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "ar",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": [
+              {
+                "code": "en",
+                "name": "English",
+                "dir": "ltr",
+                "loaded": true
+              },
+              {
+                "code": "he",
+                "name": "he",
+                "dir": "ltr",
+                "loaded": false
+              }
+            ]
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "ar",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "i18n",
+              "action": {
+                "type": "I18N/UNREGISTER_LOCALE",
+                "locale": "ar"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "ar",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": "ar"
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "ar",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "add-translations-and-has-key",
+      "covers": "addTranslations merges into a registered pack (later keys win, branches merge); an unknown code, or a lazy one not yet loaded, throws not-found. hasKey is true for a key in the current or fallback pack, never warns, and misses a branch without a count.",
+      "plugins": [
+        {
+          "factory": "i18n",
+          "config": {
+            "locales": [
+              {
+                "code": "en",
+                "name": "English",
+                "translations": {
+                  "commands": {
+                    "zoom": {
+                      "in": "Zoom In",
+                      "out": "Zoom Out"
+                    },
+                    "save": "Save"
+                  },
+                  "zoomLevel": "Zoom Level ({level}%)",
+                  "pages": {
+                    "one": "{count} page",
+                    "other": "{count} pages"
+                  },
+                  "greeting": "Hello {name}, you have {count} {unknown}"
+                }
+              },
+              {
+                "code": "es",
+                "name": "Español",
+                "translations": {
+                  "commands": {
+                    "save": "Guardar"
+                  },
+                  "pages": {
+                    "one": "{count} página",
+                    "other": "{count} páginas"
+                  }
+                }
+              }
+            ],
+            "locale": "es",
+            "loaders": {
+              "he": {
+                "$fn": "load-he",
+                "resolves": {
+                  "code": "he",
+                  "name": "עברית",
+                  "dir": "rtl",
+                  "translations": {
+                    "commands": {
+                      "save": "שמור"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "i18n"
+          },
+          "method": "hasKey",
+          "args": [
+            "commands.save"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "i18n"
+          },
+          "method": "hasKey",
+          "args": [
+            "commands.zoom.in"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "i18n"
+          },
+          "method": "hasKey",
+          "args": [
+            "commands.fit"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "i18n"
+          },
+          "method": "hasKey",
+          "args": [
+            "pages"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "i18n"
+          },
+          "method": "addTranslations",
+          "args": [
+            "es",
+            {
+              "commands": {
+                "fit": "Ajustar",
+                "zoom": {
+                  "in": "Acercar"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "i18n"
+          },
+          "method": "t",
+          "args": [
+            "commands.fit"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "i18n"
+          },
+          "method": "t",
+          "args": [
+            "commands.zoom.in"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "i18n"
+          },
+          "method": "t",
+          "args": [
+            "commands.zoom.out"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "i18n"
+          },
+          "method": "hasKey",
+          "args": [
+            "commands.fit"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "i18n"
+          },
+          "method": "addTranslations",
+          "args": [
+            "en",
+            {
+              "commands": "flat"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "i18n"
+          },
+          "method": "t",
+          "args": [
+            "commands.zoom.out"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "i18n"
+          },
+          "method": "addTranslations",
+          "args": [
+            "xx",
+            {
+              "a": "b"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "i18n"
+          },
+          "method": "addTranslations",
+          "args": [
+            "he",
+            {
+              "a": "b"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "i18n"
+          },
+          "method": "listLocales",
+          "args": []
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "es",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "es": {
+                    "code": "es",
+                    "name": "Español",
+                    "translations": {
+                      "commands": {
+                        "save": "Guardar"
+                      },
+                      "pages": {
+                        "one": "{count} página",
+                        "other": "{count} páginas"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": true
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "es",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "es": {
+                    "code": "es",
+                    "name": "Español",
+                    "translations": {
+                      "commands": {
+                        "save": "Guardar"
+                      },
+                      "pages": {
+                        "one": "{count} página",
+                        "other": "{count} páginas"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": true
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "es",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "es": {
+                    "code": "es",
+                    "name": "Español",
+                    "translations": {
+                      "commands": {
+                        "save": "Guardar"
+                      },
+                      "pages": {
+                        "one": "{count} página",
+                        "other": "{count} páginas"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": false
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "es",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "es": {
+                    "code": "es",
+                    "name": "Español",
+                    "translations": {
+                      "commands": {
+                        "save": "Guardar"
+                      },
+                      "pages": {
+                        "one": "{count} página",
+                        "other": "{count} páginas"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": false
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "es",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "es": {
+                    "code": "es",
+                    "name": "Español",
+                    "translations": {
+                      "commands": {
+                        "save": "Guardar"
+                      },
+                      "pages": {
+                        "one": "{count} página",
+                        "other": "{count} páginas"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "i18n",
+              "action": {
+                "type": "I18N/ADD_TRANSLATIONS",
+                "locale": "es",
+                "translations": {
+                  "commands": {
+                    "fit": "Ajustar",
+                    "zoom": {
+                      "in": "Acercar"
+                    }
+                  }
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "es",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "es": {
+                    "code": "es",
+                    "name": "Español",
+                    "translations": {
+                      "commands": {
+                        "save": "Guardar",
+                        "fit": "Ajustar",
+                        "zoom": {
+                          "in": "Acercar"
+                        }
+                      },
+                      "pages": {
+                        "one": "{count} página",
+                        "other": "{count} páginas"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": "Ajustar"
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "es",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "es": {
+                    "code": "es",
+                    "name": "Español",
+                    "translations": {
+                      "commands": {
+                        "save": "Guardar",
+                        "fit": "Ajustar",
+                        "zoom": {
+                          "in": "Acercar"
+                        }
+                      },
+                      "pages": {
+                        "one": "{count} página",
+                        "other": "{count} páginas"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": "Acercar"
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "es",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "es": {
+                    "code": "es",
+                    "name": "Español",
+                    "translations": {
+                      "commands": {
+                        "save": "Guardar",
+                        "fit": "Ajustar",
+                        "zoom": {
+                          "in": "Acercar"
+                        }
+                      },
+                      "pages": {
+                        "one": "{count} página",
+                        "other": "{count} páginas"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": "Zoom Out"
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "es",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "es": {
+                    "code": "es",
+                    "name": "Español",
+                    "translations": {
+                      "commands": {
+                        "save": "Guardar",
+                        "fit": "Ajustar",
+                        "zoom": {
+                          "in": "Acercar"
+                        }
+                      },
+                      "pages": {
+                        "one": "{count} página",
+                        "other": "{count} páginas"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": true
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "es",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "es": {
+                    "code": "es",
+                    "name": "Español",
+                    "translations": {
+                      "commands": {
+                        "save": "Guardar",
+                        "fit": "Ajustar",
+                        "zoom": {
+                          "in": "Acercar"
+                        }
+                      },
+                      "pages": {
+                        "one": "{count} página",
+                        "other": "{count} páginas"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "i18n",
+              "action": {
+                "type": "I18N/ADD_TRANSLATIONS",
+                "locale": "en",
+                "translations": {
+                  "commands": "flat"
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "es",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": "flat",
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "es": {
+                    "code": "es",
+                    "name": "Español",
+                    "translations": {
+                      "commands": {
+                        "save": "Guardar",
+                        "fit": "Ajustar",
+                        "zoom": {
+                          "in": "Acercar"
+                        }
+                      },
+                      "pages": {
+                        "one": "{count} página",
+                        "other": "{count} páginas"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "console.warn",
+              "args": [
+                "[i18n] missing translation \"commands.zoom.out\" (locale: es)"
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": "commands.zoom.out"
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "es",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": "flat",
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "es": {
+                    "code": "es",
+                    "name": "Español",
+                    "translations": {
+                      "commands": {
+                        "save": "Guardar",
+                        "fit": "Ajustar",
+                        "zoom": {
+                          "in": "Acercar"
+                        }
+                      },
+                      "pages": {
+                        "one": "{count} página",
+                        "other": "{count} páginas"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "threw": {
+              "$error": {
+                "name": "PluginError",
+                "message": "unknown locale 'xx'",
+                "code": "not-found",
+                "capability": "i18n"
+              }
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "es",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": "flat",
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "es": {
+                    "code": "es",
+                    "name": "Español",
+                    "translations": {
+                      "commands": {
+                        "save": "Guardar",
+                        "fit": "Ajustar",
+                        "zoom": {
+                          "in": "Acercar"
+                        }
+                      },
+                      "pages": {
+                        "one": "{count} página",
+                        "other": "{count} páginas"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "threw": {
+              "$error": {
+                "name": "PluginError",
+                "message": "unknown locale 'he'",
+                "code": "not-found",
+                "capability": "i18n"
+              }
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "es",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": "flat",
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "es": {
+                    "code": "es",
+                    "name": "Español",
+                    "translations": {
+                      "commands": {
+                        "save": "Guardar",
+                        "fit": "Ajustar",
+                        "zoom": {
+                          "in": "Acercar"
+                        }
+                      },
+                      "pages": {
+                        "one": "{count} página",
+                        "other": "{count} páginas"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": [
+              {
+                "code": "en",
+                "name": "English",
+                "dir": "ltr",
+                "loaded": true
+              },
+              {
+                "code": "es",
+                "name": "Español",
+                "dir": "ltr",
+                "loaded": true
+              },
+              {
+                "code": "he",
+                "name": "he",
+                "dir": "ltr",
+                "loaded": false
+              }
+            ]
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "es",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": "flat",
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "es": {
+                    "code": "es",
+                    "name": "Español",
+                    "translations": {
+                      "commands": {
+                        "save": "Guardar",
+                        "fit": "Ajustar",
+                        "zoom": {
+                          "in": "Acercar"
+                        }
+                      },
+                      "pages": {
+                        "one": "{count} página",
+                        "other": "{count} páginas"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "locale-events",
+      "covers": "onLocaleChanged fires once the current locale changed and is usable (a registered switch at once, a lazy one when its pack lands), never for the same locale. onLocaleLoadFailed carries the failure as PluginErrorInfo, and setLocale rejects operation-failed with the same info as details. A superseded lazy switch rejects operation-cancelled, an unknown code not-found. After unsubscribing, nothing fires.",
+      "plugins": [
+        {
+          "factory": "i18n",
+          "config": {
+            "locales": [
+              {
+                "code": "en",
+                "name": "English",
+                "translations": {
+                  "commands": {
+                    "zoom": {
+                      "in": "Zoom In",
+                      "out": "Zoom Out"
+                    },
+                    "save": "Save"
+                  },
+                  "zoomLevel": "Zoom Level ({level}%)",
+                  "pages": {
+                    "one": "{count} page",
+                    "other": "{count} pages"
+                  },
+                  "greeting": "Hello {name}, you have {count} {unknown}"
+                }
+              },
+              {
+                "code": "es",
+                "name": "Español",
+                "translations": {
+                  "commands": {
+                    "save": "Guardar"
+                  },
+                  "pages": {
+                    "one": "{count} página",
+                    "other": "{count} páginas"
+                  }
+                }
+              }
+            ],
+            "loaders": {
+              "ar": {
+                "$fn": "load-ar",
+                "defer": "ar"
+              },
+              "he": {
+                "$fn": "load-he",
+                "seq": [
+                  {
+                    "defer": "he"
+                  },
+                  {
+                    "defer": "he-2"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": {
+            "token": "i18n"
+          },
+          "method": "onLocaleChanged",
+          "args": [
+            {
+              "$fn": "changed",
+              "returns": null
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "i18n"
+          },
+          "method": "onLocaleLoadFailed",
+          "args": [
+            {
+              "$fn": "failed",
+              "returns": null
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "i18n"
+          },
+          "method": "setLocale",
+          "args": [
+            "es"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "i18n"
+          },
+          "method": "setLocale",
+          "args": [
+            "es"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "i18n"
+          },
+          "method": "setLocale",
+          "args": [
+            "ar"
+          ]
+        },
+        {
+          "op": "settle",
+          "label": "ar",
+          "value": {
+            "code": "ar",
+            "name": "العربية",
+            "dir": "rtl",
+            "translations": {
+              "commands": {
+                "save": "حفظ"
+              },
+              "pages": {
+                "zero": "لا صفحات",
+                "one": "صفحة",
+                "two": "صفحتان",
+                "few": "{count} صفحات",
+                "many": "{count} صفحة",
+                "other": "{count} صفحة"
+              }
+            }
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "i18n"
+          },
+          "method": "setLocale",
+          "args": [
+            "he"
+          ]
+        },
+        {
+          "op": "settle",
+          "label": "he",
+          "error": {
+            "name": "Error",
+            "message": "offline"
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "i18n"
+          },
+          "method": "setLocale",
+          "args": [
+            "he"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "i18n"
+          },
+          "method": "setLocale",
+          "args": [
+            "en"
+          ]
+        },
+        {
+          "op": "settle",
+          "label": "he-2",
+          "value": {
+            "code": "he",
+            "name": "עברית",
+            "dir": "rtl",
+            "translations": {
+              "commands": {
+                "save": "שמור"
+              }
+            }
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "i18n"
+          },
+          "method": "setLocale",
+          "args": [
+            "xx"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "ref": 0
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "ref": 1
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "i18n"
+          },
+          "method": "setLocale",
+          "args": [
+            "es"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "i18n"
+          },
+          "method": "getLocale",
+          "args": []
+        }
+      ],
+      "trace": [
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "created",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "$ref": 0
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "en",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "es": {
+                    "code": "es",
+                    "name": "Español",
+                    "translations": {
+                      "commands": {
+                        "save": "Guardar"
+                      },
+                      "pages": {
+                        "one": "{count} página",
+                        "other": "{count} páginas"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "created",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "$ref": 1
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "en",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "es": {
+                    "code": "es",
+                    "name": "Español",
+                    "translations": {
+                      "commands": {
+                        "save": "Guardar"
+                      },
+                      "pages": {
+                        "one": "{count} página",
+                        "other": "{count} páginas"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "en",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "es": {
+                    "code": "es",
+                    "name": "Español",
+                    "translations": {
+                      "commands": {
+                        "save": "Guardar"
+                      },
+                      "pages": {
+                        "one": "{count} página",
+                        "other": "{count} páginas"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "i18n",
+              "action": {
+                "type": "I18N/SET_LOCALE",
+                "locale": "es"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "changed",
+              "args": [
+                {
+                  "locale": "es",
+                  "previousLocale": "en"
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "es",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "es": {
+                    "code": "es",
+                    "name": "Español",
+                    "translations": {
+                      "commands": {
+                        "save": "Guardar"
+                      },
+                      "pages": {
+                        "one": "{count} página",
+                        "other": "{count} páginas"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "i18n",
+              "action": {
+                "type": "I18N/SET_LOCALE",
+                "locale": "es"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "es",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "es": {
+                    "code": "es",
+                    "name": "Español",
+                    "translations": {
+                      "commands": {
+                        "save": "Guardar"
+                      },
+                      "pages": {
+                        "one": "{count} página",
+                        "other": "{count} páginas"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "i18n",
+              "action": {
+                "type": "I18N/LOAD_STARTED",
+                "locale": "ar"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "load-ar",
+              "args": []
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 3
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "es",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "es": {
+                    "code": "es",
+                    "name": "Español",
+                    "translations": {
+                      "commands": {
+                        "save": "Guardar"
+                      },
+                      "pages": {
+                        "one": "{count} página",
+                        "other": "{count} páginas"
+                      }
+                    }
+                  }
+                },
+                "loading": "ar"
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 3,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "i18n",
+              "action": {
+                "type": "I18N/REGISTER_LOCALE",
+                "locale": {
+                  "code": "ar",
+                  "name": "العربية",
+                  "dir": "rtl",
+                  "translations": {
+                    "commands": {
+                      "save": "حفظ"
+                    },
+                    "pages": {
+                      "zero": "لا صفحات",
+                      "one": "صفحة",
+                      "two": "صفحتان",
+                      "few": "{count} صفحات",
+                      "many": "{count} صفحة",
+                      "other": "{count} صفحة"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "slice": "i18n",
+              "action": {
+                "type": "I18N/SET_LOCALE",
+                "locale": "ar"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "changed",
+              "args": [
+                {
+                  "locale": "ar",
+                  "previousLocale": "es"
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "ar",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "es": {
+                    "code": "es",
+                    "name": "Español",
+                    "translations": {
+                      "commands": {
+                        "save": "Guardar"
+                      },
+                      "pages": {
+                        "one": "{count} página",
+                        "other": "{count} páginas"
+                      }
+                    }
+                  },
+                  "ar": {
+                    "code": "ar",
+                    "name": "العربية",
+                    "dir": "rtl",
+                    "translations": {
+                      "commands": {
+                        "save": "حفظ"
+                      },
+                      "pages": {
+                        "zero": "لا صفحات",
+                        "one": "صفحة",
+                        "two": "صفحتان",
+                        "few": "{count} صفحات",
+                        "many": "{count} صفحة",
+                        "other": "{count} صفحة"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "i18n",
+              "action": {
+                "type": "I18N/LOAD_STARTED",
+                "locale": "he"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "load-he",
+              "args": []
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 4
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "ar",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "es": {
+                    "code": "es",
+                    "name": "Español",
+                    "translations": {
+                      "commands": {
+                        "save": "Guardar"
+                      },
+                      "pages": {
+                        "one": "{count} página",
+                        "other": "{count} páginas"
+                      }
+                    }
+                  },
+                  "ar": {
+                    "code": "ar",
+                    "name": "العربية",
+                    "dir": "rtl",
+                    "translations": {
+                      "commands": {
+                        "save": "حفظ"
+                      },
+                      "pages": {
+                        "zero": "لا صفحات",
+                        "one": "صفحة",
+                        "two": "صفحتان",
+                        "few": "{count} صفحات",
+                        "many": "{count} صفحة",
+                        "other": "{count} صفحة"
+                      }
+                    }
+                  }
+                },
+                "loading": "he"
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 4,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "locale 'he' failed to load",
+                  "code": "operation-failed",
+                  "capability": "i18n",
+                  "details": {
+                    "code": "operation-failed",
+                    "message": "offline",
+                    "capability": "i18n"
+                  }
+                }
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "i18n",
+              "action": {
+                "type": "I18N/LOAD_FAILED",
+                "locale": "he"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "failed",
+              "args": [
+                {
+                  "locale": "he",
+                  "error": {
+                    "code": "operation-failed",
+                    "message": "offline",
+                    "capability": "i18n"
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "ar",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "es": {
+                    "code": "es",
+                    "name": "Español",
+                    "translations": {
+                      "commands": {
+                        "save": "Guardar"
+                      },
+                      "pages": {
+                        "one": "{count} página",
+                        "other": "{count} páginas"
+                      }
+                    }
+                  },
+                  "ar": {
+                    "code": "ar",
+                    "name": "العربية",
+                    "dir": "rtl",
+                    "translations": {
+                      "commands": {
+                        "save": "حفظ"
+                      },
+                      "pages": {
+                        "zero": "لا صفحات",
+                        "one": "صفحة",
+                        "two": "صفحتان",
+                        "few": "{count} صفحات",
+                        "many": "{count} صفحة",
+                        "other": "{count} صفحة"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "i18n",
+              "action": {
+                "type": "I18N/LOAD_STARTED",
+                "locale": "he"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "load-he",
+              "args": []
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 5
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "ar",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "es": {
+                    "code": "es",
+                    "name": "Español",
+                    "translations": {
+                      "commands": {
+                        "save": "Guardar"
+                      },
+                      "pages": {
+                        "one": "{count} página",
+                        "other": "{count} páginas"
+                      }
+                    }
+                  },
+                  "ar": {
+                    "code": "ar",
+                    "name": "العربية",
+                    "dir": "rtl",
+                    "translations": {
+                      "commands": {
+                        "save": "حفظ"
+                      },
+                      "pages": {
+                        "zero": "لا صفحات",
+                        "one": "صفحة",
+                        "two": "صفحتان",
+                        "few": "{count} صفحات",
+                        "many": "{count} صفحة",
+                        "other": "{count} صفحة"
+                      }
+                    }
+                  }
+                },
+                "loading": "he"
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 5,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "switching to 'he' was superseded",
+                  "code": "operation-cancelled",
+                  "capability": "i18n"
+                }
+              }
+            },
+            {
+              "promise": 6,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "i18n",
+              "action": {
+                "type": "I18N/SET_LOCALE",
+                "locale": "en"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "changed",
+              "args": [
+                {
+                  "locale": "en",
+                  "previousLocale": "ar"
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 6
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "en",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "es": {
+                    "code": "es",
+                    "name": "Español",
+                    "translations": {
+                      "commands": {
+                        "save": "Guardar"
+                      },
+                      "pages": {
+                        "one": "{count} página",
+                        "other": "{count} páginas"
+                      }
+                    }
+                  },
+                  "ar": {
+                    "code": "ar",
+                    "name": "العربية",
+                    "dir": "rtl",
+                    "translations": {
+                      "commands": {
+                        "save": "حفظ"
+                      },
+                      "pages": {
+                        "zero": "لا صفحات",
+                        "one": "صفحة",
+                        "two": "صفحتان",
+                        "few": "{count} صفحات",
+                        "many": "{count} صفحة",
+                        "other": "{count} صفحة"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "i18n",
+              "action": {
+                "type": "I18N/REGISTER_LOCALE",
+                "locale": {
+                  "code": "he",
+                  "name": "עברית",
+                  "dir": "rtl",
+                  "translations": {
+                    "commands": {
+                      "save": "שמור"
+                    }
+                  }
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "en",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "es": {
+                    "code": "es",
+                    "name": "Español",
+                    "translations": {
+                      "commands": {
+                        "save": "Guardar"
+                      },
+                      "pages": {
+                        "one": "{count} página",
+                        "other": "{count} páginas"
+                      }
+                    }
+                  },
+                  "ar": {
+                    "code": "ar",
+                    "name": "العربية",
+                    "dir": "rtl",
+                    "translations": {
+                      "commands": {
+                        "save": "حفظ"
+                      },
+                      "pages": {
+                        "zero": "لا صفحات",
+                        "one": "صفحة",
+                        "two": "صفحتان",
+                        "few": "{count} صفحات",
+                        "many": "{count} صفحة",
+                        "other": "{count} صفحة"
+                      }
+                    }
+                  },
+                  "he": {
+                    "code": "he",
+                    "name": "עברית",
+                    "dir": "rtl",
+                    "translations": {
+                      "commands": {
+                        "save": "שמור"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 7,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "unknown locale 'xx' — not registered and no loader configured",
+                  "code": "not-found",
+                  "capability": "i18n"
+                }
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 7
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "en",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "es": {
+                    "code": "es",
+                    "name": "Español",
+                    "translations": {
+                      "commands": {
+                        "save": "Guardar"
+                      },
+                      "pages": {
+                        "one": "{count} página",
+                        "other": "{count} páginas"
+                      }
+                    }
+                  },
+                  "ar": {
+                    "code": "ar",
+                    "name": "العربية",
+                    "dir": "rtl",
+                    "translations": {
+                      "commands": {
+                        "save": "حفظ"
+                      },
+                      "pages": {
+                        "zero": "لا صفحات",
+                        "one": "صفحة",
+                        "two": "صفحتان",
+                        "few": "{count} صفحات",
+                        "many": "{count} صفحة",
+                        "other": "{count} صفحة"
+                      }
+                    }
+                  },
+                  "he": {
+                    "code": "he",
+                    "name": "עברית",
+                    "dir": "rtl",
+                    "translations": {
+                      "commands": {
+                        "save": "שמור"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "en",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "es": {
+                    "code": "es",
+                    "name": "Español",
+                    "translations": {
+                      "commands": {
+                        "save": "Guardar"
+                      },
+                      "pages": {
+                        "one": "{count} página",
+                        "other": "{count} páginas"
+                      }
+                    }
+                  },
+                  "ar": {
+                    "code": "ar",
+                    "name": "العربية",
+                    "dir": "rtl",
+                    "translations": {
+                      "commands": {
+                        "save": "حفظ"
+                      },
+                      "pages": {
+                        "zero": "لا صفحات",
+                        "one": "صفحة",
+                        "two": "صفحتان",
+                        "few": "{count} صفحات",
+                        "many": "{count} صفحة",
+                        "other": "{count} صفحة"
+                      }
+                    }
+                  },
+                  "he": {
+                    "code": "he",
+                    "name": "עברית",
+                    "dir": "rtl",
+                    "translations": {
+                      "commands": {
+                        "save": "שמור"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "en",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "es": {
+                    "code": "es",
+                    "name": "Español",
+                    "translations": {
+                      "commands": {
+                        "save": "Guardar"
+                      },
+                      "pages": {
+                        "one": "{count} página",
+                        "other": "{count} páginas"
+                      }
+                    }
+                  },
+                  "ar": {
+                    "code": "ar",
+                    "name": "العربية",
+                    "dir": "rtl",
+                    "translations": {
+                      "commands": {
+                        "save": "حفظ"
+                      },
+                      "pages": {
+                        "zero": "لا صفحات",
+                        "one": "صفحة",
+                        "two": "صفحتان",
+                        "few": "{count} صفحات",
+                        "many": "{count} صفحة",
+                        "other": "{count} صفحة"
+                      }
+                    }
+                  },
+                  "he": {
+                    "code": "he",
+                    "name": "עברית",
+                    "dir": "rtl",
+                    "translations": {
+                      "commands": {
+                        "save": "שמור"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 8,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "i18n",
+              "action": {
+                "type": "I18N/SET_LOCALE",
+                "locale": "es"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 8
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "es",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "es": {
+                    "code": "es",
+                    "name": "Español",
+                    "translations": {
+                      "commands": {
+                        "save": "Guardar"
+                      },
+                      "pages": {
+                        "one": "{count} página",
+                        "other": "{count} páginas"
+                      }
+                    }
+                  },
+                  "ar": {
+                    "code": "ar",
+                    "name": "العربية",
+                    "dir": "rtl",
+                    "translations": {
+                      "commands": {
+                        "save": "حفظ"
+                      },
+                      "pages": {
+                        "zero": "لا صفحات",
+                        "one": "صفحة",
+                        "two": "صفحتان",
+                        "few": "{count} صفحات",
+                        "many": "{count} صفحة",
+                        "other": "{count} صفحة"
+                      }
+                    }
+                  },
+                  "he": {
+                    "code": "he",
+                    "name": "עברית",
+                    "dir": "rtl",
+                    "translations": {
+                      "commands": {
+                        "save": "שמור"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": "es"
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "es",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "es": {
+                    "code": "es",
+                    "name": "Español",
+                    "translations": {
+                      "commands": {
+                        "save": "Guardar"
+                      },
+                      "pages": {
+                        "one": "{count} página",
+                        "other": "{count} páginas"
+                      }
+                    }
+                  },
+                  "ar": {
+                    "code": "ar",
+                    "name": "العربية",
+                    "dir": "rtl",
+                    "translations": {
+                      "commands": {
+                        "save": "حفظ"
+                      },
+                      "pages": {
+                        "zero": "لا صفحات",
+                        "one": "صفحة",
+                        "two": "صفحتان",
+                        "few": "{count} صفحات",
+                        "many": "{count} صفحة",
+                        "other": "{count} صفحة"
+                      }
+                    }
+                  },
+                  "he": {
+                    "code": "he",
+                    "name": "עברית",
+                    "dir": "rtl",
+                    "translations": {
+                      "commands": {
+                        "save": "שמור"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "lazy-startup-locale-announces-nothing",
+      "covers": "A lazy startup locale is already the announced locale, so its pack landing fires no onLocaleChanged; the next switch away announces it as the previous locale.",
+      "plugins": [
+        {
+          "factory": "i18n",
+          "config": {
+            "locales": [
+              {
+                "code": "en",
+                "name": "English",
+                "translations": {
+                  "commands": {
+                    "zoom": {
+                      "in": "Zoom In",
+                      "out": "Zoom Out"
+                    },
+                    "save": "Save"
+                  },
+                  "zoomLevel": "Zoom Level ({level}%)",
+                  "pages": {
+                    "one": "{count} page",
+                    "other": "{count} pages"
+                  },
+                  "greeting": "Hello {name}, you have {count} {unknown}"
+                }
+              }
+            ],
+            "locale": "ar",
+            "loaders": {
+              "ar": {
+                "$fn": "load-ar",
+                "defer": "ar"
+              }
+            }
+          }
+        }
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": {
+            "token": "i18n"
+          },
+          "method": "onLocaleChanged",
+          "args": [
+            {
+              "$fn": "changed",
+              "returns": null
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "settle",
+          "label": "ar",
+          "value": {
+            "code": "ar",
+            "name": "العربية",
+            "dir": "rtl",
+            "translations": {
+              "commands": {
+                "save": "حفظ"
+              },
+              "pages": {
+                "zero": "لا صفحات",
+                "one": "صفحة",
+                "two": "صفحتان",
+                "few": "{count} صفحات",
+                "many": "{count} صفحة",
+                "other": "{count} صفحة"
+              }
+            }
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "i18n"
+          },
+          "method": "getLocale",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "i18n"
+          },
+          "method": "getDirection",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "i18n"
+          },
+          "method": "getLoadingLocale",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "i18n"
+          },
+          "method": "listLocales",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "i18n"
+          },
+          "method": "setLocale",
+          "args": [
+            "en"
+          ]
+        }
+      ],
+      "trace": [
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "created",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "$ref": 0
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "ar",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  }
+                },
+                "loading": "ar"
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "load-ar",
+              "args": []
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "ar",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  }
+                },
+                "loading": "ar"
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "i18n",
+              "action": {
+                "type": "I18N/REGISTER_LOCALE",
+                "locale": {
+                  "code": "ar",
+                  "name": "العربية",
+                  "dir": "rtl",
+                  "translations": {
+                    "commands": {
+                      "save": "حفظ"
+                    },
+                    "pages": {
+                      "zero": "لا صفحات",
+                      "one": "صفحة",
+                      "two": "صفحتان",
+                      "few": "{count} صفحات",
+                      "many": "{count} صفحة",
+                      "other": "{count} صفحة"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "slice": "i18n",
+              "action": {
+                "type": "I18N/SET_LOCALE",
+                "locale": "ar"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "ar",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "ar": {
+                    "code": "ar",
+                    "name": "العربية",
+                    "dir": "rtl",
+                    "translations": {
+                      "commands": {
+                        "save": "حفظ"
+                      },
+                      "pages": {
+                        "zero": "لا صفحات",
+                        "one": "صفحة",
+                        "two": "صفحتان",
+                        "few": "{count} صفحات",
+                        "many": "{count} صفحة",
+                        "other": "{count} صفحة"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": "ar"
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "ar",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "ar": {
+                    "code": "ar",
+                    "name": "العربية",
+                    "dir": "rtl",
+                    "translations": {
+                      "commands": {
+                        "save": "حفظ"
+                      },
+                      "pages": {
+                        "zero": "لا صفحات",
+                        "one": "صفحة",
+                        "two": "صفحتان",
+                        "few": "{count} صفحات",
+                        "many": "{count} صفحة",
+                        "other": "{count} صفحة"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": "rtl"
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "ar",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "ar": {
+                    "code": "ar",
+                    "name": "العربية",
+                    "dir": "rtl",
+                    "translations": {
+                      "commands": {
+                        "save": "حفظ"
+                      },
+                      "pages": {
+                        "zero": "لا صفحات",
+                        "one": "صفحة",
+                        "two": "صفحتان",
+                        "few": "{count} صفحات",
+                        "many": "{count} صفحة",
+                        "other": "{count} صفحة"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": null
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "ar",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "ar": {
+                    "code": "ar",
+                    "name": "العربية",
+                    "dir": "rtl",
+                    "translations": {
+                      "commands": {
+                        "save": "حفظ"
+                      },
+                      "pages": {
+                        "zero": "لا صفحات",
+                        "one": "صفحة",
+                        "two": "صفحتان",
+                        "few": "{count} صفحات",
+                        "many": "{count} صفحة",
+                        "other": "{count} صفحة"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": [
+              {
+                "code": "en",
+                "name": "English",
+                "dir": "ltr",
+                "loaded": true
+              },
+              {
+                "code": "ar",
+                "name": "العربية",
+                "dir": "rtl",
+                "loaded": true
+              }
+            ]
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "ar",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "ar": {
+                    "code": "ar",
+                    "name": "العربية",
+                    "dir": "rtl",
+                    "translations": {
+                      "commands": {
+                        "save": "حفظ"
+                      },
+                      "pages": {
+                        "zero": "لا صفحات",
+                        "one": "صفحة",
+                        "two": "صفحتان",
+                        "few": "{count} صفحات",
+                        "many": "{count} صفحة",
+                        "other": "{count} صفحة"
+                      }
+                    }
+                  }
+                },
+                "loading": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "i18n",
+              "action": {
+                "type": "I18N/SET_LOCALE",
+                "locale": "en"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "changed",
+              "args": [
+                {
+                  "locale": "en",
+                  "previousLocale": "ar"
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "i18n": {
+                "locale": "en",
+                "fallbackLocale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "zoom": {
+                          "in": "Zoom In",
+                          "out": "Zoom Out"
+                        },
+                        "save": "Save"
+                      },
+                      "zoomLevel": "Zoom Level ({level}%)",
+                      "pages": {
+                        "one": "{count} page",
+                        "other": "{count} pages"
+                      },
+                      "greeting": "Hello {name}, you have {count} {unknown}"
+                    }
+                  },
+                  "ar": {
+                    "code": "ar",
+                    "name": "العربية",
+                    "dir": "rtl",
+                    "translations": {
+                      "commands": {
+                        "save": "حفظ"
+                      },
+                      "pages": {
+                        "zero": "لا صفحات",
+                        "one": "صفحة",
+                        "two": "صفحتان",
+                        "few": "{count} صفحات",
+                        "many": "{count} صفحة",
+                        "other": "{count} صفحة"
                       }
                     }
                   }

@@ -1,5 +1,5 @@
-//! `types.ts`: the contract. Locale packs live in the store, so `t()` is a
-//! pure read and the whole state serializes.
+//! `contract.ts`: the contract. Locale packs live in the store, so `t()` is
+//! a pure read and the whole state serializes.
 
 use std::rc::Rc;
 use std::sync::LazyLock;
@@ -8,7 +8,7 @@ use epdf_kernel::rt::Promise;
 use epdf_kernel::{Error, Token};
 use serde::{Deserialize, Serialize};
 
-use crate::capability::I18nCapability;
+use crate::controller::I18nCapability;
 use crate::js::JsRecord;
 
 /// A dictionary member: a leaf string (interpolating `{param}` slots) or a
@@ -51,31 +51,6 @@ pub struct Locale {
     pub translations: TranslationDictionary,
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct I18nState {
-    pub locale: String,
-    pub fallback_locale: String,
-    /// Registered packs by code: the lookup table `t()` reads.
-    pub locales: JsRecord<Locale>,
-    /// Code of a lazy pack being fetched.
-    pub loading: Option<String>,
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "type")]
-pub enum I18nAction {
-    /// Switch to a registered locale; the reducer ignores unregistered codes.
-    #[serde(rename = "I18N/SET_LOCALE")]
-    SetLocale { locale: String },
-    #[serde(rename = "I18N/REGISTER_LOCALE")]
-    RegisterLocale { locale: Locale },
-    #[serde(rename = "I18N/LOAD_STARTED")]
-    LoadStarted { locale: String },
-    #[serde(rename = "I18N/LOAD_FAILED")]
-    LoadFailed { locale: String },
-}
-
 /// A lazy pack: `() => Promise<Locale>`. `Err` is a loader that throws
 /// synchronously.
 pub type Loader = Rc<dyn Fn() -> Result<Promise<Locale>, Error>>;
@@ -101,7 +76,7 @@ pub struct I18nConfig {
 
 impl I18nConfig {
     /// `config.loaders?.[code]`, own keys only. (An inherited
-    /// `Object.prototype` member is never reached: see [`crate::effects`].)
+    /// `Object.prototype` member is never reached: see [`crate::loaders`].)
     pub fn loader(&self, code: &str) -> Option<&Loader> {
         self.loaders.as_ref()?.get(code)
     }
@@ -159,4 +134,22 @@ pub struct LocaleInfo {
     pub loaded: bool,
 }
 
-pub static I18N: LazyLock<Token<I18nCapability>> = LazyLock::new(|| Token::new("i18n"));
+/// `LocaleChangedEvent`: the current locale changed and is usable.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LocaleChangedEvent {
+    pub locale: String,
+    pub previous_locale: String,
+}
+
+/// `LocaleLoadFailedEvent`: a lazy pack failed to load; the previous locale
+/// stays. `error` is `PluginErrorInfo` (`{code, message, capability}`).
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct LocaleLoadFailedEvent {
+    pub locale: String,
+    pub error: serde_json::Value,
+}
+
+pub static I18N: LazyLock<Token<I18nCapability>> = LazyLock::new(|| {
+    Token::with_hint("i18n", "add i18nPlugin() from '@embedpdf/plugin-i18n' to your plugins list")
+});

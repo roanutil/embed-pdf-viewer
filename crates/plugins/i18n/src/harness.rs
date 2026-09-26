@@ -16,13 +16,13 @@ use std::any::Any;
 use std::rc::Rc;
 
 use epdf_kernel::rt::Promise;
-use epdf_kernel::{AnyPlugin, AnyToken, Error, is_undefined};
+use epdf_kernel::{AnyPlugin, AnyToken, Error, is_undefined, undefined};
 use plugin_conformance::{Answer, FunctionTable, Harness, HarnessPlugin, Outcome, scrub};
 use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
 
+use crate::contract::{Loader, Param, Params, TranslateOptions, TranslationDictionary};
 use crate::js::JsRecord;
-use crate::types::{Loader, Param, Params, TranslateOptions};
 use crate::{
     I18N, I18nAction, I18nCapability, I18nConfig, I18nState, Locale, i18n_plugin, i18n_reducer,
     initial_i18n_state, interpolate, negotiate_locale, translate,
@@ -31,8 +31,38 @@ use crate::{
 pub struct I18n;
 
 /// The TypeScript object literal's member order.
-const MEMBERS: &[&str] =
-    &["t", "locale", "dir", "locales", "loading", "setLocale", "registerLocale"];
+const MEMBERS: &[&str] = &[
+    "t",
+    "hasKey",
+    "getLocale",
+    "getDirection",
+    "listLocales",
+    "getLoadingLocale",
+    "setLocale",
+    "registerLocale",
+    "addTranslations",
+    "onLocaleChanged",
+    "onLocaleLoadFailed",
+];
+
+/// Subscribe a scripted `$fn` listener; the outcome is the unsubscribe.
+fn listen<E: serde::Serialize>(
+    h: &Harness,
+    spec: Option<&Value>,
+    subscribe: impl FnOnce(Box<dyn Fn(&E) -> Result<(), Error>>) -> epdf_kernel::Unsubscribe,
+) -> Outcome {
+    let callback = h.callback(spec.unwrap_or(&Value::Null));
+    let off = subscribe(Box::new(move |event: &E| {
+        match callback.call(vec![serde_json::to_value(event).unwrap_or(Value::Null)]) {
+            Answer::Throws(error) => Err(error),
+            _ => Ok(()),
+        }
+    }));
+    Outcome::Returned(h.register_fn(Rc::new(move |_| {
+        off.call();
+        Outcome::undefined()
+    })))
+}
 
 fn bad(what: &str, e: impl std::fmt::Display) -> Error {
     Error::new(format!("[i18n harness] {what}: {e}"))
@@ -145,7 +175,7 @@ impl HarnessPlugin for I18n {
         capability: &Rc<dyn Any>,
         method: &str,
         args: Vec<Value>,
-        _h: &Harness,
+        h: &Harness,
     ) -> Option<Outcome> {
         let cap = capability.downcast_ref::<I18nCapability>()?;
         let text = |i: usize| arg(&args, i).and_then(Value::as_str).unwrap_or_default().to_string();
@@ -154,25 +184,39 @@ impl HarnessPlugin for I18n {
                 Ok(options) => Outcome::Returned(json!(cap.t(&text(0), options.as_ref()))),
                 Err(error) => Outcome::Threw(error),
             },
-            "locale" => Outcome::Returned(json!(cap.locale())),
-            "dir" => Outcome::Returned(json!(cap.dir().as_str())),
-            "locales" => {
-                Outcome::Returned(serde_json::to_value(cap.locales()).unwrap_or(Value::Null))
+            "hasKey" => Outcome::Returned(json!(cap.has_key(&text(0)))),
+            "getLocale" => Outcome::Returned(json!(cap.get_locale())),
+            "getDirection" => Outcome::Returned(json!(cap.get_direction().as_str())),
+            "listLocales" => {
+                Outcome::Returned(serde_json::to_value(cap.list_locales()).unwrap_or(Value::Null))
             }
-            "loading" => Outcome::Returned(json!(cap.loading())),
-            "setLocale" => {
-                cap.set_locale(&text(0));
-                Outcome::undefined()
-            }
+            "getLoadingLocale" => Outcome::Returned(json!(cap.get_loading_locale())),
+            "setLocale" => Outcome::promise_unit(cap.set_locale(&text(0))),
             "registerLocale" => {
                 match decode::<Locale>("locale", arg(&args, 0).unwrap_or(&Value::Null)) {
                     Ok(locale) => {
-                        cap.register_locale(locale);
-                        Outcome::undefined()
+                        let remove = cap.register_locale(locale);
+                        Outcome::Returned(h.register_fn(Rc::new(move |_| {
+                            remove();
+                            Outcome::undefined()
+                        })))
                     }
                     Err(error) => Outcome::Threw(error),
                 }
             }
+            "addTranslations" => {
+                match decode::<TranslationDictionary>(
+                    "dictionary",
+                    arg(&args, 1).unwrap_or(&Value::Null),
+                ) {
+                    Ok(dictionary) => Outcome::from_result(
+                        cap.add_translations(&text(0), dictionary).map(|()| undefined()),
+                    ),
+                    Err(error) => Outcome::Threw(error),
+                }
+            }
+            "onLocaleChanged" => listen(h, arg(&args, 0), |f| cap.on_locale_changed(f)),
+            "onLocaleLoadFailed" => listen(h, arg(&args, 0), |f| cap.on_locale_load_failed(f)),
             other => {
                 Outcome::Threw(Error::new(format!("[scenario] \"{other}\" is not a function")))
             }

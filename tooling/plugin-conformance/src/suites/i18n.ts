@@ -246,6 +246,28 @@ const coreCases: FunctionCase[] = [
   fnCase('load-failed-other-code-is-ignored', 'i18nReducer', [state({ loading: 'ar' }), { type: 'I18N/LOAD_FAILED', locale: 'fr' }]),
   fnCase('load-failed-clears', 'i18nReducer', [state({ loading: 'ar' }), { type: 'I18N/LOAD_FAILED', locale: 'ar' }]),
   fnCase('unknown-action-is-ignored', 'i18nReducer', [state(), { type: 'I18N/NOPE' }]),
+  fnCase('unregister-removes', 'i18nReducer', [state(), { type: 'I18N/UNREGISTER_LOCALE', locale: 'es' }]),
+  fnCase('unregister-unknown-is-ignored', 'i18nReducer', [state(), { type: 'I18N/UNREGISTER_LOCALE', locale: 'ar' }]),
+  fnCase(
+    'unregister-proto-member-copies',
+    'i18nReducer',
+    [state(), { type: 'I18N/UNREGISTER_LOCALE', locale: 'toString' }],
+    'An Object.prototype member reads as registered, so the reducer copies the packs and deletes nothing: a new state with the same content.',
+  ),
+  fnCase(
+    'add-translations-merges-deep',
+    'i18nReducer',
+    [
+      state(),
+      {
+        type: 'I18N/ADD_TRANSLATIONS',
+        locale: 'en',
+        translations: { commands: { zoom: { in: 'Zoom in!', fit: 'Fit' }, save: { short: 'S' } }, zoomLevel: { one: 'x' }, pages: 'flat', extra: 'new' },
+      },
+    ],
+    'Branches merge key by key, a leaf replaces whatever was there (string or branch), and a branch replaces a leaf.',
+  ),
+  fnCase('add-translations-unknown-is-ignored', 'i18nReducer', [state(), { type: 'I18N/ADD_TRANSLATIONS', locale: 'ar', translations: { a: 'b' } }]),
 ];
 
 // ── function cases: plural categories, as translate reaches them ──────────────
@@ -400,7 +422,7 @@ const scenarios: ScenarioCase[] = [
   },
   {
     name: 'set-locale-unknown-warns-once',
-    covers: 'An unregistered code with no loader dispatches nothing and warns once per code.',
+    covers: 'An unregistered code with no loader dispatches nothing, warns nothing, and rejects not-found each time.',
     plugins: plugin({ locales: [en], loaders: { ar: loader('load-ar', { resolves: ar }) } }),
     steps: [start, i18n('setLocale', 'de'), i18n('setLocale', 'de'), i18n('setLocale', 'it'), i18n('setLocale', ''), i18n('getLocale')],
   },
@@ -531,6 +553,84 @@ const scenarios: ScenarioCase[] = [
       i18n('registerLocale', { ...en, translations: {} }),
       t('commands.zoom.in'),
     ],
+  },
+  {
+    name: 'register-returns-a-remover',
+    covers:
+      'registerLocale returns a remover that dispatches UNREGISTER_LOCALE: the pack leaves listLocales() (a lazy loader for the code is listed again), the current locale stays but loses its pack, and a second call dispatches again and changes nothing.',
+    plugins: plugin({ locales: [en], loaders: { he: loader('load-he', { resolves: he }) } }),
+    steps: [
+      start,
+      i18n('registerLocale', ar),
+      i18n('registerLocale', he),
+      i18n('setLocale', 'ar'),
+      ...reads,
+      { op: 'call', target: { ref: 0 } },
+      ...reads,
+      t('commands.save'),
+      { op: 'call', target: { ref: 1 } },
+      i18n('listLocales'),
+      { op: 'call', target: { ref: 0 } },
+      i18n('getLocale'),
+    ],
+  },
+  {
+    name: 'add-translations-and-has-key',
+    covers:
+      'addTranslations merges into a registered pack (later keys win, branches merge); an unknown code, or a lazy one not yet loaded, throws not-found. hasKey is true for a key in the current or fallback pack, never warns, and misses a branch without a count.',
+    plugins: plugin({ locales: [en, es], locale: 'es', loaders: { he: loader('load-he', { resolves: he }) } }),
+    steps: [
+      start,
+      i18n('hasKey', 'commands.save'),
+      i18n('hasKey', 'commands.zoom.in'),
+      i18n('hasKey', 'commands.fit'),
+      i18n('hasKey', 'pages'),
+      i18n('addTranslations', 'es', { commands: { fit: 'Ajustar', zoom: { in: 'Acercar' } } }),
+      t('commands.fit'),
+      t('commands.zoom.in'),
+      t('commands.zoom.out'),
+      i18n('hasKey', 'commands.fit'),
+      i18n('addTranslations', 'en', { commands: 'flat' }),
+      t('commands.zoom.out'),
+      i18n('addTranslations', 'xx', { a: 'b' }),
+      i18n('addTranslations', 'he', { a: 'b' }),
+      i18n('listLocales'),
+    ],
+  },
+  {
+    name: 'locale-events',
+    covers:
+      'onLocaleChanged fires once the current locale changed and is usable (a registered switch at once, a lazy one when its pack lands), never for the same locale. onLocaleLoadFailed carries the failure as PluginErrorInfo, and setLocale rejects operation-failed with the same info as details. A superseded lazy switch rejects operation-cancelled, an unknown code not-found. After unsubscribing, nothing fires.',
+    plugins: plugin({
+      locales: [en, es],
+      loaders: { ar: loader('load-ar', { defer: 'ar' }), he: loader('load-he', { seq: [{ defer: 'he' }, { defer: 'he-2' }] }) },
+    }),
+    steps: [
+      i18n('onLocaleChanged', { $fn: 'changed', returns: null }),
+      i18n('onLocaleLoadFailed', { $fn: 'failed', returns: null }),
+      start,
+      i18n('setLocale', 'es'),
+      i18n('setLocale', 'es'),
+      i18n('setLocale', 'ar'),
+      settle('ar', ar),
+      i18n('setLocale', 'he'),
+      fail('he', 'offline'),
+      i18n('setLocale', 'he'),
+      i18n('setLocale', 'en'),
+      settle('he-2', he),
+      i18n('setLocale', 'xx'),
+      { op: 'call', target: { ref: 0 } },
+      { op: 'call', target: { ref: 1 } },
+      i18n('setLocale', 'es'),
+      i18n('getLocale'),
+    ],
+  },
+  {
+    name: 'lazy-startup-locale-announces-nothing',
+    covers:
+      'A lazy startup locale is already the announced locale, so its pack landing fires no onLocaleChanged; the next switch away announces it as the previous locale.',
+    plugins: plugin({ locales: [en], locale: 'ar', loaders: { ar: loader('load-ar', { defer: 'ar' }) } }),
+    steps: [i18n('onLocaleChanged', { $fn: 'changed', returns: null }), start, settle('ar', ar), ...reads, i18n('setLocale', 'en')],
   },
   {
     name: 'destroy-releases-the-watch',

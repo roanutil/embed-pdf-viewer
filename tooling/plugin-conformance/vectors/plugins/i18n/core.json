@@ -3844,6 +3844,482 @@
           }
         }
       }
+    },
+    {
+      "name": "unregister-removes",
+      "fn": "i18nReducer",
+      "args": [
+        {
+          "locale": "es",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": null
+        },
+        {
+          "type": "I18N/UNREGISTER_LOCALE",
+          "locale": "es"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "locale": "es",
+            "fallbackLocale": "en",
+            "locales": {
+              "en": {
+                "code": "en",
+                "name": "English",
+                "translations": {
+                  "commands": {
+                    "zoom": {
+                      "in": "Zoom In",
+                      "out": "Zoom Out"
+                    },
+                    "save": "Save"
+                  },
+                  "zoomLevel": "Zoom Level ({level}%)",
+                  "pages": {
+                    "one": "{count} page",
+                    "other": "{count} pages"
+                  },
+                  "greeting": "Hello {name}, you have {count} {unknown}"
+                }
+              }
+            },
+            "loading": null
+          }
+        }
+      }
+    },
+    {
+      "name": "unregister-unknown-is-ignored",
+      "fn": "i18nReducer",
+      "args": [
+        {
+          "locale": "es",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": null
+        },
+        {
+          "type": "I18N/UNREGISTER_LOCALE",
+          "locale": "ar"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": true,
+          "next": {
+            "locale": "es",
+            "fallbackLocale": "en",
+            "locales": {
+              "en": {
+                "code": "en",
+                "name": "English",
+                "translations": {
+                  "commands": {
+                    "zoom": {
+                      "in": "Zoom In",
+                      "out": "Zoom Out"
+                    },
+                    "save": "Save"
+                  },
+                  "zoomLevel": "Zoom Level ({level}%)",
+                  "pages": {
+                    "one": "{count} page",
+                    "other": "{count} pages"
+                  },
+                  "greeting": "Hello {name}, you have {count} {unknown}"
+                }
+              },
+              "es": {
+                "code": "es",
+                "name": "Español",
+                "translations": {
+                  "commands": {
+                    "save": "Guardar"
+                  },
+                  "pages": {
+                    "one": "{count} página",
+                    "other": "{count} páginas"
+                  }
+                }
+              }
+            },
+            "loading": null
+          }
+        }
+      }
+    },
+    {
+      "name": "unregister-proto-member-copies",
+      "fn": "i18nReducer",
+      "args": [
+        {
+          "locale": "es",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": null
+        },
+        {
+          "type": "I18N/UNREGISTER_LOCALE",
+          "locale": "toString"
+        }
+      ],
+      "covers": "An Object.prototype member reads as registered, so the reducer copies the packs and deletes nothing: a new state with the same content.",
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "locale": "es",
+            "fallbackLocale": "en",
+            "locales": {
+              "en": {
+                "code": "en",
+                "name": "English",
+                "translations": {
+                  "commands": {
+                    "zoom": {
+                      "in": "Zoom In",
+                      "out": "Zoom Out"
+                    },
+                    "save": "Save"
+                  },
+                  "zoomLevel": "Zoom Level ({level}%)",
+                  "pages": {
+                    "one": "{count} page",
+                    "other": "{count} pages"
+                  },
+                  "greeting": "Hello {name}, you have {count} {unknown}"
+                }
+              },
+              "es": {
+                "code": "es",
+                "name": "Español",
+                "translations": {
+                  "commands": {
+                    "save": "Guardar"
+                  },
+                  "pages": {
+                    "one": "{count} página",
+                    "other": "{count} páginas"
+                  }
+                }
+              }
+            },
+            "loading": null
+          }
+        }
+      }
+    },
+    {
+      "name": "add-translations-merges-deep",
+      "fn": "i18nReducer",
+      "args": [
+        {
+          "locale": "es",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": null
+        },
+        {
+          "type": "I18N/ADD_TRANSLATIONS",
+          "locale": "en",
+          "translations": {
+            "commands": {
+              "zoom": {
+                "in": "Zoom in!",
+                "fit": "Fit"
+              },
+              "save": {
+                "short": "S"
+              }
+            },
+            "zoomLevel": {
+              "one": "x"
+            },
+            "pages": "flat",
+            "extra": "new"
+          }
+        }
+      ],
+      "covers": "Branches merge key by key, a leaf replaces whatever was there (string or branch), and a branch replaces a leaf.",
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "locale": "es",
+            "fallbackLocale": "en",
+            "locales": {
+              "en": {
+                "code": "en",
+                "name": "English",
+                "translations": {
+                  "commands": {
+                    "zoom": {
+                      "in": "Zoom in!",
+                      "out": "Zoom Out",
+                      "fit": "Fit"
+                    },
+                    "save": {
+                      "short": "S"
+                    }
+                  },
+                  "zoomLevel": {
+                    "one": "x"
+                  },
+                  "pages": "flat",
+                  "greeting": "Hello {name}, you have {count} {unknown}",
+                  "extra": "new"
+                }
+              },
+              "es": {
+                "code": "es",
+                "name": "Español",
+                "translations": {
+                  "commands": {
+                    "save": "Guardar"
+                  },
+                  "pages": {
+                    "one": "{count} página",
+                    "other": "{count} páginas"
+                  }
+                }
+              }
+            },
+            "loading": null
+          }
+        }
+      }
+    },
+    {
+      "name": "add-translations-unknown-is-ignored",
+      "fn": "i18nReducer",
+      "args": [
+        {
+          "locale": "es",
+          "fallbackLocale": "en",
+          "locales": {
+            "en": {
+              "code": "en",
+              "name": "English",
+              "translations": {
+                "commands": {
+                  "zoom": {
+                    "in": "Zoom In",
+                    "out": "Zoom Out"
+                  },
+                  "save": "Save"
+                },
+                "zoomLevel": "Zoom Level ({level}%)",
+                "pages": {
+                  "one": "{count} page",
+                  "other": "{count} pages"
+                },
+                "greeting": "Hello {name}, you have {count} {unknown}"
+              }
+            },
+            "es": {
+              "code": "es",
+              "name": "Español",
+              "translations": {
+                "commands": {
+                  "save": "Guardar"
+                },
+                "pages": {
+                  "one": "{count} página",
+                  "other": "{count} páginas"
+                }
+              }
+            }
+          },
+          "loading": null
+        },
+        {
+          "type": "I18N/ADD_TRANSLATIONS",
+          "locale": "ar",
+          "translations": {
+            "a": "b"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": true,
+          "next": {
+            "locale": "es",
+            "fallbackLocale": "en",
+            "locales": {
+              "en": {
+                "code": "en",
+                "name": "English",
+                "translations": {
+                  "commands": {
+                    "zoom": {
+                      "in": "Zoom In",
+                      "out": "Zoom Out"
+                    },
+                    "save": "Save"
+                  },
+                  "zoomLevel": "Zoom Level ({level}%)",
+                  "pages": {
+                    "one": "{count} page",
+                    "other": "{count} pages"
+                  },
+                  "greeting": "Hello {name}, you have {count} {unknown}"
+                }
+              },
+              "es": {
+                "code": "es",
+                "name": "Español",
+                "translations": {
+                  "commands": {
+                    "save": "Guardar"
+                  },
+                  "pages": {
+                    "one": "{count} página",
+                    "other": "{count} páginas"
+                  }
+                }
+              }
+            },
+            "loading": null
+          }
+        }
+      }
     }
   ]
 }
