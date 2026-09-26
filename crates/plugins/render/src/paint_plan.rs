@@ -1,5 +1,5 @@
 //! `paint-plan.ts`: the demand a page host supplies, the plan a tile plane
-//! paints, and the plugin options with their resolved defaults.
+//! paints, and the config's option blocks with their resolved defaults.
 
 use std::rc::Rc;
 
@@ -8,6 +8,7 @@ use serde::de::{self, Deserializer};
 use serde::ser::Serializer;
 use serde::{Deserialize, Serialize};
 
+use crate::contract::RenderConfig;
 use crate::raster_store::PageImageHandle;
 
 /// Scroll velocity in page points per second: prefetch direction only.
@@ -186,22 +187,6 @@ impl<'de> Deserialize<'de> for TilesSetting {
     }
 }
 
-/// `RenderPluginOptions`: the render strategy.
-#[derive(Clone, Debug, Default, PartialEq, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct RenderPluginOptions {
-    #[serde(default)]
-    pub full_page: Option<FullPageOptions>,
-    #[serde(default)]
-    pub tiles: Option<TilesSetting>,
-    #[serde(default)]
-    pub format: Option<RenderFormat>,
-    #[serde(default)]
-    pub quality: Option<f64>,
-    #[serde(default)]
-    pub debug: Option<bool>,
-}
-
 /// `DEFAULT_TILE_PYRAMID`: the ×2 client pyramid for lattices without a
 /// tiles block.
 pub const DEFAULT_TILE_PYRAMID: [f64; 6] = [1.0, 2.0, 4.0, 8.0, 16.0, 32.0];
@@ -246,7 +231,7 @@ pub struct ResolvedRenderOptions {
 }
 
 /// `resolveRenderOptions`.
-pub fn resolve_render_options(options: &RenderPluginOptions) -> ResolvedRenderOptions {
+pub fn resolve_render_options(options: &RenderConfig) -> ResolvedRenderOptions {
     let tiles = match &options.tiles {
         Some(TilesSetting::On(tiles)) => Some(tiles),
         Some(TilesSetting::Off) | None => None,

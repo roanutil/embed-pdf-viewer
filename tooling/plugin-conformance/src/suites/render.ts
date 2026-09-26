@@ -169,6 +169,9 @@ const advance = (ms: number): Step => ({ op: 'advance', ms });
 const abortSignal = (name: string): Step => ({ op: 'call', target: { token: 'render-test/signals' }, method: 'abort', args: [name] });
 const emit = (event: unknown): Step => ({ op: 'emit', doc: 'a', event });
 const signal = (name: string) => ({ $abortSignal: name });
+/** A v3 call by its own name: the public exact door, batches and the event hooks. */
+const v3 = (method: string, ...args: unknown[]): Step => ({ op: 'call', target: { token: 'render', doc: 'a' }, method, args });
+const callRef = (ref: number, ...args: unknown[]): Step => ({ op: 'call', target: { ref }, args });
 
 const render = (config?: RenderPluginOptions): PluginSpec[] => [config === undefined ? { factory: 'render' } : { factory: 'render', config }];
 const withSignalsPlugin = (config?: RenderPluginOptions): PluginSpec[] => [{ factory: 'signals' }, ...render(config)];
@@ -206,6 +209,12 @@ function views() {
     },
     release(view: string, pon: number): Step {
       return { op: 'call', target: { ref: base[view] + 4 }, args: [pr(pon)] };
+    },
+    dispose(view: string): Step {
+      return { op: 'call', target: { ref: base[view] + 5 }, args: [] };
+    },
+    getPlan(view: string, pon: number): Step {
+      return { op: 'call', target: { ref: base[view] + 1 }, args: [pr(pon)] };
     },
   };
 }
@@ -660,7 +669,7 @@ const capabilityCases: ScenarioCase[] = [
       cap('conformViewport', 11, 16),
       cap('paintSettings'),
       cap('tilesFor', 'stage'),
-      { op: 'call', target: { ref: 0 }, args: [11, DEEP] },
+      { op: 'call', target: { ref: 0 }, args: [pr(11), DEEP] },
     ],
   },
   {
@@ -701,11 +710,157 @@ const capabilityCases: ScenarioCase[] = [
   },
   {
     name: 'close-with-a-render-in-flight',
-    covers: 'Closing the document removes the ledger; a render already in flight still resolves its consumer when the engine answers.',
+    covers:
+      'Closing the document removes the ledger and aborts a render already in flight: the guarded handle rejects its consumer instance-closed at close, and the late answer is dropped.',
     plugins: render(),
     engine: { documents: { a: doc() } },
     snapshot: 'none',
     steps: [start, open(), cap('renderPage', 11, { scale: 0.5 }), close(), settle('r0')],
+  },
+  {
+    name: 'render-page-exact-size',
+    covers:
+      'The public renderPage honours the requested size exactly: width wins over scale, scale defaults to 1, the width rounds and never drops below 1 px. A width that matches a conformed raster shares its store entry; an explicit quality is its own key; a page the document lacks rejects not-found.',
+    plugins: render(),
+    engine: { documents: { a: doc() } },
+    snapshot: 'none',
+    steps: [
+      start,
+      open(),
+      v3('renderPage', pr(11)),
+      v3('renderPage', pr(11), { width: 300.4, scale: 3 }),
+      v3('renderPage', pr(11), { scale: 0.0001 }),
+      v3('renderPage', pr(22), { scale: 2, includeAnnotations: false }),
+      settleRange(0, 3)[0],
+      settleRange(0, 3)[1],
+      settleRange(0, 3)[2],
+      fail('r3', 'render failed'),
+      v3('renderPage', pr(11), { width: 306 }),
+      cap('renderPage', 11, { scale: 0.5 }),
+      v3('renderPage', pr(11), { width: 306, quality: 0.5 }),
+      v3('renderPage', pr(11), { width: 306, format: 'png' }),
+      settle('r4'),
+      settle('r5'),
+      settle('r6'),
+      v3('renderPage', pr(99)),
+      v3('renderPage', pr(99), { width: 10 }),
+    ],
+  },
+  {
+    name: 'render-page-strategy-encode',
+    covers:
+      'renderPage defaults its encode to the strategy (format and quality reach the engine, only the format joins the key) and per-call format and quality override it, each joining the key.',
+    plugins: render({ format: 'bmp', quality: 0.9 }),
+    engine: { documents: { a: doc() } },
+    snapshot: 'none',
+    steps: [
+      start,
+      open(),
+      v3('renderPage', pr(11), { width: 100 }),
+      v3('renderPage', pr(11), { width: 100, format: 'webp', quality: 0.3 }),
+      cap('renderSourceKey', 11, { scale: 0.5 }),
+      settle('r0'),
+      settle('r1'),
+    ],
+  },
+  {
+    name: 'render-thumbnail',
+    covers: 'renderThumbnail is renderPage at maxWidth device pixels, annotations baked unless it says otherwise.',
+    plugins: render(),
+    engine: { documents: { a: doc() } },
+    snapshot: 'none',
+    steps: [
+      start,
+      open(),
+      v3('renderThumbnail', pr(11), { maxWidth: 120 }),
+      v3('renderThumbnail', pr(22), { maxWidth: 120.6, includeAnnotations: false }),
+      settle('r0'),
+      settle('r1'),
+      v3('renderThumbnail', pr(11), { maxWidth: 120 }),
+    ],
+  },
+  {
+    name: 'render-pages-batch',
+    covers:
+      'renderPages runs its pages through a bounded worker pool: a page that fails (not in the document, or refused by the engine) lands in failed and the worker moves on, a repeated page is served from the store, and both lists come back in input order (a repeated page sorts at its last index).',
+    plugins: render(),
+    engine: { documents: { a: doc() } },
+    snapshot: 'none',
+    steps: [
+      start,
+      open(),
+      v3('renderPages', [pr(11), pr(99), pr(22), pr(33), pr(11)], { concurrency: 2, scale: 0.5 }),
+      fail('r1', 'boom'),
+      settle('r0'),
+      settle('r2'),
+    ],
+  },
+  {
+    name: 'render-pages-concurrency',
+    covers:
+      'The pool defaults to four workers, never fewer than one (concurrency 0 runs one), and an empty batch resolves at once with nothing in it.',
+    plugins: render(),
+    engine: { documents: { a: doc() } },
+    snapshot: 'none',
+    steps: [
+      start,
+      open(),
+      v3('renderPages', []),
+      v3('renderPages', [pr(11), pr(22)], { concurrency: 0, width: 50 }),
+      settle('r0'),
+      settle('r1'),
+      v3('renderPages', [pr(33), pr(22), pr(11), pr(33), pr(22)], { width: 60 }),
+      ...settleRange(2, 4),
+    ],
+  },
+  {
+    name: 'render-page-permission-denied',
+    covers:
+      'Without doc.render every public render door refuses locally with permission-denied naming its own operation (renderThumbnail is renderPage), before touching the page registry or the engine.',
+    plugins: render(),
+    engine: { documents: { a: doc({ allows: [] }) } },
+    snapshot: 'none',
+    steps: [
+      start,
+      open(),
+      v3('renderPage', pr(11)),
+      v3('renderPage', pr(99)),
+      v3('renderThumbnail', pr(11), { maxWidth: 40 }),
+      v3('renderPages', [pr(11), pr(22)]),
+    ],
+  },
+  {
+    name: 'events-reach-listeners',
+    covers:
+      'onInvalidated fires once per publish with PageRefs, the scope and the origin (api for the verb, the event origin mapped for a confirmed event, system for an event without one); an unplaced widget names no page. onRenderCompleted and onRenderFailed report base rasters by key; an abort is not a failure. Unsubscribing silences a listener.',
+    plugins: withSignalsPlugin(),
+    engine: { documents: { a: doc() } },
+    snapshot: SNAPSHOT,
+    steps: [
+      start,
+      open(),
+      v3('onInvalidated', { $fn: 'invalidated', returns: null }),
+      v3('onRenderCompleted', { $fn: 'completed', returns: null }),
+      v3('onRenderFailed', { $fn: 'failed', returns: null }),
+      cap('invalidate', { pons: [22], scope: 'annotations' }),
+      cap('invalidate'),
+      emit({ type: 'annotation.created', page: pr(33), origin: { kind: 'remote', sessionId: 'x', sub: 'alice', ts: 1, serverId: 7 } }),
+      emit({ type: 'form.imported' }),
+      emit({ type: 'form.valueChanged', changedWidgets: [{ ...widget(5, 11), page: null }, widget(6, 33)], origin: LOCAL }),
+      emit({ type: 'form.valueChanged', changedWidgets: [{ ...widget(5, 11), page: null }], origin: LOCAL }),
+      emit({ type: 'redaction.applied', results: [{ page: pr(11), status: 'applied' }], origin: { ...LOCAL, sub: 'bob' } }),
+      cap('renderPage', 11, { scale: 0.5 }),
+      v3('renderPage', pr(22), { width: 40 }),
+      cap('renderPage', 33, { scale: 1, signal: signal('s1') }),
+      settle('r0'),
+      fail('r1', 'render failed'),
+      abortSignal('s1'),
+      callRef(0),
+      callRef(1),
+      cap('invalidate', { pons: [11] }),
+      cap('renderPage', 22, { scale: 0.5 }),
+      settle('r3'),
+    ],
   },
 ];
 
@@ -1229,6 +1384,37 @@ const tileCases: ScenarioCase[] = [
       ...v.plan('stage', 11, DEEP),
       ...v.plan('stage', 11, { desiredDeviceWidth: 500 }),
       ...v.plan('stage', 11, DEEP),
+    ],
+  ),
+  tileCase(
+    'view-demand-refcount',
+    'createViewDemand is reference-counted per view id: the same handle comes back, only the last dispose releases the view (aborting its in-flight tiles and emptying its plans), a dispose past zero does nothing, and a disposed handle still works when reused.',
+    { tiles: { prefetch: { margin: 0 } } },
+    doc(),
+    (v) => [
+      ...v.plan('stage', 11, DEEP),
+      v.tilesFor('stage'),
+      v.dispose('stage'),
+      settle('r0'),
+      v.getPlan('stage', 11),
+      v.dispose('stage'),
+      v.getPlan('stage', 11),
+      v.dispose('stage'),
+      ...v.plan('stage', 11, DEEP),
+    ],
+  ),
+  tileCase(
+    'replan-reaches-only-views-with-the-page',
+    'An invalidation re-plans the page for every view that set a demand on it and skips the others; a re-plan that returns the same plan wakes no one.',
+    { tiles: { prefetch: { margin: 0 } } },
+    doc(),
+    (v) => [
+      ...v.plan('stage', 11, DEEP),
+      v.tilesFor('thumbs'),
+      ...v.plan('thumbs', 22, { desiredDeviceWidth: 200 }),
+      cap('invalidate', { pons: [22] }),
+      cap('invalidate', { pons: [11] }),
+      ...v.plan('thumbs', 22, { desiredDeviceWidth: 200 }),
     ],
   ),
   tileCase(

@@ -1,13 +1,13 @@
 //! The conformance adapter: how `crates/plugin-conformance` builds this
-//! plugin from a vector, calls its capability and tile handles by name, and
+//! plugin from a vector, calls its capability and view handles by name, and
 //! the function table the pure suites call by their TypeScript names.
 //!
 //! It mirrors the shims in `tooling/plugin-conformance/src/suites/render.ts`:
-//! a `renderPage` option `signal: {"$abortSignal": name}` is the signal of a
-//! controller named `name`, which the `signals` test plugin's `abort(name)`
-//! aborts; the plugin's `console.warn` and `console.debug` lines log as
-//! callbacks of those names; and the frame scheduler is the TypeScript's
-//! Node fallback, `setTimeout(cb, 16)`.
+//! a `renderSource` or `renderPage` option `signal: {"$abortSignal": name}`
+//! is the signal of a controller named `name`, which the `signals` test
+//! plugin's `abort(name)` aborts; the plugin's `console.warn` and
+//! `console.debug` lines log as callbacks of those names; and the frame
+//! scheduler is the TypeScript's Node fallback, `setTimeout(cb, 16)`.
 
 use std::any::Any;
 use std::cell::RefCell;
@@ -16,10 +16,13 @@ use std::rc::Rc;
 use std::sync::LazyLock;
 
 use epdf_geometry::Rect;
+use epdf_kernel::geometry::PageRef;
 use epdf_kernel::signal::AbortSignal;
+use epdf_kernel::store::Unsubscribe;
 use epdf_kernel::{AnyPlugin, AnyToken, Error, Token, define, is_undefined};
 use plugin_conformance::js::{arg, from_value, to_value};
-use plugin_conformance::{FunctionTable, Harness, HarnessPlugin, Outcome};
+use plugin_conformance::{Answer, FunctionTable, Harness, HarnessPlugin, Outcome};
+use serde::Serialize;
 use serde_json::{Value, json};
 
 use crate::js::{dom_abort_error, number_to_string};
@@ -28,24 +31,30 @@ use crate::policy::{
     snap_appearance_scale, snap_full_page_viewport, snap_tile_scale,
 };
 use crate::tiles::{self, PageSizePt, TileCoord, TileGrid};
-use crate::types::{InvalidateOptions, RenderAction, RenderHost, RenderPageOptions, RenderState};
 use crate::*;
 
 // ── the scenario adapter ──────────────────────────────────────────────────────
 
-/// The capability object literal's member order.
+/// The api object literal's member order (the harness wrapper spreads it).
 const MEMBERS: &[&str] = &[
     "canRender",
     "renderPage",
-    "renderSourceKey",
-    "conformViewport",
-    "paintSettings",
-    "renderPolicy",
-    "tilesFor",
-    "renderEpoch",
+    "renderThumbnail",
+    "renderPages",
+    "getRenderPolicy",
+    "getRenderEpoch",
     "invalidate",
+    "onInvalidated",
+    "renderSource",
+    "getSourceKey",
+    "conformViewport",
+    "getPaintSettings",
+    "createViewDemand",
+    "onRenderCompleted",
+    "onRenderFailed",
 ];
-const VIEW_MEMBERS: &[&str] = &["plan", "painted", "unpainted", "release"];
+const VIEW_MEMBERS: &[&str] =
+    &["setDemand", "getPlan", "markPainted", "markUnpainted", "release", "dispose"];
 
 thread_local! {
     /// The case's abort controllers by name; a render build starts a case.
@@ -68,17 +77,78 @@ fn present(args: &[Value], i: usize) -> Option<&Value> {
     args.get(i).filter(|v| !is_undefined(v))
 }
 
-fn pon_arg(args: &[Value]) -> u32 {
-    present(args, 0).and_then(Value::as_u64).unwrap_or(0) as u32
+fn page_ref(value: &Value) -> Result<PageRef, Error> {
+    PageRef::from_json(value).ok_or_else(|| Error::named("TypeError", "[render] not a PageRef"))
+}
+
+fn page_arg(args: &[Value], i: usize) -> Result<PageRef, Error> {
+    page_ref(present(args, i).unwrap_or(&Value::Null))
 }
 
 fn not_a_function(method: &str) -> Outcome {
     Outcome::Threw(Error::new(format!("[scenario] \"{method}\" is not a function")))
 }
 
+fn unit(result: Result<(), Error>) -> Outcome {
+    match result {
+        Ok(()) => Outcome::undefined(),
+        Err(error) => Outcome::Threw(error),
+    }
+}
+
+fn member<'a>(options: Option<&'a Value>, key: &str) -> Option<&'a Value> {
+    options.and_then(|o| o.get(key)).filter(|v| !v.is_null() && !is_undefined(v))
+}
+
+fn number(options: Option<&Value>, key: &str) -> Option<f64> {
+    member(options, key).and_then(Value::as_f64)
+}
+
 /// `includeAnnotations ?? true`: absent and null are both true.
 fn include_annotations(options: Option<&Value>) -> Option<bool> {
-    options.and_then(|o| o.get("includeAnnotations")).and_then(Value::as_bool)
+    member(options, "includeAnnotations").and_then(Value::as_bool)
+}
+
+fn signal_of(options: Option<&Value>) -> Option<AbortSignal> {
+    member(options, "signal")
+        .and_then(|s| s.get("$abortSignal"))
+        .and_then(Value::as_str)
+        .map(controller_named)
+}
+
+fn page_options(
+    options: Option<&Value>,
+    signal: Option<AbortSignal>,
+) -> Result<RenderPageOptions, Error> {
+    let format = match member(options, "format") {
+        Some(format) => Some(from_value::<RenderFormat>(format)?),
+        None => None,
+    };
+    Ok(RenderPageOptions {
+        width: number(options, "width"),
+        scale: number(options, "scale"),
+        include_annotations: include_annotations(options),
+        format,
+        quality: number(options, "quality"),
+        signal,
+    })
+}
+
+/// An event hook: subscribe a scripted callback, return its unsubscribe.
+fn hook<E: Serialize + 'static>(
+    h: &Harness,
+    spec: Option<&Value>,
+    subscribe: impl FnOnce(Box<dyn Fn(&E) -> Result<(), Error>>) -> Unsubscribe,
+) -> Outcome {
+    let callback = h.callback(spec.unwrap_or(&Value::Null));
+    let off = subscribe(Box::new(move |event: &E| match callback.call(vec![to_value(event)]) {
+        Answer::Throws(error) => Err(error),
+        _ => Ok(()),
+    }));
+    Outcome::Returned(h.register_fn(Rc::new(move |_| {
+        off.call();
+        Outcome::undefined()
+    })))
 }
 
 impl Render {
@@ -88,102 +158,131 @@ impl Render {
         method: &str,
         args: &[Value],
         h: &Harness,
-    ) -> Outcome {
-        match method {
+    ) -> Result<Outcome, Error> {
+        Ok(match method {
             "canRender" => Outcome::Returned(json!(cap.can_render())),
             "renderPage" => {
                 let options = present(args, 1);
-                let signal = options
-                    .and_then(|o| o.get("signal"))
-                    .and_then(|s| s.get("$abortSignal"))
-                    .and_then(Value::as_str)
-                    .map(controller_named);
-                let options = RenderPageOptions {
-                    scale: options
-                        .and_then(|o| o.get("scale"))
-                        .and_then(Value::as_f64)
-                        .unwrap_or(f64::NAN),
-                    include_annotations: include_annotations(options),
-                    signal,
-                };
-                match cap.render_page(pon_arg(args), options) {
-                    Ok(promise) => Outcome::promise(promise),
-                    Err(error) => Outcome::Threw(error),
-                }
+                let options = page_options(options, signal_of(options))?;
+                Outcome::promise(cap.render_page(page_arg(args, 0)?, options))
             }
-            "renderSourceKey" => {
+            "renderThumbnail" => {
                 let options = present(args, 1);
-                let scale = options
-                    .and_then(|o| o.get("scale"))
-                    .and_then(Value::as_f64)
-                    .unwrap_or(f64::NAN);
-                Outcome::from_result(
-                    cap.render_source_key(pon_arg(args), scale, include_annotations(options))
-                        .map(Value::String),
-                )
+                let options = RenderThumbnailOptions {
+                    max_width: number(options, "maxWidth").unwrap_or(f64::NAN),
+                    include_annotations: include_annotations(options),
+                    signal: None,
+                };
+                Outcome::promise(cap.render_thumbnail(page_arg(args, 0)?, options))
             }
-            "conformViewport" => {
-                let scale = present(args, 1).and_then(Value::as_f64).unwrap_or(f64::NAN);
-                Outcome::from_result(
-                    cap.conform_viewport(pon_arg(args), scale).map(|v| to_value(&v)),
-                )
+            "renderPages" => {
+                let pages = present(args, 0)
+                    .and_then(Value::as_array)
+                    .into_iter()
+                    .flatten()
+                    .map(page_ref)
+                    .collect::<Result<Vec<_>, _>>()?;
+                let options = present(args, 1);
+                let options = RenderPagesOptions {
+                    page: page_options(options, None)?,
+                    concurrency: number(options, "concurrency"),
+                };
+                Outcome::promise(cap.render_pages(pages, options))
             }
-            "paintSettings" => Outcome::Returned(to_value(&cap.paint_settings())),
-            "renderPolicy" => Outcome::Returned(to_value(&cap.render_policy())),
-            "tilesFor" => {
-                let view = present(args, 0).and_then(Value::as_str).unwrap_or_default();
-                let handle: Rc<dyn Any> = Rc::new(cap.tiles_for(view));
-                Outcome::Returned(h.describe(handle).unwrap_or_else(|| json!({})))
-            }
-            "renderEpoch" => {
+            "getRenderPolicy" => Outcome::Returned(to_value(&cap.get_render_policy())),
+            "getRenderEpoch" => {
                 // A default parameter: only `undefined` is true; `null` is falsy.
                 let annotations = match present(args, 1) {
                     None => true,
                     Some(Value::Bool(b)) => *b,
                     Some(_) => false,
                 };
-                Outcome::from_result(cap.render_epoch(pon_arg(args), annotations).map(|e| json!(e)))
+                Outcome::Returned(json!(cap.get_render_epoch(page_arg(args, 0)?, annotations)))
             }
             "invalidate" => {
-                let options: InvalidateOptions = present(args, 0)
-                    .map(|o| serde_json::from_value(o.clone()).unwrap_or_default())
-                    .unwrap_or_default();
-                cap.invalidate(options);
-                Outcome::undefined()
+                let options = present(args, 0);
+                let pages = match member(options, "pages").and_then(Value::as_array) {
+                    Some(pages) => Some(pages.iter().map(page_ref).collect::<Result<Vec<_>, _>>()?),
+                    None => None,
+                };
+                let scope = match member(options, "scope") {
+                    Some(scope) => Some(from_value::<InvalidateScope>(scope)?),
+                    None => None,
+                };
+                unit(cap.invalidate(InvalidateOptions { pages, scope }))
             }
-            other => not_a_function(other),
-        }
-    }
-
-    fn call_view(&self, view: &ViewTiles, method: &str, args: &[Value]) -> Outcome {
-        let pon = pon_arg(args);
-        let key = || present(args, 1).and_then(Value::as_str).unwrap_or_default().to_string();
-        match method {
-            "plan" => {
-                let demand: PageViewDemand =
-                    match from_value(present(args, 1).unwrap_or(&Value::Null)) {
-                        Ok(demand) => demand,
-                        Err(error) => return Outcome::Threw(error),
-                    };
+            "onInvalidated" => {
+                let cap = cap.clone();
+                hook(h, present(args, 0), move |f| cap.on_invalidated(f))
+            }
+            "renderSource" => {
+                let options = present(args, 1);
+                let options = RenderSourceOptions {
+                    scale: number(options, "scale").unwrap_or(f64::NAN),
+                    include_annotations: include_annotations(options),
+                    signal: signal_of(options),
+                };
+                Outcome::promise(cap.render_source(page_arg(args, 0)?, options))
+            }
+            "getSourceKey" => {
+                let options = present(args, 1);
+                let scale = number(options, "scale").unwrap_or(f64::NAN);
                 Outcome::from_result(
-                    view.plan(pon, &demand, include_annotations(present(args, 2)))
-                        .map(|plan| to_value(&*plan)),
+                    cap.get_source_key(page_arg(args, 0)?, scale, include_annotations(options))
+                        .map(Value::String),
                 )
             }
-            "painted" => {
-                view.painted(pon, &key());
+            "conformViewport" => {
+                let scale = present(args, 1).and_then(Value::as_f64).unwrap_or(f64::NAN);
+                Outcome::from_result(
+                    cap.conform_viewport(page_arg(args, 0)?, scale).map(|v| to_value(&v)),
+                )
+            }
+            "getPaintSettings" => Outcome::Returned(to_value(&cap.get_paint_settings())),
+            "createViewDemand" => {
+                let view = present(args, 0).and_then(Value::as_str).unwrap_or_default();
+                let handle: Rc<dyn Any> = Rc::new(cap.create_view_demand(view));
+                Outcome::Returned(h.describe(handle).unwrap_or_else(|| json!({})))
+            }
+            "onRenderCompleted" => {
+                let cap = cap.clone();
+                hook(h, present(args, 0), move |f| cap.on_render_completed(f))
+            }
+            "onRenderFailed" => {
+                let cap = cap.clone();
+                hook(h, present(args, 0), move |f| cap.on_render_failed(f))
+            }
+            other => not_a_function(other),
+        })
+    }
+
+    fn call_view(&self, view: &ViewDemand, method: &str, args: &[Value]) -> Result<Outcome, Error> {
+        let key = || present(args, 1).and_then(Value::as_str).unwrap_or_default().to_string();
+        Ok(match method {
+            "setDemand" => {
+                let demand: PageViewDemand = from_value(present(args, 1).unwrap_or(&Value::Null))?;
+                let page = page_arg(args, 0)?;
+                unit(view.set_demand(page, demand, include_annotations(present(args, 2))))
+            }
+            "getPlan" => Outcome::Returned(to_value(&*view.get_plan(page_arg(args, 0)?))),
+            "markPainted" => {
+                view.mark_painted(page_arg(args, 0)?, &key());
                 Outcome::undefined()
             }
-            "unpainted" => {
-                view.unpainted(pon, &key());
+            "markUnpainted" => {
+                view.mark_unpainted(page_arg(args, 0)?, &key());
                 Outcome::undefined()
             }
             "release" => {
-                view.release(pon);
+                view.release(page_arg(args, 0)?);
+                Outcome::undefined()
+            }
+            "dispose" => {
+                view.dispose();
                 Outcome::undefined()
             }
             other => not_a_function(other),
-        }
+        })
     }
 }
 
@@ -199,8 +298,8 @@ impl HarnessPlugin for Render {
                 .build());
         }
         CONTROLLERS.with(|c| c.borrow_mut().clear());
-        let options: RenderPluginOptions = if is_undefined(config) || config.is_null() {
-            RenderPluginOptions::default()
+        let config: RenderConfig = if is_undefined(config) || config.is_null() {
+            RenderConfig::default()
         } else {
             serde_json::from_value(config.clone())
                 .map_err(|e| Error::new(format!("[render] bad config: {e}")))?
@@ -213,7 +312,7 @@ impl HarnessPlugin for Render {
             warn: Rc::new(move |message| warn_h.log("console.warn", vec![json!(message)])),
             debug: Rc::new(move |message| debug_h.log("console.debug", vec![json!(message)])),
         };
-        Ok(render_plugin_with_host(options, host))
+        Ok(render_plugin_with_host(config, host))
     }
 
     fn tokens(&self) -> Vec<AnyToken> {
@@ -228,10 +327,12 @@ impl HarnessPlugin for Render {
         h: &Harness,
     ) -> Option<Outcome> {
         if let Some(cap) = capability.downcast_ref::<RenderCapability>() {
-            return Some(self.call_capability(cap, method, &args, h));
+            return Some(
+                self.call_capability(cap, method, &args, h).unwrap_or_else(Outcome::Threw),
+            );
         }
-        if let Some(view) = capability.downcast_ref::<ViewTiles>() {
-            return Some(self.call_view(view, method, &args));
+        if let Some(view) = capability.downcast_ref::<ViewDemand>() {
+            return Some(self.call_view(view, method, &args).unwrap_or_else(Outcome::Threw));
         }
         capability.downcast_ref::<Signals>()?;
         Some(match method {
@@ -248,7 +349,7 @@ impl HarnessPlugin for Render {
         if capability.downcast_ref::<RenderCapability>().is_some() {
             return Some(MEMBERS.to_vec());
         }
-        if capability.downcast_ref::<ViewTiles>().is_some() {
+        if capability.downcast_ref::<ViewDemand>().is_some() {
             return Some(VIEW_MEMBERS.to_vec());
         }
         capability.downcast_ref::<Signals>()?;
@@ -272,12 +373,6 @@ fn tiles_in_rect(a: &[Value]) -> Out {
 }
 fn tile_paint_rect(a: &[Value]) -> Out {
     ok(&tiles::tile_paint_rect(&arg::<TileGrid>(a, 0)?, arg(a, 1)?, arg(a, 2)?))
-}
-fn to_engine_rect(a: &[Value]) -> Out {
-    ok(&tiles::to_engine_rect(arg(a, 0)?, arg(a, 1)?))
-}
-fn tile_engine_rect(a: &[Value]) -> Out {
-    ok(&tiles::tile_engine_rect(&arg::<TileGrid>(a, 0)?, arg(a, 1)?, arg(a, 2)?))
 }
 fn bleed_rect(a: &[Value]) -> Out {
     ok(&tiles::bleed_rect(arg(a, 0)?, arg(a, 1)?, arg(a, 2)?))
@@ -307,7 +402,7 @@ fn intersect_rects(a: &[Value]) -> Out {
 }
 
 fn resolve_render_options_fn(a: &[Value]) -> Out {
-    ok(&resolve_render_options(&arg::<RenderPluginOptions>(a, 0)?))
+    ok(&resolve_render_options(&arg::<RenderConfig>(a, 0)?))
 }
 fn resolve_strategy_fn(a: &[Value]) -> Out {
     let policy: EngineRenderPolicy = arg(a, 0)?;
@@ -346,11 +441,11 @@ fn initial_render_state_fn(_: &[Value]) -> Out {
 }
 /// `{changed: next !== state, state: next}`. An action outside the union is
 /// the reducer's `return state`.
-fn render_reducer_fn(a: &[Value]) -> Out {
+fn reduce_render_fn(a: &[Value]) -> Out {
     let state: RenderState = serde_json::from_value(a[0].clone())
         .map_err(|e| Error::new(format!("[render] bad state: {e}")))?;
     let next = match serde_json::from_value::<RenderAction>(a[1].clone()) {
-        Ok(action) => render_reducer(&state, &action),
+        Ok(action) => reduce_render(&state, &action),
         Err(_) => None,
     };
     Ok(json!({ "changed": next.is_some(), "state": to_value(next.as_ref().unwrap_or(&state)) }))
@@ -366,8 +461,6 @@ pub fn functions() -> FunctionTable {
         ("tileGrid", tile_grid),
         ("tilesInRect", tiles_in_rect),
         ("tilePaintRect", tile_paint_rect),
-        ("toEngineRect", to_engine_rect),
-        ("tileEngineRect", tile_engine_rect),
         ("bleedRect", bleed_rect),
         ("regionCovered", region_covered),
         ("inflateRect", inflate_rect),
@@ -383,7 +476,7 @@ pub fn functions() -> FunctionTable {
         ("snapAppearanceScale", snap_appearance_scale_fn),
         ("snapTileScale", snap_tile_scale_fn),
         ("initialRenderState", initial_render_state_fn),
-        ("renderReducer", render_reducer_fn),
+        ("reduceRender", reduce_render_fn),
         ("annotatedPons", annotated_pons_fn),
     ]
 }

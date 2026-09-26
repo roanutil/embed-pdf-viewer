@@ -374,7 +374,7 @@ for (const [pName, p] of [
   }
 }
 
-// ── reducer.ts and effects.ts ───────────────────────────────────────────────
+// ── model.ts and invalidation.ts ────────────────────────────────────────────
 
 const ledgerFns: Record<string, Fn> = {
   initialRenderState,
