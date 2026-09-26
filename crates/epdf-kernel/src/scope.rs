@@ -20,10 +20,13 @@ pub type Teardown = Box<dyn FnOnce() -> Result<Option<Promise<()>>, Error>>;
 /// `CancelledError`: the close won, not a failure.
 pub fn cancelled(what: &str) -> Error {
     Error::named("CancelledError", format!("[kernel] cancelled: {what}"))
+        .of_class(crate::error::ErrorClass::Cancelled)
 }
 
+/// `error instanceof CancelledError`: by class, so an error that only
+/// carries the name is not one.
 pub fn is_cancelled(error: &Error) -> bool {
-    error.name == "CancelledError"
+    error.class == crate::error::ErrorClass::Cancelled
 }
 
 struct Inner {

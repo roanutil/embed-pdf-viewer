@@ -9,6 +9,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use crate::error::Error;
+use crate::signal::AbortSignal;
 use crate::store::Unsubscribe;
 
 type Listener<T> = Rc<dyn Fn(&T) -> Result<(), Error>>;
@@ -39,19 +40,39 @@ impl<T: 'static> EventHookSource<T> {
 
     /// The subscribe-only half, as a capability exposes it.
     pub fn on(&self, listener: impl Fn(&T) -> Result<(), Error> + 'static) -> Unsubscribe {
-        let mut inner = self.inner.borrow_mut();
-        let id = inner.next;
-        inner.next += 1;
-        let Some(listeners) = inner.listeners.as_mut() else { return Unsubscribe::noop() };
-        listeners.push((id, Rc::new(listener)));
+        self.on_signal(listener, None)
+    }
+
+    /// `on(listener, {signal})`: the signal's abort unsubscribes, and a
+    /// pre-aborted signal never registers.
+    pub fn on_signal(
+        &self,
+        listener: impl Fn(&T) -> Result<(), Error> + 'static,
+        signal: Option<&AbortSignal>,
+    ) -> Unsubscribe {
+        let id = {
+            let mut inner = self.inner.borrow_mut();
+            if inner.listeners.is_none() || signal.is_some_and(AbortSignal::aborted) {
+                return Unsubscribe::noop();
+            }
+            let id = inner.next;
+            inner.next += 1;
+            inner.listeners.as_mut().expect("live").push((id, Rc::new(listener)));
+            id
+        };
         let weak = Rc::downgrade(&self.inner);
-        Unsubscribe::new(move || {
+        let off = Unsubscribe::new(move || {
             if let Some(inner) = weak.upgrade()
                 && let Some(listeners) = inner.borrow_mut().listeners.as_mut()
             {
                 listeners.retain(|(i, _)| *i != id);
             }
-        })
+        });
+        if let Some(signal) = signal {
+            let release = off.clone();
+            signal.on_abort(Rc::new(move |_| release.call()));
+        }
+        off
     }
 
     pub fn emit(&self, event: &T) {

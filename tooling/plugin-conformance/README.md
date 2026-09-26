@@ -103,7 +103,7 @@ literal defines them (`HarnessPlugin::members`), because that order numbers the 
       "id": "a",
       "services": ["render", "page.pieceInfo"],
       "security": { "allows": ["doc.render"], "passwordPrompt": { "state": "none" } },
-      "pages": [ { "index": 0, "pageObjectNumber": 1, "...": "a PageLayout" } ],
+      "pages": [ { "index": 0, "ref": { "kind": "objectNumber", "pageObjectNumber": 1 }, "...": "a PageLayout" } ],
       "responses": [ { "path": "metadata.read", "value": { "title": "x" } } ]
     }
   },
@@ -114,10 +114,13 @@ literal defines them (`HarnessPlugin::members`), because that order numbers the 
 Every asynchronous call is logged and answered by the first entry whose `path`, `pon` and `args`
 match; `args` compares canonically, and an entry without it matches any arguments. An entry with
 `times` is consumed that many times; one without is sticky. It answers with `value`, `error`, or
-`defer: label`. Page services are `page.<service>.<method>` with the page's object number as `pon`.
+`defer: label`. Pages are addressed as the engine addresses them, by `PageRef`: `page(ref)` finds
+the page whose `ref.pageObjectNumber` matches, refuses any other with `EngineError(NotFound)`, and
+hands out a page handle whose `ref` is that address. Page services are `page.<service>.<method>`,
+logged with the page's object number as `pon`.
 Optional members exist only when `services` lists them: `render`, `actions`, `attachments`,
-`pieceInfo`, `redaction`, `downloadLayer`, `page.pieceInfo`, and `forms.submit` (the Rust side
-answers `DocumentHandle::has` from the same list). `forms.applyEffects`, `pages.flatten` and
+`pieceInfo`, `redaction`, `signatures`, `fonts`, `version`, `downloadLayer`, `page.pieceInfo`,
+`page.measure`, and `forms.submit` (the Rust side answers `DocumentHandle::has` from the same list). `forms.applyEffects`, `pages.flatten` and
 `pages.extract` are optional in the contract but every shipped engine has them, so each is present
 unless the document's `lacks` list names it.
 
@@ -139,6 +142,24 @@ still makes its handle) and then ignored, as the TypeScript's `resolve(map(value
 `src/probe.ts` and `crates/plugin-conformance/src/probe.rs` are a plugin configured entirely by the
 vector, for testing the kernel without any real plugin's behaviour. The config is documented on
 `ProbeConfig`; every hook logs as `<id>.<hook>`.
+
+A probe with `create` builds its capability through the v3 `create` hook. Its api reaches one
+`ControllerContext` member per method (the guarded `doc`, `events.source`, `waitFor`,
+`serialQueue`, `latest`, `acquire`, `geometry`, `assertPageRef`, `getPage`), and the member list,
+in order, is the `API` array in `src/suites/kernel.ts`. `sameAs` hands back the object an earlier
+probe in the same case built, so a case can install one definition twice. The runner wraps each
+plugin object once, so that stays the same object after instrumentation.
+
+## Instance ids
+
+The kernel numbers every document instance `<id>#<n>` from one counter shared by every kernel in
+the process, so a raw trace would depend on how many cases ran before it. Before each case the
+runner reads the counter (it opens a document in a throwaway kernel) and afterwards rewrites every
+`<id>#<n>` with `n` above that base to `n - base`. That is what a kernel whose counter starts at
+zero writes, and the Rust kernel counts per kernel. The first reading also pushes the counter past
+1,000, so a latest-lane run id (`<lane>#<n>`, counted per lane from one) is never mistaken for an
+instance id. Slice lease ids of workspace plugins (`<plugin>#<n>`) are counted per store and are not
+rewritten either.
 
 ## Time and ordering
 

@@ -20,6 +20,8 @@ pub const CORE_DOCUMENT_PAGES_UPDATED: &str = "@@core/document-pages-updated";
 pub const CORE_DOCUMENT_OPENING: &str = "@@core/document-opening";
 pub const CORE_DOCUMENT_LOCKED: &str = "@@core/document-locked";
 pub const CORE_DOCUMENT_OPEN_FAILED: &str = "@@core/document-open-failed";
+/// A tab was renamed (`documents.rename`).
+pub const CORE_DOCUMENT_RENAMED: &str = "@@core/document-renamed";
 
 /// `CONTINUOUS_RENDER_POLICY` from `engine-core`.
 pub fn continuous_render_policy() -> Value {
@@ -31,6 +33,8 @@ pub fn continuous_render_policy() -> Value {
 #[serde(rename_all = "camelCase")]
 pub struct DocumentMeta {
     pub id: String,
+    /// Unique per open of this id; a reopened id gets a new one.
+    pub instance_id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
     pub page_count: u32,
@@ -100,6 +104,17 @@ pub struct DocInfo {
     pub page_count: u32,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub password_provided: Option<bool>,
+    /// `error` only: why the open failed, as `{code, message, capability}`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub error: Option<PluginErrorInfo>,
+}
+
+/// `PluginErrorInfo`: the serializable summary of a `PluginError`.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct PluginErrorInfo {
+    pub code: String,
+    pub message: String,
+    pub capability: String,
 }
 
 impl DocInfo {
@@ -110,6 +125,7 @@ impl DocInfo {
             status: DocStatus::Ready,
             page_count: meta.page_count,
             password_provided: None,
+            error: None,
         }
     }
 
@@ -124,6 +140,13 @@ impl DocInfo {
             },
             page_count: 0,
             password_provided: meta.password_provided,
+            error: match (meta.status, &meta.error) {
+                (PendingStatus::Error, Some(error)) => serde_json::from_value(
+                    crate::error::to_plugin_error("documents", error).plugin_error_info(),
+                )
+                .ok(),
+                _ => None,
+            },
         }
     }
 }
@@ -136,6 +159,8 @@ pub fn doc_info_equals(a: &DocInfo, b: &DocInfo) -> bool {
         && a.status == b.status
         && a.page_count == b.page_count
         && a.password_provided == b.password_provided
+        && a.error.as_ref().map(|e| &e.code) == b.error.as_ref().map(|e| &e.code)
+        && a.error.as_ref().map(|e| &e.message) == b.error.as_ref().map(|e| &e.message)
 }
 
 /// `docInfoListEquals`: the same list object is equal without a look.
@@ -149,4 +174,18 @@ pub fn doc_info_list_equals(a: &[DocInfo], b: &[DocInfo]) -> bool {
 pub enum PluginScope {
     Workspace,
     Document,
+}
+
+/// `originOf(event)`: where a confirmed engine event came from, in the plugin
+/// vocabulary (`ChangeOrigin`). The transport does not carry the trigger, so
+/// it is always `unknown`.
+pub fn origin_of(event: &Value) -> Value {
+    let origin = event.get("origin").cloned().unwrap_or(Value::Null);
+    let remote = origin.get("kind").and_then(Value::as_str) == Some("remote");
+    serde_json::json!({
+        "locality": if remote { "remote" } else { "local" },
+        "trigger": "unknown",
+        "sessionId": origin.get("sessionId").cloned().unwrap_or(Value::Null),
+        "actorId": origin.get("sub").cloned().filter(|s| !s.is_null()).unwrap_or(Value::Null),
+    })
 }

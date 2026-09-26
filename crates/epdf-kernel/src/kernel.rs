@@ -22,15 +22,18 @@ use serde_json::Value;
 
 use crate::action::{Action, CoreAction};
 use crate::engine::{DocumentHandle, Engine, EngineCall};
-use crate::error::Error;
+use crate::error::{Error, to_plugin_error};
+use crate::event_hook::EventHookSource;
+use crate::geometry::PageRef;
 use crate::plan::{PluginPlan, plan_plugins};
 use crate::plugin::{
-    AnyPlugin, EffectContext, PluginContext, PluginDef, Services, SessionView, slice_key,
+    AnyPlugin, ConnectFn, ControllerContext, EffectContext, PluginContext, PluginDef, Services,
+    SessionView, slice_key,
 };
 use crate::rt::{self, Promise};
 use crate::scope::{Scope, cancelled, is_cancelled};
 use crate::signal::AbortSignal;
-use crate::store::{Report, Store, Unsubscribe};
+use crate::store::{Report, SliceLease, Store, Unsubscribe};
 use crate::token::{AnyToken, Token};
 use crate::types::*;
 
@@ -72,6 +75,7 @@ enum Phase {
 
 /// What `documents.open()` accepts: an input, or a thunk producing one under
 /// the loading tab. The thunk gets the session's cancellation signal.
+#[derive(Clone)]
 pub enum OpenSource {
     Input(Value),
     Thunk(Rc<dyn Fn(AbortSignal) -> Result<Promise<Value>, Error>>),
@@ -117,7 +121,10 @@ pub struct KernelOptions {
 
 struct Session {
     id: RefCell<String>,
-    name: Option<String>,
+    instance_id: String,
+    name: RefCell<Option<String>>,
+    /// What `open()` was called with, so a failed tab can `retry()`.
+    source: RefCell<Option<(OpenSource, OpenOptions)>>,
     phase: Cell<Phase>,
     handle: RefCell<Option<Rc<dyn DocumentHandle>>>,
     staged_meta: RefCell<Option<DocumentMeta>>,
@@ -126,12 +133,18 @@ struct Session {
     engine_op: RefCell<Option<Rc<dyn Fn(Option<Value>)>>>,
     cancel: AbortSignal,
     capabilities: RefCell<Vec<(*const PluginDef, Rc<dyn Any>)>>,
+    /// The `connect` halves of `create`, run in the effects phase.
+    connectors: RefCell<Vec<(*const PluginDef, ConnectFn)>>,
+    leases: RefCell<Vec<(*const PluginDef, SliceLease)>>,
     closing: RefCell<Option<Promise<()>>>,
 }
 
 impl SessionView for Session {
     fn id(&self) -> String {
         self.id.borrow().clone()
+    }
+    fn instance_id(&self) -> String {
+        self.instance_id.clone()
     }
     fn handle(&self) -> Option<Rc<dyn DocumentHandle>> {
         self.handle.borrow().clone()
@@ -141,6 +154,10 @@ impl SessionView for Session {
     }
     fn scope(&self) -> Scope {
         self.scope.clone()
+    }
+    fn lease(&self, plugin: &PluginDef) -> Option<SliceLease> {
+        let key = plugin as *const PluginDef;
+        self.leases.borrow().iter().find(|(p, _)| *p == key).map(|(_, l)| l.clone())
     }
 }
 
@@ -178,14 +195,57 @@ struct Inner {
     plan: PluginPlan,
     document_plugins: Vec<AnyPlugin>,
     workspace_capabilities: RefCell<Vec<(AnyToken, Rc<dyn Any>)>>,
+    workspace_leases: RefCell<Vec<(*const PluginDef, SliceLease)>>,
+    workspace_connectors: RefCell<Vec<(*const PluginDef, ConnectFn)>>,
+    workspace_cancel: AbortSignal,
     workspace_scope: Scope,
+    events: LifecycleEvents,
     sessions: RefCell<Sessions>,
+    instance_counter: Cell<u64>,
     status: Cell<KernelStatus>,
     start_promise: RefCell<Option<Promise<()>>>,
     destroy_promise: RefCell<Option<Promise<()>>>,
     ticket: Cell<u64>,
     report: Report,
     on_dispatch: Option<Rc<dyn Fn(&str, &dyn Action)>>,
+}
+
+/// The kernel's lifecycle events, disposed at destroy.
+#[derive(Clone)]
+pub struct LifecycleEvents {
+    pub opened: EventHookSource<Value>,
+    pub open_failed: EventHookSource<Value>,
+    pub locked: EventHookSource<Value>,
+    pub closed: EventHookSource<Value>,
+    pub active_changed: EventHookSource<Value>,
+    pub pages_changed: EventHookSource<Value>,
+}
+
+impl LifecycleEvents {
+    fn new(report: &Report) -> Self {
+        let hook = || EventHookSource::new(Some(report.clone()));
+        LifecycleEvents {
+            opened: hook(),
+            open_failed: hook(),
+            locked: hook(),
+            closed: hook(),
+            active_changed: hook(),
+            pages_changed: hook(),
+        }
+    }
+
+    fn dispose(&self) {
+        for hook in [
+            &self.opened,
+            &self.open_failed,
+            &self.locked,
+            &self.closed,
+            &self.active_changed,
+            &self.pages_changed,
+        ] {
+            hook.dispose();
+        }
+    }
 }
 
 /// The kernel. Cloning shares it.
@@ -221,6 +281,20 @@ impl Inner {
         weak as Weak<dyn Services>
     }
 
+    /// Every core write goes through here so an active-tab change is observed
+    /// exactly once.
+    fn set_core(&self, patch: impl FnOnce(&mut CoreState), action: &dyn Action) {
+        let before = self.store.core().active_id.clone();
+        self.store.set_core(patch, action);
+        let after = self.store.core().active_id.clone();
+        if before != after {
+            self.events.active_changed.emit(&serde_json::json!({
+                "documentId": after,
+                "previousDocumentId": before,
+            }));
+        }
+    }
+
     fn guard_usable(&self, what: &str) -> Result<(), Error> {
         match self.status.get() {
             s @ (KernelStatus::Failed | KernelStatus::Destroying | KernelStatus::Destroyed) => {
@@ -238,9 +312,12 @@ impl Inner {
     }
 
     fn create_session(&self, id: String, name: Option<String>) -> Rc<Session> {
+        self.instance_counter.set(self.instance_counter.get() + 1);
         Rc::new(Session {
+            instance_id: format!("{id}#{}", self.instance_counter.get()),
             id: RefCell::new(id),
-            name,
+            name: RefCell::new(name),
+            source: RefCell::new(None),
             phase: Cell::new(Phase::Opening),
             handle: RefCell::new(None),
             staged_meta: RefCell::new(None),
@@ -249,6 +326,8 @@ impl Inner {
             engine_op: RefCell::new(None),
             cancel: AbortSignal::new(),
             capabilities: RefCell::new(Vec::new()),
+            connectors: RefCell::new(Vec::new()),
+            leases: RefCell::new(Vec::new()),
             closing: RefCell::new(None),
         })
     }
@@ -347,7 +426,7 @@ impl Inner {
         self.sessions.borrow_mut().set(next_id.to_string(), session.clone());
         if let Some(slot) = core.pending.get(&previous_id).cloned() {
             let next = next_id.to_string();
-            self.store.set_core(
+            self.set_core(
                 |core| {
                     core.pending.remove(&previous_id);
                     core.pending.insert(next.clone(), PendingMeta { id: next.clone(), ..slot });
@@ -375,6 +454,12 @@ impl Inner {
         let closing = Promise::spawn(async move {
             s.phase.set(Phase::Closing);
             this.unpublish_slot(&s.id());
+            // Write authority ends now.
+            let leases: Vec<SliceLease> =
+                s.leases.borrow().iter().map(|(_, l)| l.clone()).collect();
+            for lease in leases {
+                lease.revoke();
+            }
             let reason = cancelled(&format!("closed while opening: {}", s.id()));
             s.cancel.abort(reason.clone());
             let engine_op = s.engine_op.borrow().clone();
@@ -399,6 +484,7 @@ impl Inner {
             if is_current {
                 this.sessions.borrow_mut().delete(&id);
             }
+            this.events.closed.emit(&serde_json::json!({ "documentId": id }));
             Ok(())
         });
         *session.closing.borrow_mut() = Some(closing.clone());
@@ -422,8 +508,8 @@ impl Inner {
 
     fn publish_pending_slot(&self, session: &Session, activate: bool) {
         let id = session.id();
-        let name = session.name.clone();
-        self.store.set_core(
+        let name = session.name.borrow().clone();
+        self.set_core(
             |core| {
                 core.pending.insert(
                     id.clone(),
@@ -446,8 +532,8 @@ impl Inner {
 
     fn publish_locked(&self, session: &Session, password_provided: bool) {
         let id = session.id();
-        let name = session.name.clone();
-        self.store.set_core(
+        let name = session.name.borrow().clone();
+        self.set_core(
             |core| {
                 core.pending.insert(
                     id.clone(),
@@ -462,12 +548,17 @@ impl Inner {
             },
             &core_action(CORE_DOCUMENT_LOCKED),
         );
+        self.events.locked.emit(&serde_json::json!({
+            "documentId": session.id(),
+            "passwordProvided": password_provided,
+        }));
     }
 
     fn publish_error(&self, session: &Session, error: Error) {
         let id = session.id();
-        let name = session.name.clone();
-        self.store.set_core(
+        let name = session.name.borrow().clone();
+        let info = to_plugin_error("documents", &error).plugin_error_info();
+        self.set_core(
             |core| {
                 core.pending.insert(
                     id.clone(),
@@ -482,6 +573,9 @@ impl Inner {
             },
             &core_action(CORE_DOCUMENT_OPEN_FAILED),
         );
+        self.events
+            .open_failed
+            .emit(&serde_json::json!({ "documentId": session.id(), "error": info }));
     }
 
     fn unpublish_slot(&self, id: &str) {
@@ -490,7 +584,7 @@ impl Inner {
             return;
         }
         let next_active = Self::next_active_document(&core, id);
-        self.store.set_core(
+        self.set_core(
             |core| {
                 core.pending.remove(id);
                 core.documents.remove(id);
@@ -505,13 +599,18 @@ impl Inner {
         session.phase.set(Phase::Ready);
         let meta = session.staged_meta().expect("staged meta");
         let id = session.id();
-        self.store.set_core(
+        self.set_core(
             |core| {
                 core.documents.insert(id.clone(), meta);
                 core.pending.remove(&id);
             },
             &core_action(CORE_DOCUMENT_ADDED),
         );
+        let meta = self.store.core().documents.get(&id).cloned().expect("committed");
+        self.events.opened.emit(&serde_json::json!({
+            "documentId": id,
+            "info": serde_json::to_value(DocInfo::from_meta(&meta)).unwrap_or(Value::Null),
+        }));
     }
 
     // ── capability resolution ─────────────────────────────────────────────────
@@ -542,12 +641,27 @@ impl Inner {
         {
             return Ok(capability.clone());
         }
-        let ctx = PluginContext::new(
-            self.services(),
-            plugin,
-            Some(session.clone() as Rc<dyn SessionView>),
-        );
-        let capability = (plugin.capability.as_ref().expect("provider has a capability"))(ctx)?;
+        let view = Some(session.clone() as Rc<dyn SessionView>);
+        let capability = match &plugin.create {
+            Some(create) => {
+                let cx = ControllerContext::new(
+                    self.services(),
+                    plugin,
+                    view,
+                    session.cancel.clone(),
+                    session.scope.clone(),
+                )?;
+                let created = create(cx)?;
+                if let Some(connect) = created.connect {
+                    session.connectors.borrow_mut().push((key, connect));
+                }
+                created.api
+            }
+            None => {
+                let ctx = PluginContext::new(self.services(), plugin, view)?;
+                (plugin.capability.as_ref().expect("provider has a capability"))(ctx)?
+            }
+        };
         session.capabilities.borrow_mut().push((key, capability.clone()));
         Ok(capability)
     }
@@ -661,7 +775,8 @@ impl Inner {
         let page_count = snapshot.get("pageCount").and_then(Value::as_u64).unwrap_or(0) as u32;
         *session.staged_meta.borrow_mut() = Some(DocumentMeta {
             id: session.id(),
-            name: session.name.clone(),
+            instance_id: session.instance_id.clone(),
+            name: session.name.borrow().clone(),
             page_count,
             // `snapshot.pages`: absent stays undefined, as the TypeScript copies it.
             pages: snapshot.get("pages").cloned().unwrap_or_else(crate::undefined),
@@ -683,25 +798,32 @@ impl Inner {
                 revision: existing.revision + 1,
                 ..existing
             };
-            this.store.set_core(
+            let (revision, pages) = (updated.revision, updated.pages.clone());
+            this.set_core(
                 |core| {
                     core.documents.insert(id.clone(), updated);
                 },
                 &core_action(CORE_DOCUMENT_PAGES_UPDATED),
             );
+            this.events.pages_changed.emit(&serde_json::json!({
+                "documentId": id,
+                "revision": revision,
+                "pages": pages,
+            }));
         }));
         session.scope.defer_fn(move || unsubscribe.call());
 
         for plugin in &this.document_plugins {
-            let key = slice_key(&plugin.id, Some(&session.id()));
-            this.store.register_slice(
-                &key,
+            // The lease is the write authority for this instance's slice.
+            let lease = this.store.lease(
+                &slice_key(&plugin.id, Some(&session.id())),
                 plugin.reducer.clone(),
                 (plugin.initial_state)(),
                 plugin.to_json.clone(),
+                Some(session.instance_id.clone()),
             );
-            let store = this.store.clone();
-            session.scope.defer_fn(move || store.remove_slice(&key));
+            session.leases.borrow_mut().push((Rc::as_ptr(plugin), lease.clone()));
+            session.scope.defer_fn(move || lease.revoke()); // LIFO: reverse dependency order
         }
         for plugin in &this.document_plugins {
             if let Some(init) = &plugin.init {
@@ -709,7 +831,7 @@ impl Inner {
                     this.services(),
                     plugin,
                     Some(session.clone() as Rc<dyn SessionView>),
-                );
+                )?;
                 match init(ctx)? {
                     Some(promise) => promise.await?,
                     None => rt::tick().await,
@@ -725,8 +847,22 @@ impl Inner {
                     this.services(),
                     plugin,
                     Some(session.clone() as Rc<dyn SessionView>),
-                );
+                )?;
                 effects(EffectContext { ctx })?;
+            }
+            if plugin.create.is_some() {
+                // Cheap eager construction, in dependency order.
+                this.build_document_capability(plugin, &session)?;
+                let key = Rc::as_ptr(plugin);
+                let connect = session
+                    .connectors
+                    .borrow()
+                    .iter()
+                    .find(|(p, _)| *p == key)
+                    .map(|(_, c)| c.clone());
+                if let Some(connect) = connect {
+                    connect()?;
+                }
             }
         }
         Self::checkpoint(&session)
@@ -734,18 +870,21 @@ impl Inner {
 
     fn open_document(&self, input: OpenSource, options: OpenOptions) -> Promise<Value> {
         // An async function: its synchronous throws are rejections.
-        match self.open_document_sync(input, options) {
-            Ok(promise) => promise,
+        match self.reserve_and_open(input, options) {
+            Ok((_, promise)) => promise,
             Err(error) => Promise::rejected(error),
         }
     }
 
-    fn open_document_sync(
+    /// Reserve the tab slot synchronously and start the open; the slot id at
+    /// once, and the open's promise.
+    fn reserve_and_open(
         &self,
         input: OpenSource,
         options: OpenOptions,
-    ) -> Result<Promise<Value>, Error> {
+    ) -> Result<(String, Promise<Value>), Error> {
         self.guard_usable("documents.open()")?;
+        let recorded = (input.clone(), options.clone());
         let OpenOptions { activate, name, engine: engine_options } = options;
         let requested_id = match &input {
             OpenSource::Thunk(_) => self.next_ticket(),
@@ -755,6 +894,7 @@ impl Inner {
             return Err(Error::new(format!("[documents] document already open: {requested_id}")));
         }
         let session = self.create_session(requested_id.clone(), name);
+        *session.source.borrow_mut() = Some(recorded);
         self.sessions.borrow_mut().set(requested_id, session.clone());
         self.publish_pending_slot(&session, activate.unwrap_or(true));
 
@@ -778,7 +918,8 @@ impl Inner {
                 }
             }
         };
-        self.begin_operation(&session, run)
+        let id = session.id();
+        Ok((id, self.begin_operation(&session, run)?))
     }
 
     async fn open_steps(
@@ -915,7 +1056,7 @@ impl Inner {
     }
 
     fn reorder(&self, next: Vec<String>) {
-        self.store.set_core(|core| core.order = next, &core_action(CORE_ORDER_CHANGED));
+        self.set_core(|core| core.order = next, &core_action(CORE_ORDER_CHANGED));
     }
 }
 
@@ -928,6 +1069,13 @@ impl Services for Inner {
     }
     fn workspace_scope(&self) -> Scope {
         self.workspace_scope.clone()
+    }
+    fn workspace_lease(&self, plugin: &PluginDef) -> Option<SliceLease> {
+        let key = plugin as *const PluginDef;
+        self.workspace_leases.borrow().iter().find(|(p, _)| *p == key).map(|(_, l)| l.clone())
+    }
+    fn report(&self) -> Report {
+        self.report.clone()
     }
     fn resolve(&self, token: &AnyToken, document_id: Option<&str>) -> Result<Rc<dyn Any>, Error> {
         self.resolve_capability(token, document_id)
@@ -964,6 +1112,12 @@ impl Kernel {
         let plan = plan_plugins(&plugins, DOCUMENTS.any())?;
         let document_plugins =
             plan.ordered.iter().filter(|p| p.scope == PluginScope::Document).cloned().collect();
+        let workspace_scope = Scope::new(report.clone());
+        let events = LifecycleEvents::new(&report);
+        {
+            let events = events.clone();
+            workspace_scope.defer_fn(move || events.dispose());
+        }
         let inner = Rc::new_cyclic(|this| Inner {
             this: this.clone(),
             engine,
@@ -971,8 +1125,13 @@ impl Kernel {
             plan,
             document_plugins,
             workspace_capabilities: RefCell::new(Vec::new()),
-            workspace_scope: Scope::new(report.clone()),
+            workspace_leases: RefCell::new(Vec::new()),
+            workspace_connectors: RefCell::new(Vec::new()),
+            workspace_cancel: AbortSignal::new(),
+            workspace_scope,
+            events,
             sessions: RefCell::new(Sessions::default()),
+            instance_counter: Cell::new(0),
             status: Cell::new(KernelStatus::Created),
             start_promise: RefCell::new(None),
             destroy_promise: RefCell::new(None),
@@ -985,19 +1144,37 @@ impl Kernel {
 
         for plugin in &inner.plan.ordered {
             if plugin.scope != PluginScope::Document {
-                inner.store.register_slice(
+                let lease = inner.store.lease(
                     &plugin.id,
                     plugin.reducer.clone(),
                     (plugin.initial_state)(),
                     plugin.to_json.clone(),
+                    None,
                 );
+                inner.workspace_leases.borrow_mut().push((Rc::as_ptr(plugin), lease));
             }
         }
         for plugin in &inner.plan.ordered {
-            if plugin.scope != PluginScope::Document
-                && let (Some(token), Some(capability)) = (&plugin.token, &plugin.capability)
-            {
-                let ctx = PluginContext::new(inner.services(), plugin, None);
+            if plugin.scope == PluginScope::Document {
+                continue;
+            }
+            if let Some(create) = &plugin.create {
+                let cx = ControllerContext::new(
+                    inner.services(),
+                    plugin,
+                    None,
+                    inner.workspace_cancel.clone(),
+                    inner.workspace_scope.clone(),
+                )?;
+                let created = create(cx)?;
+                if let Some(token) = &plugin.token {
+                    inner.workspace_capabilities.borrow_mut().push((token.clone(), created.api));
+                }
+                if let Some(connect) = created.connect {
+                    inner.workspace_connectors.borrow_mut().push((Rc::as_ptr(plugin), connect));
+                }
+            } else if let (Some(token), Some(capability)) = (&plugin.token, &plugin.capability) {
+                let ctx = PluginContext::new(inner.services(), plugin, None)?;
                 let built = capability(ctx)?;
                 inner.workspace_capabilities.borrow_mut().push((token.clone(), built));
             }
@@ -1100,7 +1277,7 @@ impl Kernel {
                     if plugin.scope != PluginScope::Document {
                         match &plugin.init {
                             Some(init) => {
-                                let ctx = PluginContext::new(this.services(), &plugin, None);
+                                let ctx = PluginContext::new(this.services(), &plugin, None)?;
                                 match init(ctx)? {
                                     Some(promise) => promise.await?,
                                     None => rt::tick().await,
@@ -1114,11 +1291,22 @@ impl Kernel {
                     return Ok(());
                 }
                 for plugin in this.plan.ordered.clone() {
-                    if plugin.scope != PluginScope::Document
-                        && let Some(effects) = &plugin.effects
-                    {
-                        let ctx = PluginContext::new(this.services(), &plugin, None);
+                    if plugin.scope == PluginScope::Document {
+                        continue;
+                    }
+                    if let Some(effects) = &plugin.effects {
+                        let ctx = PluginContext::new(this.services(), &plugin, None)?;
                         effects(EffectContext { ctx })?;
+                    }
+                    let key = Rc::as_ptr(&plugin);
+                    let connect = this
+                        .workspace_connectors
+                        .borrow()
+                        .iter()
+                        .find(|(p, _)| *p == key)
+                        .map(|(_, c)| c.clone());
+                    if let Some(connect) = connect {
+                        connect()?;
                     }
                 }
                 this.status.set(KernelStatus::Started);
@@ -1146,7 +1334,8 @@ impl Kernel {
         let this = inner.clone();
         let destroy = Promise::spawn(async move {
             let was_failed = this.status.get() == KernelStatus::Failed;
-            this.status.set(KernelStatus::Destroying);
+            this.status.set(KernelStatus::Destroying); // an in-flight start exits at its next check
+            this.workspace_cancel.abort(cancelled("kernel destroyed"));
             let start = this.start_promise.borrow().clone();
             match start {
                 Some(start) => {
@@ -1211,17 +1400,87 @@ impl Documents {
         }
     }
 
-    /// Fire every open without awaiting; exactly one activation, decided now.
-    pub fn open_all(&self, docs: Vec<InitialDocument>) -> Result<(), Error> {
+    /// Re-run a failed open with the same source and options.
+    pub fn retry(&self, id: &str) -> Promise<Value> {
+        let inner = match self.inner() {
+            Ok(inner) => inner,
+            Err(error) => return Promise::rejected(error),
+        };
+        let id = id.to_string();
+        Promise::spawn(async move {
+            let session = inner.sessions.borrow().get(&id);
+            let recorded = session.as_ref().and_then(|s| {
+                (s.phase.get() == Phase::Error).then(|| s.source.borrow().clone()).flatten()
+            });
+            let (Some(session), Some((source, options))) = (session, recorded) else {
+                return Err(Error::new(format!(
+                    "[documents] \"{id}\" is not a failed open; nothing to retry"
+                )));
+            };
+            inner.close_session(&session).await?;
+            let reopened = inner.open_document(source, options);
+            // `return openDocument(...)` from an async function adopts it.
+            rt::tick().await;
+            reopened.await
+        })
+    }
+
+    /// Change the tab name.
+    pub fn rename(&self, id: &str, name: &str) {
+        let Ok(inner) = self.inner() else { return };
+        let core = inner.store.core();
+        let (id, name) = (id.to_string(), name.to_string());
+        if core.documents.contains_key(&id) {
+            let (i, n) = (id.clone(), name.clone());
+            inner.set_core(
+                move |core| {
+                    if let Some(meta) = core.documents.get_mut(&i) {
+                        meta.name = Some(n);
+                    }
+                },
+                &core_action(CORE_DOCUMENT_RENAMED),
+            );
+        } else if core.pending.contains_key(&id) {
+            let (i, n) = (id.clone(), name.clone());
+            inner.set_core(
+                move |core| {
+                    if let Some(meta) = core.pending.get_mut(&i) {
+                        meta.name = Some(n);
+                    }
+                },
+                &core_action(CORE_DOCUMENT_RENAMED),
+            );
+        }
+        let session = inner.sessions.borrow().get(&id);
+        if let Some(session) = session {
+            *session.name.borrow_mut() = Some(name);
+        }
+    }
+
+    /// Fire every open without awaiting; exactly one activation, decided
+    /// now. The reserved ids, in order: a thunk's ticket, and for a refused
+    /// reservation the id it asked for.
+    pub fn open_all(&self, docs: Vec<InitialDocument>) -> Result<Vec<String>, Error> {
         let inner = self.inner()?;
         inner.guard_usable("documents.openAll()")?;
         let active_index = docs.iter().position(|d| d.active).unwrap_or(0);
+        let mut ids = Vec::new();
         for (index, doc) in docs.into_iter().enumerate() {
             let mut options = doc.options;
             options.activate = Some(index == active_index);
-            inner.open_document(doc.source, options).ignore();
+            let asked = match &doc.source {
+                OpenSource::Thunk(_) => String::new(),
+                OpenSource::Input(value) => id_of_input(value).unwrap_or_default(),
+            };
+            match inner.reserve_and_open(doc.source, options) {
+                Ok((id, done)) => {
+                    done.ignore();
+                    ids.push(id);
+                }
+                Err(_) => ids.push(asked),
+            }
         }
-        Ok(())
+        Ok(ids)
     }
 
     pub fn unlock(&self, id: &str, password: &str) -> Promise<()> {
@@ -1254,14 +1513,17 @@ impl Documents {
         let core = inner.store.core();
         if core.documents.contains_key(id) || core.pending.contains_key(id) {
             let id = id.to_string();
-            inner
-                .store
-                .set_core(|core| core.active_id = Some(id), &core_action(CORE_ACTIVE_CHANGED));
+            inner.set_core(|core| core.active_id = Some(id), &core_action(CORE_ACTIVE_CHANGED));
         }
     }
 
-    pub fn active_id(&self) -> Option<String> {
+    pub fn get_active_id(&self) -> Option<String> {
         self.inner().ok()?.store.core().active_id.clone()
+    }
+
+    pub fn get_active(&self) -> Option<DocInfo> {
+        let id = self.get_active_id()?;
+        self.get(&id)
     }
 
     pub fn list(&self) -> Vec<DocInfo> {
@@ -1291,12 +1553,29 @@ impl Documents {
         })
     }
 
-    pub fn count(&self) -> usize {
+    pub fn get_count(&self) -> usize {
         self.inner().map(|inner| inner.store.core().order.len()).unwrap_or(0)
     }
 
-    pub fn order(&self) -> Vec<String> {
+    pub fn get_order(&self) -> Vec<String> {
         self.inner().map(|inner| inner.store.core().order.clone()).unwrap_or_default()
+    }
+
+    /// Reorder every tab at once; `ids` must be a permutation of the order.
+    pub fn set_order(&self, ids: &[String]) -> Result<(), Error> {
+        let inner = self.inner()?;
+        let current = inner.store.core().order.clone();
+        let mut a = ids.to_vec();
+        let mut b = current.clone();
+        a.sort();
+        b.sort();
+        if ids.len() != current.len() || a != b {
+            return Err(Error::new(
+                "[documents] setOrder() needs a permutation of the current order",
+            ));
+        }
+        inner.reorder(ids.to_vec());
+        Ok(())
     }
 
     pub fn move_to(&self, id: &str, to_index: i64) {
@@ -1325,20 +1604,26 @@ impl Documents {
         inner.reorder(next);
     }
 
-    pub fn download(&self, id: Option<&str>, options: Option<Value>) -> Promise<Value> {
+    /// The complete document as PDF bytes. `mode` goes to the engine only
+    /// when one is given.
+    pub fn save(&self, id: Option<&str>, mode: Option<Value>) -> Promise<Value> {
         let Ok(inner) = self.inner() else {
-            return Promise::rejected(Error::new("[documents] no document to download"));
+            return Promise::rejected(Error::new("[documents] no document to save"));
         };
         match inner.document_handle_of(id) {
-            None => Promise::rejected(Error::new("[documents] no document to download")),
-            // `handle.download(opts)` passes `opts` even when it is undefined.
+            None => Promise::rejected(Error::new("[documents] no document to save")),
             Some(handle) => {
-                handle.call("download", None, vec![options.unwrap_or_else(crate::undefined)])
+                let options = match mode {
+                    Some(mode) => serde_json::json!({ "mode": mode }),
+                    None => crate::undefined(),
+                };
+                handle.call("download", None, vec![options])
             }
         }
     }
 
-    pub fn download_layer(&self, id: Option<&str>) -> Promise<Value> {
+    /// Just the document's layer.
+    pub fn save_layer(&self, id: Option<&str>) -> Promise<Value> {
         let Ok(inner) = self.inner() else {
             return Promise::rejected(Error::new("[documents] no document to download"));
         };
@@ -1351,11 +1636,56 @@ impl Documents {
         }
     }
 
+    fn meta_of(&self, id: Option<&str>) -> Option<DocumentMeta> {
+        let core = self.inner().ok()?.store.core();
+        let id = match id {
+            Some(id) => id.to_string(),
+            None => core.active_id.clone()?,
+        };
+        core.documents.get(&id).cloned()
+    }
+
+    fn pages_of(&self, id: Option<&str>) -> Option<Vec<Value>> {
+        self.meta_of(id).map(|meta| meta.pages.as_array().cloned().unwrap_or_default())
+    }
+
+    /// The page registry of a document, the active one by default.
+    pub fn list_pages(&self, id: Option<&str>) -> Vec<Value> {
+        self.pages_of(id).unwrap_or_default()
+    }
+
+    pub fn get_page(&self, page: PageRef, id: Option<&str>) -> Option<Value> {
+        self.pages_of(id)?.into_iter().find(|p| page.names(p))
+    }
+
+    pub fn get_page_at(&self, index: i64, id: Option<&str>) -> Option<Value> {
+        let pages = self.pages_of(id)?;
+        usize::try_from(index).ok().and_then(|i| pages.get(i).cloned())
+    }
+
+    pub fn get_page_index(&self, page: PageRef, id: Option<&str>) -> i64 {
+        match self.pages_of(id) {
+            Some(pages) => pages.iter().position(|p| page.names(p)).map_or(-1, |i| i as i64),
+            None => -1,
+        }
+    }
+
+    pub fn get_revision(&self, id: Option<&str>) -> i64 {
+        self.meta_of(id).map_or(-1, |meta| meta.revision as i64)
+    }
+
     /// The permissions.md chrome exception: print and download.
     pub fn allows(&self, capability: &str, id: Option<&str>) -> bool {
         self.inner()
             .ok()
             .and_then(|inner| inner.document_handle_of(id))
             .is_some_and(|handle| handle.security().allows(capability))
+    }
+
+    /// The lifecycle events: `onOpened`, `onOpenFailed`, `onLocked`,
+    /// `onClosed`, `onActiveChanged`, `onPagesChanged`. Payloads are the
+    /// TypeScript's, as JSON.
+    pub fn events(&self) -> Option<LifecycleEvents> {
+        self.inner().ok().map(|inner| inner.events.clone())
     }
 }

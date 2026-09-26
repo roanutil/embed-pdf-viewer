@@ -17,11 +17,15 @@
 
 pub mod action;
 pub mod bytes;
+pub mod compose;
 pub mod engine;
 pub mod error;
 pub mod event_hook;
+pub mod geometry;
+pub mod guarded;
 pub mod js;
 pub mod kernel;
+pub mod lanes;
 pub mod plan;
 pub mod plugin;
 pub mod rt;
@@ -37,7 +41,7 @@ pub use error::Error;
 pub use kernel::{
     DOCUMENTS, Documents, Kernel, KernelOptions, KernelStatus, OpenOptions, OpenSource,
 };
-pub use plugin::{AnyPlugin, Ctx, EffectCtx, define};
+pub use plugin::{AnyPlugin, Controller, ControllerContext, Ctx, EffectCtx, define};
 pub use rt::Promise;
 pub use store::Unsubscribe;
 pub use token::{AnyToken, Token};

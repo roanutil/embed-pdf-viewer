@@ -11,12 +11,30 @@ use std::fmt;
 
 use serde_json::{Map, Value};
 
+/// The class an error was constructed from, where the TypeScript tells
+/// errors apart with `instanceof` rather than by name. A table or a vector
+/// can only make plain errors: one named `PermissionDenied` that did not
+/// come from that class is, to `toPluginError`, a plain failure.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum ErrorClass {
+    #[default]
+    Plain,
+    /// The kernel's `CancelledError`.
+    Cancelled,
+    /// `engine-core`'s `PermissionDenied`.
+    PermissionDenied,
+    /// The kernel's `PluginError`.
+    Plugin,
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Error {
     pub name: String,
     pub message: String,
     /// Own enumerable members beyond `name` and `message`, in insertion order.
-    pub members: Map<String, Value>,
+    /// Boxed so an `Error` stays small enough to return by value.
+    pub members: Box<Map<String, Value>>,
+    pub class: ErrorClass,
 }
 
 impl Error {
@@ -26,7 +44,17 @@ impl Error {
     }
 
     pub fn named(name: impl Into<String>, message: impl Into<String>) -> Self {
-        Error { name: name.into(), message: message.into(), members: Map::new() }
+        Error {
+            name: name.into(),
+            message: message.into(),
+            members: Box::default(),
+            class: ErrorClass::Plain,
+        }
+    }
+
+    pub fn of_class(mut self, class: ErrorClass) -> Self {
+        self.class = class;
+        self
     }
 
     /// Attach an own member, as `Object.assign(error, {key: value})` would.
@@ -57,7 +85,9 @@ impl Error {
             Some(context) => format!("permission denied ({context}): {required}"),
             None => format!("permission denied: {required}"),
         };
-        let mut error = Error::named("PermissionDenied", message).with("required", required);
+        let mut error = Error::named("PermissionDenied", message)
+            .with("required", required)
+            .of_class(ErrorClass::PermissionDenied);
         if let Some(context) = context {
             error = error.with("context", context);
         }
@@ -93,7 +123,7 @@ impl Error {
         let mut out = Map::new();
         out.insert("name".into(), Value::String(self.name.clone()));
         out.insert("message".into(), Value::String(self.message.clone()));
-        for (key, value) in &self.members {
+        for (key, value) in self.members.iter() {
             out.insert(key.clone(), value.clone());
         }
         let mut wrapper = Map::new();
@@ -127,3 +157,155 @@ impl fmt::Display for Error {
 }
 
 impl std::error::Error for Error {}
+
+// ── the plugin error vocabulary (`errors.ts`) ─────────────────────────────────
+
+/// `PluginErrorCode`.
+pub mod code {
+    pub const PERMISSION_DENIED: &str = "permission-denied";
+    pub const UNSUPPORTED: &str = "unsupported";
+    pub const NOT_FOUND: &str = "not-found";
+    pub const NOT_READY: &str = "not-ready";
+    pub const INVALID_INPUT: &str = "invalid-input";
+    pub const CONFLICT: &str = "conflict";
+    pub const INSTANCE_CLOSED: &str = "instance-closed";
+    pub const OPERATION_CANCELLED: &str = "operation-cancelled";
+    pub const OPERATION_FAILED: &str = "operation-failed";
+}
+
+/// `new PluginError(code, capability, message, {cause, details})`. The own
+/// members are `code`, `capability`, then `details` and `cause` when given,
+/// as the class's fields and constructor leave them.
+pub fn plugin_error(
+    code: &str,
+    capability: &str,
+    message: impl Into<String>,
+    cause: Option<Value>,
+    details: Option<Value>,
+) -> Error {
+    let mut error = Error::named("PluginError", message)
+        .with("code", code)
+        .with("capability", capability)
+        .of_class(ErrorClass::Plugin);
+    if let Some(details) = details.filter(|d| !crate::is_undefined(d)) {
+        error = error.with("details", details);
+    }
+    if let Some(cause) = cause {
+        error = error.with("cause", cause);
+    }
+    error
+}
+
+impl Error {
+    /// `isPluginError(value, code?)`.
+    pub fn is_plugin_error(&self, code: Option<&str>) -> bool {
+        self.class == ErrorClass::Plugin && code.is_none_or(|c| self.plugin_code() == Some(c))
+    }
+
+    /// A `PluginError`'s code.
+    pub fn plugin_code(&self) -> Option<&str> {
+        if self.class != ErrorClass::Plugin {
+            return None;
+        }
+        self.members.get("code").and_then(Value::as_str)
+    }
+
+    /// `toPluginErrorInfo(error)`: `{code, message, capability}`.
+    pub fn plugin_error_info(&self) -> Value {
+        serde_json::json!({
+            "code": self.members.get("code").cloned().unwrap_or(Value::Null),
+            "message": self.message,
+            "capability": self.members.get("capability").cloned().unwrap_or(Value::Null),
+        })
+    }
+}
+
+/// The engine codes `toPluginError` maps; anything else is `operation-failed`.
+fn engine_code(code: &str) -> Option<&'static str> {
+    Some(match code {
+        "InvalidArg" | "MalformedPdf" | "WireFormat" => code::INVALID_INPUT,
+        "DocNotOpen" => code::NOT_READY,
+        "DocPasswordRequired"
+        | "DocPasswordIncorrect"
+        | "SharePasswordRequired"
+        | "Unauthenticated"
+        | "Forbidden"
+        | "ProtectedDocument" => code::PERMISSION_DENIED,
+        "NotFound" | "InvalidReference" => code::NOT_FOUND,
+        "NotImplemented" => code::UNSUPPORTED,
+        "Aborted" => code::OPERATION_CANCELLED,
+        "WeakAnnotationSessionConflict"
+        | "LayerVersionConflict"
+        | "StaleBase"
+        | "SigningPending"
+        | "SigningExpired"
+        | "SigningVersionMismatch" => code::CONFLICT,
+        _ => return None,
+    })
+}
+
+/// `toPluginError(capability, error)`: the one boundary mapping from what an
+/// engine call threw to a `PluginError`. Idempotent.
+pub fn to_plugin_error(capability: &str, error: &Error) -> Error {
+    match error.class {
+        ErrorClass::Plugin => return error.clone(),
+        ErrorClass::PermissionDenied => {
+            let mut details = Map::new();
+            if let Some(required) = error.members.get("required") {
+                details.insert("required".into(), required.clone());
+            }
+            if let Some(context) = error.members.get("context") {
+                details.insert("context".into(), context.clone());
+            }
+            return plugin_error(
+                code::PERMISSION_DENIED,
+                capability,
+                error.message.clone(),
+                Some(error.to_canonical()),
+                Some(Value::Object(details)),
+            );
+        }
+        ErrorClass::Cancelled => {
+            return plugin_error(
+                code::OPERATION_CANCELLED,
+                capability,
+                "operation cancelled",
+                Some(error.to_canonical()),
+                None,
+            );
+        }
+        ErrorClass::Plain => {}
+    }
+    if error.name == "AbortError" {
+        return plugin_error(
+            code::OPERATION_CANCELLED,
+            capability,
+            "operation cancelled",
+            Some(error.to_canonical()),
+            None,
+        );
+    }
+    if error.name == "EngineError" {
+        let mapped = error.code().and_then(engine_code).unwrap_or(code::OPERATION_FAILED);
+        return plugin_error(
+            mapped,
+            capability,
+            error.message.clone(),
+            Some(error.to_canonical()),
+            error.members.get("details").cloned(),
+        );
+    }
+    plugin_error(
+        code::OPERATION_FAILED,
+        capability,
+        error.message.clone(),
+        Some(error.to_canonical()),
+        None,
+    )
+}
+
+/// `toPluginError` of something thrown that is not an `Error`: its message
+/// is `String(value)` and the value itself is the cause.
+pub fn to_plugin_error_of_value(capability: &str, message: &str, value: Value) -> Error {
+    plugin_error(code::OPERATION_FAILED, capability, message, Some(value), None)
+}

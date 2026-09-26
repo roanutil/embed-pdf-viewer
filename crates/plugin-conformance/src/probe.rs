@@ -1,14 +1,20 @@
 //! The probe: `tooling/plugin-conformance/src/probe.ts` in Rust.
 
 use std::any::Any;
+use std::cell::RefCell;
+use std::collections::HashMap;
 use std::rc::Rc;
 
-use epdf_kernel::plugin::{EffectContext, PluginContext, PluginDef};
+use epdf_kernel::error::plugin_error;
+use epdf_kernel::event_hook::EventHookSource;
+use epdf_kernel::geometry::{PageRef, PageSpace, PdfEdges, Point, Quad, Rect};
+use epdf_kernel::plugin::{ControllerContext, Created, EffectContext, PluginContext, PluginDef};
 use epdf_kernel::rt::Promise;
-use epdf_kernel::scope::Teardown;
+use epdf_kernel::scope::{Teardown, cancelled};
+use epdf_kernel::signal::AbortSignal;
 use epdf_kernel::store::{SliceJson, SliceReducer, SliceState};
 use epdf_kernel::types::PluginScope;
-use epdf_kernel::{Action, AnyPlugin, AnyToken, Error};
+use epdf_kernel::{Action, AnyPlugin, AnyToken, DOCUMENTS, Error};
 use serde_json::{Value, json};
 
 use crate::harness::{Harness, HarnessPlugin, Outcome};
@@ -50,6 +56,7 @@ const MEMBERS: &[&str] = &[
     "get",
     "tryGet",
     "forDocument",
+    "tryForDocument",
     "cleanup",
 ];
 
@@ -101,6 +108,13 @@ impl ProbeCapability {
                     &str_arg(args, 1),
                 )
                 .map(|_| true),
+            ),
+            "tryForDocument" => result(
+                ctx.try_for_document_any(
+                    &self.harness.token(&str_arg(args, 0), None),
+                    &str_arg(args, 1),
+                )
+                .map(|c| c.is_some()),
             ),
             "cleanup" => {
                 let label = arg(args, 0).cloned().unwrap_or_else(epdf_kernel::undefined);
@@ -186,7 +200,14 @@ fn build(config: &Value, h: &Harness) -> Result<AnyPlugin, Error> {
     let to_json: SliceJson =
         Rc::new(|state: &dyn Any| state.downcast_ref::<Value>().cloned().unwrap_or(Value::Null));
 
-    let capability = token.as_ref().map(|_| {
+    let create_config = config.get("create").filter(|v| v.is_object()).cloned();
+    let create = create_config.clone().map(|create| {
+        let h = h.clone();
+        let name = name.clone();
+        Rc::new(move |cx: ControllerContext| create_api(&name, &create, &h, cx))
+            as epdf_kernel::plugin::CreateFn
+    });
+    let capability = token.as_ref().filter(|_| create_config.is_none()).map(|_| {
         let h = h.clone();
         let name = name.clone();
         let throws = config.get("capabilityThrows").cloned();
@@ -309,6 +330,7 @@ fn build(config: &Value, h: &Harness) -> Result<AnyPlugin, Error> {
         capability,
         init,
         effects,
+        create,
     }))
 }
 
@@ -318,7 +340,18 @@ impl HarnessPlugin for Probe {
     }
 
     fn build(&self, _factory: &str, config: &Value, h: &Harness) -> Result<AnyPlugin, Error> {
-        build(config, h)
+        if let Some(same) = config.get("sameAs").and_then(Value::as_str) {
+            return h
+                .0
+                .built
+                .borrow()
+                .get(same)
+                .cloned()
+                .ok_or_else(|| Error::new(format!("[probe] no earlier probe \"{same}\"")));
+        }
+        let plugin = build(config, h)?;
+        h.0.built.borrow_mut().insert(plugin.id.clone(), plugin.clone());
+        Ok(plugin)
     }
 
     fn call(
@@ -328,12 +361,408 @@ impl HarnessPlugin for Probe {
         args: Vec<Value>,
         _h: &Harness,
     ) -> Option<Outcome> {
+        if let Some(controller) = capability.downcast_ref::<ProbeController>() {
+            return Some(controller.call(method, &args));
+        }
         let probe = capability.downcast_ref::<ProbeCapability>()?;
         Some(probe.call(method, &args))
     }
 
     fn members(&self, capability: &Rc<dyn Any>) -> Option<Vec<&'static str>> {
+        if capability.downcast_ref::<ProbeController>().is_some() {
+            return Some(API.to_vec());
+        }
         capability.downcast_ref::<ProbeCapability>()?;
         Some(MEMBERS.to_vec())
+    }
+}
+
+// ── the create mode (`createApi` in probe.ts) ─────────────────────────────────
+
+/// The api's members, in the TypeScript object's order.
+const API: &[&str] = &[
+    "instanceId",
+    "state",
+    "dispatch",
+    "docCall",
+    "pageCall",
+    "allows",
+    "docId",
+    "docRead",
+    "on",
+    "emit",
+    "onThrowing",
+    "abortSignal",
+    "waitFor",
+    "waitForThrowing",
+    "queue",
+    "latest",
+    "latestCancel",
+    "latestRunning",
+    "acquire",
+    "forPage",
+    "tryForPage",
+    "assertPageRef",
+    "getPage",
+    "get",
+    "tryGet",
+    "forDocument",
+    "tryForDocument",
+    "cleanup",
+];
+
+/// `probeError`: the classes a table cannot make.
+fn probe_error(spec: &Value) -> Error {
+    match spec.get("class").and_then(Value::as_str) {
+        Some("PermissionDenied") => Error::permission_denied(
+            spec.get("required").and_then(Value::as_str).unwrap_or_default(),
+            spec.get("context").and_then(Value::as_str),
+        ),
+        Some("CancelledError") => {
+            cancelled(spec.get("what").and_then(Value::as_str).unwrap_or_default())
+        }
+        Some("PluginError") => plugin_error(
+            spec.get("code").and_then(Value::as_str).unwrap_or_default(),
+            "probe",
+            spec.get("message").and_then(Value::as_str).unwrap_or_default(),
+            None,
+            None,
+        ),
+        _ => Error::from_spec(spec),
+    }
+}
+
+/// JavaScript `===` over JSON values: numbers by value, objects never.
+fn strict_equal(a: &Value, b: &Value) -> bool {
+    match (a, b) {
+        (Value::Number(x), Value::Number(y)) => x.as_f64() == y.as_f64(),
+        (Value::Object(_) | Value::Array(_), _) => false,
+        _ => a == b,
+    }
+}
+
+fn describe_space(space: &PageSpace) -> Value {
+    let point = Point { x: 10.0, y: 20.0 };
+    let quad = Quad {
+        p1: Point { x: 1.0, y: 2.0 },
+        p2: Point { x: 3.0, y: 2.0 },
+        p3: Point { x: 1.0, y: 4.0 },
+        p4: Point { x: 3.0, y: 4.0 },
+    };
+    let edges = space.page_rect_to_pdf(Rect { x: 10.0, y: 20.0, width: 20.0, height: 40.0 });
+    json!({
+        "crop": space.crop,
+        "width": space.width,
+        "height": space.height,
+        "pdfToPage": space.pdf_to_page(point),
+        "pageToPdf": space.page_to_pdf(point),
+        "pdfRectToPage": space.pdf_rect_to_page(PdfEdges { left: 10.0, bottom: 20.0, right: 30.0, top: 60.0 }),
+        "pageRectToPdf": { "left": edges.left, "right": edges.right, "top": edges.top, "bottom": edges.bottom },
+        "pdfQuadToPage": space.pdf_quad_to_page(quad),
+        "pageQuadToPdf": space.page_quad_to_pdf(quad),
+    })
+}
+
+/// A `create` probe's api.
+pub struct ProbeController {
+    cx: ControllerContext,
+    harness: Harness,
+    name: String,
+    source: EventHookSource<Value>,
+    controllers: RefCell<HashMap<String, AbortSignal>>,
+}
+
+fn create_api(
+    name: &str,
+    config: &Value,
+    h: &Harness,
+    cx: ControllerContext,
+) -> Result<Created, Error> {
+    h.log(
+        &format!("{name}.create"),
+        vec![cx.document_id().map_or(Value::Null, |d| json!(d)), json!(cx.instance_id())],
+    );
+    if let Some(error) = config.get("throws") {
+        return Err(Error::from_spec(error));
+    }
+    let source = cx.event_source::<Value>();
+    let api = Rc::new(ProbeController {
+        cx: cx.clone(),
+        harness: h.clone(),
+        name: name.to_string(),
+        source,
+        controllers: RefCell::new(HashMap::new()),
+    });
+    let connect =
+        config.get("connect").filter(|c| !c.is_null() && **c != Value::Bool(false)).cloned().map(
+            |connect| {
+                let (h, name, cx) = (h.clone(), name.to_string(), cx.clone());
+                Rc::new(move || -> Result<(), Error> {
+                    h.log(
+                        &format!("{name}.connect"),
+                        vec![cx.document_id().map_or(Value::Null, |d| json!(d))],
+                    );
+                    if connect.is_boolean() {
+                        return Ok(());
+                    }
+                    if let Some(error) = connect.get("throws") {
+                        return Err(Error::from_spec(error));
+                    }
+                    if let Some(action) = connect.get("dispatch") {
+                        cx.dispatch_any(action);
+                    }
+                    if connect.get("listenDoc").and_then(Value::as_bool) == Some(true) {
+                        let (h, name) = (h.clone(), name.clone());
+                        let off = cx.doc()?.subscribe(Rc::new(move |event: &Value| {
+                            h.log(
+                                &format!("{name}.docEvent"),
+                                vec![event.get("type").cloned().unwrap_or(Value::Null)],
+                            );
+                        }));
+                        cx.listen(off);
+                    }
+                    if let Some(pon) = connect.get("readPage").and_then(Value::as_u64) {
+                        let page = PageRef::new(pon as u32);
+                        let index = cx
+                            .get_page(page)
+                            .and_then(|p| p.get("index").cloned())
+                            .unwrap_or(Value::Null);
+                        let width = cx.try_for_page(page).map_or(Value::Null, |s| json!(s.width));
+                        h.log(&format!("{name}.page"), vec![index, width]);
+                    }
+                    if connect.get("listenActive").and_then(Value::as_bool) == Some(true) {
+                        let documents = cx.get(&*DOCUMENTS)?;
+                        if let Some(events) = documents.events() {
+                            let (h, name) = (h.clone(), name.clone());
+                            let off = events.active_changed.on(move |event| {
+                                h.log(&format!("{name}.activeChanged"), vec![event.clone()]);
+                                Ok(())
+                            });
+                            cx.listen(off);
+                        }
+                    }
+                    Ok(())
+                }) as epdf_kernel::plugin::ConnectFn
+            },
+        );
+    Ok(Created { api: api as Rc<dyn Any>, connect })
+}
+
+impl ProbeController {
+    fn signal_of(&self, label: Option<&str>) -> Option<AbortSignal> {
+        let label = label?;
+        Some(self.controllers.borrow_mut().entry(label.to_string()).or_default().clone())
+    }
+
+    fn call(&self, method: &str, args: &[Value]) -> Outcome {
+        let cx = &self.cx;
+        let h = &self.harness;
+        let token = |i: usize| h.token(&str_arg(args, i), None);
+        let bool_of = |r: Result<bool, Error>| match r {
+            Ok(b) => Outcome::Returned(json!(b)),
+            Err(e) => Outcome::Threw(e),
+        };
+        let signal_arg = |i: usize| self.signal_of(arg(args, i).and_then(Value::as_str));
+        match method {
+            "instanceId" => Outcome::Returned(json!(cx.instance_id())),
+            "state" => Outcome::Returned(
+                cx.state_any()
+                    .and_then(|s| s.downcast_ref::<Value>().cloned())
+                    .unwrap_or(Value::Null),
+            ),
+            "dispatch" => {
+                cx.dispatch_any(&arg(args, 0).cloned().unwrap_or(Value::Null));
+                Outcome::undefined()
+            }
+            "docCall" => match cx.doc() {
+                Ok(doc) => Outcome::Promise(doc.call(&str_arg(args, 0), None, args[1..].to_vec())),
+                Err(error) => Outcome::Threw(error),
+            },
+            "pageCall" => {
+                let pon = arg(args, 0).and_then(Value::as_u64).unwrap_or(0) as u32;
+                let doc = match cx.doc() {
+                    Ok(doc) => doc,
+                    Err(error) => return Outcome::Threw(error),
+                };
+                if let Err(error) = doc.page_index(pon) {
+                    return Outcome::Threw(error);
+                }
+                let path = format!("page.{}", str_arg(args, 1));
+                Outcome::Promise(doc.call(
+                    &path,
+                    Some(pon),
+                    args.get(2..).map(<[Value]>::to_vec).unwrap_or_default(),
+                ))
+            }
+            "allows" => match cx.doc() {
+                Ok(doc) => Outcome::Returned(json!(doc.security().allows(&str_arg(args, 0)))),
+                Err(error) => Outcome::Threw(error),
+            },
+            "docId" => match cx.doc() {
+                Ok(doc) => Outcome::Returned(json!(doc.id())),
+                Err(error) => Outcome::Threw(error),
+            },
+            "docRead" => match cx.doc() {
+                Ok(doc) => Outcome::Returned(match str_arg(args, 0).as_str() {
+                    "id" => json!(doc.id()),
+                    "capabilities" => doc.capabilities(),
+                    "security.effectiveScope" => json!(doc.security().effective_scope()),
+                    "security.identity" => doc.security().identity(),
+                    "security.current" => doc.security().current(),
+                    "security.passwordPrompt" => doc.security().password_prompt(),
+                    _ => epdf_kernel::undefined(),
+                }),
+                Err(error) => Outcome::Threw(error),
+            },
+            "on" => {
+                let label = arg(args, 0).cloned().unwrap_or(Value::Null);
+                let (h2, name) = (h.clone(), self.name.clone());
+                let off = self.source.on_signal(
+                    move |event| {
+                        h2.log(&format!("{name}.event"), vec![label.clone(), event.clone()]);
+                        Ok(())
+                    },
+                    signal_arg(1).as_ref(),
+                );
+                Outcome::Returned(h.register_fn(Rc::new(move |_| {
+                    off.call();
+                    Outcome::undefined()
+                })))
+            }
+            "emit" => {
+                self.source.emit(&arg(args, 0).cloned().unwrap_or_else(epdf_kernel::undefined));
+                Outcome::undefined()
+            }
+            "onThrowing" => {
+                let message = str_arg(args, 0);
+                let off = self.source.on(move |_| Err(Error::new(message.clone())));
+                Outcome::Returned(h.register_fn(Rc::new(move |_| {
+                    off.call();
+                    Outcome::undefined()
+                })))
+            }
+            "abortSignal" => {
+                if let Some(signal) = signal_arg(0) {
+                    signal.abort(Error::new("aborted"));
+                }
+                Outcome::undefined()
+            }
+            "waitFor" => {
+                let key = str_arg(args, 0);
+                let want = arg(args, 1).cloned().unwrap_or_else(epdf_kernel::undefined);
+                let state = cx.plugin_context().clone();
+                Outcome::promise_unit(cx.wait_for(
+                    move || {
+                        let current =
+                            state.state_any().and_then(|s| s.downcast_ref::<Value>().cloned());
+                        Ok(current
+                            .and_then(|s| s.get(&key).cloned())
+                            .is_some_and(|v| strict_equal(&v, &want)))
+                    },
+                    signal_arg(2),
+                ))
+            }
+            "waitForThrowing" => {
+                let message = str_arg(args, 0);
+                Outcome::promise_unit(cx.wait_for(move || Err(Error::new(message.clone())), None))
+            }
+            "queue" => {
+                let (key, label) = (str_arg(args, 0), str_arg(args, 1));
+                let (h2, name) = (h.clone(), self.name.clone());
+                let queued = json!([key, label]);
+                Outcome::Promise(cx.serial_queue(&key).run(move || {
+                    h2.log(
+                        &format!("{name}.queued"),
+                        queued.as_array().cloned().unwrap_or_default(),
+                    );
+                    Ok(h2.defer(&label))
+                }))
+            }
+            "latest" => {
+                let (key, label) = (str_arg(args, 0), str_arg(args, 1));
+                let throws = arg(args, 3).cloned();
+                let (h2, name) = (h.clone(), self.name.clone());
+                Outcome::Promise(cx.latest(&key).run(
+                    move |run| {
+                        Promise::spawn(async move {
+                            h2.log(
+                                &format!("{name}.run"),
+                                vec![json!(run.id), json!(run.signal.aborted())],
+                            );
+                            let value = h2.defer(&label).await?;
+                            if let Some(spec) = &throws {
+                                return Err(probe_error(spec));
+                            }
+                            let committed = run.commit(|| {
+                                h2.log(
+                                    &format!("{name}.commit"),
+                                    vec![json!(run.id), value.clone()],
+                                )
+                            });
+                            h2.log(
+                                &format!("{name}.ran"),
+                                vec![json!(run.id), json!(committed), json!(run.superseded())],
+                            );
+                            Ok(value)
+                        })
+                    },
+                    signal_arg(2),
+                ))
+            }
+            "latestCancel" => {
+                cx.latest(&str_arg(args, 0)).cancel(arg(args, 1));
+                Outcome::undefined()
+            }
+            "latestRunning" => Outcome::Returned(json!(cx.latest(&str_arg(args, 0)).running())),
+            "acquire" => {
+                let label = str_arg(args, 0);
+                let (h2, name) = (h.clone(), self.name.clone());
+                let (h3, name3) = (h.clone(), self.name.clone());
+                Outcome::Promise(cx.acquire(
+                    move |lifetime| {
+                        h2.log(&format!("{name}.acquiring"), vec![json!(lifetime.aborted())]);
+                        Ok(h2.defer(&label))
+                    },
+                    Rc::new(move |resource: Value| {
+                        h3.log(&format!("{name3}.dispose"), vec![resource]);
+                        Ok(None)
+                    }),
+                ))
+            }
+            "forPage" | "tryForPage" | "assertPageRef" | "getPage" => {
+                let page = PageRef::new(arg(args, 0).and_then(Value::as_u64).unwrap_or(0) as u32);
+                match method {
+                    "forPage" => match cx.for_page(page) {
+                        Ok(space) => Outcome::Returned(describe_space(&space)),
+                        Err(error) => Outcome::Threw(error),
+                    },
+                    "tryForPage" => Outcome::Returned(
+                        cx.try_for_page(page).map_or(Value::Null, |space| describe_space(&space)),
+                    ),
+                    "assertPageRef" => match cx.assert_page_ref(page) {
+                        Ok(()) => Outcome::undefined(),
+                        Err(error) => Outcome::Threw(error),
+                    },
+                    _ => Outcome::Returned(cx.get_page(page).unwrap_or(Value::Null)),
+                }
+            }
+            "get" => bool_of(cx.get_any(&token(0)).map(|_| true)),
+            "tryGet" => bool_of(cx.try_get_any(&token(0)).map(|c| c.is_some())),
+            "forDocument" => {
+                bool_of(cx.for_document_any(&token(0), &str_arg(args, 1)).map(|_| true))
+            }
+            "tryForDocument" => {
+                bool_of(cx.try_for_document_any(&token(0), &str_arg(args, 1)).map(|c| c.is_some()))
+            }
+            "cleanup" => {
+                let label = arg(args, 0).cloned().unwrap_or_else(epdf_kernel::undefined);
+                let (h2, name) = (h.clone(), self.name.clone());
+                cx.cleanup_fn(move || h2.log(&format!("{name}.cleanup"), vec![label]));
+                Outcome::undefined()
+            }
+            other => {
+                Outcome::Threw(Error::new(format!("[scenario] \"{other}\" is not a function")))
+            }
+        }
     }
 }

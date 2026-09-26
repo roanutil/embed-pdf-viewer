@@ -65,25 +65,63 @@ fn str_arg(args: &[Value], i: usize) -> Option<&str> {
 /// `documents` as the harness drives it.
 struct DocumentsAdapter;
 
+/// `documents`, in the order the TypeScript object literal defines it.
 const DOCUMENTS_MEMBERS: &[&str] = &[
     "open",
+    "retry",
+    "rename",
     "openAll",
     "unlock",
     "close",
     "closeAll",
     "setActive",
-    "activeId",
+    "getActiveId",
+    "getActive",
     "list",
     "get",
     "has",
-    "count",
-    "order",
+    "getCount",
+    "getOrder",
+    "setOrder",
     "move",
     "swap",
-    "download",
-    "downloadLayer",
+    "save",
+    "saveLayer",
+    "listPages",
+    "getPage",
+    "getPageAt",
+    "getPageIndex",
+    "getRevision",
     "allows",
+    "onOpened",
+    "onOpenFailed",
+    "onLocked",
+    "onClosed",
+    "onActiveChanged",
+    "onPagesChanged",
 ];
+
+/// Subscribe a scripted `$fn` listener to a lifecycle event; the outcome is
+/// the unsubscribe, as a ref.
+fn subscribe_listener(
+    hook: &epdf_kernel::event_hook::EventHookSource<Value>,
+    spec: &Value,
+    h: &Harness,
+) -> Outcome {
+    let callback = h.callback(spec);
+    let off = hook.on(move |event| match callback.call(vec![event.clone()]) {
+        Answer::Throws(error) => Err(error),
+        _ => Ok(()),
+    });
+    Outcome::Returned(h.register_fn(Rc::new(move |_| {
+        off.call();
+        Outcome::undefined()
+    })))
+}
+
+fn page_ref(value: Option<&Value>) -> Option<epdf_kernel::geometry::PageRef> {
+    value.and_then(epdf_kernel::geometry::PageRef::from_json)
+}
 
 fn open_source(input: &Value, h: &Harness) -> OpenSource {
     if input.get("$fn").is_some() {
@@ -146,9 +184,17 @@ impl HarnessPlugin for DocumentsAdapter {
                     })
                     .collect();
                 match docs.open_all(initial) {
-                    Ok(()) => Outcome::undefined(),
+                    Ok(ids) => Outcome::Returned(json!(ids)),
                     Err(error) => Outcome::Threw(error),
                 }
+            }
+            "retry" => Outcome::Promise(docs.retry(str_arg(&args, 0).unwrap_or_default())),
+            "rename" => {
+                docs.rename(
+                    str_arg(&args, 0).unwrap_or_default(),
+                    str_arg(&args, 1).unwrap_or_default(),
+                );
+                Outcome::undefined()
             }
             "unlock" => {
                 let password = arg(&args, 1)
@@ -163,15 +209,30 @@ impl HarnessPlugin for DocumentsAdapter {
                 docs.set_active(str_arg(&args, 0).unwrap_or_default());
                 Outcome::undefined()
             }
-            "activeId" => Outcome::Returned(docs.active_id().map_or(Value::Null, Value::String)),
+            "getActiveId" => {
+                Outcome::Returned(docs.get_active_id().map_or(Value::Null, Value::String))
+            }
+            "getActive" => Outcome::Returned(
+                docs.get_active().map_or(Value::Null, |d| serde_json::to_value(d).unwrap()),
+            ),
             "list" => Outcome::Returned(serde_json::to_value(docs.list()).unwrap()),
             "get" => Outcome::Returned(
                 docs.get(str_arg(&args, 0).unwrap_or_default())
                     .map_or(Value::Null, |d| serde_json::to_value(d).unwrap()),
             ),
             "has" => Outcome::Returned(json!(docs.has(str_arg(&args, 0).unwrap_or_default()))),
-            "count" => Outcome::Returned(json!(docs.count())),
-            "order" => Outcome::Returned(json!(docs.order())),
+            "getCount" => Outcome::Returned(json!(docs.get_count())),
+            "getOrder" => Outcome::Returned(json!(docs.get_order())),
+            "setOrder" => {
+                let ids: Vec<String> = arg(&args, 0)
+                    .and_then(Value::as_array)
+                    .map(|a| a.iter().filter_map(|v| v.as_str().map(str::to_string)).collect())
+                    .unwrap_or_default();
+                match docs.set_order(&ids) {
+                    Ok(()) => Outcome::undefined(),
+                    Err(error) => Outcome::Threw(error),
+                }
+            }
             "move" => {
                 docs.move_to(
                     str_arg(&args, 0).unwrap_or_default(),
@@ -186,13 +247,45 @@ impl HarnessPlugin for DocumentsAdapter {
                 );
                 Outcome::undefined()
             }
-            "download" => {
-                Outcome::Promise(docs.download(str_arg(&args, 0), arg(&args, 1).cloned()))
+            "save" => {
+                let mode = arg(&args, 1).and_then(|o| o.get("mode")).filter(|m| !is_undefined(m));
+                Outcome::Promise(docs.save(str_arg(&args, 0), mode.cloned()))
             }
-            "downloadLayer" => Outcome::Promise(docs.download_layer(str_arg(&args, 0))),
+            "saveLayer" => Outcome::Promise(docs.save_layer(str_arg(&args, 0))),
+            "listPages" => Outcome::Returned(json!(docs.list_pages(str_arg(&args, 0)))),
+            "getPage" => Outcome::Returned(
+                page_ref(arg(&args, 0))
+                    .and_then(|r| docs.get_page(r, str_arg(&args, 1)))
+                    .unwrap_or(Value::Null),
+            ),
+            "getPageAt" => Outcome::Returned(
+                docs.get_page_at(
+                    arg(&args, 0).and_then(Value::as_i64).unwrap_or(-1),
+                    str_arg(&args, 1),
+                )
+                .unwrap_or(Value::Null),
+            ),
+            "getPageIndex" => Outcome::Returned(json!(match page_ref(arg(&args, 0)) {
+                Some(r) => docs.get_page_index(r, str_arg(&args, 1)),
+                None => -1,
+            })),
+            "getRevision" => Outcome::Returned(json!(docs.get_revision(str_arg(&args, 0)))),
             "allows" => Outcome::Returned(json!(
                 docs.allows(str_arg(&args, 0).unwrap_or_default(), str_arg(&args, 1))
             )),
+            "onOpened" | "onOpenFailed" | "onLocked" | "onClosed" | "onActiveChanged"
+            | "onPagesChanged" => {
+                let Some(events) = docs.events() else { return Some(Outcome::undefined()) };
+                let hook = match method {
+                    "onOpened" => events.opened,
+                    "onOpenFailed" => events.open_failed,
+                    "onLocked" => events.locked,
+                    "onClosed" => events.closed,
+                    "onActiveChanged" => events.active_changed,
+                    _ => events.pages_changed,
+                };
+                subscribe_listener(&hook, arg(&args, 0).unwrap_or(&Value::Null), h)
+            }
             other => {
                 Outcome::Threw(Error::new(format!("[scenario] \"{other}\" is not a function")))
             }
