@@ -3,7 +3,11 @@ import {
   EngineErrorCode,
   type PageDeleteResult,
   type PageMoveResult,
+  type PageNameInput,
+  type PageNameResult,
   type PageObjectNumber,
+  type PageRef,
+  type PageRemoveNameInput,
   type PageRotateResult,
   type PageRotation,
 } from '@embedpdf/engine-core/runtime';
@@ -11,6 +15,7 @@ import type { PdfRuntimeModule } from '@embedpdf/engine-runtime';
 
 import { PagesReader } from './PagesReader';
 import type { DocumentSession } from '../../document-session/DocumentSession';
+import { writeUtf16String } from '../../runtime/memory/strings';
 import { throwIfAborted } from '../../shared/abort';
 
 /**
@@ -65,11 +70,8 @@ export class PagesMutator {
    *   - every `pon` resolvable via the session's page registry;
    *   - `destIndex` in `[0, pageCount - len]`.
    */
-  move(
-    pageObjectNumbers: PageObjectNumber[],
-    destIndex: number,
-    signal: AbortSignal,
-  ): PageMoveResult {
+  move(pages: PageRef[], destIndex: number, signal: AbortSignal): PageMoveResult {
+    const pageObjectNumbers = this.session.resolvePageRefs(pages);
     throwIfAborted(signal);
     this.requireUniquePons('pages.move', pageObjectNumbers);
     if (destIndex < 0 || !Number.isInteger(destIndex)) {
@@ -149,11 +151,8 @@ export class PagesMutator {
    * fault converges to the requested state. Abort is honored BEFORE the
    * loop, never inside it.
    */
-  rotate(
-    pageObjectNumbers: PageObjectNumber[],
-    rotation: PageRotation,
-    signal: AbortSignal,
-  ): PageRotateResult {
+  rotate(pages: PageRef[], rotation: PageRotation, signal: AbortSignal): PageRotateResult {
+    const pageObjectNumbers = this.session.resolvePageRefs(pages);
     throwIfAborted(signal);
     this.requireUniquePons('pages.rotate', pageObjectNumbers);
     if (rotation !== 0 && rotation !== 90 && rotation !== 180 && rotation !== 270) {
@@ -201,7 +200,8 @@ export class PagesMutator {
    *
    * Abort is honored BEFORE the apply loop, never inside it.
    */
-  delete(pageObjectNumbers: PageObjectNumber[], signal: AbortSignal): PageDeleteResult {
+  delete(pages: PageRef[], signal: AbortSignal): PageDeleteResult {
+    const pageObjectNumbers = this.session.resolvePageRefs(pages);
     throwIfAborted(signal);
     this.requireUniquePons('pages.delete', pageObjectNumbers);
 
@@ -240,6 +240,64 @@ export class PagesMutator {
     // pages' revisions and weak-flag bookkeeping stay put (keyed by pon).
     this.session.refreshPageRegistry();
 
+    const layout = new PagesReader(this.runtime, this.session).read(signal);
+    return { layout, cache: null };
+  }
+
+  /**
+   * Register `name` → page in `/Names /Pages` (create, or replace what the
+   * key points at); with `replace`, drop that other key first — a rename as
+   * one job. Named pages are LAYOUT: page identity and order are untouched
+   * (no registry refresh, no revision bumps) and the fresh snapshot is
+   * returned like `move()`.
+   */
+  setName(input: PageNameInput, signal: AbortSignal): PageNameResult {
+    throwIfAborted(signal);
+    if (input.name.length === 0) {
+      throw new EngineError(EngineErrorCode.InvalidArg, 'pages.setName requires a non-empty name');
+    }
+    const { fn, mem } = this.runtime;
+    const docPtr = this.session.requireDocPtr();
+    const pageObjectNumber = this.session.resolvePageRef(input.page).pageObjectNumber; // NotFound on an unknown page
+
+    if (input.replace !== undefined && input.replace !== input.name && input.replace.length > 0) {
+      writeUtf16String(mem, input.replace, (ptr) => fn.EPDFDoc_RemoveNamedPage(docPtr, ptr));
+    }
+    const ok = writeUtf16String(mem, input.name, (ptr) =>
+      fn.EPDFDoc_SetNamedPage(docPtr, ptr, pageObjectNumber),
+    );
+    if (!ok) {
+      // The fork refuses only what we already validated (empty key, a page
+      // outside the tree) — reaching here means the catalog is unwritable.
+      throw new EngineError(
+        EngineErrorCode.Unknown,
+        `EPDFDoc_SetNamedPage rejected '${input.name}' for page ${pageObjectNumber}`,
+      );
+    }
+    const layout = new PagesReader(this.runtime, this.session).read(signal);
+    return { layout, cache: null };
+  }
+
+  /** Remove one `/Names /Pages` registration; the page stays. */
+  removeName(input: PageRemoveNameInput, signal: AbortSignal): PageNameResult {
+    throwIfAborted(signal);
+    if (input.name.length === 0) {
+      throw new EngineError(
+        EngineErrorCode.InvalidArg,
+        'pages.removeName requires a non-empty name',
+      );
+    }
+    const { fn, mem } = this.runtime;
+    const docPtr = this.session.requireDocPtr();
+    const removed = writeUtf16String(mem, input.name, (ptr) =>
+      fn.EPDFDoc_RemoveNamedPage(docPtr, ptr),
+    );
+    if (!removed) {
+      throw new EngineError(
+        EngineErrorCode.NotFound,
+        `pages.removeName: no /Names /Pages registration '${input.name}'`,
+      );
+    }
     const layout = new PagesReader(this.runtime, this.session).read(signal);
     return { layout, cache: null };
   }

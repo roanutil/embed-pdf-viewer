@@ -27,7 +27,10 @@
     "ci:version": "changeset version && pnpm --filter @cloudpdf/contract emit:openapi && pnpm run cloudpdf:sdk:generate && pnpm --filter @cloudpdf/website api:metadata && pnpm --filter @cloudpdf/website api:pages",
     "ci:publish": "node scripts/assert-publish-phase.mjs && node fern/scripts/validate-sdk.mjs typescript && pnpm publish -r --access public --tag next --publish-branch main --report-summary",
     "test:viewer:e2e": "pnpm --filter @embedpdf/tooling-viewer-e2e test:e2e",
-    "test:viewer:perf": "pnpm --filter @embedpdf/tooling-viewer-e2e test:perf"
+    "test:viewer:perf": "pnpm --filter @embedpdf/tooling-viewer-e2e test:perf",
+    "check:network-literals": "node tooling/build/src/check-network-literals.mjs",
+    "api:snapshot": "node tooling/build/src/api-snapshot.mjs",
+    "api:check": "node tooling/build/src/api-snapshot.mjs --check"
   },
   "devDependencies": {
     "@changesets/cli": "^2.29.6",

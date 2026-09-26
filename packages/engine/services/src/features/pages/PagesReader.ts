@@ -1,11 +1,12 @@
 import type {
+  NamedPageEntry,
   PageBoxes,
   PageLayout,
   PageListSnapshot,
   PdfRect,
   PdfPageActions,
 } from '@embedpdf/engine-core/runtime';
-import { normalizePdfRect } from '@embedpdf/engine-core/runtime';
+import { normalizePdfRect, toPageRef } from '@embedpdf/engine-core/runtime';
 import type {
   PdfFunctions,
   PdfRuntimeMemory,
@@ -65,7 +66,7 @@ export class PagesReader {
           const actions = readPageActions(fn, mem, docPtr, record.pageObjectNumber, actionBudget);
           return {
             index,
-            pageObjectNumber: record.pageObjectNumber,
+            ref: toPageRef(record.pageObjectNumber),
             label: readLabel(fn, mem, docPtr, index),
             size: readSize(fn, mem, docPtr, index, sizePtr),
             rotation: readRotation(fn, docPtr, index),
@@ -74,7 +75,7 @@ export class PagesReader {
             ...(actions ? { actions } : {}),
           };
         });
-        return { pageCount: pages.length, pages };
+        return { pageCount: pages.length, pages, namedPages: readNamedPages(fn, mem, docPtr) };
       },
     );
   }
@@ -211,4 +212,46 @@ function readLabel(
       null,
     ) || null
   );
+}
+
+// `EPDF_NAMED_PAGE_TREE_*` / `EPDF_NAMED_PAGE_KIND_*` from public/epdf_named_pages.h.
+const NAMED_PAGE_TREES = [0, 1] as const; // Pages, Templates
+const NAMED_PAGE_KIND_PAGE = 0;
+const NAMED_PAGE_KIND_TEMPLATE = 1;
+
+/**
+ * The catalog's `/Names /Pages` and `/Names /Templates` registrations, in
+ * tree order, each value classified by the fork (page / template /
+ * dangling). Page-identity data like `label`, so it ships inside the same
+ * snapshot — a registration is only meaningful against the page set that
+ * contains its target.
+ */
+function readNamedPages(fn: PdfFunctions, mem: PdfRuntimeMemory, docPtr: Ptr): NamedPageEntry[] {
+  const entries: NamedPageEntry[] = [];
+  withScratchN(mem, [4, 4], ([objNumPtr, kindPtr]) => {
+    for (const tree of NAMED_PAGE_TREES) {
+      const count = fn.EPDFDoc_GetNamedPageCount(docPtr, tree);
+      for (let index = 0; index < count; index++) {
+        const name = readUtf16String(
+          mem,
+          (buf, capacity) =>
+            fn.EPDFDoc_GetNamedPageAt(docPtr, tree, index, buf, capacity, objNumPtr, kindPtr),
+          '',
+        );
+        if (name === null) continue;
+        const objectNumber = Number(mem.peek(objNumPtr, 'i32')) >>> 0;
+        const kind = Number(mem.peek(kindPtr, 'i32'));
+        entries.push({
+          name,
+          target:
+            kind === NAMED_PAGE_KIND_PAGE
+              ? { kind: 'page', page: toPageRef(objectNumber) }
+              : kind === NAMED_PAGE_KIND_TEMPLATE
+                ? { kind: 'template', objectNumber }
+                : { kind: 'dangling' },
+        });
+      }
+    }
+  });
+  return entries;
 }

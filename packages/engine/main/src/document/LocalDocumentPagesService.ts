@@ -9,11 +9,15 @@ import {
   type PageInsertResult,
   type PageListSnapshot,
   type PageMoveResult,
+  type PageNameInput,
+  type PageNameResult,
+  type PageRemoveNameInput,
   type PageObjectNumber,
   type PageRotateResult,
   type PageRotation,
   type PageFlattenResult,
   type PageFlattenUsage,
+  type PageRef,
 } from '@embedpdf/engine-core/runtime';
 import type { SessionEventPublisher } from '@embedpdf/engine-services';
 
@@ -83,7 +87,7 @@ export class LocalDocumentPagesService implements DocumentPagesService {
     });
   }
 
-  move(pageObjectNumbers: PageObjectNumber[], destIndex: number): AbortablePromise<PageMoveResult> {
+  move(pages: PageRef[], destIndex: number): AbortablePromise<PageMoveResult> {
     if (this.view.isClosed()) {
       return AbortablePromise.rejectReason(
         new EngineError(EngineErrorCode.DocNotOpen, `document not open: ${this.docId}`),
@@ -104,7 +108,7 @@ export class LocalDocumentPagesService implements DocumentPagesService {
             kind: 'pages.move',
             jobId,
             docId,
-            pageObjectNumbers,
+            pages,
             destIndex,
           }),
       },
@@ -120,7 +124,7 @@ export class LocalDocumentPagesService implements DocumentPagesService {
       }
       this.publisher.publishLocal({
         type: 'pages.moved',
-        pageObjectNumbers,
+        pages,
         destIndex,
         ...payload.result,
       });
@@ -128,10 +132,72 @@ export class LocalDocumentPagesService implements DocumentPagesService {
     });
   }
 
-  rotate(
-    pageObjectNumbers: PageObjectNumber[],
-    rotation: PageRotation,
-  ): AbortablePromise<PageRotateResult> {
+  setName(input: PageNameInput): AbortablePromise<PageNameResult> {
+    return this.runNameJob({ kind: 'pages.setName', ...input }, 'pages.setName', input.name);
+  }
+
+  removeName(input: PageRemoveNameInput): AbortablePromise<PageNameResult> {
+    return this.runNameJob(
+      { kind: 'pages.removeName', name: input.name },
+      'pages.removeName',
+      input.name,
+    );
+  }
+
+  /**
+   * Named pages are LAYOUT: both verbs are page-structure mutations mapped
+   * to the cloud's POST /pages/names and /pages/names/delete (gated by
+   * `doc.pages.assemble`, like every page-structure verb) and publish one
+   * `pages.named` event carrying the fresh layout.
+   */
+  private runNameJob(
+    request:
+      | {
+          kind: 'pages.setName';
+          name: string;
+          page: PageRef;
+          replace?: string;
+        }
+      | { kind: 'pages.removeName'; name: string },
+    tag: 'pages.setName' | 'pages.removeName',
+    name: string,
+  ): AbortablePromise<PageNameResult> {
+    if (this.view.isClosed()) {
+      return AbortablePromise.rejectReason(
+        new EngineError(EngineErrorCode.DocNotOpen, `document not open: ${this.docId}`),
+      );
+    }
+    try {
+      this.guard.assertCapability('doc.pages.assemble');
+    } catch (err) {
+      return AbortablePromise.rejectReason(err);
+    }
+    const docId = this.docId;
+    const submission = this.queue.enqueue<WorkerResultPayload>(
+      {
+        buildPack: (jobId: JobId) => wirePack({ ...request, jobId, docId }),
+      },
+      { priority: Priority.HIGH },
+    );
+    return AbortablePromise.run<PageNameResult>(async (signal) => {
+      const onAbort = () => submission.abort(signal.reason);
+      if (signal.aborted) onAbort();
+      else signal.addEventListener('abort', onAbort, { once: true });
+      const payload = await submission;
+      if (payload.tag !== tag) {
+        throw new EngineError(EngineErrorCode.WireFormat, `unexpected payload tag: ${payload.tag}`);
+      }
+      this.publisher.publishLocal({
+        type: 'pages.named',
+        name,
+        page: request.kind === 'pages.setName' ? request.page : null,
+        ...payload.result,
+      });
+      return payload.result;
+    });
+  }
+
+  rotate(pages: PageRef[], rotation: PageRotation): AbortablePromise<PageRotateResult> {
     if (this.view.isClosed()) {
       return AbortablePromise.rejectReason(
         new EngineError(EngineErrorCode.DocNotOpen, `document not open: ${this.docId}`),
@@ -152,7 +218,7 @@ export class LocalDocumentPagesService implements DocumentPagesService {
             kind: 'pages.rotate',
             jobId,
             docId,
-            pageObjectNumbers,
+            pages,
             rotation,
           }),
       },
@@ -168,7 +234,7 @@ export class LocalDocumentPagesService implements DocumentPagesService {
       }
       this.publisher.publishLocal({
         type: 'pages.rotated',
-        pageObjectNumbers,
+        pages,
         rotation,
         ...payload.result,
       });
@@ -176,7 +242,7 @@ export class LocalDocumentPagesService implements DocumentPagesService {
     });
   }
 
-  delete(pageObjectNumbers: PageObjectNumber[]): AbortablePromise<PageDeleteResult> {
+  delete(pages: PageRef[]): AbortablePromise<PageDeleteResult> {
     if (this.view.isClosed()) {
       return AbortablePromise.rejectReason(
         new EngineError(EngineErrorCode.DocNotOpen, `document not open: ${this.docId}`),
@@ -197,7 +263,7 @@ export class LocalDocumentPagesService implements DocumentPagesService {
             kind: 'pages.delete',
             jobId,
             docId,
-            pageObjectNumbers,
+            pages,
           }),
       },
       { priority: Priority.HIGH },
@@ -212,7 +278,7 @@ export class LocalDocumentPagesService implements DocumentPagesService {
       }
       this.publisher.publishLocal({
         type: 'pages.deleted',
-        pageObjectNumbers,
+        pages,
         ...payload.result,
       });
       return payload.result;
@@ -220,7 +286,7 @@ export class LocalDocumentPagesService implements DocumentPagesService {
   }
 
   flatten(
-    pageObjectNumbers: PageObjectNumber[],
+    pages: PageRef[],
     usage: PageFlattenUsage = 'display',
   ): AbortablePromise<PageFlattenResult> {
     if (this.view.isClosed()) {
@@ -241,7 +307,7 @@ export class LocalDocumentPagesService implements DocumentPagesService {
     const submission = this.queue.enqueue<WorkerResultPayload>(
       {
         buildPack: (jobId: JobId) =>
-          wirePack({ kind: 'pages.flatten', jobId, docId, pageObjectNumbers, usage }),
+          wirePack({ kind: 'pages.flatten', jobId, docId, pages, usage }),
       },
       { priority: Priority.HIGH },
     );
@@ -351,7 +417,7 @@ export class LocalDocumentPagesService implements DocumentPagesService {
     });
   }
 
-  extract(pageObjectNumbers: PageObjectNumber[]): AbortablePromise<Uint8Array> {
+  extract(pages: PageRef[]): AbortablePromise<Uint8Array> {
     if (this.view.isClosed()) {
       return AbortablePromise.rejectReason(
         new EngineError(EngineErrorCode.DocNotOpen, `document not open: ${this.docId}`),
@@ -373,7 +439,7 @@ export class LocalDocumentPagesService implements DocumentPagesService {
             kind: 'pages.extract',
             jobId,
             docId,
-            pageObjectNumbers,
+            pages,
           }),
       },
       { priority: Priority.MEDIUM },

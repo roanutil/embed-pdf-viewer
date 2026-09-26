@@ -10,15 +10,17 @@ import {
   type ScriptOutput,
 } from '@embedpdf/core-acrojs';
 import type { ScriptSandbox } from '@embedpdf/core-js-sandbox';
-import type {
-  DocumentHandle,
-  FormEffect,
-  FormFieldDTO,
-  FormSnapshot,
-  PdfActionTree,
+import {
+  toPageRef,
+  type DocumentHandle,
+  type FormEffect,
+  type FormFieldDTO,
+  type FormSnapshot,
+  type PdfActionTree,
 } from '@embedpdf/engine-core/runtime';
 
-import { createFormScriptingController } from '../src/scripting';
+import { createFormScriptingController } from '../src/scripting/controller';
+import { standaloneRealm } from './helpers/standalone-realm';
 
 const ref = (fieldObjectNumber: number) => ({ kind: 'objectNumber' as const, fieldObjectNumber });
 
@@ -51,7 +53,7 @@ const text = (
   multiline: false,
   password: false,
   comb: false,
-  widgets: [{ annotObjectNumber: fieldObjectNumber, pageObjectNumber: 10 }],
+  widgets: [{ annotObjectNumber: fieldObjectNumber, page: toPageRef(10) }],
   ...(actions ? { actions } : {}),
 });
 
@@ -106,7 +108,7 @@ const documentMeta = (): DocumentMeta =>
     id: 'form-doc',
     name: 'proposal.pdf',
     pageCount: 1,
-    pages: [{ pageObjectNumber: 10 }],
+    pages: [{ ref: toPageRef(10) }],
     revision: 0,
   }) as DocumentMeta;
 
@@ -131,15 +133,17 @@ function harness(snapshot: FormSnapshot, sandbox: ScriptSandbox = new NodeSandbo
     actions: { read: async () => ({ nameTreeScripts: [], openAction: null }) },
     security: { identity: { user_id: 'alex', display_name: 'Alex Morgan', group_id: 'EmbedPDF' } },
   } as unknown as DocumentHandle;
+  const realm = standaloneRealm(doc, documentMeta, {
+    now: () => Date.UTC(2026, 6, 15, 9, 30, 0),
+    utcOffsetMinutes: () => 180,
+    randomSeed: () => 7,
+    sandboxFactory: vi.fn(async () => sandbox),
+  });
   const controller = createFormScriptingController({
     doc,
     document: documentMeta,
-    config: {
-      now: () => Date.UTC(2026, 6, 15, 9, 30, 0),
-      utcOffsetMinutes: () => 180,
-      randomSeed: () => 7,
-      sandboxFactory: vi.fn(async () => sandbox),
-    },
+    transaction: realm.transaction,
+    budget: realm.budget,
   });
   return { controller, batches, snapshot };
 }
@@ -171,7 +175,9 @@ describe('script fault ladder', () => {
     const snapshot: FormSnapshot = {
       formKind: 'acroform',
       needsAppearances: false,
-      fields: [text(2, 'price', '', { keystroke: action(`AFNumber_Keystroke(2, 0, 0, 0, "", true);`) })],
+      fields: [
+        text(2, 'price', '', { keystroke: action(`AFNumber_Keystroke(2, 0, 0, 0, "", true);`) }),
+      ],
       calculationOrder: [],
     };
     const fx = harness(snapshot);
@@ -212,9 +218,7 @@ describe('script fault ladder', () => {
     expect(fx.batches[0]).toEqual([
       { kind: 'setValue', ref: ref(2), value: { type: 'text', value: '7' } },
     ]);
-    expect(result.diagnostics).toContainEqual(
-      expect.objectContaining({ code: 'script-error' }),
-    );
+    expect(result.diagnostics).toContainEqual(expect.objectContaining({ code: 'script-error' }));
   });
 
   it('a throwing calculate skips that field while the /CO chain continues', async () => {
@@ -239,9 +243,7 @@ describe('script fault ladder', () => {
       { kind: 'setValue', ref: ref(2), value: { type: 'text', value: '5' } },
       { kind: 'setValue', ref: ref(4), value: { type: 'text', value: '10' } },
     ]);
-    expect(result.diagnostics).toContainEqual(
-      expect.objectContaining({ code: 'script-error' }),
-    );
+    expect(result.diagnostics).toContainEqual(expect.objectContaining({ code: 'script-error' }));
   });
 
   it('a throwing format keeps the raw committed value', async () => {
@@ -259,9 +261,7 @@ describe('script fault ladder', () => {
     expect(fx.batches[0]).toEqual([
       { kind: 'setValue', ref: ref(2), value: { type: 'text', value: '7' } },
     ]);
-    expect(result.diagnostics).toContainEqual(
-      expect.objectContaining({ code: 'script-error' }),
-    );
+    expect(result.diagnostics).toContainEqual(expect.objectContaining({ code: 'script-error' }));
   });
 
   it('a resource-budget fault still fails the transaction', async () => {

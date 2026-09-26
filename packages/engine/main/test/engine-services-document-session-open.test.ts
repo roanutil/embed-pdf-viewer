@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { wirePack, type WorkerResponse } from '@embedpdf/engine-core/runtime';
+import { toPageRef, wirePack, type WorkerResponse } from '@embedpdf/engine-core/runtime';
 import { ManifestPageSchema } from '@embedpdf/engine-core/wire';
 import type { PdfRuntimeModule, Ptr } from '@embedpdf/engine-runtime';
 import { BaseDocumentRegistry } from '../../services/src/document-session/lifecycle/BaseDocumentRegistry';
@@ -126,6 +126,9 @@ function createFakeRuntime(): PdfRuntimeModule & {
       FPDF_GetPageLabel: () => 0,
       // No page-level actions in this ownership/routing fixture.
       EPDFDoc_GetPageActionModel: () => ptr(0),
+      // No named pages either: `pages.list` reads both catalog name trees.
+      EPDFDoc_GetNamedPageCount: () => 0,
+      EPDFDoc_GetNamedPageAt: () => 0,
       EPDF_LoadMemBaseDocument64: (dataPtr: Ptr, size: number, password: string) => {
         calls.loadMemBases.push({ ptr: dataPtr, size, password });
         return ptr(201);
@@ -271,7 +274,7 @@ describe('DocumentSession open ownership', () => {
       kind: 'pages.renderEncoded',
       jobId: 9,
       docId: 'doc-never-opened',
-      pageObjectNumber: 1,
+      page: toPageRef(1),
       encode: { format: 'webp' },
     });
 
@@ -296,6 +299,9 @@ describe('DocumentSession open ownership', () => {
       docId: 'doc-a',
       bytes: new ArrayBuffer(1),
       password: null,
+      // This test counts the fake runtime's handles: keep the base-view
+      // session a plain document so the accounting below stays exact.
+      sessionKind: 'plain',
     });
     host.receive({
       kind: 'open.layerMemBase',
@@ -328,11 +334,11 @@ describe('DocumentSession open ownership', () => {
     if (baseList.kind !== 'resolve' || layerList.kind !== 'resolve') return;
     expect(baseList.result).toMatchObject({
       tag: 'pages.list',
-      snapshot: { pages: [{ pageObjectNumber: 1101 }] },
+      snapshot: { pages: [{ ref: toPageRef(1101) }] },
     });
     expect(layerList.result).toMatchObject({
       tag: 'pages.list',
-      snapshot: { pages: [{ pageObjectNumber: 3101 }, { pageObjectNumber: 3102 }] },
+      snapshot: { pages: [{ ref: toPageRef(3101) }, { ref: toPageRef(3102) }] },
     });
     expect(runtime.calls.loadPages).toEqual([]);
     expect(runtime.calls.closeDocuments).toEqual([ptr(101), ptr(301)]);
@@ -362,7 +368,7 @@ describe('DocumentSession open ownership', () => {
     if (list.kind !== 'resolve') return;
     expect(list.result).toMatchObject({
       tag: 'pages.list',
-      snapshot: { pages: [{ pageObjectNumber: 3101 }, { pageObjectNumber: 3102 }] },
+      snapshot: { pages: [{ ref: toPageRef(3101) }, { ref: toPageRef(3102) }] },
     });
     expect(runtime.calls.loadPages).toEqual([]);
     expect(runtime.calls.nodeFilePaths).toEqual(['/tmp/base-file.pdf']);
