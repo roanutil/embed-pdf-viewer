@@ -1,0 +1,34 @@
+[package]
+name = "epdf-plugin-measurement"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+description = "packages/plugin/measurement in Rust: page scale from the engine's viewports or a default, scale writes that re-measure the page's dimensions, units, precision and presets, the calibration flow, scale-aware readouts, and measurement creation through the annotation plugin."
+
+[lib]
+crate-type = ["rlib"]
+
+[features]
+# The conformance adapter (`harness` module). On by default so `cargo test`
+# replays the vectors with no flags; a host that ships the plugin turns it
+# off with `default-features = false`.
+default = ["harness"]
+harness = [
+  "dep:plugin-conformance",
+  "epdf-plugin-annotation/harness",
+  "epdf-plugin-interaction/harness",
+]
+
+[dependencies]
+epdf-kernel = { path = "../../epdf-kernel" }
+epdf-geometry = { path = "../geometry", default-features = false }
+epdf-annotation-core = { path = "../annotation-core", default-features = false }
+epdf-plugin-annotation = { path = "../annotation", default-features = false }
+epdf-plugin-interaction = { path = "../interaction", default-features = false }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["float_roundtrip", "preserve_order"] }
+plugin-conformance = { path = "../../plugin-conformance", optional = true }
+
+[[test]]
+name = "conformance"
+required-features = ["harness"]
