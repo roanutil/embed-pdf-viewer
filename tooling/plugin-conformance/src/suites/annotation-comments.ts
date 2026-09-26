@@ -373,10 +373,10 @@ const cases: ScenarioCase[] = [
       ...boot,
       call('commitScriptEffects', [
         [
-          { annotObjectNumber: 1, pageObjectNumber: 1, patch: { strokeColor: ['RGB', 1, 0, 0.5], fillColor: ['T'], opacity: 0.5, width: 3, borderStyle: 'D', dash: [3, 1], rect: [10, 20, 30, 40], contents: 'x', flags: { hidden: true } } },
+          { annotObjectNumber: 1, page: pr(1), patch: { strokeColor: ['RGB', 1, 0, 0.5], fillColor: ['T'], opacity: 0.5, width: 3, borderStyle: 'D', dash: [3, 1], rect: [10, 20, 30, 40], contents: 'x', flags: { hidden: true } } },
           { annotObjectNumber: 2, patch: { strokeColor: ['G', 0.5], fillColor: ['CMYK', 0.1, 0.2, 0.3, 0.4], borderStyle: 'S' } },
-          { annotObjectNumber: 40, pageObjectNumber: 2, patch: { contents: 'far' } },
-          { annotObjectNumber: 41, pageObjectNumber: 2, patch: { contents: 'missing' } },
+          { annotObjectNumber: 40, page: pr(2), patch: { contents: 'far' } },
+          { annotObjectNumber: 41, page: pr(2), patch: { contents: 'missing' } },
           { annotObjectNumber: 42, patch: { contents: 'no page' } },
           { annotObjectNumber: 4, patch: { contents: 'no kind' } },
           { annotObjectNumber: 3, patch: { strokeColor: ['T'] } },

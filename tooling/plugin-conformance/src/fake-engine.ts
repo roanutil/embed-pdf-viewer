@@ -73,8 +73,9 @@ export interface FakeDocumentSpec {
    *  `forms.submit`. */
   readonly services?: readonly string[];
   /** Optional members present by default that this handle lacks:
-   *  `forms.applyEffects`, `pages.flatten` and `pages.extract`, which the
-   *  contract makes optional and every shipped engine implements. */
+   *  `forms.applyEffects`, `pages.flatten`, `pages.extract` and
+   *  `page.annotations.downloadFile`, which the contract makes optional and
+   *  every shipped engine implements. */
   readonly lacks?: readonly string[];
   readonly capabilities?: unknown;
   readonly security?: SecuritySpec;
@@ -240,6 +241,8 @@ export function createFakeEngine(
     const formsAbsent = new Set<string>();
     if (!services.has('forms.submit')) formsAbsent.add('submit');
     if (lacks.has('forms.applyEffects')) formsAbsent.add('applyEffects');
+    const pageAnnotationsAbsent = new Set<string>();
+    if (lacks.has('page.annotations.downloadFile')) pageAnnotationsAbsent.add('downloadFile');
     const table = document.responses;
     const security = document.security ?? {};
     const listeners = new Set<(event: unknown) => void>();
@@ -298,7 +301,7 @@ export function createFakeEngine(
         const pageHandle: Record<string, unknown> = {
           ref: { kind: 'objectNumber', pageObjectNumber: pon },
           pageIndex: page.index,
-          annotations: service(id, table, 'page.annotations', pon),
+          annotations: service(id, table, 'page.annotations', pon, pageAnnotationsAbsent),
           text: service(id, table, 'page.text', pon),
           geometry: service(id, table, 'page.geometry', pon),
           render: service(id, table, 'page.render', pon),
