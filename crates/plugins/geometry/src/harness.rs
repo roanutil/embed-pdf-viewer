@@ -61,6 +61,60 @@ fn page_transform_probe(a: &[Value]) -> Out {
     })
 }
 
+#[derive(Deserialize, Default)]
+struct SpaceProbe {
+    #[serde(default)]
+    points: Option<Vec<Point>>,
+    #[serde(default)]
+    rects: Option<Vec<Rect>>,
+    #[serde(default)]
+    edges: Option<Vec<PdfEdges>>,
+    #[serde(default)]
+    quads: Option<Vec<Quad>>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct PageSpaceProbe {
+    #[serde(flatten)]
+    space: PageSpace,
+    pdf_to_page: Vec<Point>,
+    page_to_pdf: Vec<Point>,
+    pdf_rect_to_page: Vec<Rect>,
+    page_rect_to_pdf: Vec<PdfEdges>,
+    pdf_quad_to_page: Vec<Quad>,
+    page_quad_to_pdf: Vec<Quad>,
+}
+
+/// The suite's `pageSpace` wrapper: build the space, then call each method on
+/// the probes.
+fn page_space_probe(a: &[Value]) -> Out {
+    let s = page_space(arg(a, 0)?);
+    let probe: Option<SpaceProbe> = arg(a, 1)?;
+    let probe = probe.unwrap_or_default();
+    let points = probe.points.unwrap_or_default();
+    let quads = probe.quads.unwrap_or_default();
+    ok(PageSpaceProbe {
+        pdf_to_page: points.iter().map(|p| s.pdf_to_page(*p)).collect(),
+        page_to_pdf: points.iter().map(|p| s.page_to_pdf(*p)).collect(),
+        pdf_rect_to_page: probe
+            .edges
+            .unwrap_or_default()
+            .into_iter()
+            .map(|e| s.pdf_rect_to_page(e))
+            .collect(),
+        page_rect_to_pdf: probe
+            .rects
+            .unwrap_or_default()
+            .into_iter()
+            .map(|r| s.page_rect_to_pdf(r))
+            .collect(),
+        pdf_quad_to_page: quads.iter().map(|q| s.pdf_quad_to_page(*q)).collect(),
+        page_quad_to_pdf: quads.iter().map(|q| s.page_quad_to_pdf(*q)).collect(),
+        space: s,
+    })
+}
+
 #[derive(Deserialize)]
 struct LeftTop {
     left: f64,
@@ -72,6 +126,9 @@ pub fn functions() -> FunctionTable {
         ("NO_FRAME", |_| ok(NO_FRAME)),
         ("boundsOfRects", |a| ok(bounds_of_rects(&arg::<Vec<Rect>>(a, 0)?))),
         ("intersectRects", |a| ok(intersect_rects(arg(a, 0)?, arg(a, 1)?))),
+        ("rectFromCorners", |a| ok(rect_from_corners(arg(a, 0)?, arg(a, 1)?))),
+        ("rectContains", |a| ok(rect_contains(arg(a, 0)?, arg(a, 1)?))),
+        ("rectsOverlap", |a| ok(rects_overlap(arg(a, 0)?, arg(a, 1)?))),
         ("isQuarterTurn", |a| ok(is_quarter_turn(arg(a, 0)?))),
         ("addRotations", |a| ok(add_rotations(arg(a, 0)?, arg(a, 1)?))),
         ("snapToDevice", |a| ok(snap_to_device(arg(a, 0)?, arg(a, 1)?))),
@@ -99,6 +156,9 @@ pub fn functions() -> FunctionTable {
         }),
         ("pageGeometry", |a| ok(page_geometry(arg(a, 0)?, arg(a, 1)?).map_err(thrown)?)),
         ("pageTransform", page_transform_probe),
+        ("pageSpace", page_space_probe),
+        ("edgesOverlap", |a| ok(edges_overlap(arg(a, 0)?, arg(a, 1)?))),
+        ("edgesOfQuad", |a| ok(edges_of_quad(arg(a, 0)?))),
         ("textQuadFromRect", |a| ok(text_quad_from_rect(arg(a, 0)?))),
         ("textQuadPoints", |a| ok(text_quad_points(arg(a, 0)?))),
         ("textQuadRing", |a| ok(text_quad_ring(arg(a, 0)?))),

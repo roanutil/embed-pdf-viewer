@@ -82,6 +82,30 @@ pub fn intersect_rects(a: Rect, b: Rect) -> Rect {
     }
 }
 
+/// The axis-aligned rect spanned by two corners, in any order: a drag box.
+pub fn rect_from_corners(a: Point, b: Point) -> Rect {
+    Rect {
+        x: js::min(a.x, b.x),
+        y: js::min(a.y, b.y),
+        width: (b.x - a.x).abs(),
+        height: (b.y - a.y).abs(),
+    }
+}
+
+/// Whether a rect contains a point, edges inclusive. Space-agnostic.
+pub fn rect_contains(rect: Rect, point: Point) -> bool {
+    point.x >= rect.x
+        && point.x <= rect.x + rect.width
+        && point.y >= rect.y
+        && point.y <= rect.y + rect.height
+}
+
+/// Positive-area overlap of two rects: touching edges do not count.
+pub fn rects_overlap(a: Rect, b: Rect) -> bool {
+    let i = intersect_rects(a, b);
+    i.width > 0.0 && i.height > 0.0
+}
+
 // ── rotation, frames, device rounding ───────────────────────────────────────
 
 /// Quarter-turn display rotation, degrees clockwise: 0, 90, 180 or 270.
@@ -637,5 +661,102 @@ pub fn normalize_quad(q: Quad) -> TextQuad {
         TextQuad { upper_start: a, upper_end: b, lower_start: d, lower_end: c }
     } else {
         TextQuad { upper_start: b, upper_end: a, lower_start: c, lower_end: d }
+    }
+}
+
+// ── page space ──────────────────────────────────────────────────────────────
+
+/// A rectangle in PDF user space by its edges: the engine's `PdfRect` shape.
+/// The same four numbers as [`CropBox`]; the TypeScript names both
+/// `PdfEdges` structurally.
+pub type PdfEdges = CropBox;
+
+/// The one owner of page to PDF conversion for one page (`pageSpace` in
+/// `page-space.ts`). Page space is content space: the unrotated page, origin
+/// at the CropBox top-left, y down.
+///
+/// ```text
+/// pageX = pdfX - crop.left
+/// pageY = crop.top - pdfY
+/// ```
+#[derive(Clone, Copy, Debug, PartialEq, Serialize)]
+pub struct PageSpace {
+    pub crop: PdfEdges,
+    pub width: f64,
+    pub height: f64,
+    #[serde(skip)]
+    to_page: Mat2D,
+    #[serde(skip)]
+    to_pdf: Mat2D,
+}
+
+/// Build a page's [`PageSpace`] from its CropBox.
+pub fn page_space(crop: PdfEdges) -> PageSpace {
+    let to_page = pdf_to_content_matrix(crop.left, crop.top);
+    // `[1, 0, 0, -1, e, f]` has determinant -1 whatever the offsets, so the
+    // inverse always exists (NaN offsets invert to NaNs, as in the TypeScript).
+    let to_pdf = invert(to_page).unwrap_or([f64::NAN; 6]);
+    PageSpace {
+        crop,
+        width: crop.right - crop.left,
+        height: crop.top - crop.bottom,
+        to_page,
+        to_pdf,
+    }
+}
+
+impl PageSpace {
+    pub fn pdf_to_page(&self, p: Point) -> Point {
+        apply_point(self.to_page, p)
+    }
+
+    pub fn page_to_pdf(&self, p: Point) -> Point {
+        apply_point(self.to_pdf, p)
+    }
+
+    pub fn pdf_rect_to_page(&self, r: PdfEdges) -> Rect {
+        Rect {
+            x: r.left - self.crop.left,
+            y: self.crop.top - r.top,
+            width: r.right - r.left,
+            height: r.top - r.bottom,
+        }
+    }
+
+    pub fn page_rect_to_pdf(&self, r: Rect) -> PdfEdges {
+        let c = self.crop;
+        PdfEdges {
+            left: r.x + c.left,
+            right: r.x + r.width + c.left,
+            top: c.top - r.y,
+            bottom: c.top - (r.y + r.height),
+        }
+    }
+
+    pub fn pdf_quad_to_page(&self, q: Quad) -> Quad {
+        apply_quad(self.to_page, q)
+    }
+
+    pub fn page_quad_to_pdf(&self, q: Quad) -> Quad {
+        apply_quad(self.to_pdf, q)
+    }
+}
+
+/// Positive-area overlap of two PDF rects given by their edges: the engine's
+/// collateral rule (a redaction touches what it overlaps, not what it abuts).
+pub fn edges_overlap(a: PdfEdges, b: PdfEdges) -> bool {
+    js::min(a.right, b.right) > js::max(a.left, b.left)
+        && js::min(a.top, b.top) > js::max(a.bottom, b.bottom)
+}
+
+/// The axis-aligned PDF edges enclosing a quad.
+pub fn edges_of_quad(q: Quad) -> PdfEdges {
+    let xs = [q.p1.x, q.p2.x, q.p3.x, q.p4.x];
+    let ys = [q.p1.y, q.p2.y, q.p3.y, q.p4.y];
+    PdfEdges {
+        left: js::min_of(&xs),
+        right: js::max_of(&xs),
+        bottom: js::min_of(&ys),
+        top: js::max_of(&ys),
     }
 }

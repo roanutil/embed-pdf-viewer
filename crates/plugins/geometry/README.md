@@ -1,17 +1,18 @@
 # epdf-geometry
 
 `packages/core/geometry` in Rust: every exported function, type and constant of
-`src/index.ts`. All 609 cases in the four vector files replay identically
+`src/index.ts` and `src/page-space.ts`. All 652 cases in the four vector files replay identically
 (`cargo test -p epdf-geometry`):
 
 | File | Cases | Covers |
 |---|---|---|
-| `vectors/core/geometry-basics.json` | 115 | `boundsOfRects`, `intersectRects`, rotations, `snapToDevice`, `displaySize`, `deviceHeightForWidth`, `NO_FRAME` |
+| `vectors/core/geometry-basics.json` | 140 | `boundsOfRects`, `intersectRects`, `rectFromCorners`, `rectContains`, `rectsOverlap`, rotations, `snapToDevice`, `displaySize`, `deviceHeightForWidth`, `NO_FRAME` |
 | `vectors/core/geometry-affine.json` | 110 | `Mat2D` compose, invert, apply*, the builders, `angleOf`, `matrixToCss` |
-| `vectors/core/geometry-page.json` | 104 | `rotateScaleMatrix`, `pdfToContentMatrix`, `pageGeometry`, `pageTransform` |
+| `vectors/core/geometry-page.json` | 122 | `rotateScaleMatrix`, `pdfToContentMatrix`, `pageGeometry`, `pageTransform`, `pageSpace`, `edgesOverlap`, `edgesOfQuad` |
 | `vectors/core/geometry-text-quad.json` | 280 | the `TextQuad` helpers and `normalizeQuad` |
 
-The generators reach every statement (801/801) and every branch (93/93) of the TypeScript.
+The generators reach every statement and every branch of the TypeScript: 828/828 and 100/100 in
+`index.ts`, 99/99 and 11/11 in `page-space.ts`.
 
 ## Where the port differs in shape
 
@@ -26,6 +27,12 @@ matrices it builds and exposes the closures as methods (`to_pixels`, `content_to
 it serializes to the data members only. The vector entry is a wrapper in
 `tooling/plugin-conformance/src/suites/geometry.ts` that calls each method on probe points and
 rects, and `src/harness.rs` mirrors it.
+
+`pageSpace(crop)` returns an object of closures too. `PageSpace` holds the crop, its size and the
+two matrices, and exposes `pdf_to_page` through `page_quad_to_pdf` as methods; the vector entry is
+a probe wrapper, as for `pageTransform`. `PdfEdges` is an alias of `CropBox`, the same four edges.
+The TypeScript builds the inverse with `invert`, which cannot throw here: the matrix is
+`[1, 0, 0, -1, e, f]`, determinant -1.
 
 `pdfToContentMatrix({left, top})` is `pdf_to_content_matrix(left, top)`, the two numbers it reads.
 `invert`, `page_geometry` and `page_transform` return `Result<_, NonInvertible>` where the
@@ -47,6 +54,9 @@ Rust's `f64` methods; the vectors' 1e-12 relative tolerance absorbs a last-bit d
 fdlibm, and no case prints a transcendental result through `matrixToCss`.
 
 ## Mutation testing
+
+Pre-v3, rerun pending: these counts predate `rectFromCorners`, `rectContains`, `rectsOverlap` and
+`page-space.ts`.
 
 `cargo mutants -p epdf-geometry --test-package epdf-geometry` tests 449 mutants: 438 caught, 9
 missed, 2 unviable. Every miss is equivalent:

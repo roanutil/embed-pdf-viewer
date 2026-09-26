@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "function",
-  "describes": "packages/core/geometry: rect bounds and intersection, quarter-turn rotations, device rounding.",
+  "describes": "packages/core/geometry: rect bounds, intersection, corners, containment and overlap, quarter-turn rotations, device rounding.",
   "cases": [
     {
       "name": "NO_FRAME/zero-on-every-side",
@@ -938,6 +938,538 @@
           "width": 10,
           "height": 10
         }
+      }
+    },
+    {
+      "name": "rectFromCorners/ordered",
+      "fn": "rectFromCorners",
+      "args": [
+        {
+          "x": 1,
+          "y": 2
+        },
+        {
+          "x": 11,
+          "y": 22
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 1,
+          "y": 2,
+          "width": 10,
+          "height": 20
+        }
+      }
+    },
+    {
+      "name": "rectFromCorners/reversed",
+      "fn": "rectFromCorners",
+      "args": [
+        {
+          "x": 11,
+          "y": 22
+        },
+        {
+          "x": 1,
+          "y": 2
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 1,
+          "y": 2,
+          "width": 10,
+          "height": 20
+        }
+      }
+    },
+    {
+      "name": "rectFromCorners/mixed",
+      "fn": "rectFromCorners",
+      "args": [
+        {
+          "x": 11,
+          "y": 2
+        },
+        {
+          "x": 1,
+          "y": 22
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 1,
+          "y": 2,
+          "width": 10,
+          "height": 20
+        }
+      }
+    },
+    {
+      "name": "rectFromCorners/same-point",
+      "fn": "rectFromCorners",
+      "args": [
+        {
+          "x": 5,
+          "y": 5
+        },
+        {
+          "x": 5,
+          "y": 5
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 5,
+          "y": 5,
+          "width": 0,
+          "height": 0
+        }
+      }
+    },
+    {
+      "name": "rectFromCorners/negative",
+      "fn": "rectFromCorners",
+      "args": [
+        {
+          "x": -3,
+          "y": -4
+        },
+        {
+          "x": -10,
+          "y": 6
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": -10,
+          "y": -4,
+          "width": 7,
+          "height": 10
+        }
+      }
+    },
+    {
+      "name": "rectFromCorners/nan",
+      "fn": "rectFromCorners",
+      "args": [
+        {
+          "x": {
+            "$number": "NaN"
+          },
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": 1
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": {
+            "$number": "NaN"
+          },
+          "y": 0,
+          "width": {
+            "$number": "NaN"
+          },
+          "height": 1
+        }
+      }
+    },
+    {
+      "name": "rectFromCorners/infinite",
+      "fn": "rectFromCorners",
+      "args": [
+        {
+          "x": {
+            "$number": "-Infinity"
+          },
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": {
+            "$number": "Infinity"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": {
+            "$number": "-Infinity"
+          },
+          "y": 0,
+          "width": {
+            "$number": "Infinity"
+          },
+          "height": {
+            "$number": "Infinity"
+          }
+        }
+      }
+    },
+    {
+      "name": "rectContains/inside",
+      "fn": "rectContains",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        },
+        {
+          "x": 5,
+          "y": 5
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "rectContains/top-left-corner",
+      "fn": "rectContains",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        },
+        {
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "rectContains/bottom-right-corner",
+      "fn": "rectContains",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        },
+        {
+          "x": 10,
+          "y": 10
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "rectContains/left-of",
+      "fn": "rectContains",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        },
+        {
+          "x": -0.001,
+          "y": 5
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "rectContains/right-of",
+      "fn": "rectContains",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        },
+        {
+          "x": 10.001,
+          "y": 5
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "rectContains/above",
+      "fn": "rectContains",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        },
+        {
+          "x": 5,
+          "y": -0.001
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "rectContains/below",
+      "fn": "rectContains",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        },
+        {
+          "x": 5,
+          "y": 10.001
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "rectContains/inverted-rect",
+      "fn": "rectContains",
+      "args": [
+        {
+          "x": 10,
+          "y": 10,
+          "width": -5,
+          "height": -5
+        },
+        {
+          "x": 7,
+          "y": 7
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "rectContains/nan-point",
+      "fn": "rectContains",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        },
+        {
+          "x": {
+            "$number": "NaN"
+          },
+          "y": 5
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "rectContains/zero-size-on-point",
+      "fn": "rectContains",
+      "args": [
+        {
+          "x": 3,
+          "y": 3,
+          "width": 0,
+          "height": 0
+        },
+        {
+          "x": 3,
+          "y": 3
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "rectsOverlap/overlap",
+      "fn": "rectsOverlap",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        },
+        {
+          "x": 5,
+          "y": 5,
+          "width": 10,
+          "height": 10
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "rectsOverlap/touching-edge",
+      "fn": "rectsOverlap",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        },
+        {
+          "x": 10,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "rectsOverlap/touching-bottom",
+      "fn": "rectsOverlap",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        },
+        {
+          "x": 0,
+          "y": 10,
+          "width": 10,
+          "height": 10
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "rectsOverlap/disjoint",
+      "fn": "rectsOverlap",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        },
+        {
+          "x": 20,
+          "y": 20,
+          "width": 5,
+          "height": 5
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "rectsOverlap/contained",
+      "fn": "rectsOverlap",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        },
+        {
+          "x": 2,
+          "y": 2,
+          "width": 1,
+          "height": 1
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "rectsOverlap/zero-width",
+      "fn": "rectsOverlap",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        },
+        {
+          "x": 2,
+          "y": 2,
+          "width": 0,
+          "height": 5
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "rectsOverlap/zero-height",
+      "fn": "rectsOverlap",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        },
+        {
+          "x": 2,
+          "y": 2,
+          "width": 5,
+          "height": 0
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "rectsOverlap/nan",
+      "fn": "rectsOverlap",
+      "args": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 10,
+          "height": 10
+        },
+        {
+          "x": {
+            "$number": "NaN"
+          },
+          "y": 0,
+          "width": 5,
+          "height": 5
+        }
+      ],
+      "outcome": {
+        "returned": false
       }
     },
     {
