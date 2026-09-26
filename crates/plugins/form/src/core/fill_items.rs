@@ -16,8 +16,12 @@ use crate::value::{get, member, num, str_of, truthy};
 #[serde(rename_all = "camelCase")]
 pub struct FillItem {
     pub key: FieldKey,
+    /// The field this widget belongs to: what the public write verbs take.
+    pub field_ref: Value,
     /// Widget identity: the join to the annotation plane.
     pub annot_object_number: f64,
+    /// The widget's annotation address, null until the engine placed it.
+    pub annotation_ref: Value,
     #[serde(rename = "box")]
     pub bx: Box,
     /// Read-only field or write in flight: render, don't accept input.
@@ -31,10 +35,30 @@ pub struct FillItem {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "control", rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum FillControl {
-    Text { value: Value, multiline: Value, password: Value, max_length: Value, comb: Value },
-    Toggle { kind: ToggleKind, checked: Value, on_state: Value },
-    Choice { kind: ChoiceKind, edit: Value, multi: Value, options: Value, selected: Value },
+    Text {
+        value: Value,
+        multiline: Value,
+        password: Value,
+        max_length: Value,
+        comb: Value,
+    },
+    Toggle {
+        kind: ToggleKind,
+        checked: Value,
+        on_state: Value,
+    },
+    Choice {
+        kind: ChoiceKind,
+        edit: Value,
+        multi: Value,
+        options: Value,
+        selected: Value,
+    },
     Button,
+    /// A signature field's widget; `signed` when it carries a `/V`.
+    Signature {
+        signed: bool,
+    },
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -49,6 +73,11 @@ pub enum ToggleKind {
 pub enum ChoiceKind {
     Combo,
     List,
+}
+
+/// `widget.page?.pageObjectNumber`.
+pub fn page_of(widget: &Value) -> Option<f64> {
+    get(widget, "page").and_then(|p| num(p, "pageObjectNumber"))
 }
 
 const ZERO_BOX: Box = Box { x: 0.0, y: 0.0, width: 0.0, height: 0.0 };
@@ -126,11 +155,20 @@ pub fn project_widget(
             selected: member(field, "selectedValues"),
         },
         Some("pushbutton") => FillControl::Button,
+        Some("signature") => FillControl::Signature {
+            signed: get(field, "valueEntry").and_then(|e| str_of(e, "kind")) != Some("none"),
+        },
         _ => return None,
     };
+    let annotation_ref = widget_of(field, annot_object_number)
+        .and_then(|w| get(w, "ref"))
+        .cloned()
+        .unwrap_or(Value::Null);
     Some(FillItem {
         key,
+        field_ref: member(field, "ref"),
         annot_object_number,
+        annotation_ref,
         bx: bx.unwrap_or(ZERO_BOX),
         disabled,
         label,
@@ -149,7 +187,7 @@ pub fn fill_items(model: &Model, page_object_number: f64) -> Vec<FillItem> {
     let mut items = Vec::new();
     for field in get(snapshot, "fields").and_then(Value::as_array).into_iter().flatten() {
         for widget in get(field, "widgets").and_then(Value::as_array).into_iter().flatten() {
-            if num(widget, "pageObjectNumber") != Some(page_object_number) {
+            if page_of(widget) != Some(page_object_number) {
                 continue;
             }
             let annot = get(widget, "annotObjectNumber").and_then(Value::as_f64);
@@ -168,8 +206,7 @@ pub fn fill_items(model: &Model, page_object_number: f64) -> Vec<FillItem> {
 pub fn fill_item_for_widget(model: &Model, annot_object_number: f64) -> Option<FillItem> {
     let field = field_for_widget(model, annot_object_number)?;
     let widget = widget_of(&field, annot_object_number)?;
-    let pon = get(widget, "pageObjectNumber").and_then(Value::as_f64);
-    let bx = pon
+    let bx = page_of(widget)
         .and_then(|pon| model.geom.get(&number_key(pon)))
         .and_then(|boxes| boxes.get(&number_key(annot_object_number)))
         .copied();

@@ -1,431 +1,54 @@
-//! `scripting.ts`: the K/V/C/F transaction. One commit runs, inside one
-//! realm transaction, the document boot (once per realm), the keystroke
-//! pair, validate, the `/CO` calculation chain and format, over a detached
-//! field overlay, then commits the canonical effects as one engine batch.
+//! `scripting/controller.ts`: the K/V/C/F transaction. One commit runs,
+//! inside one realm transaction, the document boot (once per realm), the
+//! keystroke pair, validate, the `/CO` calculation chain and format, over a
+//! detached field overlay, then commits the canonical effects as one engine
+//! batch.
 //!
-//! The realm is either the actions plugin's shared one (its
-//! `script_transaction` port) or a standalone one this controller builds and
-//! owns from [`FormScriptingOptions`] (stamp's detached documents). The
-//! sandbox is a host capability: Rust has no default, so the standalone
-//! options require a factory.
+//! The controller never owns a realm. It rides a realm port: this
+//! document's own (the actions plugin's `script_realm`) or a detached one the
+//! actions plugin mints with `create_detached_script_realm` for a document
+//! that is not displayed (stamp's asset documents). Either way the owner
+//! disposes the realm; [`FormScriptingController::dispose`] only fences
+//! further transactions.
 
 use std::cell::Cell;
 use std::rc::Rc;
 
 use epdf_acrojs::{
-    DEFAULT_SCRIPT_BUDGET, ScriptBudget, ScriptDiagnostic, ScriptDiagnosticCode,
-    ScriptDocumentInput, ScriptEnvironment, ScriptEventInput, ScriptEventKind,
-    ScriptExecutionError, ScriptExecutionErrorKind, ScriptFieldInput, ScriptHost,
-    ScriptHostOptions, ScriptOutput, ScriptTransaction, ScriptWorldInput,
-    java_script_program_from_action_tree, resolve_script_identity, script_fields_from_snapshot,
-    seed_from,
+    DEFAULT_SCRIPT_BUDGET, ScriptBudget, ScriptDiagnostic, ScriptEventInput, ScriptEventKind,
+    ScriptExecutionError, ScriptExecutionErrorKind, ScriptFieldInput, ScriptOutput,
+    ScriptTransaction, ScriptWorldInput, java_script_program_from_action_tree,
+    script_fields_from_snapshot,
 };
+use epdf_kernel::Error;
 use epdf_kernel::engine::DocumentHandle;
 use epdf_kernel::rt::{self, Promise};
 use epdf_kernel::types::DocumentMeta;
-use epdf_kernel::{Error, undefined};
 use epdf_plugin_actions::ScriptPhase;
 use serde_json::{Value, json};
 
+use super::overlay::*;
+use super::results::*;
+use crate::contract::{FormCommitResult, FormCommitStatus, FormUiEffect};
 use crate::promise::{adopt, adopted, await_engine};
-use crate::types::{FormCommitResult, FormCommitStatus, FormScriptingOptions, FormUiEffect};
-use crate::value::{get, json_stringify, num, str_of, strict_eq, string_of, truthy, utf16_slice};
+use crate::value::{get, json_stringify, str_of, truthy, utf16_slice};
 
 /// A transaction body: what runs while the realm is held.
 pub type TransactionBody =
     Box<dyn FnOnce(ScriptTransaction) -> Result<Promise<FormCommitResult>, Error>>;
 
-/// The realm mutex: `transaction(body)`.
+/// The realm's transaction port: `transaction(body)`.
 pub type TransactionPort = Rc<dyn Fn(TransactionBody) -> Promise<FormCommitResult>>;
 
 /// `FormScriptingControllerOptions`.
-pub enum FormScriptingControllerOptions {
-    /// The shared realm's transaction port (the actions plugin's host).
-    Transaction {
-        doc: Rc<dyn DocumentHandle>,
-        document: Rc<dyn Fn() -> Option<DocumentMeta>>,
-        transaction: TransactionPort,
-        budget: Option<ScriptBudget>,
-    },
-    /// A standalone realm the controller builds and owns.
-    Config {
-        doc: Rc<dyn DocumentHandle>,
-        document: Rc<dyn Fn() -> Option<DocumentMeta>>,
-        config: FormScriptingOptions,
-    },
-}
-
-/// What [`create_form_scripting_host`] returns.
-#[derive(Clone)]
-pub struct FormScriptingHost {
+pub struct FormScriptingControllerOptions {
+    pub doc: Rc<dyn DocumentHandle>,
+    pub document: Rc<dyn Fn() -> Option<DocumentMeta>>,
+    /// The K/V/C/F pipeline runs wholly inside one transaction: snapshot
+    /// fetch, every pass, and the engine commit.
     pub transaction: TransactionPort,
-    host: ScriptHost,
-}
-
-impl FormScriptingHost {
-    pub fn dispose(&self) {
-        self.host.dispose();
-    }
-}
-
-/// `createFormScriptingHost({doc, document, config})`: a standalone realm
-/// for one document.
-pub fn create_form_scripting_host(
-    doc: Rc<dyn DocumentHandle>,
-    document: Rc<dyn Fn() -> Option<DocumentMeta>>,
-    config: FormScriptingOptions,
-) -> FormScriptingHost {
-    let document_input = {
-        let (doc, config) = (doc.clone(), config.clone());
-        Rc::new(move || {
-            let meta = document();
-            ScriptDocumentInput {
-                id: doc.id(),
-                file_name: match &config.file_name {
-                    Some(f) => f(),
-                    None => meta.as_ref().and_then(|m| m.name.clone()).unwrap_or_else(|| doc.id()),
-                },
-                page_count: meta.map_or(0.0, |m| f64::from(m.page_count)),
-                page_number: 0.0,
-            }
-        })
-    };
-    let identity = {
-        let (doc, overrides) = (doc.clone(), config.identity.clone());
-        Rc::new(move || resolve_script_identity(doc.as_ref(), overrides.as_ref()))
-    };
-    let environment = {
-        let (doc, config) = (doc.clone(), config.clone());
-        Rc::new(move |sequence: f64| {
-            let now_ms = config.now.as_ref().map_or_else(rt::now, |f| f());
-            ScriptEnvironment {
-                now_ms,
-                utc_offset_minutes: match &config.utc_offset_minutes {
-                    Some(f) => f(),
-                    None => config.host_utc_offset_minutes.as_ref().map_or(0.0, |f| f(now_ms)),
-                },
-                random_seed: match &config.random_seed {
-                    Some(f) => f(),
-                    None => seed_from(&doc.id(), sequence),
-                },
-            }
-        })
-    };
-    let boot_sources = {
-        let doc = doc.clone();
-        Rc::new(move || {
-            let read = doc.has("actions").then(|| doc.call("actions.read", None, Vec::new()));
-            Ok(Promise::spawn(async move {
-                let Some(read) = read else { return Ok(Vec::new()) };
-                let actions = await_engine(read).await?;
-                if actions.is_null() {
-                    return Ok(Vec::new());
-                }
-                get(&actions, "nameTreeScripts")
-                    .and_then(Value::as_array)
-                    .into_iter()
-                    .flatten()
-                    .map(|entry| {
-                        java_script_program_from_action_tree(
-                            get(entry, "action").unwrap_or(&Value::Null),
-                        )
-                    })
-                    .collect::<Result<Vec<_>, _>>()
-            }))
-        })
-    };
-    let host = ScriptHost::new(ScriptHostOptions {
-        sandbox_factory: config.sandbox_factory.clone(),
-        document: document_input,
-        identity,
-        environment,
-        boot_sources,
-        budget: config.budget.clone(),
-    });
-    let transaction: TransactionPort = {
-        let host = host.clone();
-        Rc::new(move |body: TransactionBody| host.transaction(body))
-    };
-    FormScriptingHost { transaction, host }
-}
-
-// ── the overlay ───────────────────────────────────────────────────────────────
-
-struct Appearance {
-    key: String,
-    field_ref: Value,
-    text: Value,
-}
-
-struct Overlay {
-    original: Vec<ScriptFieldInput>,
-    fields: Vec<ScriptFieldInput>,
-    reset_keys: Vec<String>,
-    appearances: Vec<Appearance>,
-}
-
-impl Overlay {
-    fn add_reset(&mut self, key: String) {
-        if !self.reset_keys.contains(&key) {
-            self.reset_keys.push(key);
-        }
-    }
-
-    fn remove_reset(&mut self, key: &str) {
-        self.reset_keys.retain(|k| k != key);
-    }
-}
-
-/// `refKey(ref)`.
-pub fn ref_key(r: &Value) -> String {
-    if str_of(r, "kind") == Some("objectNumber") {
-        format!("obj:{}", string_of(get(r, "fieldObjectNumber")))
-    } else {
-        format!("fqn:{}", string_of(get(r, "name")))
-    }
-}
-
-fn same_ref(left: &Value, right: &Value) -> bool {
-    ref_key(left) == ref_key(right)
-}
-
-/// `sameValue(left, right)`: arrays element-wise with `===`, anything else
-/// with `===`.
-fn same_value(left: Option<&Value>, right: Option<&Value>) -> bool {
-    match (left, right) {
-        (Some(Value::Array(a)), Some(Value::Array(b))) => {
-            a.len() == b.len() && a.iter().zip(b).all(|(x, y)| strict_eq(Some(x), Some(y)))
-        }
-        _ => strict_eq(left, right),
-    }
-}
-
-fn field_index(fields: &[ScriptFieldInput], r: &Value) -> Option<usize> {
-    fields.iter().position(|field| same_ref(&field.field_ref, r))
-}
-
-fn snapshot_fields(snapshot: &Value) -> &[Value] {
-    get(snapshot, "fields").and_then(Value::as_array).map_or(&[], Vec::as_slice)
-}
-
-fn snapshot_field<'a>(snapshot: &'a Value, r: &Value) -> Option<&'a Value> {
-    snapshot_fields(snapshot)
-        .iter()
-        .find(|field| same_ref(get(field, "ref").unwrap_or(&Value::Null), r))
-}
-
-/// `scriptValueFromFormValue(field, value)`. `None` is `undefined`.
-fn script_value_from_form_value(
-    field: &ScriptFieldInput,
-    value: &Value,
-) -> Result<Option<Value>, Error> {
-    let family = field.family.as_str();
-    let kind = str_of(value, "type");
-    if family == "text" && kind == Some("text") {
-        return Ok(get(value, "value").cloned());
-    }
-    if (family == "checkbox" || family == "radio") && kind == Some("toggle") {
-        return Ok(Some(match get(value, "state") {
-            Some(state) if !state.is_null() => state.clone(),
-            _ => json!("Off"),
-        }));
-    }
-    let values = || get(value, "values").and_then(Value::as_array).cloned().unwrap_or_default();
-    if family == "combobox" && kind == Some("choice") {
-        return Ok(Some(values().into_iter().next().filter(|v| !v.is_null()).unwrap_or(json!(""))));
-    }
-    if family == "listbox" && kind == Some("choice") {
-        return Ok(Some(Value::Array(values())));
-    }
-    Err(Error::new(format!(
-        "Form value type '{}' does not match field family '{}'",
-        string_of(get(value, "type")),
-        field.family
-    )))
-}
-
-/// `String(value ?? '')`.
-fn string_or_empty(value: Option<&Value>) -> String {
-    match value {
-        None | Some(Value::Null) => String::new(),
-        Some(v) => string_of(Some(v)),
-    }
-}
-
-/// `formValueFromScriptValue(field)`.
-fn form_value_from_script_value(field: &ScriptFieldInput) -> Option<Value> {
-    let value = field.value.as_ref().filter(|v| !epdf_kernel::is_undefined(v));
-    match field.family.as_str() {
-        "text" => Some(json!({ "type": "text", "value": string_or_empty(value) })),
-        "checkbox" | "radio" => {
-            let state = match value {
-                None | Some(Value::Null) => Value::Null,
-                Some(v) if string_of(Some(v)) == "Off" => Value::Null,
-                Some(v) => json!(string_of(Some(v))),
-            };
-            Some(json!({ "type": "toggle", "state": state }))
-        }
-        "combobox" => {
-            let values = match value {
-                Some(Value::Array(items)) => items.iter().take(1).cloned().collect(),
-                _ => vec![json!(string_or_empty(value))],
-            };
-            Some(json!({ "type": "choice", "values": values }))
-        }
-        "listbox" => {
-            let values = match value {
-                Some(Value::Array(items)) => items.clone(),
-                _ => vec![json!(string_or_empty(value))],
-            };
-            Some(json!({ "type": "choice", "values": values }))
-        }
-        _ => None,
-    }
-}
-
-/// `applyEffects(overlay, effects)`: fold script effects into the overlay.
-fn apply_effects(overlay: &mut Overlay, effects: &[Value]) -> Result<(), Error> {
-    for effect in effects {
-        if str_of(effect, "kind") == Some("reset") {
-            for r in get(effect, "refs").and_then(Value::as_array).into_iter().flatten() {
-                let Some(i) = field_index(&overlay.fields, r) else { continue };
-                let field = &mut overlay.fields[i];
-                field.value = field.default_value.clone();
-                overlay.add_reset(ref_key(r));
-            }
-            continue;
-        }
-        let r = get(effect, "ref").cloned().unwrap_or_else(undefined);
-        let Some(i) = field_index(&overlay.fields, &r) else { continue };
-        let key = ref_key(&r);
-        match str_of(effect, "kind") {
-            Some("setValue") => {
-                let value = get(effect, "value").cloned().unwrap_or_else(undefined);
-                overlay.fields[i].value = script_value_from_form_value(&overlay.fields[i], &value)?;
-                overlay.remove_reset(&key);
-            }
-            Some("setDisplay") => {
-                overlay.fields[i].display = string_of(get(effect, "display"));
-            }
-            _ => {
-                let text = get(effect, "text").cloned().unwrap_or_else(undefined);
-                match overlay.appearances.iter_mut().find(|a| a.key == key) {
-                    Some(existing) => {
-                        existing.field_ref = r;
-                        existing.text = text;
-                    }
-                    None => overlay.appearances.push(Appearance { key, field_ref: r, text }),
-                }
-            }
-        }
-    }
-    Ok(())
-}
-
-/// `canonicalEffects(overlay)`: the overlay's difference from the original,
-/// resets first, appearance text last.
-fn canonical_effects(overlay: &Overlay) -> Vec<Value> {
-    let mut effects = Vec::new();
-    let mut resets = Vec::new();
-    for field in &overlay.fields {
-        let Some(i) = field_index(&overlay.original, &field.field_ref) else { continue };
-        let original = &overlay.original[i];
-        if !same_value(original.value.as_ref(), field.value.as_ref()) {
-            let key = ref_key(&field.field_ref);
-            if overlay.reset_keys.contains(&key)
-                && same_value(field.value.as_ref(), field.default_value.as_ref())
-            {
-                resets.push(field.field_ref.clone());
-            } else if let Some(value) = form_value_from_script_value(field) {
-                effects.push(json!({ "kind": "setValue", "ref": field.field_ref, "value": value }));
-            }
-        }
-        if original.display != field.display {
-            effects.push(
-                json!({ "kind": "setDisplay", "ref": field.field_ref, "display": field.display }),
-            );
-        }
-    }
-    if !resets.is_empty() {
-        effects.insert(0, json!({ "kind": "reset", "refs": resets }));
-    }
-    for a in &overlay.appearances {
-        effects.push(json!({ "kind": "setAppearanceText", "ref": a.field_ref, "text": a.text }));
-    }
-    effects
-}
-
-fn script_error(message: impl Into<String>) -> ScriptExecutionError {
-    ScriptExecutionError {
-        kind: ScriptExecutionErrorKind::InvalidOutput,
-        message: message.into(),
-        stack: None,
-    }
-}
-
-fn budget_error(message: impl Into<String>) -> ScriptExecutionError {
-    ScriptExecutionError {
-        kind: ScriptExecutionErrorKind::Budget,
-        message: message.into(),
-        stack: None,
-    }
-}
-
-fn script_diagnostic(message: String) -> ScriptDiagnostic {
-    ScriptDiagnostic { code: ScriptDiagnosticCode::ScriptError, message }
-}
-
-/// `pageNumberFor(meta, field)`: the zero-based page of the field's first
-/// placed widget, 0 when there is none or the page is unknown.
-fn page_number_for(meta: Option<&DocumentMeta>, field: &Value) -> f64 {
-    let pon = get(field, "widgets")
-        .and_then(Value::as_array)
-        .into_iter()
-        .flatten()
-        .filter_map(|w| num(w, "pageObjectNumber"))
-        .find(|&pon| pon > 0.0);
-    let (Some(meta), Some(pon)) = (meta, pon) else { return 0.0 };
-    let index = meta
-        .pages
-        .as_array()
-        .and_then(|pages| pages.iter().position(|p| num(p, "pageObjectNumber") == Some(pon)));
-    index.map_or(0.0, |i| i as f64)
-}
-
-/// `statusFromEffects(result)`.
-fn status_from_effects(result: &Value) -> FormCommitStatus {
-    let statuses: Vec<&str> = get(result, "results")
-        .and_then(Value::as_array)
-        .into_iter()
-        .flatten()
-        .map(|entry| str_of(entry, "status").unwrap_or_default())
-        .collect();
-    if statuses.iter().any(|s| *s == "failed" || *s == "skipped") {
-        return FormCommitStatus::Failed;
-    }
-    if statuses.contains(&"rejected") {
-        return FormCommitStatus::Failed;
-    }
-    if statuses.contains(&"applied") {
-        FormCommitStatus::Applied
-    } else {
-        FormCommitStatus::Unchanged
-    }
-}
-
-fn failed(
-    ui_effects: Vec<FormUiEffect>,
-    diagnostics: Vec<ScriptDiagnostic>,
-    error: ScriptExecutionError,
-) -> FormCommitResult {
-    FormCommitResult {
-        status: FormCommitStatus::Failed,
-        scripted: true,
-        effects_result: None,
-        ui_effects,
-        diagnostics,
-        error: Some(error),
-    }
+    /// The transaction aggregate the realm owner enforces.
+    pub budget: Option<ScriptBudget>,
 }
 
 // ── the controller ────────────────────────────────────────────────────────────
@@ -435,7 +58,6 @@ struct ControllerInner {
     document: Rc<dyn Fn() -> Option<DocumentMeta>>,
     transaction: TransactionPort,
     transaction_budget: Option<ScriptBudget>,
-    owned_host: Option<FormScriptingHost>,
     disposed: Cell<bool>,
 }
 
@@ -538,40 +160,20 @@ fn event(kind: ScriptEventKind) -> ScriptEventInput {
 
 impl FormScriptingController {
     pub fn new(options: FormScriptingControllerOptions) -> Self {
-        let inner = match options {
-            FormScriptingControllerOptions::Transaction { doc, document, transaction, budget } => {
-                ControllerInner {
-                    doc,
-                    document,
-                    transaction,
-                    transaction_budget: budget,
-                    owned_host: None,
-                    disposed: Cell::new(false),
-                }
-            }
-            FormScriptingControllerOptions::Config { doc, document, config } => {
-                let budget = config.budget.clone();
-                let host = create_form_scripting_host(doc.clone(), document.clone(), config);
-                ControllerInner {
-                    doc,
-                    document,
-                    transaction: host.transaction.clone(),
-                    transaction_budget: budget,
-                    owned_host: Some(host),
-                    disposed: Cell::new(false),
-                }
-            }
-        };
-        FormScriptingController(Rc::new(inner))
+        let FormScriptingControllerOptions { doc, document, transaction, budget } = options;
+        FormScriptingController(Rc::new(ControllerInner {
+            doc,
+            document,
+            transaction,
+            transaction_budget: budget,
+            disposed: Cell::new(false),
+        }))
     }
 
-    /// A shared realm belongs to its host: this only fences further
-    /// transactions. A standalone realm is released.
+    /// The realm belongs to its owner: this only fences further
+    /// transactions.
     pub fn dispose(&self) {
         self.0.disposed.set(true);
-        if let Some(host) = &self.0.owned_host {
-            host.dispose();
-        }
     }
 
     /// `commit(ref, proposed)`: one originating-client value transaction.
