@@ -46018,7 +46018,7 @@
     },
     {
       "name": "connect-dispatches-and-listens",
-      "covers": "A connect may dispatch into its slice and listen: to the guarded handle event stream (an object source) and to a capability event (a function source). Both subscriptions end when the instance closes.",
+      "covers": "A connect may dispatch into its slice, read the page registry before the document is published (from the staged meta), and listen: to the guarded handle event stream (an object source) and to a capability event (a function source). Both subscriptions end when the instance closes.",
       "plugins": [
         {
           "factory": "probe",
@@ -46042,7 +46042,8 @@
                   }
                 },
                 "listenDoc": true,
-                "listenActive": true
+                "listenActive": true,
+                "readPage": 1
               }
             }
           }
@@ -46286,6 +46287,13 @@
               "fn": "ctl.connect",
               "args": [
                 "a"
+              ]
+            },
+            {
+              "fn": "ctl.page",
+              "args": [
+                0,
+                600
               ]
             }
           ],
@@ -46578,6 +46586,13 @@
               "fn": "ctl.connect",
               "args": [
                 "b"
+              ]
+            },
+            {
+              "fn": "ctl.page",
+              "args": [
+                0,
+                600
               ]
             }
           ],

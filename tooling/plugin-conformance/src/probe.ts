@@ -87,6 +87,8 @@ export interface ProbeConfig {
           readonly dispatch?: Action & { readonly state?: unknown };
           readonly listenDoc?: boolean;
           readonly listenActive?: boolean;
+          /** Read a page before the document is published (the staged meta). */
+          readonly readPage?: number;
         };
   };
 }
@@ -355,6 +357,10 @@ function createApi(config: ProbeConfig, env: PluginEnv, ctx: ControllerContext<u
           if (connect.dispatch) ctx.dispatch(connect.dispatch);
           if (connect.listenDoc) {
             ctx.listen(ctx.doc.events, (event) => log(`${name}.docEvent`, [(event as { type: string }).type]));
+          }
+          if (connect.readPage !== undefined) {
+            const page = ctx.getPage(toPageRef(connect.readPage));
+            log(`${name}.page`, [page?.index ?? null, ctx.geometry.tryForPage(toPageRef(connect.readPage))?.width ?? null]);
           }
           if (connect.listenActive) {
             ctx.listen(ctx.get(DocumentsToken).onActiveChanged, (event) => log(`${name}.activeChanged`, [event]));

@@ -1030,9 +1030,9 @@ const v3Cases: ScenarioCase[] = [
   {
     name: 'connect-dispatches-and-listens',
     covers:
-      'A connect may dispatch into its slice and listen: to the guarded handle event stream (an object source) and to a capability event (a function source). Both subscriptions end when the instance closes.',
+      'A connect may dispatch into its slice, read the page registry before the document is published (from the staged meta), and listen: to the guarded handle event stream (an object source) and to a capability event (a function source). Both subscriptions end when the instance closes.',
     plugins: [
-      probe(ctl('ctl', { create: { connect: { dispatch: { type: 'SET', state: { n: 7 } }, listenDoc: true, listenActive: true } } })),
+      probe(ctl('ctl', { create: { connect: { dispatch: { type: 'SET', state: { n: 7 } }, listenDoc: true, listenActive: true, readPage: 1 } } })),
     ],
     engine: { documents: { a: doc(), b: doc() } },
     steps: [
