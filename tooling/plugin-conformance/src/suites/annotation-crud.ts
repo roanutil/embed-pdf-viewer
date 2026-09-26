@@ -314,7 +314,7 @@ const cases: ScenarioCase[] = [
   {
     name: 'live-link-targets-and-finishing-a-draft',
     covers:
-      'linkItemsOn reads a link’s target from the model, so an optimistic retarget shows before the engine answers; finishCreationDraft commits a poly draft.',
+      'linkItemsOn reads a link’s target from the model, so an optimistic retarget shows before the engine answers, and an optimistic clear falls back to the target the engine last reported; finishCreationDraft commits a poly draft.',
     plugins: PLUGINS,
     engine: {
       documents: {
@@ -330,6 +330,8 @@ const cases: ScenarioCase[] = [
       ...boot,
       call('select', [objRef(3)]),
       call('updateSelection', [{ link: { kind: 'uri', uri: 'https://new' } }]),
+      call('linkItemsOn', [1]),
+      call('updateSelection', [{ link: null }]),
       call('linkItemsOn', [1]),
       call('createPointer', ['polygon', 'down', 1, { x: 10, y: 10 }]),
       call('createPointer', ['polygon', 'down', 1, { x: 50, y: 10 }]),
