@@ -118,10 +118,13 @@ The 62 unreached branches are mostly the `??` and optional-chaining arms of the 
 
 ## Mutation testing
 
-In progress. Each file runs on its own (`scripts/mutants.sh -p epdf-plugin-annotation
---test-package epdf-plugin-annotation --file <file>`); `harness/` is excluded. A miss is either
-killed by a case added afterwards, confirmed by applying the mutant by hand and watching the replay
-fail, or listed below with the reason no case can kill it.
+Every source file but `harness/` (excluded in `.cargo/mutants.toml`) has been run, one file at a
+time (`scripts/mutants.sh -p epdf-plugin-annotation --test-package epdf-plugin-annotation --file
+<file>`); `repository/kinds/mod.rs` has no mutants. Of the 165 that survived, 118 are killed by
+cases added afterwards and 47 are equivalent or unreachable, each listed below. "Killed after"
+counts the first group; each of those was confirmed by applying the mutant by hand and watching the
+replay fail, not by a second full run. The nine files the first pass covered (`effects` through
+`value`) are fresh runs; that pass had counted 15 misses in them, and 8 remain.
 
 | File | Caught | Timeouts | Missed | Unviable | Killed after | Accepted |
 |---|---|---|---|---|---|---|
@@ -148,8 +151,11 @@ fail, or listed below with the reason no case can kill it.
 | `text_item.rs` | 6 | 0 | 0 | 1 | | |
 | `threads.rs` | 54 | 0 | 5 | 7 | 1 | 4 |
 | `value.rs` | 13 | 0 | 0 | 0 | | |
+| `capability.rs` | 328 | 0 | 78 | 177 | 61 | 17 |
+| `lib.rs` | 2 | 0 | 0 | 1 | | |
+| Total | 899 | 1 | 165 | 261 | 118 | 47 |
 
-The other files are being run.
+Timeouts count as caught: the one is a mutant that loops forever.
 
 ### Accepted misses
 
@@ -169,3 +175,13 @@ The other files are being run.
 | `repository/kinds/quads.rs` 85, 88, 91, 94 | `<` to `<=` and `>` to `>=` in `pdf_bounds_of_quads` | Equivalent. On a tie the running bound is replaced by an equal value. |
 | `threads.rs` 130 | `x < y` to `<=` in `chronological` | Equivalent. It sits under `x != y`. |
 | `threads.rs` 141 | `d > 0.0` to `==`, `<` and `>=` | Equivalent. `sort_by` only asks whether the answer is `Less`, and every mutant still answers `Less` exactly when `d < 0`. |
+| `capability.rs` 76 to 78, 84 to 86 | `same_num` and `same_rc` to `false`, and each of their arms deleted | Unobservable. Each only turns a memo hit into a miss, which recomputes an equal value, and canonical JSON has no object identity. (`==` to `!=` in `same_num`, which turns a miss into a stale hit, is killed.) |
+| `capability.rs` 221 | `owner_of` to `Default::default()` | Unreachable in the harness. The fake engine's `allowsAnnotationMutation` ignores its target, so the owner never changes an answer. |
+| `capability.rs` 279 | `+` to `-` and `*` in `random_uuid`'s counter | Unreachable in the harness, which always installs `random_uuid`. |
+| `capability.rs` 806 | `&&` to `\|\|` in `selected_committed` | Equivalent. An annotation has both a ref and a DTO (ingested) or neither (an uncommitted draft). |
+| `capability.rs` 982 | the `w > 0.0` guard to `true`, and `>` to `>=` | Equivalent. `sniff_binary_metadata` never reports a raster with a zero width. |
+| `capability.rs` 995 | `&&` to `\|\|` in `upright_rot_for`'s filter | Equivalent. It only lets a `NaN` display rotation through, and `fit_stamp_box` and `box_geom_fields` both read a `NaN` rotation as none. |
+| `capability.rs` 1098 | delete the `(None, None)` arm of the file picker's same-document check | Unreachable. The plugin is document-scoped, so a click always has a document. |
+| `capability.rs` 689 | the first `==` to `!=` in the link-chain cleanup | Equivalent. The entry is then never removed, and the next sync awaits a settled promise instead of a fresh resolved one, which costs the same turns. |
+| `capability.rs` 2237 | the `subtype == "link"` guard in `link_items_on` to `true` | Equivalent. The loop only reaches it for link annotations, whose DTO subtype is `link`. |
+| `capability.rs` 2640 | `-1.0` to `1.0` for a member missing from the paint order in `group` | Unreachable. Every committed selected member is in `order`. |
