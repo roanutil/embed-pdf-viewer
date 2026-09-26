@@ -1,7 +1,7 @@
 {
   "total": {
-    "statements": "33531/33608",
-    "branches": "8299/8545"
+    "statements": "34545/34622",
+    "branches": "8626/8874"
   },
   "files": {
     "packages/core/acrojs/src/actions.ts": {
@@ -18,7 +18,7 @@
     },
     "packages/core/acrojs/src/host.ts": {
       "statements": "240/240",
-      "branches": "64/65",
+      "branches": "65/66",
       "uncoveredLines": [],
       "uncoveredBranches": [
         "184:108#0"
@@ -190,7 +190,7 @@
     },
     "packages/core/main/src/context.ts": {
       "statements": "123/123",
-      "branches": "32/33",
+      "branches": "33/34",
       "uncoveredLines": [],
       "uncoveredBranches": [
         "81:52#0"
@@ -1497,6 +1497,33 @@
     },
     "packages/plugin/stage/src/types.ts": {
       "statements": "667/667",
+      "branches": "0/0",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/stamp/src/capability.ts": {
+      "statements": "731/731",
+      "branches": "302/304",
+      "uncoveredLines": [],
+      "uncoveredBranches": [
+        "636:67#0",
+        "717:27#0"
+      ]
+    },
+    "packages/plugin/stamp/src/reducer.ts": {
+      "statements": "68/68",
+      "branches": "20/20",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/stamp/src/stamp.plugin.ts": {
+      "statements": "23/23",
+      "branches": "3/3",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/stamp/src/types.ts": {
+      "statements": "192/192",
       "branches": "0/0",
       "uncoveredLines": [],
       "uncoveredBranches": []

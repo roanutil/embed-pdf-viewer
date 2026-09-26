@@ -1,13 +1,13 @@
 # epdf-plugin-stamp
 
 `packages/plugin/stamp` in Rust: workspace stamp libraries over an asset engine, dynamic stamps
-evaluated through form scripting, and placement through the annotation plugin. All 73 cases in four
+evaluated through form scripting, and placement through the annotation plugin. All 74 cases in four
 vector files replay identically (`cargo test -p epdf-plugin-stamp`):
 
 | File | Kind | Cases | Covers |
 |---|---|---|---|
 | `vectors/plugins/stamp-library.json` | scenario | 20 | `importLibraryPdf`: catalog and page `/PieceInfo` reads and writes, options over metadata, source errors, missing services, engine failures mid-import and at close, URL renders, id allocation and collisions, concurrent imports, every asset-engine configuration and its teardown |
-| `vectors/plugins/stamp-assets.json` | scenario | 19 | loose raster and PDF assets, appends to and deletes from a canonical library, `removeLibrary`, the per-library mutation queue, a loose library that takes a canonical id, a mutation that outlives the kernel |
+| `vectors/plugins/stamp-assets.json` | scenario | 20 | loose raster and PDF assets, appends to and deletes from a canonical library, `removeLibrary`, the per-library mutation queue, loose and canonical libraries replacing each other under one id, a mutation that outlives the kernel |
 | `vectors/plugins/stamp-placement.json` | scenario | 19 | `armAsset` and `disarm` through the real annotation plugin, the skipped cases (scripting off, no sandbox, raster, no field on the page), materialization, its refusals, the observers, flatten and close failures |
 | `vectors/plugins/stamp-functions.json` | function | 15 | the reducer |
 
@@ -62,7 +62,7 @@ fixture refuses a second one.
 Each `await` and `.then` is mirrored in `src/promise.rs`. An engine call awaited resumes three turns
 after it settles, an `async` function that returns a promise settles two turns after it, and
 `mutateLibrary`'s `result.finally(...)` settles three turns after `result`. The queue's ordering is
-pinned by `removals-are-serialized-per-library` and the three `*-queued-*` cases, where a deferred
+pinned by `removals-are-serialized-per-library`, `a-loose-append-finds-its-library-canonical` and the three `*-queued-*` cases, where a deferred
 `open` holds one mutation while others line up behind it. `openAssetDocument` draws its
 `stamp-import` id after awaiting the engine, as the argument evaluation order puts it, which the
 concurrent cases would expose.
@@ -78,8 +78,9 @@ made the same call.
 
 A few malformed engine answers make the TypeScript throw a `TypeError` where the Rust carries on,
 and no vector sends one: an insert result without `insertedPageObjectNumbers` (read as empty), a
-page layout without `pageObjectNumber` (read as 0), and a truthy non-bytes answer to a save or an
-extraction (read as no bytes). An `assetName` callback that answers a non-string reads as no name,
+page layout without `pageObjectNumber` (read as 0), a truthy non-bytes answer to a save or an
+extraction (read as no bytes), and a form widget or selected page whose `pageObjectNumber` is not a
+number (never a match, where the TypeScript's `===` matches two `undefined`s). An `assetName` callback that answers a non-string reads as no name,
 where the TypeScript would store the value itself.
 
 The selectors read the state with `Ctx::state()`, which panics once the kernel is destroyed, where
@@ -96,7 +97,7 @@ could reach the NotImplemented refusal for an engine that can't flatten.
 ## Coverage
 
 The generators reach every statement and branch of `reducer.ts`, `stamp.plugin.ts` and `types.ts`,
-and all 731 statements and 301 of the 303 branches of `capability.ts` (`vectors/coverage.json`).
+and all 731 statements and 302 of the 304 branches of `capability.ts` (`vectors/coverage.json`).
 The two branches left are unreachable from the public surface:
 
 - `capability.ts:636`, the `'native form effect failed'` fallback. Every failed `FormCommitResult`
@@ -110,4 +111,24 @@ an engine whose `download` answers nothing leaves the library's bytes `undefined
 
 ## Mutation testing
 
-Pending.
+Complete, file by file through `scripts/mutants.sh`:
+
+| File | Caught | Missed | Timeout | Unviable |
+|---|---|---|---|---|
+| `capability.rs` | 116 | 1 | 11 | 63 |
+| `reducer.rs` | 4 | 1 | 0 | 0 |
+| `promise.rs` | 0 | 0 | 0 | 6 |
+| `lib.rs` | 0 | 0 | 0 | 1 |
+
+The timeouts count as caught. Ten mutate `base36` or `uid` into a function that repeats an id,
+and `allocate_id`'s draw-again loop then never ends; the eleventh is `allocate_id`'s `!` itself.
+The two misses are equivalent:
+
+- `capability.rs:115`, deleting the `"stamp"` arm of `kind_from_pdf_name`. `None` falls back to
+  `StampAssetKind::Stamp`, the same kind.
+- `reducer.rs:9`, `initial_stamp_state` as `Default::default()`: the same value.
+
+The first `capability.rs` run missed 14 of 206. `a-loose-append-finds-its-library-canonical` and
+four more flatten results in `a-flatten-that-fails-or-skips` kill the reachable ones, and two
+helpers lost code no vector could tell apart: a guard in `entries_of` and a general `===` in widget
+matching. `types.rs` has no functions to mutate, and `harness.rs` is the adapter.
