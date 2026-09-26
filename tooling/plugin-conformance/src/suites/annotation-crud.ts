@@ -284,6 +284,61 @@ const cases: ScenarioCase[] = [
     ],
   },
   {
+    name: 'text-commits-debounce-per-annotation',
+    covers:
+      'Each annotation keeps its own debounce timer: typing into a second one neither cancels nor takes over the first one’s, and one firing leaves the other’s pending timer to be restarted, so each commits its last contents once.',
+    plugins: PLUGINS,
+    engine: {
+      documents: {
+        a: doc([
+          hydrate({ 1: [freeText(1, { rect: { left: 100, bottom: 600, right: 300, top: 700 } }), callout(3)] }),
+          { path: 'page.annotations.update', pon: 1, value: updated(freeText(1, { contents: 'a2' })) },
+        ]),
+      },
+    },
+    snapshot: 'none',
+    steps: [
+      ...boot,
+      call('setContents', [objRef(1), 'a1']),
+      call('setContents', [objRef(3), 'b1']),
+      call('setContents', [objRef(1), 'a2']),
+      advance(300),
+      call('setContents', [objRef(1), 'a3']),
+      advance(100),
+      call('setContents', [objRef(3), 'b2']),
+      advance(200),
+      call('setContents', [objRef(3), 'b3']),
+      advance(300),
+    ],
+  },
+  {
+    name: 'live-link-targets-and-finishing-a-draft',
+    covers:
+      'linkItemsOn reads a link’s target from the model, so an optimistic retarget shows before the engine answers; finishCreationDraft commits a poly draft.',
+    plugins: PLUGINS,
+    engine: {
+      documents: {
+        a: doc([
+          hydrate({ 1: [link(3)] }),
+          { path: 'page.annotations.update', pon: 1, defer: 'retarget' },
+          { path: 'page.annotations.create', pon: 1, value: created(polygon(12)) },
+        ]),
+      },
+    },
+    snapshot: 'none',
+    steps: [
+      ...boot,
+      call('select', [objRef(3)]),
+      call('updateSelection', [{ link: { kind: 'uri', uri: 'https://new' } }]),
+      call('linkItemsOn', [1]),
+      call('createPointer', ['polygon', 'down', 1, { x: 10, y: 10 }]),
+      call('createPointer', ['polygon', 'down', 1, { x: 50, y: 10 }]),
+      call('createPointer', ['polygon', 'down', 1, { x: 30, y: 40 }]),
+      call('finishCreationDraft'),
+      call('list', [1]),
+    ],
+  },
+  {
     name: 'settings',
     covers:
       'setDefaults and currentDefaults through a tool’s preset (arrow reads its own bag; a bare subtype falls back), propsForTool through the tool’s props kind, setSnap and snapSettings, setChrome (deep merge) and chromeSettings, and chrome() dropping the rotate guides when they are disabled.',

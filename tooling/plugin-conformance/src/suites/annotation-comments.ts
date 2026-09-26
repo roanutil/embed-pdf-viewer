@@ -30,6 +30,7 @@ import {
   updated,
   widget,
   layout,
+  base,
 } from './annotation-fixtures';
 
 const at = (d: number) => `2024-01-${String(d).padStart(2, '0')}T00:00:00Z`;
@@ -313,15 +314,50 @@ const cases: ScenarioCase[] = [
     ],
   },
   {
+    name: 'link-sync-chains-per-parent',
+    covers:
+      'Link syncs chain per parent: a third set on one parent waits for the second, not the first; a set after the first settles still waits for the latest; and when one parent’s chain drains, another parent’s pending chain is kept, so its next set still waits.',
+    plugins: WITH_LENS,
+    engine: {
+      documents: {
+        a: doc([
+          hydrate({ 1: [square(1), square(2, { rect: { left: 300, bottom: 600, right: 400, top: 700 } })] }),
+          { path: 'page.annotations.create', pon: 1, times: 1, defer: 'a1' },
+          { path: 'page.annotations.create', pon: 1, times: 1, defer: 'b1' },
+          { path: 'page.annotations.create', pon: 1, value: created(link(22, { inReplyTo: objRef(2), replyType: 'group', target: { kind: 'uri', uri: 'https://b2' } })) },
+          { path: 'page.annotations.update', pon: 1, times: 1, defer: 'a2' },
+          { path: 'page.annotations.update', pon: 1, times: 1, value: updated(link(20, { inReplyTo: objRef(1), replyType: 'group', target: { kind: 'uri', uri: 'https://3' } })) },
+          { path: 'page.annotations.update', pon: 1, times: 1, value: updated(link(20, { inReplyTo: objRef(1), replyType: 'group', target: { kind: 'uri', uri: 'https://4' } })) },
+          { path: 'page.annotations.update', pon: 1, value: updated(link(21, { inReplyTo: objRef(2), replyType: 'group', target: { kind: 'uri', uri: 'https://b2' } })) },
+        ]),
+      },
+    },
+    snapshot: 'none',
+    steps: [
+      ...boot,
+      lens('linksSet', [objRef(1), { kind: 'uri', uri: 'https://1' }]),
+      lens('linksSet', [objRef(1), { kind: 'uri', uri: 'https://2' }]),
+      lens('linksSet', [objRef(1), { kind: 'uri', uri: 'https://3' }]),
+      lens('linksSet', [objRef(2), { kind: 'uri', uri: 'https://b1' }]),
+      settle('a1', created(link(20, { inReplyTo: objRef(1), replyType: 'group', target: { kind: 'uri', uri: 'https://1' } }))),
+      lens('linksSet', [objRef(1), { kind: 'uri', uri: 'https://4' }]),
+      settle('a2', updated(link(20, { inReplyTo: objRef(1), replyType: 'group', target: { kind: 'uri', uri: 'https://2' } }))),
+      lens('linksSet', [objRef(2), { kind: 'uri', uri: 'https://b2' }]),
+      settle('b1', created(link(21, { inReplyTo: objRef(2), replyType: 'group', target: { kind: 'uri', uri: 'https://b1' } }))),
+      lens('linksOf', [objRef(1)]),
+      lens('linksOf', [objRef(2)]),
+    ],
+  },
+  {
     name: 'script-commits',
     covers:
-      'commitScriptEffects: per entry, resolve the ref from the model (or the engine’s page list for an unloaded one), lower the Acrobat patch (RGB, gray and CMYK colours, a transparent fill as null, borderStyle, dash, rect, contents, flags, opacity, width), write it, stop on the first refusal (the rest skip), and reload each touched page once. Unresolvable entries and transparent strokes fail without writing.',
+      'commitScriptEffects: per entry, resolve the ref from the model (or the engine’s page list for an unloaded one), lower the Acrobat patch (RGB, gray and CMYK colours, a transparent fill as null, borderStyle, dash, rect, contents, flags, opacity, width), write it, stop on the first refusal (the rest skip), and reload each touched page once. Unresolvable entries (a loaded one without a subtype asks the page list first) and transparent strokes fail without writing; a listed page is searched for the entry’s own object number.',
     plugins: PLUGINS,
     engine: {
       documents: {
         a: doc([
-          hydrate({ 1: [square(1), circle(2), widget(3, 'text')] }),
-          { path: 'page.annotations.list', pon: 2, times: 1, value: { annotations: [square(40, { pageObjectNumber: 2 })] } },
+          hydrate({ 1: [square(1), circle(2), widget(3, 'text'), base(4, '')] }),
+          { path: 'page.annotations.list', pon: 2, times: 1, value: { annotations: [square(39, { pageObjectNumber: 2 }), square(40, { pageObjectNumber: 2 })] } },
           { path: 'page.annotations.list', pon: 2, times: 1, error: { name: 'EngineError', message: 'no', code: 'NotFound' } },
           { path: 'page.annotations.list', pon: 1, value: { annotations: [square(1), circle(2), widget(3, 'text')] } },
           { path: 'page.annotations.list', pon: 2, value: { annotations: [] } },
@@ -341,6 +377,7 @@ const cases: ScenarioCase[] = [
           { annotObjectNumber: 40, pageObjectNumber: 2, patch: { contents: 'far' } },
           { annotObjectNumber: 41, pageObjectNumber: 2, patch: { contents: 'missing' } },
           { annotObjectNumber: 42, patch: { contents: 'no page' } },
+          { annotObjectNumber: 4, patch: { contents: 'no kind' } },
           { annotObjectNumber: 3, patch: { strokeColor: ['T'] } },
           { annotObjectNumber: 3, patch: { width: 1 } },
           { annotObjectNumber: 2, patch: { opacity: 1 } },

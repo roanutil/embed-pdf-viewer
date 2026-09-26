@@ -37,6 +37,21 @@ const grouped = (n: number, parent: number) => ({ inReplyTo: objRef(parent), rep
 
 const cases: ScenarioCase[] = [
   {
+    name: 'a-pair-groups',
+    covers: 'Two committed members on one page are enough: canGroup says so and group writes the one subordinate.',
+    plugins: PLUGINS,
+    engine: {
+      documents: {
+        a: doc([
+          hydrate({ 1: [square(1), square(2)] }),
+          { path: 'page.annotations.update', pon: 1, args: [objRef(2), { subtype: 'square', inReplyTo: objRef(1), replyType: 'group' }], value: updated(square(2, grouped(2, 1))) },
+        ]),
+      },
+    },
+    snapshot: SNAP,
+    steps: [...boot, call('select', [objRef(1)]), call('select', [objRef(2), { add: true }]), call('canGroup'), call('group')],
+  },
+  {
     name: 'group-and-ungroup',
     covers:
       'canGroup needs 2+ committed members on one page, each passing the update check, and not already one complete group. group makes the bottom-most member the primary and writes /IRT + /RT /Group onto the rest (a relationship-only patch, source preserved); ungroup clears it on every subordinate of the touched groups.',
