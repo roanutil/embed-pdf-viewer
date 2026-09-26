@@ -8,11 +8,17 @@
  * plugin code in.
  */
 import {
+  CancelledError,
+  DocumentsToken,
+  PluginError,
+  toPageRef,
   type Action,
   type AnyPlugin,
+  type ControllerContext,
   type EffectContext,
   type PluginContext,
 } from '@embedpdf/core';
+import { PermissionDenied } from '@embedpdf/engine-core/runtime';
 
 import { makeError, type ErrorSpec } from './fake-engine';
 import { registerPlugin, type PluginEnv } from './scenario';
@@ -63,6 +69,43 @@ export interface ProbeConfig {
   };
   /** Throw while building the capability. */
   readonly capabilityThrows?: ErrorSpec;
+  /** Hand back the plugin object an earlier probe in this case built under
+   *  this id, instead of a new one: the same definition installed twice. */
+  readonly sameAs?: string;
+  /** Build the capability through the v3 `create` hook instead of
+   *  `capability`: the api is `createApi` below, over a ControllerContext. */
+  readonly create?: {
+    readonly throws?: ErrorSpec;
+    /** Provide a `connect` half. It logs `<id>.connect` and then, as asked,
+     *  throws, dispatches, or listens: `listenDoc` to the guarded handle's
+     *  event stream (an object source), `listenActive` to the documents
+     *  capability's `onActiveChanged` (a function source). */
+    readonly connect?:
+      | true
+      | {
+          readonly throws?: ErrorSpec;
+          readonly dispatch?: Action & { readonly state?: unknown };
+          readonly listenDoc?: boolean;
+          readonly listenActive?: boolean;
+        };
+  };
+}
+
+/** An error the probe raises itself, for the classes a table cannot make:
+ *  `PermissionDenied` (matched by class, not name), the kernel's
+ *  `CancelledError`, and a `PluginError` that must pass through unchanged. */
+export type ProbeErrorSpec =
+  | ErrorSpec
+  | { readonly class: 'PermissionDenied'; readonly required: string; readonly context?: string }
+  | { readonly class: 'CancelledError'; readonly what: string }
+  | { readonly class: 'PluginError'; readonly code: string; readonly message: string };
+
+function probeError(spec: ProbeErrorSpec): Error {
+  const special = spec as { class?: string; required: string; context?: string; what: string; code: string; message: string };
+  if (special.class === 'PermissionDenied') return new PermissionDenied(special.required, special.context);
+  if (special.class === 'CancelledError') return new CancelledError(special.what);
+  if (special.class === 'PluginError') return new PluginError(special.code as never, 'probe', special.message);
+  return makeError(spec as ErrorSpec);
 }
 
 type Defer = PluginEnv['defer'];
@@ -100,7 +143,8 @@ export function probePlugin(config: ProbeConfig, env: PluginEnv): AnyPlugin {
             if (rule === 'merge') return { ...(state as object), ...(action.state as object) };
             return state;
           },
-    capability: token
+    create: config.create ? (ctx: ControllerContext<unknown>) => createApi(config, env, ctx) : undefined,
+    capability: token && !config.create
       ? (ctx: PluginContext<unknown>) => {
           log(`${name}.capability`, [where(ctx)]);
           if (config.capabilityThrows) throw makeError(config.capabilityThrows);
@@ -116,6 +160,8 @@ export function probePlugin(config: ProbeConfig, env: PluginEnv): AnyPlugin {
             tryGet: (tokenName: string) => ctx.tryGet(probeToken(tokenName)) !== null,
             forDocument: (tokenName: string, documentId: string) =>
               ctx.forDocument(probeToken(tokenName), documentId) !== undefined,
+            tryForDocument: (tokenName: string, documentId: string) =>
+              ctx.tryForDocument(probeToken(tokenName), documentId) !== null,
             cleanup: (label: string) => ctx.cleanup(() => log(`${name}.cleanup`, [label])),
           };
         }
@@ -172,4 +218,186 @@ export function probePlugin(config: ProbeConfig, env: PluginEnv): AnyPlugin {
   return plugin;
 }
 
-registerPlugin('probe', { factory: (config, env) => probePlugin(config as ProbeConfig, env) });
+/**
+ * The api of a `create` probe. Every member reaches one ControllerContext
+ * member and reports what it did; promise-returning members hand the promise
+ * back, so its settlement lands in the trace. `<label>` arguments name a
+ * `settle` step that finishes the work the member started.
+ */
+function createApi(config: ProbeConfig, env: PluginEnv, ctx: ControllerContext<unknown>) {
+  const { log, defer } = env;
+  const name = config.id;
+  const create = config.create!;
+  log(`${name}.create`, [ctx.documentId ?? null, ctx.instanceId]);
+  if (create.throws) throw makeError(create.throws);
+  const deferred = (label: string) =>
+    new Promise<unknown>((resolve, reject) => defer(label, resolve, reject));
+  const controllers = new Map<string, AbortController>();
+  const signalOf = (label?: string) => {
+    if (label === undefined) return undefined;
+    let controller = controllers.get(label);
+    if (!controller) {
+      controller = new AbortController();
+      controllers.set(label, controller);
+    }
+    return controller.signal;
+  };
+  const source = ctx.events.source<unknown>();
+  const token = (tokenName: string) => env.token(tokenName);
+  const service = (path: string) => {
+    const members = path.split('.');
+    const method = members.pop()!;
+    let target: Record<string, unknown> = ctx.doc as unknown as Record<string, unknown>;
+    for (const member of members) target = target[member] as Record<string, unknown>;
+    return { target, method };
+  };
+
+  const api = {
+    instanceId: () => ctx.instanceId,
+    state: () => ctx.getState(),
+    dispatch: (action: Action) => ctx.dispatch(action),
+    /** `ctx.doc.<path>(...args)`: through the guarded handle. */
+    docCall: (path: string, ...args: unknown[]) => {
+      const { target, method } = service(path);
+      return (target[method] as (...a: unknown[]) => unknown)(...args);
+    },
+    /** `ctx.doc.page(toPageRef(pon)).<path>(...args)`. */
+    pageCall: (pon: number, path: string, ...args: unknown[]) => {
+      const page = ctx.doc.page(toPageRef(pon)) as unknown as Record<string, Record<string, (...a: unknown[]) => unknown>>;
+      const [serviceName, method] = path.split('.');
+      return page[serviceName][method](...args);
+    },
+    /** A synchronous read through the guard: `ctx.doc.security.allows(cap)`. */
+    allows: (capability: string) => ctx.doc.security.allows(capability as never),
+    docId: () => ctx.doc.id,
+    /** A synchronous member read through the guard, by path. */
+    docRead: (path: string) => {
+      let value: unknown = ctx.doc;
+      for (const member of path.split('.')) value = (value as Record<string, unknown>)[member];
+      return value;
+    },
+    /** Subscribe a logging listener to this instance's event source,
+     *  optionally tied to a named AbortController. */
+    on: (label: string, signal?: string) =>
+      source.on((event) => log(`${name}.event`, [label, event]), { signal: signalOf(signal) }),
+    emit: (event: unknown) => source.emit(event),
+    /** Subscribe a listener that throws, to show the source reports it. */
+    onThrowing: (message: string) =>
+      source.on(() => {
+        throw new Error(message);
+      }),
+    abortSignal: (label: string, reason?: unknown) => {
+      signalOf(label);
+      controllers.get(label)!.abort(reason);
+    },
+    /** Resolve once `state[key] === value`. */
+    waitFor: (key: string, value: unknown, signal?: string) =>
+      ctx.waitFor(() => (ctx.getState() as Record<string, unknown>)[key] === value, { signal: signalOf(signal) }),
+    /** A predicate that throws once it is checked. */
+    waitForThrowing: (message: string) =>
+      ctx.waitFor(() => {
+        throw new Error(message);
+      }),
+    /** Queue work on `serialQueue(key)`: logs when it starts, finishes with the label's settlement. */
+    queue: (key: string, label: string) =>
+      ctx.serialQueue(key)(() => {
+        log(`${name}.queued`, [key, label]);
+        return deferred(label);
+      }),
+    /** Run on `latest(key)`: logs the run id when it starts, waits for the
+     *  label, then tries to commit (logged with whether it could). */
+    latest: (key: string, label: string, signal?: string, throws?: ProbeErrorSpec) =>
+      ctx.latest(key).run(
+        async (run) => {
+          log(`${name}.run`, [run.id, run.signal.aborted]);
+          const value = await deferred(label);
+          if (throws) throw probeError(throws);
+          const committed = run.commit(() => log(`${name}.commit`, [run.id, value]));
+          log(`${name}.ran`, [run.id, committed, run.superseded]);
+          return value;
+        },
+        { signal: signalOf(signal) },
+      ),
+    latestCancel: (key: string, reason?: unknown) => ctx.latest(key).cancel(reason),
+    latestRunning: (key: string) => ctx.latest(key).running,
+    /** `acquire`: the resource is the label's value; its disposal is logged. */
+    acquire: (label: string) =>
+      ctx.acquire(
+        (lifetime) => {
+          log(`${name}.acquiring`, [lifetime.aborted]);
+          return deferred(label);
+        },
+        (resource) => log(`${name}.dispose`, [resource]),
+      ),
+    forPage: (pon: number) => describeSpace(ctx.geometry.forPage(toPageRef(pon))),
+    tryForPage: (pon: number) => {
+      const space = ctx.geometry.tryForPage(toPageRef(pon));
+      return space ? describeSpace(space) : null;
+    },
+    assertPageRef: (pon: number) => ctx.assertPageRef(toPageRef(pon)),
+    getPage: (pon: number) => ctx.getPage(toPageRef(pon)),
+    get: (tokenName: string) => ctx.get(token(tokenName)) !== undefined,
+    tryGet: (tokenName: string) => ctx.tryGet(token(tokenName)) !== null,
+    forDocument: (tokenName: string, documentId: string) => ctx.forDocument(token(tokenName), documentId) !== undefined,
+    tryForDocument: (tokenName: string, documentId: string) =>
+      ctx.tryForDocument(token(tokenName), documentId) !== null,
+    cleanup: (label: string) => ctx.cleanup(() => log(`${name}.cleanup`, [label])),
+  };
+
+  const connect = create.connect;
+  return {
+    api,
+    connect: connect
+      ? () => {
+          log(`${name}.connect`, [ctx.documentId ?? null]);
+          if (connect === true) return;
+          if (connect.throws) throw makeError(connect.throws);
+          if (connect.dispatch) ctx.dispatch(connect.dispatch);
+          if (connect.listenDoc) {
+            ctx.listen(ctx.doc.events, (event) => log(`${name}.docEvent`, [(event as { type: string }).type]));
+          }
+          if (connect.listenActive) {
+            ctx.listen(ctx.get(DocumentsToken).onActiveChanged, (event) => log(`${name}.activeChanged`, [event]));
+          }
+        }
+      : undefined,
+  };
+}
+
+/** A PageSpace as data: its box and one sample of each conversion. */
+function describeSpace(space: ReturnType<ControllerContext<unknown>['geometry']['forPage']>) {
+  const quad = { p1: { x: 1, y: 2 }, p2: { x: 3, y: 2 }, p3: { x: 1, y: 4 }, p4: { x: 3, y: 4 } };
+  return {
+    crop: space.crop,
+    width: space.width,
+    height: space.height,
+    pdfToPage: space.pdfToPage({ x: 10, y: 20 }),
+    pageToPdf: space.pageToPdf({ x: 10, y: 20 }),
+    pdfRectToPage: space.pdfRectToPage({ left: 10, bottom: 20, right: 30, top: 60 }),
+    pageRectToPdf: space.pageRectToPdf({ x: 10, y: 20, width: 20, height: 40 }),
+    pdfQuadToPage: space.pdfQuadToPage(quad),
+    pageQuadToPdf: space.pageQuadToPdf(quad),
+  };
+}
+
+/** The probes built in each case, by id, for `sameAs`. */
+const built = new WeakMap<PluginEnv, Map<string, AnyPlugin>>();
+
+registerPlugin('probe', {
+  factory: (config, env) => {
+    const probe = config as ProbeConfig;
+    let byId = built.get(env);
+    if (!byId) {
+      byId = new Map();
+      built.set(env, byId);
+    }
+    if (probe.sameAs !== undefined) {
+      const earlier = byId.get(probe.sameAs);
+      if (!earlier) throw new Error(`[probe] no earlier probe "${probe.sameAs}"`);
+      return earlier;
+    }
+    const plugin = probePlugin(probe, env);
+    byId.set(probe.id, plugin);
+    return plugin;
+  },
+});
