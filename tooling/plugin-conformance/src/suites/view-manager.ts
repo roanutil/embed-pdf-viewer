@@ -7,14 +7,35 @@
  * reconciles panes with the kernel's open-document order.
  */
 import { viewManagerPlugin, ViewManagerToken } from '../../../../packages/plugin/view-manager/src/index';
-import { initialViewManagerState, viewManagerReducer } from '../../../../packages/plugin/view-manager/src/reducer';
-import type { ViewManagerAction, ViewManagerState } from '../../../../packages/plugin/view-manager/src/types';
+import { initialViewManagerState, viewManagerReducer } from '../../../../packages/plugin/view-manager/src/model';
+import type { ViewManagerAction, ViewManagerState } from '../../../../packages/plugin/view-manager/src/model';
 
 import type { FakeDocumentSpec } from '../fake-engine';
 import { registerPlugin, type ScenarioCase, type Step } from '../scenario';
 import type { FunctionCase, Suite } from '../vectors';
 
-registerPlugin('view-manager', { factory: () => viewManagerPlugin(), tokens: [ViewManagerToken] });
+/**
+ * The shipping controller spreads its context (`{ ...rawCtx, dispatch }`),
+ * which reads the controller context's `doc` getter, and for a workspace
+ * plugin that getter throws: `createKernel` with `viewManagerPlugin()`
+ * refuses, whatever else is installed. This factory hides `doc` from the
+ * spread, so the vectors describe the panes as the controller means them.
+ * The workaround and the defect are recorded in multiplatform-plugins-status.md.
+ */
+const withoutDoc = <T extends object>(ctx: T): T =>
+  new Proxy(ctx, {
+    ownKeys: (target) => Reflect.ownKeys(target).filter((key) => key !== 'doc'),
+    getOwnPropertyDescriptor: (target, key) =>
+      key === 'doc' ? undefined : Reflect.getOwnPropertyDescriptor(target, key),
+  });
+
+registerPlugin('view-manager', {
+  factory: () => {
+    const plugin = viewManagerPlugin();
+    return { ...plugin, create: (ctx) => plugin.create!(withoutDoc(ctx)) } as typeof plugin;
+  },
+  tokens: [ViewManagerToken],
+});
 
 // ── function cases: the reducer ───────────────────────────────────────────────
 
@@ -22,89 +43,89 @@ const reduce = (state: ViewManagerState, action: ViewManagerAction) => {
   const next = viewManagerReducer(state, action);
   return { same: next === state, next };
 };
-const initial = () => initialViewManagerState;
+const initial = () => initialViewManagerState();
 
 const view = (id: string, documentIds: string[], activeDocumentId: string | null = documentIds[0] ?? null) => ({ id, documentIds, activeDocumentId });
 const st = (views: ReturnType<typeof view>[], over: Partial<ViewManagerState> = {}): ViewManagerState => ({
-  views: Object.fromEntries(views.map((v) => [v.id, v])),
+  panes: Object.fromEntries(views.map((v) => [v.id, v])),
   order: views.map((v) => v.id),
-  focusedViewId: views[0]?.id ?? null,
+  focusedPaneId: views[0]?.id ?? null,
   seq: views.length,
   ...over,
 });
-const panes = st([view('view-1', ['a', 'b', 'c'], 'b'), view('view-2', ['d'], 'd'), view('view-3', [], null)], { focusedViewId: 'view-2' });
+const panes = st([view('pane-1', ['a', 'b', 'c'], 'b'), view('pane-2', ['d'], 'd'), view('pane-3', [], null)], { focusedPaneId: 'pane-2' });
 const nan = { $number: 'NaN' };
 
 const r = (name: string, action: unknown, state: ViewManagerState = panes): FunctionCase => ({ name, fn: 'viewManagerReducer', args: [state, action] });
 
 const reducerCases: FunctionCase[] = [
   { name: 'initial-state', fn: 'initialViewManagerState', args: [] },
-  r('create', { type: 'CREATE', view: view('view-4', [], null) }),
-  r('create-on-empty', { type: 'CREATE', view: view('view-1', [], null) }, st([])),
-  r('remove-unknown-is-ignored', { type: 'REMOVE', id: 'nope' }),
-  r('remove-focused-focuses-the-last', { type: 'REMOVE', id: 'view-2' }),
-  r('remove-unfocused-keeps-focus', { type: 'REMOVE', id: 'view-1' }),
-  r('remove-the-only-view', { type: 'REMOVE', id: 'view-1' }, st([view('view-1', ['a'])])),
-  r('reorder', { type: 'REORDER_VIEWS', order: ['view-3', 'view-1', 'view-2'] }),
-  r('set-focused', { type: 'SET_FOCUSED', id: 'view-3' }),
+  r('create', { type: 'CREATE_PANE', pane: view('pane-4', [], null) }),
+  r('create-on-empty', { type: 'CREATE_PANE', pane: view('pane-1', [], null) }, st([])),
+  r('remove-unknown-is-ignored', { type: 'REMOVE_PANE', id: 'nope' }),
+  r('remove-focused-focuses-the-last', { type: 'REMOVE_PANE', id: 'pane-2' }),
+  r('remove-unfocused-keeps-focus', { type: 'REMOVE_PANE', id: 'pane-1' }),
+  r('remove-the-only-view', { type: 'REMOVE_PANE', id: 'pane-1' }, st([view('pane-1', ['a'])])),
+  r('reorder', { type: 'REORDER_PANES', order: ['pane-3', 'pane-1', 'pane-2'] }),
+  r('set-focused', { type: 'SET_FOCUSED', id: 'pane-3' }),
   r('set-focused-null', { type: 'SET_FOCUSED', id: null }),
-  r('set-focused-same-is-a-new-state', { type: 'SET_FOCUSED', id: 'view-2' }),
-  r('set-active', { type: 'SET_ACTIVE_DOC', viewId: 'view-1', documentId: 'c' }),
-  r('set-active-null', { type: 'SET_ACTIVE_DOC', viewId: 'view-1', documentId: null }),
-  r('set-active-unknown-view', { type: 'SET_ACTIVE_DOC', viewId: 'nope', documentId: 'a' }),
-  r('set-active-foreign-document', { type: 'SET_ACTIVE_DOC', viewId: 'view-1', documentId: 'd' }),
-  r('add-appends', { type: 'ADD_DOC', viewId: 'view-1', documentId: 'e' }),
-  r('add-at-index', { type: 'ADD_DOC', viewId: 'view-1', documentId: 'e', index: 1 }),
-  r('add-at-zero', { type: 'ADD_DOC', viewId: 'view-1', documentId: 'e', index: 0 }),
-  r('add-negative-clamps', { type: 'ADD_DOC', viewId: 'view-1', documentId: 'e', index: -4 }),
-  r('add-past-the-end-clamps', { type: 'ADD_DOC', viewId: 'view-1', documentId: 'e', index: 99 }),
-  r('add-fractional-truncates', { type: 'ADD_DOC', viewId: 'view-1', documentId: 'e', index: 2.9 }),
-  r('add-nan-lands-first', { type: 'ADD_DOC', viewId: 'view-1', documentId: 'e', index: nan }),
-  r('add-infinity-appends', { type: 'ADD_DOC', viewId: 'view-1', documentId: 'e', index: { $number: 'Infinity' } }),
-  r('add-negative-infinity-lands-first', { type: 'ADD_DOC', viewId: 'view-1', documentId: 'e', index: { $number: '-Infinity' } }),
-  r('add-to-empty-activates', { type: 'ADD_DOC', viewId: 'view-3', documentId: 'e' }),
-  r('add-present-is-ignored', { type: 'ADD_DOC', viewId: 'view-1', documentId: 'a' }),
-  r('add-unknown-view-is-ignored', { type: 'ADD_DOC', viewId: 'nope', documentId: 'e' }),
-  r('remove-doc-inactive', { type: 'REMOVE_DOC', viewId: 'view-1', documentId: 'a' }),
-  r('remove-doc-active-picks-the-next', { type: 'REMOVE_DOC', viewId: 'view-1', documentId: 'b' }),
-  r('remove-doc-active-last-picks-the-previous', { type: 'REMOVE_DOC', viewId: 'view-1', documentId: 'c' }, st([view('view-1', ['a', 'b', 'c'], 'c')])),
-  r('remove-doc-only-leaves-null', { type: 'REMOVE_DOC', viewId: 'view-2', documentId: 'd' }),
-  r('remove-doc-absent-is-a-new-state', { type: 'REMOVE_DOC', viewId: 'view-1', documentId: 'zzz' }),
-  r('remove-doc-unknown-view', { type: 'REMOVE_DOC', viewId: 'nope', documentId: 'a' }),
-  r('move-within', { type: 'MOVE_DOC_WITHIN', viewId: 'view-1', documentId: 'a', toIndex: 2 }),
-  r('move-within-to-front', { type: 'MOVE_DOC_WITHIN', viewId: 'view-1', documentId: 'c', toIndex: 0 }),
-  r('move-within-clamps', { type: 'MOVE_DOC_WITHIN', viewId: 'view-1', documentId: 'a', toIndex: 50 }),
-  r('move-within-nan', { type: 'MOVE_DOC_WITHIN', viewId: 'view-1', documentId: 'c', toIndex: nan }),
-  r('move-within-absent', { type: 'MOVE_DOC_WITHIN', viewId: 'view-1', documentId: 'd', toIndex: 0 }),
-  r('move-within-unknown-view', { type: 'MOVE_DOC_WITHIN', viewId: 'nope', documentId: 'a', toIndex: 0 }),
-  r('move-between', { type: 'MOVE_DOC_BETWEEN', fromViewId: 'view-1', toViewId: 'view-2', documentId: 'b' }),
-  r('move-between-at-index', { type: 'MOVE_DOC_BETWEEN', fromViewId: 'view-1', toViewId: 'view-2', documentId: 'a', toIndex: 0 }),
-  r('move-between-into-empty', { type: 'MOVE_DOC_BETWEEN', fromViewId: 'view-2', toViewId: 'view-3', documentId: 'd', toIndex: 5 }),
-  r('move-between-same-view', { type: 'MOVE_DOC_BETWEEN', fromViewId: 'view-1', toViewId: 'view-1', documentId: 'a' }),
-  r('move-between-same-view-at-index', { type: 'MOVE_DOC_BETWEEN', fromViewId: 'view-1', toViewId: 'view-1', documentId: 'c', toIndex: 0 }),
-  r('move-between-unknown-from', { type: 'MOVE_DOC_BETWEEN', fromViewId: 'nope', toViewId: 'view-1', documentId: 'a' }),
-  r('move-between-unknown-to', { type: 'MOVE_DOC_BETWEEN', fromViewId: 'view-1', toViewId: 'nope', documentId: 'a' }),
-  r('move-between-absent-document', { type: 'MOVE_DOC_BETWEEN', fromViewId: 'view-1', toViewId: 'view-2', documentId: 'd' }),
-  r('reconcile-prunes-closed', { type: 'RECONCILE', open: ['a', 'd'], preferViewId: 'view-2' }),
-  r('reconcile-prunes-the-active', { type: 'RECONCILE', open: ['a', 'c', 'd'], preferViewId: null }),
-  r('reconcile-assigns-to-preferred', { type: 'RECONCILE', open: ['a', 'b', 'c', 'd', 'x', 'y'], preferViewId: 'view-3' }),
-  r('reconcile-assigns-to-focused', { type: 'RECONCILE', open: ['x', 'a', 'b', 'c', 'd'], preferViewId: 'nope' }),
-  r('reconcile-assigns-to-first', { type: 'RECONCILE', open: ['a', 'b', 'c', 'd', 'x'], preferViewId: null }, { ...panes, focusedViewId: 'gone' }),
-  r('reconcile-assigns-to-first-no-focus', { type: 'RECONCILE', open: ['x'], preferViewId: '' }, { ...panes, focusedViewId: null }),
-  r('reconcile-creates-a-default-pane', { type: 'RECONCILE', open: ['a', 'b'], preferViewId: null }, st([])),
-  r('reconcile-creates-and-keeps-a-stale-focus', { type: 'RECONCILE', open: ['a'], preferViewId: 'x' }, st([], { focusedViewId: 'x', seq: 4 })),
-  r('reconcile-nothing-open', { type: 'RECONCILE', open: [], preferViewId: null }),
-  r('reconcile-nothing-open-no-views', { type: 'RECONCILE', open: [], preferViewId: null }, st([])),
-  r('reconcile-empty-active-is-replaced', { type: 'RECONCILE', open: ['a', 'b'], preferViewId: null }, st([view('view-1', ['a', 'b'], '')])),
-  r('reconcile-duplicate-assignments', { type: 'RECONCILE', open: ['a', 'b'], preferViewId: null }, st([view('view-1', ['a']), view('view-2', ['a', 'b'], 'b')])),
-  r('reconcile-keeps-other-members', { type: 'RECONCILE', open: ['a', 'b', 'c', 'd'], preferViewId: null }),
+  r('set-focused-same-is-a-new-state', { type: 'SET_FOCUSED', id: 'pane-2' }),
+  r('set-active', { type: 'SET_ACTIVE_DOC', paneId: 'pane-1', documentId: 'c' }),
+  r('set-active-null', { type: 'SET_ACTIVE_DOC', paneId: 'pane-1', documentId: null }),
+  r('set-active-unknown-view', { type: 'SET_ACTIVE_DOC', paneId: 'nope', documentId: 'a' }),
+  r('set-active-foreign-document', { type: 'SET_ACTIVE_DOC', paneId: 'pane-1', documentId: 'd' }),
+  r('add-appends', { type: 'ADD_DOC', paneId: 'pane-1', documentId: 'e' }),
+  r('add-at-index', { type: 'ADD_DOC', paneId: 'pane-1', documentId: 'e', index: 1 }),
+  r('add-at-zero', { type: 'ADD_DOC', paneId: 'pane-1', documentId: 'e', index: 0 }),
+  r('add-negative-clamps', { type: 'ADD_DOC', paneId: 'pane-1', documentId: 'e', index: -4 }),
+  r('add-past-the-end-clamps', { type: 'ADD_DOC', paneId: 'pane-1', documentId: 'e', index: 99 }),
+  r('add-fractional-truncates', { type: 'ADD_DOC', paneId: 'pane-1', documentId: 'e', index: 2.9 }),
+  r('add-nan-lands-first', { type: 'ADD_DOC', paneId: 'pane-1', documentId: 'e', index: nan }),
+  r('add-infinity-appends', { type: 'ADD_DOC', paneId: 'pane-1', documentId: 'e', index: { $number: 'Infinity' } }),
+  r('add-negative-infinity-lands-first', { type: 'ADD_DOC', paneId: 'pane-1', documentId: 'e', index: { $number: '-Infinity' } }),
+  r('add-to-empty-activates', { type: 'ADD_DOC', paneId: 'pane-3', documentId: 'e' }),
+  r('add-present-is-ignored', { type: 'ADD_DOC', paneId: 'pane-1', documentId: 'a' }),
+  r('add-unknown-view-is-ignored', { type: 'ADD_DOC', paneId: 'nope', documentId: 'e' }),
+  r('remove-doc-inactive', { type: 'REMOVE_DOC', paneId: 'pane-1', documentId: 'a' }),
+  r('remove-doc-active-picks-the-next', { type: 'REMOVE_DOC', paneId: 'pane-1', documentId: 'b' }),
+  r('remove-doc-active-last-picks-the-previous', { type: 'REMOVE_DOC', paneId: 'pane-1', documentId: 'c' }, st([view('pane-1', ['a', 'b', 'c'], 'c')])),
+  r('remove-doc-only-leaves-null', { type: 'REMOVE_DOC', paneId: 'pane-2', documentId: 'd' }),
+  r('remove-doc-absent-is-a-new-state', { type: 'REMOVE_DOC', paneId: 'pane-1', documentId: 'zzz' }),
+  r('remove-doc-unknown-view', { type: 'REMOVE_DOC', paneId: 'nope', documentId: 'a' }),
+  r('move-within', { type: 'MOVE_DOC_WITHIN', paneId: 'pane-1', documentId: 'a', toIndex: 2 }),
+  r('move-within-to-front', { type: 'MOVE_DOC_WITHIN', paneId: 'pane-1', documentId: 'c', toIndex: 0 }),
+  r('move-within-clamps', { type: 'MOVE_DOC_WITHIN', paneId: 'pane-1', documentId: 'a', toIndex: 50 }),
+  r('move-within-nan', { type: 'MOVE_DOC_WITHIN', paneId: 'pane-1', documentId: 'c', toIndex: nan }),
+  r('move-within-absent', { type: 'MOVE_DOC_WITHIN', paneId: 'pane-1', documentId: 'd', toIndex: 0 }),
+  r('move-within-unknown-view', { type: 'MOVE_DOC_WITHIN', paneId: 'nope', documentId: 'a', toIndex: 0 }),
+  r('move-between', { type: 'MOVE_DOC_BETWEEN', fromPaneId: 'pane-1', toPaneId: 'pane-2', documentId: 'b' }),
+  r('move-between-at-index', { type: 'MOVE_DOC_BETWEEN', fromPaneId: 'pane-1', toPaneId: 'pane-2', documentId: 'a', toIndex: 0 }),
+  r('move-between-into-empty', { type: 'MOVE_DOC_BETWEEN', fromPaneId: 'pane-2', toPaneId: 'pane-3', documentId: 'd', toIndex: 5 }),
+  r('move-between-same-view', { type: 'MOVE_DOC_BETWEEN', fromPaneId: 'pane-1', toPaneId: 'pane-1', documentId: 'a' }),
+  r('move-between-same-view-at-index', { type: 'MOVE_DOC_BETWEEN', fromPaneId: 'pane-1', toPaneId: 'pane-1', documentId: 'c', toIndex: 0 }),
+  r('move-between-unknown-from', { type: 'MOVE_DOC_BETWEEN', fromPaneId: 'nope', toPaneId: 'pane-1', documentId: 'a' }),
+  r('move-between-unknown-to', { type: 'MOVE_DOC_BETWEEN', fromPaneId: 'pane-1', toPaneId: 'nope', documentId: 'a' }),
+  r('move-between-absent-document', { type: 'MOVE_DOC_BETWEEN', fromPaneId: 'pane-1', toPaneId: 'pane-2', documentId: 'd' }),
+  r('reconcile-prunes-closed', { type: 'RECONCILE', open: ['a', 'd'], preferPaneId: 'pane-2' }),
+  r('reconcile-prunes-the-active', { type: 'RECONCILE', open: ['a', 'c', 'd'], preferPaneId: null }),
+  r('reconcile-assigns-to-preferred', { type: 'RECONCILE', open: ['a', 'b', 'c', 'd', 'x', 'y'], preferPaneId: 'pane-3' }),
+  r('reconcile-assigns-to-focused', { type: 'RECONCILE', open: ['x', 'a', 'b', 'c', 'd'], preferPaneId: 'nope' }),
+  r('reconcile-assigns-to-first', { type: 'RECONCILE', open: ['a', 'b', 'c', 'd', 'x'], preferPaneId: null }, { ...panes, focusedPaneId: 'gone' }),
+  r('reconcile-assigns-to-first-no-focus', { type: 'RECONCILE', open: ['x'], preferPaneId: '' }, { ...panes, focusedPaneId: null }),
+  r('reconcile-creates-a-default-pane', { type: 'RECONCILE', open: ['a', 'b'], preferPaneId: null }, st([])),
+  r('reconcile-creates-and-keeps-a-stale-focus', { type: 'RECONCILE', open: ['a'], preferPaneId: 'x' }, st([], { focusedPaneId: 'x', seq: 4 })),
+  r('reconcile-nothing-open', { type: 'RECONCILE', open: [], preferPaneId: null }),
+  r('reconcile-nothing-open-no-views', { type: 'RECONCILE', open: [], preferPaneId: null }, st([])),
+  r('reconcile-empty-active-is-replaced', { type: 'RECONCILE', open: ['a', 'b'], preferPaneId: null }, st([view('pane-1', ['a', 'b'], '')])),
+  r('reconcile-duplicate-assignments', { type: 'RECONCILE', open: ['a', 'b'], preferPaneId: null }, st([view('pane-1', ['a']), view('pane-2', ['a', 'b'], 'b')])),
+  r('reconcile-keeps-other-members', { type: 'RECONCILE', open: ['a', 'b', 'c', 'd'], preferPaneId: null }),
   r('unknown-action-is-ignored', { type: 'NOPE' }),
 ];
 
 // ── scenarios ─────────────────────────────────────────────────────────────────
 
 const box = { left: 0, bottom: 0, right: 600, top: 800 };
-const pages = [{ index: 0, pageObjectNumber: 1, label: null, size: { width: 600, height: 800 }, rotation: 0, userUnit: 1, boxes: { media: box, crop: box } }];
+const pages = [{ index: 0, ref: { kind: 'objectNumber', pageObjectNumber: 1 }, label: null, size: { width: 600, height: 800 }, rotation: 0, userUnit: 1, boxes: { media: box, crop: box } }];
 const doc = (over: Partial<FakeDocumentSpec> = {}): FakeDocumentSpec => ({ pages, ...over });
 
 const start: Step = { op: 'call', target: 'kernel', method: 'start' };
@@ -116,7 +137,7 @@ const open = (id: string, options?: unknown): Step => ({
 });
 const docs = (method: string, ...args: unknown[]): Step => ({ op: 'call', target: 'documents', method, args });
 const vm = (method: string, ...args: unknown[]): Step => ({ op: 'call', target: { token: 'view-manager' }, method, args });
-const reads: Step[] = [vm('list'), vm('order'), vm('focusedViewId')];
+const reads: Step[] = [vm('listPanes'), vm('getPaneOrder'), vm('getFocusedPaneId')];
 
 const plugins = [{ factory: 'view-manager' }];
 const snapshot = ['view-manager'];
@@ -127,7 +148,7 @@ const cases: ScenarioCase[] = [
     covers: 'The capability exists from createKernel(); with no panes the selectors are empty, get() and documentView() are null.',
     plugins,
     snapshot,
-    steps: [...reads, vm('get', 'view-1'), vm('documentView', 'a')],
+    steps: [...reads, vm('getPane', 'pane-1'), vm('getPaneOfDocument', 'a')],
   },
   {
     name: 'first-open-makes-a-pane',
@@ -142,9 +163,9 @@ const cases: ScenarioCase[] = [
       open('a'),
       ...reads,
       open('b'),
-      vm('get', 'view-1'),
-      vm('documentView', 'b'),
-      vm('documentView', 'zzz'),
+      vm('getPane', 'pane-1'),
+      vm('getPaneOfDocument', 'b'),
+      vm('getPaneOfDocument', 'zzz'),
       open('c'),
       ...reads,
       { op: 'settle', label: 'open-c', value: { $document: 'c' } },
@@ -162,7 +183,7 @@ const cases: ScenarioCase[] = [
       open('a'),
       open('b'),
       open('c'),
-      vm('setActiveDocument', 'view-1', 'b'),
+      vm('setActiveDocument', 'pane-1', 'b'),
       docs('close', 'b'),
       ...reads,
       docs('closeAll'),
@@ -179,25 +200,25 @@ const cases: ScenarioCase[] = [
     steps: [
       start,
       open('a'),
-      vm('createView'),
+      vm('createPane'),
       open('b'),
-      vm('createView'),
+      vm('createPane'),
       ...reads,
-      vm('moveView', 'view-3', 0),
-      vm('moveView', 'view-1', 99),
-      vm('moveView', 'view-1', -3),
-      vm('moveView', 'view-2', 1.5),
-      vm('moveView', 'view-2', { $number: 'NaN' }),
-      vm('moveView', 'nope', 0),
-      vm('order'),
-      vm('setFocused', 'view-1'),
+      vm('movePane', 'pane-3', 0),
+      vm('movePane', 'pane-1', 99),
+      vm('movePane', 'pane-1', -3),
+      vm('movePane', 'pane-2', 1.5),
+      vm('movePane', 'pane-2', { $number: 'NaN' }),
+      vm('movePane', 'nope', 0),
+      vm('getPaneOrder'),
+      vm('setFocusedPane', 'pane-1'),
       open('c'),
-      vm('list'),
-      vm('removeView', 'view-1'),
+      vm('listPanes'),
+      vm('removePane', 'pane-1'),
       ...reads,
-      vm('removeView', 'view-1'),
-      vm('setFocused', 'ghost'),
-      vm('focusedViewId'),
+      vm('removePane', 'pane-1'),
+      vm('setFocusedPane', 'ghost'),
+      vm('getFocusedPaneId'),
       docs('close', 'c'),
       ...reads,
     ],
@@ -214,20 +235,20 @@ const cases: ScenarioCase[] = [
       open('a'),
       open('b'),
       open('c'),
-      vm('createView'),
-      vm('moveDocumentBetween', 'view-1', 'view-2', 'b'),
+      vm('createPane'),
+      vm('moveDocumentBetween', 'pane-1', 'pane-2', 'b'),
       ...reads,
-      vm('moveDocumentBetween', 'view-2', 'view-1', 'b', 0),
-      vm('moveDocumentWithin', 'view-1', 'b', 2),
-      vm('moveDocumentBetween', 'view-1', 'view-1', 'a'),
-      vm('setActiveDocument', 'view-1', null),
-      vm('setActiveDocument', 'view-1', 'zzz'),
-      vm('addDocument', 'view-2', 'a'),
-      vm('addDocument', 'view-2', 'c', 0),
-      vm('addDocument', 'view-2', 'c'),
-      vm('removeDocument', 'view-1', 'c'),
-      vm('removeDocument', 'view-1', 'nope'),
-      vm('documentView', 'a'),
+      vm('moveDocumentBetween', 'pane-2', 'pane-1', 'b', 0),
+      vm('moveDocumentWithin', 'pane-1', 'b', 2),
+      vm('moveDocumentBetween', 'pane-1', 'pane-1', 'a'),
+      vm('setActiveDocument', 'pane-1', null),
+      vm('setActiveDocument', 'pane-1', 'zzz'),
+      vm('addDocument', 'pane-2', 'a'),
+      vm('addDocument', 'pane-2', 'c', 0),
+      vm('addDocument', 'pane-2', 'c'),
+      vm('removeDocument', 'pane-1', 'c'),
+      vm('removeDocument', 'pane-1', 'nope'),
+      vm('getPaneOfDocument', 'a'),
       ...reads,
     ],
   },
@@ -253,7 +274,7 @@ const cases: ScenarioCase[] = [
     plugins,
     snapshot,
     engine: { documents: { a: doc() } },
-    steps: [start, open('a'), { op: 'call', target: 'kernel', method: 'destroy' }, vm('list')],
+    steps: [start, open('a'), { op: 'call', target: 'kernel', method: 'destroy' }, vm('listPanes')],
   },
 ];
 

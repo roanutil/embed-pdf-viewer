@@ -9,9 +9,9 @@
       "args": [],
       "outcome": {
         "returned": {
-          "views": {},
+          "panes": {},
           "order": [],
-          "focusedViewId": null,
+          "focusedPaneId": null,
           "seq": 0
         }
       }
@@ -21,9 +21,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -31,31 +31,31 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
-          "type": "CREATE",
-          "view": {
-            "id": "view-4",
+          "type": "CREATE_PANE",
+          "pane": {
+            "id": "pane-4",
             "documentIds": [],
             "activeDocumentId": null
           }
@@ -65,9 +65,9 @@
         "returned": {
           "same": false,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "a",
                   "b",
@@ -75,31 +75,31 @@
                 ],
                 "activeDocumentId": "b"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "d"
                 ],
                 "activeDocumentId": "d"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               },
-              "view-4": {
-                "id": "view-4",
+              "pane-4": {
+                "id": "pane-4",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3",
-              "view-4"
+              "pane-1",
+              "pane-2",
+              "pane-3",
+              "pane-4"
             ],
-            "focusedViewId": "view-4",
+            "focusedPaneId": "pane-4",
             "seq": 4
           }
         }
@@ -110,15 +110,15 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {},
+          "panes": {},
           "order": [],
-          "focusedViewId": null,
+          "focusedPaneId": null,
           "seq": 0
         },
         {
-          "type": "CREATE",
-          "view": {
-            "id": "view-1",
+          "type": "CREATE_PANE",
+          "pane": {
+            "id": "pane-1",
             "documentIds": [],
             "activeDocumentId": null
           }
@@ -128,17 +128,17 @@
         "returned": {
           "same": false,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1"
+              "pane-1"
             ],
-            "focusedViewId": "view-1",
+            "focusedPaneId": "pane-1",
             "seq": 1
           }
         }
@@ -149,9 +149,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -159,29 +159,29 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
-          "type": "REMOVE",
+          "type": "REMOVE_PANE",
           "id": "nope"
         }
       ],
@@ -189,9 +189,9 @@
         "returned": {
           "same": true,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "a",
                   "b",
@@ -199,25 +199,25 @@
                 ],
                 "activeDocumentId": "b"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "d"
                 ],
                 "activeDocumentId": "d"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": "view-2",
+            "focusedPaneId": "pane-2",
             "seq": 3
           }
         }
@@ -228,9 +228,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -238,39 +238,39 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
-          "type": "REMOVE",
-          "id": "view-2"
+          "type": "REMOVE_PANE",
+          "id": "pane-2"
         }
       ],
       "outcome": {
         "returned": {
           "same": false,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "a",
                   "b",
@@ -278,17 +278,17 @@
                 ],
                 "activeDocumentId": "b"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1",
-              "view-3"
+              "pane-1",
+              "pane-3"
             ],
-            "focusedViewId": "view-3",
+            "focusedPaneId": "pane-3",
             "seq": 3
           }
         }
@@ -299,9 +299,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -309,55 +309,55 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
-          "type": "REMOVE",
-          "id": "view-1"
+          "type": "REMOVE_PANE",
+          "id": "pane-1"
         }
       ],
       "outcome": {
         "returned": {
           "same": false,
           "next": {
-            "views": {
-              "view-2": {
-                "id": "view-2",
+            "panes": {
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "d"
                 ],
                 "activeDocumentId": "d"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-2",
-              "view-3"
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": "view-2",
+            "focusedPaneId": "pane-2",
             "seq": 3
           }
         }
@@ -368,9 +368,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a"
               ],
@@ -378,23 +378,23 @@
             }
           },
           "order": [
-            "view-1"
+            "pane-1"
           ],
-          "focusedViewId": "view-1",
+          "focusedPaneId": "pane-1",
           "seq": 1
         },
         {
-          "type": "REMOVE",
-          "id": "view-1"
+          "type": "REMOVE_PANE",
+          "id": "pane-1"
         }
       ],
       "outcome": {
         "returned": {
           "same": false,
           "next": {
-            "views": {},
+            "panes": {},
             "order": [],
-            "focusedViewId": null,
+            "focusedPaneId": null,
             "seq": 1
           }
         }
@@ -405,9 +405,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -415,33 +415,33 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
-          "type": "REORDER_VIEWS",
+          "type": "REORDER_PANES",
           "order": [
-            "view-3",
-            "view-1",
-            "view-2"
+            "pane-3",
+            "pane-1",
+            "pane-2"
           ]
         }
       ],
@@ -449,9 +449,9 @@
         "returned": {
           "same": false,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "a",
                   "b",
@@ -459,25 +459,25 @@
                 ],
                 "activeDocumentId": "b"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "d"
                 ],
                 "activeDocumentId": "d"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-3",
-              "view-1",
-              "view-2"
+              "pane-3",
+              "pane-1",
+              "pane-2"
             ],
-            "focusedViewId": "view-2",
+            "focusedPaneId": "pane-2",
             "seq": 3
           }
         }
@@ -488,9 +488,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -498,39 +498,39 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
           "type": "SET_FOCUSED",
-          "id": "view-3"
+          "id": "pane-3"
         }
       ],
       "outcome": {
         "returned": {
           "same": false,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "a",
                   "b",
@@ -538,25 +538,25 @@
                 ],
                 "activeDocumentId": "b"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "d"
                 ],
                 "activeDocumentId": "d"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": "view-3",
+            "focusedPaneId": "pane-3",
             "seq": 3
           }
         }
@@ -567,9 +567,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -577,25 +577,25 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
@@ -607,9 +607,9 @@
         "returned": {
           "same": false,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "a",
                   "b",
@@ -617,25 +617,25 @@
                 ],
                 "activeDocumentId": "b"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "d"
                 ],
                 "activeDocumentId": "d"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": null,
+            "focusedPaneId": null,
             "seq": 3
           }
         }
@@ -646,9 +646,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -656,39 +656,39 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
           "type": "SET_FOCUSED",
-          "id": "view-2"
+          "id": "pane-2"
         }
       ],
       "outcome": {
         "returned": {
           "same": false,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "a",
                   "b",
@@ -696,25 +696,25 @@
                 ],
                 "activeDocumentId": "b"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "d"
                 ],
                 "activeDocumentId": "d"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": "view-2",
+            "focusedPaneId": "pane-2",
             "seq": 3
           }
         }
@@ -725,9 +725,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -735,30 +735,30 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
           "type": "SET_ACTIVE_DOC",
-          "viewId": "view-1",
+          "paneId": "pane-1",
           "documentId": "c"
         }
       ],
@@ -766,9 +766,9 @@
         "returned": {
           "same": false,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "a",
                   "b",
@@ -776,25 +776,25 @@
                 ],
                 "activeDocumentId": "c"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "d"
                 ],
                 "activeDocumentId": "d"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": "view-2",
+            "focusedPaneId": "pane-2",
             "seq": 3
           }
         }
@@ -805,9 +805,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -815,30 +815,30 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
           "type": "SET_ACTIVE_DOC",
-          "viewId": "view-1",
+          "paneId": "pane-1",
           "documentId": null
         }
       ],
@@ -846,9 +846,9 @@
         "returned": {
           "same": false,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "a",
                   "b",
@@ -856,25 +856,25 @@
                 ],
                 "activeDocumentId": null
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "d"
                 ],
                 "activeDocumentId": "d"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": "view-2",
+            "focusedPaneId": "pane-2",
             "seq": 3
           }
         }
@@ -885,9 +885,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -895,30 +895,30 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
           "type": "SET_ACTIVE_DOC",
-          "viewId": "nope",
+          "paneId": "nope",
           "documentId": "a"
         }
       ],
@@ -926,9 +926,9 @@
         "returned": {
           "same": true,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "a",
                   "b",
@@ -936,25 +936,25 @@
                 ],
                 "activeDocumentId": "b"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "d"
                 ],
                 "activeDocumentId": "d"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": "view-2",
+            "focusedPaneId": "pane-2",
             "seq": 3
           }
         }
@@ -965,9 +965,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -975,30 +975,30 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
           "type": "SET_ACTIVE_DOC",
-          "viewId": "view-1",
+          "paneId": "pane-1",
           "documentId": "d"
         }
       ],
@@ -1006,9 +1006,9 @@
         "returned": {
           "same": true,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "a",
                   "b",
@@ -1016,25 +1016,25 @@
                 ],
                 "activeDocumentId": "b"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "d"
                 ],
                 "activeDocumentId": "d"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": "view-2",
+            "focusedPaneId": "pane-2",
             "seq": 3
           }
         }
@@ -1045,9 +1045,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -1055,30 +1055,30 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
           "type": "ADD_DOC",
-          "viewId": "view-1",
+          "paneId": "pane-1",
           "documentId": "e"
         }
       ],
@@ -1086,9 +1086,9 @@
         "returned": {
           "same": false,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "a",
                   "b",
@@ -1097,25 +1097,25 @@
                 ],
                 "activeDocumentId": "b"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "d"
                 ],
                 "activeDocumentId": "d"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": "view-2",
+            "focusedPaneId": "pane-2",
             "seq": 3
           }
         }
@@ -1126,9 +1126,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -1136,30 +1136,30 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
           "type": "ADD_DOC",
-          "viewId": "view-1",
+          "paneId": "pane-1",
           "documentId": "e",
           "index": 1
         }
@@ -1168,9 +1168,9 @@
         "returned": {
           "same": false,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "a",
                   "e",
@@ -1179,25 +1179,25 @@
                 ],
                 "activeDocumentId": "b"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "d"
                 ],
                 "activeDocumentId": "d"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": "view-2",
+            "focusedPaneId": "pane-2",
             "seq": 3
           }
         }
@@ -1208,9 +1208,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -1218,30 +1218,30 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
           "type": "ADD_DOC",
-          "viewId": "view-1",
+          "paneId": "pane-1",
           "documentId": "e",
           "index": 0
         }
@@ -1250,9 +1250,9 @@
         "returned": {
           "same": false,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "e",
                   "a",
@@ -1261,25 +1261,25 @@
                 ],
                 "activeDocumentId": "b"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "d"
                 ],
                 "activeDocumentId": "d"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": "view-2",
+            "focusedPaneId": "pane-2",
             "seq": 3
           }
         }
@@ -1290,9 +1290,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -1300,30 +1300,30 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
           "type": "ADD_DOC",
-          "viewId": "view-1",
+          "paneId": "pane-1",
           "documentId": "e",
           "index": -4
         }
@@ -1332,9 +1332,9 @@
         "returned": {
           "same": false,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "e",
                   "a",
@@ -1343,25 +1343,25 @@
                 ],
                 "activeDocumentId": "b"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "d"
                 ],
                 "activeDocumentId": "d"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": "view-2",
+            "focusedPaneId": "pane-2",
             "seq": 3
           }
         }
@@ -1372,9 +1372,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -1382,30 +1382,30 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
           "type": "ADD_DOC",
-          "viewId": "view-1",
+          "paneId": "pane-1",
           "documentId": "e",
           "index": 99
         }
@@ -1414,9 +1414,9 @@
         "returned": {
           "same": false,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "a",
                   "b",
@@ -1425,25 +1425,25 @@
                 ],
                 "activeDocumentId": "b"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "d"
                 ],
                 "activeDocumentId": "d"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": "view-2",
+            "focusedPaneId": "pane-2",
             "seq": 3
           }
         }
@@ -1454,9 +1454,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -1464,30 +1464,30 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
           "type": "ADD_DOC",
-          "viewId": "view-1",
+          "paneId": "pane-1",
           "documentId": "e",
           "index": 2.9
         }
@@ -1496,9 +1496,9 @@
         "returned": {
           "same": false,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "a",
                   "b",
@@ -1507,25 +1507,25 @@
                 ],
                 "activeDocumentId": "b"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "d"
                 ],
                 "activeDocumentId": "d"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": "view-2",
+            "focusedPaneId": "pane-2",
             "seq": 3
           }
         }
@@ -1536,9 +1536,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -1546,30 +1546,30 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
           "type": "ADD_DOC",
-          "viewId": "view-1",
+          "paneId": "pane-1",
           "documentId": "e",
           "index": {
             "$number": "NaN"
@@ -1580,9 +1580,9 @@
         "returned": {
           "same": false,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "e",
                   "a",
@@ -1591,25 +1591,25 @@
                 ],
                 "activeDocumentId": "b"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "d"
                 ],
                 "activeDocumentId": "d"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": "view-2",
+            "focusedPaneId": "pane-2",
             "seq": 3
           }
         }
@@ -1620,9 +1620,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -1630,30 +1630,30 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
           "type": "ADD_DOC",
-          "viewId": "view-1",
+          "paneId": "pane-1",
           "documentId": "e",
           "index": {
             "$number": "Infinity"
@@ -1664,9 +1664,9 @@
         "returned": {
           "same": false,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "a",
                   "b",
@@ -1675,25 +1675,25 @@
                 ],
                 "activeDocumentId": "b"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "d"
                 ],
                 "activeDocumentId": "d"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": "view-2",
+            "focusedPaneId": "pane-2",
             "seq": 3
           }
         }
@@ -1704,9 +1704,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -1714,30 +1714,30 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
           "type": "ADD_DOC",
-          "viewId": "view-1",
+          "paneId": "pane-1",
           "documentId": "e",
           "index": {
             "$number": "-Infinity"
@@ -1748,9 +1748,9 @@
         "returned": {
           "same": false,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "e",
                   "a",
@@ -1759,25 +1759,25 @@
                 ],
                 "activeDocumentId": "b"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "d"
                 ],
                 "activeDocumentId": "d"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": "view-2",
+            "focusedPaneId": "pane-2",
             "seq": 3
           }
         }
@@ -1788,9 +1788,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -1798,30 +1798,30 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
           "type": "ADD_DOC",
-          "viewId": "view-3",
+          "paneId": "pane-3",
           "documentId": "e"
         }
       ],
@@ -1829,9 +1829,9 @@
         "returned": {
           "same": false,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "a",
                   "b",
@@ -1839,15 +1839,15 @@
                 ],
                 "activeDocumentId": "b"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "d"
                 ],
                 "activeDocumentId": "d"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [
                   "e"
                 ],
@@ -1855,11 +1855,11 @@
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": "view-2",
+            "focusedPaneId": "pane-2",
             "seq": 3
           }
         }
@@ -1870,9 +1870,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -1880,30 +1880,30 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
           "type": "ADD_DOC",
-          "viewId": "view-1",
+          "paneId": "pane-1",
           "documentId": "a"
         }
       ],
@@ -1911,9 +1911,9 @@
         "returned": {
           "same": true,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "a",
                   "b",
@@ -1921,25 +1921,25 @@
                 ],
                 "activeDocumentId": "b"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "d"
                 ],
                 "activeDocumentId": "d"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": "view-2",
+            "focusedPaneId": "pane-2",
             "seq": 3
           }
         }
@@ -1950,9 +1950,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -1960,30 +1960,30 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
           "type": "ADD_DOC",
-          "viewId": "nope",
+          "paneId": "nope",
           "documentId": "e"
         }
       ],
@@ -1991,9 +1991,9 @@
         "returned": {
           "same": true,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "a",
                   "b",
@@ -2001,25 +2001,25 @@
                 ],
                 "activeDocumentId": "b"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "d"
                 ],
                 "activeDocumentId": "d"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": "view-2",
+            "focusedPaneId": "pane-2",
             "seq": 3
           }
         }
@@ -2030,9 +2030,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -2040,30 +2040,30 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
           "type": "REMOVE_DOC",
-          "viewId": "view-1",
+          "paneId": "pane-1",
           "documentId": "a"
         }
       ],
@@ -2071,34 +2071,34 @@
         "returned": {
           "same": false,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "b",
                   "c"
                 ],
                 "activeDocumentId": "b"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "d"
                 ],
                 "activeDocumentId": "d"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": "view-2",
+            "focusedPaneId": "pane-2",
             "seq": 3
           }
         }
@@ -2109,9 +2109,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -2119,30 +2119,30 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
           "type": "REMOVE_DOC",
-          "viewId": "view-1",
+          "paneId": "pane-1",
           "documentId": "b"
         }
       ],
@@ -2150,34 +2150,34 @@
         "returned": {
           "same": false,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "a",
                   "c"
                 ],
                 "activeDocumentId": "c"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "d"
                 ],
                 "activeDocumentId": "d"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": "view-2",
+            "focusedPaneId": "pane-2",
             "seq": 3
           }
         }
@@ -2188,9 +2188,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -2200,14 +2200,14 @@
             }
           },
           "order": [
-            "view-1"
+            "pane-1"
           ],
-          "focusedViewId": "view-1",
+          "focusedPaneId": "pane-1",
           "seq": 1
         },
         {
           "type": "REMOVE_DOC",
-          "viewId": "view-1",
+          "paneId": "pane-1",
           "documentId": "c"
         }
       ],
@@ -2215,9 +2215,9 @@
         "returned": {
           "same": false,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "a",
                   "b"
@@ -2226,9 +2226,9 @@
               }
             },
             "order": [
-              "view-1"
+              "pane-1"
             ],
-            "focusedViewId": "view-1",
+            "focusedPaneId": "pane-1",
             "seq": 1
           }
         }
@@ -2239,9 +2239,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -2249,30 +2249,30 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
           "type": "REMOVE_DOC",
-          "viewId": "view-2",
+          "paneId": "pane-2",
           "documentId": "d"
         }
       ],
@@ -2280,9 +2280,9 @@
         "returned": {
           "same": false,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "a",
                   "b",
@@ -2290,23 +2290,23 @@
                 ],
                 "activeDocumentId": "b"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [],
                 "activeDocumentId": null
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": "view-2",
+            "focusedPaneId": "pane-2",
             "seq": 3
           }
         }
@@ -2317,9 +2317,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -2327,30 +2327,30 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
           "type": "REMOVE_DOC",
-          "viewId": "view-1",
+          "paneId": "pane-1",
           "documentId": "zzz"
         }
       ],
@@ -2358,9 +2358,9 @@
         "returned": {
           "same": false,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "a",
                   "b",
@@ -2368,25 +2368,25 @@
                 ],
                 "activeDocumentId": "b"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "d"
                 ],
                 "activeDocumentId": "d"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": "view-2",
+            "focusedPaneId": "pane-2",
             "seq": 3
           }
         }
@@ -2397,9 +2397,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -2407,30 +2407,30 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
           "type": "REMOVE_DOC",
-          "viewId": "nope",
+          "paneId": "nope",
           "documentId": "a"
         }
       ],
@@ -2438,9 +2438,9 @@
         "returned": {
           "same": true,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "a",
                   "b",
@@ -2448,25 +2448,25 @@
                 ],
                 "activeDocumentId": "b"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "d"
                 ],
                 "activeDocumentId": "d"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": "view-2",
+            "focusedPaneId": "pane-2",
             "seq": 3
           }
         }
@@ -2477,9 +2477,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -2487,30 +2487,30 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
           "type": "MOVE_DOC_WITHIN",
-          "viewId": "view-1",
+          "paneId": "pane-1",
           "documentId": "a",
           "toIndex": 2
         }
@@ -2519,9 +2519,9 @@
         "returned": {
           "same": false,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "b",
                   "c",
@@ -2529,25 +2529,25 @@
                 ],
                 "activeDocumentId": "b"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "d"
                 ],
                 "activeDocumentId": "d"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": "view-2",
+            "focusedPaneId": "pane-2",
             "seq": 3
           }
         }
@@ -2558,9 +2558,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -2568,30 +2568,30 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
           "type": "MOVE_DOC_WITHIN",
-          "viewId": "view-1",
+          "paneId": "pane-1",
           "documentId": "c",
           "toIndex": 0
         }
@@ -2600,9 +2600,9 @@
         "returned": {
           "same": false,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "c",
                   "a",
@@ -2610,25 +2610,25 @@
                 ],
                 "activeDocumentId": "b"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "d"
                 ],
                 "activeDocumentId": "d"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": "view-2",
+            "focusedPaneId": "pane-2",
             "seq": 3
           }
         }
@@ -2639,9 +2639,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -2649,30 +2649,30 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
           "type": "MOVE_DOC_WITHIN",
-          "viewId": "view-1",
+          "paneId": "pane-1",
           "documentId": "a",
           "toIndex": 50
         }
@@ -2681,9 +2681,9 @@
         "returned": {
           "same": false,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "b",
                   "c",
@@ -2691,25 +2691,25 @@
                 ],
                 "activeDocumentId": "b"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "d"
                 ],
                 "activeDocumentId": "d"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": "view-2",
+            "focusedPaneId": "pane-2",
             "seq": 3
           }
         }
@@ -2720,9 +2720,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -2730,30 +2730,30 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
           "type": "MOVE_DOC_WITHIN",
-          "viewId": "view-1",
+          "paneId": "pane-1",
           "documentId": "c",
           "toIndex": {
             "$number": "NaN"
@@ -2764,9 +2764,9 @@
         "returned": {
           "same": false,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "c",
                   "a",
@@ -2774,25 +2774,25 @@
                 ],
                 "activeDocumentId": "b"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "d"
                 ],
                 "activeDocumentId": "d"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": "view-2",
+            "focusedPaneId": "pane-2",
             "seq": 3
           }
         }
@@ -2803,9 +2803,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -2813,30 +2813,30 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
           "type": "MOVE_DOC_WITHIN",
-          "viewId": "view-1",
+          "paneId": "pane-1",
           "documentId": "d",
           "toIndex": 0
         }
@@ -2845,9 +2845,9 @@
         "returned": {
           "same": true,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "a",
                   "b",
@@ -2855,25 +2855,25 @@
                 ],
                 "activeDocumentId": "b"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "d"
                 ],
                 "activeDocumentId": "d"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": "view-2",
+            "focusedPaneId": "pane-2",
             "seq": 3
           }
         }
@@ -2884,9 +2884,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -2894,30 +2894,30 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
           "type": "MOVE_DOC_WITHIN",
-          "viewId": "nope",
+          "paneId": "nope",
           "documentId": "a",
           "toIndex": 0
         }
@@ -2926,9 +2926,9 @@
         "returned": {
           "same": true,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "a",
                   "b",
@@ -2936,25 +2936,25 @@
                 ],
                 "activeDocumentId": "b"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "d"
                 ],
                 "activeDocumentId": "d"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": "view-2",
+            "focusedPaneId": "pane-2",
             "seq": 3
           }
         }
@@ -2965,9 +2965,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -2975,31 +2975,31 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
           "type": "MOVE_DOC_BETWEEN",
-          "fromViewId": "view-1",
-          "toViewId": "view-2",
+          "fromPaneId": "pane-1",
+          "toPaneId": "pane-2",
           "documentId": "b"
         }
       ],
@@ -3007,35 +3007,35 @@
         "returned": {
           "same": false,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "a",
                   "c"
                 ],
                 "activeDocumentId": "c"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "d",
                   "b"
                 ],
                 "activeDocumentId": "b"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": "view-2",
+            "focusedPaneId": "pane-2",
             "seq": 3
           }
         }
@@ -3046,9 +3046,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -3056,31 +3056,31 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
           "type": "MOVE_DOC_BETWEEN",
-          "fromViewId": "view-1",
-          "toViewId": "view-2",
+          "fromPaneId": "pane-1",
+          "toPaneId": "pane-2",
           "documentId": "a",
           "toIndex": 0
         }
@@ -3089,35 +3089,35 @@
         "returned": {
           "same": false,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "b",
                   "c"
                 ],
                 "activeDocumentId": "b"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "a",
                   "d"
                 ],
                 "activeDocumentId": "a"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": "view-2",
+            "focusedPaneId": "pane-2",
             "seq": 3
           }
         }
@@ -3128,9 +3128,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -3138,31 +3138,31 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
           "type": "MOVE_DOC_BETWEEN",
-          "fromViewId": "view-2",
-          "toViewId": "view-3",
+          "fromPaneId": "pane-2",
+          "toPaneId": "pane-3",
           "documentId": "d",
           "toIndex": 5
         }
@@ -3171,9 +3171,9 @@
         "returned": {
           "same": false,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "a",
                   "b",
@@ -3181,13 +3181,13 @@
                 ],
                 "activeDocumentId": "b"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [],
                 "activeDocumentId": null
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [
                   "d"
                 ],
@@ -3195,11 +3195,11 @@
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": "view-3",
+            "focusedPaneId": "pane-3",
             "seq": 3
           }
         }
@@ -3210,9 +3210,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -3220,31 +3220,31 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
           "type": "MOVE_DOC_BETWEEN",
-          "fromViewId": "view-1",
-          "toViewId": "view-1",
+          "fromPaneId": "pane-1",
+          "toPaneId": "pane-1",
           "documentId": "a"
         }
       ],
@@ -3252,9 +3252,9 @@
         "returned": {
           "same": false,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "b",
                   "c",
@@ -3262,25 +3262,25 @@
                 ],
                 "activeDocumentId": "b"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "d"
                 ],
                 "activeDocumentId": "d"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": "view-2",
+            "focusedPaneId": "pane-2",
             "seq": 3
           }
         }
@@ -3291,9 +3291,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -3301,31 +3301,31 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
           "type": "MOVE_DOC_BETWEEN",
-          "fromViewId": "view-1",
-          "toViewId": "view-1",
+          "fromPaneId": "pane-1",
+          "toPaneId": "pane-1",
           "documentId": "c",
           "toIndex": 0
         }
@@ -3334,9 +3334,9 @@
         "returned": {
           "same": false,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "c",
                   "a",
@@ -3344,25 +3344,25 @@
                 ],
                 "activeDocumentId": "b"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "d"
                 ],
                 "activeDocumentId": "d"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": "view-2",
+            "focusedPaneId": "pane-2",
             "seq": 3
           }
         }
@@ -3373,9 +3373,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -3383,31 +3383,31 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
           "type": "MOVE_DOC_BETWEEN",
-          "fromViewId": "nope",
-          "toViewId": "view-1",
+          "fromPaneId": "nope",
+          "toPaneId": "pane-1",
           "documentId": "a"
         }
       ],
@@ -3415,9 +3415,9 @@
         "returned": {
           "same": true,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "a",
                   "b",
@@ -3425,25 +3425,25 @@
                 ],
                 "activeDocumentId": "b"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "d"
                 ],
                 "activeDocumentId": "d"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": "view-2",
+            "focusedPaneId": "pane-2",
             "seq": 3
           }
         }
@@ -3454,9 +3454,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -3464,31 +3464,31 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
           "type": "MOVE_DOC_BETWEEN",
-          "fromViewId": "view-1",
-          "toViewId": "nope",
+          "fromPaneId": "pane-1",
+          "toPaneId": "nope",
           "documentId": "a"
         }
       ],
@@ -3496,9 +3496,9 @@
         "returned": {
           "same": true,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "a",
                   "b",
@@ -3506,25 +3506,25 @@
                 ],
                 "activeDocumentId": "b"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "d"
                 ],
                 "activeDocumentId": "d"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": "view-2",
+            "focusedPaneId": "pane-2",
             "seq": 3
           }
         }
@@ -3535,9 +3535,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -3545,31 +3545,31 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
           "type": "MOVE_DOC_BETWEEN",
-          "fromViewId": "view-1",
-          "toViewId": "view-2",
+          "fromPaneId": "pane-1",
+          "toPaneId": "pane-2",
           "documentId": "d"
         }
       ],
@@ -3577,9 +3577,9 @@
         "returned": {
           "same": true,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "a",
                   "b",
@@ -3587,25 +3587,25 @@
                 ],
                 "activeDocumentId": "b"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "d"
                 ],
                 "activeDocumentId": "d"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": "view-2",
+            "focusedPaneId": "pane-2",
             "seq": 3
           }
         }
@@ -3616,9 +3616,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -3626,25 +3626,25 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
@@ -3653,40 +3653,40 @@
             "a",
             "d"
           ],
-          "preferViewId": "view-2"
+          "preferPaneId": "pane-2"
         }
       ],
       "outcome": {
         "returned": {
           "same": false,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "a"
                 ],
                 "activeDocumentId": "a"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "d"
                 ],
                 "activeDocumentId": "d"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": "view-2",
+            "focusedPaneId": "pane-2",
             "seq": 3
           }
         }
@@ -3697,9 +3697,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -3707,25 +3707,25 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
@@ -3735,41 +3735,41 @@
             "c",
             "d"
           ],
-          "preferViewId": null
+          "preferPaneId": null
         }
       ],
       "outcome": {
         "returned": {
           "same": false,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "a",
                   "c"
                 ],
                 "activeDocumentId": "a"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "d"
                 ],
                 "activeDocumentId": "d"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": "view-2",
+            "focusedPaneId": "pane-2",
             "seq": 3
           }
         }
@@ -3780,9 +3780,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -3790,25 +3790,25 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
@@ -3821,16 +3821,16 @@
             "x",
             "y"
           ],
-          "preferViewId": "view-3"
+          "preferPaneId": "pane-3"
         }
       ],
       "outcome": {
         "returned": {
           "same": false,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "a",
                   "b",
@@ -3838,15 +3838,15 @@
                 ],
                 "activeDocumentId": "b"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "d"
                 ],
                 "activeDocumentId": "d"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [
                   "x",
                   "y"
@@ -3855,11 +3855,11 @@
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": "view-2",
+            "focusedPaneId": "pane-2",
             "seq": 3
           }
         }
@@ -3870,9 +3870,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -3880,25 +3880,25 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
@@ -3910,16 +3910,16 @@
             "c",
             "d"
           ],
-          "preferViewId": "nope"
+          "preferPaneId": "nope"
         }
       ],
       "outcome": {
         "returned": {
           "same": false,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "a",
                   "b",
@@ -3927,26 +3927,26 @@
                 ],
                 "activeDocumentId": "b"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "d",
                   "x"
                 ],
                 "activeDocumentId": "d"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": "view-2",
+            "focusedPaneId": "pane-2",
             "seq": 3
           }
         }
@@ -3957,9 +3957,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -3967,25 +3967,25 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "gone",
+          "focusedPaneId": "gone",
           "seq": 3
         },
         {
@@ -3997,16 +3997,16 @@
             "d",
             "x"
           ],
-          "preferViewId": null
+          "preferPaneId": null
         }
       ],
       "outcome": {
         "returned": {
           "same": false,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "a",
                   "b",
@@ -4015,25 +4015,25 @@
                 ],
                 "activeDocumentId": "b"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "d"
                 ],
                 "activeDocumentId": "d"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": "gone",
+            "focusedPaneId": "gone",
             "seq": 3
           }
         }
@@ -4044,9 +4044,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -4054,25 +4054,25 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": null,
+          "focusedPaneId": null,
           "seq": 3
         },
         {
@@ -4080,38 +4080,38 @@
           "open": [
             "x"
           ],
-          "preferViewId": ""
+          "preferPaneId": ""
         }
       ],
       "outcome": {
         "returned": {
           "same": false,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "x"
                 ],
                 "activeDocumentId": "x"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [],
                 "activeDocumentId": null
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": null,
+            "focusedPaneId": null,
             "seq": 3
           }
         }
@@ -4122,9 +4122,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {},
+          "panes": {},
           "order": [],
-          "focusedViewId": null,
+          "focusedPaneId": null,
           "seq": 0
         },
         {
@@ -4133,16 +4133,16 @@
             "a",
             "b"
           ],
-          "preferViewId": null
+          "preferPaneId": null
         }
       ],
       "outcome": {
         "returned": {
           "same": false,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "a",
                   "b"
@@ -4151,9 +4151,9 @@
               }
             },
             "order": [
-              "view-1"
+              "pane-1"
             ],
-            "focusedViewId": "view-1",
+            "focusedPaneId": "pane-1",
             "seq": 1
           }
         }
@@ -4164,9 +4164,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {},
+          "panes": {},
           "order": [],
-          "focusedViewId": "x",
+          "focusedPaneId": "x",
           "seq": 4
         },
         {
@@ -4174,16 +4174,16 @@
           "open": [
             "a"
           ],
-          "preferViewId": "x"
+          "preferPaneId": "x"
         }
       ],
       "outcome": {
         "returned": {
           "same": false,
           "next": {
-            "views": {
-              "view-5": {
-                "id": "view-5",
+            "panes": {
+              "pane-5": {
+                "id": "pane-5",
                 "documentIds": [
                   "a"
                 ],
@@ -4191,9 +4191,9 @@
               }
             },
             "order": [
-              "view-5"
+              "pane-5"
             ],
-            "focusedViewId": "x",
+            "focusedPaneId": "x",
             "seq": 5
           }
         }
@@ -4204,9 +4204,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -4214,60 +4214,60 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
           "type": "RECONCILE",
           "open": [],
-          "preferViewId": null
+          "preferPaneId": null
         }
       ],
       "outcome": {
         "returned": {
           "same": false,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [],
                 "activeDocumentId": null
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [],
                 "activeDocumentId": null
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": "view-2",
+            "focusedPaneId": "pane-2",
             "seq": 3
           }
         }
@@ -4278,24 +4278,24 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {},
+          "panes": {},
           "order": [],
-          "focusedViewId": null,
+          "focusedPaneId": null,
           "seq": 0
         },
         {
           "type": "RECONCILE",
           "open": [],
-          "preferViewId": null
+          "preferPaneId": null
         }
       ],
       "outcome": {
         "returned": {
           "same": false,
           "next": {
-            "views": {},
+            "panes": {},
             "order": [],
-            "focusedViewId": null,
+            "focusedPaneId": null,
             "seq": 0
           }
         }
@@ -4306,9 +4306,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b"
@@ -4317,9 +4317,9 @@
             }
           },
           "order": [
-            "view-1"
+            "pane-1"
           ],
-          "focusedViewId": "view-1",
+          "focusedPaneId": "pane-1",
           "seq": 1
         },
         {
@@ -4328,16 +4328,16 @@
             "a",
             "b"
           ],
-          "preferViewId": null
+          "preferPaneId": null
         }
       ],
       "outcome": {
         "returned": {
           "same": false,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "a",
                   "b"
@@ -4346,9 +4346,9 @@
               }
             },
             "order": [
-              "view-1"
+              "pane-1"
             ],
-            "focusedViewId": "view-1",
+            "focusedPaneId": "pane-1",
             "seq": 1
           }
         }
@@ -4359,16 +4359,16 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a"
               ],
               "activeDocumentId": "a"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "a",
                 "b"
@@ -4377,10 +4377,10 @@
             }
           },
           "order": [
-            "view-1",
-            "view-2"
+            "pane-1",
+            "pane-2"
           ],
-          "focusedViewId": "view-1",
+          "focusedPaneId": "pane-1",
           "seq": 2
         },
         {
@@ -4389,23 +4389,23 @@
             "a",
             "b"
           ],
-          "preferViewId": null
+          "preferPaneId": null
         }
       ],
       "outcome": {
         "returned": {
           "same": false,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "a"
                 ],
                 "activeDocumentId": "a"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "a",
                   "b"
@@ -4414,10 +4414,10 @@
               }
             },
             "order": [
-              "view-1",
-              "view-2"
+              "pane-1",
+              "pane-2"
             ],
-            "focusedViewId": "view-1",
+            "focusedPaneId": "pane-1",
             "seq": 2
           }
         }
@@ -4428,9 +4428,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -4438,25 +4438,25 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
@@ -4467,16 +4467,16 @@
             "c",
             "d"
           ],
-          "preferViewId": null
+          "preferPaneId": null
         }
       ],
       "outcome": {
         "returned": {
           "same": false,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "a",
                   "b",
@@ -4484,25 +4484,25 @@
                 ],
                 "activeDocumentId": "b"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "d"
                 ],
                 "activeDocumentId": "d"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": "view-2",
+            "focusedPaneId": "pane-2",
             "seq": 3
           }
         }
@@ -4513,9 +4513,9 @@
       "fn": "viewManagerReducer",
       "args": [
         {
-          "views": {
-            "view-1": {
-              "id": "view-1",
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
               "documentIds": [
                 "a",
                 "b",
@@ -4523,25 +4523,25 @@
               ],
               "activeDocumentId": "b"
             },
-            "view-2": {
-              "id": "view-2",
+            "pane-2": {
+              "id": "pane-2",
               "documentIds": [
                 "d"
               ],
               "activeDocumentId": "d"
             },
-            "view-3": {
-              "id": "view-3",
+            "pane-3": {
+              "id": "pane-3",
               "documentIds": [],
               "activeDocumentId": null
             }
           },
           "order": [
-            "view-1",
-            "view-2",
-            "view-3"
+            "pane-1",
+            "pane-2",
+            "pane-3"
           ],
-          "focusedViewId": "view-2",
+          "focusedPaneId": "pane-2",
           "seq": 3
         },
         {
@@ -4552,9 +4552,9 @@
         "returned": {
           "same": true,
           "next": {
-            "views": {
-              "view-1": {
-                "id": "view-1",
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
                 "documentIds": [
                   "a",
                   "b",
@@ -4562,25 +4562,25 @@
                 ],
                 "activeDocumentId": "b"
               },
-              "view-2": {
-                "id": "view-2",
+              "pane-2": {
+                "id": "pane-2",
                 "documentIds": [
                   "d"
                 ],
                 "activeDocumentId": "d"
               },
-              "view-3": {
-                "id": "view-3",
+              "pane-3": {
+                "id": "pane-3",
                 "documentIds": [],
                 "activeDocumentId": null
               }
             },
             "order": [
-              "view-1",
-              "view-2",
-              "view-3"
+              "pane-1",
+              "pane-2",
+              "pane-3"
             ],
-            "focusedViewId": "view-2",
+            "focusedPaneId": "pane-2",
             "seq": 3
           }
         }
