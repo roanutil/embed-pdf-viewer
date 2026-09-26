@@ -331,7 +331,9 @@ fn sniff(a: &[Value]) -> Out {
     Ok(match crate::binary::sniff_binary_metadata(&bytes) {
         None => Value::Null,
         Some(meta) => match meta.size {
-            Some((width, height)) => json!({ "mimeType": meta.mime_type, "width": width, "height": height }),
+            Some((width, height)) => {
+                json!({ "mimeType": meta.mime_type, "width": width, "height": height })
+            }
             None => json!({ "mimeType": meta.mime_type }),
         },
     })
