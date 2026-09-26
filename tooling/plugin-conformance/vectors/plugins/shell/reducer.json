@@ -1717,6 +1717,455 @@
           }
         }
       }
+    },
+    {
+      "name": "set-props-replaces-them",
+      "fn": "shellReducer",
+      "args": [
+        {
+          "surfaces": {
+            "7": {
+              "open": true
+            },
+            "left": {
+              "open": true,
+              "exclusive": "side"
+            },
+            "right": {
+              "open": true,
+              "exclusive": "side",
+              "props": {
+                "tab": 2
+              }
+            },
+            "modal": {
+              "open": false,
+              "exclusive": "overlay"
+            },
+            "free": {
+              "open": true,
+              "exclusive": ""
+            }
+          },
+          "openMenus": [
+            "file",
+            "edit"
+          ]
+        },
+        {
+          "type": "SHELL/SET_SURFACE_PROPS",
+          "id": "right",
+          "props": {
+            "tab": 3,
+            "extra": null
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "surfaces": {
+              "7": {
+                "open": true
+              },
+              "left": {
+                "open": true,
+                "exclusive": "side"
+              },
+              "right": {
+                "open": true,
+                "exclusive": "side",
+                "props": {
+                  "tab": 3,
+                  "extra": null
+                }
+              },
+              "modal": {
+                "open": false,
+                "exclusive": "overlay"
+              },
+              "free": {
+                "open": true,
+                "exclusive": ""
+              }
+            },
+            "openMenus": [
+              "file",
+              "edit"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "set-props-on-a-closed-surface",
+      "fn": "shellReducer",
+      "args": [
+        {
+          "surfaces": {
+            "7": {
+              "open": true
+            },
+            "left": {
+              "open": true,
+              "exclusive": "side"
+            },
+            "right": {
+              "open": true,
+              "exclusive": "side",
+              "props": {
+                "tab": 2
+              }
+            },
+            "modal": {
+              "open": false,
+              "exclusive": "overlay"
+            },
+            "free": {
+              "open": true,
+              "exclusive": ""
+            }
+          },
+          "openMenus": [
+            "file",
+            "edit"
+          ]
+        },
+        {
+          "type": "SHELL/SET_SURFACE_PROPS",
+          "id": "modal",
+          "props": {
+            "x": 1
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "surfaces": {
+              "7": {
+                "open": true
+              },
+              "left": {
+                "open": true,
+                "exclusive": "side"
+              },
+              "right": {
+                "open": true,
+                "exclusive": "side",
+                "props": {
+                  "tab": 2
+                }
+              },
+              "modal": {
+                "open": false,
+                "exclusive": "overlay",
+                "props": {
+                  "x": 1
+                }
+              },
+              "free": {
+                "open": true,
+                "exclusive": ""
+              }
+            },
+            "openMenus": [
+              "file",
+              "edit"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "set-props-unknown-is-ignored",
+      "fn": "shellReducer",
+      "args": [
+        {
+          "surfaces": {
+            "7": {
+              "open": true
+            },
+            "left": {
+              "open": true,
+              "exclusive": "side"
+            },
+            "right": {
+              "open": true,
+              "exclusive": "side",
+              "props": {
+                "tab": 2
+              }
+            },
+            "modal": {
+              "open": false,
+              "exclusive": "overlay"
+            },
+            "free": {
+              "open": true,
+              "exclusive": ""
+            }
+          },
+          "openMenus": [
+            "file",
+            "edit"
+          ]
+        },
+        {
+          "type": "SHELL/SET_SURFACE_PROPS",
+          "id": "nope",
+          "props": {
+            "x": 1
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": true,
+          "next": {
+            "surfaces": {
+              "7": {
+                "open": true
+              },
+              "left": {
+                "open": true,
+                "exclusive": "side"
+              },
+              "right": {
+                "open": true,
+                "exclusive": "side",
+                "props": {
+                  "tab": 2
+                }
+              },
+              "modal": {
+                "open": false,
+                "exclusive": "overlay"
+              },
+              "free": {
+                "open": true,
+                "exclusive": ""
+              }
+            },
+            "openMenus": [
+              "file",
+              "edit"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "close-all-surfaces",
+      "fn": "shellReducer",
+      "args": [
+        {
+          "surfaces": {
+            "7": {
+              "open": true
+            },
+            "left": {
+              "open": true,
+              "exclusive": "side"
+            },
+            "right": {
+              "open": true,
+              "exclusive": "side",
+              "props": {
+                "tab": 2
+              }
+            },
+            "modal": {
+              "open": false,
+              "exclusive": "overlay"
+            },
+            "free": {
+              "open": true,
+              "exclusive": ""
+            }
+          },
+          "openMenus": [
+            "file",
+            "edit"
+          ]
+        },
+        {
+          "type": "SHELL/CLOSE_ALL_SURFACES"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "surfaces": {
+              "7": {
+                "open": false
+              },
+              "left": {
+                "open": false,
+                "exclusive": "side"
+              },
+              "right": {
+                "open": false,
+                "exclusive": "side",
+                "props": {
+                  "tab": 2
+                }
+              },
+              "modal": {
+                "open": false,
+                "exclusive": "overlay"
+              },
+              "free": {
+                "open": false,
+                "exclusive": ""
+              }
+            },
+            "openMenus": [
+              "file",
+              "edit"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "close-all-surfaces-none-open-is-ignored",
+      "fn": "shellReducer",
+      "args": [
+        {
+          "surfaces": {
+            "modal": {
+              "open": false,
+              "exclusive": "overlay"
+            }
+          },
+          "openMenus": [
+            "file"
+          ]
+        },
+        {
+          "type": "SHELL/CLOSE_ALL_SURFACES"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": true,
+          "next": {
+            "surfaces": {
+              "modal": {
+                "open": false,
+                "exclusive": "overlay"
+              }
+            },
+            "openMenus": [
+              "file"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "close-all-surfaces-empty-is-ignored",
+      "fn": "shellReducer",
+      "args": [
+        {
+          "surfaces": {},
+          "openMenus": []
+        },
+        {
+          "type": "SHELL/CLOSE_ALL_SURFACES"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": true,
+          "next": {
+            "surfaces": {},
+            "openMenus": []
+          }
+        }
+      }
+    },
+    {
+      "name": "apply-snapshot-replaces-everything",
+      "fn": "shellReducer",
+      "args": [
+        {
+          "surfaces": {
+            "7": {
+              "open": true
+            },
+            "left": {
+              "open": true,
+              "exclusive": "side"
+            },
+            "right": {
+              "open": true,
+              "exclusive": "side",
+              "props": {
+                "tab": 2
+              }
+            },
+            "modal": {
+              "open": false,
+              "exclusive": "overlay"
+            },
+            "free": {
+              "open": true,
+              "exclusive": ""
+            }
+          },
+          "openMenus": [
+            "file",
+            "edit"
+          ]
+        },
+        {
+          "type": "SHELL/APPLY_SNAPSHOT",
+          "snapshot": {
+            "surfaces": {
+              "5": {
+                "open": true
+              },
+              "search": {
+                "open": false,
+                "exclusive": "side",
+                "props": {
+                  "q": "x"
+                }
+              }
+            },
+            "openMenus": [
+              "help"
+            ]
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "surfaces": {
+              "5": {
+                "open": true
+              },
+              "search": {
+                "open": false,
+                "exclusive": "side",
+                "props": {
+                  "q": "x"
+                }
+              }
+            },
+            "openMenus": [
+              "help"
+            ]
+          }
+        }
+      }
     }
   ]
 }

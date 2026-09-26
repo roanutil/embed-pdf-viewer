@@ -6,10 +6,11 @@ use std::any::Any;
 use std::rc::Rc;
 
 use epdf_kernel::{AnyPlugin, AnyToken, Error, is_undefined};
-use plugin_conformance::{FunctionTable, Harness, HarnessPlugin, Outcome, scrub};
+use plugin_conformance::{Answer, FunctionTable, Harness, HarnessPlugin, Outcome, scrub};
 use serde_json::{Value, json};
 
-use crate::types::{OpenSurfaceOptions, ShellAction, ShellState};
+use crate::contract::{OpenSurfaceOptions, ShellSnapshot, SurfaceProps};
+use crate::model::{ShellAction, ShellState};
 use crate::{SHELL, ShellCapability, initial_shell_state, shell_plugin, shell_reducer};
 
 pub struct Shell;
@@ -17,17 +18,25 @@ pub struct Shell;
 /// The TypeScript object literal's member order.
 const MEMBERS: &[&str] = &[
     "isOpen",
-    "surfaceProps",
-    "openSurfaces",
-    "openMenus",
-    "isMenuOpen",
+    "getSurface",
+    "listOpenSurfaces",
     "open",
     "close",
     "toggle",
+    "updateSurfaceProps",
+    "closeAll",
+    "isMenuOpen",
+    "listOpenMenus",
     "openMenu",
     "closeMenu",
     "toggleMenu",
     "closeAllMenus",
+    "getSnapshot",
+    "applySnapshot",
+    "onSurfaceOpened",
+    "onSurfaceClosed",
+    "onMenuOpened",
+    "onMenuClosed",
 ];
 
 fn arg(args: &[Value], i: usize) -> Option<&Value> {
@@ -40,6 +49,27 @@ fn options(value: Option<&Value>) -> Option<OpenSurfaceOptions> {
         exclusive: value.get("exclusive").and_then(Value::as_str).map(str::to_string),
         props: value.get("props").and_then(Value::as_object).cloned(),
     })
+}
+
+fn json_of<T: serde::Serialize>(value: &T) -> Value {
+    serde_json::to_value(value).unwrap_or(Value::Null)
+}
+
+/// Subscribe a scripted `$fn` listener; the outcome is the unsubscribe.
+fn listen<E: serde::Serialize>(
+    h: &Harness,
+    spec: Option<&Value>,
+    subscribe: impl FnOnce(Box<dyn Fn(&E) -> Result<(), Error>>) -> epdf_kernel::Unsubscribe,
+) -> Outcome {
+    let callback = h.callback(spec.unwrap_or(&Value::Null));
+    let off = subscribe(Box::new(move |event: &E| match callback.call(vec![json_of(event)]) {
+        Answer::Throws(error) => Err(error),
+        _ => Ok(()),
+    }));
+    Outcome::Returned(h.register_fn(Rc::new(move |_| {
+        off.call();
+        Outcome::undefined()
+    })))
 }
 
 impl HarnessPlugin for Shell {
@@ -60,32 +90,72 @@ impl HarnessPlugin for Shell {
         capability: &Rc<dyn Any>,
         method: &str,
         args: Vec<Value>,
-        _h: &Harness,
+        h: &Harness,
     ) -> Option<Outcome> {
         let cap = capability.downcast_ref::<ShellCapability>()?;
         let id = arg(&args, 0).and_then(Value::as_str).unwrap_or_default();
         Some(match method {
             "isOpen" => Outcome::Returned(json!(cap.is_open(id))),
-            "surfaceProps" => match cap.surface_props(id) {
-                Some(props) => Outcome::Returned(Value::Object(props)),
-                None => Outcome::undefined(),
-            },
-            "openSurfaces" => Outcome::Returned(json!(cap.open_surfaces())),
-            "openMenus" => Outcome::Returned(json!(cap.open_menus())),
-            "isMenuOpen" => Outcome::Returned(json!(cap.is_menu_open(id))),
-            "open" | "close" | "toggle" | "openMenu" | "closeMenu" | "toggleMenu"
-            | "closeAllMenus" => {
-                match method {
-                    "open" => cap.open(id, options(arg(&args, 1))),
-                    "close" => cap.close(id),
-                    "toggle" => cap.toggle(id, options(arg(&args, 1))),
-                    "openMenu" => cap.open_menu(id),
-                    "closeMenu" => cap.close_menu(id),
-                    "toggleMenu" => cap.toggle_menu(id),
-                    _ => cap.close_all_menus(),
-                }
+            "getSurface" => Outcome::Returned(json_of(&cap.get_surface(id))),
+            "listOpenSurfaces" => Outcome::Returned(json_of(&cap.list_open_surfaces())),
+            "open" => {
+                cap.open(id, options(arg(&args, 1)));
                 Outcome::undefined()
             }
+            "close" => {
+                cap.close(id);
+                Outcome::undefined()
+            }
+            "toggle" => {
+                cap.toggle(id, options(arg(&args, 1)));
+                Outcome::undefined()
+            }
+            "updateSurfaceProps" => {
+                let props: SurfaceProps = arg(&args, 1)
+                    .map(scrub)
+                    .and_then(|p| p.as_object().cloned())
+                    .unwrap_or_default();
+                {
+                    cap.update_surface_props(id, props);
+                    Outcome::undefined()
+                }
+            }
+            "closeAll" => {
+                cap.close_all();
+                Outcome::undefined()
+            }
+            "isMenuOpen" => Outcome::Returned(json!(cap.is_menu_open(id))),
+            "listOpenMenus" => Outcome::Returned(json!(cap.list_open_menus())),
+            "openMenu" => {
+                cap.open_menu(id);
+                Outcome::undefined()
+            }
+            "closeMenu" => {
+                cap.close_menu(id);
+                Outcome::undefined()
+            }
+            "toggleMenu" => {
+                cap.toggle_menu(id);
+                Outcome::undefined()
+            }
+            "closeAllMenus" => {
+                cap.close_all_menus();
+                Outcome::undefined()
+            }
+            "getSnapshot" => Outcome::Returned(json_of(&cap.get_snapshot())),
+            "applySnapshot" => match serde_json::from_value::<ShellSnapshot>(scrub(
+                arg(&args, 0).unwrap_or(&Value::Null),
+            )) {
+                Ok(snapshot) => {
+                    cap.apply_snapshot(snapshot);
+                    Outcome::undefined()
+                }
+                Err(error) => Outcome::Threw(bad("snapshot", error)),
+            },
+            "onSurfaceOpened" => listen(h, arg(&args, 0), |f| cap.on_surface_opened(f)),
+            "onSurfaceClosed" => listen(h, arg(&args, 0), |f| cap.on_surface_closed(f)),
+            "onMenuOpened" => listen(h, arg(&args, 0), |f| cap.on_menu_opened(f)),
+            "onMenuClosed" => listen(h, arg(&args, 0), |f| cap.on_menu_closed(f)),
             other => {
                 Outcome::Threw(Error::new(format!("[scenario] \"{other}\" is not a function")))
             }
@@ -97,7 +167,6 @@ impl HarnessPlugin for Shell {
         Some(MEMBERS.to_vec())
     }
 }
-
 fn bad(what: &str, e: impl std::fmt::Display) -> Error {
     Error::new(format!("[shell harness] {what}: {e}"))
 }

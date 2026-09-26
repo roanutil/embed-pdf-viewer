@@ -8,6 +8,29 @@ use std::fmt;
 use serde::de::{Deserialize, Deserializer, MapAccess, Visitor};
 use serde::ser::{Serialize, SerializeMap, Serializer};
 
+/// The members every JavaScript object inherits from `Object.prototype`:
+/// `record[key]` finds one when the record has no own `key`.
+const OBJECT_PROTOTYPE_MEMBERS: &[&str] = &[
+    "constructor",
+    "__defineGetter__",
+    "__defineSetter__",
+    "hasOwnProperty",
+    "__lookupGetter__",
+    "__lookupSetter__",
+    "isPrototypeOf",
+    "propertyIsEnumerable",
+    "toString",
+    "valueOf",
+    "__proto__",
+    "toLocaleString",
+];
+
+/// Whether `record[key]` finds an inherited member (truthy, with no own
+/// enumerable members) for a key the record does not own.
+pub fn is_inherited(key: &str) -> bool {
+    OBJECT_PROTOTYPE_MEMBERS.contains(&key)
+}
+
 /// A canonical array index (`"0"`, `"17"`, below 2^32 - 1): the keys a
 /// JavaScript object enumerates first, in ascending numeric order.
 fn array_index(key: &str) -> Option<u32> {
@@ -68,6 +91,11 @@ impl<V> JsRecord<V> {
             let (key, value) = &self.entries[position];
             (key.as_str(), value)
         })
+    }
+
+    /// `Object.keys(record)`.
+    pub fn keys(&self) -> impl Iterator<Item = &str> {
+        self.iter().map(|(k, _)| k)
     }
 }
 
