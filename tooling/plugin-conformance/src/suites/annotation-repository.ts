@@ -15,7 +15,6 @@ import {
   colorToCss,
   fromDTO,
   linkChildRects,
-  refKey,
   styleFromDTO,
   toCreateDraft,
   toPatch,
@@ -34,6 +33,7 @@ import { calloutFields } from '../../../../packages/plugin/annotation/src/reposi
 import { pdfBoundsOfQuads, quadPointsFor } from '../../../../packages/plugin/annotation/src/repository/kinds/quads';
 import { widgetKindOf } from '../../../../packages/plugin/annotation/src/repository/kinds/misc';
 import type { Annot, Border } from '../../../../packages/core/annotation/src/types';
+import { annotationKey } from '../../../../packages/engine/core/src/runtime';
 
 import {
   CROP,
@@ -57,6 +57,7 @@ import {
   unsupported,
   widget,
   objRef,
+  pr,
 } from './annotation-fixtures';
 import type { FunctionCase, Suite } from '../vectors';
 
@@ -118,7 +119,7 @@ const DTOS: [string, Dto, typeof CROP][] = [
   ['widget-radio', widget(47, 'radio'), CROP],
   ['widget-signature', widget(48, 'signature'), CROP],
   ['unsupported', unsupported(49), CROP],
-  ['nm-ref', square(50, { ref: { kind: 'nm', pageObjectNumber: 1, nm: 'abc' } }), CROP],
+  ['nm-ref', square(50, { ref: { kind: 'nm', page: pr(1), nm: 'abc' } }), CROP],
   // An unrotated box is read only with a rotation, and never mistaken for the
   // RD-inset rect (unlike `callout-rotated`, whose two boxes coincide).
   ['highlight-multiply', markup('highlight', 53, { blendMode: 'multiply' }), CROP],
@@ -256,9 +257,9 @@ cases.push(
 
 // The seam helpers.
 cases.push(
-  c('refKey', 'object-number', objRef(12)),
-  c('refKey', 'nm', { kind: 'nm', pageObjectNumber: 1, nm: 'x y' }),
-  c('refKey', 'index', { kind: 'index', pageObjectNumber: 3, index: 7, revision: { docSessionId: 's', pageObjectNumber: 3, generation: 1 } }),
+  c('annotationKey', 'object-number', objRef(12)),
+  c('annotationKey', 'nm', { kind: 'nm', page: pr(1), nm: 'x y' }),
+  c('annotationKey', 'index', { kind: 'index', page: pr(3), index: 7, revision: { docSessionId: 's', page: pr(3), generation: 1 } }),
   c('colorToCss', 'plain', { r: 255, g: 16, b: 0 }),
   c('colorToCss', 'clamped', { r: 300, g: -5, b: 12.6 }),
   c('cssToColor', 'six', '#aabbcc'),
@@ -282,7 +283,7 @@ cases.push(
   c('borderFromDTO', 'dashed', { borderStyle: 'dashed', dashArray: [2, 1] }),
   c('borderFromDTO', 'dashed-default', { borderStyle: 'dashed' }),
   c('borderFromDTO', 'solid', { borderStyle: 'solid', cloudyIntensity: 0 }),
-  c('writableTarget', 'goto', { kind: 'goto', destination: { kind: 'fit', pageObjectNumber: 1 } }),
+  c('writableTarget', 'goto', { kind: 'goto', destination: { kind: 'fit', page: pr(1) } }),
   c('writableTarget', 'uri', { kind: 'uri', uri: 'https://x' }),
   c('writableTarget', 'named', { kind: 'named', name: 'NextPage' }),
   c('writableTarget', 'null', null),
@@ -337,7 +338,7 @@ export const suites: Suite[] = [
         resetUuid();
         return toCreateDraft(a, crop);
       }) as never,
-      refKey: refKey as never,
+      annotationKey: annotationKey as never,
       colorToCss: colorToCss as never,
       cssToColor: cssToColor as never,
       boxGeomFields: boxGeomFields as never,

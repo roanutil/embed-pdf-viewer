@@ -182,6 +182,9 @@ export const geom = (name: string): Geom => {
 // ── annots and models ─────────────────────────────────────────────────────────
 
 export const PON = 1;
+/** The page address for an object number. */
+export const pageRef = (pon: number) => ({ kind: 'objectNumber' as const, pageObjectNumber: pon });
+export const PAGE_REF = pageRef(PON);
 
 export const flags = (over: Partial<AnnotationFlags> = {}): AnnotationFlags => ({
   ...NO_ANNOTATION_FLAGS,
@@ -197,8 +200,8 @@ const objectNumber = (id: string): number =>
 /** A committed annotation (it has a ref) with the drawn defaults. */
 export const annot = (id: string, subtype: string, g: Geom, over: Partial<Annot> = {}): Annot => ({
   id,
-  ref: { kind: 'objectNumber', pageObjectNumber: PON, annotObjectNumber: objectNumber(id) },
-  pon: PON,
+  ref: { kind: 'objectNumber', page: PAGE_REF, annotObjectNumber: objectNumber(id) },
+  page: PAGE_REF,
   subtype,
   geom: g,
   style: initialStyle,

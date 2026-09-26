@@ -38,20 +38,21 @@ import {
   tq,
   v,
   type Fn,
+  pageRef,
 } from './annotation-core-fixtures';
 
 type Table<T> = Record<string, T>;
 
 const viewFns: Record<string, Fn> = {
-  pageItems: (m: Partial<Model>, pon: number, view?: ViewEnv) => vw.pageItems(modelOf(m), pon, view),
+  pageItems: (m: Partial<Model>, pon: number, view?: ViewEnv) => vw.pageItems(modelOf(m), pageRef(pon), view),
   chrome: (m: Partial<Model>, pon: number, pageBox?: Rect, knobOffset?: number, view?: ViewEnv) =>
-    vw.chrome(modelOf(m), pon, pageBox, knobOffset, view),
+    vw.chrome(modelOf(m), pageRef(pon), pageBox, knobOffset, view),
   selectedItems: (m: Partial<Model>, view?: ViewEnv) => vw.selectedItems(modelOf(m), view),
-  textBoxes: (m: Partial<Model>, pon: number, view?: ViewEnv) => vw.textBoxes(modelOf(m), pon, view),
+  textBoxes: (m: Partial<Model>, pon: number, view?: ViewEnv) => vw.textBoxes(modelOf(m), pageRef(pon), view),
   selectionBoundsOnPage: (m: Partial<Model>, pon: number, view?: ViewEnv) =>
-    vw.selectionBoundsOnPage(modelOf(m), pon, view),
+    vw.selectionBoundsOnPage(modelOf(m), pageRef(pon), view),
   selectionKnob: (m: Partial<Model>, pon: number, pageBox?: Rect, knobOffset?: number, view?: ViewEnv) =>
-    vw.selectionKnob(modelOf(m), pon, pageBox, knobOffset, view),
+    vw.selectionKnob(modelOf(m), pageRef(pon), pageBox, knobOffset, view),
   creationDraftAnchor: (m: Partial<Model>) => vw.creationDraftAnchor(modelOf(m)),
   selectionAnchor: (
     m: Partial<Model>,
@@ -86,12 +87,12 @@ const viewFns: Record<string, Fn> = {
   viewAll: (m: Partial<Model>, pon: number, pageBox?: Rect, knobOffset?: number, view?: ViewEnv) => {
     const model = modelOf(m);
     return {
-      pageItems: vw.pageItems(model, pon, view),
-      chrome: vw.chrome(model, pon, pageBox, knobOffset, view),
+      pageItems: vw.pageItems(model, pageRef(pon), view),
+      chrome: vw.chrome(model, pageRef(pon), pageBox, knobOffset, view),
       selectedItems: vw.selectedItems(model, view),
-      textBoxes: vw.textBoxes(model, pon, view),
-      selectionBoundsOnPage: vw.selectionBoundsOnPage(model, pon, view),
-      selectionKnob: vw.selectionKnob(model, pon, pageBox, knobOffset, view),
+      textBoxes: vw.textBoxes(model, pageRef(pon), view),
+      selectionBoundsOnPage: vw.selectionBoundsOnPage(model, pageRef(pon), view),
+      selectionKnob: vw.selectionKnob(model, pageRef(pon), pageBox, knobOffset, view),
       creationDraftAnchor: vw.creationDraftAnchor(model),
     };
   },
@@ -105,14 +106,14 @@ const PAGE = rc(0, 0, 600, 800);
 const ptr = (phase: 'down' | 'move' | 'up', x: number, y: number, over: object = {}): Msg => ({
   t: 'editPointer',
   phase,
-  in: { pon: PON, point: v(x, y), shift: false, ...over },
+  in: { page: pageRef(PON), point: v(x, y), shift: false, ...over },
 });
 const create = (subtype: string, phase: 'down' | 'move' | 'up', x: number, y: number, over: object = {}, msgOver: object = {}): Msg =>
   ({
     t: 'createPointer',
     phase,
     subtype,
-    in: { pon: PON, point: v(x, y), shift: false, ...over },
+    in: { page: pageRef(PON), point: v(x, y), shift: false, ...over },
     ...msgOver,
   }) as Msg;
 
@@ -141,7 +142,7 @@ const VIEW_ANNOTS: Annot[] = [
   annot('reply', 'text', gRect(rc(100, 100, 20, 20)), { irt: 'sq' }),
   annot('nozoom', 'square', gLine(v(0, 0), v(0, 0)), { geom: gRect(rc(560, 700, 30, 30)), flags: flags({ noZoom: true, noRotate: true }), source: 'baked', apBox: rc(560, 700, 30, 30), apRot: 90 }),
   annot('nozoom-ln', 'line', gLine(v(500, 700), v(550, 720)), { flags: flags({ noZoom: true }) }),
-  sq('other-page', rc(100, 100, 80, 60), { pon: 2 }),
+  sq('other-page', rc(100, 100, 80, 60), { page: pageRef(2) }),
 ];
 const S = (over: Partial<Model> = {}) => start(VIEW_ANNOTS, over);
 
@@ -173,8 +174,8 @@ const STATES: [string, Partial<Model>][] = [
   ['sel-group-plus-other-page', S({ selected: ['sq', 'ln', 'other-page', 'ghost'] })],
   ['draft-rotate-unrotatable', S({ selected: ['hl'], draft: { g: 'rotate', ids: ['hl'], pivot: v(100, 400), start: v(100, 380), cur: v(120, 380) } })],
   ['draft-handle-text-to-rect', S({ selected: ['ft'], draft: { g: 'handle', id: 'ft', handle: 'se', base: gText(rc(450, 250, 100, 40)), cur: gRect(rc(450, 250, 120, 50)) } })],
-  ['draft-create-rect-no-preset', S({ defaults: { square: { color: '#00ff00' } }, draft: { g: 'create-rect', subtype: 'square', pon: PON, from: v(0, 0), to: v(50, 50), ellipse: false } })],
-  ['draft-create-callout-no-preset', S({ draft: { g: 'create-callout', subtype: 'free-text-callout', pon: PON, step: 'box', tip: v(0, 0), cur: v(50, 50), boxFrom: v(50, 50) } })],
+  ['draft-create-rect-no-preset', S({ defaults: { square: { color: '#00ff00' } }, draft: { g: 'create-rect', subtype: 'square', page: pageRef(PON), from: v(0, 0), to: v(50, 50), ellipse: false } })],
+  ['draft-create-callout-no-preset', S({ draft: { g: 'create-callout', subtype: 'free-text-callout', page: pageRef(PON), step: 'box', tip: v(0, 0), cur: v(50, 50), boxFrom: v(50, 50) } })],
   ['weird-opaque', start([annot('stamp-ink', 'stamp', gInk([[v(0, 0), v(50, 50)]]), { source: 'baked', apBox: rc(0, 0, 50, 50) })], { selected: ['stamp-ink'] })],
   ['move-sq', drive(S(), [ptr('down', 140, 101), ptr('move', 170, 131, { pageBox: PAGE })])],
   ['move-baked', drive(S(), [ptr('down', 301, 130), ptr('move', 321, 150)])],
@@ -193,7 +194,7 @@ const STATES: [string, Partial<Model>][] = [
   ['rotate-baked', drive(S({ selected: ['baked'] }), [ptr('down', 340, 76), ptr('move', 400, 100)])],
   ['group-resize', drive(S({ selected: ['sq', 'ln', 'ink'] }), [ptr('down', 550, 300), ptr('move', 600, 350)])],
   ['group-resize-rotated', drive(S({ selected: ['sq', 'pl'] }), [ptr('down', 406, 568), ptr('move', 500, 600)])],
-  ['marquee', drive(S(), [{ t: 'marqueePointer', phase: 'down', in: { pon: PON, point: v(90, 90), shift: false } }, { t: 'marqueePointer', phase: 'move', in: { pon: PON, point: v(200, 200), shift: false } }])],
+  ['marquee', drive(S(), [{ t: 'marqueePointer', phase: 'down', in: { page: pageRef(PON), point: v(90, 90), shift: false } }, { t: 'marqueePointer', phase: 'move', in: { page: pageRef(PON), point: v(200, 200), shift: false } }])],
   ['create-square', drive(S(), [create('square', 'down', 10, 10), create('square', 'move', 60, 40)])],
   ['create-square-zero', drive(S(), [create('square', 'down', 10, 10)])],
   ['create-square-line-drag', drive(S(), [create('square', 'down', 10, 10), create('square', 'move', 60, 10)])],
@@ -209,9 +210,9 @@ const STATES: [string, Partial<Model>][] = [
   ['create-callout-box-drag', drive(S(), [create('free-text-callout', 'down', 10, 10), create('free-text-callout', 'down', 60, 70), create('free-text-callout', 'down', 100, 80), create('free-text-callout', 'move', 200, 140)])],
   ['create-polygon-hover-same-y', drive(S(), [create('polygon', 'down', 10, 10), create('polygon', 'down', 60, 10), create('polygon', 'move', 80, 10)])],
   ['create-square-height-drag', drive(S(), [create('square', 'down', 10, 10), create('square', 'move', 10, 60)])],
-  ['create-callout-other-page', drive(S(), [create('free-text-callout', 'down', 10, 10, { pon: 2 }), create('free-text-callout', 'move', 60, 70, { pon: 2 })])],
+  ['create-callout-other-page', drive(S(), [create('free-text-callout', 'down', 10, 10, { page: pageRef(2) }), create('free-text-callout', 'move', 60, 70, { page: pageRef(2) })])],
   ['create-callout-upright', drive(S({ defaults: { 'free-text-callout': { lineEndings: { end: 'circle' } } } }), [create('free-text-callout', 'down', 10, 10, { upright: true, displayRotation: 90 }), create('free-text-callout', 'down', 60, 70), create('free-text-callout', 'move', 100, 80)])],
-  ['create-on-page2', drive(S(), [create('square', 'down', 10, 10, { pon: 2 }), create('square', 'move', 60, 40, { pon: 2 })])],
+  ['create-on-page2', drive(S(), [create('square', 'down', 10, 10, { page: pageRef(2) }), create('square', 'move', 60, 40, { page: pageRef(2) })])],
   ['markup-preview', drive(S(), [{ t: 'setMarkupPreview', subtype: 'highlight', quadsByPage: { [PON]: [tq(10, 10, 100, 12)], 2: [tq(0, 0, 5, 5)] } }])],
   ['markup-preview-empty-page', drive(S(), [{ t: 'setMarkupPreview', subtype: 'underline', preset: 'u2', quadsByPage: { 2: [tq(0, 0, 5, 5)] } }])],
 ];
@@ -233,7 +234,7 @@ const viewCases: FunctionCase[] = [];
       const page = { byId: byId ?? {}, order: order ?? [] };
       const key = `${vname}|${JSON.stringify(page)}`;
       const group = groups.get(key) ?? { page, calls: [] as unknown[] };
-      group.calls.push({ name, over, pon: PON, view });
+      group.calls.push({ name, over, page: pageRef(PON), view });
       groups.set(key, group);
     }
   }
@@ -261,7 +262,7 @@ viewCases.push(
   c('creationDraftAnchor', 'none', S()),
   c('creationDraftAnchor', 'polygon', STATES.find(([n]) => n === 'create-polygon')![1]),
   c('creationDraftAnchor', 'polyline-one', STATES.find(([n]) => n === 'create-polyline')![1]),
-  c('creationDraftAnchor', 'empty-points', { draft: { g: 'create-poly', subtype: 'polygon', pon: PON, points: [], cur: v(0, 0), closed: true } }),
+  c('creationDraftAnchor', 'empty-points', { draft: { g: 'create-poly', subtype: 'polygon', page: pageRef(PON), points: [], cur: v(0, 0), closed: true } }),
 );
 viewCases.push(
   c(

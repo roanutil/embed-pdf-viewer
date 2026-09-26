@@ -342,6 +342,18 @@
                 "label": "Text color"
               },
               {
+                "key": "bold",
+                "label": "Bold"
+              },
+              {
+                "key": "italic",
+                "label": "Italic"
+              },
+              {
+                "key": "underline",
+                "label": "Underline"
+              },
+              {
                 "key": "textAlign",
                 "label": "Align"
               },
@@ -1689,6 +1701,18 @@
           {
             "key": "fontColor",
             "label": "Text color"
+          },
+          {
+            "key": "bold",
+            "label": "Bold"
+          },
+          {
+            "key": "italic",
+            "label": "Italic"
+          },
+          {
+            "key": "underline",
+            "label": "Underline"
           },
           {
             "key": "textAlign",

@@ -62,6 +62,7 @@ import {
   tqRot,
   v,
   type Fn,
+  pageRef,
 } from './annotation-core-fixtures';
 
 /** Every subtype the kind table names, plus unknown and prototype keys. */
@@ -196,7 +197,7 @@ const groupFns: Record<string, Fn> = {
   },
 };
 const URI = { kind: 'uri', uri: 'https://example.com' };
-const GOTO = { kind: 'goto', destination: { kind: 'xyz', pageObjectNumber: 3, left: 10, top: null } };
+const GOTO = { kind: 'goto', destination: { kind: 'xyz', page: pageRef(3), left: 10, top: null } };
 const linkChild = (id: string, parent: string, target: unknown, over: Partial<Annot> = {}) =>
   annot(id, 'link', gRect(rc(0, 0, 10, 10)), {
     group: parent,
@@ -374,14 +375,14 @@ for (const [mname, mode] of MODES) {
 
 const snapFns: Record<string, Fn> = {
   computeMoveSnap: (s: Partial<Model>, ids: Id[], pon: number, raw: Vec, threshold: number, pageBox?: Rect) =>
-    sn.computeMoveSnap(modelOf(s), ids, pon, raw, threshold, pageBox),
+    sn.computeMoveSnap(modelOf(s), ids, pageRef(pon), raw, threshold, pageBox),
 };
 const SNAP = start([
   sq('a', rc(100, 100, 80, 60)),
   sq('b', rc(300, 100, 50, 50)),
   sq('c', rc(100, 300, 40, 40)),
   sq('rot', rc(400, 400, 60, 30), { geom: gRect(rc(400, 400, 60, 30), false, 45) }),
-  sq('other-page', rc(100, 100, 80, 60), { pon: 2 }),
+  sq('other-page', rc(100, 100, 80, 60), { page: pageRef(2) }),
   sq('hidden', rc(0, 0, 10, 10), { flags: flags({ hidden: true }) }),
   annot('note', 'text', gRect(rc(500, 500, 20, 20))),
   sq('nozoom', rc(250, 250, 20, 20), { flags: flags({ noZoom: true }) }),
@@ -410,7 +411,7 @@ const snapCases: FunctionCase[] = [
 // ── hit testing ──────────────────────────────────────────────────────────────
 
 const hitFns: Record<string, Fn> = {
-  paintOrder: (s: Partial<Model>, pon: number) => ht.paintOrder(modelOf(s), pon),
+  paintOrder: (s: Partial<Model>, pon: number) => ht.paintOrder(modelOf(s), pageRef(pon)),
   isSelectable: (s: Partial<Model>, id: Id) => ht.isSelectable(modelOf(s), id),
   canMove: (s: Partial<Model>, id: Id) => ht.canMove(modelOf(s), id),
   /** Per id: `[isSelectable, canMove]`. */
@@ -418,11 +419,11 @@ const hitFns: Record<string, Fn> = {
     const m = modelOf(s);
     return ids.map((id) => [ht.isSelectable(m, id), ht.canMove(m, id)]);
   },
-  groupUnionBounds: (s: Partial<Model>, pon: number, view?: an.ViewEnv) => ht.groupUnionBounds(modelOf(s), pon, view),
+  groupUnionBounds: (s: Partial<Model>, pon: number, view?: an.ViewEnv) => ht.groupUnionBounds(modelOf(s), pageRef(pon), view),
   hitTest: (s: Partial<Model>, pon: number, p: Vec, gm: ChromeGeom, margin: number, pageBox?: Rect, inert?: Set<Id>, view?: an.ViewEnv) =>
-    ht.hitTest(modelOf(s), pon, p, gm, margin, pageBox, inert, view),
+    ht.hitTest(modelOf(s), pageRef(pon), p, gm, margin, pageBox, inert, view),
   cursorAt: (s: Partial<Model>, pon: number, p: Vec, gm: ChromeGeom, margin: number, pageBox?: Rect, inert?: Set<Id>, view?: an.ViewEnv) =>
-    ht.cursorAt(modelOf(s), pon, p, gm, margin, pageBox, inert, view),
+    ht.cursorAt(modelOf(s), pageRef(pon), p, gm, margin, pageBox, inert, view),
   /** One page, many calls: each call sets the selection and passes every
    *  hitTest argument; the answer is `[hitTest, cursorAt]`. */
   hitCalls: (
@@ -431,14 +432,14 @@ const hitFns: Record<string, Fn> = {
   ) =>
     calls.map(({ selected, pon, p, gm, margin, pageBox, inert, view }) => {
       const m = { ...modelOf(s), selected };
-      return [ht.hitTest(m, pon, p, gm, margin, pageBox, inert, view), ht.cursorAt(m, pon, p, gm, margin, pageBox, inert, view)];
+      return [ht.hitTest(m, pageRef(pon), p, gm, margin, pageBox, inert, view), ht.cursorAt(m, pageRef(pon), p, gm, margin, pageBox, inert, view)];
     }),
   /** One page, many selections and points: per selection, `[hitTest,
    *  cursorAt]` per point. */
   hitProbe: (s: Partial<Model>, pon: number, selections: Id[][], points: Vec[], gm: ChromeGeom, margin: number) =>
     selections.map((selected) => {
       const m = { ...modelOf(s), selected };
-      return points.map((p) => [ht.hitTest(m, pon, p, gm, margin), ht.cursorAt(m, pon, p, gm, margin)]);
+      return points.map((p) => [ht.hitTest(m, pageRef(pon), p, gm, margin), ht.cursorAt(m, pageRef(pon), p, gm, margin)]);
     }),
 };
 const CG: ChromeGeom = { handleTol: 6, knobTol: 6, knobOffset: 24 };
@@ -467,7 +468,7 @@ const HIT_ANNOTS: Annot[] = [
   annot('review-state', 'text', gRect(rc(120, 120, 20, 20)), { data: { subtype: 'text', state: 'accepted' } as never }),
   annot('reply2', 'text', gRect(rc(200, 200, 20, 20)), { irt: 'sq' }),
   annot('child-link', 'link', gRect(rc(100, 100, 80, 60)), { group: 'sq', irt: 'sq' }),
-  sq('other-page', rc(100, 100, 80, 60), { pon: 2 }),
+  sq('other-page', rc(100, 100, 80, 60), { page: pageRef(2) }),
   annot('unknown', 'mystery', gRect(rc(560, 20, 20, 20))),
   sq('nozoom', rc(560, 700, 30, 30), { flags: flags({ noZoom: true, noRotate: true }) }),
 ];
