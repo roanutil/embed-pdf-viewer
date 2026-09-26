@@ -136,6 +136,19 @@ Four calls have fallbacks: `open` hands out the document whose key is the input'
 with `FakeEngineUnmatched`, and the generator refuses to write that trace unless the case sets
 `allowUnmatched`: it is almost always a case that forgot a response.
 
+An `open` that no entry answers and whose input `id` keys no document falls back to
+`defaultDocument`, when the engine spec names one: `{"defaultDocument": "workshop", "documents":
+{"workshop": {...}}}`. It is for a plugin that opens scratch documents under ids it mints (the
+stamp asset engine), where the case cannot know the id in advance. Without it that open rejects
+with `FakeEngineUnmatched`.
+
+An error the engine rejects with, from an entry's `error` or from a `settle` step that settles an
+engine call's `defer`, is the class a real engine throws. One named `PermissionDenied` is built as
+`engine-core`'s `PermissionDenied` (`makeEngineError`; `engine_error` on the Rust side, which sets
+`ErrorClass::PermissionDenied`), because the kernel's `toPluginError` maps refusals by class and
+not by name. Every other error, and every error a `settle` step hands to a scripted callback or a
+vector hands in as an argument, stays a plain `Error` with the name and members it spells.
+
 Synchronous reads come from `security` and are not logged, because how often a selector runs is not
 behaviour. `allows` takes a list or `"*"`. `allowsAnnotationCreate` and `allowsAnnotationMutation`
 default to `allows('doc.annotate.create')` and `allows('doc.annotate.modify')`.
@@ -167,6 +180,16 @@ zero writes, and the Rust kernel counts per kernel. The first reading also pushe
 1,000, so a latest-lane run id (`<lane>#<n>`, counted per lane from one) is never mistaken for an
 instance id. Slice lease ids of workspace plugins (`<plugin>#<n>`) are counted per store and are not
 rewritten either.
+
+## Module state
+
+Two generator-side rules keep module-level state from leaking between suites and cases. Neither
+has a Rust counterpart, because the Rust side builds a fresh kernel and fresh plugin state for
+every case. `src/staleness.ts` imports every suite module before it emits any, as `generate.ts`
+does, because a scenario suite may name a factory another suite's module registers. And a stamp
+case loads its own copy of the stamp source tree: `src/loader/instance-hook.mjs` is a resolve hook
+that carries a `?stamp-instance=N` query from the importing module down to every module under
+`packages/plugin/stamp/src`, so the asset engine's module-level id counter starts over per case.
 
 ## Time and ordering
 

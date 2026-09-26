@@ -82,7 +82,7 @@ const cases: ScenarioCase[] = [
   {
     name: 'rotate-by',
     covers:
-      'rotateBy turns a relative turn into the absolute wire from the registry rotation, wrapping into [0, 360); an unknown pon counts as 0; any number is carried through the arithmetic.',
+      'rotateBy turns a relative turn into the absolute wire from the registry rotation, wrapping into [0, 360); an unknown page rejects not-found; any number is carried through the arithmetic.',
     plugins,
     snapshot: 'none',
     engine: { documents: { a: doc({ responses: answering }) } },
@@ -178,7 +178,7 @@ const cases: ScenarioCase[] = [
   {
     name: 'add-blank',
     covers:
-      'addBlank: append by default sized like the last page; PON placements land after/before the anchor sized like it; an index placement is forwarded verbatim and sized like its predecessor, clamped into the registry; explicit size and count win; a missing anchor throws.',
+      'insertBlank: append by default sized like the last page; ref placements land after/before the anchor sized like it; an index placement is forwarded verbatim and sized like its predecessor, clamped into the registry; explicit size and count win; a missing anchor rejects not-found.',
     plugins,
     snapshot: 'none',
     engine: { documents: { a: doc({ responses: answering }) } },
@@ -221,7 +221,7 @@ const cases: ScenarioCase[] = [
   },
   {
     name: 'insert',
-    covers: 'insert forwards the bytes and the resolved placement index; a missing anchor throws before any engine call.',
+    covers: 'insertFromBytes forwards the bytes and the resolved placement index; a missing anchor rejects not-found before any engine call.',
     plugins,
     snapshot: 'none',
     engine: { documents: { a: doc({ responses: answering }) } },
@@ -239,7 +239,7 @@ const cases: ScenarioCase[] = [
   {
     name: 'a-captured-capability-outlives-its-document',
     covers:
-      'A capability captured before its document closed keeps its handle and the last registry it saw: the verbs still reach the engine (the kernel no longer resolves the capability).',
+      'A capability captured before its document closed keeps its guarded handle and the last registry it saw: canEdit still answers, and each verb still reaches the engine, but its promise rejects instance-closed (the kernel no longer resolves the capability).',
     plugins,
     snapshot: 'none',
     engine: { documents: { a: doc({ responses: answering }) } },
@@ -271,6 +271,109 @@ const cases: ScenarioCase[] = [
       edit('insertBlank', [{ placement: { index: 0.5 } }]),
       edit('insertBlank', [{ placement: { after: pr(10) } }]),
       edit('insertFromBytes', [{ $bytes: 'AQID' }, { placement: { index: 0 } }]),
+    ],
+  },
+  {
+    name: 'rotate-by-groups-and-empty',
+    covers:
+      'rotateBy groups pages by their resulting rotation and makes one engine call per group, in first-seen order, resolving with the last answer; no pages rejects invalid-input without an engine call.',
+    plugins,
+    snapshot: 'none',
+    engine: {
+      documents: {
+        a: doc({
+          pages: [...three, page(40, 3, 0, 700, 800)],
+          responses: [
+            { path: 'pages.rotate', args: [[pr(10), pr(40)], 90], value: { rotated: 'first' } },
+            { path: 'pages.rotate', args: [[pr(20)], 180], value: { rotated: 'second' } },
+            { path: 'pages.rotate', args: [[pr(30)], 0], value: { rotated: 'third' } },
+          ],
+        }),
+      },
+    },
+    steps: [start, open('a'), edit('rotateBy', [[pr(10), pr(20), pr(30), pr(40)], 90]), edit('rotateBy', [[], 90])],
+  },
+  {
+    name: 'move-to-the-end',
+    covers: "move with 'end' (or no placement) sends the registry's page count as the destination; ref placements resolve after or before their anchor.",
+    plugins,
+    snapshot: 'none',
+    engine: { documents: { a: doc({ responses: answering }) } },
+    steps: [
+      start,
+      open('a'),
+      edit('move', [[pr(10)], 'end']),
+      edit('move', [[pr(10)]]),
+      edit('move', [[pr(30)], { after: pr(10) }]),
+      edit('move', [[pr(10)], { before: pr(30) }]),
+      edit('move', [[pr(10)], { before: pr(99) }]),
+    ],
+  },
+  {
+    name: 'insert-a-subset-of-another-pdf',
+    covers:
+      'insertFromBytes with pageIndexes opens the bytes beside the document (full scope, an id from the clock), lists its pages, extracts the chosen ones by ref, inserts the extract at the placement and closes the source. A missing index rejects not-found and still closes the source; a refused open rejects with the mapped error.',
+    plugins,
+    snapshot: 'none',
+    engine: {
+      defaultDocument: 'src',
+      documents: {
+        a: doc({ responses: answering }),
+        src: {
+          pages: [page(5, 0, 0, 10, 20), page(6, 1, 0, 30, 40), page(7, 2, 0, 50, 60)],
+          responses: [{ path: 'pages.extract', value: { $bytes: 'BAUG' } }],
+        },
+      },
+      responses: [
+        { path: 'open', args: [{ kind: 'bytes', id: 'page-edit-source-0', bytes: { $bytes: 'ERET' } }, { scope: ['*'] }], times: 1, error: denied('doc.open') },
+      ],
+    },
+    steps: [
+      start,
+      open('a'),
+      edit('insertFromBytes', [{ $bytes: 'AQID' }, { pageIndexes: [2, 0], placement: { after: pr(10) } }]),
+      edit('insertFromBytes', [{ $bytes: 'AQID' }, { pageIndexes: [] }]),
+      edit('insertFromBytes', [{ $bytes: 'AQID' }, { pageIndexes: [1, 3] }]),
+      edit('insertFromBytes', [{ $bytes: 'ERET' }, { pageIndexes: [0] }]),
+    ],
+  },
+  {
+    name: 'insert-from-another-document',
+    covers:
+      "insertFromDocument extracts the pages from the other open document's handle and inserts the bytes at the placement ('end' by default); a document that is not open rejects not-found; a refused extract rejects with the mapped error.",
+    plugins,
+    snapshot: 'none',
+    engine: {
+      documents: {
+        a: doc({ responses: answering }),
+        b: doc({ responses: [{ path: 'pages.extract', args: [[pr(20)]], value: { $bytes: 'BwgJ' } }, { path: 'pages.extract', error: denied('doc.pages.extract') }] }),
+      },
+    },
+    steps: [
+      start,
+      open('a'),
+      open('b'),
+      edit('insertFromDocument', ['b', [pr(20)]]),
+      edit('insertFromDocument', ['b', [pr(20)], { placement: { index: 0 } }]),
+      edit('insertFromDocument', ['zzz', [pr(20)]]),
+      edit('insertFromDocument', ['b', [pr(30)]]),
+    ],
+  },
+  {
+    name: 'duplicate',
+    covers:
+      'duplicate extracts the pages and inserts the copy right after the last of them by default, or at the placement given; no pages rejects invalid-input before any engine call.',
+    plugins,
+    snapshot: 'none',
+    engine: { documents: { a: doc({ responses: [...answering, { path: 'pages.extract', value: { $bytes: 'CgsM' } }] }) } },
+    steps: [
+      start,
+      open('a'),
+      edit('duplicate', [[pr(10), pr(20)]]),
+      edit('duplicate', [[pr(30)], { placement: 'end' }]),
+      edit('duplicate', [[pr(99)]]),
+      edit('duplicate', [[]]),
+      edit('extract', [[pr(10)]]),
     ],
   },
   {

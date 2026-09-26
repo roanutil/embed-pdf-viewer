@@ -8695,6 +8695,5112 @@
           }
         }
       ]
+    },
+    {
+      "name": "props-close-all-and-snapshots",
+      "covers": "updateSurfaceProps replaces props without reopening (and ignores an unknown id); closeAll closes every surface and keeps them; getSnapshot is the state; applySnapshot replaces surfaces and menus wholesale, dropping ones it does not name.",
+      "plugins": [
+        {
+          "factory": "shell"
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "open",
+          "args": [
+            "left",
+            {
+              "exclusive": "side",
+              "props": {
+                "tab": 1
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "open",
+          "args": [
+            "modal"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "openMenu",
+          "args": [
+            "file"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "updateSurfaceProps",
+          "args": [
+            "left",
+            {
+              "tab": 2
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "getSurface",
+          "args": [
+            "left"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "updateSurfaceProps",
+          "args": [
+            "nope",
+            {
+              "tab": 2
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "getSurface",
+          "args": [
+            "nope"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "getSnapshot",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "closeAll",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "closeAll",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "listOpenSurfaces",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "getSnapshot",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "applySnapshot",
+          "args": [
+            {
+              "surfaces": {
+                "4": {
+                  "open": true,
+                  "props": {
+                    "k": "v"
+                  }
+                },
+                "modal": {
+                  "open": true
+                }
+              },
+              "openMenus": [
+                "view",
+                "edit"
+              ]
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "isOpen",
+          "args": [
+            "modal"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "getSurface",
+          "args": [
+            "modal"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "listOpenSurfaces",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "listOpenMenus",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "isMenuOpen",
+          "args": [
+            "file"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "getSurface",
+          "args": [
+            "left"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "getSnapshot",
+          "args": []
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {},
+                "openMenus": []
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "shell::a",
+              "action": {
+                "type": "SHELL/OPEN_SURFACE",
+                "id": "left",
+                "exclusive": "side",
+                "props": {
+                  "tab": 1
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {
+                  "left": {
+                    "open": true,
+                    "exclusive": "side",
+                    "props": {
+                      "tab": 1
+                    }
+                  }
+                },
+                "openMenus": []
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "shell::a",
+              "action": {
+                "type": "SHELL/OPEN_SURFACE",
+                "id": "modal"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {
+                  "left": {
+                    "open": true,
+                    "exclusive": "side",
+                    "props": {
+                      "tab": 1
+                    }
+                  },
+                  "modal": {
+                    "open": true
+                  }
+                },
+                "openMenus": []
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "shell::a",
+              "action": {
+                "type": "SHELL/OPEN_MENU",
+                "id": "file"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {
+                  "left": {
+                    "open": true,
+                    "exclusive": "side",
+                    "props": {
+                      "tab": 1
+                    }
+                  },
+                  "modal": {
+                    "open": true
+                  }
+                },
+                "openMenus": [
+                  "file"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "shell::a",
+              "action": {
+                "type": "SHELL/SET_SURFACE_PROPS",
+                "id": "left",
+                "props": {
+                  "tab": 2
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {
+                  "left": {
+                    "open": true,
+                    "exclusive": "side",
+                    "props": {
+                      "tab": 2
+                    }
+                  },
+                  "modal": {
+                    "open": true
+                  }
+                },
+                "openMenus": [
+                  "file"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "id": "left",
+              "open": true,
+              "exclusive": "side",
+              "props": {
+                "tab": 2
+              }
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {
+                  "left": {
+                    "open": true,
+                    "exclusive": "side",
+                    "props": {
+                      "tab": 2
+                    }
+                  },
+                  "modal": {
+                    "open": true
+                  }
+                },
+                "openMenus": [
+                  "file"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "shell::a",
+              "action": {
+                "type": "SHELL/SET_SURFACE_PROPS",
+                "id": "nope",
+                "props": {
+                  "tab": 2
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {
+                  "left": {
+                    "open": true,
+                    "exclusive": "side",
+                    "props": {
+                      "tab": 2
+                    }
+                  },
+                  "modal": {
+                    "open": true
+                  }
+                },
+                "openMenus": [
+                  "file"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": null
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {
+                  "left": {
+                    "open": true,
+                    "exclusive": "side",
+                    "props": {
+                      "tab": 2
+                    }
+                  },
+                  "modal": {
+                    "open": true
+                  }
+                },
+                "openMenus": [
+                  "file"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "surfaces": {
+                "left": {
+                  "open": true,
+                  "exclusive": "side",
+                  "props": {
+                    "tab": 2
+                  }
+                },
+                "modal": {
+                  "open": true
+                }
+              },
+              "openMenus": [
+                "file"
+              ]
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {
+                  "left": {
+                    "open": true,
+                    "exclusive": "side",
+                    "props": {
+                      "tab": 2
+                    }
+                  },
+                  "modal": {
+                    "open": true
+                  }
+                },
+                "openMenus": [
+                  "file"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "shell::a",
+              "action": {
+                "type": "SHELL/CLOSE_ALL_SURFACES"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {
+                  "left": {
+                    "open": false,
+                    "exclusive": "side",
+                    "props": {
+                      "tab": 2
+                    }
+                  },
+                  "modal": {
+                    "open": false
+                  }
+                },
+                "openMenus": [
+                  "file"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "shell::a",
+              "action": {
+                "type": "SHELL/CLOSE_ALL_SURFACES"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {
+                  "left": {
+                    "open": false,
+                    "exclusive": "side",
+                    "props": {
+                      "tab": 2
+                    }
+                  },
+                  "modal": {
+                    "open": false
+                  }
+                },
+                "openMenus": [
+                  "file"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": []
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {
+                  "left": {
+                    "open": false,
+                    "exclusive": "side",
+                    "props": {
+                      "tab": 2
+                    }
+                  },
+                  "modal": {
+                    "open": false
+                  }
+                },
+                "openMenus": [
+                  "file"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "surfaces": {
+                "left": {
+                  "open": false,
+                  "exclusive": "side",
+                  "props": {
+                    "tab": 2
+                  }
+                },
+                "modal": {
+                  "open": false
+                }
+              },
+              "openMenus": [
+                "file"
+              ]
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {
+                  "left": {
+                    "open": false,
+                    "exclusive": "side",
+                    "props": {
+                      "tab": 2
+                    }
+                  },
+                  "modal": {
+                    "open": false
+                  }
+                },
+                "openMenus": [
+                  "file"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "shell::a",
+              "action": {
+                "type": "SHELL/APPLY_SNAPSHOT",
+                "snapshot": {
+                  "surfaces": {
+                    "4": {
+                      "open": true,
+                      "props": {
+                        "k": "v"
+                      }
+                    },
+                    "modal": {
+                      "open": true
+                    }
+                  },
+                  "openMenus": [
+                    "view",
+                    "edit"
+                  ]
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {
+                  "4": {
+                    "open": true,
+                    "props": {
+                      "k": "v"
+                    }
+                  },
+                  "modal": {
+                    "open": true
+                  }
+                },
+                "openMenus": [
+                  "view",
+                  "edit"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": true
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {
+                  "4": {
+                    "open": true,
+                    "props": {
+                      "k": "v"
+                    }
+                  },
+                  "modal": {
+                    "open": true
+                  }
+                },
+                "openMenus": [
+                  "view",
+                  "edit"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "id": "modal",
+              "open": true
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {
+                  "4": {
+                    "open": true,
+                    "props": {
+                      "k": "v"
+                    }
+                  },
+                  "modal": {
+                    "open": true
+                  }
+                },
+                "openMenus": [
+                  "view",
+                  "edit"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": [
+              {
+                "id": "4",
+                "open": true,
+                "props": {
+                  "k": "v"
+                }
+              },
+              {
+                "id": "modal",
+                "open": true
+              }
+            ]
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {
+                  "4": {
+                    "open": true,
+                    "props": {
+                      "k": "v"
+                    }
+                  },
+                  "modal": {
+                    "open": true
+                  }
+                },
+                "openMenus": [
+                  "view",
+                  "edit"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": [
+              "view",
+              "edit"
+            ]
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {
+                  "4": {
+                    "open": true,
+                    "props": {
+                      "k": "v"
+                    }
+                  },
+                  "modal": {
+                    "open": true
+                  }
+                },
+                "openMenus": [
+                  "view",
+                  "edit"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": false
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {
+                  "4": {
+                    "open": true,
+                    "props": {
+                      "k": "v"
+                    }
+                  },
+                  "modal": {
+                    "open": true
+                  }
+                },
+                "openMenus": [
+                  "view",
+                  "edit"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": null
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {
+                  "4": {
+                    "open": true,
+                    "props": {
+                      "k": "v"
+                    }
+                  },
+                  "modal": {
+                    "open": true
+                  }
+                },
+                "openMenus": [
+                  "view",
+                  "edit"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "surfaces": {
+                "4": {
+                  "open": true,
+                  "props": {
+                    "k": "v"
+                  }
+                },
+                "modal": {
+                  "open": true
+                }
+              },
+              "openMenus": [
+                "view",
+                "edit"
+              ]
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {
+                  "4": {
+                    "open": true,
+                    "props": {
+                      "k": "v"
+                    }
+                  },
+                  "modal": {
+                    "open": true
+                  }
+                },
+                "openMenus": [
+                  "view",
+                  "edit"
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "events",
+      "covers": "Every write is diffed: onSurfaceOpened and onSurfaceClosed fire per surface whose open flag changed, with its props after the change (an exclusive sibling closing included, and a surface a snapshot drops closing with no props); onMenuOpened and onMenuClosed fire per menu, closes first. A write that changes nothing fires nothing, and after unsubscribing nothing fires.",
+      "plugins": [
+        {
+          "factory": "shell"
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "onSurfaceOpened",
+          "args": [
+            {
+              "$fn": "opened",
+              "returns": null
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "onSurfaceClosed",
+          "args": [
+            {
+              "$fn": "closed",
+              "returns": null
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "onMenuOpened",
+          "args": [
+            {
+              "$fn": "menu-opened",
+              "returns": null
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "onMenuClosed",
+          "args": [
+            {
+              "$fn": "menu-closed",
+              "returns": null
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "open",
+          "args": [
+            "left",
+            {
+              "exclusive": "side",
+              "props": {
+                "tab": 1
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "open",
+          "args": [
+            "right",
+            {
+              "exclusive": "side"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "open",
+          "args": [
+            "right",
+            {
+              "exclusive": "side",
+              "props": {
+                "again": true
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "updateSurfaceProps",
+          "args": [
+            "right",
+            {
+              "tab": 9
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "toggle",
+          "args": [
+            "right"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "close",
+          "args": [
+            "right"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "open",
+          "args": [
+            "modal"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "closeAll",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "openMenu",
+          "args": [
+            "file"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "toggleMenu",
+          "args": [
+            "edit"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "openMenu",
+          "args": [
+            "file"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "applySnapshot",
+          "args": [
+            {
+              "surfaces": {
+                "gone": {
+                  "open": true
+                }
+              },
+              "openMenus": [
+                "edit",
+                "view"
+              ]
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "applySnapshot",
+          "args": [
+            {
+              "surfaces": {},
+              "openMenus": [
+                "view"
+              ]
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "closeAllMenus",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "ref": 0
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "ref": 1
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "ref": 2
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "ref": 3
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "open",
+          "args": [
+            "left"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "shell",
+            "doc": "a"
+          },
+          "method": "openMenu",
+          "args": [
+            "file"
+          ]
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {},
+                "openMenus": []
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 0
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {},
+                "openMenus": []
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 1
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {},
+                "openMenus": []
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 2
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {},
+                "openMenus": []
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 3
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {},
+                "openMenus": []
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "shell::a",
+              "action": {
+                "type": "SHELL/OPEN_SURFACE",
+                "id": "left",
+                "exclusive": "side",
+                "props": {
+                  "tab": 1
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "opened",
+              "args": [
+                {
+                  "id": "left",
+                  "props": {
+                    "tab": 1
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {
+                  "left": {
+                    "open": true,
+                    "exclusive": "side",
+                    "props": {
+                      "tab": 1
+                    }
+                  }
+                },
+                "openMenus": []
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "shell::a",
+              "action": {
+                "type": "SHELL/OPEN_SURFACE",
+                "id": "right",
+                "exclusive": "side"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "closed",
+              "args": [
+                {
+                  "id": "left",
+                  "props": {
+                    "tab": 1
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "opened",
+              "args": [
+                {
+                  "id": "right"
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {
+                  "left": {
+                    "open": false,
+                    "exclusive": "side",
+                    "props": {
+                      "tab": 1
+                    }
+                  },
+                  "right": {
+                    "open": true,
+                    "exclusive": "side"
+                  }
+                },
+                "openMenus": []
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "shell::a",
+              "action": {
+                "type": "SHELL/OPEN_SURFACE",
+                "id": "right",
+                "exclusive": "side",
+                "props": {
+                  "again": true
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {
+                  "left": {
+                    "open": false,
+                    "exclusive": "side",
+                    "props": {
+                      "tab": 1
+                    }
+                  },
+                  "right": {
+                    "open": true,
+                    "exclusive": "side",
+                    "props": {
+                      "again": true
+                    }
+                  }
+                },
+                "openMenus": []
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "shell::a",
+              "action": {
+                "type": "SHELL/SET_SURFACE_PROPS",
+                "id": "right",
+                "props": {
+                  "tab": 9
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {
+                  "left": {
+                    "open": false,
+                    "exclusive": "side",
+                    "props": {
+                      "tab": 1
+                    }
+                  },
+                  "right": {
+                    "open": true,
+                    "exclusive": "side",
+                    "props": {
+                      "tab": 9
+                    }
+                  }
+                },
+                "openMenus": []
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "shell::a",
+              "action": {
+                "type": "SHELL/TOGGLE_SURFACE",
+                "id": "right"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "closed",
+              "args": [
+                {
+                  "id": "right",
+                  "props": {
+                    "tab": 9
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {
+                  "left": {
+                    "open": false,
+                    "exclusive": "side",
+                    "props": {
+                      "tab": 1
+                    }
+                  },
+                  "right": {
+                    "open": false,
+                    "exclusive": "side",
+                    "props": {
+                      "tab": 9
+                    }
+                  }
+                },
+                "openMenus": []
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "shell::a",
+              "action": {
+                "type": "SHELL/CLOSE_SURFACE",
+                "id": "right"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {
+                  "left": {
+                    "open": false,
+                    "exclusive": "side",
+                    "props": {
+                      "tab": 1
+                    }
+                  },
+                  "right": {
+                    "open": false,
+                    "exclusive": "side",
+                    "props": {
+                      "tab": 9
+                    }
+                  }
+                },
+                "openMenus": []
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "shell::a",
+              "action": {
+                "type": "SHELL/OPEN_SURFACE",
+                "id": "modal"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "opened",
+              "args": [
+                {
+                  "id": "modal"
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {
+                  "left": {
+                    "open": false,
+                    "exclusive": "side",
+                    "props": {
+                      "tab": 1
+                    }
+                  },
+                  "right": {
+                    "open": false,
+                    "exclusive": "side",
+                    "props": {
+                      "tab": 9
+                    }
+                  },
+                  "modal": {
+                    "open": true
+                  }
+                },
+                "openMenus": []
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "shell::a",
+              "action": {
+                "type": "SHELL/CLOSE_ALL_SURFACES"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "closed",
+              "args": [
+                {
+                  "id": "modal"
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {
+                  "left": {
+                    "open": false,
+                    "exclusive": "side",
+                    "props": {
+                      "tab": 1
+                    }
+                  },
+                  "right": {
+                    "open": false,
+                    "exclusive": "side",
+                    "props": {
+                      "tab": 9
+                    }
+                  },
+                  "modal": {
+                    "open": false
+                  }
+                },
+                "openMenus": []
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "shell::a",
+              "action": {
+                "type": "SHELL/OPEN_MENU",
+                "id": "file"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "menu-opened",
+              "args": [
+                {
+                  "id": "file"
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {
+                  "left": {
+                    "open": false,
+                    "exclusive": "side",
+                    "props": {
+                      "tab": 1
+                    }
+                  },
+                  "right": {
+                    "open": false,
+                    "exclusive": "side",
+                    "props": {
+                      "tab": 9
+                    }
+                  },
+                  "modal": {
+                    "open": false
+                  }
+                },
+                "openMenus": [
+                  "file"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "shell::a",
+              "action": {
+                "type": "SHELL/OPEN_MENU",
+                "id": "edit"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "menu-opened",
+              "args": [
+                {
+                  "id": "edit"
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {
+                  "left": {
+                    "open": false,
+                    "exclusive": "side",
+                    "props": {
+                      "tab": 1
+                    }
+                  },
+                  "right": {
+                    "open": false,
+                    "exclusive": "side",
+                    "props": {
+                      "tab": 9
+                    }
+                  },
+                  "modal": {
+                    "open": false
+                  }
+                },
+                "openMenus": [
+                  "file",
+                  "edit"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "shell::a",
+              "action": {
+                "type": "SHELL/OPEN_MENU",
+                "id": "file"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {
+                  "left": {
+                    "open": false,
+                    "exclusive": "side",
+                    "props": {
+                      "tab": 1
+                    }
+                  },
+                  "right": {
+                    "open": false,
+                    "exclusive": "side",
+                    "props": {
+                      "tab": 9
+                    }
+                  },
+                  "modal": {
+                    "open": false
+                  }
+                },
+                "openMenus": [
+                  "file",
+                  "edit"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "shell::a",
+              "action": {
+                "type": "SHELL/APPLY_SNAPSHOT",
+                "snapshot": {
+                  "surfaces": {
+                    "gone": {
+                      "open": true
+                    }
+                  },
+                  "openMenus": [
+                    "edit",
+                    "view"
+                  ]
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "opened",
+              "args": [
+                {
+                  "id": "gone"
+                }
+              ]
+            },
+            {
+              "fn": "menu-closed",
+              "args": [
+                {
+                  "id": "file"
+                }
+              ]
+            },
+            {
+              "fn": "menu-opened",
+              "args": [
+                {
+                  "id": "view"
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {
+                  "gone": {
+                    "open": true
+                  }
+                },
+                "openMenus": [
+                  "edit",
+                  "view"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "shell::a",
+              "action": {
+                "type": "SHELL/APPLY_SNAPSHOT",
+                "snapshot": {
+                  "surfaces": {},
+                  "openMenus": [
+                    "view"
+                  ]
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "closed",
+              "args": [
+                {
+                  "id": "gone"
+                }
+              ]
+            },
+            {
+              "fn": "menu-closed",
+              "args": [
+                {
+                  "id": "edit"
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {},
+                "openMenus": [
+                  "view"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "shell::a",
+              "action": {
+                "type": "SHELL/CLOSE_ALL_MENUS"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "menu-closed",
+              "args": [
+                {
+                  "id": "view"
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {},
+                "openMenus": []
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {},
+                "openMenus": []
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {},
+                "openMenus": []
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {},
+                "openMenus": []
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {},
+                "openMenus": []
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "shell::a",
+              "action": {
+                "type": "SHELL/OPEN_SURFACE",
+                "id": "left"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {
+                  "left": {
+                    "open": true
+                  }
+                },
+                "openMenus": []
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "shell::a",
+              "action": {
+                "type": "SHELL/OPEN_MENU",
+                "id": "file"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {
+                  "left": {
+                    "open": true
+                  }
+                },
+                "openMenus": [
+                  "file"
+                ]
+              }
+            }
+          }
+        }
+      ]
     }
   ]
 }

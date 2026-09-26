@@ -5188,6 +5188,4690 @@
           }
         }
       ]
+    },
+    {
+      "name": "update-without-the-capability-is-refused-locally",
+      "covers": "Without doc.metadata.modify, update() rejects with a permission-denied PluginError before it reaches the engine, and the snapshot and status stay as they were.",
+      "plugins": [
+        {
+          "factory": "metadata"
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ],
+            "security": {
+              "allows": [
+                "doc.render"
+              ]
+            },
+            "responses": [
+              {
+                "path": "metadata.read",
+                "value": {
+                  "title": "Kept",
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {}
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "metadata",
+            "doc": "a"
+          },
+          "method": "update",
+          "args": [
+            {
+              "title": "x"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "metadata",
+            "doc": "a"
+          },
+          "method": "getSnapshot",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "metadata",
+            "doc": "a"
+          },
+          "method": "getStatus",
+          "args": []
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "metadata::a",
+              "action": {
+                "type": "loading"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            },
+            {
+              "slice": "metadata::a",
+              "action": {
+                "type": "set",
+                "metadata": {
+                  "title": "Kept",
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {}
+                }
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "metadata.read",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "metadata::a": {
+                "status": "ready",
+                "value": {
+                  "title": "Kept",
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {}
+                },
+                "revision": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "metadata.update requires doc.metadata.modify",
+                  "code": "permission-denied",
+                  "capability": "metadata",
+                  "details": {
+                    "required": "doc.metadata.modify"
+                  }
+                }
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "metadata::a": {
+                "status": "ready",
+                "value": {
+                  "title": "Kept",
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {}
+                },
+                "revision": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "title": "Kept",
+              "author": null,
+              "subject": null,
+              "keywords": null,
+              "producer": null,
+              "creator": null,
+              "created": null,
+              "modified": null,
+              "trapped": "unknown",
+              "custom": {}
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "metadata::a": {
+                "status": "ready",
+                "value": {
+                  "title": "Kept",
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {}
+                },
+                "revision": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": "ready"
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "metadata::a": {
+                "status": "ready",
+                "value": {
+                  "title": "Kept",
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {}
+                },
+                "revision": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "a-forbidden-seed-read",
+      "covers": "A seed read the engine refuses with PermissionDenied leaves the snapshot null and the status forbidden; a later plain failure makes it error, and a good refresh makes it ready.",
+      "plugins": [
+        {
+          "factory": "metadata"
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ],
+            "responses": [
+              {
+                "path": "metadata.read",
+                "times": 1,
+                "error": {
+                  "name": "PermissionDenied",
+                  "message": "permission denied (local): doc.metadata.read",
+                  "required": "doc.metadata.read",
+                  "context": "local"
+                }
+              },
+              {
+                "path": "metadata.read",
+                "times": 1,
+                "error": {
+                  "name": "EngineError",
+                  "message": "gone",
+                  "code": "Unknown"
+                }
+              },
+              {
+                "path": "metadata.read",
+                "value": {
+                  "title": "Back",
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {}
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "metadata",
+            "doc": "a"
+          },
+          "method": "getStatus",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "metadata",
+            "doc": "a"
+          },
+          "method": "getSnapshot",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "metadata",
+            "doc": "a"
+          },
+          "method": "refresh",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "metadata",
+            "doc": "a"
+          },
+          "method": "getStatus",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "metadata",
+            "doc": "a"
+          },
+          "method": "refresh",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "metadata",
+            "doc": "a"
+          },
+          "method": "getStatus",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "metadata",
+            "doc": "a"
+          },
+          "method": "getSnapshot",
+          "args": []
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "metadata::a",
+              "action": {
+                "type": "loading"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            },
+            {
+              "slice": "metadata::a",
+              "action": {
+                "type": "error",
+                "forbidden": true
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "metadata.read",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "metadata::a": {
+                "status": "forbidden",
+                "value": null,
+                "revision": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": "forbidden"
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "metadata::a": {
+                "status": "forbidden",
+                "value": null,
+                "revision": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": null
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "metadata::a": {
+                "status": "forbidden",
+                "value": null,
+                "revision": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "gone",
+                  "code": "operation-failed",
+                  "capability": "metadata",
+                  "cause": {
+                    "$error": {
+                      "name": "EngineError",
+                      "message": "gone",
+                      "code": "Unknown"
+                    }
+                  }
+                }
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "metadata::a",
+              "action": {
+                "type": "loading"
+              }
+            },
+            {
+              "slice": "metadata::a",
+              "action": {
+                "type": "error",
+                "forbidden": false
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "metadata.read",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "metadata::a": {
+                "status": "error",
+                "value": null,
+                "revision": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": "error"
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "metadata::a": {
+                "status": "error",
+                "value": null,
+                "revision": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 3,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "metadata::a",
+              "action": {
+                "type": "loading"
+              }
+            },
+            {
+              "slice": "metadata::a",
+              "action": {
+                "type": "set",
+                "metadata": {
+                  "title": "Back",
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {}
+                }
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "metadata.read",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 3
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "metadata::a": {
+                "status": "ready",
+                "value": {
+                  "title": "Back",
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {}
+                },
+                "revision": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": "ready"
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "metadata::a": {
+                "status": "ready",
+                "value": {
+                  "title": "Back",
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {}
+                },
+                "revision": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "title": "Back",
+              "author": null,
+              "subject": null,
+              "keywords": null,
+              "producer": null,
+              "creator": null,
+              "created": null,
+              "modified": null,
+              "trapped": "unknown",
+              "custom": {}
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "metadata::a": {
+                "status": "ready",
+                "value": {
+                  "title": "Back",
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {}
+                },
+                "revision": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "status-while-the-seed-read-is-in-flight",
+      "covers": "The status is loading while the seed read is out, and a refresh made meanwhile shares that read instead of issuing a second one.",
+      "plugins": [
+        {
+          "factory": "metadata"
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ],
+            "responses": [
+              {
+                "path": "metadata.read",
+                "defer": "read"
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "metadata",
+            "doc": "a"
+          },
+          "method": "getStatus",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "metadata",
+            "doc": "a"
+          },
+          "method": "refresh",
+          "args": []
+        },
+        {
+          "op": "settle",
+          "label": "read",
+          "value": {
+            "title": "Once",
+            "author": null,
+            "subject": null,
+            "keywords": null,
+            "producer": null,
+            "creator": null,
+            "created": null,
+            "modified": null,
+            "trapped": "unknown",
+            "custom": {}
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "metadata",
+            "doc": "a"
+          },
+          "method": "getStatus",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "metadata",
+            "doc": "a"
+          },
+          "method": "getSnapshot",
+          "args": []
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "metadata::a",
+              "action": {
+                "type": "loading"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "metadata.read",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "metadata::a": {
+                "status": "loading",
+                "value": null,
+                "revision": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": "loading"
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "metadata::a": {
+                "status": "loading",
+                "value": null,
+                "revision": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "metadata::a": {
+                "status": "loading",
+                "value": null,
+                "revision": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "metadata::a",
+              "action": {
+                "type": "set",
+                "metadata": {
+                  "title": "Once",
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {}
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "metadata::a": {
+                "status": "ready",
+                "value": {
+                  "title": "Once",
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {}
+                },
+                "revision": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": "ready"
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "metadata::a": {
+                "status": "ready",
+                "value": {
+                  "title": "Once",
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {}
+                },
+                "revision": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "title": "Once",
+              "author": null,
+              "subject": null,
+              "keywords": null,
+              "producer": null,
+              "creator": null,
+              "created": null,
+              "modified": null,
+              "trapped": "unknown",
+              "custom": {}
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "metadata::a": {
+                "status": "ready",
+                "value": {
+                  "title": "Once",
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {}
+                },
+                "revision": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "an-event-during-the-seed-read-wins",
+      "covers": "A confirmed metadata.updated that lands while the seed read is out is newer than that read, so the read is dropped when it arrives.",
+      "plugins": [
+        {
+          "factory": "metadata"
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ],
+            "responses": [
+              {
+                "path": "metadata.read",
+                "defer": "read"
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "emit",
+          "doc": "a",
+          "event": {
+            "type": "metadata.updated",
+            "metadata": {
+              "title": "Event",
+              "author": null,
+              "subject": null,
+              "keywords": null,
+              "producer": null,
+              "creator": null,
+              "created": null,
+              "modified": null,
+              "trapped": "unknown",
+              "custom": {}
+            },
+            "origin": {
+              "kind": "remote",
+              "sessionId": "s2",
+              "sub": "u-9"
+            }
+          }
+        },
+        {
+          "op": "settle",
+          "label": "read",
+          "value": {
+            "title": "Stale read",
+            "author": null,
+            "subject": null,
+            "keywords": null,
+            "producer": null,
+            "creator": null,
+            "created": null,
+            "modified": null,
+            "trapped": "unknown",
+            "custom": {}
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "metadata",
+            "doc": "a"
+          },
+          "method": "getSnapshot",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "metadata",
+            "doc": "a"
+          },
+          "method": "getStatus",
+          "args": []
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "metadata::a",
+              "action": {
+                "type": "loading"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "metadata.read",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "metadata::a": {
+                "status": "loading",
+                "value": null,
+                "revision": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "metadata::a",
+              "action": {
+                "type": "set",
+                "metadata": {
+                  "title": "Event",
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {}
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "metadata::a": {
+                "status": "ready",
+                "value": {
+                  "title": "Event",
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {}
+                },
+                "revision": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "metadata::a": {
+                "status": "ready",
+                "value": {
+                  "title": "Event",
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {}
+                },
+                "revision": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "title": "Event",
+              "author": null,
+              "subject": null,
+              "keywords": null,
+              "producer": null,
+              "creator": null,
+              "created": null,
+              "modified": null,
+              "trapped": "unknown",
+              "custom": {}
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "metadata::a": {
+                "status": "ready",
+                "value": {
+                  "title": "Event",
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {}
+                },
+                "revision": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": "ready"
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "metadata::a": {
+                "status": "ready",
+                "value": {
+                  "title": "Event",
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {}
+                },
+                "revision": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "closing-during-the-seed-read",
+      "covers": "Closing the document while its seed read is out ends that read as instance-closed, which the controller swallows: nothing is reported.",
+      "plugins": [
+        {
+          "factory": "metadata"
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ],
+            "responses": [
+              {
+                "path": "metadata.read",
+                "defer": "read"
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "close",
+          "args": [
+            "a"
+          ]
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "metadata::a",
+              "action": {
+                "type": "loading"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "metadata.read",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "metadata::a": {
+                "status": "loading",
+                "value": null,
+                "revision": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-removed"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "abort": 2,
+              "reason": {
+                "$error": {
+                  "name": "CancelledError",
+                  "message": "[kernel] cancelled: closed while opening: a"
+                }
+              }
+            },
+            {
+              "doc": "a",
+              "path": "close",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "on-updated-reports-each-confirmed-change",
+      "covers": "onUpdated fires once per confirmed value, after the snapshot changed: the seed read with every key and a system origin, then each event with its previous value, the keys that differ (custom by its JSON, so reordered entries count) and the origin the event carried. After unsubscribing it stays quiet.",
+      "plugins": [
+        {
+          "factory": "metadata"
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ],
+            "responses": [
+              {
+                "path": "metadata.read",
+                "defer": "read"
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "metadata",
+            "doc": "a"
+          },
+          "method": "onUpdated",
+          "args": [
+            {
+              "$fn": "updated",
+              "returns": null
+            }
+          ]
+        },
+        {
+          "op": "settle",
+          "label": "read",
+          "value": {
+            "title": "Seed",
+            "author": null,
+            "subject": null,
+            "keywords": null,
+            "producer": null,
+            "creator": null,
+            "created": null,
+            "modified": null,
+            "trapped": "unknown",
+            "custom": {
+              "A": "1",
+              "B": "2"
+            }
+          }
+        },
+        {
+          "op": "emit",
+          "doc": "a",
+          "event": {
+            "type": "metadata.updated",
+            "metadata": {
+              "title": "Local",
+              "author": null,
+              "subject": null,
+              "keywords": null,
+              "producer": null,
+              "creator": null,
+              "created": null,
+              "modified": null,
+              "trapped": "unknown",
+              "custom": {
+                "A": "1",
+                "B": "2"
+              }
+            },
+            "origin": {
+              "kind": "local",
+              "sessionId": "s1",
+              "sub": null
+            }
+          }
+        },
+        {
+          "op": "emit",
+          "doc": "a",
+          "event": {
+            "type": "metadata.updated",
+            "metadata": {
+              "title": "Local",
+              "author": null,
+              "subject": null,
+              "keywords": null,
+              "producer": null,
+              "creator": null,
+              "created": null,
+              "modified": null,
+              "trapped": "unknown",
+              "custom": {
+                "B": "2",
+                "A": "1"
+              }
+            },
+            "origin": {
+              "kind": "remote",
+              "sessionId": "s2",
+              "sub": "u-9"
+            }
+          }
+        },
+        {
+          "op": "emit",
+          "doc": "a",
+          "event": {
+            "type": "metadata.updated",
+            "metadata": {
+              "title": "Local",
+              "author": null,
+              "subject": null,
+              "keywords": null,
+              "producer": null,
+              "creator": null,
+              "created": null,
+              "modified": null,
+              "trapped": "unknown",
+              "custom": {
+                "B": "2",
+                "A": "1"
+              }
+            },
+            "origin": {
+              "kind": "remote",
+              "sessionId": "s2",
+              "sub": "u-9"
+            }
+          }
+        },
+        {
+          "op": "emit",
+          "doc": "a",
+          "event": {
+            "type": "metadata.updated",
+            "metadata": {
+              "title": "Sparse",
+              "author": null
+            },
+            "origin": {
+              "kind": "local",
+              "sessionId": "s1",
+              "sub": null
+            }
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "ref": 0
+          }
+        },
+        {
+          "op": "emit",
+          "doc": "a",
+          "event": {
+            "type": "metadata.updated",
+            "metadata": {
+              "title": "Unheard",
+              "author": null,
+              "subject": null,
+              "keywords": null,
+              "producer": null,
+              "creator": null,
+              "created": null,
+              "modified": null,
+              "trapped": "unknown",
+              "custom": {}
+            },
+            "origin": {
+              "kind": "local",
+              "sessionId": "s1",
+              "sub": null
+            }
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "metadata",
+            "doc": "a"
+          },
+          "method": "getSnapshot",
+          "args": []
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "metadata::a",
+              "action": {
+                "type": "loading"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "metadata.read",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "metadata::a": {
+                "status": "loading",
+                "value": null,
+                "revision": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 0
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "metadata::a": {
+                "status": "loading",
+                "value": null,
+                "revision": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "metadata::a",
+              "action": {
+                "type": "set",
+                "metadata": {
+                  "title": "Seed",
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {
+                    "A": "1",
+                    "B": "2"
+                  }
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "updated",
+              "args": [
+                {
+                  "metadata": {
+                    "title": "Seed",
+                    "author": null,
+                    "subject": null,
+                    "keywords": null,
+                    "producer": null,
+                    "creator": null,
+                    "created": null,
+                    "modified": null,
+                    "trapped": "unknown",
+                    "custom": {
+                      "A": "1",
+                      "B": "2"
+                    }
+                  },
+                  "previous": null,
+                  "changedKeys": [
+                    "title",
+                    "author",
+                    "subject",
+                    "keywords",
+                    "producer",
+                    "creator",
+                    "created",
+                    "modified",
+                    "trapped",
+                    "custom"
+                  ],
+                  "origin": {
+                    "locality": "local",
+                    "trigger": "system",
+                    "sessionId": null,
+                    "actorId": null
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "metadata::a": {
+                "status": "ready",
+                "value": {
+                  "title": "Seed",
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {
+                    "A": "1",
+                    "B": "2"
+                  }
+                },
+                "revision": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "metadata::a",
+              "action": {
+                "type": "set",
+                "metadata": {
+                  "title": "Local",
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {
+                    "A": "1",
+                    "B": "2"
+                  }
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "updated",
+              "args": [
+                {
+                  "metadata": {
+                    "title": "Local",
+                    "author": null,
+                    "subject": null,
+                    "keywords": null,
+                    "producer": null,
+                    "creator": null,
+                    "created": null,
+                    "modified": null,
+                    "trapped": "unknown",
+                    "custom": {
+                      "A": "1",
+                      "B": "2"
+                    }
+                  },
+                  "previous": {
+                    "title": "Seed",
+                    "author": null,
+                    "subject": null,
+                    "keywords": null,
+                    "producer": null,
+                    "creator": null,
+                    "created": null,
+                    "modified": null,
+                    "trapped": "unknown",
+                    "custom": {
+                      "A": "1",
+                      "B": "2"
+                    }
+                  },
+                  "changedKeys": [
+                    "title"
+                  ],
+                  "origin": {
+                    "locality": "local",
+                    "trigger": "unknown",
+                    "sessionId": "s1",
+                    "actorId": null
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "metadata::a": {
+                "status": "ready",
+                "value": {
+                  "title": "Local",
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {
+                    "A": "1",
+                    "B": "2"
+                  }
+                },
+                "revision": 2
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "metadata::a",
+              "action": {
+                "type": "set",
+                "metadata": {
+                  "title": "Local",
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {
+                    "B": "2",
+                    "A": "1"
+                  }
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "updated",
+              "args": [
+                {
+                  "metadata": {
+                    "title": "Local",
+                    "author": null,
+                    "subject": null,
+                    "keywords": null,
+                    "producer": null,
+                    "creator": null,
+                    "created": null,
+                    "modified": null,
+                    "trapped": "unknown",
+                    "custom": {
+                      "B": "2",
+                      "A": "1"
+                    }
+                  },
+                  "previous": {
+                    "title": "Local",
+                    "author": null,
+                    "subject": null,
+                    "keywords": null,
+                    "producer": null,
+                    "creator": null,
+                    "created": null,
+                    "modified": null,
+                    "trapped": "unknown",
+                    "custom": {
+                      "A": "1",
+                      "B": "2"
+                    }
+                  },
+                  "changedKeys": [
+                    "custom"
+                  ],
+                  "origin": {
+                    "locality": "remote",
+                    "trigger": "unknown",
+                    "sessionId": "s2",
+                    "actorId": "u-9"
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "metadata::a": {
+                "status": "ready",
+                "value": {
+                  "title": "Local",
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {
+                    "B": "2",
+                    "A": "1"
+                  }
+                },
+                "revision": 3
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "metadata::a",
+              "action": {
+                "type": "set",
+                "metadata": {
+                  "title": "Local",
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {
+                    "B": "2",
+                    "A": "1"
+                  }
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "updated",
+              "args": [
+                {
+                  "metadata": {
+                    "title": "Local",
+                    "author": null,
+                    "subject": null,
+                    "keywords": null,
+                    "producer": null,
+                    "creator": null,
+                    "created": null,
+                    "modified": null,
+                    "trapped": "unknown",
+                    "custom": {
+                      "B": "2",
+                      "A": "1"
+                    }
+                  },
+                  "previous": {
+                    "title": "Local",
+                    "author": null,
+                    "subject": null,
+                    "keywords": null,
+                    "producer": null,
+                    "creator": null,
+                    "created": null,
+                    "modified": null,
+                    "trapped": "unknown",
+                    "custom": {
+                      "B": "2",
+                      "A": "1"
+                    }
+                  },
+                  "changedKeys": [],
+                  "origin": {
+                    "locality": "remote",
+                    "trigger": "unknown",
+                    "sessionId": "s2",
+                    "actorId": "u-9"
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "metadata::a": {
+                "status": "ready",
+                "value": {
+                  "title": "Local",
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {
+                    "B": "2",
+                    "A": "1"
+                  }
+                },
+                "revision": 4
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "metadata::a",
+              "action": {
+                "type": "set",
+                "metadata": {
+                  "title": "Sparse",
+                  "author": null
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "updated",
+              "args": [
+                {
+                  "metadata": {
+                    "title": "Sparse",
+                    "author": null
+                  },
+                  "previous": {
+                    "title": "Local",
+                    "author": null,
+                    "subject": null,
+                    "keywords": null,
+                    "producer": null,
+                    "creator": null,
+                    "created": null,
+                    "modified": null,
+                    "trapped": "unknown",
+                    "custom": {
+                      "B": "2",
+                      "A": "1"
+                    }
+                  },
+                  "changedKeys": [
+                    "title"
+                  ],
+                  "origin": {
+                    "locality": "local",
+                    "trigger": "unknown",
+                    "sessionId": "s1",
+                    "actorId": null
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "metadata::a": {
+                "status": "ready",
+                "value": {
+                  "title": "Sparse",
+                  "author": null
+                },
+                "revision": 5
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "metadata::a": {
+                "status": "ready",
+                "value": {
+                  "title": "Sparse",
+                  "author": null
+                },
+                "revision": 5
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "metadata::a",
+              "action": {
+                "type": "set",
+                "metadata": {
+                  "title": "Unheard",
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {}
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "metadata::a": {
+                "status": "ready",
+                "value": {
+                  "title": "Unheard",
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {}
+                },
+                "revision": 6
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "title": "Unheard",
+              "author": null,
+              "subject": null,
+              "keywords": null,
+              "producer": null,
+              "creator": null,
+              "created": null,
+              "modified": null,
+              "trapped": "unknown",
+              "custom": {}
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "metadata::a": {
+                "status": "ready",
+                "value": {
+                  "title": "Unheard",
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {}
+                },
+                "revision": 6
+              }
+            }
+          }
+        }
+      ]
     }
   ]
 }

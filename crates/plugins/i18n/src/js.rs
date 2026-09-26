@@ -105,6 +105,11 @@ impl<V> JsRecord<V> {
         }
     }
 
+    /// `delete record[key]`: drops the own member, if any.
+    pub fn remove(&mut self, key: &str) {
+        self.entries.retain(|(k, _)| k != key);
+    }
+
     /// `Object.entries(record)`, in property order.
     pub fn iter(&self) -> impl Iterator<Item = (&str, &V)> {
         let mut indexed: Vec<(u32, usize)> = Vec::new();

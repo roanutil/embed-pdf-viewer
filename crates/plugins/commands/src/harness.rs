@@ -10,17 +10,20 @@
 //! format; this is its Rust half.
 
 use std::any::Any;
+use std::cell::RefCell;
+use std::collections::HashMap;
 use std::rc::Rc;
 
 use epdf_kernel::{AnyPlugin, AnyToken, Error, is_undefined, undefined};
 use plugin_conformance::{Answer, FunctionTable, Harness, HarnessPlugin, Outcome, scrub};
 use serde_json::{Map, Value, json};
 
-use crate::capability::CommandRegistry;
-use crate::types::{
-    AccentDerivation, CommandCtx, CommandDef, CommandsAction, CommandsConfig, CommandsState,
-    Derivation, IconAccent, Panel, ResolvedCommand, RunFn, Shortcut,
+use crate::contract::{
+    AccentDerivation, CommandCtx, CommandDef, CommandsConfig, Derivation, IconAccent, Panel,
+    RegisterCommandOptions, ResolvedCommand, RunFn, Shortcut,
 };
+use crate::model::{CommandsAction, CommandsState};
+use crate::registry::CommandRegistry;
 use crate::{
     COMMANDS, CommandsCapability, commands_plugin, commands_reducer, initial_commands_state,
     register_command, resolved_commands_equal,
@@ -30,20 +33,26 @@ pub struct Commands;
 
 /// The TypeScript object literal's member order.
 const MEMBERS: &[&str] = &[
-    "register",
-    "unregister",
-    "has",
-    "ids",
-    "resolve",
-    "search",
-    "menuTarget",
+    "registerCommand",
+    "registerCommands",
+    "hasCommand",
+    "getCommand",
+    "listCommandIds",
+    "resolveCommand",
+    "listCommands",
+    "searchCommands",
+    "listShortcuts",
     "execute",
-    "matchStroke",
-    "disabledCategories",
+    "canExecute",
+    "getDisabledCategories",
     "isCategoryDisabled",
     "disableCategory",
     "enableCategory",
     "setDisabledCategories",
+    "onExecuted",
+    "onExecutionFailed",
+    "matchStroke",
+    "getMenuTarget",
 ];
 
 fn arg(args: &[Value], i: usize) -> Option<&Value> {
@@ -73,24 +82,46 @@ fn opt_string(object: &Map<String, Value>, key: &str) -> Option<String> {
 
 /// The canonical form of a `CommandCtx` in a callback's arguments.
 fn ctx_json(c: &CommandCtx) -> Value {
-    json!({
-        "documentId": c.document_id(),
-        "core": { "$function": true },
-        "get": { "$function": true },
-        "tryGet": { "$function": true },
-    })
+    let mut out = Map::new();
+    out.insert("documentId".into(), json!(c.document_id()));
+    if let Some(args) = c.args() {
+        out.insert("args".into(), args.clone());
+    }
+    for member in ["core", "get", "tryGet"] {
+        out.insert(member.into(), json!({ "$function": true }));
+    }
+    Value::Object(out)
 }
 
 fn outcome_value(outcome: Outcome) -> Value {
     match outcome {
         Outcome::Returned(value) => json!({ "returned": value }),
         Outcome::Threw(error) => json!({ "threw": error.to_canonical() }),
-        Outcome::Promise(_) => json!({ "returned": undefined() }),
+        // A promise has no canonical form in callback arguments.
+        Outcome::Promise(_) => json!({ "returnedPromise": true }),
     }
+}
+
+thread_local! {
+    /// Removers kept by `remember` uses, per case (`build` resets it), as
+    /// the generator's factory keeps them.
+    static REMEMBERED: RefCell<HashMap<String, Rc<dyn Fn()>>> = RefCell::new(HashMap::new());
 }
 
 /// One `uses` entry, done with the context a command function was handed.
 fn run_use(spec: &Value, c: &CommandCtx, h: &Harness) -> Value {
+    if let Some(name) = spec.get("forget").and_then(Value::as_str) {
+        let remove = REMEMBERED.with(|r| r.borrow().get(name).cloned());
+        return match remove {
+            Some(remove) => {
+                remove();
+                json!({ "returned": undefined() })
+            }
+            None => {
+                json!({ "threw": Error::new(format!("nothing remembered as {name}")).to_canonical() })
+            }
+        };
+    }
     if let Some(member) = spec.get("core").and_then(Value::as_str) {
         let core = serde_json::to_value(&*c.core()).unwrap_or(Value::Null);
         return json!({ "returned": core.get(member).cloned().unwrap_or_else(undefined) });
@@ -111,6 +142,23 @@ fn run_use(spec: &Value, c: &CommandCtx, h: &Harness) -> Value {
         return json!({ "returned": "resolved" });
     };
     let args = spec.get("args").and_then(Value::as_array).cloned().unwrap_or_default();
+    // A remover a use gets back is a function in callback arguments, which
+    // the trace prints as `{"$function": true}` and never numbers as a ref.
+    if method == "registerCommand"
+        && let Some(cap) = capability.downcast_ref::<CommandsCapability>()
+    {
+        let registered = decode_def(arg(&args, 0).unwrap_or(&Value::Null), Some(h))
+            .and_then(|def| cap.register_command(def, register_options(arg(&args, 1))));
+        return match registered {
+            Ok(remove) => {
+                if let Some(name) = spec.get("remember").and_then(Value::as_str) {
+                    REMEMBERED.with(|r| r.borrow_mut().insert(name.to_string(), remove));
+                }
+                json!({ "returned": { "$function": true } })
+            }
+            Err(error) => json!({ "threw": error.to_canonical() }),
+        };
+    }
     outcome_value(h.call(&capability, method, args))
 }
 
@@ -168,8 +216,8 @@ fn run(spec: &Value, h: &Harness) -> RunFn {
     let f = scripted(spec, h);
     Rc::new(move |c| match f(c) {
         Answer::Throws(error) => Err(error),
-        // The return value, a promise included, is never read.
-        Answer::Returns(_) | Answer::Promise(_) => Ok(()),
+        Answer::Returns(_) => Ok(None),
+        Answer::Promise(promise) => Ok(Some(promise)),
     })
 }
 
@@ -221,19 +269,86 @@ fn decode_config(raw: &Value, h: Option<&Harness>) -> Result<CommandsConfig, Err
     Ok(CommandsConfig { commands, disabled_categories: strings(raw.get("disabledCategories")) })
 }
 
-fn resolved(result: Result<Option<ResolvedCommand>, Error>) -> Outcome {
+fn json_of<T: serde::Serialize>(value: &T) -> Value {
+    serde_json::to_value(value).unwrap_or(Value::Null)
+}
+
+/// A definition as `getCommand` hands it back: its data members. Function
+/// members are not printed; no vector reads a definition that has them.
+fn def_json(def: &CommandDef) -> Value {
+    let mut out = Map::new();
+    out.insert("id".into(), json!(def.id));
+    out.insert("labelKey".into(), json!(def.label_key));
+    if let Some(icon) = &def.icon {
+        out.insert("icon".into(), json!(icon));
+    }
+    match &def.shortcut {
+        Some(Shortcut::One(s)) => {
+            out.insert("shortcut".into(), json!(s));
+        }
+        Some(Shortcut::Many(list)) => {
+            out.insert("shortcut".into(), json!(list));
+        }
+        None => {}
+    }
+    if let Some(categories) = &def.categories {
+        out.insert("categories".into(), json!(categories));
+    }
+    if let Some(menu) = &def.menu {
+        out.insert("menu".into(), json!(menu));
+    }
+    match &def.panel {
+        Some(Panel::Id(id)) => {
+            out.insert("panel".into(), json!(id));
+        }
+        Some(Panel::Target { id, exclusive }) => {
+            let mut target = Map::new();
+            target.insert("id".into(), json!(id));
+            if let Some(exclusive) = exclusive {
+                target.insert("exclusive".into(), json!(exclusive));
+            }
+            out.insert("panel".into(), Value::Object(target));
+        }
+        None => {}
+    }
+    if let Some(modal) = &def.modal {
+        out.insert("modal".into(), json!(modal));
+    }
+    Value::Object(out)
+}
+
+fn register_options(value: Option<&Value>) -> RegisterCommandOptions {
+    RegisterCommandOptions {
+        replace: value.and_then(|o| o.get("replace")).and_then(Value::as_bool).unwrap_or(false),
+    }
+}
+
+/// A remover as a ref the vector can call.
+fn remover(result: Result<Rc<dyn Fn()>, Error>, h: &Harness) -> Outcome {
     match result {
-        Ok(Some(r)) => Outcome::Returned(serde_json::to_value(r).unwrap_or(Value::Null)),
-        Ok(None) => Outcome::Returned(Value::Null),
+        Ok(remove) => Outcome::Returned(h.register_fn(Rc::new(move |_| {
+            remove();
+            Outcome::undefined()
+        }))),
         Err(error) => Outcome::Threw(error),
     }
 }
 
-fn unit(result: Result<(), Error>) -> Outcome {
-    match result {
-        Ok(()) => Outcome::undefined(),
-        Err(error) => Outcome::Threw(error),
-    }
+/// Subscribe a scripted `$fn` listener; the outcome is the unsubscribe.
+fn listen<E: serde::Serialize>(
+    h: &Harness,
+    spec: Option<&Value>,
+    subscribe: impl FnOnce(Box<dyn Fn(&E) -> Result<(), Error>>) -> epdf_kernel::Unsubscribe,
+) -> Outcome {
+    let callback = h.callback(spec.unwrap_or(&Value::Null));
+    let off = subscribe(Box::new(move |event: &E| match callback.call(vec![json_of(event)]) {
+        Answer::Throws(error) => Err(error),
+        _ => Ok(()),
+    }));
+    Outcome::Returned(h.register_fn(Rc::new(move |_| {
+        off.call();
+        Outcome::undefined()
+    })))
 }
 
 impl HarnessPlugin for Commands {
@@ -242,7 +357,8 @@ impl HarnessPlugin for Commands {
     }
 
     fn build(&self, _factory: &str, config: &Value, h: &Harness) -> Result<AnyPlugin, Error> {
-        commands_plugin(decode_config(config, Some(h))?)
+        REMEMBERED.with(|r| r.borrow_mut().clear());
+        Ok(commands_plugin(decode_config(config, Some(h))?))
     }
 
     fn tokens(&self) -> Vec<AnyToken> {
@@ -260,25 +376,41 @@ impl HarnessPlugin for Commands {
         let id = str_arg(&args, 0).unwrap_or_default();
         let doc = str_arg(&args, 1);
         Some(match method {
-            "register" => match decode_def(arg(&args, 0).unwrap_or(&Value::Null), Some(h)) {
-                Ok(def) => unit(cap.register(def)),
+            "registerCommand" => match decode_def(arg(&args, 0).unwrap_or(&Value::Null), Some(h)) {
+                Ok(def) => remover(cap.register_command(def, register_options(arg(&args, 1))), h),
                 Err(error) => Outcome::Threw(error),
             },
-            "unregister" => {
-                cap.unregister(id);
-                Outcome::undefined()
+            "registerCommands" => {
+                let defs: Result<Vec<CommandDef>, Error> = arg(&args, 0)
+                    .and_then(Value::as_array)
+                    .into_iter()
+                    .flatten()
+                    .map(|d| decode_def(d, Some(h)))
+                    .collect();
+                match defs {
+                    Ok(defs) => {
+                        remover(cap.register_commands(defs, register_options(arg(&args, 1))), h)
+                    }
+                    Err(error) => Outcome::Threw(error),
+                }
             }
-            "has" => Outcome::Returned(json!(cap.has(id))),
-            "ids" => Outcome::Returned(json!(cap.ids())),
-            "resolve" => resolved(cap.resolve(id, doc)),
-            "search" => match cap.search(id, doc) {
-                Ok(hits) => Outcome::Returned(serde_json::to_value(hits).unwrap_or(Value::Null)),
-                Err(error) => Outcome::Threw(error),
-            },
-            "menuTarget" => Outcome::Returned(
-                cap.menu_target(id).map_or(Value::Null, |t| serde_json::to_value(t).unwrap()),
-            ),
-            "execute" => unit(cap.execute(id, doc)),
+            "hasCommand" => Outcome::Returned(json!(cap.has_command(id))),
+            "getCommand" => {
+                Outcome::Returned(cap.get_command(id).map_or(Value::Null, |d| def_json(&d)))
+            }
+            "listCommandIds" => Outcome::Returned(json!(cap.list_command_ids())),
+            "resolveCommand" => Outcome::Returned(json_of(&cap.resolve_command(id, doc))),
+            "listCommands" => Outcome::Returned(json_of(&cap.list_commands(str_arg(&args, 0)))),
+            "searchCommands" => Outcome::Returned(json_of(&cap.search_commands(id, doc))),
+            "listShortcuts" => Outcome::Returned(json_of(&cap.list_shortcuts())),
+            "execute" => {
+                let options = arg(&args, 1);
+                let document_id = options.and_then(|o| o.get("documentId")).and_then(Value::as_str);
+                let call_args =
+                    options.and_then(|o| o.get("args")).filter(|a| !is_undefined(a)).cloned();
+                Outcome::promise(cap.execute(id, document_id, call_args))
+            }
+            "canExecute" => Outcome::Returned(json!(cap.can_execute(id, doc))),
             "matchStroke" => {
                 let stroke = arg(&args, 0).map(|s| serde_json::from_value(scrub(s)));
                 let opts = arg(&args, 1).map(|o| serde_json::from_value(scrub(o)));
@@ -289,14 +421,9 @@ impl HarnessPlugin for Commands {
                     _ => Outcome::Threw(bad("matchStroke", "a stroke and options")),
                 }
             }
-            "disabledCategories" => match cap.disabled_categories() {
-                Ok(list) => Outcome::Returned(json!(list)),
-                Err(error) => Outcome::Threw(error),
-            },
-            "isCategoryDisabled" => match cap.is_category_disabled(id) {
-                Ok(disabled) => Outcome::Returned(json!(disabled)),
-                Err(error) => Outcome::Threw(error),
-            },
+            "getMenuTarget" => Outcome::Returned(json_of(&cap.get_menu_target(id))),
+            "getDisabledCategories" => Outcome::Returned(json!(cap.get_disabled_categories())),
+            "isCategoryDisabled" => Outcome::Returned(json!(cap.is_category_disabled(id))),
             "disableCategory" => {
                 cap.disable_category(id);
                 Outcome::undefined()
@@ -309,6 +436,8 @@ impl HarnessPlugin for Commands {
                 cap.set_disabled_categories(&strings(arg(&args, 0)));
                 Outcome::undefined()
             }
+            "onExecuted" => listen(h, arg(&args, 0), |f| cap.on_executed(f)),
+            "onExecutionFailed" => listen(h, arg(&args, 0), |f| cap.on_execution_failed(f)),
             other => {
                 Outcome::Threw(Error::new(format!("[scenario] \"{other}\" is not a function")))
             }
@@ -337,7 +466,7 @@ fn f_reducer(args: &[Value]) -> Result<Value, Error> {
 }
 
 fn f_initial(_: &[Value]) -> Result<Value, Error> {
-    serde_json::to_value(initial_commands_state()).map_err(|e| bad("state", e))
+    serde_json::to_value(initial_commands_state(&[])).map_err(|e| bad("state", e))
 }
 
 fn resolved_arg(args: &[Value], i: usize) -> Result<Option<ResolvedCommand>, Error> {
@@ -365,7 +494,8 @@ fn f_register(args: &[Value]) -> Result<Value, Error> {
     let mut registry = CommandRegistry::new();
     let mut error = None;
     for def in arg(args, 0).and_then(Value::as_array).into_iter().flatten() {
-        if let Err(e) = register_command(&mut registry, decode_def(def, None)?) {
+        let def = decode_def(def, None)?;
+        if let Err(e) = register_command(&mut registry, def, RegisterCommandOptions::default()) {
             error = Some(e);
             break;
         }
@@ -384,9 +514,10 @@ fn f_register(args: &[Value]) -> Result<Value, Error> {
 }
 
 /// What `commandsPlugin(config)` builds: its identity and initial state.
+/// The definitions are registered when a controller is created, not here.
 fn f_plugin(args: &[Value]) -> Result<Value, Error> {
     let config = decode_config(arg(args, 0).unwrap_or(&undefined()), None)?;
-    let plugin = commands_plugin(config)?;
+    let plugin = commands_plugin(config);
     let state = (plugin.initial_state)();
     Ok(json!({
         "id": plugin.id,

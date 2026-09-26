@@ -5,7 +5,7 @@ use std::any::Any;
 use std::rc::Rc;
 
 use epdf_kernel::{AnyPlugin, AnyToken, Error};
-use plugin_conformance::{Harness, HarnessPlugin, Outcome};
+use plugin_conformance::{Answer, Harness, HarnessPlugin, Outcome};
 use serde_json::{Value, json};
 
 use crate::{METADATA, MetadataCapability, metadata_plugin};
@@ -13,7 +13,7 @@ use crate::{METADATA, MetadataCapability, metadata_plugin};
 pub struct Metadata;
 
 /// The TypeScript object literal's member order.
-const MEMBERS: &[&str] = &["canEdit", "current", "update", "reload"];
+const MEMBERS: &[&str] = &["getSnapshot", "getStatus", "canEdit", "update", "refresh", "onUpdated"];
 
 impl HarnessPlugin for Metadata {
     fn factories(&self) -> Vec<&'static str> {
@@ -33,16 +33,30 @@ impl HarnessPlugin for Metadata {
         capability: &Rc<dyn Any>,
         method: &str,
         args: Vec<Value>,
-        _h: &Harness,
+        h: &Harness,
     ) -> Option<Outcome> {
         let cap = capability.downcast_ref::<MetadataCapability>()?;
         Some(match method {
-            "canEdit" => Outcome::Returned(json!(cap.can_edit())),
-            "current" => Outcome::Returned(cap.current().unwrap_or(Value::Null)),
+            "getSnapshot" => Outcome::Returned(cap.get_snapshot().unwrap_or(Value::Null)),
+            "getStatus" => Outcome::Returned(json!(cap.get_status())),
+            "canEdit" => Outcome::from_result(cap.can_edit().map(Value::Bool)),
             "update" => {
-                Outcome::promise_unit(cap.update(args.into_iter().next().unwrap_or(Value::Null)))
+                Outcome::Promise(cap.update(args.into_iter().next().unwrap_or(Value::Null), None))
             }
-            "reload" => Outcome::promise_unit(cap.reload()),
+            "refresh" => Outcome::promise_unit(cap.refresh()),
+            "onUpdated" => {
+                let callback = h.callback(args.first().unwrap_or(&Value::Null));
+                let off = cap.on_updated(move |event| {
+                    match callback.call(vec![serde_json::to_value(event).unwrap_or(Value::Null)]) {
+                        Answer::Throws(error) => Err(error),
+                        _ => Ok(()),
+                    }
+                });
+                Outcome::Returned(h.register_fn(Rc::new(move |_| {
+                    off.call();
+                    Outcome::undefined()
+                })))
+            }
             other => {
                 Outcome::Threw(Error::new(format!("[scenario] \"{other}\" is not a function")))
             }

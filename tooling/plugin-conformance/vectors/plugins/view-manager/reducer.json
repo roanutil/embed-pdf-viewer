@@ -2026,6 +2026,167 @@
       }
     },
     {
+      "name": "add-moves-from-its-holder",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
+        },
+        {
+          "type": "ADD_DOC",
+          "paneId": "pane-1",
+          "documentId": "d",
+          "index": 0
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
+                "documentIds": [
+                  "d",
+                  "a",
+                  "b",
+                  "c"
+                ],
+                "activeDocumentId": "b"
+              },
+              "pane-2": {
+                "id": "pane-2",
+                "documentIds": [],
+                "activeDocumentId": null
+              },
+              "pane-3": {
+                "id": "pane-3",
+                "documentIds": [],
+                "activeDocumentId": null
+              }
+            },
+            "order": [
+              "pane-1",
+              "pane-2",
+              "pane-3"
+            ],
+            "focusedPaneId": "pane-2",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "add-moves-into-an-empty-pane",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
+        },
+        {
+          "type": "ADD_DOC",
+          "paneId": "pane-3",
+          "documentId": "b"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "panes": {
+              "pane-1": {
+                "id": "pane-1",
+                "documentIds": [
+                  "a",
+                  "c"
+                ],
+                "activeDocumentId": "c"
+              },
+              "pane-2": {
+                "id": "pane-2",
+                "documentIds": [
+                  "d"
+                ],
+                "activeDocumentId": "d"
+              },
+              "pane-3": {
+                "id": "pane-3",
+                "documentIds": [
+                  "b"
+                ],
+                "activeDocumentId": "b"
+              }
+            },
+            "order": [
+              "pane-1",
+              "pane-2",
+              "pane-3"
+            ],
+            "focusedPaneId": "pane-2",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
       "name": "remove-doc-inactive",
       "fn": "viewManagerReducer",
       "args": [

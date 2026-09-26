@@ -20,8 +20,8 @@
  *   {"tryGet": token, "call"?: method, "args"?: [...]}  the same through ctx.tryGet
  *   {"core": member}                                    ctx.core()[member]
  *
- * Each use answers `{returned}` or `{threw}` (a `get` without `call`
- * answers `{returned: "resolved"}`), and the list is logged as the callback
+ * Each use answers `{returned}`, `{returnedPromise: true}` or `{threw}` (a
+ * `get` without `call` answers `{returned: "resolved"}`), and the list is logged as the callback
  * `<name>:uses` after the function's own call. A use's `args` are decoded
  * the same way, so a use can register a command.
  */
@@ -101,6 +101,9 @@ function runUse(use: Use, ctx: CommandCtx, env: PluginEnv): unknown {
     const args = (use.args ?? []).map((arg) => decodeCommandValue(arg, env));
     const returned = capability[use.call](...args);
     if (use.remember !== undefined) remembered.set(use.remember, returned as () => void);
+    // A promise (an `execute` a run starts) has no canonical form in callback
+    // arguments, so the use records that one came back.
+    if (returned instanceof Promise) return { returnedPromise: true };
     return { returned };
   } catch (error) {
     return { threw: error };
@@ -155,10 +158,11 @@ const register = (defs: CommandDef[]) => {
   return error === undefined ? { entries } : { entries, error };
 };
 
-/** What `commandsPlugin(config)` builds: its identity and initial state. */
+/** What `commandsPlugin(config)` builds: its identity and initial state.
+ *  The definitions are registered when the controller is created, not here. */
 const plugin = (config?: CommandsConfig) => {
   const def = commandsPlugin(config);
-  return { id: def.id, scope: def.scope, initialState: def.initialState };
+  return { id: def.id, scope: def.scope, initialState: def.initialState?.() };
 };
 
 /** `resolvedCommandsEqual(a, a)`: one object on both sides. */
@@ -244,8 +248,8 @@ const pluginCases: FunctionCase[] = [
   { name: 'plugin-empty-config', fn: 'commandsPlugin', args: [{}] },
   { name: 'plugin-disabled-categories', fn: 'commandsPlugin', args: [{ disabledCategories: ['pro', 'beta', 'pro'] }] },
   { name: 'plugin-commands', fn: 'commandsPlugin', args: [{ commands: [def('a', { shortcut: 'Mod+A' }), def('b')] }] },
-  { name: 'plugin-duplicate-command-throws', fn: 'commandsPlugin', args: [{ commands: [def('a'), def('a')] }] },
-  { name: 'plugin-bad-shortcut-throws', fn: 'commandsPlugin', args: [{ commands: [def('a', { shortcut: 'Super+A' })] }] },
+  { name: 'plugin-duplicate-command-is-not-checked-here', fn: 'commandsPlugin', args: [{ commands: [def('a'), def('a')] }] },
+  { name: 'plugin-bad-shortcut-is-not-checked-here', fn: 'commandsPlugin', args: [{ commands: [def('a', { shortcut: 'Super+A' })] }] },
 ];
 
 // ── scenarios ─────────────────────────────────────────────────────────────────
@@ -598,7 +602,7 @@ const cases: ScenarioCase[] = [
   {
     name: 'execute-guards-and-run',
     covers:
-      'execute resolves first (every derivation runs), then refuses a disabled or hidden command; otherwise it calls run with a fresh CommandCtx and skips the surface routing. A run that throws throws out of execute; one that rejects or stays pending is not awaited.',
+      'execute resolves first (every derivation runs), then refuses a disabled or hidden command with a rejected result; otherwise it calls run with a fresh CommandCtx and skips the surface routing. It awaits the run: a run that throws or rejects makes execute reject with an operation-failed PluginError, and a pending run keeps execute pending until it settles.',
     plugins: [
       withShell,
       commands([
@@ -840,9 +844,113 @@ const cases: ScenarioCase[] = [
     steps: [cmd('execute', 'setup'), cmd('searchCommands', ''), cmd('listCommandIds'), cmd('searchCommands', '')],
   },
   {
+    name: 'register-many-shortcuts-and-can-execute',
+    covers:
+      'registerCommands registers each definition in order and returns one remover for all of them (a definition replaced since is left alone); replace: true swaps a definition in place of a duplicate. listShortcuts lists every binding in registry order. canExecute is enabled and visible for the target, false for a missing id.',
+    plugins: [commands([vdef('a', { shortcut: ['Mod+A', 'Ctrl+Shift+A'] })])],
+    engine: { documents: { a: doc() } },
+    steps: [
+      start,
+      open('a'),
+      cmd('registerCommands', [vdef('b', { shortcut: 'Mod+B' }), vdef('c', { enabled: no('c.enabled') }), vdef('d', { visible: no('d.visible') })]),
+      cmd('listCommandIds'),
+      cmd('listShortcuts'),
+      cmd('canExecute', 'a'),
+      cmd('canExecute', 'c'),
+      cmd('canExecute', 'd'),
+      cmd('canExecute', 'missing'),
+      cmd('canExecute', 'a', 'a'),
+      cmd('registerCommand', vdef('b', { labelKey: 'b again', shortcut: 'Mod+Shift+B' }), { replace: true }),
+      cmd('registerCommands', [vdef('a')]),
+      cmd('registerCommands', [vdef('e'), vdef('a', { labelKey: 'a replaced' })], { replace: true }),
+      cmd('resolveCommand', 'a'),
+      cmd('listShortcuts'),
+      { op: 'call', target: { ref: 0 } },
+      cmd('listCommandIds'),
+      { op: 'call', target: { ref: 2 } },
+      cmd('listCommandIds'),
+      cmd('listShortcuts'),
+    ],
+  },
+  {
+    name: 'execute-events',
+    covers:
+      'onExecuted fires after a command ran, with its id, target document and the args as given; onExecutionFailed fires when run throws or rejects, with the failure as PluginErrorInfo, and execute rejects with the mapped PluginError. The run sees the args on its CommandCtx. A refused command fires neither. A throwing listener is reported and its siblings still fire; after unsubscribing nothing fires.',
+    plugins: [
+      withShell,
+      commands([
+        vdef('go', { run: fn('go.run') }),
+        vdef('fails', { run: boom('fails.run', 'run failed') }),
+        vdef('rejects', { run: fn('rejects.run', { rejects: { name: 'TypeError', message: 'async run failed' } }) }),
+        vdef('off', { enabled: no('off.enabled') }),
+        vdef('panel', { panel: 'search' }),
+      ]),
+    ],
+    engine: { documents: { a: doc(), b: doc() } },
+    steps: [
+      cmd('onExecuted', { $fn: 'executed', throws: { name: 'Error', message: 'listener broke' } }),
+      cmd('onExecuted', { $fn: 'executed-2', returns: null }),
+      cmd('onExecutionFailed', { $fn: 'failed', returns: null }),
+      start,
+      cmd('execute', 'go'),
+      open('a'),
+      open('b'),
+      cmd('execute', 'go', { args: { zoom: 2 } }),
+      cmd('execute', 'go', { documentId: 'b', args: [1, 'two'] }),
+      cmd('execute', 'panel', { args: null }),
+      cmd('execute', 'fails', { args: 'x' }),
+      cmd('execute', 'rejects'),
+      cmd('execute', 'off'),
+      cmd('execute', 'missing'),
+      { op: 'call', target: { ref: 0 } },
+      { op: 'call', target: { ref: 1 } },
+      { op: 'call', target: { ref: 2 } },
+      cmd('execute', 'go'),
+      cmd('execute', 'fails'),
+    ],
+  },
+  {
+    name: 'get-and-list-commands',
+    covers:
+      'getCommand hands back the definition as registered (null for an unknown id); listCommands resolves every command in registry order for the target document.',
+    plugins: [
+      withShell,
+      commands([
+        vdef('a', { icon: 'star', shortcut: ['Mod+A'], categories: ['pro'], menu: 'file' }),
+        vdef('b', { panel: { id: 'search', exclusive: 'left' }, modal: 'print' }),
+        vdef('c', { labelKey: 'Label C' }),
+      ], ['pro']),
+    ],
+    engine: { documents: { a: doc() } },
+    steps: [
+      cmd('getCommand', 'a'),
+      cmd('getCommand', 'b'),
+      cmd('getCommand', 'missing'),
+      cmd('listCommands'),
+      start,
+      open('a'),
+      shell('open', ['search']),
+      cmd('listCommands'),
+      cmd('listCommands', 'a'),
+    ],
+  },
+  {
+    name: 'a-bad-config-refuses-the-kernel',
+    covers:
+      'config.commands are registered when the controller is created, so a duplicate id makes createKernel throw the conflict.',
+    plugins: [commands([vdef('a'), vdef('a')])],
+    steps: [cmd('listCommandIds')],
+  },
+  {
+    name: 'a-bad-config-shortcut-refuses-the-kernel',
+    covers: 'An unparsable shortcut in config.commands makes createKernel throw the parse error.',
+    plugins: [commands([vdef('a', { shortcut: 'Hyper+A' })])],
+    steps: [cmd('listCommandIds')],
+  },
+  {
     name: 'after-destroy',
     covers:
-      'A capability reference kept past destroy still reads and changes the registry and matches strokes, but everything that reads the slice throws the TypeError of reading a member of the missing state; category intents dispatch into nothing.',
+      'A capability reference kept past destroy still reads and changes the registry, matches strokes, resolves and executes against the last state (i18n no longer resolves, so labels are their keys); category intents are dropped, and the first is reported instance-closed.',
     plugins: [withI18n, withShell, commands([vdef('menu', { labelKey: 'commands.zoomIn', menu: 'file', shortcut: 'Mod+M', run: fn('menu.run', { uses: [{ tryGet: 'i18n', call: 'getLocale' }, { core: 'activeId' }] }) })])],
     engine: { documents: { a: doc() } },
     steps: [

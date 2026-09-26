@@ -1,10 +1,9 @@
 //! `translate.ts`: the pure lookup core. State in, string out.
 
+use crate::contract::{Param, Params, TranslateOptions, TranslationDictionary, TranslationNode};
 use crate::js::{Inherited, number_to_string};
+use crate::model::I18nState;
 use crate::plural::plural_category;
-use crate::types::{
-    I18nState, Param, Params, TranslateOptions, TranslationDictionary, TranslationNode,
-};
 
 /// What a dotted-path walk can land on. Beyond the dictionary's own nodes, a
 /// JavaScript walk also reaches what every object inherits: `node['toString']`

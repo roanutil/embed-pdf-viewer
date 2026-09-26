@@ -511,7 +511,7 @@ fn run_step(step: &Value, kernel: &Kernel, fake: &Rc<FakeEngine>, h: &Harness) {
         "settle" => {
             let label = step["label"].as_str().unwrap_or_default();
             let outcome = match step.get("error") {
-                Some(error) => Err(Error::from_spec(error)),
+                Some(error) => Err(error),
                 None => Ok(step.get("value").cloned().unwrap_or_else(undefined)),
             };
             if !fake.settle(label, outcome) {
