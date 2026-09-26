@@ -1,11 +1,12 @@
 /**
- * `packages/plugin/stamp/src/reducer.ts`, called directly: the pure,
+ * `packages/plugin/stamp/src/model.ts`, called directly: the pure,
  * serializable descriptor store. `changed` is `next !== state`, the branch
  * the Rust reducer answers with `None`. Replayed by
  * `crates/plugins/stamp/tests/conformance.rs`.
  */
-import { initialStampState, stampReducer } from '../../../../packages/plugin/stamp/src/reducer';
-import type { StampAction, StampAsset, StampLibrary, StampState } from '../../../../packages/plugin/stamp/src/types';
+import { initialStampState, stampReducer } from '../../../../packages/plugin/stamp/src/model';
+import type { StampAction, StampState } from '../../../../packages/plugin/stamp/src/model';
+import type { StampAsset, StampLibrary } from '../../../../packages/plugin/stamp/src/contract';
 
 import type { FunctionCase, Suite } from '../vectors';
 
@@ -24,10 +25,11 @@ const r = (name: string, state: StampState, action: unknown, covers?: string): F
   ...(covers === undefined ? {} : { covers }),
 });
 
+const pr = (pon: number) => ({ kind: 'objectNumber' as const, pageObjectNumber: pon });
 const library = (id: string, assetIds: string[] = [], over: Partial<StampLibrary> = {}): StampLibrary => ({
   id,
   name: `Library ${id}`,
-  storage: 'canonical-pdf',
+  kind: 'stamps',
   assetIds,
   ...over,
 });
@@ -36,9 +38,9 @@ const asset = (id: string, libraryId: string, over: Partial<StampAsset> = {}): S
   libraryId,
   kind: 'stamp',
   name: `Asset ${id}`,
+  label: `Asset ${id}`,
   size: { width: 200, height: 100 },
-  format: 'pdf',
-  pageObjectNumber: 100,
+  page: pr(100),
   ...over,
 });
 
@@ -46,12 +48,12 @@ const EMPTY = initialStampState();
 const ONE: StampState = {
   libraries: { L: library('L', ['a', 'b'], { categories: ['Team'] }) },
   libraryOrder: ['L'],
-  assets: { a: asset('a', 'L'), b: asset('b', 'L', { kind: 'signature', subject: 'S', categories: ['x'], pageObjectNumber: 101 }) },
+  assets: { a: asset('a', 'L'), b: asset('b', 'L', { kind: 'signature', subject: 'S', categories: ['x'], page: pr(101) }) },
 };
 const TWO: StampState = {
-  libraries: { ...ONE.libraries, M: library('M', ['c'], { storage: 'loose' }) },
+  libraries: { ...ONE.libraries, M: library('M', ['c'], { kind: 'signatures' }) },
   libraryOrder: ['L', 'M'],
-  assets: { ...ONE.assets, c: asset('c', 'M', { format: 'png', pageObjectNumber: undefined }) },
+  assets: { ...ONE.assets, c: asset('c', 'M', { page: pr(102) }) },
 };
 /** An asset whose library is gone, and a library listing an asset that is. */
 const ORPHANS: StampState = {
@@ -63,7 +65,7 @@ const ORPHANS: StampState = {
 const cases: FunctionCase[] = [
   { name: 'initial-state', fn: 'initialStampState', args: [] },
   r('library-added-to-empty', EMPTY, { type: 'LIBRARY_ADDED', library: library('L') }),
-  r('library-added-appends-order', ONE, { type: 'LIBRARY_ADDED', library: library('M', [], { storage: 'loose' }) }),
+  r('library-added-appends-order', ONE, { type: 'LIBRARY_ADDED', library: library('M', [], { kind: 'signatures' }) }),
   r(
     'library-added-with-a-taken-id',
     TWO,
@@ -84,7 +86,7 @@ const cases: FunctionCase[] = [
     { type: 'LIBRARY_REMOVED', libraryId: 'L' },
     'Every order entry of the id goes.',
   ),
-  r('asset-added', TWO, { type: 'ASSET_ADDED', asset: asset('d', 'M', { format: 'jpeg' }) }),
+  r('asset-added', TWO, { type: 'ASSET_ADDED', asset: asset('d', 'M', { label: 'JPEG' }) }),
   r('asset-added-to-unknown-library', TWO, { type: 'ASSET_ADDED', asset: asset('d', 'nope') }, 'An asset for an unknown library returns the same state.'),
   r(
     'asset-added-twice',

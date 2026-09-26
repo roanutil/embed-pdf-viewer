@@ -93,6 +93,10 @@ export interface FakeEngineSpec {
   readonly responses?: readonly ResponseSpec[];
   /** Answer every call with a plain `Promise` that has no `abort`. */
   readonly plainPromises?: boolean;
+  /** The document an `open` falls back to when no table entry answers it and
+   *  no document is keyed by the input's `id`: a plugin that opens scratch
+   *  documents under ids it mints (stamp's asset engine) gets this one. */
+  readonly defaultDocument?: string;
 }
 
 export type EngineLogEntry =
@@ -329,10 +333,9 @@ export function createFakeEngine(
         undefined,
         args,
         () => {
-          if (typeof inputId !== 'string' || !spec.documents?.[inputId]) {
-            throw makeError({ name: 'FakeEngineUnmatched', message: 'no document for open' });
-          }
-          return { $document: inputId };
+          if (typeof inputId === 'string' && spec.documents?.[inputId]) return { $document: inputId };
+          if (spec.defaultDocument !== undefined) return { $document: spec.defaultDocument };
+          throw makeError({ name: 'FakeEngineUnmatched', message: 'no document for open' });
         },
         (value) => {
           const key = (value as { $document?: unknown } | null)?.$document;

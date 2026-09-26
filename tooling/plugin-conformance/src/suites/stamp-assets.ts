@@ -27,6 +27,7 @@ import {
   stamp,
   start,
   str,
+  withWorkshop,
 } from './stamp-fixtures';
 
 const ONE = [assetPage(0, 100)];
@@ -43,8 +44,8 @@ const appendDoc = (pages: typeof ONE, pon = 101, over: { responses?: ResponseSpe
     ...(over.services ? { services: over.services } : {}),
     responses: [
       ...(over.responses ?? []),
-      { path: 'pages.insert', value: { insertedPageObjectNumbers: [pon], layout: { pageCount: after.length, pages: after }, cache: null } },
-      { path: 'pages.extract', args: [[pon]], value: pdf(`page-${pon}`) },
+      { path: 'pages.insert', value: { insertedPages: [{ kind: 'objectNumber', pageObjectNumber: pon }], layout: { pageCount: after.length, pages: after }, cache: null } },
+      { path: 'pages.extract', args: [[{ kind: 'objectNumber', pageObjectNumber: pon }]], value: pdf(`page-${pon}`) },
       { path: 'page.render.image', pon, value: { contentType: 'image/png', source: { kind: 'bytes', bytes: bytes(`png-${pon}`) } } },
     ],
     download: 'canonical-2',
@@ -73,8 +74,8 @@ const loose: ScenarioCase[] = [
       stamp('addAsset', [{ name: 'Photo', kind: 'signature', subject: 'Scan', categories: ['Ink'], source: jpeg(64, 32) }]),
       stamp('libraries'),
       stamp('assets'),
-      stamp('assetPreview', ['stamp-0-1']),
-      stamp('assetBytes', ['stamp-0-3']),
+      stamp('assetPreview', ['stamp-lib-0-0:Logo']),
+      stamp('assetBytes', ['stamp-lib-0-3:Photo']),
       stamp('libraryBytes', ['stamp-lib-0-0']),
     ],
   },
@@ -89,9 +90,9 @@ const loose: ScenarioCase[] = [
       stamp('addAsset', [{ name: 'Bare preview', source: png(), preview: png(8, 8) }]),
       stamp('addAsset', [{ name: 'Empty type', source: png(), preview: { data: png(8, 8), mimeType: '' } }]),
       stamp('assets'),
-      stamp('assetPreview', ['stamp-0-1']),
-      stamp('assetPreview', ['stamp-0-3']),
-      stamp('assetPreview', ['stamp-0-5']),
+      stamp('assetPreview', ['stamp-lib-0-0:Sized']),
+      stamp('assetPreview', ['stamp-lib-0-3:Bare preview']),
+      stamp('assetPreview', ['stamp-lib-0-6:Empty type']),
     ],
   },
   {
@@ -105,8 +106,8 @@ const loose: ScenarioCase[] = [
       stamp('addAsset', [{ name: 'Sig', source: PDF, size: { width: 150, height: 60 } }]),
       stamp('addAsset', [{ name: 'Sig preview', source: PDF, size: { width: 150, height: 60 }, preview: png() }]),
       stamp('assets'),
-      stamp('assetPreview', ['stamp-0-1']),
-      stamp('assetPreview', ['stamp-0-3']),
+      stamp('assetPreview', ['stamp-lib-0-0:Sig']),
+      stamp('assetPreview', ['stamp-lib-0-3:Sig']),
     ],
   },
   {
@@ -180,24 +181,24 @@ const canonical: ScenarioCase[] = [
   {
     name: 'appends-that-are-refused',
     covers:
-      'A raster cannot join a canonical library (rejected before any engine call); an insert of more than one page, an inserted page missing from the layout, a document without page pieceInfo and an inserted page the handle does not know each reject after closing the document, adding nothing.',
+      'A raster joins a canonical library as a page of its own (v2 refused it before any engine call; here the workshop document takes that append). An insert of more than one page, an inserted page missing from the layout, a document without page pieceInfo and an inserted page the handle does not know each reject after closing the document, adding nothing.',
     plugins: STAMP(),
     engine: {
       documents: {
         lib: assetDoc(ONE),
         multi: assetDoc(ONE, {
-          responses: [{ path: 'pages.insert', value: { insertedPageObjectNumbers: [101, 102], layout: { pageCount: 3, pages: THREE }, cache: null } }],
+          responses: [{ path: 'pages.insert', value: { insertedPages: [{ kind: 'objectNumber', pageObjectNumber: 101 }, { kind: 'objectNumber', pageObjectNumber: 102 }], layout: { pageCount: 3, pages: THREE }, cache: null } }],
         }),
         unlisted: assetDoc(ONE, {
           registry: TWO,
-          responses: [{ path: 'pages.insert', value: { insertedPageObjectNumbers: [101], layout: { pageCount: 1, pages: ONE }, cache: null } }],
+          responses: [{ path: 'pages.insert', value: { insertedPages: [{ kind: 'objectNumber', pageObjectNumber: 101 }], layout: { pageCount: 1, pages: ONE }, cache: null } }],
         }),
         noPageInfo: appendDoc(ONE, 101, { services: ['pieceInfo'] }),
         unknown: assetDoc(ONE, {
-          responses: [{ path: 'pages.insert', value: { insertedPageObjectNumbers: [555], layout: { pageCount: 2, pages: TWO }, cache: null } }],
+          responses: [{ path: 'pages.insert', value: { insertedPages: [{ kind: 'objectNumber', pageObjectNumber: 555 }], layout: { pageCount: 2, pages: TWO }, cache: null } }],
         }),
       },
-      responses: opens('lib', 'multi', 'unlisted', 'noPageInfo', 'unknown'),
+      responses: opens('lib', 'workshop', 'multi', 'unlisted', 'noPageInfo', 'unknown'),
     },
     steps: [
       start,
@@ -248,9 +249,9 @@ const canonical: ScenarioCase[] = [
       start,
       stamp('importLibraryPdf', [PDF]),
       stamp('libraryBytes', ['stamp-lib-0-1']),
-      stamp('assetBytes', ['stamp-0-2']),
+      stamp('assetBytes', ['stamp-lib-0-1:Stamp1']),
       stamp('addAsset', [{ libraryId: 'stamp-lib-0-1', name: 'Late', source: PDF }]),
-      stamp('removeAsset', ['stamp-0-2']),
+      stamp('removeAsset', ['stamp-lib-0-1:Stamp1']),
       stamp('assets'),
     ],
   },
@@ -267,9 +268,9 @@ const removal: ScenarioCase[] = [
       start,
       stamp('importLibraryPdf', [PDF]),
       stamp('removeAsset', ['nope']),
-      stamp('removeAsset', ['stamp-0-2']),
-      stamp('asset', ['stamp-0-2']),
-      stamp('assetBytes', ['stamp-0-2']),
+      stamp('removeAsset', ['stamp-lib-0-1:Stamp1']),
+      stamp('asset', ['stamp-lib-0-1:Stamp1']),
+      stamp('assetBytes', ['stamp-lib-0-1:Stamp1']),
       stamp('assets', ['stamp-lib-0-1']),
       stamp('libraryBytes', ['stamp-lib-0-1']),
     ],
@@ -282,13 +283,13 @@ const removal: ScenarioCase[] = [
     steps: [
       start,
       stamp('importLibraryPdf', [PDF]),
-      stamp('removeAsset', ['stamp-0-2']),
+      stamp('removeAsset', ['stamp-lib-0-1:Stamp1']),
       stamp('libraries'),
       stamp('libraryBytes', ['stamp-lib-0-1']),
       stamp('addAsset', [{ name: 'Logo', source: png() }]),
-      stamp('removeAsset', ['stamp-0-4']),
+      stamp('removeAsset', ['stamp-lib-0-2:Logo']),
       stamp('libraries'),
-      stamp('assetBytes', ['stamp-0-4']),
+      stamp('assetBytes', ['stamp-lib-0-2:Logo']),
     ],
   },
   {
@@ -305,9 +306,9 @@ const removal: ScenarioCase[] = [
     steps: [
       start,
       stamp('importLibraryPdf', [PDF]),
-      stamp('removeAsset', ['stamp-0-2']),
-      stamp('asset', ['stamp-0-2']),
-      stamp('assetBytes', ['stamp-0-2']),
+      stamp('removeAsset', ['stamp-lib-0-1:Stamp1']),
+      stamp('asset', ['stamp-lib-0-1:Stamp1']),
+      stamp('assetBytes', ['stamp-lib-0-1:Stamp1']),
       stamp('libraryBytes', ['stamp-lib-0-1']),
     ],
   },
@@ -319,7 +320,7 @@ const removal: ScenarioCase[] = [
     engine: {
       documents: {
         lib: assetDoc(TWO),
-        other: assetDoc(TWO, { catalog: { Id: str('other') }, page: { 100: { Id: str('o1') }, 101: { Id: str('o2') } } }),
+        other: assetDoc(TWO, { catalog: { Id: str('other') }, page: { 100: { Id: str('other:Stamp1') }, 101: { Id: str('o2') } } }),
         remove: deleteDoc(TWO),
         removeOther: deleteDoc(TWO),
       },
@@ -333,10 +334,10 @@ const removal: ScenarioCase[] = [
       start,
       stamp('importLibraryPdf', [PDF]),
       stamp('importLibraryPdf', [PDF]),
-      stamp('removeAsset', ['stamp-0-2']),
-      stamp('removeAsset', ['stamp-0-3']),
-      stamp('removeAsset', ['stamp-0-3']),
-      stamp('removeAsset', ['o1']),
+      stamp('removeAsset', ['stamp-lib-0-1:Stamp1']),
+      stamp('removeAsset', ['stamp-lib-0-1:Stamp2']),
+      stamp('removeAsset', ['stamp-lib-0-1:Stamp2']),
+      stamp('removeAsset', ['other:Stamp1']),
       settle('reopen', { $document: 'remove' }),
       stamp('libraries'),
       stamp('libraryBytes', ['stamp-lib-0-1']),
@@ -357,10 +358,10 @@ const removal: ScenarioCase[] = [
       stamp('removeLibrary', ['stamp-lib-0-1']),
       stamp('libraries'),
       stamp('assets'),
-      stamp('assetBytes', ['stamp-0-2']),
+      stamp('assetBytes', ['stamp-lib-0-1:Stamp1']),
       stamp('libraryBytes', ['stamp-lib-0-1']),
-      stamp('removeLibrary', ['stamp-lib-0-4']),
-      stamp('assetBytes', ['stamp-0-5']),
+      stamp('removeLibrary', ['stamp-lib-0-2']),
+      stamp('assetBytes', ['stamp-lib-0-2:Logo']),
       stamp('libraries'),
     ],
   },
@@ -379,7 +380,7 @@ const queued: ScenarioCase[] = [
     steps: [
       start,
       stamp('importLibraryPdf', [PDF]),
-      stamp('removeAsset', ['stamp-0-2']),
+      stamp('removeAsset', ['stamp-lib-0-1:Stamp1']),
       stamp('removeLibrary', ['stamp-lib-0-1']),
       stamp('addAsset', [{ libraryId: 'stamp-lib-0-1', name: 'Late', source: PDF }]),
       settle('reopen', { $document: 'remove' }),
@@ -393,7 +394,7 @@ const queued: ScenarioCase[] = [
     plugins: STAMP(),
     engine: {
       documents: {
-        lib: assetDoc(TWO, { catalog: { Id: str('stamp-lib-0-2') }, page: { 100: { Id: str('c1') }, 101: { Id: str('c2') } } }),
+        lib: assetDoc(TWO, { catalog: { Id: str('stamp-lib-0-2') }, page: { 100: { Id: str('stamp-lib-0-2:Stamp1') }, 101: { Id: str('stamp-lib-0-2:Stamp2') } } }),
         remove: deleteDoc(TWO),
       },
       responses: [...opens('lib'), { path: 'open', times: 1, defer: 'reopen' }],
@@ -401,7 +402,7 @@ const queued: ScenarioCase[] = [
     steps: [
       start,
       stamp('importLibraryPdf', [PDF]),
-      stamp('removeAsset', ['c1']),
+      stamp('removeAsset', ['stamp-lib-0-2:Stamp1']),
       stamp('addAsset', [{ name: 'Logo', source: png() }]),
       stamp('libraries'),
       stamp('removeLibrary', ['stamp-lib-0-2']),
@@ -420,12 +421,12 @@ const queued: ScenarioCase[] = [
       documents: {
         first: assetDoc(TWO, {
           catalog: { Id: str('stamp-lib-0-3') },
-          page: { 100: { Id: str('c1') }, 101: { Id: str('c2') } },
+          page: { 100: { Id: str('stamp-lib-0-3:Stamp1') }, 101: { Id: str('stamp-lib-0-3:Stamp2') } },
           responses: [{ path: 'download', defer: 'save-first' }],
         }),
         second: assetDoc(TWO, {
           catalog: { Id: str('stamp-lib-0-3') },
-          page: { 100: { Id: str('d1') }, 101: { Id: str('d2') } },
+          page: { 100: { Id: str('stamp-lib-0-3:Stamp2') }, 101: { Id: str('stamp-lib-0-2') } },
           responses: [{ path: 'download', defer: 'save-second' }],
         }),
         remove: deleteDoc(TWO),
@@ -437,7 +438,7 @@ const queued: ScenarioCase[] = [
       stamp('importLibraryPdf', [PDF]),
       stamp('importLibraryPdf', [PDF]),
       settle('save-first', PDF),
-      stamp('removeAsset', ['c1']),
+      stamp('removeAsset', ['stamp-lib-0-3:Stamp1']),
       stamp('addAsset', [{ name: 'Logo', source: png() }]),
       stamp('addAsset', [{ libraryId: 'stamp-lib-0-3', name: 'Late', source: png() }]),
       settle('save-second', PDF),
@@ -454,7 +455,7 @@ const queued: ScenarioCase[] = [
       documents: {
         lib: assetDoc(TWO, {
           catalog: { Id: str('stamp-lib-0-1') },
-          page: { 100: { Id: str('c1'), Kind: nm('Stamp') }, 101: { Id: str('c2'), Categories: arr('x') } },
+          page: { 100: { Id: str('stamp-lib-0-1:Stamp1'), Kind: nm('Stamp') }, 101: { Id: str('stamp-lib-0-1:Stamp2'), Categories: arr('x') } },
           responses: [{ path: 'download', defer: 'save' }],
         }),
       },
@@ -466,8 +467,8 @@ const queued: ScenarioCase[] = [
       stamp('addAsset', [{ name: 'Logo', source: png() }]),
       settle('save', PDF),
       stamp('libraries'),
-      stamp('removeAsset', ['stamp-0-2']),
-      stamp('asset', ['stamp-0-2']),
+      stamp('removeAsset', ['stamp-lib-0-1:Logo']),
+      stamp('asset', ['stamp-lib-0-1:Logo']),
     ],
   },
   {
@@ -483,7 +484,7 @@ const queued: ScenarioCase[] = [
     steps: [
       start,
       stamp('importLibraryPdf', [PDF]),
-      stamp('removeAsset', ['stamp-0-2']),
+      stamp('removeAsset', ['stamp-lib-0-1:Stamp1']),
       stamp('addAsset', [{ libraryId: 'stamp-lib-0-1', name: 'Late', source: PDF }]),
       destroy,
       settle('reopen', { $document: 'remove' }),
@@ -491,11 +492,16 @@ const queued: ScenarioCase[] = [
   },
 ];
 
+/** Every case can create and extend libraries: the workshop document
+ *  answers the opens a case does not name (see stamp-fixtures.ts). */
+const workshop = (cases: ScenarioCase[]): ScenarioCase[] =>
+  cases.map((c) => ({ ...c, engine: withWorkshop(c.engine as never) }));
+
 export const suites: Suite[] = [
   {
     kind: 'scenario',
     file: 'plugins/stamp-assets.json',
     describes: 'packages/plugin/stamp: loose and canonical assets, removal, and the per-library mutation queue.',
-    cases: [...loose, ...canonical, ...removal, ...queued],
+    cases: workshop([...loose, ...canonical, ...removal, ...queued]),
   },
 ];

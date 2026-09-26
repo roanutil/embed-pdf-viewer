@@ -31,6 +31,8 @@ import {
   str,
   type StampScriptingSpec,
   type StampSpec,
+  withWorkshop,
+  WORKSHOP_PAGE,
 } from './stamp-fixtures';
 
 const ONE = [assetPage(0, 100)];
@@ -84,9 +86,9 @@ const dynamicDoc = (o: DynamicOptions = {}): FakeDocumentSpec => {
       { path: 'forms.applyEffects', value: effectsOk(1) },
       {
         path: 'pages.flatten',
-        value: o.flatten ?? { results: pages.map((p) => ({ pageObjectNumber: p.pageObjectNumber, status: 'flattened' })) },
+        value: o.flatten ?? { results: pages.map((p) => ({ page: p.ref, status: 'flattened' })) },
       },
-      ...pages.map((p) => ({ path: 'pages.extract', args: [[p.pageObjectNumber]], value: pdf(`flat-${p.pageObjectNumber}`) })),
+      ...pages.map((p) => ({ path: 'pages.extract', args: [[{ kind: 'objectNumber', pageObjectNumber: p.ref.pageObjectNumber }]], value: pdf(`flat-${p.ref.pageObjectNumber}`) })),
       { path: 'page.render.image', value: { contentType: 'image/png', source: { kind: 'bytes', bytes: bytes('flat-preview') } } },
     ],
   };
@@ -111,9 +113,9 @@ const staticCases: ScenarioCase[] = [
       start,
       openDoc('a'),
       stamp('importLibraryPdf', [PDF]),
-      arm('stamp-0-2', { targetWidth: 120 }),
+      arm('stamp-lib-0-1:Stamp1', { targetWidth: 120 }),
       stamp('disarm', ['a']),
-      arm('stamp-0-2'),
+      arm('stamp-lib-0-1:Stamp1'),
     ],
   },
   {
@@ -127,8 +129,8 @@ const staticCases: ScenarioCase[] = [
       openDoc('a'),
       stamp('addAsset', [{ name: 'Logo', source: png(100, 50) }]),
       stamp('addAsset', [{ name: 'Sig', source: PDF, size: { width: 150, height: 60 } }]),
-      arm('stamp-0-1', { targetWidth: 50 }),
-      arm('stamp-0-3', {}),
+      arm('stamp-lib-0-0:Logo', { targetWidth: 50 }),
+      arm('stamp-lib-0-3:Sig', {}),
     ],
   },
   {
@@ -143,8 +145,8 @@ const staticCases: ScenarioCase[] = [
       openDoc('a'),
       arm('nope'),
       stamp('addAsset', [{ name: 'Logo', source: png() }]),
-      arm('stamp-0-1'),
-      arm('stamp-0-1', undefined, 'elsewhere'),
+      arm('stamp-lib-0-0:Logo'),
+      arm('stamp-lib-0-0:Logo', undefined, 'elsewhere'),
       stamp('disarm', ['a']),
       stamp('disarm', ['elsewhere']),
     ],
@@ -158,7 +160,7 @@ const skipped: ScenarioCase[] = [
     plugins: PLACEMENT({ scripting: { enabled: false, sandbox: BOOT_SETS } }),
     engine: { documents: { a: target(), lib: assetDoc(ONE) }, responses: opens('a', 'lib') },
     snapshot: 'none',
-    steps: [start, openDoc('a'), stamp('importLibraryPdf', [PDF]), arm('stamp-0-2')],
+    steps: [start, openDoc('a'), stamp('importLibraryPdf', [PDF]), arm('stamp-lib-0-1:Stamp1')],
   },
   {
     name: 'no-sandbox-host',
@@ -166,7 +168,7 @@ const skipped: ScenarioCase[] = [
     plugins: PLACEMENT({ scripting: { enabled: true, sandbox: null } }),
     engine: { documents: { a: target(), lib: assetDoc(ONE) }, responses: opens('a', 'lib') },
     snapshot: 'none',
-    steps: [start, openDoc('a'), stamp('importLibraryPdf', [PDF]), arm('stamp-0-2')],
+    steps: [start, openDoc('a'), stamp('importLibraryPdf', [PDF]), arm('stamp-lib-0-1:Stamp1')],
   },
   {
     name: 'a-raster-asset-is-never-evaluated',
@@ -174,7 +176,7 @@ const skipped: ScenarioCase[] = [
     plugins: PLACEMENT(scripting()),
     engine: { documents: { a: target() }, responses: opens('a') },
     snapshot: 'none',
-    steps: [start, openDoc('a'), stamp('addAsset', [{ name: 'Logo', source: png() }]), arm('stamp-0-1')],
+    steps: [start, openDoc('a'), stamp('addAsset', [{ name: 'Logo', source: png() }]), arm('stamp-lib-0-0:Logo')],
   },
   {
     name: 'a-stamp-without-fields-on-its-page-arms-the-template',
@@ -190,7 +192,7 @@ const skipped: ScenarioCase[] = [
       responses: opens('a', 'lib', 'copy'),
     },
     snapshot: 'none',
-    steps: [start, openDoc('a'), stamp('importLibraryPdf', [PDF]), arm('stamp-0-2')],
+    steps: [start, openDoc('a'), stamp('importLibraryPdf', [PDF]), arm('stamp-lib-0-1:Stamp1')],
   },
 ];
 
@@ -212,31 +214,29 @@ const dynamic: ScenarioCase[] = [
       start,
       openDoc('a'),
       stamp('importLibraryPdf', [PDF]),
-      arm('stamp-0-2', { targetWidth: 80 }),
+      arm('stamp-lib-0-1:Stamp1', { targetWidth: 80 }),
       stamp('libraryBytes', ['stamp-lib-0-1']),
-      stamp('assetBytes', ['stamp-0-2']),
+      stamp('assetBytes', ['stamp-lib-0-1:Stamp1']),
     ],
   },
   {
     name: 'a-loose-dynamic-stamp',
     covers:
-      'A loose PDF asset evaluates from its own bytes and must be exactly one page: a single page is selected whatever its number, two pages reject with InvalidArg. A target without an identity opens the copy without one.',
+      'A PDF asset added without a library gets a library of its own (a blank seed, then the page appended, both on the workshop document) and evaluates from that library\'s canonical bytes, selecting its page. A target without an identity opens the copy without one. (v2 kept such an asset loose and evaluated its own bytes, refusing a two-page PDF; v3 has no loose assets.)',
     plugins: PLACEMENT(scripting()),
     engine: {
       documents: {
         a: target({ security: { allows: '*' } }),
-        copy: dynamicDoc({ pages: [assetPage(0, 7)], fields: [DATE(7)] }),
-        pair: dynamicDoc({ pages: TWO }),
+        copy: dynamicDoc({ pages: [assetPage(0, 3, 612, 792), assetPage(1, WORKSHOP_PAGE)], fields: [DATE(WORKSHOP_PAGE)] }),
       },
-      responses: opens('a', 'copy', 'pair'),
+      responses: opens('a', 'workshop', 'workshop', 'copy'),
     },
     snapshot: 'none',
     steps: [
       start,
       openDoc('a'),
       stamp('addAsset', [{ name: 'Dynamic', source: PDF, size: { width: 200, height: 80 } }]),
-      arm('stamp-0-1'),
-      arm('stamp-0-1'),
+      arm('stamp-lib-0-0:Dynamic'),
     ],
   },
   {
@@ -259,10 +259,10 @@ const dynamic: ScenarioCase[] = [
       start,
       openDoc('a'),
       stamp('importLibraryPdf', [PDF]),
-      arm('stamp-0-2', undefined, 'closed'),
-      arm('stamp-0-2'),
-      arm('stamp-0-2'),
-      arm('stamp-0-2'),
+      arm('stamp-lib-0-1:Stamp1', undefined, 'closed'),
+      arm('stamp-lib-0-1:Stamp1'),
+      arm('stamp-lib-0-1:Stamp1'),
+      arm('stamp-lib-0-1:Stamp1'),
     ],
   },
   {
@@ -291,7 +291,7 @@ const dynamic: ScenarioCase[] = [
     ),
     engine: { documents: { a: target(), lib: assetDoc(ONE), copy: dynamicDoc() }, responses: opens('a', 'lib', 'copy') },
     snapshot: 'none',
-    steps: [start, openDoc('a'), stamp('importLibraryPdf', [PDF]), arm('stamp-0-2')],
+    steps: [start, openDoc('a'), stamp('importLibraryPdf', [PDF]), arm('stamp-lib-0-1:Stamp1')],
   },
   {
     name: 'a-failed-recalculation-fails-the-arm',
@@ -320,7 +320,7 @@ const dynamic: ScenarioCase[] = [
     ),
     engine: { documents: { a: target(), lib: assetDoc(ONE), copy: dynamicDoc() }, responses: opens('a', 'lib', 'copy') },
     snapshot: ['annotation::a'],
-    steps: [start, openDoc('a'), stamp('importLibraryPdf', [PDF]), arm('stamp-0-2')],
+    steps: [start, openDoc('a'), stamp('importLibraryPdf', [PDF]), arm('stamp-lib-0-1:Stamp1')],
   },
   {
     name: 'an-error-observer-that-throws',
@@ -333,7 +333,7 @@ const dynamic: ScenarioCase[] = [
     ),
     engine: { documents: { a: target(), lib: assetDoc(ONE), copy: dynamicDoc() }, responses: opens('a', 'lib', 'copy') },
     snapshot: 'none',
-    steps: [start, openDoc('a'), stamp('importLibraryPdf', [PDF]), arm('stamp-0-2')],
+    steps: [start, openDoc('a'), stamp('importLibraryPdf', [PDF]), arm('stamp-lib-0-1:Stamp1')],
   },
   {
     name: 'observers-see-a-successful-run',
@@ -363,7 +363,7 @@ const dynamic: ScenarioCase[] = [
     ),
     engine: { documents: { a: target(), lib: assetDoc(ONE), copy: dynamicDoc() }, responses: opens('a', 'lib', 'copy') },
     snapshot: 'none',
-    steps: [start, openDoc('a'), stamp('importLibraryPdf', [PDF]), arm('stamp-0-2')],
+    steps: [start, openDoc('a'), stamp('importLibraryPdf', [PDF]), arm('stamp-lib-0-1:Stamp1')],
   },
   {
     name: 'a-flatten-that-fails-or-skips',
@@ -373,12 +373,12 @@ const dynamic: ScenarioCase[] = [
       documents: {
         a: target(),
         lib: assetDoc(ONE),
-        failed: dynamicDoc({ flatten: { results: [{ pageObjectNumber: 100, status: 'failed' }] } }),
-        skipped: dynamicDoc({ flatten: { results: [{ pageObjectNumber: 100, status: 'skipped' }] } }),
-        text: dynamicDoc({ flatten: { results: [{ pageObjectNumber: 'p100', status: 'failed' }] } }),
-        nil: dynamicDoc({ flatten: { results: [{ pageObjectNumber: null, status: 'failed' }] } }),
-        flag: dynamicDoc({ flatten: { results: [{ pageObjectNumber: true, status: 'failed' }] } }),
-        none: dynamicDoc({ flatten: { results: [{ status: 'failed' }] } }),
+        failed: dynamicDoc({ flatten: { results: [{ page: { kind: 'objectNumber', pageObjectNumber: 100 }, status: 'failed' }] } }),
+        skipped: dynamicDoc({ flatten: { results: [{ page: { kind: 'objectNumber', pageObjectNumber: 100 }, status: 'skipped' }] } }),
+        text: dynamicDoc({ flatten: { results: [{ page: { kind: 'objectNumber', pageObjectNumber: 'p100' }, status: 'failed' }] } }),
+        nil: dynamicDoc({ flatten: { results: [{ page: { kind: 'objectNumber', pageObjectNumber: null }, status: 'failed' }] } }),
+        flag: dynamicDoc({ flatten: { results: [{ page: { kind: 'objectNumber', pageObjectNumber: true }, status: 'failed' }] } }),
+        none: dynamicDoc({ flatten: { results: [{ page: {}, status: 'failed' }] } }),
       },
       responses: opens('a', 'lib', 'failed', 'skipped', 'text', 'nil', 'flag', 'none'),
     },
@@ -387,12 +387,12 @@ const dynamic: ScenarioCase[] = [
       start,
       openDoc('a'),
       stamp('importLibraryPdf', [PDF]),
-      arm('stamp-0-2'),
-      arm('stamp-0-2'),
-      arm('stamp-0-2'),
-      arm('stamp-0-2'),
-      arm('stamp-0-2'),
-      arm('stamp-0-2'),
+      arm('stamp-lib-0-1:Stamp1'),
+      arm('stamp-lib-0-1:Stamp1'),
+      arm('stamp-lib-0-1:Stamp1'),
+      arm('stamp-lib-0-1:Stamp1'),
+      arm('stamp-lib-0-1:Stamp1'),
+      arm('stamp-lib-0-1:Stamp1'),
     ],
   },
   {
@@ -409,34 +409,7 @@ const dynamic: ScenarioCase[] = [
       responses: opens('a', 'lib', 'copy', 'url'),
     },
     snapshot: 'none',
-    steps: [start, openDoc('a'), stamp('importLibraryPdf', [PDF]), arm('stamp-0-2'), arm('stamp-0-2')],
-  },
-  {
-    name: 'a-loose-pdf-under-a-canonical-id-has-no-page',
-    covers:
-      "A loose PDF asset whose library id an import later took evaluates from the canonical bytes, where it has no page: with more than one page the arm rejects with InvalidArg naming an unknown page.",
-    plugins: PLACEMENT(scripting()),
-    engine: {
-      documents: {
-        a: target(),
-        lib: assetDoc(TWO, {
-          catalog: { Id: str('stamp-lib-0-1') },
-          page: { 100: { Id: str('c1') }, 101: { Id: str('c2') } },
-          responses: [{ path: 'download', defer: 'save' }],
-        }),
-        copy: dynamicDoc({ pages: TWO }),
-      },
-      responses: opens('a', 'lib', 'copy'),
-    },
-    snapshot: 'none',
-    steps: [
-      start,
-      openDoc('a'),
-      stamp('importLibraryPdf', [PDF]),
-      stamp('addAsset', [{ name: 'Loose', source: PDF, size: { width: 10, height: 10 } }]),
-      settle('save', PDF),
-      arm('stamp-0-2'),
-    ],
+    steps: [start, openDoc('a'), stamp('importLibraryPdf', [PDF]), arm('stamp-lib-0-1:Stamp1'), arm('stamp-lib-0-1:Stamp1')],
   },
   {
     name: 'a-library-without-canonical-bytes',
@@ -452,7 +425,7 @@ const dynamic: ScenarioCase[] = [
       responses: opens('a', 'lib', 'copy', 'copy'),
     },
     snapshot: 'none',
-    steps: [start, openDoc('a'), stamp('importLibraryPdf', [PDF]), arm('stamp-0-2'), stamp('disarm', ['a']), arm('stamp-0-3')],
+    steps: [start, openDoc('a'), stamp('importLibraryPdf', [PDF]), arm('stamp-lib-0-1:Stamp1'), stamp('disarm', ['a']), arm('stamp-lib-0-1:Stamp2')],
   },
   {
     name: 'teardown-destroys-a-factory-engine-once',
@@ -460,15 +433,20 @@ const dynamic: ScenarioCase[] = [
     plugins: PLACEMENT({ ...scripting(), assetEngine: 'factory' }),
     engine: { documents: { a: target(), lib: assetDoc(ONE), copy: dynamicDoc() }, responses: opens('a', 'lib', 'copy') },
     snapshot: 'none',
-    steps: [start, openDoc('a'), stamp('importLibraryPdf', [PDF]), arm('stamp-0-2'), destroy],
+    steps: [start, openDoc('a'), stamp('importLibraryPdf', [PDF]), arm('stamp-lib-0-1:Stamp1'), destroy],
   },
 ];
+
+/** Every case can create and extend libraries: the workshop document
+ *  answers the opens a case does not name (see stamp-fixtures.ts). */
+const workshop = (cases: ScenarioCase[]): ScenarioCase[] =>
+  cases.map((c) => ({ ...c, engine: withWorkshop(c.engine as never) }));
 
 export const suites: Suite[] = [
   {
     kind: 'scenario',
     file: 'plugins/stamp-placement.json',
     describes: 'packages/plugin/stamp: armAsset and disarm through the annotation plugin, and dynamic stamps through form scripting.',
-    cases: [...staticCases, ...skipped, ...dynamic],
+    cases: workshop([...staticCases, ...skipped, ...dynamic]),
   },
 ];
