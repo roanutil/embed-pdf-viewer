@@ -19,6 +19,8 @@ harness = ["dep:plugin-conformance", "epdf-plugin-stage/harness"]
 epdf-kernel = { path = "../../epdf-kernel" }
 epdf-geometry = { path = "../geometry", default-features = false }
 epdf-plugin-stage = { path = "../stage", default-features = false }
+# For `page_ref_json`, the `PageRef` serde adapter the plugin crates share.
+epdf-plugin-actions = { path = "../actions", default-features = false }
 serde = { version = "1", features = ["derive", "rc"] }
 serde_json = { version = "1", features = ["float_roundtrip"] }
 plugin-conformance = { path = "../../plugin-conformance", optional = true }

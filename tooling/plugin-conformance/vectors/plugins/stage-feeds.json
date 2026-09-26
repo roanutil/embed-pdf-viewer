@@ -7249,6 +7249,823 @@
       ]
     },
     {
+      "name": "a-cursor-past-the-last-page",
+      "covers": "A restored view may carry a cursor the document no longer has: getCurrentPage is null then, and the feed reports a null current page.",
+      "plugins": [
+        {
+          "factory": "actions",
+          "config": {
+            "openSequence": "off"
+          }
+        },
+        {
+          "factory": "stage",
+          "config": {
+            "viewUnitsPerPoint": 1,
+            "scrollBehavior": "instant"
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              },
+              {
+                "index": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 3
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ],
+            "security": {
+              "allows": "*"
+            },
+            "responses": [
+              {
+                "path": "forms.list",
+                "value": {
+                  "formKind": "none",
+                  "needsAppearances": false,
+                  "fields": [],
+                  "calculationOrder": []
+                }
+              },
+              {
+                "path": "page.annotations.list",
+                "value": {
+                  "annotations": []
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stage",
+            "doc": "a"
+          },
+          "method": "setViewportSize",
+          "args": [
+            {
+              "width": 1000,
+              "height": 700
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stage",
+            "doc": "a"
+          },
+          "method": "applyViewState",
+          "args": [
+            {
+              "flow": "continuous",
+              "layout": "vertical",
+              "spread": "none",
+              "sizing": "intrinsic",
+              "columns": "square",
+              "bounded": true,
+              "padding": 24,
+              "gap": 16,
+              "pageFrame": {
+                "top": 0,
+                "right": 0,
+                "bottom": 0,
+                "left": 0
+              },
+              "direction": "ltr",
+              "fitAlign": {
+                "x": "center",
+                "y": "center"
+              },
+              "arrivalAlign": {
+                "x": "start",
+                "y": "start"
+              },
+              "zoomAlign": {
+                "x": "center",
+                "y": "center"
+              },
+              "anchorAlign": {
+                "x": "start",
+                "y": "start"
+              },
+              "viewRotation": 0,
+              "zoom": {
+                "level": 1
+              },
+              "scrollBehavior": "instant",
+              "viewUnitsPerPoint": 1,
+              "cursor": 7,
+              "anchor": {
+                "pageIndex": 2,
+                "fx": 0.5,
+                "fy": 0.5
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stage",
+            "doc": "a"
+          },
+          "method": "getCurrentPage",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stage",
+            "doc": "a"
+          },
+          "method": "getCurrentPageIndex",
+          "args": []
+        }
+      ],
+      "snapshot": [
+        "stage::a",
+        "actions::a"
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "plugins": {
+              "stage::a": {
+                "camera": {
+                  "x": 0,
+                  "y": 0,
+                  "zoom": 1
+                },
+                "placed": false,
+                "cameraResting": true,
+                "vp": {
+                  "width": 0,
+                  "height": 0
+                },
+                "dpr": 1,
+                "cursor": 0,
+                "motionCause": "user",
+                "activeRules": [],
+                "flow": "continuous",
+                "layout": "vertical",
+                "spread": "none",
+                "sizing": "intrinsic",
+                "columns": "square",
+                "bounded": true,
+                "padding": 24,
+                "gap": 16,
+                "pageFrame": {
+                  "top": 0,
+                  "right": 0,
+                  "bottom": 0,
+                  "left": 0
+                },
+                "direction": "ltr",
+                "fitAlign": {
+                  "x": "center",
+                  "y": "center"
+                },
+                "arrivalAlign": {
+                  "x": "start",
+                  "y": "start"
+                },
+                "zoomAlign": {
+                  "x": "center",
+                  "y": "center"
+                },
+                "anchorAlign": {
+                  "x": "start",
+                  "y": "start"
+                },
+                "viewRotation": 0,
+                "zoom": {
+                  "mode": "automatic"
+                },
+                "scrollBehavior": "instant",
+                "viewUnitsPerPoint": 1
+              },
+              "actions::a": {
+                "seq": 0,
+                "policyRevision": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "stage::a",
+              "action": {
+                "type": "VP",
+                "vp": {
+                  "width": 1000,
+                  "height": 700
+                }
+              }
+            },
+            {
+              "slice": "stage::a",
+              "action": {
+                "type": "MOTION_CAUSE",
+                "cause": "programmatic"
+              }
+            },
+            {
+              "slice": "stage::a",
+              "action": {
+                "type": "CAMERA",
+                "camera": {
+                  "zoom": 1,
+                  "x": -200,
+                  "y": -24
+                }
+              }
+            },
+            {
+              "slice": "stage::a",
+              "action": {
+                "type": "PLACED"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "page.annotations.list",
+              "pon": 1,
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "page.annotations.list",
+              "pon": 2,
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "page.annotations.list",
+              "pon": 3,
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "stage::a": {
+                "camera": {
+                  "zoom": 1,
+                  "x": -200,
+                  "y": -24
+                },
+                "placed": true,
+                "cameraResting": true,
+                "vp": {
+                  "width": 1000,
+                  "height": 700
+                },
+                "dpr": 1,
+                "cursor": 0,
+                "motionCause": "programmatic",
+                "activeRules": [],
+                "flow": "continuous",
+                "layout": "vertical",
+                "spread": "none",
+                "sizing": "intrinsic",
+                "columns": "square",
+                "bounded": true,
+                "padding": 24,
+                "gap": 16,
+                "pageFrame": {
+                  "top": 0,
+                  "right": 0,
+                  "bottom": 0,
+                  "left": 0
+                },
+                "direction": "ltr",
+                "fitAlign": {
+                  "x": "center",
+                  "y": "center"
+                },
+                "arrivalAlign": {
+                  "x": "start",
+                  "y": "start"
+                },
+                "zoomAlign": {
+                  "x": "center",
+                  "y": "center"
+                },
+                "anchorAlign": {
+                  "x": "start",
+                  "y": "start"
+                },
+                "viewRotation": 0,
+                "zoom": {
+                  "mode": "automatic"
+                },
+                "scrollBehavior": "instant",
+                "viewUnitsPerPoint": 1
+              },
+              "actions::a": {
+                "seq": 0,
+                "policyRevision": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "stage::a",
+              "action": {
+                "type": "PATCH",
+                "patch": {
+                  "flow": "continuous",
+                  "layout": "vertical",
+                  "spread": "none",
+                  "sizing": "intrinsic",
+                  "columns": "square",
+                  "bounded": true,
+                  "padding": 24,
+                  "gap": 16,
+                  "pageFrame": {
+                    "top": 0,
+                    "right": 0,
+                    "bottom": 0,
+                    "left": 0
+                  },
+                  "direction": "ltr",
+                  "fitAlign": {
+                    "x": "center",
+                    "y": "center"
+                  },
+                  "arrivalAlign": {
+                    "x": "start",
+                    "y": "start"
+                  },
+                  "zoomAlign": {
+                    "x": "center",
+                    "y": "center"
+                  },
+                  "anchorAlign": {
+                    "x": "start",
+                    "y": "start"
+                  },
+                  "viewRotation": 0,
+                  "zoom": {
+                    "level": 1
+                  },
+                  "scrollBehavior": "instant",
+                  "viewUnitsPerPoint": 1
+                }
+              }
+            },
+            {
+              "slice": "stage::a",
+              "action": {
+                "type": "CURSOR",
+                "cursor": 7
+              }
+            },
+            {
+              "slice": "stage::a",
+              "action": {
+                "type": "CAMERA",
+                "camera": {
+                  "zoom": 1,
+                  "x": -200,
+                  "y": 1756
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "stage::a": {
+                "camera": {
+                  "zoom": 1,
+                  "x": -200,
+                  "y": 1756
+                },
+                "placed": true,
+                "cameraResting": true,
+                "vp": {
+                  "width": 1000,
+                  "height": 700
+                },
+                "dpr": 1,
+                "cursor": 7,
+                "motionCause": "programmatic",
+                "activeRules": [],
+                "flow": "continuous",
+                "layout": "vertical",
+                "spread": "none",
+                "sizing": "intrinsic",
+                "columns": "square",
+                "bounded": true,
+                "padding": 24,
+                "gap": 16,
+                "pageFrame": {
+                  "top": 0,
+                  "right": 0,
+                  "bottom": 0,
+                  "left": 0
+                },
+                "direction": "ltr",
+                "fitAlign": {
+                  "x": "center",
+                  "y": "center"
+                },
+                "arrivalAlign": {
+                  "x": "start",
+                  "y": "start"
+                },
+                "zoomAlign": {
+                  "x": "center",
+                  "y": "center"
+                },
+                "anchorAlign": {
+                  "x": "start",
+                  "y": "start"
+                },
+                "viewRotation": 0,
+                "zoom": {
+                  "level": 1
+                },
+                "scrollBehavior": "instant",
+                "viewUnitsPerPoint": 1
+              },
+              "actions::a": {
+                "seq": 0,
+                "policyRevision": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": null
+          },
+          "state": {
+            "plugins": {
+              "stage::a": {
+                "camera": {
+                  "zoom": 1,
+                  "x": -200,
+                  "y": 1756
+                },
+                "placed": true,
+                "cameraResting": true,
+                "vp": {
+                  "width": 1000,
+                  "height": 700
+                },
+                "dpr": 1,
+                "cursor": 7,
+                "motionCause": "programmatic",
+                "activeRules": [],
+                "flow": "continuous",
+                "layout": "vertical",
+                "spread": "none",
+                "sizing": "intrinsic",
+                "columns": "square",
+                "bounded": true,
+                "padding": 24,
+                "gap": 16,
+                "pageFrame": {
+                  "top": 0,
+                  "right": 0,
+                  "bottom": 0,
+                  "left": 0
+                },
+                "direction": "ltr",
+                "fitAlign": {
+                  "x": "center",
+                  "y": "center"
+                },
+                "arrivalAlign": {
+                  "x": "start",
+                  "y": "start"
+                },
+                "zoomAlign": {
+                  "x": "center",
+                  "y": "center"
+                },
+                "anchorAlign": {
+                  "x": "start",
+                  "y": "start"
+                },
+                "viewRotation": 0,
+                "zoom": {
+                  "level": 1
+                },
+                "scrollBehavior": "instant",
+                "viewUnitsPerPoint": 1
+              },
+              "actions::a": {
+                "seq": 0,
+                "policyRevision": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": 7
+          },
+          "state": {
+            "plugins": {
+              "stage::a": {
+                "camera": {
+                  "zoom": 1,
+                  "x": -200,
+                  "y": 1756
+                },
+                "placed": true,
+                "cameraResting": true,
+                "vp": {
+                  "width": 1000,
+                  "height": 700
+                },
+                "dpr": 1,
+                "cursor": 7,
+                "motionCause": "programmatic",
+                "activeRules": [],
+                "flow": "continuous",
+                "layout": "vertical",
+                "spread": "none",
+                "sizing": "intrinsic",
+                "columns": "square",
+                "bounded": true,
+                "padding": 24,
+                "gap": 16,
+                "pageFrame": {
+                  "top": 0,
+                  "right": 0,
+                  "bottom": 0,
+                  "left": 0
+                },
+                "direction": "ltr",
+                "fitAlign": {
+                  "x": "center",
+                  "y": "center"
+                },
+                "arrivalAlign": {
+                  "x": "start",
+                  "y": "start"
+                },
+                "zoomAlign": {
+                  "x": "center",
+                  "y": "center"
+                },
+                "anchorAlign": {
+                  "x": "start",
+                  "y": "start"
+                },
+                "viewRotation": 0,
+                "zoom": {
+                  "level": 1
+                },
+                "scrollBehavior": "instant",
+                "viewUnitsPerPoint": 1
+              },
+              "actions::a": {
+                "seq": 0,
+                "policyRevision": 0
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "a-thumbnail-lens-stays-out",
       "covers": "A lens with its own id registers no executors and feeds no page state, so actions only ever drive the main lens.",
       "plugins": [

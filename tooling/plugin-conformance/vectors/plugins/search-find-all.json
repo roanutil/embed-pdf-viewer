@@ -2320,7 +2320,7 @@
     },
     {
       "name": "find-all-errors-reject",
-      "covers": "An engine error rejects findAll with that error; so does a geometry failure while converting hits.",
+      "covers": "An engine error rejects findAll with its PluginError; a page with userUnit 0 still converts.",
       "plugins": [
         {
           "factory": "search"

@@ -1,19 +1,16 @@
-//! `types.ts`, plus the engine-core search DTOs the plugin reads
-//! (`search/types.ts`, `text/layout.ts`'s `PdfTextSegment`).
-
-use std::collections::BTreeMap;
-use std::rc::Rc;
-use std::sync::LazyLock;
+//! `contract.ts`: the public search vocabulary, plus the engine-core search
+//! DTOs the plugin reads (`search/types.ts`, `text/layout.ts`'s
+//! `PdfTextSegment`). The capability is [`crate::SearchCapability`]; the
+//! token is [`crate::SEARCH`].
 
 use epdf_geometry::{Quad, Rect, TextQuad};
-use epdf_kernel::Token;
+use epdf_kernel::geometry::PageRef;
 use epdf_kernel::signal::AbortSignal;
+use epdf_plugin_actions::page_ref_json;
 use epdf_plugin_stage::{RevealAnchor, ScrollBehaviorKind};
 use serde::{Deserialize, Serialize};
 
-use crate::capability::SearchCapability;
-
-/// `PageObjectNumber`, as the engine contract spells a page.
+/// `PageObjectNumber`, the number inside a [`PageRef`].
 pub type PageObjectNumber = u32;
 
 // ── the engine's DTOs ─────────────────────────────────────────────────────────
@@ -63,8 +60,8 @@ pub struct SearchRequest {
     pub mode: Option<SearchMode>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub cursor: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub start_page: Option<PageObjectNumber>,
+    #[serde(default, skip_serializing_if = "Option::is_none", with = "page_ref_json::option")]
+    pub start_page: Option<PageRef>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub skip: Option<f64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -103,7 +100,8 @@ pub struct PdfTextSegment {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SearchMatch {
-    pub page_object_number: PageObjectNumber,
+    #[serde(with = "page_ref_json")]
+    pub page: PageRef,
     pub char_start: f64,
     pub char_count: f64,
     pub segments: Vec<PdfTextSegment>,
@@ -124,7 +122,8 @@ pub struct SearchSlice {
 
 // ── the plugin's types ────────────────────────────────────────────────────────
 
-/// One merged visual line of a match, in content space.
+/// `TextSegment`: one merged visual line of a match in page space, the
+/// structural twin of selection's `SelectionSegment`.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct TextSegment {
     pub quad: TextQuad,
@@ -133,12 +132,14 @@ pub struct TextSegment {
     pub advance: f64,
 }
 
-/// One match, viewer-shaped: content-space segments plus the page's display
-/// index, with the engine's text-page offsets kept.
+/// `SearchHit`: one match. `page` is the durable identity, `page_index` its
+/// display index at the time of the match; `char_start` and `char_count`
+/// are engine text-page offsets.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SearchHit {
-    pub pon: PageObjectNumber,
+    #[serde(with = "page_ref_json")]
+    pub page: PageRef,
     pub page_index: usize,
     pub char_start: f64,
     pub char_count: f64,
@@ -150,31 +151,16 @@ pub struct SearchHit {
     pub snippet: Option<SearchSnippet>,
 }
 
-/// `searching` means the slice loop is still walking pages.
+/// `searching`: the scan is walking pages. `cancelled`: `cancel()` stopped
+/// it and the hits found so far stay.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum SearchStatus {
     Idle,
     Searching,
     Complete,
+    Cancelled,
     Error,
-}
-
-/// `SearchExecOptions`: how the session scan runs, never what it means.
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
-pub struct SearchExecOptions {
-    /// Scan origin. Defaults to the Stage's current page.
-    pub start_page: Option<PageObjectNumber>,
-}
-
-/// `SearchFindAllOptions`.
-#[derive(Clone, Default)]
-pub struct SearchFindAllOptions {
-    /// Abort the scan; the promise rejects with the signal's reason.
-    pub signal: Option<AbortSignal>,
-    /// Pin the slice mode. `None` is `Full` with the automatic `Rects`
-    /// fallback when snippets are denied.
-    pub mode: Option<SearchMode>,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
@@ -183,42 +169,31 @@ pub struct SearchProgress {
     pub total: f64,
 }
 
-/// `SearchState`. `hits` and `hits_by_page` are shared with every state
-/// that did not change them, as the TypeScript's spreads share them.
+/// `PluginErrorInfo`: the serializable face of a `PluginError`.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SearchState {
-    /// The query in flight or completed; `None` when idle.
-    pub query: Option<SearchQuery>,
-    pub status: SearchStatus,
-    pub hits: Rc<Vec<SearchHit>>,
-    /// pon to indices into `hits`.
-    pub hits_by_page: Rc<BTreeMap<PageObjectNumber, Vec<usize>>>,
-    /// Index into `hits`, `-1` for none.
-    pub active_index: isize,
-    pub progress: SearchProgress,
-    pub error: Option<String>,
+pub struct PluginErrorInfo {
+    pub code: String,
+    pub message: String,
+    pub capability: String,
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "type")]
-pub enum SearchAction {
-    #[serde(rename = "START")]
-    Start { query: SearchQuery },
-    #[serde(rename = "APPEND")]
-    Append { hits: Vec<SearchHit>, scanned: f64, total: f64 },
-    #[serde(rename = "COMPLETE")]
-    Complete,
-    #[serde(rename = "ERROR")]
-    Error { message: String },
-    #[serde(rename = "SET_ACTIVE")]
-    SetActive { index: isize },
-    #[serde(rename = "CLEAR")]
-    Clear,
+impl PluginErrorInfo {
+    /// `toPluginErrorInfo(error)` of a `PluginError`.
+    pub fn of(error: &epdf_kernel::Error) -> Self {
+        let text = |key: &str| {
+            error.member(key).and_then(serde_json::Value::as_str).unwrap_or_default().to_string()
+        };
+        PluginErrorInfo {
+            code: text("code"),
+            message: error.message.clone(),
+            capability: text("capability"),
+        }
+    }
 }
 
-/// `SearchRevealOptions`: how hit navigation arrives, merged per key as
-/// `{...default, ...config.reveal, ...perCall}`.
+/// `SearchRevealOptions`: how a navigated hit arrives, forwarded to the
+/// Stage's positioned reveal and merged per key as `{...default,
+/// ...config.reveal, ...perCall}`.
 ///
 /// Each member is two options because a spread copies a key that is
 /// present with the value `undefined`: the outer `None` is an absent key
@@ -233,11 +208,107 @@ pub struct SearchRevealOptions {
     pub behavior: Option<Option<ScrollBehaviorKind>>,
 }
 
-/// `SearchPluginConfig`.
+/// `OperationOptions`.
+#[derive(Clone, Default)]
+pub struct OperationOptions {
+    pub signal: Option<AbortSignal>,
+}
+
+/// `SearchOptions`.
+#[derive(Clone, Default)]
+pub struct SearchOptions {
+    /// Scan origin. Defaults to the Stage's current page when a Stage is
+    /// installed.
+    pub start_page: Option<PageRef>,
+    pub signal: Option<AbortSignal>,
+}
+
+/// `SearchFindAllOptions`.
+#[derive(Clone, Default)]
+pub struct SearchFindAllOptions {
+    /// Rejects `operation-cancelled` when it aborts.
+    pub signal: Option<AbortSignal>,
+    /// Pin the slice mode. `None` is `Full` with the automatic `Rects`
+    /// fallback when snippets are denied.
+    pub mode: Option<SearchMode>,
+}
+
+/// What a `search()` resolved to.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum SearchResultStatus {
+    Complete,
+    Superseded,
+    Cancelled,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SearchResult {
+    pub status: SearchResultStatus,
+    pub hit_count: usize,
+}
+
+/// `SearchConfig`.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
-pub struct SearchPluginConfig {
-    /// Arrival defaults for `next`, `prev` and `go_to`.
+pub struct SearchConfig {
+    /// Arrival defaults for `next_hit`, `previous_hit` and `go_to_hit`.
     pub reveal: Option<SearchRevealOptions>,
 }
 
-pub static SEARCH: LazyLock<Token<SearchCapability>> = LazyLock::new(|| Token::new("search"));
+// ── events ────────────────────────────────────────────────────────────────────
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SearchStartedEvent {
+    pub query: SearchQuery,
+    pub operation_id: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SearchProgressEvent {
+    pub scanned: f64,
+    pub total: f64,
+    pub hit_count: usize,
+    pub operation_id: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SearchCompletedEvent {
+    pub hit_count: usize,
+    pub operation_id: String,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum SearchCancelReason {
+    Superseded,
+    Cancelled,
+    Cleared,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SearchCancelledEvent {
+    pub operation_id: String,
+    pub reason: SearchCancelReason,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SearchFailedEvent {
+    pub error: PluginErrorInfo,
+    pub operation_id: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct SearchActiveHitChangedEvent {
+    pub index: usize,
+    pub hit: Option<SearchHit>,
+}
+
+/// `SearchClearedEvent`: an empty object.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize)]
+pub struct SearchClearedEvent {}

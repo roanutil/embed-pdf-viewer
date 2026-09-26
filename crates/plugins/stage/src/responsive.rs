@@ -4,8 +4,8 @@
 
 use epdf_geometry::Size;
 
+use crate::contract::*;
 use crate::for_each_setting;
-use crate::types::*;
 
 /// The reported viewport as a queryable box. A square box is portrait.
 pub fn box_of(vp: Size) -> StageBox {

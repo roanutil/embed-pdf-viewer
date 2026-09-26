@@ -339,7 +339,7 @@ const sessionCases: ScenarioCase[] = [
   {
     name: 'clear-aborts-and-resets',
     covers:
-      'clear() aborts the in-flight slice with reason "cleared" and dispatches CLEAR; a late answer is ignored; clear() when idle still dispatches CLEAR and aborts nothing.',
+      'clear() aborts the in-flight slice with reason "cleared", dispatches CLEAR and resolves the run cancelled; a late answer is ignored; clear() when idle dispatches nothing.',
     plugins: search(),
     engine: { documents: { a: doc([deferAt(Q, 'full', {}, 's1')]) } },
     snapshot: SNAPSHOT,
@@ -500,8 +500,8 @@ const failureCases: ScenarioCase[] = [
     steps: [start, open(), s('search', Q), s('errorMessage')],
   },
   {
-    name: 'a-geometry-failure-is-an-error',
-    covers: 'A page whose geometry cannot invert (userUnit 0) throws while converting its hits, and the session errors with the geometry message.',
+    name: 'a-user-unit-of-zero-still-converts',
+    covers: 'Hits convert through the page space, which reads only the crop: a page with userUnit 0 converts like any other and the session completes.',
     plugins: search(),
     engine: {
       documents: {
@@ -533,7 +533,7 @@ const failureCases: ScenarioCase[] = [
   {
     name: 'close-mid-search',
     covers:
-      'Closing the document does not abort the session: a slice answered after close is still converted and dispatched into the removed slice.',
+      'Closing the document aborts the guarded slice: the run resolves cancelled, and a slice answered after close is dropped.',
     plugins: search(),
     engine: { documents: { a: doc([deferAt(Q, 'full', {}, 's1')]) } },
     steps: [start, open(), s('search', Q), close(), settle('s1', slice([m(11, 0)], null, 3))],
@@ -873,7 +873,7 @@ const findAllCases: ScenarioCase[] = [
   },
   {
     name: 'find-all-errors-reject',
-    covers: 'An engine error rejects findAll with that error; so does a geometry failure while converting hits.',
+    covers: 'An engine error rejects findAll with its PluginError; a page with userUnit 0 still converts.',
     plugins: search(),
     engine: {
       documents: {
@@ -958,18 +958,132 @@ const findAllCases: ScenarioCase[] = [
   },
 ];
 
+// ── the v3 surface: cancel, the events, and the reads with no v2 twin ─────────
+
+/** A call by its v3 name. */
+const v3 = (method: string, ...args: unknown[]): Step => ({ op: 'call', target: { token: 'search', doc: 'a' }, method, args });
+const callRef = (ref: number): Step => ({ op: 'call', target: { ref } });
+const HOOKS = ['onStarted', 'onProgress', 'onCompleted', 'onCancelled', 'onFailed', 'onActiveHitChanged', 'onCleared'];
+/** A logging listener on every event; the unsubscribes are refs 0 to 6. */
+const listenAll: Step[] = HOOKS.map((hook) => v3(hook, { $fn: hook }));
+
+const v3Cases: ScenarioCase[] = [
+  {
+    name: 'cancel-keeps-the-hits',
+    covers:
+      'cancel() aborts the in-flight slice with reason "cancelled"; the run resolves cancelled with the hits found so far, the session dispatches CANCELLED and keeps them, and onCancelled reports the reason; cancel() with nothing running does nothing.',
+    plugins: search(),
+    engine: { documents: { a: doc([answer(Q, 'full', {}, slice([m(11, 0), m(22, 1)], 'c1', 1)), deferAt(Q, 'full', { cursor: 'c1' }, 's2')]) } },
+    snapshot: SNAPSHOT,
+    steps: [start, open(), v3('onCancelled', { $fn: 'cancelled' }), s('search', Q), v3('cancel'), s('status'), s('hitCount'), settle('s2', slice([m(33, 0)], null, 3)), v3('cancel'), s('hits')],
+  },
+  {
+    name: 'session-events',
+    covers:
+      'A run emits onStarted, one onProgress per slice with the running hit count, and onCompleted; navigation emits onActiveHitChanged only when the index moves; a superseded run reports onCancelled superseded, a clear during a run cancelled with reason cleared and then onCleared, a clear while idle nothing, and a failure onFailed with its PluginErrorInfo; an unsubscribed listener hears nothing more.',
+    plugins: search(),
+    engine: {
+      documents: {
+        a: doc([
+          ...CHAIN,
+          deferAt(Q2, 'full', {}, 'q2'),
+          deferAt({ text: 'third' }, 'full', {}, 'q3'),
+          failAt({ text: 'fails' }, 'full', {}, BOOM),
+        ]),
+      },
+    },
+    snapshot: SNAPSHOT,
+    steps: [
+      start,
+      open(),
+      ...listenAll,
+      s('search', Q),
+      s('next'),
+      s('goTo', 1),
+      s('goTo', 5),
+      s('search', Q2),
+      s('search', { text: 'third' }),
+      s('clear'),
+      s('clear'),
+      s('search', { text: 'fails' }),
+      s('errorMessage'),
+      callRef(4),
+      s('search', { text: 'fails' }),
+    ],
+  },
+  {
+    name: 'page-reads',
+    covers:
+      'getHitCount with a page counts that page\'s bucket (0 for a page with none); listPagesWithHits names each page with hits once, in object-number order, and is empty before any hit.',
+    plugins: search(),
+    engine: { documents: { a: doc([answer(Q, 'full', {}, slice([m(33, 0), m(11, 0), m(33, 4), m(22, 1)], null, 3))]) } },
+    snapshot: 'none',
+    steps: [start, open(), v3('listPagesWithHits'), s('search', Q), v3('listPagesWithHits'), v3('getHitCount', pr(33)), v3('getHitCount', pr(99)), v3('getHitCount'), v3('listHits', {})],
+  },
+  {
+    name: 'a-failed-rerun-is-swallowed',
+    covers: 'A mutation rerun whose scan fails records the error through the session; the timer swallows the rejected refresh.',
+    plugins: search(),
+    engine: { documents: { a: doc([answer(Q, 'full', {}, slice([m(11, 0)], null, 3), 1), failAt(Q, 'full', {}, BOOM, 1)]) } },
+    snapshot: SNAPSHOT,
+    steps: [start, open(), v3('onFailed', { $fn: 'failed' }), s('search', Q), emit({ type: 'annotations.created', page: pr(11) }), advance(250), s('status'), s('errorMessage')],
+  },
+];
+
+const turnCases: ScenarioCase[] = [
+  {
+    name: 'close-races-the-session-and-find-all',
+    covers:
+      'Closing with a session scan and a findAll both in flight settles both promises in one step: the order they settle in is fixed by how many turns each chain takes from the guarded rejection (the session resolves cancelled through the lane and its catch; findAll rejects instance-closed through collect alone).',
+    plugins: search(),
+    engine: { documents: { a: doc([deferAt(Q, 'full', {}, 'session', 1), deferAt(Q2, 'full', {}, 'find', 1)]) } },
+    snapshot: 'none',
+    steps: [start, open(), s('search', Q), s('findAll', Q2), close()],
+  },
+  {
+    name: 'close-races-find-all-first',
+    covers: 'The same race with findAll started first: settlement order does not follow call order.',
+    plugins: search(),
+    engine: { documents: { a: doc([deferAt(Q2, 'full', {}, 'find', 1), deferAt(Q, 'full', {}, 'session', 1)]) } },
+    snapshot: 'none',
+    steps: [start, open(), s('findAll', Q2), s('search', Q), close()],
+  },
+];
+
+const revealActiveCases: ScenarioCase[] = [
+  {
+    name: 'reveal-active-hit',
+    covers: 'revealActiveHit reveals the active hit again without changing it (per-call options merge as navigation\'s do), and does nothing with no active hit.',
+    plugins: withStage(),
+    engine: { documents: { a: doc([answer(Q, 'full', { startPage: 11 }, slice([m(11, 0), m(22, 2)], null, 3))]) } },
+    snapshot: STAGE_SNAPSHOT,
+    steps: [
+      start,
+      open(),
+      st('setViewport', { width: 800, height: 600 }),
+      v3('revealActiveHit'),
+      s('search', Q),
+      s('goTo', 1, { behavior: 'instant' }),
+      st('setCamera', { x: 0, y: 0, zoom: 1 }),
+      v3('revealActiveHit', { behavior: 'instant' }),
+      st('camera'),
+      s('activeIndex'),
+    ],
+  },
+];
+
 export const suites: Suite[] = [
   {
     kind: 'scenario',
     file: 'plugins/search.json',
     describes: 'packages/plugin/search: the session, degradation and errors, hit geometry, the permission twin, navigation and the rerun effect.',
-    cases: [...sessionCases, ...failureCases, ...geometryCases, ...twinCases, ...navigationCases, ...effectCases],
+    cases: [...sessionCases, ...failureCases, ...geometryCases, ...twinCases, ...navigationCases, ...effectCases, ...v3Cases, ...turnCases],
   },
   {
     kind: 'scenario',
     file: 'plugins/search-stage.json',
     describes: 'packages/plugin/search with a Stage: viewport-first scans and reveal-on-navigate.',
-    cases: stageCases,
+    cases: [...stageCases, ...revealActiveCases],
   },
   {
     kind: 'scenario',

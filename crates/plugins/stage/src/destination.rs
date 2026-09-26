@@ -11,9 +11,11 @@ use epdf_geometry::{
     CropBox, NonInvertible, PageGeometryInput, PageRotation, Point, Rect, Size, apply_point, js,
     page_geometry,
 };
+use epdf_kernel::geometry::PageRef;
+use epdf_plugin_actions::page_ref_json;
 use serde::{Deserialize, Serialize};
 
-use crate::types::*;
+use crate::contract::*;
 
 /// `PageBoxes`: the PDF page boundary boxes in user space (y-up edges).
 /// `bleed`, `trim` and `art` are not read here.
@@ -31,7 +33,8 @@ pub struct PageLayout {
     /// Display order at read time.
     pub index: usize,
     /// Durable identity.
-    pub page_object_number: PageObjectNumber,
+    #[serde(rename = "ref", with = "page_ref_json")]
+    pub page_ref: PageRef,
     #[serde(default)]
     pub label: Option<String>,
     /// Un-rotated crop dimensions in PDF points.
@@ -54,7 +57,8 @@ pub struct PageLayout {
 pub enum PdfDestination {
     #[serde(rename = "xyz", rename_all = "camelCase")]
     Xyz {
-        page_object_number: PageObjectNumber,
+        #[serde(with = "page_ref_json")]
+        page: PageRef,
         #[serde(default)]
         left: Option<f64>,
         #[serde(default)]
@@ -63,48 +67,66 @@ pub enum PdfDestination {
         zoom: Option<f64>,
     },
     #[serde(rename = "fit", rename_all = "camelCase")]
-    Fit { page_object_number: PageObjectNumber },
+    Fit {
+        #[serde(with = "page_ref_json")]
+        page: PageRef,
+    },
     #[serde(rename = "fitH", rename_all = "camelCase")]
     FitH {
-        page_object_number: PageObjectNumber,
+        #[serde(with = "page_ref_json")]
+        page: PageRef,
         #[serde(default)]
         top: Option<f64>,
     },
     #[serde(rename = "fitV", rename_all = "camelCase")]
     FitV {
-        page_object_number: PageObjectNumber,
+        #[serde(with = "page_ref_json")]
+        page: PageRef,
         #[serde(default)]
         left: Option<f64>,
     },
     #[serde(rename = "fitR", rename_all = "camelCase")]
-    FitR { page_object_number: PageObjectNumber, left: f64, bottom: f64, right: f64, top: f64 },
+    FitR {
+        #[serde(with = "page_ref_json")]
+        page: PageRef,
+        left: f64,
+        bottom: f64,
+        right: f64,
+        top: f64,
+    },
     #[serde(rename = "fitB", rename_all = "camelCase")]
-    FitB { page_object_number: PageObjectNumber },
+    FitB {
+        #[serde(with = "page_ref_json")]
+        page: PageRef,
+    },
     #[serde(rename = "fitBH", rename_all = "camelCase")]
     FitBh {
-        page_object_number: PageObjectNumber,
+        #[serde(with = "page_ref_json")]
+        page: PageRef,
         #[serde(default)]
         top: Option<f64>,
     },
     #[serde(rename = "fitBV", rename_all = "camelCase")]
     FitBv {
-        page_object_number: PageObjectNumber,
+        #[serde(with = "page_ref_json")]
+        page: PageRef,
         #[serde(default)]
         left: Option<f64>,
     },
 }
 
 impl PdfDestination {
-    pub fn page_object_number(&self) -> PageObjectNumber {
+    /// The target page.
+    pub fn page(&self) -> PageRef {
         match *self {
-            PdfDestination::Xyz { page_object_number, .. }
-            | PdfDestination::Fit { page_object_number }
-            | PdfDestination::FitH { page_object_number, .. }
-            | PdfDestination::FitV { page_object_number, .. }
-            | PdfDestination::FitR { page_object_number, .. }
-            | PdfDestination::FitB { page_object_number }
-            | PdfDestination::FitBh { page_object_number, .. }
-            | PdfDestination::FitBv { page_object_number, .. } => page_object_number,
+            PdfDestination::Xyz { page, .. }
+            | PdfDestination::Fit { page }
+            | PdfDestination::FitH { page, .. }
+            | PdfDestination::FitV { page, .. }
+            | PdfDestination::FitR { page, .. }
+            | PdfDestination::FitB { page }
+            | PdfDestination::FitBh { page, .. }
+            | PdfDestination::FitBv { page, .. } => page,
         }
     }
 }

@@ -14,7 +14,9 @@ use epdf_stage_core::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::types::*;
+use crate::contract::*;
+
+pub mod area;
 
 /// Out-of-the-box defaults: a document-reading feel.
 pub fn default_settings() -> StageSettings {
@@ -192,4 +194,23 @@ pub fn settings_equal(a: &StageSettings, b: &StageSettings) -> bool {
     }
     for_each_setting!(arm);
     true
+}
+
+/// `eqSetting(a[key], b[key])` for one key.
+pub fn setting_eq(a: &StageSettings, b: &StageSettings, key: SettingKey) -> bool {
+    macro_rules! arm {
+        ($key:ident, $field:ident, $effect:ident) => {
+            if key == SettingKey::$key {
+                return crate::responsive::eq_setting(&a.$field, &b.$field);
+            }
+        };
+    }
+    for_each_setting!(arm);
+    true
+}
+
+/// `pickSettings`: the settings slice of a larger object. The typed state
+/// keeps its settings as a field, so this is a copy.
+pub fn pick_settings(src: &StageSettings) -> StageSettings {
+    src.clone()
 }

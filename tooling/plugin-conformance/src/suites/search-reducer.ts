@@ -77,6 +77,8 @@ const cases: FunctionCase[] = [
   c('set-active', withHits, { type: 'SET_ACTIVE', index: 2 }),
   c('set-active-unchecked', withHits, { type: 'SET_ACTIVE', index: 7 }, 'The reducer stores the index it is given; wrapping is the capability\'s job.'),
   c('set-active-negative', done, { type: 'SET_ACTIVE', index: -1 }),
+  c('set-active-same-index', withHits, { type: 'SET_ACTIVE', index: 0 }, 'The index already active returns the same state, so the store does not notify.'),
+  c('cancelled', withHits, { type: 'CANCELLED' }, 'CANCELLED keeps the hits, the index and the progress.'),
   c('clear', failed, { type: 'CLEAR' }),
   c('clear-when-idle', initialSearchState(), { type: 'CLEAR' }),
   c('unknown-action', withHits, { type: 'OTHER' }, 'An action outside the union returns the same state.'),

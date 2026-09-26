@@ -1,12 +1,12 @@
-//! `effects.ts`: the lens's two effects.
+//! `sync/watchers.ts`: the lens's two steady-state watchers.
 //!
 //! 1. Refit on page-registry mutations: a rotate, move or delete bumps the
 //!    document revision, and the lens re-resolves its zoom intent against
 //!    the new footprint.
 //! 2. The page-state feed (main lens only, actions present): stage is
 //!    authoritative for what page the viewer is on, and reports
-//!    `{currentPon, visiblePons, placed, cause}` on placement and on every
-//!    change of the reportable truth.
+//!    `{currentPage, visiblePages, placed, cause}` (page refs, not indexes)
+//!    on placement and on every change of the reportable truth.
 //!
 //! Both are `ctx.watch`es in the TypeScript. A selector there may throw
 //! (resolving the capability while the document closes), and the throw
@@ -17,11 +17,12 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use epdf_kernel::geometry::PageRef;
 use epdf_kernel::{EffectCtx, Error, Token};
 use epdf_plugin_actions::{ACTIONS, PageStateCause, PageStateReport};
 
-use crate::capability::{StageCapability, read_of_undefined};
-use crate::types::*;
+use crate::controller::{StageCapability, read_of_undefined};
+use crate::model::*;
 
 /// `ctx.watch(select, handler)` with a fallible selector and `is_equal`.
 fn watch<R: Clone + 'static>(
@@ -45,13 +46,13 @@ fn watch<R: Clone + 'static>(
 }
 
 struct Snapshot {
-    current_pon: Option<PageObjectNumber>,
-    visible_pons: Vec<PageObjectNumber>,
+    current_page: Option<PageRef>,
+    visible_pages: Vec<PageRef>,
     cause: MotionCause,
 }
 
-/// `registerStageEffects(ctx, token, feedActions)`.
-pub fn register_stage_effects(
+/// `registerStageWatchers(ctx, token, feedActions)`.
+pub fn register_stage_watchers(
     fx: EffectCtx<StageState, StageAction>,
     token: Token<StageCapability>,
     feed_actions: bool,
@@ -83,8 +84,10 @@ pub fn register_stage_effects(
             }
             let stage = ctx.get(&token)?;
             Ok(Some(Snapshot {
-                current_pon: stage.pages().get(state.cursor).map(|p| p.pon),
-                visible_pons: stage.visible_pages().iter().map(|p| p.pon).collect(),
+                current_page: stage
+                    .get_current_page()
+                    .and_then(|page| page.get("ref").and_then(PageRef::from_json)),
+                visible_pages: stage.list_visible_pages().iter().map(|p| p.page_ref).collect(),
                 cause: state.motion_cause,
             }))
         })
@@ -92,16 +95,19 @@ pub fn register_stage_effects(
     let signature = snapshot.clone();
     watch(
         &fx,
-        // The reportable truth: the current pon and the visible pon set.
+        // The reportable truth: the current page and the visible page set.
         // `cause` is left out: a cause flip alone is not a change.
         move || {
             Ok(match signature()? {
                 None => "unplaced".to_string(),
                 Some(s) => {
-                    let mut pons = s.visible_pons.clone();
+                    let mut pons: Vec<u32> =
+                        s.visible_pages.iter().map(|p| p.page_object_number).collect();
                     pons.sort();
                     let pons: Vec<String> = pons.iter().map(u32::to_string).collect();
-                    let current = s.current_pon.map_or("-1".to_string(), |p| p.to_string());
+                    let current = s
+                        .current_page
+                        .map_or("-1".to_string(), |p| p.page_object_number.to_string());
                     format!("{current}|{}", pons.join(","))
                 }
             })
@@ -110,8 +116,8 @@ pub fn register_stage_effects(
         move |_, _| {
             let Some(s) = snapshot()? else { return Ok(()) };
             actions.report_page_state(PageStateReport {
-                current_pon: s.current_pon.map(f64::from),
-                visible_pons: s.visible_pons.iter().map(|&p| f64::from(p)).collect(),
+                current_page: s.current_page,
+                visible_pages: s.visible_pages,
                 placed: true,
                 cause: match s.cause {
                     MotionCause::User => PageStateCause::User,
