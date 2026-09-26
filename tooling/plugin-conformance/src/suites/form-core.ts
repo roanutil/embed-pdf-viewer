@@ -8,7 +8,7 @@
  * a case can also hand a function a model the reducer would never produce
  * (a widget index that points past its field).
  */
-import type { ActionDiagnostic, SubmitIntent } from '../../../../packages/plugin/actions/src/types';
+import type { ActionDiagnostic, SubmitIntent } from '../../../../packages/plugin/actions/src/contract';
 import { fillItemForWidget, fillItems, projectWidget } from '../../../../packages/plugin/form/src/core/fill-items';
 import {
   fieldByKey,
@@ -20,8 +20,8 @@ import {
   type Msg,
 } from '../../../../packages/plugin/form/src/core/model';
 import { buildSubmitEntries, resolveFieldSelection } from '../../../../packages/plugin/form/src/field-selection';
-import { formReducer, initialFormState } from '../../../../packages/plugin/form/src/reducer';
-import { FORM_TOOL_BY_ID, FORM_TOOLS, PLACE_TAGS } from '../../../../packages/plugin/form/src/tools';
+import { formReducer, initialFormState } from '../../../../packages/plugin/form/src/model';
+import { FORM_TOOL_BY_ID, FORM_TOOLS, PLACE_TAGS } from '../../../../packages/plugin/form/src/tools/definitions';
 
 import type { FunctionCase, Suite } from '../vectors';
 import {
@@ -34,6 +34,7 @@ import {
   signature,
   snapshot,
   text,
+  v3Widget,
 } from './form-fixtures';
 
 const run = (msgs: Msg[]): Model => msgs.reduce(update, initialModel());
@@ -118,7 +119,7 @@ const modelCases: FunctionCase[] = [
   fc('update', 'write-done-patches-and-reindexes', writing, {
     t: 'writeDone',
     key: 'obj:4',
-    field: { ...TEXT, value: 'abcde', widgets: [{ annotObjectNumber: 204, pageObjectNumber: 3 }] },
+    field: { ...TEXT, value: 'abcde', widgets: [v3Widget({ annotObjectNumber: 204, pageObjectNumber: 3 })] },
   }),
   fc('update', 'write-done-without-snapshot', initialModel(), { t: 'writeDone', key: 'obj:4', field: TEXT }),
   fc('update', 'write-done-unknown-key', writing, { t: 'writeDone', key: 'obj:404', field: TEXT }),
