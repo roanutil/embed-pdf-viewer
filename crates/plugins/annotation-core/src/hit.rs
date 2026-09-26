@@ -5,15 +5,19 @@ use serde::{Deserialize, Serialize};
 use crate::anchor::{anchor_mode_of, anchored_geom, anchored_stroke_width};
 use crate::flags::{annot_interactive, annot_transformable, viewable};
 use crate::geometry::{
-    geom_handles, geom_hit, obb_from_geom, place_rotate_knob, point_in_quad, rect_handles_for,
-    selection_center, selection_quad, union_rect,
+    geom_handles, geom_hit, place_rotate_knob, point_in_quad, rect_handles_for, union_rect,
 };
 use crate::group::group_caps;
-use crate::js::IdSet;
+use crate::js::{self, IdSet};
 use crate::kinds::{caps_for, is_markup};
+use crate::measurement::{
+    MeasurementAppearance, distance_caption_hit, distance_handles, distance_hit, distance_layout,
+};
+use crate::measurement_shape::measurement_layout;
 use crate::plane::is_substrate_only;
+use crate::selection::annotation_selection_frame;
 use crate::types::{
-    Annot, ChromeGeom, Cursor, Geom, Id, Model, PageObjectNumber, Point, Rect, ViewEnv,
+    Annot, ChromeGeom, Cursor, Geom, Id, Model, PageRef, Point, Rect, Style, ViewEnv,
 };
 
 /// What is under a content point.
@@ -45,12 +49,13 @@ pub enum Target {
 /// Page annotation ids in paint order: markups first, then every other
 /// kind, each in creation order; what `/F` hides and the substrate-only
 /// annotations are culled.
-pub fn paint_order(m: &Model, pon: PageObjectNumber) -> Vec<Id> {
+pub fn paint_order(m: &Model, page: PageRef) -> Vec<Id> {
+    let pon = page.pon();
     let mut markup = Vec::new();
     let mut other = Vec::new();
     for id in &m.order {
         let Some(a) = m.by_id.get(id) else { continue };
-        if a.pon != pon {
+        if a.page.pon() != pon {
             continue;
         }
         if !viewable(&a.flags, m.selected.contains(id)) {
@@ -109,18 +114,16 @@ fn in_rect(b: Rect, p: Point) -> bool {
 }
 
 fn in_bounds(a: &Annot, p: Point, view: Option<ViewEnv>) -> bool {
-    point_in_quad(
-        p,
-        &selection_quad(&hit_geom_of(a, view), hit_stroke_of(a, view), Some(&a.style.border)),
-    )
+    point_in_quad(p, &annotation_selection_frame(a, view).corners)
 }
 
-fn selection_union_bounds(m: &Model, pon: PageObjectNumber, view: Option<ViewEnv>) -> Option<Rect> {
+fn selection_union_bounds(m: &Model, page: PageRef, view: Option<ViewEnv>) -> Option<Rect> {
+    let pon = page.pon();
     let sel: Vec<&Id> = m
         .selected
         .iter()
         .filter(|id| {
-            m.by_id.get(*id).is_some_and(|a| a.pon == pon)
+            m.by_id.get(*id).is_some_and(|a| a.page.pon() == pon)
                 && is_selectable(m, id)
                 && can_move(m, id)
         })
@@ -130,32 +133,34 @@ fn selection_union_bounds(m: &Model, pon: PageObjectNumber, view: Option<ViewEnv
     }
     let mut corners = Vec::new();
     for id in sel {
-        let a = &m.by_id[id];
-        corners.extend(selection_quad(
-            &hit_geom_of(a, view),
-            hit_stroke_of(a, view),
-            Some(&a.style.border),
-        ));
+        corners.extend(annotation_selection_frame(&m.by_id[id], view).corners);
     }
     Some(union_rect(&corners))
 }
 
-/// The axis-aligned union of the selection bounds of every selected
+/// The axis-aligned union of the selection frames of every selected
 /// annotation on a page.
-pub fn group_union_bounds(m: &Model, pon: PageObjectNumber, view: Option<ViewEnv>) -> Option<Rect> {
+pub fn group_union_bounds(m: &Model, page: PageRef, view: Option<ViewEnv>) -> Option<Rect> {
+    let pon = page.pon();
     let mut corners = Vec::new();
     for id in &m.selected {
         let Some(a) = m.by_id.get(id) else { continue };
-        if a.pon != pon {
+        if a.page.pon() != pon {
             continue;
         }
-        corners.extend(selection_quad(
-            &hit_geom_of(a, view),
-            hit_stroke_of(a, view),
-            Some(&a.style.border),
-        ));
+        corners.extend(annotation_selection_frame(a, view).corners);
     }
     (!corners.is_empty()).then(|| union_rect(&corners))
+}
+
+/// The measurement layout of an annotation at its hit geometry.
+fn hit_layout(
+    a: &Annot,
+    geometry: &Geom,
+    stroke_width: f64,
+) -> Option<crate::measurement_shape::MeasurementLayout> {
+    let measure = a.measure.as_ref()?;
+    measurement_layout(geometry, measure, &Style { stroke_width, ..a.style.clone() })
 }
 
 fn within(at: Point, p: Point, tol: f64) -> bool {
@@ -177,7 +182,7 @@ fn box_corners(u: Rect) -> [Point; 4] {
 #[allow(clippy::too_many_arguments)]
 pub fn hit_test(
     m: &Model,
-    pon: PageObjectNumber,
+    page: PageRef,
     p: Point,
     geom: &ChromeGeom,
     stroke_margin: f64,
@@ -185,24 +190,52 @@ pub fn hit_test(
     inert: Option<&IdSet>,
     view: Option<ViewEnv>,
 ) -> Target {
+    let pon = page.pon();
     if m.selected.len() == 1 && is_selectable(m, &m.selected[0]) {
         let a = &m.by_id[&m.selected[0]];
-        if a.pon == pon {
+        if a.page.pon() == pon {
             if caps_for(&a.subtype).rotatable && annot_transformable(a) {
-                let hg = hit_geom_of(a, view);
-                if let Some(obb) = obb_from_geom(&hg, hit_stroke_of(a, view), Some(&a.style.border))
-                {
-                    let knob = place_rotate_knob(&obb.corners, geom.knob_offset, page_box);
-                    if within(knob.at, p, geom.knob_tol) {
-                        return Target::Rotate {
-                            ids: vec![a.id.clone()],
-                            pivot: selection_center(&hg, hit_stroke_of(a, view)),
-                        };
-                    }
+                let frame = annotation_selection_frame(a, view);
+                let knob = place_rotate_knob(&frame.corners, geom.knob_offset, page_box);
+                if within(knob.at, p, geom.knob_tol) {
+                    return Target::Rotate { ids: vec![a.id.clone()], pivot: frame.center };
                 }
             }
             if has_handles(a) {
-                for h in geom_handles(&hit_geom_of(a, view)) {
+                let geometry = hit_geom_of(a, view);
+                let stroke_width = hit_stroke_of(a, view);
+                let distance = match &a.measure {
+                    Some(MeasurementAppearance::Distance(d)) => {
+                        distance_layout(&geometry, d, stroke_width)
+                    }
+                    _ => None,
+                };
+                let mut handles = match &distance {
+                    Some(layout) => distance_handles(layout),
+                    None => geom_handles(&geometry),
+                };
+                if distance.is_some() {
+                    // The closest visible handle wins; a stable sort keeps
+                    // declaration order on ties, as V8's does.
+                    let d = |at: Point| js::hypot(at.x - p.x, at.y - p.y);
+                    handles.sort_by(|l, r| {
+                        d(l.at).partial_cmp(&d(r.at)).unwrap_or(std::cmp::Ordering::Equal)
+                    });
+                }
+                if let Some(layout) = hit_layout(a, &geometry, stroke_width)
+                    && distance_caption_hit(
+                        layout.caption(),
+                        p,
+                        js::min(2.0, geom.handle_tol / 3.0),
+                    )
+                {
+                    return Target::Handle {
+                        id: a.id.clone(),
+                        handle: "caption".into(),
+                        cursor: "move".into(),
+                    };
+                }
+                for h in handles {
                     if within(h.at, p, geom.handle_tol) {
                         return Target::Handle { id: a.id.clone(), handle: h.id, cursor: h.cursor };
                     }
@@ -214,12 +247,12 @@ pub fn hit_test(
         let on_page = || {
             m.selected
                 .iter()
-                .filter(|id| m.by_id.get(*id).is_some_and(|a| a.pon == pon))
+                .filter(|id| m.by_id.get(*id).is_some_and(|a| a.page.pon() == pon))
                 .cloned()
                 .collect()
         };
         if gc.rotatable
-            && let Some(union) = group_union_bounds(m, pon, view)
+            && let Some(union) = group_union_bounds(m, page, view)
         {
             let knob = place_rotate_knob(&box_corners(union), geom.knob_offset, page_box);
             if within(knob.at, p, geom.knob_tol) {
@@ -229,7 +262,7 @@ pub fn hit_test(
             }
         }
         if gc.resizable
-            && let Some(union) = group_union_bounds(m, pon, view)
+            && let Some(union) = group_union_bounds(m, page, view)
         {
             for h in rect_handles_for(union) {
                 if within(h.at, p, geom.handle_tol) {
@@ -243,22 +276,37 @@ pub fn hit_test(
             }
         }
     }
-    let order = paint_order(m, pon);
+    let order = paint_order(m, page);
     for id in order.iter().rev() {
         let Some(a) = m.by_id.get(id) else { continue };
         if inert.is_some_and(|s| s.has(id)) || !is_selectable(m, id) {
             continue;
         }
-        let hit = if m.selected.contains(id) && can_move(m, id) {
-            in_bounds(a, p, view)
-        } else {
-            geom_hit(&hit_geom_of(a, view), p, stroke_margin, is_filled(a), hit_stroke_of(a, view))
-        };
+        let geometry = hit_geom_of(a, view);
+        let stroke_width = hit_stroke_of(a, view);
+        let caption_hit = hit_layout(a, &geometry, stroke_width)
+            .is_some_and(|l| distance_caption_hit(l.caption(), p, stroke_margin));
+        let hit = caption_hit
+            || if m.selected.contains(id) && can_move(m, id) {
+                in_bounds(a, p, view)
+            } else {
+                match &a.measure {
+                    Some(MeasurementAppearance::Distance(d)) => {
+                        match distance_layout(&geometry, d, stroke_width) {
+                            Some(layout) => distance_hit(&layout, p, stroke_width, stroke_margin),
+                            None => {
+                                geom_hit(&geometry, p, stroke_margin, is_filled(a), stroke_width)
+                            }
+                        }
+                    }
+                    _ => geom_hit(&geometry, p, stroke_margin, is_filled(a), stroke_width),
+                }
+            };
         if hit {
             return Target::Annot { id: id.clone() };
         }
     }
-    if let Some(union) = selection_union_bounds(m, pon, view)
+    if let Some(union) = selection_union_bounds(m, page, view)
         && in_rect(union, p)
     {
         for id in order.iter().rev() {
@@ -274,7 +322,7 @@ pub fn hit_test(
 #[allow(clippy::too_many_arguments)]
 pub fn cursor_at(
     m: &Model,
-    pon: PageObjectNumber,
+    page: PageRef,
     p: Point,
     geom: &ChromeGeom,
     stroke_margin: f64,
@@ -282,7 +330,7 @@ pub fn cursor_at(
     inert: Option<&IdSet>,
     view: Option<ViewEnv>,
 ) -> Option<Cursor> {
-    match hit_test(m, pon, p, geom, stroke_margin, page_box, inert, view) {
+    match hit_test(m, page, p, geom, stroke_margin, page_box, inert, view) {
         Target::Handle { cursor, .. } | Target::GroupHandle { cursor, .. } => Some(cursor),
         Target::Rotate { .. } => Some("grab".into()),
         Target::Annot { id } => Some(

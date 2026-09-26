@@ -62,9 +62,9 @@ const viewFns: Record<string, Fn> = {
   ) =>
     vw.selectionAnchor(
       modelOf(m),
-      pageBoxes && ((pon) => pageBoxes[String(pon)]),
-      knobOffsets && ((pon) => knobOffsets[String(pon)]),
-      views && ((pon) => views[String(pon)]),
+      pageBoxes && ((page) => pageBoxes[String(page.pageObjectNumber)]),
+      knobOffsets && ((page) => knobOffsets[String(page.pageObjectNumber)]),
+      views && ((page) => views[String(page.pageObjectNumber)]),
     ),
   /** One page, many states: each call layers `over` on the page and runs
    *  `viewAll` with its own page, box, offset and view. */
@@ -234,7 +234,7 @@ const viewCases: FunctionCase[] = [];
       const page = { byId: byId ?? {}, order: order ?? [] };
       const key = `${vname}|${JSON.stringify(page)}`;
       const group = groups.get(key) ?? { page, calls: [] as unknown[] };
-      group.calls.push({ name, over, page: pageRef(PON), view });
+      group.calls.push({ name, over, pon: PON, view });
       groups.set(key, group);
     }
   }

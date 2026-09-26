@@ -26,10 +26,15 @@ pub mod ink;
 pub mod js;
 pub mod kinds;
 pub mod links;
+pub mod measure;
+pub mod measurement;
+pub mod measurement_shape;
 pub mod placement;
 pub mod plane;
 pub mod props;
+pub mod richtext;
 pub mod scene;
+pub mod selection;
 pub mod snap;
 pub mod types;
 pub mod update;
@@ -56,6 +61,18 @@ pub use hit::{
 pub use ink::straighten_ink_stroke;
 pub use kinds::{AnnotationKind, KINDS, KindCaps, PropSpec, caps_for, is_markup, props_for};
 pub use links::{link_children_of, link_of};
+pub use measurement::{
+    DistanceLayout, distance_caption_at, distance_caption_hit, distance_handles, distance_hit,
+    distance_label, distance_layout, distance_leader_length, distance_scene,
+    distance_selection_quad, expand_distance_bounds, measurement_caption_scene,
+    move_distance_caption,
+};
+pub use measurement_shape::{
+    MeasurementLayout, ShapeMeasurementLayout, automatic_shape_caption_center, measurement_layout,
+    measurement_selection_quad, move_measurement_caption, shape_caption_point,
+    shape_measurement_label, shape_measurement_layout, shape_measurement_readout,
+    transform_measurement_caption, with_shape_caption_point,
+};
 pub use placement::{
     ClickPlacement, PlacementOptions, clamp_rect_to_box, click_create_geom, resolve_click_placement,
 };
@@ -64,7 +81,13 @@ pub use props::{
     PropValue, apply_props, initial_text_style, kind_takes_link, read_prop, shared_props,
     style_from_props, text_style_from_props,
 };
+pub use richtext::{
+    RichTextRange, RichTextStyleDelta, apply_style_to_range, is_plain_rich_text, locate_offset,
+    normalize_runs, paragraphs_from_plain_text, plain_text_of, range_has_style, rich_text_length,
+    same_style_delta, split_runs_at, style_at,
+};
 pub use scene::{blend_for, layout_redact_label, scene};
+pub use selection::{SelectionFrame, annotation_selection_frame};
 pub use snap::{SnapResult, compute_move_snap};
 pub use types::*;
 pub use update::{

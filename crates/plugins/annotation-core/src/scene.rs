@@ -5,6 +5,8 @@ use epdf_geometry::{text_quad_bounds, text_quad_ring};
 
 use crate::geometry::geom_scene;
 use crate::js;
+use crate::measurement::{MeasurementAppearance, distance_scene, measurement_caption_scene};
+use crate::measurement_shape::shape_measurement_layout;
 use crate::types::{
     BlendMode, Border, Geom, Label, Paint, Point, Quad, Rect, RenderItem, RenderNode, Round,
     SceneNode, Style, TextAlign, TextQuad, TextStyle,
@@ -179,6 +181,7 @@ pub fn layout_redact_label(
         text: label.text.clone(),
         font_size,
         font_family: font_family.clone(),
+        rotation: None,
         paint: paint.clone(),
     };
     let baseline = |row_top: f64| row_top + font_size * 0.95;
@@ -260,6 +263,9 @@ pub fn scene(item: &RenderItem) -> Vec<SceneNode> {
     if item.subtype == "link" {
         return Vec::new();
     }
+    if let Some(MeasurementAppearance::Distance(d)) = &item.measure {
+        return distance_scene(&item.geom, d, &item.style);
+    }
     if item.subtype == "redact" {
         return redact_scene(item);
     }
@@ -280,23 +286,35 @@ pub fn scene(item: &RenderItem) -> Vec<SceneNode> {
             .collect();
     }
     let ink = matches!(item.geom, Geom::Ink { .. });
-    geom_scene(&item.geom, item.style.stroke_width, Some(&item.style.border))
-        .into_iter()
-        .map(|n| {
-            let closed = match &n {
-                RenderNode::Rect { .. } | RenderNode::Ellipse { .. } | RenderNode::Path { .. } => {
-                    true
+    let mut nodes: Vec<SceneNode> =
+        geom_scene(&item.geom, item.style.stroke_width, Some(&item.style.border))
+            .into_iter()
+            .map(|n| {
+                let closed = match &n {
+                    RenderNode::Rect { .. }
+                    | RenderNode::Ellipse { .. }
+                    | RenderNode::Path { .. } => true,
+                    RenderNode::Poly { closed, .. } => *closed,
+                    RenderNode::Line { .. } => false,
+                };
+                let mut paint =
+                    Paint { blend: blend_for(&item.style), ..shape_paint(&item.style, closed) };
+                if ink {
+                    paint.cap = Some(Round::Round);
+                    paint.join = Some(Round::Round);
                 }
-                RenderNode::Poly { closed, .. } => *closed,
-                RenderNode::Line { .. } => false,
-            };
-            let mut paint =
-                Paint { blend: blend_for(&item.style), ..shape_paint(&item.style, closed) };
-            if ink {
-                paint.cap = Some(Round::Round);
-                paint.join = Some(Round::Round);
+                SceneNode::painted(n, paint)
+            })
+            .collect();
+    if let Some(measure) = &item.measure {
+        let caption = match measure {
+            MeasurementAppearance::Shape(s) => {
+                shape_measurement_layout(&item.geom, s, &item.style).and_then(|l| l.caption)
             }
-            SceneNode::painted(n, paint)
-        })
-        .collect()
+            // A distance returned above.
+            MeasurementAppearance::Distance(_) => None,
+        };
+        nodes.extend(measurement_caption_scene(caption.as_ref(), &item.style));
+    }
+    nodes
 }

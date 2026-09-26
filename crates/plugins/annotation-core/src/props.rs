@@ -21,6 +21,9 @@ pub fn initial_text_style() -> TextStyle {
         font_size: 14.0,
         font_color: "#000000".into(),
         text_align: TextAlign::Left,
+        bold: None,
+        italic: None,
+        underline: None,
     }
 }
 
@@ -43,6 +46,9 @@ pub fn text_style_from_props(p: &AnnotationProps) -> TextStyle {
         font_size: p.font_size,
         font_color: p.font_color.clone(),
         text_align: p.text_align,
+        bold: p.bold,
+        italic: p.italic,
+        underline: p.underline,
     }
 }
 
@@ -75,6 +81,7 @@ pub enum PropValue {
     Endings(LineEndings),
     Align(TextAlign),
     Link(PdfLinkTarget),
+    Bool(bool),
 }
 
 /// Read one property off an annotation, or `None` (`undefined`) when its
@@ -95,6 +102,11 @@ pub fn read_prop(a: &Annot, key: PropKey) -> Option<PropValue> {
         PropKey::FontSize => a.text.as_ref().map(|t| PropValue::Number(t.font_size)),
         PropKey::FontColor => a.text.as_ref().map(|t| PropValue::Text(t.font_color.clone())),
         PropKey::TextAlign => a.text.as_ref().map(|t| PropValue::Align(t.text_align)),
+        PropKey::Bold => a.text.as_ref().map(|t| PropValue::Bool(t.bold.unwrap_or(false))),
+        PropKey::Italic => a.text.as_ref().map(|t| PropValue::Bool(t.italic.unwrap_or(false))),
+        PropKey::Underline => {
+            a.text.as_ref().map(|t| PropValue::Bool(t.underline.unwrap_or(false)))
+        }
         PropKey::Icon => a.icon.clone().map(PropValue::Text),
         PropKey::Link => match &a.link {
             Nullable::Undefined => None,
@@ -227,6 +239,19 @@ pub fn apply_props_tracked(
             text.text_align = t;
             text_changed = true;
         }
+        for (key, value, slot) in [
+            (PropKey::Bold, patch.bold, &mut text.bold),
+            (PropKey::Italic, patch.italic, &mut text.italic),
+            (PropKey::Underline, patch.underline, &mut text.underline),
+        ] {
+            if let Some(v) = value
+                && takes(key)
+                && slot.unwrap_or(false) != v
+            {
+                *slot = Some(v);
+                text_changed = true;
+            }
+        }
         changed.text = text_changed;
     }
 
@@ -281,6 +306,9 @@ pub fn resolve_props(style: &Style, d: Option<&AnnotationPropsPatch>) -> Annotat
         font_size: text.font_size,
         font_color: text.font_color,
         text_align: text.text_align,
+        bold: None,
+        italic: None,
+        underline: None,
         line_endings: NO_ENDINGS,
         icon: None,
         link: Nullable::Undefined,
@@ -319,6 +347,9 @@ pub fn resolve_props(style: &Style, d: Option<&AnnotationPropsPatch>) -> Annotat
     if let Some(v) = d.text_align {
         out.text_align = v;
     }
+    out.bold = d.bold;
+    out.italic = d.italic;
+    out.underline = d.underline;
     if let Some(v) = &d.icon {
         out.icon = Some(v.clone());
     }

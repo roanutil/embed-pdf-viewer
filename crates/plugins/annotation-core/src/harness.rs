@@ -49,6 +49,12 @@ fn model(a: &[Value], i: usize) -> Result<Model, Error> {
     model_of(a.get(i).unwrap_or(&Value::Null))
 }
 
+/// A suite wrapper's page argument: the object number it passes to
+/// `pageRef(pon)`.
+fn page(a: &[Value], i: usize) -> Result<PageRef, Error> {
+    Ok(PageRef::new(arg(a, i)?))
+}
+
 fn geom(a: &[Value], i: usize) -> Result<Geom, Error> {
     arg(a, i)
 }
@@ -90,9 +96,9 @@ fn hit_calls(a: &[Value]) -> Out {
         .into_iter()
         .map(|c| {
             let m = Model { selected: c.selected, ..m.clone() };
-            let t = hit_test(&m, c.pon, c.p, &c.gm, c.margin, c.page_box, c.inert.as_ref(), c.view);
-            let cur =
-                cursor_at(&m, c.pon, c.p, &c.gm, c.margin, c.page_box, c.inert.as_ref(), c.view);
+            let pg = PageRef::new(c.pon);
+            let t = hit_test(&m, pg, c.p, &c.gm, c.margin, c.page_box, c.inert.as_ref(), c.view);
+            let cur = cursor_at(&m, pg, c.p, &c.gm, c.margin, c.page_box, c.inert.as_ref(), c.view);
             Value::Array(vec![to_value(&t), to_value(&cur)])
         })
         .collect();
@@ -101,7 +107,7 @@ fn hit_calls(a: &[Value]) -> Out {
 
 fn hit_probe(a: &[Value]) -> Out {
     let m = model(a, 0)?;
-    let pon: PageObjectNumber = arg(a, 1)?;
+    let pon = page(a, 1)?;
     let selections: Vec<Vec<Id>> = arg(a, 2)?;
     let points: Vec<Point> = arg(a, 3)?;
     let gm: ChromeGeom = arg(a, 4)?;
@@ -130,7 +136,7 @@ fn hit_test_fn(a: &[Value]) -> Out {
     let inert: Option<IdSet> = arg(a, 6)?;
     ok(hit_test(
         &m,
-        arg(a, 1)?,
+        page(a, 1)?,
         arg(a, 2)?,
         &arg(a, 3)?,
         arg(a, 4)?,
@@ -145,7 +151,7 @@ fn cursor_at_fn(a: &[Value]) -> Out {
     let inert: Option<IdSet> = arg(a, 6)?;
     ok(cursor_at(
         &m,
-        arg(a, 1)?,
+        page(a, 1)?,
         arg(a, 2)?,
         &arg(a, 3)?,
         arg(a, 4)?,
@@ -213,6 +219,7 @@ fn view_all_of(
     knob_offset: Option<f64>,
     view: Option<ViewEnv>,
 ) -> ViewAll {
+    let pon = PageRef::new(pon);
     ViewAll {
         page_items: page_items(m, pon, view),
         chrome: chrome(m, pon, page_box, knob_offset, view),
@@ -282,15 +289,15 @@ fn anchor_with(
     offsets: Option<&Table<f64>>,
     views: Option<&Table<ViewEnv>>,
 ) -> Option<SelectionAnchor> {
-    let key = |pon: PageObjectNumber| pon.to_string();
-    let box_of = |pon: PageObjectNumber| boxes.and_then(|t| t.get(&key(pon)).copied());
-    let offset_of = |pon: PageObjectNumber| offsets.and_then(|t| t.get(&key(pon)).copied());
-    let view_of = |pon: PageObjectNumber| views.and_then(|t| t.get(&key(pon)).copied());
+    let key = |page: PageRef| page.pon().to_string();
+    let box_of = |page: PageRef| boxes.and_then(|t| t.get(&key(page)).copied());
+    let offset_of = |page: PageRef| offsets.and_then(|t| t.get(&key(page)).copied());
+    let view_of = |page: PageRef| views.and_then(|t| t.get(&key(page)).copied());
     selection_anchor(
         m,
-        boxes.map(|_| &box_of as &dyn Fn(PageObjectNumber) -> Option<Rect>),
-        offsets.map(|_| &offset_of as &dyn Fn(PageObjectNumber) -> Option<f64>),
-        views.map(|_| &view_of as &dyn Fn(PageObjectNumber) -> Option<ViewEnv>),
+        boxes.map(|_| &box_of as &dyn Fn(PageRef) -> Option<Rect>),
+        offsets.map(|_| &offset_of as &dyn Fn(PageRef) -> Option<f64>),
+        views.map(|_| &view_of as &dyn Fn(PageRef) -> Option<ViewEnv>),
     )
 }
 
@@ -448,7 +455,7 @@ fn annots_in_boxes(a: &[Value]) -> Out {
         let inert: Option<IdSet> = arg(&c, 3)?;
         out.push(to_value(&annots_in_box(
             &m,
-            arg(&c, 0)?,
+            page(&c, 0)?,
             arg(&c, 1)?,
             arg(&c, 2)?,
             inert.as_ref(),
@@ -461,7 +468,7 @@ fn annots_in_boxes(a: &[Value]) -> Out {
 fn annots_in_box_fn(a: &[Value]) -> Out {
     let m = model(a, 0)?;
     let inert: Option<IdSet> = arg(a, 4)?;
-    ok(annots_in_box(&m, arg(a, 1)?, arg(a, 2)?, arg(a, 3)?, inert.as_ref(), arg(a, 5)?))
+    ok(annots_in_box(&m, page(a, 1)?, arg(a, 2)?, arg(a, 3)?, inert.as_ref(), arg(a, 5)?))
 }
 
 // ── the table ───────────────────────────────────────────────────────────────
@@ -522,7 +529,7 @@ pub fn functions() -> FunctionTable {
         }),
         ("geomTranslate", |a| ok(geom_translate(&geom(a, 0)?, arg(a, 1)?))),
         ("geomRotateAbout", |a| ok(geom_rotate_about(&geom(a, 0)?, arg(a, 1)?, arg(a, 2)?))),
-        ("geomResetRotation", |a| ok(geom_reset_rotation(&geom(a, 0)?))),
+        ("geomResetRotation", |a| ok(geom_reset_rotation(&geom(a, 0)?, arg(a, 1)?))),
         ("geomScaleAbout", |a| {
             ok(geom_scale_about(&geom(a, 0)?, arg(a, 1)?, arg(a, 2)?, arg(a, 3)?))
         }),
@@ -614,18 +621,18 @@ pub fn functions() -> FunctionTable {
             ok(compute_move_snap(
                 &model(a, 0)?,
                 &arg::<Vec<Id>>(a, 1)?,
-                arg(a, 2)?,
+                page(a, 2)?,
                 arg(a, 3)?,
                 arg(a, 4)?,
                 arg(a, 5)?,
             ))
         }),
         // hit testing
-        ("paintOrder", |a| ok(paint_order(&model(a, 0)?, arg(a, 1)?))),
+        ("paintOrder", |a| ok(paint_order(&model(a, 0)?, page(a, 1)?))),
         ("isSelectable", |a| ok(is_selectable(&model(a, 0)?, &arg::<String>(a, 1)?))),
         ("canMove", |a| ok(can_move(&model(a, 0)?, &arg::<String>(a, 1)?))),
         ("selectability", selectability),
-        ("groupUnionBounds", |a| ok(group_union_bounds(&model(a, 0)?, arg(a, 1)?, arg(a, 2)?))),
+        ("groupUnionBounds", |a| ok(group_union_bounds(&model(a, 0)?, page(a, 1)?, arg(a, 2)?))),
         ("hitTest", hit_test_fn),
         ("cursorAt", cursor_at_fn),
         ("hitCalls", hit_calls),
@@ -650,15 +657,15 @@ pub fn functions() -> FunctionTable {
             ok(straighten_ink_stroke(&arg::<Vec<Point>>(a, 0)?, &arg(a, 1)?))
         }),
         // view
-        ("pageItems", |a| ok(page_items(&model(a, 0)?, arg(a, 1)?, arg(a, 2)?))),
-        ("chrome", |a| ok(chrome(&model(a, 0)?, arg(a, 1)?, arg(a, 2)?, arg(a, 3)?, arg(a, 4)?))),
+        ("pageItems", |a| ok(page_items(&model(a, 0)?, page(a, 1)?, arg(a, 2)?))),
+        ("chrome", |a| ok(chrome(&model(a, 0)?, page(a, 1)?, arg(a, 2)?, arg(a, 3)?, arg(a, 4)?))),
         ("selectedItems", |a| ok(selected_items(&model(a, 0)?, arg(a, 1)?))),
-        ("textBoxes", |a| ok(text_boxes(&model(a, 0)?, arg(a, 1)?, arg(a, 2)?))),
+        ("textBoxes", |a| ok(text_boxes(&model(a, 0)?, page(a, 1)?, arg(a, 2)?))),
         ("selectionBoundsOnPage", |a| {
-            ok(selection_bounds_on_page(&model(a, 0)?, arg(a, 1)?, arg(a, 2)?))
+            ok(selection_bounds_on_page(&model(a, 0)?, page(a, 1)?, arg(a, 2)?))
         }),
         ("selectionKnob", |a| {
-            ok(selection_knob(&model(a, 0)?, arg(a, 1)?, arg(a, 2)?, arg(a, 3)?, arg(a, 4)?))
+            ok(selection_knob(&model(a, 0)?, page(a, 1)?, arg(a, 2)?, arg(a, 3)?, arg(a, 4)?))
         }),
         ("creationDraftAnchor", |a| ok(creation_draft_anchor(&model(a, 0)?))),
         ("selectionAnchor", selection_anchor_fn),
