@@ -119,6 +119,15 @@ const DTOS: [string, Dto, typeof CROP][] = [
   ['widget-signature', widget(48, 'signature'), CROP],
   ['unsupported', unsupported(49), CROP],
   ['nm-ref', square(50, { ref: { kind: 'nm', pageObjectNumber: 1, nm: 'abc' } }), CROP],
+  // An unrotated box is read only with a rotation, and never mistaken for the
+  // RD-inset rect (unlike `callout-rotated`, whose two boxes coincide).
+  ['highlight-multiply', markup('highlight', 53, { blendMode: 'multiply' }), CROP],
+  ['callout-unrotated-box-no-rotation', callout(54, { unrotatedRect: { left: 160, bottom: 560, right: 290, top: 690 } }), CROP],
+  ['callout-rotated-distinct-box', callout(55, { rotation: 90, unrotatedRect: { left: 160, bottom: 560, right: 290, top: 690 } }), CROP],
+  ['free-text-unrotated-box-no-rotation', freeText(56, { unrotatedRect: { left: 110, bottom: 610, right: 190, top: 690 } }), CROP],
+  ['caret-unrotated-box-no-rotation', caret(58, { unrotatedRect: { left: 86, bottom: 746, right: 94, top: 754 } }), CROP],
+  // Only a strikeout reads its intent.
+  ['highlight-with-intent', markup('highlight', 57, { intent: 'strikeout-text-edit' }), CROP],
 ];
 
 function BLUE_DTO() {
@@ -193,6 +202,7 @@ const STYLED: [string, Annot, typeof CROP][] = [
   ['link-readonly', annotOf('link-javascript'), CROP],
   ['widget-text', annotOf('widget-text'), CROP],
   ['stamp', annotOf('stamp'), CROP],
+  ['square-empty-interior', restyle(annotOf('square'), { interiorColor: '' }), CROP],
 ];
 for (const [label, a, crop] of STYLED) {
   for (const [scope, keys] of PROP_SCOPES) {

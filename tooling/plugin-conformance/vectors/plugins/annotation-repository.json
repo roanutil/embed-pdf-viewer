@@ -9271,6 +9271,1253 @@
       }
     },
     {
+      "name": "fromDTO/highlight-multiply",
+      "fn": "fromDTO",
+      "args": [
+        {
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 53
+          },
+          "pageObjectNumber": 1,
+          "index": 53,
+          "identityQuality": "durable",
+          "nm": null,
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "rect": {
+            "left": 50,
+            "bottom": 730,
+            "right": 200,
+            "top": 745
+          },
+          "contents": null,
+          "subject": null,
+          "author": null,
+          "created": null,
+          "modified": null,
+          "blendMode": "multiply",
+          "inReplyTo": null,
+          "replyType": null,
+          "subtype": "highlight",
+          "color": {
+            "r": 239,
+            "g": 68,
+            "b": 68
+          },
+          "opacity": 1,
+          "quadPoints": [
+            {
+              "p1": {
+                "x": 50,
+                "y": 745
+              },
+              "p2": {
+                "x": 200,
+                "y": 745
+              },
+              "p3": {
+                "x": 50,
+                "y": 730
+              },
+              "p4": {
+                "x": 200,
+                "y": 730
+              }
+            }
+          ]
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        },
+        "baked"
+      ],
+      "outcome": {
+        "returned": {
+          "id": "obj:53",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 53
+          },
+          "pon": 1,
+          "subtype": "highlight",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "baked",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 53
+            },
+            "pageObjectNumber": 1,
+            "index": 53,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 50,
+              "bottom": 730,
+              "right": 200,
+              "top": 745
+            },
+            "contents": null,
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "multiply",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "highlight",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "opacity": 1,
+            "quadPoints": [
+              {
+                "p1": {
+                  "x": 50,
+                  "y": 745
+                },
+                "p2": {
+                  "x": 200,
+                  "y": 745
+                },
+                "p3": {
+                  "x": 50,
+                  "y": 730
+                },
+                "p4": {
+                  "x": 200,
+                  "y": 730
+                }
+              }
+            ]
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": null,
+            "strokeWidth": 0,
+            "opacity": 1,
+            "blendMode": "multiply",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "quads",
+            "quads": [
+              {
+                "upperStart": {
+                  "x": 50,
+                  "y": 55
+                },
+                "upperEnd": {
+                  "x": 200,
+                  "y": 55
+                },
+                "lowerStart": {
+                  "x": 50,
+                  "y": 70
+                },
+                "lowerEnd": {
+                  "x": 200,
+                  "y": 70
+                }
+              }
+            ]
+          },
+          "apBox": {
+            "x": 50,
+            "y": 55,
+            "width": 150,
+            "height": 15
+          }
+        }
+      }
+    },
+    {
+      "name": "fromDTO/callout-unrotated-box-no-rotation",
+      "fn": "fromDTO",
+      "args": [
+        {
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 54
+          },
+          "pageObjectNumber": 1,
+          "index": 54,
+          "identityQuality": "durable",
+          "nm": null,
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "rect": {
+            "left": 50,
+            "bottom": 500,
+            "right": 300,
+            "top": 700
+          },
+          "contents": "Hello",
+          "subject": null,
+          "author": null,
+          "created": null,
+          "modified": null,
+          "blendMode": "normal",
+          "inReplyTo": null,
+          "replyType": null,
+          "subtype": "free-text",
+          "intent": "free-text-callout",
+          "fontFamily": "helvetica",
+          "fontSize": 12,
+          "textAlign": "left",
+          "color": {
+            "r": 239,
+            "g": 68,
+            "b": 68
+          },
+          "interiorColor": null,
+          "opacity": 1,
+          "strokeWidth": 1,
+          "borderStyle": "solid",
+          "rectDifferences": {
+            "left": 100,
+            "bottom": 50,
+            "right": 0,
+            "top": 0
+          },
+          "calloutLine": [
+            {
+              "x": 60,
+              "y": 510
+            },
+            {
+              "x": 120,
+              "y": 560
+            },
+            {
+              "x": 150,
+              "y": 600
+            }
+          ],
+          "lineEnding": "open-arrow",
+          "unrotatedRect": {
+            "left": 160,
+            "bottom": 560,
+            "right": 290,
+            "top": 690
+          }
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        },
+        "baked"
+      ],
+      "outcome": {
+        "returned": {
+          "id": "obj:54",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 54
+          },
+          "pon": 1,
+          "subtype": "free-text",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "baked",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 54
+            },
+            "pageObjectNumber": 1,
+            "index": 54,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 50,
+              "bottom": 500,
+              "right": 300,
+              "top": 700
+            },
+            "contents": "Hello",
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "free-text",
+            "intent": "free-text-callout",
+            "fontFamily": "helvetica",
+            "fontSize": 12,
+            "textAlign": "left",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "interiorColor": null,
+            "opacity": 1,
+            "strokeWidth": 1,
+            "borderStyle": "solid",
+            "rectDifferences": {
+              "left": 100,
+              "bottom": 50,
+              "right": 0,
+              "top": 0
+            },
+            "calloutLine": [
+              {
+                "x": 60,
+                "y": 510
+              },
+              {
+                "x": 120,
+                "y": 560
+              },
+              {
+                "x": 150,
+                "y": 600
+              }
+            ],
+            "lineEnding": "open-arrow",
+            "unrotatedRect": {
+              "left": 160,
+              "bottom": 560,
+              "right": 290,
+              "top": 690
+            }
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": null,
+            "strokeWidth": 1,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "text",
+            "rect": {
+              "x": 150,
+              "y": 100,
+              "width": 150,
+              "height": 150
+            },
+            "callout": {
+              "tip": {
+                "x": 60,
+                "y": 290
+              },
+              "knee": {
+                "x": 120,
+                "y": 240
+              },
+              "ending": "open-arrow"
+            }
+          },
+          "text": {
+            "fontFamily": "helvetica",
+            "fontSize": 12,
+            "fontColor": "#ef4444",
+            "textAlign": "left"
+          },
+          "apBox": {
+            "x": 50,
+            "y": 100,
+            "width": 250,
+            "height": 200
+          }
+        }
+      }
+    },
+    {
+      "name": "fromDTO/callout-rotated-distinct-box",
+      "fn": "fromDTO",
+      "args": [
+        {
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 55
+          },
+          "pageObjectNumber": 1,
+          "index": 55,
+          "identityQuality": "durable",
+          "nm": null,
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "rect": {
+            "left": 50,
+            "bottom": 500,
+            "right": 300,
+            "top": 700
+          },
+          "contents": "Hello",
+          "subject": null,
+          "author": null,
+          "created": null,
+          "modified": null,
+          "blendMode": "normal",
+          "inReplyTo": null,
+          "replyType": null,
+          "subtype": "free-text",
+          "intent": "free-text-callout",
+          "fontFamily": "helvetica",
+          "fontSize": 12,
+          "textAlign": "left",
+          "color": {
+            "r": 239,
+            "g": 68,
+            "b": 68
+          },
+          "interiorColor": null,
+          "opacity": 1,
+          "strokeWidth": 1,
+          "borderStyle": "solid",
+          "rectDifferences": {
+            "left": 100,
+            "bottom": 50,
+            "right": 0,
+            "top": 0
+          },
+          "calloutLine": [
+            {
+              "x": 60,
+              "y": 510
+            },
+            {
+              "x": 120,
+              "y": 560
+            },
+            {
+              "x": 150,
+              "y": 600
+            }
+          ],
+          "lineEnding": "open-arrow",
+          "rotation": 90,
+          "unrotatedRect": {
+            "left": 160,
+            "bottom": 560,
+            "right": 290,
+            "top": 690
+          }
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        },
+        "baked"
+      ],
+      "outcome": {
+        "returned": {
+          "id": "obj:55",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 55
+          },
+          "pon": 1,
+          "subtype": "free-text",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "baked",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 55
+            },
+            "pageObjectNumber": 1,
+            "index": 55,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 50,
+              "bottom": 500,
+              "right": 300,
+              "top": 700
+            },
+            "contents": "Hello",
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "free-text",
+            "intent": "free-text-callout",
+            "fontFamily": "helvetica",
+            "fontSize": 12,
+            "textAlign": "left",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "interiorColor": null,
+            "opacity": 1,
+            "strokeWidth": 1,
+            "borderStyle": "solid",
+            "rectDifferences": {
+              "left": 100,
+              "bottom": 50,
+              "right": 0,
+              "top": 0
+            },
+            "calloutLine": [
+              {
+                "x": 60,
+                "y": 510
+              },
+              {
+                "x": 120,
+                "y": 560
+              },
+              {
+                "x": 150,
+                "y": 600
+              }
+            ],
+            "lineEnding": "open-arrow",
+            "rotation": 90,
+            "unrotatedRect": {
+              "left": 160,
+              "bottom": 560,
+              "right": 290,
+              "top": 690
+            }
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": null,
+            "strokeWidth": 1,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "text",
+            "rect": {
+              "x": 160,
+              "y": 110,
+              "width": 130,
+              "height": 130
+            },
+            "callout": {
+              "tip": {
+                "x": 60,
+                "y": 290
+              },
+              "knee": {
+                "x": 120,
+                "y": 240
+              },
+              "ending": "open-arrow"
+            },
+            "rot": 270
+          },
+          "text": {
+            "fontFamily": "helvetica",
+            "fontSize": 12,
+            "fontColor": "#ef4444",
+            "textAlign": "left"
+          },
+          "apBox": {
+            "x": 50,
+            "y": 100,
+            "width": 250,
+            "height": 200
+          }
+        }
+      }
+    },
+    {
+      "name": "fromDTO/free-text-unrotated-box-no-rotation",
+      "fn": "fromDTO",
+      "args": [
+        {
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 56
+          },
+          "pageObjectNumber": 1,
+          "index": 56,
+          "identityQuality": "durable",
+          "nm": null,
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "rect": {
+            "left": 100,
+            "bottom": 600,
+            "right": 200,
+            "top": 700
+          },
+          "contents": "Hello",
+          "subject": null,
+          "author": null,
+          "created": null,
+          "modified": null,
+          "blendMode": "normal",
+          "inReplyTo": null,
+          "replyType": null,
+          "subtype": "free-text",
+          "intent": "free-text",
+          "fontFamily": "helvetica",
+          "fontSize": 12,
+          "textAlign": "left",
+          "color": {
+            "r": 239,
+            "g": 68,
+            "b": 68
+          },
+          "interiorColor": null,
+          "opacity": 1,
+          "strokeWidth": 1,
+          "borderStyle": "solid",
+          "rectDifferences": null,
+          "unrotatedRect": {
+            "left": 110,
+            "bottom": 610,
+            "right": 190,
+            "top": 690
+          }
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        },
+        "baked"
+      ],
+      "outcome": {
+        "returned": {
+          "id": "obj:56",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 56
+          },
+          "pon": 1,
+          "subtype": "free-text",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "baked",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 56
+            },
+            "pageObjectNumber": 1,
+            "index": 56,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 100,
+              "bottom": 600,
+              "right": 200,
+              "top": 700
+            },
+            "contents": "Hello",
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "free-text",
+            "intent": "free-text",
+            "fontFamily": "helvetica",
+            "fontSize": 12,
+            "textAlign": "left",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "interiorColor": null,
+            "opacity": 1,
+            "strokeWidth": 1,
+            "borderStyle": "solid",
+            "rectDifferences": null,
+            "unrotatedRect": {
+              "left": 110,
+              "bottom": 610,
+              "right": 190,
+              "top": 690
+            }
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": null,
+            "strokeWidth": 1,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "text",
+            "rect": {
+              "x": 100,
+              "y": 100,
+              "width": 100,
+              "height": 100
+            }
+          },
+          "text": {
+            "fontFamily": "helvetica",
+            "fontSize": 12,
+            "fontColor": "#ef4444",
+            "textAlign": "left"
+          },
+          "apBox": {
+            "x": 100,
+            "y": 100,
+            "width": 100,
+            "height": 100
+          }
+        }
+      }
+    },
+    {
+      "name": "fromDTO/caret-unrotated-box-no-rotation",
+      "fn": "fromDTO",
+      "args": [
+        {
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 58
+          },
+          "pageObjectNumber": 1,
+          "index": 58,
+          "identityQuality": "durable",
+          "nm": null,
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "rect": {
+            "left": 85,
+            "bottom": 745,
+            "right": 95,
+            "top": 755
+          },
+          "contents": null,
+          "subject": null,
+          "author": null,
+          "created": null,
+          "modified": null,
+          "blendMode": "normal",
+          "inReplyTo": null,
+          "replyType": null,
+          "subtype": "caret",
+          "color": {
+            "r": 239,
+            "g": 68,
+            "b": 68
+          },
+          "opacity": 1,
+          "rectDifferences": {
+            "left": 0.5,
+            "top": 0.5,
+            "right": 0.5,
+            "bottom": 0.5
+          },
+          "unrotatedRect": {
+            "left": 86,
+            "bottom": 746,
+            "right": 94,
+            "top": 754
+          }
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        },
+        "baked"
+      ],
+      "outcome": {
+        "returned": {
+          "id": "obj:58",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 58
+          },
+          "pon": 1,
+          "subtype": "caret",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "baked",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 58
+            },
+            "pageObjectNumber": 1,
+            "index": 58,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 85,
+              "bottom": 745,
+              "right": 95,
+              "top": 755
+            },
+            "contents": null,
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "caret",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "opacity": 1,
+            "rectDifferences": {
+              "left": 0.5,
+              "top": 0.5,
+              "right": 0.5,
+              "bottom": 0.5
+            },
+            "unrotatedRect": {
+              "left": 86,
+              "bottom": 746,
+              "right": 94,
+              "top": 754
+            }
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": null,
+            "strokeWidth": 1,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "caret",
+            "rect": {
+              "x": 85,
+              "y": 45,
+              "width": 10,
+              "height": 10
+            }
+          },
+          "apBox": {
+            "x": 85,
+            "y": 45,
+            "width": 10,
+            "height": 10
+          }
+        }
+      }
+    },
+    {
+      "name": "fromDTO/highlight-with-intent",
+      "fn": "fromDTO",
+      "args": [
+        {
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 57
+          },
+          "pageObjectNumber": 1,
+          "index": 57,
+          "identityQuality": "durable",
+          "nm": null,
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "rect": {
+            "left": 50,
+            "bottom": 730,
+            "right": 200,
+            "top": 745
+          },
+          "contents": null,
+          "subject": null,
+          "author": null,
+          "created": null,
+          "modified": null,
+          "blendMode": "normal",
+          "inReplyTo": null,
+          "replyType": null,
+          "subtype": "highlight",
+          "color": {
+            "r": 239,
+            "g": 68,
+            "b": 68
+          },
+          "opacity": 1,
+          "quadPoints": [
+            {
+              "p1": {
+                "x": 50,
+                "y": 745
+              },
+              "p2": {
+                "x": 200,
+                "y": 745
+              },
+              "p3": {
+                "x": 50,
+                "y": 730
+              },
+              "p4": {
+                "x": 200,
+                "y": 730
+              }
+            }
+          ],
+          "intent": "strikeout-text-edit"
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        },
+        "baked"
+      ],
+      "outcome": {
+        "returned": {
+          "id": "obj:57",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 57
+          },
+          "pon": 1,
+          "subtype": "highlight",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "baked",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 57
+            },
+            "pageObjectNumber": 1,
+            "index": 57,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 50,
+              "bottom": 730,
+              "right": 200,
+              "top": 745
+            },
+            "contents": null,
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "highlight",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "opacity": 1,
+            "quadPoints": [
+              {
+                "p1": {
+                  "x": 50,
+                  "y": 745
+                },
+                "p2": {
+                  "x": 200,
+                  "y": 745
+                },
+                "p3": {
+                  "x": 50,
+                  "y": 730
+                },
+                "p4": {
+                  "x": 200,
+                  "y": 730
+                }
+              }
+            ],
+            "intent": "strikeout-text-edit"
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": null,
+            "strokeWidth": 0,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "quads",
+            "quads": [
+              {
+                "upperStart": {
+                  "x": 50,
+                  "y": 55
+                },
+                "upperEnd": {
+                  "x": 200,
+                  "y": 55
+                },
+                "lowerStart": {
+                  "x": 50,
+                  "y": 70
+                },
+                "lowerEnd": {
+                  "x": 200,
+                  "y": 70
+                }
+              }
+            ]
+          },
+          "apBox": {
+            "x": 50,
+            "y": 55,
+            "width": 150,
+            "height": 15
+          }
+        }
+      }
+    },
+    {
       "name": "fromDTO/vector-source",
       "fn": "fromDTO",
       "args": [
@@ -32510,6 +33757,3118 @@
           "cloudyIntensity": null,
           "rectDifferences": null,
           "borderStyle": "solid",
+          "nm": "00000000-0000-4000-8000-000000000001",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          }
+        }
+      }
+    },
+    {
+      "name": "toPatch/highlight-multiply",
+      "fn": "toPatch",
+      "args": [
+        {
+          "id": "obj:53",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 53
+          },
+          "pon": 1,
+          "subtype": "highlight",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "vector",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 53
+            },
+            "pageObjectNumber": 1,
+            "index": 53,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 50,
+              "bottom": 730,
+              "right": 200,
+              "top": 745
+            },
+            "contents": null,
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "multiply",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "highlight",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "opacity": 1,
+            "quadPoints": [
+              {
+                "p1": {
+                  "x": 50,
+                  "y": 745
+                },
+                "p2": {
+                  "x": 200,
+                  "y": 745
+                },
+                "p3": {
+                  "x": 50,
+                  "y": 730
+                },
+                "p4": {
+                  "x": 200,
+                  "y": 730
+                }
+              }
+            ]
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": null,
+            "strokeWidth": 0,
+            "opacity": 1,
+            "blendMode": "multiply",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "quads",
+            "quads": [
+              {
+                "upperStart": {
+                  "x": 50,
+                  "y": 55
+                },
+                "upperEnd": {
+                  "x": 200,
+                  "y": 55
+                },
+                "lowerStart": {
+                  "x": 50,
+                  "y": 70
+                },
+                "lowerEnd": {
+                  "x": 200,
+                  "y": 70
+                }
+              }
+            ]
+          },
+          "apBox": {
+            "x": 50,
+            "y": 55,
+            "width": 150,
+            "height": 15
+          }
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "highlight",
+          "color": {
+            "r": 239,
+            "g": 68,
+            "b": 68
+          },
+          "opacity": 1,
+          "blendMode": "multiply"
+        }
+      }
+    },
+    {
+      "name": "toScopedPatch/highlight-multiply/geometry",
+      "fn": "toScopedPatch",
+      "args": [
+        {
+          "id": "obj:53",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 53
+          },
+          "pon": 1,
+          "subtype": "highlight",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "vector",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 53
+            },
+            "pageObjectNumber": 1,
+            "index": 53,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 50,
+              "bottom": 730,
+              "right": 200,
+              "top": 745
+            },
+            "contents": null,
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "multiply",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "highlight",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "opacity": 1,
+            "quadPoints": [
+              {
+                "p1": {
+                  "x": 50,
+                  "y": 745
+                },
+                "p2": {
+                  "x": 200,
+                  "y": 745
+                },
+                "p3": {
+                  "x": 50,
+                  "y": 730
+                },
+                "p4": {
+                  "x": 200,
+                  "y": 730
+                }
+              }
+            ]
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": null,
+            "strokeWidth": 0,
+            "opacity": 1,
+            "blendMode": "multiply",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "quads",
+            "quads": [
+              {
+                "upperStart": {
+                  "x": 50,
+                  "y": 55
+                },
+                "upperEnd": {
+                  "x": 200,
+                  "y": 55
+                },
+                "lowerStart": {
+                  "x": 50,
+                  "y": 70
+                },
+                "lowerEnd": {
+                  "x": 200,
+                  "y": 70
+                }
+              }
+            ]
+          },
+          "apBox": {
+            "x": 50,
+            "y": 55,
+            "width": 150,
+            "height": 15
+          }
+        },
+        {
+          "kind": "geometry"
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "highlight",
+          "color": {
+            "r": 239,
+            "g": 68,
+            "b": 68
+          },
+          "opacity": 1,
+          "blendMode": "multiply"
+        }
+      }
+    },
+    {
+      "name": "toCreateDraft/highlight-multiply",
+      "fn": "toCreateDraft",
+      "args": [
+        {
+          "id": "obj:53",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 53
+          },
+          "pon": 1,
+          "subtype": "highlight",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "vector",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 53
+            },
+            "pageObjectNumber": 1,
+            "index": 53,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 50,
+              "bottom": 730,
+              "right": 200,
+              "top": 745
+            },
+            "contents": null,
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "multiply",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "highlight",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "opacity": 1,
+            "quadPoints": [
+              {
+                "p1": {
+                  "x": 50,
+                  "y": 745
+                },
+                "p2": {
+                  "x": 200,
+                  "y": 745
+                },
+                "p3": {
+                  "x": 50,
+                  "y": 730
+                },
+                "p4": {
+                  "x": 200,
+                  "y": 730
+                }
+              }
+            ]
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": null,
+            "strokeWidth": 0,
+            "opacity": 1,
+            "blendMode": "multiply",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "quads",
+            "quads": [
+              {
+                "upperStart": {
+                  "x": 50,
+                  "y": 55
+                },
+                "upperEnd": {
+                  "x": 200,
+                  "y": 55
+                },
+                "lowerStart": {
+                  "x": 50,
+                  "y": 70
+                },
+                "lowerEnd": {
+                  "x": 200,
+                  "y": 70
+                }
+              }
+            ]
+          },
+          "apBox": {
+            "x": 50,
+            "y": 55,
+            "width": 150,
+            "height": 15
+          }
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "highlight",
+          "color": {
+            "r": 239,
+            "g": 68,
+            "b": 68
+          },
+          "opacity": 1,
+          "blendMode": "multiply",
+          "quadPoints": [
+            {
+              "p1": {
+                "x": 50,
+                "y": 745
+              },
+              "p2": {
+                "x": 200,
+                "y": 745
+              },
+              "p3": {
+                "x": 50,
+                "y": 730
+              },
+              "p4": {
+                "x": 200,
+                "y": 730
+              }
+            }
+          ],
+          "nm": "00000000-0000-4000-8000-000000000001",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          }
+        }
+      }
+    },
+    {
+      "name": "toPatch/callout-unrotated-box-no-rotation",
+      "fn": "toPatch",
+      "args": [
+        {
+          "id": "obj:54",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 54
+          },
+          "pon": 1,
+          "subtype": "free-text",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "vector",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 54
+            },
+            "pageObjectNumber": 1,
+            "index": 54,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 50,
+              "bottom": 500,
+              "right": 300,
+              "top": 700
+            },
+            "contents": "Hello",
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "free-text",
+            "intent": "free-text-callout",
+            "fontFamily": "helvetica",
+            "fontSize": 12,
+            "textAlign": "left",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "interiorColor": null,
+            "opacity": 1,
+            "strokeWidth": 1,
+            "borderStyle": "solid",
+            "rectDifferences": {
+              "left": 100,
+              "bottom": 50,
+              "right": 0,
+              "top": 0
+            },
+            "calloutLine": [
+              {
+                "x": 60,
+                "y": 510
+              },
+              {
+                "x": 120,
+                "y": 560
+              },
+              {
+                "x": 150,
+                "y": 600
+              }
+            ],
+            "lineEnding": "open-arrow",
+            "unrotatedRect": {
+              "left": 160,
+              "bottom": 560,
+              "right": 290,
+              "top": 690
+            }
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": null,
+            "strokeWidth": 1,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "text",
+            "rect": {
+              "x": 150,
+              "y": 100,
+              "width": 150,
+              "height": 150
+            },
+            "callout": {
+              "tip": {
+                "x": 60,
+                "y": 290
+              },
+              "knee": {
+                "x": 120,
+                "y": 240
+              },
+              "ending": "open-arrow"
+            }
+          },
+          "text": {
+            "fontFamily": "helvetica",
+            "fontSize": 12,
+            "fontColor": "#ef4444",
+            "textAlign": "left"
+          },
+          "apBox": {
+            "x": 50,
+            "y": 100,
+            "width": 250,
+            "height": 200
+          }
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "free-text",
+          "rect": {
+            "left": 59.5,
+            "bottom": 509.5,
+            "right": 300.5,
+            "top": 700.5
+          },
+          "rectDifferences": {
+            "left": 90.5,
+            "bottom": 40.5,
+            "right": 0.5,
+            "top": 0.5
+          },
+          "calloutLine": [
+            {
+              "x": 60,
+              "y": 510
+            },
+            {
+              "x": 120,
+              "y": 560
+            },
+            {
+              "x": 150,
+              "y": 625
+            }
+          ],
+          "lineEnding": "open-arrow",
+          "rotation": null,
+          "unrotatedRect": null,
+          "fontFamily": "helvetica",
+          "fontSize": 12,
+          "fontColor": {
+            "r": 239,
+            "g": 68,
+            "b": 68
+          },
+          "textAlign": "left",
+          "opacity": 1,
+          "interiorColor": null,
+          "color": {
+            "r": 239,
+            "g": 68,
+            "b": 68
+          },
+          "strokeWidth": 1
+        }
+      }
+    },
+    {
+      "name": "toScopedPatch/callout-unrotated-box-no-rotation/geometry",
+      "fn": "toScopedPatch",
+      "args": [
+        {
+          "id": "obj:54",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 54
+          },
+          "pon": 1,
+          "subtype": "free-text",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "vector",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 54
+            },
+            "pageObjectNumber": 1,
+            "index": 54,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 50,
+              "bottom": 500,
+              "right": 300,
+              "top": 700
+            },
+            "contents": "Hello",
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "free-text",
+            "intent": "free-text-callout",
+            "fontFamily": "helvetica",
+            "fontSize": 12,
+            "textAlign": "left",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "interiorColor": null,
+            "opacity": 1,
+            "strokeWidth": 1,
+            "borderStyle": "solid",
+            "rectDifferences": {
+              "left": 100,
+              "bottom": 50,
+              "right": 0,
+              "top": 0
+            },
+            "calloutLine": [
+              {
+                "x": 60,
+                "y": 510
+              },
+              {
+                "x": 120,
+                "y": 560
+              },
+              {
+                "x": 150,
+                "y": 600
+              }
+            ],
+            "lineEnding": "open-arrow",
+            "unrotatedRect": {
+              "left": 160,
+              "bottom": 560,
+              "right": 290,
+              "top": 690
+            }
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": null,
+            "strokeWidth": 1,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "text",
+            "rect": {
+              "x": 150,
+              "y": 100,
+              "width": 150,
+              "height": 150
+            },
+            "callout": {
+              "tip": {
+                "x": 60,
+                "y": 290
+              },
+              "knee": {
+                "x": 120,
+                "y": 240
+              },
+              "ending": "open-arrow"
+            }
+          },
+          "text": {
+            "fontFamily": "helvetica",
+            "fontSize": 12,
+            "fontColor": "#ef4444",
+            "textAlign": "left"
+          },
+          "apBox": {
+            "x": 50,
+            "y": 100,
+            "width": 250,
+            "height": 200
+          }
+        },
+        {
+          "kind": "geometry"
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "free-text",
+          "rect": {
+            "left": 59.5,
+            "bottom": 509.5,
+            "right": 300.5,
+            "top": 700.5
+          },
+          "rectDifferences": {
+            "left": 90.5,
+            "bottom": 40.5,
+            "right": 0.5,
+            "top": 0.5
+          },
+          "calloutLine": [
+            {
+              "x": 60,
+              "y": 510
+            },
+            {
+              "x": 120,
+              "y": 560
+            },
+            {
+              "x": 150,
+              "y": 625
+            }
+          ],
+          "lineEnding": "open-arrow",
+          "rotation": null,
+          "unrotatedRect": null
+        }
+      }
+    },
+    {
+      "name": "toCreateDraft/callout-unrotated-box-no-rotation",
+      "fn": "toCreateDraft",
+      "args": [
+        {
+          "id": "obj:54",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 54
+          },
+          "pon": 1,
+          "subtype": "free-text",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "vector",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 54
+            },
+            "pageObjectNumber": 1,
+            "index": 54,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 50,
+              "bottom": 500,
+              "right": 300,
+              "top": 700
+            },
+            "contents": "Hello",
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "free-text",
+            "intent": "free-text-callout",
+            "fontFamily": "helvetica",
+            "fontSize": 12,
+            "textAlign": "left",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "interiorColor": null,
+            "opacity": 1,
+            "strokeWidth": 1,
+            "borderStyle": "solid",
+            "rectDifferences": {
+              "left": 100,
+              "bottom": 50,
+              "right": 0,
+              "top": 0
+            },
+            "calloutLine": [
+              {
+                "x": 60,
+                "y": 510
+              },
+              {
+                "x": 120,
+                "y": 560
+              },
+              {
+                "x": 150,
+                "y": 600
+              }
+            ],
+            "lineEnding": "open-arrow",
+            "unrotatedRect": {
+              "left": 160,
+              "bottom": 560,
+              "right": 290,
+              "top": 690
+            }
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": null,
+            "strokeWidth": 1,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "text",
+            "rect": {
+              "x": 150,
+              "y": 100,
+              "width": 150,
+              "height": 150
+            },
+            "callout": {
+              "tip": {
+                "x": 60,
+                "y": 290
+              },
+              "knee": {
+                "x": 120,
+                "y": 240
+              },
+              "ending": "open-arrow"
+            }
+          },
+          "text": {
+            "fontFamily": "helvetica",
+            "fontSize": 12,
+            "fontColor": "#ef4444",
+            "textAlign": "left"
+          },
+          "apBox": {
+            "x": 50,
+            "y": 100,
+            "width": 250,
+            "height": 200
+          }
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "free-text",
+          "rect": {
+            "left": 59.5,
+            "bottom": 509.5,
+            "right": 300.5,
+            "top": 700.5
+          },
+          "rectDifferences": {
+            "left": 90.5,
+            "bottom": 40.5,
+            "right": 0.5,
+            "top": 0.5
+          },
+          "calloutLine": [
+            {
+              "x": 60,
+              "y": 510
+            },
+            {
+              "x": 120,
+              "y": 560
+            },
+            {
+              "x": 150,
+              "y": 625
+            }
+          ],
+          "lineEnding": "open-arrow",
+          "rotation": null,
+          "unrotatedRect": null,
+          "fontFamily": "helvetica",
+          "fontSize": 12,
+          "fontColor": {
+            "r": 239,
+            "g": 68,
+            "b": 68
+          },
+          "textAlign": "left",
+          "opacity": 1,
+          "interiorColor": null,
+          "color": {
+            "r": 239,
+            "g": 68,
+            "b": 68
+          },
+          "strokeWidth": 1,
+          "intent": "free-text-callout",
+          "contents": "Hello",
+          "nm": "00000000-0000-4000-8000-000000000001",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          }
+        }
+      }
+    },
+    {
+      "name": "toPatch/callout-rotated-distinct-box",
+      "fn": "toPatch",
+      "args": [
+        {
+          "id": "obj:55",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 55
+          },
+          "pon": 1,
+          "subtype": "free-text",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "vector",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 55
+            },
+            "pageObjectNumber": 1,
+            "index": 55,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 50,
+              "bottom": 500,
+              "right": 300,
+              "top": 700
+            },
+            "contents": "Hello",
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "free-text",
+            "intent": "free-text-callout",
+            "fontFamily": "helvetica",
+            "fontSize": 12,
+            "textAlign": "left",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "interiorColor": null,
+            "opacity": 1,
+            "strokeWidth": 1,
+            "borderStyle": "solid",
+            "rectDifferences": {
+              "left": 100,
+              "bottom": 50,
+              "right": 0,
+              "top": 0
+            },
+            "calloutLine": [
+              {
+                "x": 60,
+                "y": 510
+              },
+              {
+                "x": 120,
+                "y": 560
+              },
+              {
+                "x": 150,
+                "y": 600
+              }
+            ],
+            "lineEnding": "open-arrow",
+            "rotation": 90,
+            "unrotatedRect": {
+              "left": 160,
+              "bottom": 560,
+              "right": 290,
+              "top": 690
+            }
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": null,
+            "strokeWidth": 1,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "text",
+            "rect": {
+              "x": 160,
+              "y": 110,
+              "width": 130,
+              "height": 130
+            },
+            "callout": {
+              "tip": {
+                "x": 60,
+                "y": 290
+              },
+              "knee": {
+                "x": 120,
+                "y": 240
+              },
+              "ending": "open-arrow"
+            },
+            "rot": 270
+          },
+          "text": {
+            "fontFamily": "helvetica",
+            "fontSize": 12,
+            "fontColor": "#ef4444",
+            "textAlign": "left"
+          },
+          "apBox": {
+            "x": 50,
+            "y": 100,
+            "width": 250,
+            "height": 200
+          }
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "free-text",
+          "rect": {
+            "left": 59.5,
+            "bottom": 509.5,
+            "right": 290.5,
+            "top": 690.5
+          },
+          "rectDifferences": {
+            "left": 100.49999999999997,
+            "bottom": 50.5,
+            "right": 0.5,
+            "top": 0.5
+          },
+          "calloutLine": [
+            {
+              "x": 60,
+              "y": 510
+            },
+            {
+              "x": 120,
+              "y": 560
+            },
+            {
+              "x": 160,
+              "y": 625
+            }
+          ],
+          "lineEnding": "open-arrow",
+          "rotation": 90,
+          "unrotatedRect": {
+            "left": 160,
+            "bottom": 560,
+            "right": 290,
+            "top": 690
+          },
+          "fontFamily": "helvetica",
+          "fontSize": 12,
+          "fontColor": {
+            "r": 239,
+            "g": 68,
+            "b": 68
+          },
+          "textAlign": "left",
+          "opacity": 1,
+          "interiorColor": null,
+          "color": {
+            "r": 239,
+            "g": 68,
+            "b": 68
+          },
+          "strokeWidth": 1
+        }
+      }
+    },
+    {
+      "name": "toScopedPatch/callout-rotated-distinct-box/geometry",
+      "fn": "toScopedPatch",
+      "args": [
+        {
+          "id": "obj:55",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 55
+          },
+          "pon": 1,
+          "subtype": "free-text",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "vector",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 55
+            },
+            "pageObjectNumber": 1,
+            "index": 55,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 50,
+              "bottom": 500,
+              "right": 300,
+              "top": 700
+            },
+            "contents": "Hello",
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "free-text",
+            "intent": "free-text-callout",
+            "fontFamily": "helvetica",
+            "fontSize": 12,
+            "textAlign": "left",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "interiorColor": null,
+            "opacity": 1,
+            "strokeWidth": 1,
+            "borderStyle": "solid",
+            "rectDifferences": {
+              "left": 100,
+              "bottom": 50,
+              "right": 0,
+              "top": 0
+            },
+            "calloutLine": [
+              {
+                "x": 60,
+                "y": 510
+              },
+              {
+                "x": 120,
+                "y": 560
+              },
+              {
+                "x": 150,
+                "y": 600
+              }
+            ],
+            "lineEnding": "open-arrow",
+            "rotation": 90,
+            "unrotatedRect": {
+              "left": 160,
+              "bottom": 560,
+              "right": 290,
+              "top": 690
+            }
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": null,
+            "strokeWidth": 1,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "text",
+            "rect": {
+              "x": 160,
+              "y": 110,
+              "width": 130,
+              "height": 130
+            },
+            "callout": {
+              "tip": {
+                "x": 60,
+                "y": 290
+              },
+              "knee": {
+                "x": 120,
+                "y": 240
+              },
+              "ending": "open-arrow"
+            },
+            "rot": 270
+          },
+          "text": {
+            "fontFamily": "helvetica",
+            "fontSize": 12,
+            "fontColor": "#ef4444",
+            "textAlign": "left"
+          },
+          "apBox": {
+            "x": 50,
+            "y": 100,
+            "width": 250,
+            "height": 200
+          }
+        },
+        {
+          "kind": "geometry"
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "free-text",
+          "rect": {
+            "left": 59.5,
+            "bottom": 509.5,
+            "right": 290.5,
+            "top": 690.5
+          },
+          "rectDifferences": {
+            "left": 100.49999999999997,
+            "bottom": 50.5,
+            "right": 0.5,
+            "top": 0.5
+          },
+          "calloutLine": [
+            {
+              "x": 60,
+              "y": 510
+            },
+            {
+              "x": 120,
+              "y": 560
+            },
+            {
+              "x": 160,
+              "y": 625
+            }
+          ],
+          "lineEnding": "open-arrow",
+          "rotation": 90,
+          "unrotatedRect": {
+            "left": 160,
+            "bottom": 560,
+            "right": 290,
+            "top": 690
+          }
+        }
+      }
+    },
+    {
+      "name": "toCreateDraft/callout-rotated-distinct-box",
+      "fn": "toCreateDraft",
+      "args": [
+        {
+          "id": "obj:55",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 55
+          },
+          "pon": 1,
+          "subtype": "free-text",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "vector",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 55
+            },
+            "pageObjectNumber": 1,
+            "index": 55,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 50,
+              "bottom": 500,
+              "right": 300,
+              "top": 700
+            },
+            "contents": "Hello",
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "free-text",
+            "intent": "free-text-callout",
+            "fontFamily": "helvetica",
+            "fontSize": 12,
+            "textAlign": "left",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "interiorColor": null,
+            "opacity": 1,
+            "strokeWidth": 1,
+            "borderStyle": "solid",
+            "rectDifferences": {
+              "left": 100,
+              "bottom": 50,
+              "right": 0,
+              "top": 0
+            },
+            "calloutLine": [
+              {
+                "x": 60,
+                "y": 510
+              },
+              {
+                "x": 120,
+                "y": 560
+              },
+              {
+                "x": 150,
+                "y": 600
+              }
+            ],
+            "lineEnding": "open-arrow",
+            "rotation": 90,
+            "unrotatedRect": {
+              "left": 160,
+              "bottom": 560,
+              "right": 290,
+              "top": 690
+            }
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": null,
+            "strokeWidth": 1,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "text",
+            "rect": {
+              "x": 160,
+              "y": 110,
+              "width": 130,
+              "height": 130
+            },
+            "callout": {
+              "tip": {
+                "x": 60,
+                "y": 290
+              },
+              "knee": {
+                "x": 120,
+                "y": 240
+              },
+              "ending": "open-arrow"
+            },
+            "rot": 270
+          },
+          "text": {
+            "fontFamily": "helvetica",
+            "fontSize": 12,
+            "fontColor": "#ef4444",
+            "textAlign": "left"
+          },
+          "apBox": {
+            "x": 50,
+            "y": 100,
+            "width": 250,
+            "height": 200
+          }
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "free-text",
+          "rect": {
+            "left": 59.5,
+            "bottom": 509.5,
+            "right": 290.5,
+            "top": 690.5
+          },
+          "rectDifferences": {
+            "left": 100.49999999999997,
+            "bottom": 50.5,
+            "right": 0.5,
+            "top": 0.5
+          },
+          "calloutLine": [
+            {
+              "x": 60,
+              "y": 510
+            },
+            {
+              "x": 120,
+              "y": 560
+            },
+            {
+              "x": 160,
+              "y": 625
+            }
+          ],
+          "lineEnding": "open-arrow",
+          "rotation": 90,
+          "unrotatedRect": {
+            "left": 160,
+            "bottom": 560,
+            "right": 290,
+            "top": 690
+          },
+          "fontFamily": "helvetica",
+          "fontSize": 12,
+          "fontColor": {
+            "r": 239,
+            "g": 68,
+            "b": 68
+          },
+          "textAlign": "left",
+          "opacity": 1,
+          "interiorColor": null,
+          "color": {
+            "r": 239,
+            "g": 68,
+            "b": 68
+          },
+          "strokeWidth": 1,
+          "intent": "free-text-callout",
+          "contents": "Hello",
+          "nm": "00000000-0000-4000-8000-000000000001",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          }
+        }
+      }
+    },
+    {
+      "name": "toPatch/free-text-unrotated-box-no-rotation",
+      "fn": "toPatch",
+      "args": [
+        {
+          "id": "obj:56",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 56
+          },
+          "pon": 1,
+          "subtype": "free-text",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "vector",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 56
+            },
+            "pageObjectNumber": 1,
+            "index": 56,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 100,
+              "bottom": 600,
+              "right": 200,
+              "top": 700
+            },
+            "contents": "Hello",
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "free-text",
+            "intent": "free-text",
+            "fontFamily": "helvetica",
+            "fontSize": 12,
+            "textAlign": "left",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "interiorColor": null,
+            "opacity": 1,
+            "strokeWidth": 1,
+            "borderStyle": "solid",
+            "rectDifferences": null,
+            "unrotatedRect": {
+              "left": 110,
+              "bottom": 610,
+              "right": 190,
+              "top": 690
+            }
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": null,
+            "strokeWidth": 1,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "text",
+            "rect": {
+              "x": 100,
+              "y": 100,
+              "width": 100,
+              "height": 100
+            }
+          },
+          "text": {
+            "fontFamily": "helvetica",
+            "fontSize": 12,
+            "fontColor": "#ef4444",
+            "textAlign": "left"
+          },
+          "apBox": {
+            "x": 100,
+            "y": 100,
+            "width": 100,
+            "height": 100
+          }
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "free-text",
+          "rect": {
+            "left": 100,
+            "bottom": 600,
+            "right": 200,
+            "top": 700
+          },
+          "rotation": null,
+          "unrotatedRect": null,
+          "fontFamily": "helvetica",
+          "fontSize": 12,
+          "fontColor": {
+            "r": 239,
+            "g": 68,
+            "b": 68
+          },
+          "textAlign": "left",
+          "opacity": 1,
+          "interiorColor": null,
+          "color": {
+            "r": 239,
+            "g": 68,
+            "b": 68
+          },
+          "strokeWidth": 1
+        }
+      }
+    },
+    {
+      "name": "toScopedPatch/free-text-unrotated-box-no-rotation/geometry",
+      "fn": "toScopedPatch",
+      "args": [
+        {
+          "id": "obj:56",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 56
+          },
+          "pon": 1,
+          "subtype": "free-text",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "vector",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 56
+            },
+            "pageObjectNumber": 1,
+            "index": 56,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 100,
+              "bottom": 600,
+              "right": 200,
+              "top": 700
+            },
+            "contents": "Hello",
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "free-text",
+            "intent": "free-text",
+            "fontFamily": "helvetica",
+            "fontSize": 12,
+            "textAlign": "left",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "interiorColor": null,
+            "opacity": 1,
+            "strokeWidth": 1,
+            "borderStyle": "solid",
+            "rectDifferences": null,
+            "unrotatedRect": {
+              "left": 110,
+              "bottom": 610,
+              "right": 190,
+              "top": 690
+            }
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": null,
+            "strokeWidth": 1,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "text",
+            "rect": {
+              "x": 100,
+              "y": 100,
+              "width": 100,
+              "height": 100
+            }
+          },
+          "text": {
+            "fontFamily": "helvetica",
+            "fontSize": 12,
+            "fontColor": "#ef4444",
+            "textAlign": "left"
+          },
+          "apBox": {
+            "x": 100,
+            "y": 100,
+            "width": 100,
+            "height": 100
+          }
+        },
+        {
+          "kind": "geometry"
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "free-text",
+          "rect": {
+            "left": 100,
+            "bottom": 600,
+            "right": 200,
+            "top": 700
+          },
+          "rotation": null,
+          "unrotatedRect": null
+        }
+      }
+    },
+    {
+      "name": "toCreateDraft/free-text-unrotated-box-no-rotation",
+      "fn": "toCreateDraft",
+      "args": [
+        {
+          "id": "obj:56",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 56
+          },
+          "pon": 1,
+          "subtype": "free-text",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "vector",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 56
+            },
+            "pageObjectNumber": 1,
+            "index": 56,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 100,
+              "bottom": 600,
+              "right": 200,
+              "top": 700
+            },
+            "contents": "Hello",
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "free-text",
+            "intent": "free-text",
+            "fontFamily": "helvetica",
+            "fontSize": 12,
+            "textAlign": "left",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "interiorColor": null,
+            "opacity": 1,
+            "strokeWidth": 1,
+            "borderStyle": "solid",
+            "rectDifferences": null,
+            "unrotatedRect": {
+              "left": 110,
+              "bottom": 610,
+              "right": 190,
+              "top": 690
+            }
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": null,
+            "strokeWidth": 1,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "text",
+            "rect": {
+              "x": 100,
+              "y": 100,
+              "width": 100,
+              "height": 100
+            }
+          },
+          "text": {
+            "fontFamily": "helvetica",
+            "fontSize": 12,
+            "fontColor": "#ef4444",
+            "textAlign": "left"
+          },
+          "apBox": {
+            "x": 100,
+            "y": 100,
+            "width": 100,
+            "height": 100
+          }
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "free-text",
+          "rect": {
+            "left": 100,
+            "bottom": 600,
+            "right": 200,
+            "top": 700
+          },
+          "rotation": null,
+          "unrotatedRect": null,
+          "fontFamily": "helvetica",
+          "fontSize": 12,
+          "fontColor": {
+            "r": 239,
+            "g": 68,
+            "b": 68
+          },
+          "textAlign": "left",
+          "opacity": 1,
+          "interiorColor": null,
+          "color": {
+            "r": 239,
+            "g": 68,
+            "b": 68
+          },
+          "strokeWidth": 1,
+          "intent": "free-text",
+          "contents": "Hello",
+          "nm": "00000000-0000-4000-8000-000000000001",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          }
+        }
+      }
+    },
+    {
+      "name": "toPatch/caret-unrotated-box-no-rotation",
+      "fn": "toPatch",
+      "args": [
+        {
+          "id": "obj:58",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 58
+          },
+          "pon": 1,
+          "subtype": "caret",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "vector",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 58
+            },
+            "pageObjectNumber": 1,
+            "index": 58,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 85,
+              "bottom": 745,
+              "right": 95,
+              "top": 755
+            },
+            "contents": null,
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "caret",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "opacity": 1,
+            "rectDifferences": {
+              "left": 0.5,
+              "top": 0.5,
+              "right": 0.5,
+              "bottom": 0.5
+            },
+            "unrotatedRect": {
+              "left": 86,
+              "bottom": 746,
+              "right": 94,
+              "top": 754
+            }
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": null,
+            "strokeWidth": 1,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "caret",
+            "rect": {
+              "x": 85,
+              "y": 45,
+              "width": 10,
+              "height": 10
+            }
+          },
+          "apBox": {
+            "x": 85,
+            "y": 45,
+            "width": 10,
+            "height": 10
+          }
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "caret",
+          "rect": {
+            "left": 85,
+            "bottom": 745,
+            "right": 95,
+            "top": 755
+          },
+          "rotation": null,
+          "unrotatedRect": null,
+          "color": {
+            "r": 239,
+            "g": 68,
+            "b": 68
+          },
+          "opacity": 1
+        }
+      }
+    },
+    {
+      "name": "toScopedPatch/caret-unrotated-box-no-rotation/geometry",
+      "fn": "toScopedPatch",
+      "args": [
+        {
+          "id": "obj:58",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 58
+          },
+          "pon": 1,
+          "subtype": "caret",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "vector",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 58
+            },
+            "pageObjectNumber": 1,
+            "index": 58,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 85,
+              "bottom": 745,
+              "right": 95,
+              "top": 755
+            },
+            "contents": null,
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "caret",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "opacity": 1,
+            "rectDifferences": {
+              "left": 0.5,
+              "top": 0.5,
+              "right": 0.5,
+              "bottom": 0.5
+            },
+            "unrotatedRect": {
+              "left": 86,
+              "bottom": 746,
+              "right": 94,
+              "top": 754
+            }
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": null,
+            "strokeWidth": 1,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "caret",
+            "rect": {
+              "x": 85,
+              "y": 45,
+              "width": 10,
+              "height": 10
+            }
+          },
+          "apBox": {
+            "x": 85,
+            "y": 45,
+            "width": 10,
+            "height": 10
+          }
+        },
+        {
+          "kind": "geometry"
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "caret",
+          "rect": {
+            "left": 85,
+            "bottom": 745,
+            "right": 95,
+            "top": 755
+          },
+          "rotation": null,
+          "unrotatedRect": null
+        }
+      }
+    },
+    {
+      "name": "toCreateDraft/caret-unrotated-box-no-rotation",
+      "fn": "toCreateDraft",
+      "args": [
+        {
+          "id": "obj:58",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 58
+          },
+          "pon": 1,
+          "subtype": "caret",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "vector",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 58
+            },
+            "pageObjectNumber": 1,
+            "index": 58,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 85,
+              "bottom": 745,
+              "right": 95,
+              "top": 755
+            },
+            "contents": null,
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "caret",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "opacity": 1,
+            "rectDifferences": {
+              "left": 0.5,
+              "top": 0.5,
+              "right": 0.5,
+              "bottom": 0.5
+            },
+            "unrotatedRect": {
+              "left": 86,
+              "bottom": 746,
+              "right": 94,
+              "top": 754
+            }
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": null,
+            "strokeWidth": 1,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "caret",
+            "rect": {
+              "x": 85,
+              "y": 45,
+              "width": 10,
+              "height": 10
+            }
+          },
+          "apBox": {
+            "x": 85,
+            "y": 45,
+            "width": 10,
+            "height": 10
+          }
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "caret",
+          "rect": {
+            "left": 85,
+            "bottom": 745,
+            "right": 95,
+            "top": 755
+          },
+          "rotation": null,
+          "unrotatedRect": null,
+          "color": {
+            "r": 239,
+            "g": 68,
+            "b": 68
+          },
+          "opacity": 1,
+          "rectDifferences": {
+            "left": 0.5,
+            "top": 0.5,
+            "right": 0.5,
+            "bottom": 0.5
+          },
+          "nm": "00000000-0000-4000-8000-000000000001",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          }
+        }
+      }
+    },
+    {
+      "name": "toPatch/highlight-with-intent",
+      "fn": "toPatch",
+      "args": [
+        {
+          "id": "obj:57",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 57
+          },
+          "pon": 1,
+          "subtype": "highlight",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "vector",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 57
+            },
+            "pageObjectNumber": 1,
+            "index": 57,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 50,
+              "bottom": 730,
+              "right": 200,
+              "top": 745
+            },
+            "contents": null,
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "highlight",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "opacity": 1,
+            "quadPoints": [
+              {
+                "p1": {
+                  "x": 50,
+                  "y": 745
+                },
+                "p2": {
+                  "x": 200,
+                  "y": 745
+                },
+                "p3": {
+                  "x": 50,
+                  "y": 730
+                },
+                "p4": {
+                  "x": 200,
+                  "y": 730
+                }
+              }
+            ],
+            "intent": "strikeout-text-edit"
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": null,
+            "strokeWidth": 0,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "quads",
+            "quads": [
+              {
+                "upperStart": {
+                  "x": 50,
+                  "y": 55
+                },
+                "upperEnd": {
+                  "x": 200,
+                  "y": 55
+                },
+                "lowerStart": {
+                  "x": 50,
+                  "y": 70
+                },
+                "lowerEnd": {
+                  "x": 200,
+                  "y": 70
+                }
+              }
+            ]
+          },
+          "apBox": {
+            "x": 50,
+            "y": 55,
+            "width": 150,
+            "height": 15
+          }
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "highlight",
+          "color": {
+            "r": 239,
+            "g": 68,
+            "b": 68
+          },
+          "opacity": 1,
+          "blendMode": "normal"
+        }
+      }
+    },
+    {
+      "name": "toScopedPatch/highlight-with-intent/geometry",
+      "fn": "toScopedPatch",
+      "args": [
+        {
+          "id": "obj:57",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 57
+          },
+          "pon": 1,
+          "subtype": "highlight",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "vector",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 57
+            },
+            "pageObjectNumber": 1,
+            "index": 57,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 50,
+              "bottom": 730,
+              "right": 200,
+              "top": 745
+            },
+            "contents": null,
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "highlight",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "opacity": 1,
+            "quadPoints": [
+              {
+                "p1": {
+                  "x": 50,
+                  "y": 745
+                },
+                "p2": {
+                  "x": 200,
+                  "y": 745
+                },
+                "p3": {
+                  "x": 50,
+                  "y": 730
+                },
+                "p4": {
+                  "x": 200,
+                  "y": 730
+                }
+              }
+            ],
+            "intent": "strikeout-text-edit"
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": null,
+            "strokeWidth": 0,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "quads",
+            "quads": [
+              {
+                "upperStart": {
+                  "x": 50,
+                  "y": 55
+                },
+                "upperEnd": {
+                  "x": 200,
+                  "y": 55
+                },
+                "lowerStart": {
+                  "x": 50,
+                  "y": 70
+                },
+                "lowerEnd": {
+                  "x": 200,
+                  "y": 70
+                }
+              }
+            ]
+          },
+          "apBox": {
+            "x": 50,
+            "y": 55,
+            "width": 150,
+            "height": 15
+          }
+        },
+        {
+          "kind": "geometry"
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "highlight",
+          "color": {
+            "r": 239,
+            "g": 68,
+            "b": 68
+          },
+          "opacity": 1,
+          "blendMode": "normal"
+        }
+      }
+    },
+    {
+      "name": "toCreateDraft/highlight-with-intent",
+      "fn": "toCreateDraft",
+      "args": [
+        {
+          "id": "obj:57",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 57
+          },
+          "pon": 1,
+          "subtype": "highlight",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "vector",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 57
+            },
+            "pageObjectNumber": 1,
+            "index": 57,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 50,
+              "bottom": 730,
+              "right": 200,
+              "top": 745
+            },
+            "contents": null,
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "highlight",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "opacity": 1,
+            "quadPoints": [
+              {
+                "p1": {
+                  "x": 50,
+                  "y": 745
+                },
+                "p2": {
+                  "x": 200,
+                  "y": 745
+                },
+                "p3": {
+                  "x": 50,
+                  "y": 730
+                },
+                "p4": {
+                  "x": 200,
+                  "y": 730
+                }
+              }
+            ],
+            "intent": "strikeout-text-edit"
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": null,
+            "strokeWidth": 0,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "quads",
+            "quads": [
+              {
+                "upperStart": {
+                  "x": 50,
+                  "y": 55
+                },
+                "upperEnd": {
+                  "x": 200,
+                  "y": 55
+                },
+                "lowerStart": {
+                  "x": 50,
+                  "y": 70
+                },
+                "lowerEnd": {
+                  "x": 200,
+                  "y": 70
+                }
+              }
+            ]
+          },
+          "apBox": {
+            "x": 50,
+            "y": 55,
+            "width": 150,
+            "height": 15
+          }
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "highlight",
+          "color": {
+            "r": 239,
+            "g": 68,
+            "b": 68
+          },
+          "opacity": 1,
+          "blendMode": "normal",
+          "quadPoints": [
+            {
+              "p1": {
+                "x": 50,
+                "y": 745
+              },
+              "p2": {
+                "x": 200,
+                "y": 745
+              },
+              "p3": {
+                "x": 50,
+                "y": 730
+              },
+              "p4": {
+                "x": 200,
+                "y": 730
+              }
+            }
+          ],
           "nm": "00000000-0000-4000-8000-000000000001",
           "flags": {
             "invisible": false,
@@ -63038,6 +67397,1273 @@
       }
     },
     {
+      "name": "toScopedPatch/square-empty-interior/color",
+      "fn": "toScopedPatch",
+      "args": [
+        {
+          "id": "obj:1",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 1
+          },
+          "pon": 1,
+          "subtype": "square",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "vector",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 1
+            },
+            "pageObjectNumber": 1,
+            "index": 1,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 100,
+              "bottom": 600,
+              "right": 200,
+              "top": 700
+            },
+            "contents": null,
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "square",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "interiorColor": null,
+            "opacity": 1,
+            "strokeWidth": 2,
+            "borderStyle": "solid",
+            "cloudyIntensity": null,
+            "rectDifferences": null
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": "",
+            "strokeWidth": 2,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "rect",
+            "rect": {
+              "x": 100,
+              "y": 100,
+              "width": 100,
+              "height": 100
+            },
+            "ellipse": false
+          },
+          "apBox": {
+            "x": 100,
+            "y": 100,
+            "width": 100,
+            "height": 100
+          }
+        },
+        {
+          "kind": "props",
+          "keys": [
+            "color"
+          ]
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "square",
+          "color": {
+            "r": 239,
+            "g": 68,
+            "b": 68
+          }
+        }
+      }
+    },
+    {
+      "name": "toScopedPatch/square-empty-interior/stroke-width",
+      "fn": "toScopedPatch",
+      "args": [
+        {
+          "id": "obj:1",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 1
+          },
+          "pon": 1,
+          "subtype": "square",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "vector",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 1
+            },
+            "pageObjectNumber": 1,
+            "index": 1,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 100,
+              "bottom": 600,
+              "right": 200,
+              "top": 700
+            },
+            "contents": null,
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "square",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "interiorColor": null,
+            "opacity": 1,
+            "strokeWidth": 2,
+            "borderStyle": "solid",
+            "cloudyIntensity": null,
+            "rectDifferences": null
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": "",
+            "strokeWidth": 2,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "rect",
+            "rect": {
+              "x": 100,
+              "y": 100,
+              "width": 100,
+              "height": 100
+            },
+            "ellipse": false
+          },
+          "apBox": {
+            "x": 100,
+            "y": 100,
+            "width": 100,
+            "height": 100
+          }
+        },
+        {
+          "kind": "props",
+          "keys": [
+            "strokeWidth"
+          ]
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "square",
+          "strokeWidth": 2,
+          "cloudyIntensity": null,
+          "rectDifferences": null
+        }
+      }
+    },
+    {
+      "name": "toScopedPatch/square-empty-interior/border",
+      "fn": "toScopedPatch",
+      "args": [
+        {
+          "id": "obj:1",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 1
+          },
+          "pon": 1,
+          "subtype": "square",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "vector",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 1
+            },
+            "pageObjectNumber": 1,
+            "index": 1,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 100,
+              "bottom": 600,
+              "right": 200,
+              "top": 700
+            },
+            "contents": null,
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "square",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "interiorColor": null,
+            "opacity": 1,
+            "strokeWidth": 2,
+            "borderStyle": "solid",
+            "cloudyIntensity": null,
+            "rectDifferences": null
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": "",
+            "strokeWidth": 2,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "rect",
+            "rect": {
+              "x": 100,
+              "y": 100,
+              "width": 100,
+              "height": 100
+            },
+            "ellipse": false
+          },
+          "apBox": {
+            "x": 100,
+            "y": 100,
+            "width": 100,
+            "height": 100
+          }
+        },
+        {
+          "kind": "props",
+          "keys": [
+            "border"
+          ]
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "square",
+          "borderStyle": "solid",
+          "cloudyIntensity": null,
+          "rectDifferences": null
+        }
+      }
+    },
+    {
+      "name": "toScopedPatch/square-empty-interior/line-endings",
+      "fn": "toScopedPatch",
+      "args": [
+        {
+          "id": "obj:1",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 1
+          },
+          "pon": 1,
+          "subtype": "square",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "vector",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 1
+            },
+            "pageObjectNumber": 1,
+            "index": 1,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 100,
+              "bottom": 600,
+              "right": 200,
+              "top": 700
+            },
+            "contents": null,
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "square",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "interiorColor": null,
+            "opacity": 1,
+            "strokeWidth": 2,
+            "borderStyle": "solid",
+            "cloudyIntensity": null,
+            "rectDifferences": null
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": "",
+            "strokeWidth": 2,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "rect",
+            "rect": {
+              "x": 100,
+              "y": 100,
+              "width": 100,
+              "height": 100
+            },
+            "ellipse": false
+          },
+          "apBox": {
+            "x": 100,
+            "y": 100,
+            "width": 100,
+            "height": 100
+          }
+        },
+        {
+          "kind": "props",
+          "keys": [
+            "lineEndings"
+          ]
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "square",
+          "rect": {
+            "left": 100,
+            "bottom": 600,
+            "right": 200,
+            "top": 700
+          },
+          "rotation": null,
+          "unrotatedRect": null,
+          "color": {
+            "r": 239,
+            "g": 68,
+            "b": 68
+          },
+          "interiorColor": null,
+          "opacity": 1,
+          "strokeWidth": 2,
+          "cloudyIntensity": null,
+          "rectDifferences": null,
+          "borderStyle": "solid"
+        }
+      }
+    },
+    {
+      "name": "toScopedPatch/square-empty-interior/interior",
+      "fn": "toScopedPatch",
+      "args": [
+        {
+          "id": "obj:1",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 1
+          },
+          "pon": 1,
+          "subtype": "square",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "vector",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 1
+            },
+            "pageObjectNumber": 1,
+            "index": 1,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 100,
+              "bottom": 600,
+              "right": 200,
+              "top": 700
+            },
+            "contents": null,
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "square",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "interiorColor": null,
+            "opacity": 1,
+            "strokeWidth": 2,
+            "borderStyle": "solid",
+            "cloudyIntensity": null,
+            "rectDifferences": null
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": "",
+            "strokeWidth": 2,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "rect",
+            "rect": {
+              "x": 100,
+              "y": 100,
+              "width": 100,
+              "height": 100
+            },
+            "ellipse": false
+          },
+          "apBox": {
+            "x": 100,
+            "y": 100,
+            "width": 100,
+            "height": 100
+          }
+        },
+        {
+          "kind": "props",
+          "keys": [
+            "interiorColor",
+            "opacity",
+            "blendMode"
+          ]
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "square",
+          "interiorColor": null,
+          "opacity": 1,
+          "blendMode": "normal"
+        }
+      }
+    },
+    {
+      "name": "toScopedPatch/square-empty-interior/font",
+      "fn": "toScopedPatch",
+      "args": [
+        {
+          "id": "obj:1",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 1
+          },
+          "pon": 1,
+          "subtype": "square",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "vector",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 1
+            },
+            "pageObjectNumber": 1,
+            "index": 1,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 100,
+              "bottom": 600,
+              "right": 200,
+              "top": 700
+            },
+            "contents": null,
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "square",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "interiorColor": null,
+            "opacity": 1,
+            "strokeWidth": 2,
+            "borderStyle": "solid",
+            "cloudyIntensity": null,
+            "rectDifferences": null
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": "",
+            "strokeWidth": 2,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "rect",
+            "rect": {
+              "x": 100,
+              "y": 100,
+              "width": 100,
+              "height": 100
+            },
+            "ellipse": false
+          },
+          "apBox": {
+            "x": 100,
+            "y": 100,
+            "width": 100,
+            "height": 100
+          }
+        },
+        {
+          "kind": "props",
+          "keys": [
+            "fontFamily",
+            "fontSize",
+            "fontColor",
+            "textAlign"
+          ]
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "square",
+          "fontFamily": "helvetica",
+          "fontSize": 14,
+          "fontColor": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "textAlign": "left"
+        }
+      }
+    },
+    {
+      "name": "toScopedPatch/square-empty-interior/icon",
+      "fn": "toScopedPatch",
+      "args": [
+        {
+          "id": "obj:1",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 1
+          },
+          "pon": 1,
+          "subtype": "square",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "vector",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 1
+            },
+            "pageObjectNumber": 1,
+            "index": 1,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 100,
+              "bottom": 600,
+              "right": 200,
+              "top": 700
+            },
+            "contents": null,
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "square",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "interiorColor": null,
+            "opacity": 1,
+            "strokeWidth": 2,
+            "borderStyle": "solid",
+            "cloudyIntensity": null,
+            "rectDifferences": null
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": "",
+            "strokeWidth": 2,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "rect",
+            "rect": {
+              "x": 100,
+              "y": 100,
+              "width": 100,
+              "height": 100
+            },
+            "ellipse": false
+          },
+          "apBox": {
+            "x": 100,
+            "y": 100,
+            "width": 100,
+            "height": 100
+          }
+        },
+        {
+          "kind": "props",
+          "keys": [
+            "icon"
+          ]
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        }
+      ],
+      "outcome": {
+        "returned": null
+      }
+    },
+    {
+      "name": "toScopedPatch/square-empty-interior/link",
+      "fn": "toScopedPatch",
+      "args": [
+        {
+          "id": "obj:1",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 1
+          },
+          "pon": 1,
+          "subtype": "square",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "vector",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 1
+            },
+            "pageObjectNumber": 1,
+            "index": 1,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 100,
+              "bottom": 600,
+              "right": 200,
+              "top": 700
+            },
+            "contents": null,
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "square",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "interiorColor": null,
+            "opacity": 1,
+            "strokeWidth": 2,
+            "borderStyle": "solid",
+            "cloudyIntensity": null,
+            "rectDifferences": null
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": "",
+            "strokeWidth": 2,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "rect",
+            "rect": {
+              "x": 100,
+              "y": 100,
+              "width": 100,
+              "height": 100
+            },
+            "ellipse": false
+          },
+          "apBox": {
+            "x": 100,
+            "y": 100,
+            "width": 100,
+            "height": 100
+          }
+        },
+        {
+          "kind": "props",
+          "keys": [
+            "link"
+          ]
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        }
+      ],
+      "outcome": {
+        "returned": null
+      }
+    },
+    {
+      "name": "toScopedPatch/square-empty-interior/unknown",
+      "fn": "toScopedPatch",
+      "args": [
+        {
+          "id": "obj:1",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 1
+          },
+          "pon": 1,
+          "subtype": "square",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "vector",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 1
+            },
+            "pageObjectNumber": 1,
+            "index": 1,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 100,
+              "bottom": 600,
+              "right": 200,
+              "top": 700
+            },
+            "contents": null,
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "square",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "interiorColor": null,
+            "opacity": 1,
+            "strokeWidth": 2,
+            "borderStyle": "solid",
+            "cloudyIntensity": null,
+            "rectDifferences": null
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": "",
+            "strokeWidth": 2,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "rect",
+            "rect": {
+              "x": 100,
+              "y": 100,
+              "width": 100,
+              "height": 100
+            },
+            "ellipse": false
+          },
+          "apBox": {
+            "x": 100,
+            "y": 100,
+            "width": 100,
+            "height": 100
+          }
+        },
+        {
+          "kind": "props",
+          "keys": [
+            "bogus"
+          ]
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "square",
+          "rect": {
+            "left": 100,
+            "bottom": 600,
+            "right": 200,
+            "top": 700
+          },
+          "rotation": null,
+          "unrotatedRect": null,
+          "color": {
+            "r": 239,
+            "g": 68,
+            "b": 68
+          },
+          "interiorColor": null,
+          "opacity": 1,
+          "strokeWidth": 2,
+          "cloudyIntensity": null,
+          "rectDifferences": null,
+          "borderStyle": "solid"
+        }
+      }
+    },
+    {
+      "name": "toScopedPatch/square-empty-interior/empty",
+      "fn": "toScopedPatch",
+      "args": [
+        {
+          "id": "obj:1",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 1
+          },
+          "pon": 1,
+          "subtype": "square",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "vector",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 1
+            },
+            "pageObjectNumber": 1,
+            "index": 1,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 100,
+              "bottom": 600,
+              "right": 200,
+              "top": 700
+            },
+            "contents": null,
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "square",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "interiorColor": null,
+            "opacity": 1,
+            "strokeWidth": 2,
+            "borderStyle": "solid",
+            "cloudyIntensity": null,
+            "rectDifferences": null
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": "",
+            "strokeWidth": 2,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "rect",
+            "rect": {
+              "x": 100,
+              "y": 100,
+              "width": 100,
+              "height": 100
+            },
+            "ellipse": false
+          },
+          "apBox": {
+            "x": 100,
+            "y": 100,
+            "width": 100,
+            "height": 100
+          }
+        },
+        {
+          "kind": "props",
+          "keys": []
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        }
+      ],
+      "outcome": {
+        "returned": null
+      }
+    },
+    {
       "name": "toPatch/styled/square",
       "fn": "toPatch",
       "args": [
@@ -66311,6 +71937,140 @@
             "top": 690
           },
           "rotation": 30
+        }
+      }
+    },
+    {
+      "name": "toPatch/styled/square-empty-interior",
+      "fn": "toPatch",
+      "args": [
+        {
+          "id": "obj:1",
+          "ref": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1,
+            "annotObjectNumber": 1
+          },
+          "pon": 1,
+          "subtype": "square",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "vector",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 1
+            },
+            "pageObjectNumber": 1,
+            "index": 1,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 100,
+              "bottom": 600,
+              "right": 200,
+              "top": 700
+            },
+            "contents": null,
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "square",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "interiorColor": null,
+            "opacity": 1,
+            "strokeWidth": 2,
+            "borderStyle": "solid",
+            "cloudyIntensity": null,
+            "rectDifferences": null
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": "",
+            "strokeWidth": 2,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "rect",
+            "rect": {
+              "x": 100,
+              "y": 100,
+              "width": 100,
+              "height": 100
+            },
+            "ellipse": false
+          },
+          "apBox": {
+            "x": 100,
+            "y": 100,
+            "width": 100,
+            "height": 100
+          }
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "square",
+          "rect": {
+            "left": 100,
+            "bottom": 600,
+            "right": 200,
+            "top": 700
+          },
+          "rotation": null,
+          "unrotatedRect": null,
+          "color": {
+            "r": 239,
+            "g": 68,
+            "b": 68
+          },
+          "interiorColor": null,
+          "opacity": 1,
+          "strokeWidth": 2,
+          "cloudyIntensity": null,
+          "rectDifferences": null,
+          "borderStyle": "solid"
         }
       }
     },

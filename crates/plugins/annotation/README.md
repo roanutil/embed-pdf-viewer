@@ -131,6 +131,14 @@ fail, or listed below with the reason no case can kill it.
 | `types.rs` | 1 | 0 | 0 | 1 | | |
 | `repository/mod.rs` | 29 | 0 | 0 | 1 | | |
 | `repository/links.rs` | 2 | 0 | 0 | 0 | | |
+| `repository/projection.rs` | 39 | 0 | 0 | 3 | | |
+| `repository/props.rs` | 9 | 0 | 1 | 1 | 1 | |
+| `repository/seam.rs` | 67 | 0 | 3 | 4 | 1 | 2 |
+| `repository/kinds/free_text.rs` | 13 | 0 | 3 | 3 | 3 | |
+| `repository/kinds/misc.rs` | 15 | 0 | 0 | 10 | | |
+| `repository/kinds/quads.rs` | 48 | 0 | 6 | 4 | 2 | 4 |
+| `repository/kinds/shape.rs` | 5 | 0 | 0 | 1 | | |
+| `repository/kinds/stroke.rs` | 22 | 0 | 0 | 5 | | |
 
 The other files are being run.
 
@@ -147,3 +155,6 @@ The other files are being run.
 | `binary.rs` 31, 48 | the `is_undefined` guards in `not_a_blob` and `resolve_now` to `false` | Unreachable. The harness decodes an explicit `{"$undefined": true}` member to `null`, and an omitted member is `None`, so the undefined marker never reaches either match. |
 | `binary.rs` 105 | `offset + 4 < len` to `<=` in `parse_jpeg` | Equivalent. With four bytes left, every branch of the extra pass returns `None` or leaves the loop: an SOF needs nine. |
 | `binary.rs` 129 | `\|` to `^` in the segment length | Equivalent. The high byte is shifted clear of the low one, so the bits never overlap. |
+| `repository/seam.rs` 126 | the `truthy_num(r)` guard on the rotation in `box_geom_from_dto` to `true` | Equivalent. It only lets a 0 or `NaN` rotation through, and `from_pdf_rotation` turns those into 0 and `NaN`, which the two `truthy_num(rot)` tests below treat as no rotation either way. |
+| `repository/seam.rs` 304 | `content_rect_of` to `Default::default()` | Unobservable. Nothing in the workspace calls it. |
+| `repository/kinds/quads.rs` 85, 88, 91, 94 | `<` to `<=` and `>` to `>=` in `pdf_bounds_of_quads` | Equivalent. On a tie the running bound is replaced by an equal value. |
