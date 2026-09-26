@@ -24,7 +24,7 @@ import { join, relative, resolve } from 'node:path';
 
 import { vectorsRoot } from './vectors';
 
-const PORTED = /^packages\/(core\/(main|geometry|stage|ui|annotation|acrojs)|plugin\/[^/]+)\/src\//;
+const PORTED = /^packages\/(core\/(main|geometry|stage|ui|annotation|acrojs|signature)|plugin\/[^/]+)\/src\//;
 /** JavaScript that runs inside the script sandbox. It ships to Rust as data
  *  (`crates/plugins/acrojs/prelude.js`), not as a port, so its lines are not
  *  this gate's to count. */
