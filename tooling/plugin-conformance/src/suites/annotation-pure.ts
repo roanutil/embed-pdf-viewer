@@ -57,6 +57,23 @@ cases.push(
   ]),
   c('buildToolRegistry', 'unknown-base', [{ id: 'orphan', extends: 'nope' }]),
   c('buildToolRegistry', 'bad-default', [{ id: 'square', defaults: { fontSize: 12 } }]),
+  // Every known kind is strict about its defaults: one key it doesn't take each.
+  ...(
+    [
+      ['line', { icon: 'comment' }],
+      ['polyline', { icon: 'comment' }],
+      ['ink', { icon: 'comment' }],
+      ['free-text', { blendMode: 'multiply' }],
+      ['free-text-callout', { blendMode: 'multiply' }],
+      ['underline', { strokeWidth: 2 }],
+      ['redact', { strokeWidth: 2 }],
+      ['stamp', { opacity: 0.5 }],
+      ['link', { color: '#000000' }],
+      ['file-attachment', { strokeWidth: 2 }],
+      ['widget-choice', { opacity: 0.5 }],
+      ['widget-toggle', { fontSize: 10 }],
+    ] as const
+  ).map(([kind, defaults]) => c('buildToolRegistry', `bad-default-${kind}`, [{ id: `bad-${kind}`, subtype: kind, defaults }])),
   c('buildToolRegistry', 'bad-default-inherited', [{ id: 'marker', extends: 'highlight', subtype: 'caret' }]),
   c('buildToolRegistry', 'widget-kinds', [
     { id: 'field-text', subtype: 'widget-text', defaults: { fontSize: 10, border: { kind: 'solid' } } },

@@ -126,6 +126,7 @@ fail, or listed below with the reason no case can kill it.
 | File | Caught | Timeouts | Missed | Unviable | Killed after | Accepted |
 |---|---|---|---|---|---|---|
 | `handler.rs` | 75 | 0 | 28 | 7 | 18 | 10 |
+| `tools.rs` | 73 | 0 | 17 | 6 | 11 | 6 |
 
 The other files are being run.
 
@@ -134,3 +135,8 @@ The other files are being run.
 | Line | Mutant | Why no case kills it |
 |---|---|---|
 | `handler.rs` 43, 73, 123, 278, 413 | each handler's `id()` to `""` and to `"xyzzy"` | Unobservable. The hub never reads a handler's id; it orders by `priority()` and gates by `enabled_for()`. |
+| `tools.rs` 69 | the `mode == "footprint"` guard in `GhostPolicy`'s decoder to `true` | Unreachable by a vector. It only changes what an object without that mode decodes to. That object is outside `GhostPolicy`'s type: the TypeScript draws a ghost for anything but `false`, and the port refuses to decode it, the same split as the core's unknown enum strings. |
+| `tools.rs` 293, 301 | delete `subtype` from the `draw` and `markup` built-in rows | Equivalent. Those rows set the subtype to the tool's id, which is what resolution falls back to. |
+| `tools.rs` 294 | delete `cursor` from the `draw` row | Equivalent. Its value is `crosshair`, the resolved default. |
+| `tools.rs` 439 | `\|\|` to `&&` in `merge_defaults` | Equivalent. When only one side has line endings, merging them over the empty default gives that side's endings, which the spread already holds. |
+| `tools.rs` 549 | `!=` to `==` on `ToolRegistry::delete`'s return | Unobservable. Its one caller, the `registerTool` unregister, ignores the result. |
