@@ -1,0 +1,38 @@
+[package]
+name = "epdf-plugin-form"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+description = "packages/plugin/form in Rust: the field plane (reactive snapshot over doc.forms, the fill projection, value writes and reset, interchange, field design and the draw-to-place handler, ISO field selection) and the K/V/C/F scripting transaction over a host-supplied sandbox."
+
+[lib]
+crate-type = ["rlib"]
+
+[features]
+# The conformance adapter (`harness` module). On by default so `cargo test`
+# replays the vectors with no flags; a host that ships the plugin turns it
+# off with `default-features = false`.
+default = ["harness"]
+harness = [
+  "dep:plugin-conformance",
+  "epdf-acrojs/harness",
+  "epdf-plugin-interaction/harness",
+  "epdf-plugin-actions/harness",
+  "epdf-plugin-annotation/harness",
+]
+
+[dependencies]
+epdf-kernel = { path = "../../epdf-kernel" }
+epdf-geometry = { path = "../geometry", default-features = false }
+epdf-annotation-core = { path = "../annotation-core", default-features = false }
+epdf-acrojs = { path = "../acrojs", default-features = false }
+epdf-plugin-interaction = { path = "../interaction", default-features = false }
+epdf-plugin-actions = { path = "../actions", default-features = false }
+epdf-plugin-annotation = { path = "../annotation", default-features = false }
+serde = { version = "1", features = ["derive", "rc"] }
+serde_json = { version = "1", features = ["float_roundtrip", "preserve_order"] }
+plugin-conformance = { path = "../../plugin-conformance", optional = true }
+
+[[test]]
+name = "conformance"
+required-features = ["harness"]

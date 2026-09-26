@@ -363,6 +363,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "epdf-plugin-form"
+version = "0.0.0"
+dependencies = [
+ "epdf-acrojs",
+ "epdf-annotation-core",
+ "epdf-geometry",
+ "epdf-kernel",
+ "epdf-plugin-actions",
+ "epdf-plugin-annotation",
+ "epdf-plugin-interaction",
+ "plugin-conformance",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "epdf-plugin-i18n"
 version = "0.0.0"
 dependencies = [
