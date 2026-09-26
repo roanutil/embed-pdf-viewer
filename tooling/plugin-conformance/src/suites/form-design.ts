@@ -150,7 +150,7 @@ const designCases: ScenarioCase[] = [
   {
     name: 'placement-is-page-bound',
     covers:
-      'An overshooting box is intersected with the page; a box under one point in either axis after that rejects, as does a page the document does not have; neither reaches the engine.',
+      'An overshooting box is intersected with the page; a box under one point in either axis after that rejects (exactly one point is enough), as does a page the document does not have; neither reaches the engine.',
     plugins: FORM_ONLY,
     engine: {
       documents: {
@@ -165,6 +165,7 @@ const designCases: ScenarioCase[] = [
       call('placeField', [input({ box: { x: 700, y: 10, width: 30, height: 30 } })]),
       call('placeField', [input({ pageObjectNumber: 99 })]),
       call('placeField', [input({ box: { x: 10, y: 10, width: 30, height: 0.25 } })]),
+      call('placeField', [input({ box: { x: 599, y: 799, width: 5, height: 5 } })]),
     ],
   },
   {

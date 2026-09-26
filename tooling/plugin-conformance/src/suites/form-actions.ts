@@ -270,19 +270,29 @@ const widgetCases: ScenarioCase[] = [
   {
     name: 'activation-is-delegated',
     covers:
-      "With the actions plugin activateWidget dispatches the widget's /A tree with a widget source and returns kind 'dispatched'; with no tree at all the form path runs.",
+      "With the actions plugin activateWidget dispatches the widget's /A tree with a widget source and returns kind 'dispatched'; with no tree at all the form path runs, and a rootless tree counts as none.",
     plugins: WITH_ACTIONS,
     engine: {
       documents: {
         a: doc([
           list(FIELDS),
           { path: 'forms.applyEffects', value: effectsOk(1) },
-          annotations(1, [activation(1, 101, { activate: tree(resetNode([byName('other')])) }), widgetAnnot(1, 102)]),
+          annotations(1, [
+            activation(1, 101, { activate: tree(resetNode([byName('other')])) }),
+            widgetAnnot(1, 102),
+            activation(1, 103, { activate: tree(null) }),
+          ]),
         ]),
       },
     },
     snapshot: 'none',
-    steps: [...boot, act('onAction', [fnSpec('onAction')]), call('activateWidget', ['obj:1', W1]), call('activateWidget', ['obj:2', aref(1, 102)])],
+    steps: [
+      ...boot,
+      act('onAction', [fnSpec('onAction')]),
+      call('activateWidget', ['obj:1', W1]),
+      call('activateWidget', ['obj:2', aref(1, 102)]),
+      call('activateWidget', ['obj:3', aref(1, 103)]),
+    ],
   },
   {
     name: 'a-refused-activation-is-dispatched',

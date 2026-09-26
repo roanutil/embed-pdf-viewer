@@ -15647,7 +15647,7 @@
     },
     {
       "name": "activation-is-delegated",
-      "covers": "With the actions plugin activateWidget dispatches the widget's /A tree with a widget source and returns kind 'dispatched'; with no tree at all the form path runs.",
+      "covers": "With the actions plugin activateWidget dispatches the widget's /A tree with a widget source and returns kind 'dispatched'; with no tree at all the form path runs, and a rootless tree counts as none.",
       "plugins": [
         {
           "factory": "interaction"
@@ -16061,6 +16061,58 @@
                       "strokeWidth": 1,
                       "borderStyle": "solid",
                       "textAlign": "left"
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1,
+                        "annotObjectNumber": 103
+                      },
+                      "pageObjectNumber": 1,
+                      "index": 103,
+                      "identityQuality": "durable",
+                      "nm": null,
+                      "flags": {
+                        "invisible": false,
+                        "hidden": false,
+                        "print": true,
+                        "noZoom": false,
+                        "noRotate": false,
+                        "noView": false,
+                        "readOnly": false,
+                        "locked": false,
+                        "toggleNoView": false,
+                        "lockedContents": false
+                      },
+                      "rect": {
+                        "left": 100,
+                        "bottom": 600,
+                        "right": 260,
+                        "top": 624
+                      },
+                      "contents": null,
+                      "subject": null,
+                      "author": null,
+                      "created": null,
+                      "modified": null,
+                      "blendMode": "normal",
+                      "inReplyTo": null,
+                      "replyType": null,
+                      "subtype": "widget",
+                      "fieldFamily": "text",
+                      "color": null,
+                      "interiorColor": null,
+                      "strokeWidth": 1,
+                      "borderStyle": "solid",
+                      "textAlign": "left",
+                      "actions": {
+                        "activate": {
+                          "root": null,
+                          "incomplete": false,
+                          "warningFlags": 0,
+                          "warnings": []
+                        }
+                      }
                     }
                   ]
                 }
@@ -16132,6 +16184,22 @@
               "kind": "objectNumber",
               "pageObjectNumber": 1,
               "annotObjectNumber": 102
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form",
+            "doc": "a"
+          },
+          "method": "activateWidget",
+          "args": [
+            "obj:3",
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1,
+              "annotObjectNumber": 103
             }
           ]
         }
@@ -16912,6 +16980,43 @@
           },
           "outcome": {
             "promise": 3
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 4,
+              "resolved": {
+                "kind": "form",
+                "result": {
+                  "status": "unchanged",
+                  "scripted": false,
+                  "effectsResult": null,
+                  "uiEffects": [],
+                  "diagnostics": []
+                }
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "page.annotations.list",
+              "pon": 1,
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 4
           }
         }
       ]

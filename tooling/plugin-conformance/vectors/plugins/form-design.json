@@ -6214,7 +6214,7 @@
     },
     {
       "name": "placement-is-page-bound",
-      "covers": "An overshooting box is intersected with the page; a box under one point in either axis after that rejects, as does a page the document does not have; neither reaches the engine.",
+      "covers": "An overshooting box is intersected with the page; a box under one point in either axis after that rejects (exactly one point is enough), as does a page the document does not have; neither reaches the engine.",
       "plugins": [
         {
           "factory": "interaction"
@@ -6453,6 +6453,26 @@
                 "y": 10,
                 "width": 30,
                 "height": 0.25
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form",
+            "doc": "a"
+          },
+          "method": "placeField",
+          "args": [
+            {
+              "family": "text",
+              "pageObjectNumber": 1,
+              "box": {
+                "x": 599,
+                "y": 799,
+                "width": 5,
+                "height": 5
               }
             }
           ]
@@ -6784,6 +6804,132 @@
           },
           "outcome": {
             "promise": 6
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 7,
+              "resolved": {
+                "field": {
+                  "ref": {
+                    "kind": "objectNumber",
+                    "fieldObjectNumber": 50
+                  },
+                  "fieldObjectNumber": 50,
+                  "name": "text_1",
+                  "family": "text",
+                  "origin": "acroform",
+                  "flags": {
+                    "readOnly": false,
+                    "required": false,
+                    "noExport": false,
+                    "raw": 0
+                  },
+                  "alternateName": null,
+                  "mappingName": null,
+                  "widgets": [
+                    {
+                      "annotObjectNumber": 150,
+                      "pageObjectNumber": 1
+                    }
+                  ],
+                  "valueEntry": {
+                    "kind": "none"
+                  },
+                  "defaultValueEntry": {
+                    "kind": "none"
+                  },
+                  "value": "",
+                  "defaultValue": "",
+                  "maxLength": null,
+                  "multiline": false,
+                  "password": false,
+                  "comb": false
+                },
+                "widget": {
+                  "annotObjectNumber": 150,
+                  "pageObjectNumber": 1
+                }
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "form::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "snapshot": {
+                    "formKind": "acroform",
+                    "needsAppearances": false,
+                    "fields": [],
+                    "calculationOrder": []
+                  },
+                  "byKey": {},
+                  "byWidget": {},
+                  "writing": {},
+                  "geom": {},
+                  "seq": 4
+                }
+              }
+            },
+            {
+              "slice": "form::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "snapshot": {
+                    "formKind": "acroform",
+                    "needsAppearances": false,
+                    "fields": [],
+                    "calculationOrder": []
+                  },
+                  "byKey": {},
+                  "byWidget": {},
+                  "writing": {},
+                  "geom": {},
+                  "seq": 5
+                }
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "forms.createField",
+              "args": [
+                {
+                  "family": "text",
+                  "name": "text_1",
+                  "widget": {
+                    "pageObjectNumber": 1,
+                    "rect": {
+                      "left": 599,
+                      "top": 1,
+                      "right": 600,
+                      "bottom": 0
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "forms.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 7
           }
         }
       ]

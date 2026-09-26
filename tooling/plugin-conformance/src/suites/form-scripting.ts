@@ -808,6 +808,11 @@ const observe: Step[] = [
   act('onScriptError', [fnSpec('onScriptError')]),
 ];
 
+const REF_CANDIDATES = [
+  { ...widgetAnnot(1, 109, undefined, { actions: { activate: tree(js('nm()')) } }), ref: { kind: 'nm', pageObjectNumber: 1, nm: 'n1' } },
+  { ...widgetAnnot(1, 110, undefined, { actions: { activate: tree(js('index()')) } }), ref: { kind: 'index', pageObjectNumber: 1, index: 3, revision: 'r1' } },
+];
+
 const capabilityCases: ScenarioCase[] = [
   {
     name: 'commit-through-the-shared-realm',
@@ -907,6 +912,38 @@ const capabilityCases: ScenarioCase[] = [
       call('activateWidget', ['obj:8', { kind: 'index', pageObjectNumber: 1, index: 3, revision: 'r1' }]),
       call('activateWidget', ['obj:8', { kind: 'index', pageObjectNumber: 1, index: 3, revision: 'r2' }]),
       call('activateWidget', ['obj:8', aref(1, 111)]),
+    ],
+  },
+  {
+    name: 'scripted-activation-matches-refs',
+    covers:
+      "The form path finds the widget by ref the way sameAnnotationRef does: an /NM on the same page, an index with the same revision, never another page's object number.",
+    plugins: scripted({ builds: [{ run: [out({ formEffects: [setValue(1, textValue('clicked'))] })] }] }),
+    engine: {
+      documents: {
+        a: doc([
+          list([NAME, BUTTON]),
+          // Each activation reads the page twice: the dispatcher first
+          // (finding no tree), then the form path.
+          ...[0, 1, 2, 3, 4].flatMap((): ResponseSpec[] => [
+            annotations(1, [], { times: 1 }),
+            annotations(1, REF_CANDIDATES, { times: 1 }),
+          ]),
+          annotations(2, [], { times: 1 }),
+          annotations(2, [widgetAnnot(1, 108, undefined, { actions: { activate: tree(js('wrong-page()')) } })], { times: 1 }),
+          applyOk(),
+        ]),
+      },
+    },
+    snapshot: 'none',
+    steps: [
+      ...boot,
+      call('activateWidget', ['obj:8', { kind: 'nm', pageObjectNumber: 1, nm: 'n1' }]),
+      call('activateWidget', ['obj:8', { kind: 'nm', pageObjectNumber: 1, nm: 'n2' }]),
+      call('activateWidget', ['obj:8', { kind: 'index', pageObjectNumber: 1, index: 3, revision: 'r1' }]),
+      call('activateWidget', ['obj:8', { kind: 'index', pageObjectNumber: 1, index: 4, revision: 'r1' }]),
+      call('activateWidget', ['obj:8', { kind: 'index', pageObjectNumber: 1, index: 3, revision: 'r2' }]),
+      call('activateWidget', ['obj:8', aref(2, 108)]),
     ],
   },
   {
