@@ -178,14 +178,18 @@ pub enum PluginScope {
 
 /// `originOf(event)`: where a confirmed engine event came from, in the plugin
 /// vocabulary (`ChangeOrigin`). The transport does not carry the trigger, so
-/// it is always `unknown`.
+/// it is always `unknown`. An origin without a `sessionId` leaves the member
+/// out, as the TypeScript's `undefined` does in canonical JSON.
 pub fn origin_of(event: &Value) -> Value {
     let origin = event.get("origin").cloned().unwrap_or(Value::Null);
     let remote = origin.get("kind").and_then(Value::as_str) == Some("remote");
-    serde_json::json!({
+    let mut out = serde_json::json!({
         "locality": if remote { "remote" } else { "local" },
         "trigger": "unknown",
-        "sessionId": origin.get("sessionId").cloned().unwrap_or(Value::Null),
         "actorId": origin.get("sub").cloned().filter(|s| !s.is_null()).unwrap_or(Value::Null),
-    })
+    });
+    if let (Some(session), Some(map)) = (origin.get("sessionId"), out.as_object_mut()) {
+        map.insert("sessionId".into(), session.clone());
+    }
+    out
 }

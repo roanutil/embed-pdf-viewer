@@ -13,18 +13,6 @@ use crate::contract::{RedactionAppliedEvent, RedactionPendingChangedEvent};
 use crate::controller::RedactionCapability;
 use crate::model::RedactionAction;
 
-/// `originOf(event)`. The kernel's `origin_of` answers `null` for an origin
-/// without a `sessionId`, where the TypeScript's object literal carries
-/// `undefined`, which canonical JSON leaves out.
-fn change_origin(event: &Value) -> Value {
-    let mut origin = origin_of(event);
-    let has_session = event.get("origin").and_then(|o| o.get("sessionId")).is_some();
-    if let (false, Some(map)) = (has_session, origin.as_object_mut()) {
-        map.remove("sessionId");
-    }
-    origin
-}
-
 impl RedactionCapability {
     /// `subscribeChanges(ctx, services)`: run once, from the plugin's
     /// `connect`.
@@ -43,7 +31,7 @@ impl RedactionCapability {
                 this.0.cx.dispatch(RedactionAction::ApplyFinished { result: Some(event.clone()) });
                 this.0.events.applied.emit(&RedactionAppliedEvent {
                     result: event.clone(),
-                    origin: change_origin(event),
+                    origin: origin_of(event),
                 });
             }));
             cx.listen(off);
