@@ -80,7 +80,7 @@ the index skips them as `forEach` skips holes.
 
 ## Coverage
 
-The generators reach 2,746 of the package's 2,762 statements and 753 of its 796 branches
+The generators reach 2,746 of the package's 2,762 statements and 756 of its 799 branches
 (`vectors/coverage.json`). Every file outside `form.plugin.ts`, `handler.ts` and `scripting.ts` is
 at every statement. The 16 statements left, and the branches with them, guard states the public
 surface can't produce:
@@ -105,4 +105,27 @@ a non-palette tool, which the hub never routes).
 
 ## Mutation testing
 
-MUTATION_RESULTS
+`scripts/mutants.sh -p epdf-plugin-form --test-package epdf-plugin-form --file <file>`, file by file
+over every module but `harness.rs`, catches 454 of 466 viable mutants (449 caught, 5 timeouts; 164
+unviable). Two of the 449 are `scripting.rs` survivors that later cases kill, checked by applying
+each by hand; the other numbers are from the last run of each file. The 12 survivors are
+equivalent:
+
+- `capability.rs:396` and `:418`, the fill caches' grant comparison as `!=`. The grant can't change
+  while the model stands still, so a miss recomputes the same items.
+- `capability.rs:745`, reloading a changed widget's page 0: the annotation plugin finds no crop for
+  it and makes no call.
+- `capability.rs:836`, `no_tree`'s first `&&` as `||`. Every inert step carries a diagnostic, so an
+  inert result with steps never has none.
+- `scripting.rs:637`, dropping the null check on `/CO` entries. A null matches only a field whose
+  FQN is literally `undefined`, and then only as a recalculation anchor, which proposes nothing.
+- `field_selection.rs:86` and `:92`, `explicit_include`'s `&&` and `explicit`'s `&&` as `||`.
+  `listed()` is false for every selected field whenever `explicit_include` is false.
+- `handler.rs:74` (two), the handler's `id`, which the hub never reads, and `handler.rs:84`,
+  `enabled_for` answering true, which only reaches an `on_down` that declines any tool the palette
+  doesn't know.
+- `core/model.rs:59` and `reducer.rs:11`, `initial_model` and `initial_form_state` as
+  `Default::default()`: the same values.
+
+The timeouts count as caught: four `value.rs` mutants of `get` and `num` hang the replay, and
+`auto_name`'s `+=` as `*=` stays at 1 and never finds a free name.

@@ -1,7 +1,7 @@
 {
   "total": {
-    "statements": "30026/30087",
-    "branches": "7345/7543"
+    "statements": "32775/32852",
+    "branches": "8106/8346"
   },
   "files": {
     "packages/core/acrojs/src/actions.ts": {
@@ -18,7 +18,7 @@
     },
     "packages/core/acrojs/src/host.ts": {
       "statements": "240/240",
-      "branches": "65/66",
+      "branches": "64/65",
       "uncoveredLines": [],
       "uncoveredBranches": [
         "184:108#0"
@@ -312,7 +312,7 @@
     },
     "packages/plugin/actions/src/capability.ts": {
       "statements": "1604/1615",
-      "branches": "575/603",
+      "branches": "577/605",
       "uncoveredLines": [
         329,
         330,
@@ -417,7 +417,7 @@
     },
     "packages/plugin/annotation/src/capability.ts": {
       "statements": "2251/2264",
-      "branches": "727/774",
+      "branches": "728/774",
       "uncoveredLines": [
         1395,
         1396,
@@ -471,7 +471,6 @@
         "1647:37#0",
         "1660:21#0",
         "1690:16#0",
-        "1838:57#0",
         "1858:30#0",
         "1866:42#0",
         "1869:16#0",
@@ -512,6 +511,12 @@
         "421:55#0",
         "453:22#0"
       ]
+    },
+    "packages/plugin/annotation/src/host-contract.ts": {
+      "statements": "3/3",
+      "branches": "0/0",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
     },
     "packages/plugin/annotation/src/hover-feed.ts": {
       "statements": "47/47",
@@ -611,7 +616,7 @@
     },
     "packages/plugin/annotation/src/repository/seam.ts": {
       "statements": "279/279",
-      "branches": "91/91",
+      "branches": "93/93",
       "uncoveredLines": [],
       "uncoveredBranches": []
     },
@@ -671,6 +676,157 @@
     "packages/plugin/commands/src/types.ts": {
       "statements": "168/168",
       "branches": "21/21",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/form/src/capability.ts": {
+      "statements": "808/808",
+      "branches": "283/301",
+      "uncoveredLines": [],
+      "uncoveredBranches": [
+        "137:32#0",
+        "143:14#0",
+        "232:14#0",
+        "261:16#0",
+        "286:14#0",
+        "299:14#0",
+        "352:14#0",
+        "408:16#0",
+        "438:14#0",
+        "567:14#0",
+        "574:14#0",
+        "585:14#0",
+        "618:18#0",
+        "738:55#0",
+        "769:18#0",
+        "776:16#0",
+        "782:18#0",
+        "790:18#0"
+      ]
+    },
+    "packages/plugin/form/src/contract.ts": {
+      "statements": "24/24",
+      "branches": "0/0",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/form/src/core/fill-items.ts": {
+      "statements": "169/169",
+      "branches": "42/42",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/form/src/core/model.ts": {
+      "statements": "128/128",
+      "branches": "30/30",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/form/src/effects.ts": {
+      "statements": "67/67",
+      "branches": "18/19",
+      "uncoveredLines": [],
+      "uncoveredBranches": [
+        "27:12#0"
+      ]
+    },
+    "packages/plugin/form/src/field-selection.ts": {
+      "statements": "103/103",
+      "branches": "34/34",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/form/src/form.plugin.ts": {
+      "statements": "155/168",
+      "branches": "21/27",
+      "uncoveredLines": [
+        118,
+        119,
+        120,
+        121,
+        122,
+        123,
+        124,
+        125,
+        126,
+        127,
+        128,
+        145,
+        146
+      ],
+      "uncoveredBranches": [
+        "98:74#0",
+        "117:27#0",
+        "135:27#0",
+        "144:44#0",
+        "148:27#0",
+        "155:55#0"
+      ]
+    },
+    "packages/plugin/form/src/handler.ts": {
+      "statements": "135/136",
+      "branches": "32/36",
+      "uncoveredLines": [
+        135
+      ],
+      "uncoveredBranches": [
+        "60:19#0",
+        "77:19#0",
+        "83:17#0",
+        "134:16#0"
+      ]
+    },
+    "packages/plugin/form/src/index.ts": {
+      "statements": "7/7",
+      "branches": "0/0",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/form/src/mutationQueue.ts": {
+      "statements": "4/4",
+      "branches": "0/0",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/form/src/reducer.ts": {
+      "statements": "8/8",
+      "branches": "5/5",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/form/src/scripting.ts": {
+      "statements": "783/785",
+      "branches": "290/304",
+      "uncoveredLines": [
+        367,
+        368
+      ],
+      "uncoveredBranches": [
+        "76:13#0",
+        "77:7#0",
+        "86:25#0",
+        "177:4#0",
+        "213:19#0",
+        "366:22#0",
+        "379:53#0",
+        "452:106#0",
+        "477:53#0",
+        "500:53#0",
+        "585:53#0",
+        "628:53#0",
+        "672:53#0",
+        "435:60#0"
+      ]
+    },
+    "packages/plugin/form/src/tools.ts": {
+      "statements": "89/89",
+      "branches": "1/1",
+      "uncoveredLines": [],
+      "uncoveredBranches": []
+    },
+    "packages/plugin/form/src/types.ts": {
+      "statements": "266/266",
+      "branches": "0/0",
       "uncoveredLines": [],
       "uncoveredBranches": []
     },
@@ -778,7 +934,7 @@
     },
     "packages/plugin/interaction/src/types.ts": {
       "statements": "240/240",
-      "branches": "6/6",
+      "branches": "7/7",
       "uncoveredLines": [],
       "uncoveredBranches": []
     },
