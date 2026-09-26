@@ -5197,6 +5197,3373 @@
       ]
     },
     {
+      "name": "policy-rows-merge-and-update-live",
+      "covers": "config.policy merges row-wise over the defaults (a partial row keeps the other origins); getPolicy is the effective policy; updatePolicy merges rows over the current policy, skips an empty row, bumps policyRevision even for an empty patch, and later dispatches decide with it.",
+      "plugins": [
+        {
+          "factory": "actions",
+          "config": {
+            "openSequence": "off",
+            "policy": {
+              "uri": {
+                "hover": "allow"
+              }
+            }
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ],
+            "security": {
+              "allows": "*"
+            },
+            "responses": [
+              {
+                "path": "forms.list",
+                "value": {
+                  "formKind": "none",
+                  "needsAppearances": false,
+                  "fields": [],
+                  "calculationOrder": []
+                }
+              },
+              {
+                "path": "page.annotations.list",
+                "value": {
+                  "annotations": []
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "setUiAdapter",
+          "args": [
+            {
+              "openUri": {
+                "$fn": "ui.openUri"
+              },
+              "print": {
+                "$fn": "ui.print"
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "registerExecutor",
+          "args": [
+            "goto",
+            {
+              "$fn": "exec.goto",
+              "returns": {
+                "status": "executed"
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "onDiagnostic",
+          "args": [
+            {
+              "$fn": "onDiagnostic"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "getPolicy",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "execute",
+          "args": [
+            {
+              "root": {
+                "type": "uri",
+                "subtype": "URI",
+                "uri": "https://a.test/",
+                "isMap": false,
+                "next": []
+              },
+              "incomplete": false,
+              "warningFlags": 0,
+              "warnings": []
+            },
+            {
+              "origin": "hover",
+              "source": {
+                "kind": "api"
+              },
+              "event": {
+                "scope": "annotation",
+                "name": "cursorEnter"
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "updatePolicy",
+          "args": [
+            {
+              "uri": {
+                "user": "block"
+              },
+              "goto": {
+                "lifecycle": "block"
+              },
+              "hide": null
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "getPolicy",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "execute",
+          "args": [
+            {
+              "root": {
+                "type": "uri",
+                "subtype": "URI",
+                "uri": "https://a.test/",
+                "isMap": false,
+                "next": []
+              },
+              "incomplete": false,
+              "warningFlags": 0,
+              "warnings": []
+            },
+            {
+              "origin": "user",
+              "source": {
+                "kind": "api"
+              },
+              "event": {
+                "scope": "activate"
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "execute",
+          "args": [
+            {
+              "root": {
+                "type": "goto",
+                "subtype": "GoTo",
+                "destination": {
+                  "kind": "fit",
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  }
+                },
+                "next": []
+              },
+              "incomplete": false,
+              "warningFlags": 0,
+              "warnings": []
+            },
+            {
+              "origin": "lifecycle",
+              "source": {
+                "kind": "api"
+              },
+              "event": {
+                "scope": "document",
+                "name": "open"
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "canExecute",
+          "args": [
+            {
+              "root": {
+                "type": "goto",
+                "subtype": "GoTo",
+                "destination": {
+                  "kind": "fit",
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  }
+                },
+                "next": []
+              },
+              "incomplete": false,
+              "warningFlags": 0,
+              "warnings": []
+            },
+            {
+              "origin": "lifecycle",
+              "source": {
+                "kind": "api"
+              },
+              "event": {
+                "scope": "document",
+                "name": "open"
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "updatePolicy",
+          "args": [
+            {}
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "getPolicy",
+          "args": []
+        }
+      ],
+      "snapshot": [
+        "actions::a"
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 0,
+                "policyRevision": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 0
+            }
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 0,
+                "policyRevision": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 1
+            }
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 0,
+                "policyRevision": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 2
+            }
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 0,
+                "policyRevision": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "goto": {
+                "user": "allow",
+                "hover": "allow",
+                "lifecycle": "allow"
+              },
+              "named": {
+                "user": "allow",
+                "hover": "allow",
+                "lifecycle": "allow"
+              },
+              "hide": {
+                "user": "allow",
+                "hover": "allow",
+                "lifecycle": "allow"
+              },
+              "reset-form": {
+                "user": "allow",
+                "hover": "allow",
+                "lifecycle": "allow"
+              },
+              "javascript": {
+                "user": "allow",
+                "hover": "allow",
+                "lifecycle": "allow"
+              },
+              "uri": {
+                "user": "adapter",
+                "hover": "allow",
+                "lifecycle": "report"
+              },
+              "print": {
+                "user": "adapter",
+                "hover": "block",
+                "lifecycle": "block"
+              },
+              "submit-form": {
+                "user": "adapter",
+                "hover": "block",
+                "lifecycle": "block"
+              }
+            }
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 0,
+                "policyRevision": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": {
+                "status": "executed",
+                "nodes": [
+                  {
+                    "path": [],
+                    "type": "uri",
+                    "status": "executed"
+                  }
+                ],
+                "diagnostics": []
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "actions::a",
+              "action": {
+                "type": "ACTIONS_DISPATCHED"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "ui.openUri",
+              "args": [
+                "https://a.test/",
+                {
+                  "isMap": false,
+                  "origin": "hover"
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 1,
+                "policyRevision": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "actions::a",
+              "action": {
+                "type": "ACTIONS_POLICY_CHANGED"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 1,
+                "policyRevision": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "goto": {
+                "user": "allow",
+                "hover": "allow",
+                "lifecycle": "block"
+              },
+              "named": {
+                "user": "allow",
+                "hover": "allow",
+                "lifecycle": "allow"
+              },
+              "hide": {
+                "user": "allow",
+                "hover": "allow",
+                "lifecycle": "allow"
+              },
+              "reset-form": {
+                "user": "allow",
+                "hover": "allow",
+                "lifecycle": "allow"
+              },
+              "javascript": {
+                "user": "allow",
+                "hover": "allow",
+                "lifecycle": "allow"
+              },
+              "uri": {
+                "user": "block",
+                "hover": "allow",
+                "lifecycle": "report"
+              },
+              "print": {
+                "user": "adapter",
+                "hover": "block",
+                "lifecycle": "block"
+              },
+              "submit-form": {
+                "user": "adapter",
+                "hover": "block",
+                "lifecycle": "block"
+              }
+            }
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 1,
+                "policyRevision": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 3,
+              "resolved": {
+                "status": "inert",
+                "nodes": [
+                  {
+                    "path": [],
+                    "type": "uri",
+                    "status": "blocked"
+                  }
+                ],
+                "diagnostics": [
+                  {
+                    "code": "blocked",
+                    "message": "uri: policy 'block' for origin 'user'"
+                  }
+                ]
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "actions::a",
+              "action": {
+                "type": "ACTIONS_DISPATCHED"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "onDiagnostic",
+              "args": [
+                {
+                  "code": "blocked",
+                  "message": "uri: policy 'block' for origin 'user'"
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 3
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 2,
+                "policyRevision": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 4,
+              "resolved": {
+                "status": "inert",
+                "nodes": [
+                  {
+                    "path": [],
+                    "type": "goto",
+                    "status": "blocked"
+                  }
+                ],
+                "diagnostics": [
+                  {
+                    "code": "blocked",
+                    "message": "goto: policy 'block' for origin 'lifecycle'"
+                  }
+                ]
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "actions::a",
+              "action": {
+                "type": "ACTIONS_DISPATCHED"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "onDiagnostic",
+              "args": [
+                {
+                  "code": "blocked",
+                  "message": "goto: policy 'block' for origin 'lifecycle'"
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 4
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 3,
+                "policyRevision": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": false
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 3,
+                "policyRevision": 1
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "actions::a",
+              "action": {
+                "type": "ACTIONS_POLICY_CHANGED"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 3,
+                "policyRevision": 2
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "goto": {
+                "user": "allow",
+                "hover": "allow",
+                "lifecycle": "block"
+              },
+              "named": {
+                "user": "allow",
+                "hover": "allow",
+                "lifecycle": "allow"
+              },
+              "hide": {
+                "user": "allow",
+                "hover": "allow",
+                "lifecycle": "allow"
+              },
+              "reset-form": {
+                "user": "allow",
+                "hover": "allow",
+                "lifecycle": "allow"
+              },
+              "javascript": {
+                "user": "allow",
+                "hover": "allow",
+                "lifecycle": "allow"
+              },
+              "uri": {
+                "user": "block",
+                "hover": "allow",
+                "lifecycle": "report"
+              },
+              "print": {
+                "user": "adapter",
+                "hover": "block",
+                "lifecycle": "block"
+              },
+              "submit-form": {
+                "user": "adapter",
+                "hover": "block",
+                "lifecycle": "block"
+              }
+            }
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 3,
+                "policyRevision": 2
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "execute-named",
+      "covers": "executeNamed runs one Named verb as a user-origin api action through the same queue; a partial context overrides the origin, source or event; Print goes through the adapter door.",
+      "plugins": [
+        {
+          "factory": "actions",
+          "config": {
+            "openSequence": "off"
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ],
+            "security": {
+              "allows": "*"
+            },
+            "responses": [
+              {
+                "path": "forms.list",
+                "value": {
+                  "formKind": "none",
+                  "needsAppearances": false,
+                  "fields": [],
+                  "calculationOrder": []
+                }
+              },
+              {
+                "path": "page.annotations.list",
+                "value": {
+                  "annotations": []
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "registerExecutor",
+          "args": [
+            "named",
+            {
+              "$fn": "exec.named",
+              "returns": {
+                "status": "executed"
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "onDiagnostic",
+          "args": [
+            {
+              "$fn": "onDiagnostic"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "onExecuted",
+          "args": [
+            {
+              "$fn": "onExecuted"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "executeNamed",
+          "args": [
+            "NextPage"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "executeNamed",
+          "args": [
+            "FirstPage",
+            {
+              "source": {
+                "kind": "link"
+              },
+              "event": {
+                "scope": "annotation",
+                "name": "mouseUp"
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "executeNamed",
+          "args": [
+            "Print"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "setUiAdapter",
+          "args": [
+            {
+              "openUri": {
+                "$fn": "ui.openUri"
+              },
+              "print": {
+                "$fn": "ui.print"
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "executeNamed",
+          "args": [
+            "Print"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "executeNamed",
+          "args": [
+            "Print",
+            {
+              "origin": "hover"
+            }
+          ]
+        }
+      ],
+      "snapshot": [
+        "actions::a"
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 0,
+                "policyRevision": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 0
+            }
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 0,
+                "policyRevision": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 1
+            }
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 0,
+                "policyRevision": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 2
+            }
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 0,
+                "policyRevision": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": {
+                "status": "executed",
+                "nodes": [
+                  {
+                    "path": [],
+                    "type": "named",
+                    "status": "executed"
+                  }
+                ],
+                "diagnostics": []
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "actions::a",
+              "action": {
+                "type": "ACTIONS_DISPATCHED"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "exec.named",
+              "args": [
+                {
+                  "type": "named",
+                  "subtype": "Named",
+                  "name": "NextPage",
+                  "next": []
+                },
+                {
+                  "origin": "user",
+                  "source": {
+                    "kind": "api"
+                  },
+                  "event": {
+                    "scope": "activate"
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "onExecuted",
+              "args": [
+                {
+                  "ctx": {
+                    "origin": "user",
+                    "source": {
+                      "kind": "api"
+                    },
+                    "event": {
+                      "scope": "activate"
+                    }
+                  },
+                  "tree": {
+                    "root": {
+                      "type": "named",
+                      "subtype": "Named",
+                      "name": "NextPage",
+                      "next": []
+                    },
+                    "incomplete": false,
+                    "warningFlags": 0,
+                    "warnings": []
+                  },
+                  "result": {
+                    "status": "executed",
+                    "nodes": [
+                      {
+                        "path": [],
+                        "type": "named",
+                        "status": "executed"
+                      }
+                    ],
+                    "diagnostics": []
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 1,
+                "policyRevision": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 3,
+              "resolved": {
+                "status": "executed",
+                "nodes": [
+                  {
+                    "path": [],
+                    "type": "named",
+                    "status": "executed"
+                  }
+                ],
+                "diagnostics": []
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "actions::a",
+              "action": {
+                "type": "ACTIONS_DISPATCHED"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "exec.named",
+              "args": [
+                {
+                  "type": "named",
+                  "subtype": "Named",
+                  "name": "FirstPage",
+                  "next": []
+                },
+                {
+                  "origin": "user",
+                  "source": {
+                    "kind": "link"
+                  },
+                  "event": {
+                    "scope": "annotation",
+                    "name": "mouseUp"
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "onExecuted",
+              "args": [
+                {
+                  "ctx": {
+                    "origin": "user",
+                    "source": {
+                      "kind": "link"
+                    },
+                    "event": {
+                      "scope": "annotation",
+                      "name": "mouseUp"
+                    }
+                  },
+                  "tree": {
+                    "root": {
+                      "type": "named",
+                      "subtype": "Named",
+                      "name": "FirstPage",
+                      "next": []
+                    },
+                    "incomplete": false,
+                    "warningFlags": 0,
+                    "warnings": []
+                  },
+                  "result": {
+                    "status": "executed",
+                    "nodes": [
+                      {
+                        "path": [],
+                        "type": "named",
+                        "status": "executed"
+                      }
+                    ],
+                    "diagnostics": []
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 3
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 2,
+                "policyRevision": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 4,
+              "resolved": {
+                "status": "inert",
+                "nodes": [
+                  {
+                    "path": [],
+                    "type": "named",
+                    "status": "no-executor",
+                    "detail": "no UI adapter installed"
+                  }
+                ],
+                "diagnostics": [
+                  {
+                    "code": "no-adapter",
+                    "message": "print: no UI adapter installed"
+                  }
+                ]
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "actions::a",
+              "action": {
+                "type": "ACTIONS_DISPATCHED"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "onDiagnostic",
+              "args": [
+                {
+                  "code": "no-adapter",
+                  "message": "print: no UI adapter installed"
+                }
+              ]
+            },
+            {
+              "fn": "onExecuted",
+              "args": [
+                {
+                  "ctx": {
+                    "origin": "user",
+                    "source": {
+                      "kind": "api"
+                    },
+                    "event": {
+                      "scope": "activate"
+                    }
+                  },
+                  "tree": {
+                    "root": {
+                      "type": "named",
+                      "subtype": "Named",
+                      "name": "Print",
+                      "next": []
+                    },
+                    "incomplete": false,
+                    "warningFlags": 0,
+                    "warnings": []
+                  },
+                  "result": {
+                    "status": "inert",
+                    "nodes": [
+                      {
+                        "path": [],
+                        "type": "named",
+                        "status": "no-executor",
+                        "detail": "no UI adapter installed"
+                      }
+                    ],
+                    "diagnostics": [
+                      {
+                        "code": "no-adapter",
+                        "message": "print: no UI adapter installed"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 4
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 3,
+                "policyRevision": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 3
+            }
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 3,
+                "policyRevision": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 5,
+              "resolved": {
+                "status": "executed",
+                "nodes": [
+                  {
+                    "path": [],
+                    "type": "named",
+                    "status": "executed"
+                  }
+                ],
+                "diagnostics": []
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "actions::a",
+              "action": {
+                "type": "ACTIONS_DISPATCHED"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "ui.print",
+              "args": []
+            },
+            {
+              "fn": "onExecuted",
+              "args": [
+                {
+                  "ctx": {
+                    "origin": "user",
+                    "source": {
+                      "kind": "api"
+                    },
+                    "event": {
+                      "scope": "activate"
+                    }
+                  },
+                  "tree": {
+                    "root": {
+                      "type": "named",
+                      "subtype": "Named",
+                      "name": "Print",
+                      "next": []
+                    },
+                    "incomplete": false,
+                    "warningFlags": 0,
+                    "warnings": []
+                  },
+                  "result": {
+                    "status": "executed",
+                    "nodes": [
+                      {
+                        "path": [],
+                        "type": "named",
+                        "status": "executed"
+                      }
+                    ],
+                    "diagnostics": []
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 5
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 4,
+                "policyRevision": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 6,
+              "resolved": {
+                "status": "inert",
+                "nodes": [
+                  {
+                    "path": [],
+                    "type": "named",
+                    "status": "blocked"
+                  }
+                ],
+                "diagnostics": [
+                  {
+                    "code": "blocked",
+                    "message": "named: policy 'block' for origin 'hover'"
+                  }
+                ]
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "actions::a",
+              "action": {
+                "type": "ACTIONS_DISPATCHED"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "onDiagnostic",
+              "args": [
+                {
+                  "code": "blocked",
+                  "message": "named: policy 'block' for origin 'hover'"
+                }
+              ]
+            },
+            {
+              "fn": "onExecuted",
+              "args": [
+                {
+                  "ctx": {
+                    "origin": "hover",
+                    "source": {
+                      "kind": "api"
+                    },
+                    "event": {
+                      "scope": "activate"
+                    }
+                  },
+                  "tree": {
+                    "root": {
+                      "type": "named",
+                      "subtype": "Named",
+                      "name": "Print",
+                      "next": []
+                    },
+                    "incomplete": false,
+                    "warningFlags": 0,
+                    "warnings": []
+                  },
+                  "result": {
+                    "status": "inert",
+                    "nodes": [
+                      {
+                        "path": [],
+                        "type": "named",
+                        "status": "blocked"
+                      }
+                    ],
+                    "diagnostics": [
+                      {
+                        "code": "blocked",
+                        "message": "named: policy 'block' for origin 'hover'"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 6
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 5,
+                "policyRevision": 0
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "get-action-tree",
+      "covers": "getActionTree reads the raw tree behind each source kind: an annotation (activate by default, or the named /AA event; the /A-shadows-U rule is not applied), a field by object number or by name, a page (open by default), and the catalog (OpenAction by default, or the Table-200 tree for a verb). Anything absent is null, and a document without the actions service has no catalog trees.",
+      "plugins": [
+        {
+          "factory": "actions",
+          "config": {
+            "openSequence": "off"
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                },
+                "actions": {
+                  "open": {
+                    "root": {
+                      "type": "named",
+                      "subtype": "Named",
+                      "name": "O-1",
+                      "next": []
+                    },
+                    "incomplete": false,
+                    "warningFlags": 0,
+                    "warnings": []
+                  },
+                  "close": {
+                    "root": {
+                      "type": "named",
+                      "subtype": "Named",
+                      "name": "C-1",
+                      "next": []
+                    },
+                    "incomplete": false,
+                    "warningFlags": 0,
+                    "warnings": []
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ],
+            "security": {
+              "allows": "*"
+            },
+            "services": [
+              "actions"
+            ],
+            "responses": [
+              {
+                "path": "page.annotations.list",
+                "pon": 1,
+                "value": {
+                  "annotations": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "annotObjectNumber": 5
+                      },
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "subtype": "square",
+                      "rect": {
+                        "left": 10,
+                        "bottom": 20,
+                        "right": 30,
+                        "top": 40
+                      },
+                      "flags": {
+                        "hidden": false,
+                        "print": true,
+                        "readOnly": false,
+                        "locked": false,
+                        "noView": false,
+                        "toggleNoView": false
+                      },
+                      "actions": {
+                        "activate": {
+                          "root": {
+                            "type": "named",
+                            "subtype": "Named",
+                            "name": "A-5",
+                            "next": []
+                          },
+                          "incomplete": false,
+                          "warningFlags": 0,
+                          "warnings": []
+                        },
+                        "mouseUp": {
+                          "root": {
+                            "type": "named",
+                            "subtype": "Named",
+                            "name": "U-5",
+                            "next": []
+                          },
+                          "incomplete": false,
+                          "warningFlags": 0,
+                          "warnings": []
+                        },
+                        "cursorEnter": {
+                          "root": {
+                            "type": "named",
+                            "subtype": "Named",
+                            "name": "E-5",
+                            "next": []
+                          },
+                          "incomplete": false,
+                          "warningFlags": 0,
+                          "warnings": []
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "forms.list",
+                "value": {
+                  "formKind": "acroform",
+                  "needsAppearances": false,
+                  "fields": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 100
+                      },
+                      "fieldObjectNumber": 100,
+                      "name": "f",
+                      "family": "text",
+                      "valueEntry": {
+                        "kind": "scalar",
+                        "value": "f-value"
+                      },
+                      "defaultValueEntry": {
+                        "kind": "none"
+                      },
+                      "flags": {
+                        "readOnly": false,
+                        "required": false
+                      },
+                      "widgets": [],
+                      "actions": {
+                        "keystroke": {
+                          "root": {
+                            "type": "javascript",
+                            "subtype": "JavaScript",
+                            "script": "k()",
+                            "next": []
+                          },
+                          "incomplete": false,
+                          "warningFlags": 0,
+                          "warnings": []
+                        }
+                      }
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 101
+                      },
+                      "fieldObjectNumber": 101,
+                      "name": "g",
+                      "family": "text",
+                      "valueEntry": {
+                        "kind": "scalar",
+                        "value": "g-value"
+                      },
+                      "defaultValueEntry": {
+                        "kind": "none"
+                      },
+                      "flags": {
+                        "readOnly": false,
+                        "required": false
+                      },
+                      "widgets": []
+                    }
+                  ],
+                  "calculationOrder": []
+                }
+              },
+              {
+                "path": "actions.read",
+                "value": {
+                  "nameTreeScripts": [],
+                  "openAction": {
+                    "root": {
+                      "type": "named",
+                      "subtype": "Named",
+                      "name": "OpenAction",
+                      "next": []
+                    },
+                    "incomplete": false,
+                    "warningFlags": 0,
+                    "warnings": []
+                  },
+                  "openDestination": null,
+                  "willSave": {
+                    "root": {
+                      "type": "named",
+                      "subtype": "Named",
+                      "name": "WS",
+                      "next": []
+                    },
+                    "incomplete": false,
+                    "warningFlags": 0,
+                    "warnings": []
+                  }
+                }
+              },
+              {
+                "path": "forms.list",
+                "value": {
+                  "formKind": "none",
+                  "needsAppearances": false,
+                  "fields": [],
+                  "calculationOrder": []
+                }
+              },
+              {
+                "path": "page.annotations.list",
+                "value": {
+                  "annotations": []
+                }
+              }
+            ]
+          },
+          "b": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ],
+            "security": {
+              "allows": "*"
+            },
+            "responses": [
+              {
+                "path": "forms.list",
+                "value": {
+                  "formKind": "none",
+                  "needsAppearances": false,
+                  "fields": [],
+                  "calculationOrder": []
+                }
+              },
+              {
+                "path": "page.annotations.list",
+                "value": {
+                  "annotations": []
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "b",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "getActionTree",
+          "args": [
+            {
+              "kind": "annotation",
+              "annotation": {
+                "kind": "objectNumber",
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "annotObjectNumber": 5
+              },
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "getActionTree",
+          "args": [
+            {
+              "kind": "annotation",
+              "annotation": {
+                "kind": "objectNumber",
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "annotObjectNumber": 5
+              },
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "event": "cursorEnter"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "getActionTree",
+          "args": [
+            {
+              "kind": "annotation",
+              "annotation": {
+                "kind": "objectNumber",
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "annotObjectNumber": 5
+              },
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "event": "mouseUp"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "getActionTree",
+          "args": [
+            {
+              "kind": "annotation",
+              "annotation": {
+                "kind": "objectNumber",
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "annotObjectNumber": 5
+              },
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "event": "blur"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "getActionTree",
+          "args": [
+            {
+              "kind": "annotation",
+              "annotation": {
+                "kind": "objectNumber",
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "annotObjectNumber": 9
+              },
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "getActionTree",
+          "args": [
+            {
+              "kind": "field",
+              "field": {
+                "kind": "objectNumber",
+                "fieldObjectNumber": 100
+              },
+              "event": "keystroke"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "getActionTree",
+          "args": [
+            {
+              "kind": "field",
+              "field": {
+                "kind": "fqn",
+                "name": "f"
+              },
+              "event": "keystroke"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "getActionTree",
+          "args": [
+            {
+              "kind": "field",
+              "field": {
+                "kind": "fqn",
+                "name": "g"
+              },
+              "event": "keystroke"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "getActionTree",
+          "args": [
+            {
+              "kind": "field",
+              "field": {
+                "kind": "objectNumber",
+                "fieldObjectNumber": 999
+              },
+              "event": "format"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "getActionTree",
+          "args": [
+            {
+              "kind": "page",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "getActionTree",
+          "args": [
+            {
+              "kind": "page",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "event": "close"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "getActionTree",
+          "args": [
+            {
+              "kind": "page",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 2
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "getActionTree",
+          "args": [
+            {
+              "kind": "page",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 7
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "getActionTree",
+          "args": [
+            {
+              "kind": "document"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "getActionTree",
+          "args": [
+            {
+              "kind": "document",
+              "event": "will-save"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "getActionTree",
+          "args": [
+            {
+              "kind": "document",
+              "event": "did-print"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "b"
+          },
+          "method": "getActionTree",
+          "args": [
+            {
+              "kind": "document"
+            }
+          ]
+        }
+      ],
+      "snapshot": "none",
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 1
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": "b"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "b",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "b",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            },
+            "b": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 2
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 3,
+              "resolved": {
+                "root": {
+                  "type": "named",
+                  "subtype": "Named",
+                  "name": "A-5",
+                  "next": []
+                },
+                "incomplete": false,
+                "warningFlags": 0,
+                "warnings": []
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "page.annotations.list",
+              "pon": 1,
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            },
+            "b": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 3
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 4,
+              "resolved": {
+                "root": {
+                  "type": "named",
+                  "subtype": "Named",
+                  "name": "E-5",
+                  "next": []
+                },
+                "incomplete": false,
+                "warningFlags": 0,
+                "warnings": []
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "page.annotations.list",
+              "pon": 1,
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            },
+            "b": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 4
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 5,
+              "resolved": {
+                "root": {
+                  "type": "named",
+                  "subtype": "Named",
+                  "name": "U-5",
+                  "next": []
+                },
+                "incomplete": false,
+                "warningFlags": 0,
+                "warnings": []
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "page.annotations.list",
+              "pon": 1,
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            },
+            "b": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 5
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 6,
+              "resolved": null
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "page.annotations.list",
+              "pon": 1,
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            },
+            "b": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 6
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 7,
+              "resolved": null
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "page.annotations.list",
+              "pon": 1,
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            },
+            "b": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 7
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 8,
+              "resolved": {
+                "root": {
+                  "type": "javascript",
+                  "subtype": "JavaScript",
+                  "script": "k()",
+                  "next": []
+                },
+                "incomplete": false,
+                "warningFlags": 0,
+                "warnings": []
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "forms.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            },
+            "b": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 8
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 9,
+              "resolved": {
+                "root": {
+                  "type": "javascript",
+                  "subtype": "JavaScript",
+                  "script": "k()",
+                  "next": []
+                },
+                "incomplete": false,
+                "warningFlags": 0,
+                "warnings": []
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "forms.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            },
+            "b": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 9
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 10,
+              "resolved": null
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "forms.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            },
+            "b": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 10
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 11,
+              "resolved": null
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "forms.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            },
+            "b": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 11
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 12,
+              "resolved": {
+                "root": {
+                  "type": "named",
+                  "subtype": "Named",
+                  "name": "O-1",
+                  "next": []
+                },
+                "incomplete": false,
+                "warningFlags": 0,
+                "warnings": []
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            },
+            "b": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 12
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 13,
+              "resolved": {
+                "root": {
+                  "type": "named",
+                  "subtype": "Named",
+                  "name": "C-1",
+                  "next": []
+                },
+                "incomplete": false,
+                "warningFlags": 0,
+                "warnings": []
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            },
+            "b": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 13
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 14,
+              "resolved": null
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            },
+            "b": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 14
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 15,
+              "resolved": null
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            },
+            "b": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 15
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 16,
+              "resolved": {
+                "root": {
+                  "type": "named",
+                  "subtype": "Named",
+                  "name": "OpenAction",
+                  "next": []
+                },
+                "incomplete": false,
+                "warningFlags": 0,
+                "warnings": []
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "actions.read",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            },
+            "b": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 16
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 17,
+              "resolved": {
+                "root": {
+                  "type": "named",
+                  "subtype": "Named",
+                  "name": "WS",
+                  "next": []
+                },
+                "incomplete": false,
+                "warningFlags": 0,
+                "warnings": []
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            },
+            "b": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 17
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 18,
+              "resolved": null
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            },
+            "b": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 18
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 19,
+              "resolved": null
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            },
+            "b": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 19
+          }
+        }
+      ]
+    },
+    {
       "name": "uri-without-an-adapter",
       "covers": "A user uri with no adapter installed is no-executor with a no-adapter diagnostic.",
       "plugins": [

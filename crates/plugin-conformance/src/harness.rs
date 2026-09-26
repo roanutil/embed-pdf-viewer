@@ -65,6 +65,17 @@ pub trait HarnessPlugin {
     /// The capability's own members, in the order the TypeScript object
     /// literal defines them, for printing the object when a call returns it.
     fn members(&self, capability: &Rc<dyn Any>) -> Option<Vec<&'static str>>;
+    /// A member that is not a method (a nested object, a value), printed as
+    /// the TypeScript prints it; `None` prints the member as a callable ref.
+    /// Called in member order, so refs registered here number in place.
+    fn describe_member(
+        &self,
+        _capability: &Rc<dyn Any>,
+        _member: &'static str,
+        _h: &Harness,
+    ) -> Option<Value> {
+        None
+    }
 }
 
 #[derive(Default)]
@@ -183,6 +194,10 @@ impl Harness {
             if let Some(members) = adapter.members(&capability) {
                 let mut out = serde_json::Map::new();
                 for member in members {
+                    if let Some(value) = adapter.describe_member(&capability, member, self) {
+                        out.insert(member.to_string(), value);
+                        continue;
+                    }
                     let adapter = adapter.clone();
                     let capability = capability.clone();
                     let h = self.clone();

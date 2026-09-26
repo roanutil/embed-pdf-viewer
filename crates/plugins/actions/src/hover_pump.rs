@@ -13,9 +13,11 @@ use epdf_kernel::rt::{self, Promise};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::types::{
-    ActionSource, ActionTrigger, ActionTriggerResult, AnnotationRef, PageObjectNumber,
-    PdfAnnotationEventKind,
+use epdf_kernel::geometry::PageRef;
+
+use crate::contract::{
+    ActionSource, ActionTrigger, ActionTriggerResult, AnnotationRef, PdfAnnotationEventKind,
+    page_ref_json,
 };
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
@@ -32,7 +34,8 @@ pub struct HoverEvents {
 pub struct HoverTarget {
     #[serde(rename = "ref")]
     pub annotation_ref: AnnotationRef,
-    pub pon: PageObjectNumber,
+    #[serde(with = "page_ref_json")]
+    pub page: PageRef,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub source: Option<ActionSource>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -50,7 +53,7 @@ fn same_target(a: Option<&HoverTarget>, b: Option<&HoverTarget>) -> bool {
     let (Some(a), Some(b)) = (a, b) else { return a.is_none() && b.is_none() };
     let (x, y) = (&a.annotation_ref, &b.annotation_ref);
     let kind = |v: &Value| member(v, "kind").as_str().map(str::to_string);
-    if kind(x) != kind(y) || a.pon != b.pon {
+    if kind(x) != kind(y) || a.page.page_object_number != b.page.page_object_number {
         return false;
     }
     let number = |v: &Value, key: &str| member(v, key).as_f64();
@@ -102,7 +105,7 @@ fn hover_trigger(event: PdfAnnotationEventKind, target: &HoverTarget) -> ActionT
     ActionTrigger::Annotation {
         event,
         annotation_ref: target.annotation_ref.clone(),
-        pon: target.pon,
+        page: target.page,
         source: target.source.clone(),
     }
 }
