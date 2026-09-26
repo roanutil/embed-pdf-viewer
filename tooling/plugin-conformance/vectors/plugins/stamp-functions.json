@@ -1,0 +1,1797 @@
+{
+  "schemaVersion": 1,
+  "kind": "function",
+  "describes": "packages/plugin/stamp reducer, called directly.",
+  "cases": [
+    {
+      "name": "initial-state",
+      "fn": "initialStampState",
+      "args": [],
+      "outcome": {
+        "returned": {
+          "libraries": {},
+          "libraryOrder": [],
+          "assets": {}
+        }
+      }
+    },
+    {
+      "name": "library-added-to-empty",
+      "fn": "stampReducer",
+      "args": [
+        {
+          "libraries": {},
+          "libraryOrder": [],
+          "assets": {}
+        },
+        {
+          "type": "LIBRARY_ADDED",
+          "library": {
+            "id": "L",
+            "name": "Library L",
+            "storage": "canonical-pdf",
+            "assetIds": []
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "changed": true,
+          "state": {
+            "libraries": {
+              "L": {
+                "id": "L",
+                "name": "Library L",
+                "storage": "canonical-pdf",
+                "assetIds": []
+              }
+            },
+            "libraryOrder": [
+              "L"
+            ],
+            "assets": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "library-added-appends-order",
+      "fn": "stampReducer",
+      "args": [
+        {
+          "libraries": {
+            "L": {
+              "id": "L",
+              "name": "Library L",
+              "storage": "canonical-pdf",
+              "assetIds": [
+                "a",
+                "b"
+              ],
+              "categories": [
+                "Team"
+              ]
+            }
+          },
+          "libraryOrder": [
+            "L"
+          ],
+          "assets": {
+            "a": {
+              "id": "a",
+              "libraryId": "L",
+              "kind": "stamp",
+              "name": "Asset a",
+              "size": {
+                "width": 200,
+                "height": 100
+              },
+              "format": "pdf",
+              "pageObjectNumber": 100
+            },
+            "b": {
+              "id": "b",
+              "libraryId": "L",
+              "kind": "signature",
+              "name": "Asset b",
+              "size": {
+                "width": 200,
+                "height": 100
+              },
+              "format": "pdf",
+              "pageObjectNumber": 101,
+              "subject": "S",
+              "categories": [
+                "x"
+              ]
+            }
+          }
+        },
+        {
+          "type": "LIBRARY_ADDED",
+          "library": {
+            "id": "M",
+            "name": "Library M",
+            "storage": "loose",
+            "assetIds": []
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "changed": true,
+          "state": {
+            "libraries": {
+              "L": {
+                "id": "L",
+                "name": "Library L",
+                "storage": "canonical-pdf",
+                "assetIds": [
+                  "a",
+                  "b"
+                ],
+                "categories": [
+                  "Team"
+                ]
+              },
+              "M": {
+                "id": "M",
+                "name": "Library M",
+                "storage": "loose",
+                "assetIds": []
+              }
+            },
+            "libraryOrder": [
+              "L",
+              "M"
+            ],
+            "assets": {
+              "a": {
+                "id": "a",
+                "libraryId": "L",
+                "kind": "stamp",
+                "name": "Asset a",
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "format": "pdf",
+                "pageObjectNumber": 100
+              },
+              "b": {
+                "id": "b",
+                "libraryId": "L",
+                "kind": "signature",
+                "name": "Asset b",
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "format": "pdf",
+                "pageObjectNumber": 101,
+                "subject": "S",
+                "categories": [
+                  "x"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "library-added-with-a-taken-id",
+      "fn": "stampReducer",
+      "args": [
+        {
+          "libraries": {
+            "L": {
+              "id": "L",
+              "name": "Library L",
+              "storage": "canonical-pdf",
+              "assetIds": [
+                "a",
+                "b"
+              ],
+              "categories": [
+                "Team"
+              ]
+            },
+            "M": {
+              "id": "M",
+              "name": "Library M",
+              "storage": "loose",
+              "assetIds": [
+                "c"
+              ]
+            }
+          },
+          "libraryOrder": [
+            "L",
+            "M"
+          ],
+          "assets": {
+            "a": {
+              "id": "a",
+              "libraryId": "L",
+              "kind": "stamp",
+              "name": "Asset a",
+              "size": {
+                "width": 200,
+                "height": 100
+              },
+              "format": "pdf",
+              "pageObjectNumber": 100
+            },
+            "b": {
+              "id": "b",
+              "libraryId": "L",
+              "kind": "signature",
+              "name": "Asset b",
+              "size": {
+                "width": 200,
+                "height": 100
+              },
+              "format": "pdf",
+              "pageObjectNumber": 101,
+              "subject": "S",
+              "categories": [
+                "x"
+              ]
+            },
+            "c": {
+              "id": "c",
+              "libraryId": "M",
+              "kind": "stamp",
+              "name": "Asset c",
+              "size": {
+                "width": 200,
+                "height": 100
+              },
+              "format": "png"
+            }
+          }
+        },
+        {
+          "type": "LIBRARY_ADDED",
+          "library": {
+            "id": "L",
+            "name": "Replacement",
+            "storage": "canonical-pdf",
+            "assetIds": []
+          }
+        }
+      ],
+      "covers": "A LIBRARY_ADDED for an id already present replaces the library and appends the id to the order again.",
+      "outcome": {
+        "returned": {
+          "changed": true,
+          "state": {
+            "libraries": {
+              "L": {
+                "id": "L",
+                "name": "Replacement",
+                "storage": "canonical-pdf",
+                "assetIds": []
+              },
+              "M": {
+                "id": "M",
+                "name": "Library M",
+                "storage": "loose",
+                "assetIds": [
+                  "c"
+                ]
+              }
+            },
+            "libraryOrder": [
+              "L",
+              "M",
+              "L"
+            ],
+            "assets": {
+              "a": {
+                "id": "a",
+                "libraryId": "L",
+                "kind": "stamp",
+                "name": "Asset a",
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "format": "pdf",
+                "pageObjectNumber": 100
+              },
+              "b": {
+                "id": "b",
+                "libraryId": "L",
+                "kind": "signature",
+                "name": "Asset b",
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "format": "pdf",
+                "pageObjectNumber": 101,
+                "subject": "S",
+                "categories": [
+                  "x"
+                ]
+              },
+              "c": {
+                "id": "c",
+                "libraryId": "M",
+                "kind": "stamp",
+                "name": "Asset c",
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "format": "png"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "library-removed",
+      "fn": "stampReducer",
+      "args": [
+        {
+          "libraries": {
+            "L": {
+              "id": "L",
+              "name": "Library L",
+              "storage": "canonical-pdf",
+              "assetIds": [
+                "a",
+                "b"
+              ],
+              "categories": [
+                "Team"
+              ]
+            },
+            "M": {
+              "id": "M",
+              "name": "Library M",
+              "storage": "loose",
+              "assetIds": [
+                "c"
+              ]
+            }
+          },
+          "libraryOrder": [
+            "L",
+            "M"
+          ],
+          "assets": {
+            "a": {
+              "id": "a",
+              "libraryId": "L",
+              "kind": "stamp",
+              "name": "Asset a",
+              "size": {
+                "width": 200,
+                "height": 100
+              },
+              "format": "pdf",
+              "pageObjectNumber": 100
+            },
+            "b": {
+              "id": "b",
+              "libraryId": "L",
+              "kind": "signature",
+              "name": "Asset b",
+              "size": {
+                "width": 200,
+                "height": 100
+              },
+              "format": "pdf",
+              "pageObjectNumber": 101,
+              "subject": "S",
+              "categories": [
+                "x"
+              ]
+            },
+            "c": {
+              "id": "c",
+              "libraryId": "M",
+              "kind": "stamp",
+              "name": "Asset c",
+              "size": {
+                "width": 200,
+                "height": 100
+              },
+              "format": "png"
+            }
+          }
+        },
+        {
+          "type": "LIBRARY_REMOVED",
+          "libraryId": "L"
+        }
+      ],
+      "covers": "Removing a library drops it, its order entries and its listed assets.",
+      "outcome": {
+        "returned": {
+          "changed": true,
+          "state": {
+            "libraries": {
+              "M": {
+                "id": "M",
+                "name": "Library M",
+                "storage": "loose",
+                "assetIds": [
+                  "c"
+                ]
+              }
+            },
+            "libraryOrder": [
+              "M"
+            ],
+            "assets": {
+              "c": {
+                "id": "c",
+                "libraryId": "M",
+                "kind": "stamp",
+                "name": "Asset c",
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "format": "png"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "library-removed-unknown",
+      "fn": "stampReducer",
+      "args": [
+        {
+          "libraries": {
+            "L": {
+              "id": "L",
+              "name": "Library L",
+              "storage": "canonical-pdf",
+              "assetIds": [
+                "a",
+                "b"
+              ],
+              "categories": [
+                "Team"
+              ]
+            },
+            "M": {
+              "id": "M",
+              "name": "Library M",
+              "storage": "loose",
+              "assetIds": [
+                "c"
+              ]
+            }
+          },
+          "libraryOrder": [
+            "L",
+            "M"
+          ],
+          "assets": {
+            "a": {
+              "id": "a",
+              "libraryId": "L",
+              "kind": "stamp",
+              "name": "Asset a",
+              "size": {
+                "width": 200,
+                "height": 100
+              },
+              "format": "pdf",
+              "pageObjectNumber": 100
+            },
+            "b": {
+              "id": "b",
+              "libraryId": "L",
+              "kind": "signature",
+              "name": "Asset b",
+              "size": {
+                "width": 200,
+                "height": 100
+              },
+              "format": "pdf",
+              "pageObjectNumber": 101,
+              "subject": "S",
+              "categories": [
+                "x"
+              ]
+            },
+            "c": {
+              "id": "c",
+              "libraryId": "M",
+              "kind": "stamp",
+              "name": "Asset c",
+              "size": {
+                "width": 200,
+                "height": 100
+              },
+              "format": "png"
+            }
+          }
+        },
+        {
+          "type": "LIBRARY_REMOVED",
+          "libraryId": "nope"
+        }
+      ],
+      "covers": "An unknown library id returns the same state.",
+      "outcome": {
+        "returned": {
+          "changed": false,
+          "state": {
+            "libraries": {
+              "L": {
+                "id": "L",
+                "name": "Library L",
+                "storage": "canonical-pdf",
+                "assetIds": [
+                  "a",
+                  "b"
+                ],
+                "categories": [
+                  "Team"
+                ]
+              },
+              "M": {
+                "id": "M",
+                "name": "Library M",
+                "storage": "loose",
+                "assetIds": [
+                  "c"
+                ]
+              }
+            },
+            "libraryOrder": [
+              "L",
+              "M"
+            ],
+            "assets": {
+              "a": {
+                "id": "a",
+                "libraryId": "L",
+                "kind": "stamp",
+                "name": "Asset a",
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "format": "pdf",
+                "pageObjectNumber": 100
+              },
+              "b": {
+                "id": "b",
+                "libraryId": "L",
+                "kind": "signature",
+                "name": "Asset b",
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "format": "pdf",
+                "pageObjectNumber": 101,
+                "subject": "S",
+                "categories": [
+                  "x"
+                ]
+              },
+              "c": {
+                "id": "c",
+                "libraryId": "M",
+                "kind": "stamp",
+                "name": "Asset c",
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "format": "png"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "library-removed-with-missing-assets",
+      "fn": "stampReducer",
+      "args": [
+        {
+          "libraries": {
+            "M": {
+              "id": "M",
+              "name": "Library M",
+              "storage": "canonical-pdf",
+              "assetIds": [
+                "gone",
+                "c"
+              ]
+            }
+          },
+          "libraryOrder": [
+            "M"
+          ],
+          "assets": {
+            "c": {
+              "id": "c",
+              "libraryId": "M",
+              "kind": "stamp",
+              "name": "Asset c",
+              "size": {
+                "width": 200,
+                "height": 100
+              },
+              "format": "pdf",
+              "pageObjectNumber": 100
+            },
+            "stray": {
+              "id": "stray",
+              "libraryId": "L",
+              "kind": "stamp",
+              "name": "Asset stray",
+              "size": {
+                "width": 200,
+                "height": 100
+              },
+              "format": "pdf",
+              "pageObjectNumber": 100
+            }
+          }
+        },
+        {
+          "type": "LIBRARY_REMOVED",
+          "libraryId": "M"
+        }
+      ],
+      "covers": "Deleting a listed asset that is already gone is harmless; an asset of another library survives.",
+      "outcome": {
+        "returned": {
+          "changed": true,
+          "state": {
+            "libraries": {},
+            "libraryOrder": [],
+            "assets": {
+              "stray": {
+                "id": "stray",
+                "libraryId": "L",
+                "kind": "stamp",
+                "name": "Asset stray",
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "format": "pdf",
+                "pageObjectNumber": 100
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "library-removed-duplicate-order",
+      "fn": "stampReducer",
+      "args": [
+        {
+          "libraries": {
+            "L": {
+              "id": "L",
+              "name": "Library L",
+              "storage": "canonical-pdf",
+              "assetIds": [
+                "a",
+                "b"
+              ],
+              "categories": [
+                "Team"
+              ]
+            },
+            "M": {
+              "id": "M",
+              "name": "Library M",
+              "storage": "loose",
+              "assetIds": [
+                "c"
+              ]
+            }
+          },
+          "libraryOrder": [
+            "L",
+            "M",
+            "L"
+          ],
+          "assets": {
+            "a": {
+              "id": "a",
+              "libraryId": "L",
+              "kind": "stamp",
+              "name": "Asset a",
+              "size": {
+                "width": 200,
+                "height": 100
+              },
+              "format": "pdf",
+              "pageObjectNumber": 100
+            },
+            "b": {
+              "id": "b",
+              "libraryId": "L",
+              "kind": "signature",
+              "name": "Asset b",
+              "size": {
+                "width": 200,
+                "height": 100
+              },
+              "format": "pdf",
+              "pageObjectNumber": 101,
+              "subject": "S",
+              "categories": [
+                "x"
+              ]
+            },
+            "c": {
+              "id": "c",
+              "libraryId": "M",
+              "kind": "stamp",
+              "name": "Asset c",
+              "size": {
+                "width": 200,
+                "height": 100
+              },
+              "format": "png"
+            }
+          }
+        },
+        {
+          "type": "LIBRARY_REMOVED",
+          "libraryId": "L"
+        }
+      ],
+      "covers": "Every order entry of the id goes.",
+      "outcome": {
+        "returned": {
+          "changed": true,
+          "state": {
+            "libraries": {
+              "M": {
+                "id": "M",
+                "name": "Library M",
+                "storage": "loose",
+                "assetIds": [
+                  "c"
+                ]
+              }
+            },
+            "libraryOrder": [
+              "M"
+            ],
+            "assets": {
+              "c": {
+                "id": "c",
+                "libraryId": "M",
+                "kind": "stamp",
+                "name": "Asset c",
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "format": "png"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "asset-added",
+      "fn": "stampReducer",
+      "args": [
+        {
+          "libraries": {
+            "L": {
+              "id": "L",
+              "name": "Library L",
+              "storage": "canonical-pdf",
+              "assetIds": [
+                "a",
+                "b"
+              ],
+              "categories": [
+                "Team"
+              ]
+            },
+            "M": {
+              "id": "M",
+              "name": "Library M",
+              "storage": "loose",
+              "assetIds": [
+                "c"
+              ]
+            }
+          },
+          "libraryOrder": [
+            "L",
+            "M"
+          ],
+          "assets": {
+            "a": {
+              "id": "a",
+              "libraryId": "L",
+              "kind": "stamp",
+              "name": "Asset a",
+              "size": {
+                "width": 200,
+                "height": 100
+              },
+              "format": "pdf",
+              "pageObjectNumber": 100
+            },
+            "b": {
+              "id": "b",
+              "libraryId": "L",
+              "kind": "signature",
+              "name": "Asset b",
+              "size": {
+                "width": 200,
+                "height": 100
+              },
+              "format": "pdf",
+              "pageObjectNumber": 101,
+              "subject": "S",
+              "categories": [
+                "x"
+              ]
+            },
+            "c": {
+              "id": "c",
+              "libraryId": "M",
+              "kind": "stamp",
+              "name": "Asset c",
+              "size": {
+                "width": 200,
+                "height": 100
+              },
+              "format": "png"
+            }
+          }
+        },
+        {
+          "type": "ASSET_ADDED",
+          "asset": {
+            "id": "d",
+            "libraryId": "M",
+            "kind": "stamp",
+            "name": "Asset d",
+            "size": {
+              "width": 200,
+              "height": 100
+            },
+            "format": "jpeg",
+            "pageObjectNumber": 100
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "changed": true,
+          "state": {
+            "libraries": {
+              "L": {
+                "id": "L",
+                "name": "Library L",
+                "storage": "canonical-pdf",
+                "assetIds": [
+                  "a",
+                  "b"
+                ],
+                "categories": [
+                  "Team"
+                ]
+              },
+              "M": {
+                "id": "M",
+                "name": "Library M",
+                "storage": "loose",
+                "assetIds": [
+                  "c",
+                  "d"
+                ]
+              }
+            },
+            "libraryOrder": [
+              "L",
+              "M"
+            ],
+            "assets": {
+              "a": {
+                "id": "a",
+                "libraryId": "L",
+                "kind": "stamp",
+                "name": "Asset a",
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "format": "pdf",
+                "pageObjectNumber": 100
+              },
+              "b": {
+                "id": "b",
+                "libraryId": "L",
+                "kind": "signature",
+                "name": "Asset b",
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "format": "pdf",
+                "pageObjectNumber": 101,
+                "subject": "S",
+                "categories": [
+                  "x"
+                ]
+              },
+              "c": {
+                "id": "c",
+                "libraryId": "M",
+                "kind": "stamp",
+                "name": "Asset c",
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "format": "png"
+              },
+              "d": {
+                "id": "d",
+                "libraryId": "M",
+                "kind": "stamp",
+                "name": "Asset d",
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "format": "jpeg",
+                "pageObjectNumber": 100
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "asset-added-to-unknown-library",
+      "fn": "stampReducer",
+      "args": [
+        {
+          "libraries": {
+            "L": {
+              "id": "L",
+              "name": "Library L",
+              "storage": "canonical-pdf",
+              "assetIds": [
+                "a",
+                "b"
+              ],
+              "categories": [
+                "Team"
+              ]
+            },
+            "M": {
+              "id": "M",
+              "name": "Library M",
+              "storage": "loose",
+              "assetIds": [
+                "c"
+              ]
+            }
+          },
+          "libraryOrder": [
+            "L",
+            "M"
+          ],
+          "assets": {
+            "a": {
+              "id": "a",
+              "libraryId": "L",
+              "kind": "stamp",
+              "name": "Asset a",
+              "size": {
+                "width": 200,
+                "height": 100
+              },
+              "format": "pdf",
+              "pageObjectNumber": 100
+            },
+            "b": {
+              "id": "b",
+              "libraryId": "L",
+              "kind": "signature",
+              "name": "Asset b",
+              "size": {
+                "width": 200,
+                "height": 100
+              },
+              "format": "pdf",
+              "pageObjectNumber": 101,
+              "subject": "S",
+              "categories": [
+                "x"
+              ]
+            },
+            "c": {
+              "id": "c",
+              "libraryId": "M",
+              "kind": "stamp",
+              "name": "Asset c",
+              "size": {
+                "width": 200,
+                "height": 100
+              },
+              "format": "png"
+            }
+          }
+        },
+        {
+          "type": "ASSET_ADDED",
+          "asset": {
+            "id": "d",
+            "libraryId": "nope",
+            "kind": "stamp",
+            "name": "Asset d",
+            "size": {
+              "width": 200,
+              "height": 100
+            },
+            "format": "pdf",
+            "pageObjectNumber": 100
+          }
+        }
+      ],
+      "covers": "An asset for an unknown library returns the same state.",
+      "outcome": {
+        "returned": {
+          "changed": false,
+          "state": {
+            "libraries": {
+              "L": {
+                "id": "L",
+                "name": "Library L",
+                "storage": "canonical-pdf",
+                "assetIds": [
+                  "a",
+                  "b"
+                ],
+                "categories": [
+                  "Team"
+                ]
+              },
+              "M": {
+                "id": "M",
+                "name": "Library M",
+                "storage": "loose",
+                "assetIds": [
+                  "c"
+                ]
+              }
+            },
+            "libraryOrder": [
+              "L",
+              "M"
+            ],
+            "assets": {
+              "a": {
+                "id": "a",
+                "libraryId": "L",
+                "kind": "stamp",
+                "name": "Asset a",
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "format": "pdf",
+                "pageObjectNumber": 100
+              },
+              "b": {
+                "id": "b",
+                "libraryId": "L",
+                "kind": "signature",
+                "name": "Asset b",
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "format": "pdf",
+                "pageObjectNumber": 101,
+                "subject": "S",
+                "categories": [
+                  "x"
+                ]
+              },
+              "c": {
+                "id": "c",
+                "libraryId": "M",
+                "kind": "stamp",
+                "name": "Asset c",
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "format": "png"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "asset-added-twice",
+      "fn": "stampReducer",
+      "args": [
+        {
+          "libraries": {
+            "L": {
+              "id": "L",
+              "name": "Library L",
+              "storage": "canonical-pdf",
+              "assetIds": [
+                "a",
+                "b"
+              ],
+              "categories": [
+                "Team"
+              ]
+            }
+          },
+          "libraryOrder": [
+            "L"
+          ],
+          "assets": {
+            "a": {
+              "id": "a",
+              "libraryId": "L",
+              "kind": "stamp",
+              "name": "Asset a",
+              "size": {
+                "width": 200,
+                "height": 100
+              },
+              "format": "pdf",
+              "pageObjectNumber": 100
+            },
+            "b": {
+              "id": "b",
+              "libraryId": "L",
+              "kind": "signature",
+              "name": "Asset b",
+              "size": {
+                "width": 200,
+                "height": 100
+              },
+              "format": "pdf",
+              "pageObjectNumber": 101,
+              "subject": "S",
+              "categories": [
+                "x"
+              ]
+            }
+          }
+        },
+        {
+          "type": "ASSET_ADDED",
+          "asset": {
+            "id": "a",
+            "libraryId": "L",
+            "kind": "stamp",
+            "name": "Again",
+            "size": {
+              "width": 200,
+              "height": 100
+            },
+            "format": "pdf",
+            "pageObjectNumber": 100
+          }
+        }
+      ],
+      "covers": "An asset id already present is replaced and listed a second time.",
+      "outcome": {
+        "returned": {
+          "changed": true,
+          "state": {
+            "libraries": {
+              "L": {
+                "id": "L",
+                "name": "Library L",
+                "storage": "canonical-pdf",
+                "assetIds": [
+                  "a",
+                  "b",
+                  "a"
+                ],
+                "categories": [
+                  "Team"
+                ]
+              }
+            },
+            "libraryOrder": [
+              "L"
+            ],
+            "assets": {
+              "a": {
+                "id": "a",
+                "libraryId": "L",
+                "kind": "stamp",
+                "name": "Again",
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "format": "pdf",
+                "pageObjectNumber": 100
+              },
+              "b": {
+                "id": "b",
+                "libraryId": "L",
+                "kind": "signature",
+                "name": "Asset b",
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "format": "pdf",
+                "pageObjectNumber": 101,
+                "subject": "S",
+                "categories": [
+                  "x"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "asset-removed",
+      "fn": "stampReducer",
+      "args": [
+        {
+          "libraries": {
+            "L": {
+              "id": "L",
+              "name": "Library L",
+              "storage": "canonical-pdf",
+              "assetIds": [
+                "a",
+                "b"
+              ],
+              "categories": [
+                "Team"
+              ]
+            },
+            "M": {
+              "id": "M",
+              "name": "Library M",
+              "storage": "loose",
+              "assetIds": [
+                "c"
+              ]
+            }
+          },
+          "libraryOrder": [
+            "L",
+            "M"
+          ],
+          "assets": {
+            "a": {
+              "id": "a",
+              "libraryId": "L",
+              "kind": "stamp",
+              "name": "Asset a",
+              "size": {
+                "width": 200,
+                "height": 100
+              },
+              "format": "pdf",
+              "pageObjectNumber": 100
+            },
+            "b": {
+              "id": "b",
+              "libraryId": "L",
+              "kind": "signature",
+              "name": "Asset b",
+              "size": {
+                "width": 200,
+                "height": 100
+              },
+              "format": "pdf",
+              "pageObjectNumber": 101,
+              "subject": "S",
+              "categories": [
+                "x"
+              ]
+            },
+            "c": {
+              "id": "c",
+              "libraryId": "M",
+              "kind": "stamp",
+              "name": "Asset c",
+              "size": {
+                "width": 200,
+                "height": 100
+              },
+              "format": "png"
+            }
+          }
+        },
+        {
+          "type": "ASSET_REMOVED",
+          "assetId": "a"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "changed": true,
+          "state": {
+            "libraries": {
+              "L": {
+                "id": "L",
+                "name": "Library L",
+                "storage": "canonical-pdf",
+                "assetIds": [
+                  "b"
+                ],
+                "categories": [
+                  "Team"
+                ]
+              },
+              "M": {
+                "id": "M",
+                "name": "Library M",
+                "storage": "loose",
+                "assetIds": [
+                  "c"
+                ]
+              }
+            },
+            "libraryOrder": [
+              "L",
+              "M"
+            ],
+            "assets": {
+              "b": {
+                "id": "b",
+                "libraryId": "L",
+                "kind": "signature",
+                "name": "Asset b",
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "format": "pdf",
+                "pageObjectNumber": 101,
+                "subject": "S",
+                "categories": [
+                  "x"
+                ]
+              },
+              "c": {
+                "id": "c",
+                "libraryId": "M",
+                "kind": "stamp",
+                "name": "Asset c",
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "format": "png"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "asset-removed-unknown",
+      "fn": "stampReducer",
+      "args": [
+        {
+          "libraries": {
+            "L": {
+              "id": "L",
+              "name": "Library L",
+              "storage": "canonical-pdf",
+              "assetIds": [
+                "a",
+                "b"
+              ],
+              "categories": [
+                "Team"
+              ]
+            },
+            "M": {
+              "id": "M",
+              "name": "Library M",
+              "storage": "loose",
+              "assetIds": [
+                "c"
+              ]
+            }
+          },
+          "libraryOrder": [
+            "L",
+            "M"
+          ],
+          "assets": {
+            "a": {
+              "id": "a",
+              "libraryId": "L",
+              "kind": "stamp",
+              "name": "Asset a",
+              "size": {
+                "width": 200,
+                "height": 100
+              },
+              "format": "pdf",
+              "pageObjectNumber": 100
+            },
+            "b": {
+              "id": "b",
+              "libraryId": "L",
+              "kind": "signature",
+              "name": "Asset b",
+              "size": {
+                "width": 200,
+                "height": 100
+              },
+              "format": "pdf",
+              "pageObjectNumber": 101,
+              "subject": "S",
+              "categories": [
+                "x"
+              ]
+            },
+            "c": {
+              "id": "c",
+              "libraryId": "M",
+              "kind": "stamp",
+              "name": "Asset c",
+              "size": {
+                "width": 200,
+                "height": 100
+              },
+              "format": "png"
+            }
+          }
+        },
+        {
+          "type": "ASSET_REMOVED",
+          "assetId": "nope"
+        }
+      ],
+      "covers": "An unknown asset id returns the same state.",
+      "outcome": {
+        "returned": {
+          "changed": false,
+          "state": {
+            "libraries": {
+              "L": {
+                "id": "L",
+                "name": "Library L",
+                "storage": "canonical-pdf",
+                "assetIds": [
+                  "a",
+                  "b"
+                ],
+                "categories": [
+                  "Team"
+                ]
+              },
+              "M": {
+                "id": "M",
+                "name": "Library M",
+                "storage": "loose",
+                "assetIds": [
+                  "c"
+                ]
+              }
+            },
+            "libraryOrder": [
+              "L",
+              "M"
+            ],
+            "assets": {
+              "a": {
+                "id": "a",
+                "libraryId": "L",
+                "kind": "stamp",
+                "name": "Asset a",
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "format": "pdf",
+                "pageObjectNumber": 100
+              },
+              "b": {
+                "id": "b",
+                "libraryId": "L",
+                "kind": "signature",
+                "name": "Asset b",
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "format": "pdf",
+                "pageObjectNumber": 101,
+                "subject": "S",
+                "categories": [
+                  "x"
+                ]
+              },
+              "c": {
+                "id": "c",
+                "libraryId": "M",
+                "kind": "stamp",
+                "name": "Asset c",
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "format": "png"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "asset-removed-without-its-library",
+      "fn": "stampReducer",
+      "args": [
+        {
+          "libraries": {
+            "M": {
+              "id": "M",
+              "name": "Library M",
+              "storage": "canonical-pdf",
+              "assetIds": [
+                "gone",
+                "c"
+              ]
+            }
+          },
+          "libraryOrder": [
+            "M"
+          ],
+          "assets": {
+            "c": {
+              "id": "c",
+              "libraryId": "M",
+              "kind": "stamp",
+              "name": "Asset c",
+              "size": {
+                "width": 200,
+                "height": 100
+              },
+              "format": "pdf",
+              "pageObjectNumber": 100
+            },
+            "stray": {
+              "id": "stray",
+              "libraryId": "L",
+              "kind": "stamp",
+              "name": "Asset stray",
+              "size": {
+                "width": 200,
+                "height": 100
+              },
+              "format": "pdf",
+              "pageObjectNumber": 100
+            }
+          }
+        },
+        {
+          "type": "ASSET_REMOVED",
+          "assetId": "stray"
+        }
+      ],
+      "covers": "An asset whose library is gone is deleted and the libraries are left as they are.",
+      "outcome": {
+        "returned": {
+          "changed": true,
+          "state": {
+            "libraries": {
+              "M": {
+                "id": "M",
+                "name": "Library M",
+                "storage": "canonical-pdf",
+                "assetIds": [
+                  "gone",
+                  "c"
+                ]
+              }
+            },
+            "libraryOrder": [
+              "M"
+            ],
+            "assets": {
+              "c": {
+                "id": "c",
+                "libraryId": "M",
+                "kind": "stamp",
+                "name": "Asset c",
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "format": "pdf",
+                "pageObjectNumber": 100
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "unknown-action",
+      "fn": "stampReducer",
+      "args": [
+        {
+          "libraries": {
+            "L": {
+              "id": "L",
+              "name": "Library L",
+              "storage": "canonical-pdf",
+              "assetIds": [
+                "a",
+                "b"
+              ],
+              "categories": [
+                "Team"
+              ]
+            },
+            "M": {
+              "id": "M",
+              "name": "Library M",
+              "storage": "loose",
+              "assetIds": [
+                "c"
+              ]
+            }
+          },
+          "libraryOrder": [
+            "L",
+            "M"
+          ],
+          "assets": {
+            "a": {
+              "id": "a",
+              "libraryId": "L",
+              "kind": "stamp",
+              "name": "Asset a",
+              "size": {
+                "width": 200,
+                "height": 100
+              },
+              "format": "pdf",
+              "pageObjectNumber": 100
+            },
+            "b": {
+              "id": "b",
+              "libraryId": "L",
+              "kind": "signature",
+              "name": "Asset b",
+              "size": {
+                "width": 200,
+                "height": 100
+              },
+              "format": "pdf",
+              "pageObjectNumber": 101,
+              "subject": "S",
+              "categories": [
+                "x"
+              ]
+            },
+            "c": {
+              "id": "c",
+              "libraryId": "M",
+              "kind": "stamp",
+              "name": "Asset c",
+              "size": {
+                "width": 200,
+                "height": 100
+              },
+              "format": "png"
+            }
+          }
+        },
+        {
+          "type": "OTHER"
+        }
+      ],
+      "covers": "An action outside the union returns the same state.",
+      "outcome": {
+        "returned": {
+          "changed": false,
+          "state": {
+            "libraries": {
+              "L": {
+                "id": "L",
+                "name": "Library L",
+                "storage": "canonical-pdf",
+                "assetIds": [
+                  "a",
+                  "b"
+                ],
+                "categories": [
+                  "Team"
+                ]
+              },
+              "M": {
+                "id": "M",
+                "name": "Library M",
+                "storage": "loose",
+                "assetIds": [
+                  "c"
+                ]
+              }
+            },
+            "libraryOrder": [
+              "L",
+              "M"
+            ],
+            "assets": {
+              "a": {
+                "id": "a",
+                "libraryId": "L",
+                "kind": "stamp",
+                "name": "Asset a",
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "format": "pdf",
+                "pageObjectNumber": 100
+              },
+              "b": {
+                "id": "b",
+                "libraryId": "L",
+                "kind": "signature",
+                "name": "Asset b",
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "format": "pdf",
+                "pageObjectNumber": 101,
+                "subject": "S",
+                "categories": [
+                  "x"
+                ]
+              },
+              "c": {
+                "id": "c",
+                "libraryId": "M",
+                "kind": "stamp",
+                "name": "Asset c",
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "format": "png"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}
